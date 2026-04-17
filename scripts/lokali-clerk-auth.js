@@ -13,11 +13,11 @@
   })();
 
   // ──────────────────────────────────────────────
-  // CONFIG — sync URL must be your server proxy (verifies Clerk JWT, adds Xano secret).
-  // Set window.LOKALI_CLERK_SYNC_URL before this script, or replace the default below.
-  // Example: https://your-app.vercel.app/api/lokali/clerk-sync
+  // CONFIG — sync URL points at the Lokali API proxy on Vercel, which verifies
+  // the Clerk JWT and calls Xano with the private sync secret (server-side only).
+  // To override (e.g. for staging), set window.LOKALI_CLERK_SYNC_URL before loading.
   // ──────────────────────────────────────────────
-  var CLERK_SYNC_URL = window.LOKALI_CLERK_SYNC_URL || '';
+  var CLERK_SYNC_URL = window.LOKALI_CLERK_SYNC_URL || 'https://lokali-api.vercel.app/api/lokali/clerk-sync';
   var AFTER_SIGN_IN_PATH = '/vendor-dashboard/dashboard';
   var SIGN_IN_PATH = '/login';
 
