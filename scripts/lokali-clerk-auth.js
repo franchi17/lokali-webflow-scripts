@@ -28,6 +28,22 @@
   var _mountUserWaitTries = 0;
   var MOUNT_USER_WAIT_MAX = 80;
 
+  var SYNC_COOLDOWN_KEY = 'lokali_clerk_sync_cooldown';
+  var SYNC_COOLDOWN_MS = 30000; // don't call /clerk-sync more than once per 30s per tab
+
+  function inSyncCooldown() {
+    try {
+      var t = parseInt(sessionStorage.getItem(SYNC_COOLDOWN_KEY) || '0', 10);
+      return t && (Date.now() - t) < SYNC_COOLDOWN_MS;
+    } catch (e) { return false; }
+  }
+  function markSynced() {
+    try { sessionStorage.setItem(SYNC_COOLDOWN_KEY, String(Date.now())); } catch (e) {}
+  }
+  function clearSyncCooldown() {
+    try { sessionStorage.removeItem(SYNC_COOLDOWN_KEY); } catch (e) {}
+  }
+
   function waitForDeps(cb) {
     var checks = 0;
     var interval = setInterval(function () {
@@ -42,6 +58,7 @@
 
   function syncClerkUser(user) {
     if (_syncing) return Promise.resolve(null);
+    if (inSyncCooldown()) return Promise.resolve(window.LokaliAPI && window.LokaliAPI.getToken());
     if (!CLERK_SYNC_URL) {
       console.error('[Lokali] Set LOKALI_CLERK_SYNC_URL (your clerk-sync proxy) before lokali-clerk-auth.js');
       return Promise.resolve(null);
@@ -55,10 +72,7 @@
     }
 
     return session.getToken().then(function (sessionJwt) {
-      if (!sessionJwt) {
-        _syncing = false;
-        return null;
-      }
+      if (!sessionJwt) return null;
       return fetch(CLERK_SYNC_URL, {
         method: 'POST',
         headers: {
@@ -66,19 +80,16 @@
           'Authorization': 'Bearer ' + sessionJwt
         },
         body: '{}'
-      }).then(function (res) {
-        return res.json();
-      });
+      }).then(function (res) { return res.json(); });
     }).then(function (data) {
-      if (data === null) {
-        return null;
-      }
       _syncing = false;
+      if (data == null) return null;
       var token = (typeof data === 'string' && data.length > 20)
         ? data
         : (data && (data.authToken || data.auth_token)) || null;
       if (token && window.LokaliAPI) {
         window.LokaliAPI.setToken(token);
+        markSynced();
       }
       return token;
     }).catch(function (err) {
@@ -107,31 +118,34 @@
     return false;
   }
 
-  /** OAuth often lands on `/` after Google — redirect only after a fresh sync (no token before). */
-  function isHomePath() {
+  function isDashboardPath() {
     var path = window.location.pathname || '/';
-    return path === '/' || path === '';
+    return path.indexOf('/vendor-dashboard') === 0;
   }
 
   function handleAuthState() {
     if (!window.Clerk.isSignedIn) {
       window.LokaliAPI.clearToken();
+      clearSyncCooldown();
       return;
     }
 
     var user = window.Clerk.user;
-    if (!user) {
-      return;
-    }
+    if (!user) return;
 
     var existing = window.LokaliAPI.getToken();
-    if (!existing) {
+
+    // Only trigger a sync in two situations:
+    //  1) We're on an auth page (user just signed in) — sync then redirect to dashboard.
+    //  2) We're on a dashboard page without a Xano token — sync so API calls work.
+    // Everywhere else (home, browse, pricing, etc.), do NOT call /clerk-sync.
+    if (!existing && (isAuthPage() || isDashboardPath())) {
       syncClerkUser(user).then(function (token) {
-        if (token && (isAuthPage() || isHomePath())) {
+        if (token && isAuthPage()) {
           window.location.href = AFTER_SIGN_IN_PATH;
         }
       });
-    } else if (isAuthPage()) {
+    } else if (existing && isAuthPage()) {
       window.location.href = AFTER_SIGN_IN_PATH;
     }
   }
