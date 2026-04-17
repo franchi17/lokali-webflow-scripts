@@ -1,0 +1,60 @@
+
+(function () {
+  'use strict';
+
+  var MAX_RETRIES = 20;
+  var RETRY_MS = 300;
+
+  function findAddressInput() {
+    var ids = ['address', 'input-address', 'business-address'];
+    var el = null;
+    for (var i = 0; i < ids.length; i++) {
+      el = document.getElementById(ids[i]);
+      if (el) break;
+    }
+    var input = el && el.tagName === 'INPUT' ? el : (el ? el.querySelector('input') : null);
+    if (!input) {
+      var wrapper = document.querySelector('[data-lokali-address]');
+      if (wrapper) input = wrapper.querySelector('input');
+    }
+    return input || null;
+  }
+
+  window.initLokaliAutocomplete = function (retryCount) {
+    retryCount = retryCount || 0;
+
+    var input = findAddressInput();
+    if (!input) {
+      if (retryCount < MAX_RETRIES) {
+        setTimeout(function () { window.initLokaliAutocomplete(retryCount + 1); }, RETRY_MS);
+      } else {
+        console.warn('Lokali: address input not found (#address, #input-address, or [data-lokali-address] input)');
+      }
+      return;
+    }
+
+    if (typeof google === 'undefined' || !google.maps || !google.maps.places) {
+      if (retryCount < MAX_RETRIES) {
+        setTimeout(function () { window.initLokaliAutocomplete(retryCount + 1); }, RETRY_MS);
+      } else {
+        console.warn('Lokali: Google Maps API not loaded yet');
+      }
+      return;
+    }
+
+    try {
+      var autocomplete = new google.maps.places.Autocomplete(input, {
+        types: ['address'],
+        componentRestrictions: { country: 'us' },
+        fields: ['formatted_address']
+      });
+
+      autocomplete.addListener('place_changed', function () {
+        var place = autocomplete.getPlace();
+        if (place.formatted_address) input.value = place.formatted_address;
+      });
+    } catch (err) {
+      console.warn('Lokali: Autocomplete init error', err);
+    }
+  };
+})();

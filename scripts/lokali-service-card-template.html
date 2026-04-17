@@ -1,0 +1,298 @@
+
+
+<div id="service-card-template" class="service-card" style="display: none;">
+
+  <div class="drag-handle" aria-hidden="true">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+         stroke="currentColor" stroke-width="2"
+         stroke-linecap="round" stroke-linejoin="round">
+      <line x1="8" y1="6"  x2="16" y2="6"/>
+      <line x1="8" y1="12" x2="16" y2="12"/>
+      <line x1="8" y1="18" x2="16" y2="18"/>
+    </svg>
+  </div>
+
+  <div class="service-info">
+    <div data-field="service-name" class="service-name"></div>
+    <div data-field="service-category" class="service-category"></div>
+  </div>
+
+  <div class="card-divider" aria-hidden="true"></div>
+
+  <div data-field="service-description" class="service-description"></div>
+
+  <div class="card-divider" aria-hidden="true"></div>
+
+  <div data-field="service-price" class="service-price"></div>
+
+  <div data-field="service-status" class="status-pill"></div>
+
+  <div data-field="service-remote" class="remote-badge" style="display: none;">
+    Remote
+  </div>
+
+  <div class="card-actions">
+    <button data-action="edit" class="icon-btn" type="button" aria-label="Edit service">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+      </svg>
+    </button>
+
+    <button data-action="delete" class="icon-btn icon-btn--delete" type="button" aria-label="Deactivate service">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <polyline points="3 6 5 6 21 6"/>
+        <path d="M19 6l-1 14H6L5 6"/>
+        <path d="M10 11v6"/>
+        <path d="M14 11v6"/>
+        <path d="M9 6V4h6v2"/>
+      </svg>
+    </button>
+  </div>
+
+</div>
+
+<style>
+
+  .service-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: #FFFFFF;
+    border: 0.5px solid #EEEDF6;
+    border-radius: 12px;
+    padding: 0.75rem 1.25rem;
+    cursor: pointer;
+    position: relative;
+    z-index: 1;
+    margin-bottom: -10px;
+    transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+    touch-action: manipulation;
+    box-sizing: border-box;
+  }
+  .service-card:last-child {
+    margin-bottom: 0;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .service-card:hover {
+      transform: translateY(-4px);
+      border-color: #C8C6D8;
+      z-index: 10;
+      box-shadow: 0 4px 20px rgba(96, 2, 238, 0.08);
+    }
+  }
+
+  .service-card--hidden   { display: none !important; }
+  .service-card--dragging { opacity: 0.4; }
+  .service-card--drag-over { border: 1px dashed #6002EE; }
+
+  .drag-handle {
+    color: #C8C6D8;
+    cursor: grab;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.15s ease;
+  }
+  .drag-handle:active { cursor: grabbing; }
+
+  .card-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    transition: opacity 0.15s ease;
+  }
+
+  
+  .card-actions,
+  .drag-handle {
+    opacity: 1;
+  }
+
+  
+  @media (hover: hover) and (pointer: fine) {
+    .card-actions,
+    .drag-handle {
+      opacity: 0;
+    }
+    .service-card:hover .card-actions,
+    .service-card:hover .drag-handle {
+      opacity: 1;
+    }
+  }
+
+  .service-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1.4;
+    min-width: 0;
+  }
+  .service-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: #1A1829;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .service-category {
+    font-size: 11px;
+    color: #8E8BA6;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .card-divider {
+    width: 0.5px;
+    height: 28px;
+    background: #EEEDF6;
+    flex-shrink: 0;
+  }
+
+  .service-description {
+    font-size: 12px;
+    color: #4A4761;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 2;
+    min-width: 0;
+  }
+
+  .service-price {
+    font-size: 14px;
+    font-weight: 500;
+    color: #1A1829;
+    white-space: nowrap;
+    flex-shrink: 0;
+    min-width: 64px;
+    text-align: right;
+  }
+
+  .status-pill {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 9px;
+    border-radius: 100px;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  .pill-active   { background: #EAFAF2; color: #1D6A45; }
+  .pill-inactive { background: #F1EFE8; color: #888780; }
+
+  #filter-pill-all,
+  #filter-pill-active,
+  #filter-pill-inactive {
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  }
+  .filter-pill-selected > *:first-child,
+  .filter-pill-selected > *:only-child {
+    background: #6002EE !important;
+    background-color: #6002EE !important;
+    color: #FFFFFF !important;
+    border-color: transparent !important;
+  }
+
+  .remote-badge {
+    font-size: 11px;
+    font-weight: 500;
+    color: #021AEE;
+    background: #E6F1FB;
+    padding: 3px 8px;
+    border-radius: 100px;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  .icon-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 0.5px solid #EEEDF6;
+    background: #F7F6FC;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #8E8BA6;
+    transition: background 0.12s ease, color 0.12s ease;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  .icon-btn:hover             { background: #EEEDF6; color: #1A1829; }
+  .icon-btn--delete:hover     { background: #FDECEC; color: #A32D2D; }
+
+  @media (max-width: 767px) {
+    .service-card {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      grid-template-rows: auto auto;
+      grid-template-areas:
+        "name   status"
+        "desc   price";
+      gap: 0.25rem 0.75rem;
+      align-items: center;
+      padding: 0.85rem 1rem 0.85rem 1.15rem;
+      border-left: 3.5px solid #EEEDF6;
+      margin-bottom: 0;
+    }
+    .service-card:hover {
+      transform: none;
+      box-shadow: none;
+    }
+
+    .drag-handle,
+    .card-divider,
+    .card-actions,
+    .remote-badge,
+    .service-category {
+      display: none !important;
+    }
+
+    .service-info {
+      grid-area: name;
+      flex: unset;
+      min-width: 0;
+    }
+    .service-name {
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .service-description {
+      grid-area: desc;
+      font-size: 13px;
+      color: #8E8BA6;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex: unset;
+      min-width: 0;
+      align-self: center;
+    }
+
+    .service-price {
+      grid-area: price;
+      text-align: right;
+      justify-self: end;
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .status-pill {
+      grid-area: status;
+      justify-self: end;
+    }
+  }
+
+</style>

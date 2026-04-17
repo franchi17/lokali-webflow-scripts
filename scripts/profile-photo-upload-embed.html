@@ -1,0 +1,66 @@
+
+<div class="lokali-service-upload">
+  <input
+    type="file"
+    id="vendor-profile-photo-upload"
+    accept="image/*"
+    aria-label="Upload profile photo"
+    class="lokali-service-upload__input"
+  />
+  <label for="vendor-profile-photo-upload" class="lokali-service-upload__trigger">
+    <span class="lokali-service-upload__icon" aria-hidden="true">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 16V4m0 0l-4 4m4-4l4 4M4 20h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </span>
+    <span>Upload image</span>
+  </label>
+</div>
+
+<style>
+  .lokali-service-upload__input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+  .lokali-service-upload {
+    position: relative;
+    display: inline-block;
+  }
+  .lokali-service-upload__trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    border-radius: 8px;
+    font-family: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    color: #6002ee;
+    background: #f0e6ff;
+    border: 0.25px solid #6002ee;
+    transition: background 0.2s ease, filter 0.2s ease;
+  }
+  .lokali-service-upload__trigger:hover {
+    background: #e6d9ff;
+  }
+  .lokali-service-upload__icon {
+    display: inline-flex;
+    line-height: 0;
+  }
+  .lokali-service-upload__icon svg {
+    display: block;
+  }
+  .lokali-service-upload__input:focus + .lokali-service-upload__trigger {
+    outline: 0.25px solid #6002ee;
+    outline-offset: 2px;
+  }
+</style>

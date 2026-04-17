@@ -1,0 +1,224 @@
+
+<script>
+
+var LokaliVendorSignUpPage = (function () {
+  'use strict';
+
+  var FORM_ID = 'signupForm';
+  var BTN_ID  = 'signupBtn';
+  var EMAIL_ID = 'email';
+  var PW_ID    = 'password';
+  var FN_ID    = 'first_name';
+  var LN_ID    = 'last_name';
+  var _submitting = false;
+
+  function _showToast(type, message) {
+    if (typeof document === 'undefined') return;
+    var id = 'lokali-signup-toast';
+    var el = document.getElementById(id);
+    if (!el) {
+      el = document.createElement('div');
+      el.id = id;
+      el.style.position = 'fixed';
+      el.style.top = '24px';
+      el.style.left = '50%';
+      el.style.transform = 'translateX(-50%)';
+      el.style.zIndex = '9999';
+      el.style.padding = '12px 20px';
+      el.style.borderRadius = '999px';
+      el.style.boxShadow = '0 8px 20px rgba(15, 23, 42, 0.2)';
+      el.style.fontSize = '14px';
+      el.style.fontWeight = '500';
+      el.style.color = '#ffffff';
+      el.style.display = 'none';
+      el.style.maxWidth = '90vw';
+      el.style.textAlign = 'center';
+      document.body.appendChild(el);
+    }
+
+    if (type === 'success') el.style.background = '#047857';
+    else el.style.background = '#b91c1c';
+
+    el.textContent = message || '';
+    el.style.display = 'block';
+
+    clearTimeout(el._lokaliTimer);
+    el._lokaliTimer = setTimeout(function () {
+      el.style.display = 'none';
+    }, 5000);
+  }
+
+  function _setLoading(on) {
+    var btn = document.getElementById(BTN_ID);
+    if (!btn) return;
+    btn.disabled = !!on;
+    if (on) btn.setAttribute('data-lokali-loading', 'true');
+    else btn.removeAttribute('data-lokali-loading');
+  }
+
+  function _getInputValue(id) {
+    var el = document.getElementById(id);
+    if (!el) return '';
+    return String(el.value || '').trim();
+  }
+
+  function _validate(email, password) {
+
+    var emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email || '');
+    if (!emailOk) return 'Please enter a valid email address.';
+
+    var pw = password || '';
+    if (!pw || pw.length < 8) return 'Password must be at least 8 characters.';
+    if (!/\d/.test(pw)) return 'Password must include at least one number.';
+
+    return null;
+  }
+
+  function _formatApiError(res) {
+
+    var status = res && res.status;
+    var raw = res && res.error;
+
+    if (typeof raw === 'string') {
+      return raw;
+    }
+
+    if (raw && typeof raw === 'object') {
+
+      var msg =
+        raw.message ||
+        raw.error ||
+        raw.error_message ||
+        raw.error_code ||
+        raw.detail ||
+        null;
+
+      if (msg) {
+
+        if (raw.error_code && !raw.message && !raw.error) {
+          return 'Signup failed (' + String(raw.error_code) + ').';
+        }
+
+        if (status && (status >= 400) && raw.error_code && raw.message) {
+          return 'Signup failed (' + String(raw.error_code) + '): ' + String(raw.message);
+        }
+        return String(msg);
+      }
+
+      try {
+        return 'Signup failed. ' + JSON.stringify(raw);
+      } catch (e) {
+        return 'Signup failed due to an unknown error.';
+      }
+    }
+
+    if (status && status >= 400) {
+      return 'Signup failed (HTTP ' + String(status) + '). Check your email/password and try again.';
+    }
+    return 'Signup failed. Please try again.';
+  }
+
+  function doSignup() {
+    if (_submitting) return Promise.resolve(false);
+    _submitting = true;
+
+    var email = _getInputValue(EMAIL_ID);
+    var password = _getInputValue(PW_ID);
+    var firstName = _getInputValue(FN_ID);
+    var lastName = _getInputValue(LN_ID);
+
+    var validationError = _validate(email, password);
+    if (validationError) {
+      _showToast('error', validationError);
+      return Promise.resolve(false);
+    }
+
+    if (!window.LokaliAPI || !window.LokaliAPI.auth || typeof window.LokaliAPI.auth.signup !== 'function') {
+      _showToast('error', 'Signup is temporarily unavailable. Please try again later.');
+      return Promise.resolve(false);
+    }
+
+    _setLoading(true);
+
+    return window.LokaliAPI.auth.signup(email, password, firstName, lastName)
+      .then(function (res) {
+        if (res && (res.error || (res.status != null && res.status >= 400))) {
+          var msg = _formatApiError(res);
+          _showToast('error', msg);
+          return false;
+        }
+
+        _showToast('success', 'Account created! Redirecting…');
+        window.location.href = '/vendor-dashboard/dashboard';
+        return true;
+      })
+      .catch(function (err) {
+        console.error('[LokaliVendorSignUp] Unexpected error:', err);
+        var msg = (err && (err.message || err.error)) ? String(err.message || err.error) : null;
+        _showToast('error', msg || 'Something went wrong (network error). Please check your connection and try again.');
+        return false;
+      })
+      .finally(function () {
+        _setLoading(false);
+        _submitting = false;
+      });
+  }
+
+  function handleSubmit(e) {
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+    return doSignup();
+  }
+
+  function init() {
+    var form = document.getElementById(FORM_ID);
+    if (!form || form.tagName !== 'FORM') {
+
+      var maybe = document.querySelector('#' + FORM_ID + ' form') || document.querySelector('[data-lokali-signup-form] form') || null;
+      form = maybe || form;
+    }
+
+    if (!form || form.tagName !== 'FORM') return;
+
+    form.addEventListener('submit', function (e) {
+      if (e && typeof e.preventDefault === 'function') e.preventDefault();
+      if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+      doSignup();
+    }, true);
+
+    var btn = document.getElementById(BTN_ID);
+    if (btn) {
+
+      try { btn.setAttribute('type', 'button'); } catch (e2) {}
+
+      btn.addEventListener('click', function (e) {
+        if (e && typeof e.preventDefault === 'function') e.preventDefault();
+        if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+
+        var btnForm = btn.closest && btn.closest('form');
+        if (!btnForm || btnForm === form) {
+          doSignup();
+        } else {
+
+          doSignup();
+        }
+      }, true);
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () { LokaliVendorSignUpPage.init(); });
+  } else {
+    init();
+  }
+
+  return { init: init };
+})();
+
+document.addEventListener('DOMContentLoaded', function () {
+  if (window.LokaliVendorSignUpPage && typeof window.LokaliVendorSignUpPage.init === 'function') {
+    window.LokaliVendorSignUpPage.init();
+  }
+});
+</script>
+

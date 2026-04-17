@@ -1,0 +1,211 @@
+
+<script>
+
+var LokaliGoogleSignInPopupPage = (function () {
+  'use strict';
+
+  var GOOGLE_CLIENT_ID = (typeof window.LOKALI_GOOGLE_CLIENT_ID === 'string' && window.LOKALI_GOOGLE_CLIENT_ID.trim())
+    ? window.LOKALI_GOOGLE_CLIENT_ID.trim()
+    : null;
+
+  var CONTAINER_ID = 'googleSignInContainer';
+  var CONTEXT_ATTR = 'data-lokali-google-signin';
+
+  var errorBanner = null;
+  var errorMsg = null;
+  var signinBtn = null;
+
+  function _initErrorEls() {
+    errorBanner = document.getElementById('errorBanner');
+    errorMsg = document.getElementById('errorMsg');
+    signinBtn = document.getElementById('signinBtn');
+  }
+
+  function _toast(type, message) {
+    if (typeof document === 'undefined') return;
+    var id = 'lokali-google-signin-toast';
+    var el = document.getElementById(id);
+    if (!el) {
+      el = document.createElement('div');
+      el.id = id;
+      el.style.position = 'fixed';
+      el.style.top = '24px';
+      el.style.left = '50%';
+      el.style.transform = 'translateX(-50%)';
+      el.style.zIndex = '9999';
+      el.style.padding = '12px 20px';
+      el.style.borderRadius = '999px';
+      el.style.boxShadow = '0 8px 20px rgba(15, 23, 42, 0.2)';
+      el.style.fontSize = '14px';
+      el.style.fontWeight = '500';
+      el.style.color = '#ffffff';
+      el.style.display = 'none';
+      el.style.maxWidth = '90vw';
+      el.style.textAlign = 'center';
+      document.body.appendChild(el);
+    }
+    if (type === 'success') el.style.background = '#047857';
+    else el.style.background = '#b91c1c';
+    el.textContent = message || '';
+    el.style.display = 'block';
+    clearTimeout(el._lokaliTimer);
+    el._lokaliTimer = setTimeout(function () {
+      el.style.display = 'none';
+    }, 5000);
+  }
+
+  function showError(message) {
+    var msg = message || 'Something went wrong. Please try again.';
+    if (errorMsg) errorMsg.textContent = msg;
+    if (errorBanner) {
+      errorBanner.classList.add('visible');
+      return;
+    }
+
+    _toast('error', msg);
+  }
+
+  function clearError() {
+    if (errorBanner) errorBanner.classList.remove('visible');
+  }
+
+  function setLoading(on) {
+    if (signinBtn) {
+      signinBtn.disabled = !!on;
+      signinBtn.classList.toggle('loading', !!on);
+    }
+  }
+
+  function _formatApiError(res) {
+    var status = res && res.status;
+    var raw = res && res.error;
+
+    if (typeof raw === 'string') return raw;
+    if (raw && typeof raw === 'object') {
+      var msg = raw.message || raw.error || raw.error_message || raw.error_code || raw.detail || null;
+      if (msg) return String(msg);
+      if (raw.error_code) return 'Request failed (' + String(raw.error_code) + ').';
+      try { return 'Request failed. ' + JSON.stringify(raw); } catch (e) { return 'Request failed.'; }
+    }
+    if (status && status >= 400) return 'Request failed (HTTP ' + String(status) + '). Please try again.';
+    return 'Request failed. Please try again.';
+  }
+
+  function _loadGoogleIdentityServices() {
+    if (window.google && window.google.accounts && window.google.accounts.id) {
+      return Promise.resolve(true);
+    }
+
+    return new Promise(function (resolve, reject) {
+      var existing = document.querySelector('script[data-lokali-gis="1"]');
+      if (existing) {
+
+        setTimeout(function () {
+          if (window.google && window.google.accounts && window.google.accounts.id) resolve(true);
+          else reject(new Error('Google Identity Services failed to load.'));
+        }, 1500);
+        return;
+      }
+
+      var s = document.createElement('script');
+      s.src = 'https://accounts.google.com/gsi/client';
+      s.async = true;
+      s.defer = true;
+      s.setAttribute('data-lokali-gis', '1');
+      s.onload = function () {
+        if (window.google && window.google.accounts && window.google.accounts.id) resolve(true);
+        else reject(new Error('Google Identity Services loaded, but id client is not available.'));
+      };
+      s.onerror = function () {
+        reject(new Error('Failed to load Google Identity Services script.'));
+      };
+      document.head.appendChild(s);
+    });
+  }
+
+  function _getContainer() {
+    var el = document.getElementById(CONTAINER_ID);
+    if (el) return el;
+    el = document.querySelector('[' + CONTEXT_ATTR + '="container"]');
+    if (el) return el;
+    el = document.querySelector('[' + CONTEXT_ATTR + ']');
+    return el || null;
+  }
+
+  function init() {
+    _initErrorEls();
+    clearError();
+
+    if (!GOOGLE_CLIENT_ID) {
+      showError('Google sign-in is not configured (missing window.LOKALI_GOOGLE_CLIENT_ID).');
+      return;
+    }
+
+    var container = _getContainer();
+    if (!container) return;
+
+    _loadGoogleIdentityServices()
+      .then(function () {
+        var id = window.google && window.google.accounts && window.google.accounts.id;
+        if (!id || !id.initialize) throw new Error('Google Identity Services id client not ready.');
+
+        id.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          callback: function (response) {
+
+            clearError();
+            var idToken = response && response.credential;
+            if (!idToken) {
+              showError('Google sign-in did not return a token. Please try again.');
+              return;
+            }
+
+            if (!window.LokaliAPI || !window.LokaliAPI.auth || typeof window.LokaliAPI.auth.googleLogin !== 'function') {
+              showError('Login is temporarily unavailable. Please try again later.');
+              return;
+            }
+
+            setLoading(true);
+            window.LokaliAPI.auth.googleLogin(idToken)
+              .then(function (res) {
+                if (res && (res.error || (res.status != null && res.status >= 400))) {
+                  showError(_formatApiError(res));
+                  return;
+                }
+                window.location.href = '/vendor-dashboard/dashboard';
+              })
+              .catch(function (err) {
+                console.error('[LokaliGoogleSignInPopup]', err);
+                showError((err && (err.message || err.error)) ? String(err.message || err.error) : 'Something went wrong. Please try again.');
+              })
+              .finally(function () {
+                setLoading(false);
+              });
+          },
+          ux_mode: 'popup'
+        });
+
+        id.renderButton(container, {
+          theme: 'outline',
+          size: 'large',
+          text: 'signin_with',
+          shape: 'pill',
+          width: container.offsetWidth || undefined
+        });
+      })
+      .catch(function (err) {
+        console.error('[LokaliGoogleSignInPopup] init failed:', err);
+        showError((err && err.message) ? String(err.message) : 'Google sign-in failed to initialize.');
+      });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+
+  return { init: init };
+})();
+</script>
+

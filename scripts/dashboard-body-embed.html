@@ -1,0 +1,614 @@
+<!-- ============================================================
+     LOKALI — Vendor Dashboard · HTML + CSS only (paste into Webflow Embed)
+
+     WEBFLOW — before </body>, IN ORDER (site footer and/or page footer):
+       1. lokali-api-client.js
+       2. lokali-dashboard.js
+       3. lokali-dashboard-embed.js  ← required; Webflow does not run script inside this Embed
+
+     lokali-dashboard-embed.js polls for #lokali-vendor-dashboard-root (footer often runs before the Embed exists).
+
+     Stuck? Published live site → F12 Console → set LOKALI_DASHBOARD_EMBED_DEBUG = true, reload.
+     Or run: LokaliDashboardEmbed.runBoot()
+
+     This file is HTML + <style> only so the shell stays visible without JS.
+
+     Xano APIs (via LokaliAPI):
+       GET  vendor/me              (Vendors, Bearer)
+       GET  vendors/me/services   (Services, Bearer) + vendor_id fallback
+       GET  vendors/me/products    (Products, Bearer) + vendor_id fallback
+       GET  vendor/me/billing      (Plans, Bearer)
+       GET  me                     (Auth, Bearer) — greeting only
+     ============================================================ -->
+
+<style>
+/* ── Brand tokens ── */
+#lokali-vendor-dashboard-root {
+  --violet:     #6002EE;
+  --violet-50:  #F0E6FF;
+  --violet-100: #D9BFFF;
+  --violet-600: #4C00C4;
+  --violet-800: #260070;
+  --orange:     #FF6B00;
+  --orange-50:  #FFF3E6;
+  --orange-700: #A84200;
+  --ink:        #1A1829;
+  --dusk:       #4A4761;
+  --slate:      #8E8BA6;
+  --fog:        #C8C6D8;
+  --mist:       #EEEDF6;
+  --snow:       #F7F6FC;
+  --white:      #FFFFFF;
+  --green:      #16A34A;
+  --green-50:   #F0FDF4;
+  --green-100:  #BBF7D0;
+  --red:        #DC2626;
+  --red-50:     #FEF2F2;
+
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  color: var(--ink);
+  background: var(--snow);
+  position: relative;
+  min-height: 100vh;
+  padding: 32px 40px 60px;
+  box-sizing: border-box;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+#lokali-vendor-dashboard-root *,
+#lokali-vendor-dashboard-root *::before,
+#lokali-vendor-dashboard-root *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ── Loading overlay (shown by lokali-dashboard-embed.js while fetching) ── */
+#ld-loading {
+  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  align-content: flex-start;
+  padding-top: 100px;
+  background: rgba(247, 246, 252, 0.94);
+  gap: 10px;
+  color: var(--slate);
+  font-size: 14px;
+}
+#ld-loading .spinner {
+  width: 20px; height: 20px;
+  border: 2px solid var(--mist);
+  border-top-color: var(--violet);
+  border-radius: 50%;
+  animation: ld-spin 0.7s linear infinite;
+}
+@keyframes ld-spin { to { transform: rotate(360deg); } }
+
+#ld-error {
+  display: none;
+  background: var(--red-50);
+  border: 1px solid #FECACA;
+  border-radius: 10px;
+  padding: 16px 20px;
+  font-size: 13px;
+  color: var(--red);
+  margin-bottom: 24px;
+}
+
+/* ── Greeting header (visible without JS — no blank page) ── */
+#ld-header {
+  margin-bottom: 28px;
+}
+#ld-greeting {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.3px;
+  margin-bottom: 4px;
+}
+#ld-date {
+  font-size: 13px;
+  color: var(--slate);
+}
+
+/* ── Stat cards row ── */
+#ld-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 28px;
+}
+.ld-stat {
+  background: var(--white);
+  border: 1.5px solid var(--mist);
+  border-radius: 12px;
+  padding: 18px 20px;
+}
+.ld-stat-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--slate);
+  margin-bottom: 8px;
+}
+.ld-stat-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.5px;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.ld-stat-sub {
+  font-size: 12px;
+  color: var(--slate);
+}
+.ld-stat-accent { color: var(--violet); }
+
+/* ── Section header ── */
+.ld-section {
+  margin-bottom: 28px;
+}
+
+.ld-dash-hint {
+  font-size: 13px;
+  color: var(--slate);
+  padding: 16px;
+  background: var(--white);
+  border: 1px dashed var(--fog);
+  border-radius: 10px;
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+.ld-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.ld-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--slate);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ld-count-badge {
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--violet-50);
+  color: var(--violet);
+  border-radius: 20px;
+  padding: 2px 8px;
+}
+.ld-link-btn {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--violet);
+  background: none;
+  border: 1.5px solid var(--violet-100);
+  border-radius: 7px;
+  padding: 5px 12px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s;
+}
+.ld-link-btn:hover { background: var(--violet-50); border-color: var(--violet); }
+
+/* ── Profile card ── */
+#ld-profile-card {
+  background: var(--white);
+  border: 1.5px solid var(--mist);
+  border-radius: 14px;
+  padding: 24px;
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+}
+#ld-vendor-photo {
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--mist);
+  border: 2px solid var(--fog);
+  flex-shrink: 0;
+}
+.ld-photo-placeholder {
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  background: var(--violet-50);
+  border: 2px solid var(--violet-100);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--violet);
+  flex-shrink: 0;
+}
+.ld-profile-info { flex: 1; }
+#ld-vendor-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+#ld-vendor-tagline {
+  font-size: 13px;
+  color: var(--dusk);
+  margin-bottom: 10px;
+  font-style: italic;
+}
+.ld-profile-tags {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.ld-tag {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+.ld-tag-violet { background: var(--violet-50); color: var(--violet-800); }
+.ld-tag-green  { background: var(--green-50);  color: var(--green); border: 1px solid var(--green-100); }
+.ld-tag-orange { background: var(--orange-50); color: var(--orange-700); }
+.ld-tag-fog    { background: var(--mist); color: var(--slate); }
+.ld-profile-actions { flex-shrink: 0; }
+
+/* ── Empty state ── */
+.ld-empty {
+  background: var(--white);
+  border: 1.5px dashed var(--fog);
+  border-radius: 12px;
+  padding: 32px;
+  text-align: center;
+}
+.ld-empty-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.ld-empty-sub {
+  font-size: 13px;
+  color: var(--slate);
+  margin-bottom: 16px;
+}
+.ld-btn-primary {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--white);
+  background: var(--violet);
+  border: none;
+  border-radius: 8px;
+  padding: 9px 18px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  transition: opacity 0.15s;
+}
+.ld-btn-primary:hover { opacity: 0.88; }
+
+/* ── Service cards ── */
+.ld-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.ld-grid-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+}
+.ld-service-card, .ld-product-card {
+  background: var(--white);
+  border: 1.5px solid var(--mist);
+  border-radius: 12px;
+  padding: 16px;
+  transition: border-color 0.15s;
+}
+.ld-service-card:hover, .ld-product-card:hover { border-color: var(--violet-100); }
+
+.ld-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.ld-card-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.3;
+}
+.ld-card-price {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--violet);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.ld-card-desc {
+  font-size: 12px;
+  color: var(--dusk);
+  line-height: 1.5;
+  margin-bottom: 12px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.ld-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 10px;
+  border-top: 1px solid var(--mist);
+}
+.ld-status-dot {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.ld-status-dot::before {
+  content: '';
+  width: 7px; height: 7px;
+  border-radius: 50%;
+}
+.ld-status-active { color: var(--green); }
+.ld-status-active::before { background: var(--green); }
+.ld-status-inactive { color: var(--slate); }
+.ld-status-inactive::before { background: var(--fog); }
+
+.ld-card-actions {
+  display: flex;
+  gap: 6px;
+}
+.ld-icon-btn {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--slate);
+  background: var(--snow);
+  border: 1px solid var(--fog);
+  border-radius: 6px;
+  padding: 4px 9px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.15s;
+}
+.ld-icon-btn:hover { color: var(--violet); border-color: var(--violet-100); background: var(--violet-50); }
+
+/* ── Product image ── */
+.ld-product-img {
+  width: 100%;
+  height: 100px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: var(--mist);
+  margin-bottom: 12px;
+  display: block;
+}
+.ld-product-img-placeholder {
+  width: 100%;
+  height: 100px;
+  border-radius: 8px;
+  background: var(--mist);
+  border: 1px solid var(--fog);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: var(--slate);
+  font-weight: 500;
+}
+
+/* ── Plan card ── */
+#ld-plan-card {
+  background: var(--white);
+  border: 1.5px solid var(--mist);
+  border-radius: 14px;
+  padding: 24px;
+}
+.ld-plan-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.ld-plan-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ld-plan-badge {
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--violet);
+  color: var(--white);
+  border-radius: 20px;
+  padding: 2px 10px;
+}
+.ld-usage-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+.ld-usage-item { }
+.ld-usage-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--dusk);
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.ld-usage-nums {
+  font-size: 12px;
+  color: var(--slate);
+}
+.ld-usage-bar-wrap {
+  height: 6px;
+  background: var(--mist);
+  border-radius: 20px;
+  overflow: hidden;
+}
+.ld-usage-bar-fill {
+  height: 100%;
+  background: var(--violet);
+  border-radius: 20px;
+  transition: width 0.6s ease;
+}
+.ld-usage-bar-fill.at-limit { background: var(--orange); }
+</style>
+
+<!-- ── Root container (unique id — avoids Webflow clashes) ── -->
+<div id="lokali-vendor-dashboard-root">
+
+  <!-- Visible if JS never runs (Designer preview, stripped scripts) -->
+  <p id="lokali-dash-fallback" style="margin:0 0 16px;padding:12px 16px;background:#F0E6FF;border:1px solid #D9BFFF;border-radius:8px;font-family:system-ui,sans-serif;font-size:13px;color:#260070;line-height:1.5;">
+    <strong>Setup:</strong> Add <code>lokali-dashboard-embed.js</code> to Site settings → Custom Code → <strong>Footer</strong> after <code>lokali-api-client.js</code> and <code>lokali-dashboard.js</code>. Webflow usually does not run <code>&lt;script&gt;</code> inside an Embed. Publish and open the <strong>live site</strong> (not Designer preview) to load Xano data.
+  </p>
+
+  <!-- Loading -->
+  <div id="ld-loading">
+    <div class="spinner"></div>
+    Loading your dashboard…
+  </div>
+
+  <!-- Error -->
+  <div id="ld-error"></div>
+
+  <!-- Greeting -->
+  <div id="ld-header">
+    <div id="ld-greeting" data-lokali-greeting>Good morning!</div>
+    <div id="ld-date"></div>
+  </div>
+
+  <!-- Stat cards -->
+  <div id="ld-stats">
+    <div class="ld-stat">
+      <div class="ld-stat-label">Services</div>
+      <div class="ld-stat-value ld-stat-accent" id="ld-stat-services">—</div>
+      <div class="ld-stat-sub" id="ld-stat-services-sub">of — allowed</div>
+    </div>
+    <div class="ld-stat">
+      <div class="ld-stat-label">Products</div>
+      <div class="ld-stat-value ld-stat-accent" id="ld-stat-products">—</div>
+      <div class="ld-stat-sub" id="ld-stat-products-sub">of — allowed</div>
+    </div>
+    <div class="ld-stat">
+      <div class="ld-stat-label">Plan</div>
+      <div class="ld-stat-value" id="ld-stat-plan" style="font-size:18px;">—</div>
+      <div class="ld-stat-sub" id="ld-stat-plan-sub">current plan</div>
+    </div>
+    <div class="ld-stat">
+      <div class="ld-stat-label">Profile</div>
+      <div class="ld-stat-value" id="ld-stat-status" style="font-size:18px;">—</div>
+      <div class="ld-stat-sub" id="ld-stat-status-sub">visibility</div>
+    </div>
+  </div>
+
+  <!-- Profile section -->
+  <div class="ld-section" id="ld-section-profile">
+    <div class="ld-section-head">
+      <div class="ld-section-title">Your Profile</div>
+      <a class="ld-link-btn" href="/vendor-dashboard/profile">Edit profile →</a>
+    </div>
+    <div id="ld-profile-card">
+      <div class="ld-photo-placeholder" id="ld-vendor-photo-wrap">?</div>
+      <div class="ld-profile-info">
+        <div id="ld-vendor-name">—</div>
+        <div id="ld-vendor-tagline"></div>
+        <div class="ld-profile-tags" id="ld-profile-tags"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Services section -->
+  <div class="ld-section" id="ld-section-services">
+    <div class="ld-section-head">
+      <div class="ld-section-title">
+        Your Services
+        <span class="ld-count-badge" id="ld-services-badge">0</span>
+      </div>
+      <a class="ld-link-btn" href="/vendor-dashboard/services">Manage services →</a>
+    </div>
+    <div id="ld-services-list">
+      <p id="ld-services-hint" class="ld-dash-hint">Services from Xano will load here once <code>lokali-dashboard-embed.js</code> is in the site footer.</p>
+    </div>
+  </div>
+
+  <!-- Products section -->
+  <div class="ld-section" id="ld-section-products">
+    <div class="ld-section-head">
+      <div class="ld-section-title">
+        Your Products
+        <span class="ld-count-badge" id="ld-products-badge">0</span>
+      </div>
+      <a class="ld-link-btn" href="/vendor-dashboard/products">Manage products →</a>
+    </div>
+    <div id="ld-products-list">
+      <p id="ld-products-hint" class="ld-dash-hint">Products from Xano will load here once <code>lokali-dashboard-embed.js</code> is in the site footer.</p>
+    </div>
+  </div>
+
+  <!-- Plan section -->
+  <div class="ld-section" id="ld-section-plan">
+    <div class="ld-section-head">
+      <div class="ld-section-title">Your Plan</div>
+      <a class="ld-link-btn" href="/pricing">View plans →</a>
+    </div>
+    <div id="ld-plan-card">
+      <div class="ld-plan-top">
+        <div class="ld-plan-name">
+          <span id="ld-plan-label">—</span>
+          <span class="ld-plan-badge" id="ld-plan-badge">Plan</span>
+        </div>
+      </div>
+      <div class="ld-usage-row">
+        <div class="ld-usage-item">
+          <div class="ld-usage-label">
+            Services
+            <span class="ld-usage-nums" id="ld-usage-services-nums">— / —</span>
+          </div>
+          <div class="ld-usage-bar-wrap">
+            <div class="ld-usage-bar-fill" id="ld-usage-services-bar" style="width:0%"></div>
+          </div>
+        </div>
+        <div class="ld-usage-item">
+          <div class="ld-usage-label">
+            Products
+            <span class="ld-usage-nums" id="ld-usage-products-nums">— / —</span>
+          </div>
+          <div class="ld-usage-bar-wrap">
+            <div class="ld-usage-bar-fill" id="ld-usage-products-bar" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /#lokali-vendor-dashboard-root -->
+

@@ -1,0 +1,29 @@
+
+
+.iti {
+  width: 100%;
+  max-width: 280px;
+  box-sizing: border-box;
+}
+
+.iti .iti__tel-input,
+.iti input {
+  box-sizing: border-box;
+  width: 100% !important;
+  min-width: 0;
+}
+
+.iti__flag-container {
+  z-index: 10;
+  pointer-events: auto;
+}
+
+.iti__country-list {
+  display: none;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 9999;
+}
+.iti.iti--open .iti__country-list {
+  display: block;
+}

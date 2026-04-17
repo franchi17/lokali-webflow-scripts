@@ -1,0 +1,173 @@
+<script>
+
+const LokaliSignInPage = (() => {
+  function resolveInput(id) {
+    var el = document.getElementById(id);
+    if (!el) return null;
+    if (el.tagName === 'INPUT') return el;
+    var input = el.querySelector && el.querySelector('input');
+    return input || el;
+  }
+  var form = document.getElementById('signinForm');
+  if (!form || form.tagName !== 'FORM') {
+    if (form && form.querySelector) form = form.querySelector('form');
+    if (!form) {
+      var p = document.getElementById('password');
+      form = p && p.closest && p.closest('form');
+    }
+  }
+  var emailInput = resolveInput('email') || (form && form.querySelector('input[type="email"]'));
+  var pwInput = resolveInput('password') || (form && form.querySelector('input[type="password"]'));
+  var submitBtn   = document.getElementById('signinBtn');
+  const errorBanner = document.getElementById('errorBanner');
+  const errorMsg    = document.getElementById('errorMsg');
+  const emailError  = document.getElementById('emailError');
+  const pwError     = document.getElementById('passwordError');
+
+  function checkAlreadyAuthed() {
+    var api = window.LokaliAPI;
+    var token = api && typeof api.getToken === 'function' ? api.getToken() : null;
+    if (!token) return;
+    if (!api.auth || typeof api.auth.me !== 'function') {
+      window.location.href = '/vendor-dashboard/dashboard';
+      return;
+    }
+    api.auth.me().then(function (res) {
+      if (res.error || res.status === 401) {
+        if (api.clearToken) api.clearToken();
+        return;
+      }
+      window.location.href = '/vendor-dashboard/dashboard';
+    }).catch(function () {
+      if (api.clearToken) api.clearToken();
+    });
+  }
+
+  function setLoading(on) {
+    if (submitBtn) {
+      submitBtn.disabled = on;
+      submitBtn.classList.toggle('loading', on);
+    }
+  }
+
+  function showError(message) {
+    if (errorMsg) errorMsg.textContent = message || 'Something went wrong. Please try again.';
+    if (errorBanner) errorBanner.classList.add('visible');
+  }
+
+  function clearError() {
+    if (errorBanner) errorBanner.classList.remove('visible');
+  }
+
+  function setFieldError(input, errorEl, show) {
+    if (input) input.classList.toggle('error-input', show);
+    if (errorEl) errorEl.classList.toggle('visible', show);
+  }
+
+  function validate() {
+    let valid = true;
+    const emailVal = emailInput.value.trim();
+    const pwVal    = pwInput.value;
+
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal);
+    setFieldError(emailInput, emailError, !emailOk);
+    if (!emailOk) valid = false;
+
+    const pwOk = pwVal.length > 0;
+    setFieldError(pwInput, pwError, !pwOk);
+    if (!pwOk) valid = false;
+
+    return valid;
+  }
+
+  var passwordVisible = false;
+
+  function bindPasswordToggle() {
+    document.body.addEventListener('click', function (e) {
+      var btn = e.target && e.target.closest && (e.target.closest('#togglePassword') || e.target.closest('#pwToggle') || e.target.closest('[data-password-toggle]'));
+      if (!btn) return;
+      e.preventDefault();
+      e.stopPropagation();
+      var input = resolveInput('password') || (form && form.querySelector('input[type="password"]'));
+      var iconOpen = document.getElementById('eyeOpen');
+      var iconClosed = document.getElementById('eyeClosed');
+      if (!input) return;
+      passwordVisible = !passwordVisible;
+      input.type = passwordVisible ? 'text' : 'password';
+      if (iconOpen && iconClosed) {
+        iconOpen.style.display = passwordVisible ? 'none' : 'block';
+        iconClosed.style.display = passwordVisible ? 'block' : 'none';
+        btn.setAttribute('aria-label', passwordVisible ? 'Hide password' : 'Show password');
+      } else {
+        var icon = document.getElementById('eyeIcon') || btn.querySelector('svg');
+        if (icon) {
+          var openSvg = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>';
+          var closedSvg = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"></path><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"></path><line x1="1" y1="1" x2="23" y2="23"></line>';
+          icon.innerHTML = passwordVisible ? openSvg : closedSvg;
+        }
+      }
+    });
+    var iconClosed = document.getElementById('eyeClosed');
+    if (iconClosed) iconClosed.style.display = 'none';
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    clearError();
+    if (!validate()) return;
+
+    if (!window.LokaliAPI || !window.LokaliAPI.auth || typeof window.LokaliAPI.auth.login !== 'function') {
+      showError('Login is temporarily unavailable. Please try again later.');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const { data, error, status } = await window.LokaliAPI.auth.login(
+        emailInput.value.trim(),
+        pwInput.value
+      );
+
+      if (error || status >= 400) {
+        const msg =
+          typeof error === 'string'
+            ? error
+            : (error && error.message) || 'Incorrect email or password.';
+        showError(msg);
+        return;
+      }
+
+      window.location.href = '/vendor-dashboard/dashboard';
+    } catch (err) {
+      console.error('[LokaliSignIn] Unexpected error:', err);
+      showError('Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function bindClearOnInput() {
+    emailInput.addEventListener('input', () =>
+      setFieldError(emailInput, emailError, false)
+    );
+    pwInput.addEventListener('input', () =>
+      setFieldError(pwInput, pwError, false)
+    );
+  }
+
+  function init() {
+    if (!form || !emailInput || !pwInput) return;
+    checkAlreadyAuthed();
+    bindPasswordToggle();
+    bindClearOnInput();
+    form.addEventListener('submit', handleSubmit);
+    var btn = document.getElementById('signinBtn');
+    if (btn && !btn.closest('form')) btn.addEventListener('click', function (e) { e.preventDefault(); handleSubmit(e); });
+  }
+
+  return { init };
+})();
+
+document.addEventListener('DOMContentLoaded', LokaliSignInPage.init);
+</script>
