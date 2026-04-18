@@ -28,8 +28,15 @@
   var _mountUserWaitTries = 0;
   var MOUNT_USER_WAIT_MAX = 80;
 
-  var SYNC_COOLDOWN_KEY = 'lokali_clerk_sync_cooldown';
-  var SYNC_COOLDOWN_MS = 30000; // don't call /clerk-sync more than once per 30s per tab
+  // Two cooldown windows:
+  //  - SUCCESS cooldown (long): once we have a Xano token, don't resync on every nav.
+  //  - ATTEMPT cooldown (short): after ANY attempt (success OR fail), don't fire another
+  //    /clerk-sync for a few seconds. Prevents a failed 429 from being immediately retried
+  //    by the next page load and chewing through Xano's 10 req / 20s budget.
+  var SYNC_COOLDOWN_KEY = 'lokali_clerk_sync_cooldown';      // success timestamp
+  var SYNC_ATTEMPT_KEY  = 'lokali_clerk_sync_attempt';       // last attempt timestamp
+  var SYNC_COOLDOWN_MS = 5 * 60 * 1000; // 5 min: success window (token still valid)
+  var SYNC_ATTEMPT_MS  = 8000;          // 8s: minimum gap between attempts
 
   function inSyncCooldown() {
     try {
@@ -37,11 +44,26 @@
       return t && (Date.now() - t) < SYNC_COOLDOWN_MS;
     } catch (e) { return false; }
   }
+  function inAttemptCooldown() {
+    try {
+      var t = parseInt(sessionStorage.getItem(SYNC_ATTEMPT_KEY) || '0', 10);
+      return t && (Date.now() - t) < SYNC_ATTEMPT_MS;
+    } catch (e) { return false; }
+  }
+  function markAttempt() {
+    try { sessionStorage.setItem(SYNC_ATTEMPT_KEY, String(Date.now())); } catch (e) {}
+  }
   function markSynced() {
-    try { sessionStorage.setItem(SYNC_COOLDOWN_KEY, String(Date.now())); } catch (e) {}
+    try {
+      sessionStorage.setItem(SYNC_COOLDOWN_KEY, String(Date.now()));
+      sessionStorage.setItem(SYNC_ATTEMPT_KEY, String(Date.now()));
+    } catch (e) {}
   }
   function clearSyncCooldown() {
-    try { sessionStorage.removeItem(SYNC_COOLDOWN_KEY); } catch (e) {}
+    try {
+      sessionStorage.removeItem(SYNC_COOLDOWN_KEY);
+      sessionStorage.removeItem(SYNC_ATTEMPT_KEY);
+    } catch (e) {}
   }
 
   function waitForDeps(cb) {
@@ -58,15 +80,19 @@
 
   function syncClerkUser(user) {
     if (_syncing) return Promise.resolve(null);
-    // Cooldown only applies when we already have a Xano token (prevents spam re-syncs).
-    // First-time sync (no token yet) must always be allowed through.
     var existingTok = window.LokaliAPI && window.LokaliAPI.getToken && window.LokaliAPI.getToken();
+    // If we already have a Xano token and a successful sync happened recently, reuse it.
     if (existingTok && inSyncCooldown()) return Promise.resolve(existingTok);
+    // Even with no token, throttle attempts to avoid hammering Xano's rate limit
+    // when /clerk-sync 429s. Returns whatever we have (likely null) — caller code
+    // should NOT redirect on null.
+    if (inAttemptCooldown()) return Promise.resolve(existingTok);
     if (!CLERK_SYNC_URL) {
       console.error('[Lokali] Set LOKALI_CLERK_SYNC_URL (your clerk-sync proxy) before lokali-clerk-auth.js');
       return Promise.resolve(null);
     }
     _syncing = true;
+    markAttempt();
 
     var session = window.Clerk && window.Clerk.session;
     if (!session || typeof session.getToken !== 'function') {
