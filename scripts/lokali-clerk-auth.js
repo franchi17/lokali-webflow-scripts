@@ -58,7 +58,10 @@
 
   function syncClerkUser(user) {
     if (_syncing) return Promise.resolve(null);
-    if (inSyncCooldown()) return Promise.resolve(window.LokaliAPI && window.LokaliAPI.getToken());
+    // Cooldown only applies when we already have a Xano token (prevents spam re-syncs).
+    // First-time sync (no token yet) must always be allowed through.
+    var existingTok = window.LokaliAPI && window.LokaliAPI.getToken && window.LokaliAPI.getToken();
+    if (existingTok && inSyncCooldown()) return Promise.resolve(existingTok);
     if (!CLERK_SYNC_URL) {
       console.error('[Lokali] Set LOKALI_CLERK_SYNC_URL (your clerk-sync proxy) before lokali-clerk-auth.js');
       return Promise.resolve(null);
