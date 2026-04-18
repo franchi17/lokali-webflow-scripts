@@ -123,6 +123,11 @@
     return path.indexOf('/vendor-dashboard') === 0;
   }
 
+  function isHomePath() {
+    var path = window.location.pathname || '/';
+    return path === '/' || path === '';
+  }
+
   function handleAuthState() {
     if (!window.Clerk.isSignedIn) {
       window.LokaliAPI.clearToken();
@@ -135,13 +140,16 @@
 
     var existing = window.LokaliAPI.getToken();
 
-    // Only trigger a sync in two situations:
-    //  1) We're on an auth page (user just signed in) — sync then redirect to dashboard.
-    //  2) We're on a dashboard page without a Xano token — sync so API calls work.
-    // Everywhere else (home, browse, pricing, etc.), do NOT call /clerk-sync.
-    if (!existing && (isAuthPage() || isDashboardPath())) {
+    // Trigger a sync in three situations (all gated by NO existing Xano token,
+    // which is what prevents the request loop on every page navigation):
+    //  1) Auth page — user just signed in/up via Clerk widget.
+    //  2) Dashboard page — script needs a token for API calls.
+    //  3) Home page — Clerk's after-sign-up fallback often lands here; we sync once
+    //     then forward to the dashboard. Subsequent home visits do NOT re-sync
+    //     because `existing` will be set.
+    if (!existing && (isAuthPage() || isDashboardPath() || isHomePath())) {
       syncClerkUser(user).then(function (token) {
-        if (token && isAuthPage()) {
+        if (token && (isAuthPage() || isHomePath())) {
           window.location.href = AFTER_SIGN_IN_PATH;
         }
       });
