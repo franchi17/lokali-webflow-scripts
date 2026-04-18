@@ -113,6 +113,8 @@
      */
     populateGreetingName: function (selector) {
       var sel = selector || '[data-lokali-greeting-name]';
+      var tok = window.LokaliAPI && window.LokaliAPI.getToken && window.LokaliAPI.getToken();
+      if (!tok) return Promise.resolve();
       return window.LokaliAPI.auth.me().then(function (res) {
         if (res.error || !res.data) return;
         var user = res.data.user || res.data;
@@ -140,6 +142,13 @@
         hour <  17 ? ['Good afternoon', 'Welcome back',  'Hey there'   ] :
                      ['Good evening',   'Welcome back',  'Hey there'   ];
       var prefix = pools[Math.floor(Math.random() * pools.length)];
+
+      var tok = window.LokaliAPI && window.LokaliAPI.getToken && window.LokaliAPI.getToken();
+      if (!tok) {
+        var els0 = document.querySelectorAll(sel);
+        Array.prototype.forEach.call(els0, function (el) { el.textContent = prefix + '!'; });
+        return Promise.resolve();
+      }
 
       return window.LokaliAPI.auth.me().then(function (res) {
         var name = '';
