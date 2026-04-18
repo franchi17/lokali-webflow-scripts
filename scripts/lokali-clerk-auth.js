@@ -265,9 +265,21 @@
       handleAuthState();
       mountClerkUI();
 
+      // Only re-run handleAuthState when the signed-in flag actually flips —
+      // Clerk's listener fires on many internal changes (token refresh, UI
+      // mount, focus events) and would otherwise trigger an infinite sync loop.
+      var lastSignedIn = !!window.Clerk.isSignedIn;
+      var lastUserId = (window.Clerk.user && window.Clerk.user.id) || null;
       window.Clerk.addListener(function () {
-        handleAuthState();
-        mountClerkUI();
+        var nowSignedIn = !!window.Clerk.isSignedIn;
+        var nowUserId = (window.Clerk.user && window.Clerk.user.id) || null;
+        var changed = nowSignedIn !== lastSignedIn || nowUserId !== lastUserId;
+        lastSignedIn = nowSignedIn;
+        lastUserId = nowUserId;
+        if (changed) {
+          handleAuthState();
+          mountClerkUI();
+        }
       });
     });
   });
