@@ -215,6 +215,257 @@ var LokaliDashboardHome = (function () {
     }
   }
 
+  // ─── New-user dashboard renderers ─────────────────────────────────────────
+  // All of the renderers below are additive. Each one no-ops if the
+  // corresponding markup isn't present on the page, so the same script works
+  // on both the legacy and reframed dashboard layouts.
+
+  function _normalizeBillingShape(raw) {
+    raw = raw || {};
+    var planName = '';
+    var planLabel = '';
+    if (raw.plan && typeof raw.plan === 'object') {
+      planName = (raw.plan.name || '').toString().toLowerCase().trim();
+      planLabel = (raw.plan.label || '').toString().trim();
+    }
+    if (!planName) {
+      planName = (
+        raw.plan_name ||
+        raw.name ||
+        (raw.subscription && raw.subscription.plan_name) ||
+        ''
+      ).toString().toLowerCase().trim();
+    }
+
+    var services = raw.services && typeof raw.services === 'object' ? raw.services : null;
+    var products = raw.products && typeof raw.products === 'object' ? raw.products : null;
+
+    return {
+      planName: planName,
+      planLabel: planLabel || _defaultPlanLabel(planName),
+      services: services,
+      products: products,
+      profileViewsThisMonth: raw.profile_views_this_month != null
+        ? raw.profile_views_this_month
+        : (raw.profileViewsThisMonth != null ? raw.profileViewsThisMonth : null),
+      publicUrl: (raw.public_url || raw.publicUrl || '').toString()
+    };
+  }
+
+  function _defaultPlanLabel(planName) {
+    switch (planName) {
+      case 'free':    return 'Free Plan';
+      case 'starter': return 'Starter Plan';
+      case 'mid':     return 'Mid Plan';
+      case 'pro':     return 'Pro Plan';
+      default:        return planName ? (planName.charAt(0).toUpperCase() + planName.slice(1) + ' Plan') : '';
+    }
+  }
+
+  function _formatNumber(n) {
+    if (n == null || isNaN(n)) return '0';
+    try { return Number(n).toLocaleString(); } catch (e) { return String(n); }
+  }
+
+  // ─── Render: Profile Views stat card ──────────────────────────────────────
+
+  function _renderProfileViews(billing) {
+    var card = _el('dashboard-profile-views-card');
+    if (!billing || billing.profileViewsThisMonth == null) {
+      if (card) card.style.display = 'none';
+      return;
+    }
+    if (card) card.style.display = '';
+    _setText('dashboard-profile-views', _formatNumber(billing.profileViewsThisMonth));
+    _setText('dashboard-profile-views-period', 'This month');
+  }
+
+  // ─── Render: Active Services capacity ─────────────────────────────────────
+  // Existing stat field `dashboard-active-services` stays (just the count).
+  // Adds capacity ("3/3") plus an "At limit · upgrade for more" state.
+
+  function _renderActiveServicesCapacity(billing, fallbackCount) {
+    var s = billing && billing.services;
+    var used = s && s.used != null ? Number(s.used) : Number(fallbackCount || 0);
+    var limit = s && s.limit != null ? Number(s.limit) : null;
+    _setText('dashboard-active-services', used);
+
+    if (limit == null) {
+      _setText('dashboard-active-services-capacity', '');
+      _hide('dashboard-active-services-state');
+      return;
+    }
+
+    var unlimited = limit >= 999999;
+    _setText('dashboard-active-services-capacity', unlimited ? '' : (used + '/' + limit));
+
+    var stateEl = _el('dashboard-active-services-state');
+    if (stateEl) {
+      var atLimit = !unlimited && used >= limit;
+      stateEl.style.display = atLimit ? '' : 'none';
+      if (atLimit) _setText('dashboard-active-services-state', 'At limit · upgrade for more');
+    }
+  }
+
+  // ─── Render: Listing strength missing count ───────────────────────────────
+  // Surfaces a dynamic "N" for headlines like
+  // "You're missing N things that help customers decide to reach out."
+
+  function _renderStrengthMissingCount(results) {
+    var missing = (results || []).filter(function (r) { return !r.done; }).length;
+    _setText('strength-missing-count', missing);
+    var sectionTitle = _el('listing-strength-title-noun');
+    if (sectionTitle) {
+      sectionTitle.textContent = missing === 1 ? 'thing' : 'things';
+    }
+  }
+
+  // ─── Render: Share profile card ───────────────────────────────────────────
+  // Expects:
+  //   [data-lokali="share-profile-url"]   — text node for the URL
+  //   #share-copy-link                    — copy-link button
+  //   #share-copy-link-text or
+  //     [data-lokali="share-copy-link-text"] (inside the button) — swappable label
+  //   #share-profile-btn                  — "Share profile" button (Web Share API
+  //                                          with copy fallback)
+  // Hides the whole card (#share-profile-card) when no URL is available.
+
+  function _renderShareCard(vendor, billing) {
+    var url = (billing && billing.publicUrl) || _deriveShareUrl(vendor);
+    var card = _el('share-profile-card');
+
+    if (!url) {
+      if (card) card.style.display = 'none';
+      return;
+    }
+    if (card) card.style.display = '';
+
+    _setText('share-profile-url', _displayUrl(url));
+    var linkEl = _el('share-profile-url');
+    if (linkEl && linkEl.tagName === 'A') linkEl.setAttribute('href', url);
+
+    _wireCopyLink(url);
+    _wireShareButton(url, vendor && vendor.business_name);
+  }
+
+  function _deriveShareUrl(vendor) {
+    if (!vendor || vendor.id == null) return '';
+    var host = (window.LOKALI_PUBLIC_ORIGIN && String(window.LOKALI_PUBLIC_ORIGIN).replace(/\/$/, '')) ||
+               'https://www.golokali.com';
+    return host + '/vendors/' + vendor.id;
+  }
+
+  function _displayUrl(url) {
+    return String(url).replace(/^https?:\/\//i, '');
+  }
+
+  function _wireCopyLink(url) {
+    var btn = document.getElementById('share-copy-link');
+    if (!btn || btn.__lokaliWired) return;
+    btn.__lokaliWired = true;
+
+    btn.addEventListener('click', function (e) {
+      e.preventDefault();
+      _copyToClipboard(url).then(function (ok) {
+        if (!ok) return;
+        var labelEl = btn.querySelector('[data-lokali="share-copy-link-text"]') ||
+                      document.getElementById('share-copy-link-text') ||
+                      btn;
+        var original = labelEl.textContent;
+        labelEl.textContent = 'Copied';
+        btn.classList.add('lokali-share-copied');
+        setTimeout(function () {
+          labelEl.textContent = original;
+          btn.classList.remove('lokali-share-copied');
+        }, 2000);
+      });
+    });
+  }
+
+  function _wireShareButton(url, title) {
+    var btn = document.getElementById('share-profile-btn');
+    if (!btn || btn.__lokaliWired) return;
+    btn.__lokaliWired = true;
+
+    btn.addEventListener('click', function (e) {
+      e.preventDefault();
+      var shareData = { title: title || 'My Lokali profile', url: url };
+      if (navigator.share) {
+        navigator.share(shareData).catch(function () {});
+        return;
+      }
+      _copyToClipboard(url);
+    });
+  }
+
+  function _copyToClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text).then(function () { return true; },
+        function () { return _legacyCopy(text); });
+    }
+    return Promise.resolve(_legacyCopy(text));
+  }
+
+  function _legacyCopy(text) {
+    try {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      var ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      return !!ok;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // ─── Render: contextual plan card ─────────────────────────────────────────
+  // The new design's plan upsell card lives at the bottom of the dashboard and
+  // replaces the violet "blunt demand" banner. The legacy banner renderer
+  // above (`_renderPlanBanner`) stays in place for back-compat — the new card
+  // uses distinct IDs so both can coexist if needed.
+  //   #plan-context-card                                  — card root
+  //   [data-lokali="plan-context-label"]                  — e.g. "FREE PLAN"
+  //   [data-lokali="plan-context-services-used"]          — e.g. "3/3 services used"
+  //   [data-lokali="plan-context-headline"]               — copy varies by tier
+  //   [data-lokali="plan-context-sub"]                    — sub-copy
+  //   [data-lokali="plan-context-cta"]                    — CTA label
+
+  function _renderPlanCard(billing) {
+    var card = _el('plan-context-card');
+    if (!card) return;
+
+    var planName = billing.planName || 'free';
+    var isFreeish = planName === 'free' || planName === 'starter';
+
+    if (!isFreeish) {
+      card.style.display = 'none';
+      return;
+    }
+    card.style.display = '';
+
+    var s = billing.services;
+    var used = s && s.used != null ? Number(s.used) : 0;
+    var limit = s && s.limit != null ? Number(s.limit) : null;
+    var atLimit = limit != null && limit < 999999 && used >= limit;
+
+    _setText('plan-context-label', (billing.planLabel || 'Free Plan').toUpperCase());
+    _setText('plan-context-services-used',
+      limit != null ? (used + '/' + limit + ' services used') : (used + ' services used'));
+
+    var headline = atLimit
+      ? "You're getting traction. Unlock more with Mid."
+      : "You're getting started. Unlock more with Mid.";
+    _setText('plan-context-headline', headline);
+
+    _setText('plan-context-sub',
+      'More listings, public reviews, and homepage placement from $20/mo');
+    _setText('plan-context-cta', 'See plans');
+  }
+
   // ─── Init ─────────────────────────────────────────────────────────────────
 
   function init() {
@@ -247,11 +498,18 @@ var LokaliDashboardHome = (function () {
       var activeProducts = productItems.filter(function (p) { return p.is_active !== false; }).length;
 
       var strength = _calcStrength(vendor, activeServices, activeProducts);
+      var billing = _normalizeBillingShape(!billingRes.error ? billingRes.data : null);
 
       _renderStats(activeServices, activeProducts, strength.score);
       _renderProgressBar(strength.score);
       _renderStrengthList(strength.results);
+      _renderStrengthMissingCount(strength.results);
       _renderQuickActions(strength.score);
+
+      _renderProfileViews(billing);
+      _renderActiveServicesCapacity(billing, activeServices);
+      _renderShareCard(vendor, billing);
+      _renderPlanCard(billing);
 
       if (!billingRes.error) _renderPlanBanner(billingRes.data);
 
