@@ -32,7 +32,10 @@ var LokaliDashboardHome = (function () {
       label: 'Tagline set',
       sub: 'Add a short tagline — it appears at the top of your listing',
       pts: 10,
-      test: function (v) { return !!(v.tagline && v.tagline.trim()); }
+      test: function (v) {
+        var t = v.business_tagline || v.tagline || '';
+        return !!(t && t.trim());
+      }
     },
     {
       key: 'category',
@@ -349,10 +352,12 @@ var LokaliDashboardHome = (function () {
   }
 
   function _deriveShareUrl(vendor) {
-    if (!vendor || vendor.id == null) return '';
+    if (!vendor) return '';
+    var identifier = (vendor.slug && vendor.slug.trim()) || vendor.id;
+    if (!identifier) return '';
     var host = (window.LOKALI_PUBLIC_ORIGIN && String(window.LOKALI_PUBLIC_ORIGIN).replace(/\/$/, '')) ||
                'https://www.golokali.com';
-    return host + '/vendors/' + vendor.id;
+    return host + '/vendors/' + identifier;
   }
 
   function _displayUrl(url) {
