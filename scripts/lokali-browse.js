@@ -87,6 +87,8 @@
   var ICON_CALL     = ASSET + '6a21e2bf163c5945a1c0e919_phone-solid.png';
   var ICON_WHATSAPP = ASSET + '6a1f445dfb11386d2e5502cf_whatsapp-brands-solid.png';
   var ICON_TEXT     = ASSET + '6a1f445d06bc9a07f37fb0d9_comments-regular.png';
+  var ICON_CROWN    = ASSET + '69f4dbb3533f0ee2046ab0fb_crown-solid.png';     // founding badge (matches sidebar)
+  var ICON_BULLHORN = ASSET + '6a1af53c6b8fa6046c223ce9_bullhorn-solid.png';  // new badge (matches sidebar)
   var AREA_GREY     = '#6B6880'; // location text — a touch darker than slate for legibility
 
   // category slug -> sidebar icon URL (reused on the card pill)
@@ -389,7 +391,13 @@
     if (_emptyState) (list.length === 0 ? showEl(_emptyState, 'block') : hideEl(_emptyState));
   }
 
-  function badge(cls, glyph, title) { var b = ce('span', 'badge ' + cls); b.textContent = glyph; b.title = title; return b; }
+  // opts: { title, url+color (masked icon) | glyph (text, colored by CSS) }
+  function badge(cls, opts) {
+    var b = ce('span', 'badge ' + cls); b.title = opts.title;
+    if (opts.url) b.appendChild(maskIcon(opts.url, opts.color, 10));
+    else b.textContent = opts.glyph;
+    return b;
+  }
   function addContact(parent, href, label, iconUrl) {
     if (!href) return;
     var b = ce('button', 'contact-btn'); b.type = 'button';
@@ -426,10 +434,10 @@
     var meta = ce('div', 'vcard-meta');
     var nameRow = ce('div', 'vcard-name-row');
     var name = ce('span', 'vcard-name'); name.textContent = vName(v); nameRow.appendChild(name);
-    if (vIsFounding(v))  nameRow.appendChild(badge('badge-founding', '★', 'Founding vendor'));
-    if (vIsNew(v))       nameRow.appendChild(badge('badge-new', '●', 'New this week'));
-    if (vIsVerified(v))  nameRow.appendChild(badge('badge-verified', '✓', 'Verified'));
-    if (vIsSpotlight(v)) nameRow.appendChild(badge('badge-spotlight', '✦', 'Spotlight'));
+    if (vIsFounding(v))  nameRow.appendChild(badge('badge-founding', { url: ICON_CROWN,    color: '#C9A22A', title: 'Founding vendor' }));
+    if (vIsNew(v))       nameRow.appendChild(badge('badge-new',      { url: ICON_BULLHORN, color: '#1D6A45', title: 'New this week' }));
+    if (vIsVerified(v))  nameRow.appendChild(badge('badge-verified', { glyph: '✓', title: 'Verified' }));
+    if (vIsSpotlight(v)) nameRow.appendChild(badge('badge-spotlight', { glyph: '✦', title: 'Spotlight' }));
     var area = ce('div', 'vcard-area');
     area.appendChild(maskIcon(ICON_PIN, AREA_GREY, 11));
     area.appendChild(document.createTextNode(' ' + vAreaLabel(v)));
