@@ -81,6 +81,18 @@
     { sort: 'a_z',        id: 'sort-az',   label: 'A → Z',         url: ASSET + '6a1d92f86dcb45f8402fe0ea_arrow-down-a-z-solid.png' }
   ];
 
+  // Card icons (Webflow assets).
+  var ICON_PIN      = ASSET + '6a1d9d9c67a9d9957b19c578_map-pin-solid.png';
+  var ICON_EMAIL    = ASSET + '6a1f445d6fda20928afcb0fd_envelope-regular.png';
+  var ICON_CALL     = ASSET + '6a21e2bf163c5945a1c0e919_phone-solid.png';
+  var ICON_WHATSAPP = ASSET + '6a1f445dfb11386d2e5502cf_whatsapp-brands-solid.png';
+  var ICON_TEXT     = ASSET + '6a1f445d06bc9a07f37fb0d9_comments-regular.png';
+  var AREA_GREY     = '#6B6880'; // location text — a touch darker than slate for legibility
+
+  // category slug -> sidebar icon URL (reused on the card pill)
+  var SLUG_TO_URL = {};
+  CATEGORY_LIST.forEach(function (c) { SLUG_TO_URL[c.slug] = c.url; });
+
   /* Card + filter-panel CSS — injected once so the script's UI is fully styled. */
   var CSS = [
     // ── card ──
@@ -88,26 +100,19 @@
     ".vcard:hover{border-color:#D4AAFD;box-shadow:0 4px 16px rgba(96,2,238,.08);transform:translateY(-1px);}",
     ".vcard-spotlight{border-color:rgba(96,2,238,.2);background:linear-gradient(160deg,rgba(96,2,238,.02) 0%,#fff 60%);}",
     ".vcard-header{display:flex;align-items:flex-start;gap:12px;margin-bottom:10px;}",
-    ".vcard-avatar{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;border:.5px solid rgba(0,0,0,.06);}",
+    ".vcard-avatar{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;flex-shrink:0;border:.5px solid rgba(0,0,0,.06);overflow:hidden;}",
+    ".vcard-avatar-initials{background:#F3EBFF;color:#6002EE;letter-spacing:.5px;}",
+    ".vcard-avatar-img{width:100%;height:100%;object-fit:cover;display:block;}",
     ".vcard-meta{flex:1;min-width:0;}",
     ".vcard-name-row{display:flex;align-items:center;gap:6px;margin-bottom:3px;flex-wrap:wrap;}",
     ".vcard-name{font-size:14px;font-weight:600;color:#1A1829;letter-spacing:-.2px;line-height:1.2;}",
-    ".vcard-area{font-size:11px;color:#8E8BA6;display:flex;align-items:center;gap:4px;}",
-    ".vcard-area-dot{width:5px;height:5px;border-radius:50%;background:#C8C6D8;flex-shrink:0;}",
+    ".vcard-area{font-size:11px;color:#6B6880;display:flex;align-items:center;gap:4px;}",
     ".vcard .badge{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:100px;font-size:10px;line-height:1;flex-shrink:0;font-weight:600;}",
     ".vcard .badge-founding{background:rgba(201,162,42,.12);color:#C9A22A;border:.5px solid rgba(201,162,42,.25);}",
     ".vcard .badge-new{background:#EAFAF2;color:#1D6A45;border:.5px solid rgba(29,106,69,.15);}",
     ".vcard .badge-spotlight{background:rgba(96,2,238,.08);color:#6002EE;border:.5px solid rgba(96,2,238,.15);}",
-    ".vcard .badge-verified{background:#E6F1FB;color:#1565C0;border:.5px solid rgba(21,101,192,.2);}",
-    ".vcard .cat-pill{display:inline-flex;align-items:center;font-size:11px;font-weight:500;border-radius:100px;padding:3px 10px;margin-bottom:8px;}",
-    ".vcard .cat-food{background:#FFF3EA;color:#FF6B00;}",
-    ".vcard .cat-photo{background:#F3EBFF;color:#6002EE;}",
-    ".vcard .cat-wellness{background:#EAFAF2;color:#1D6A45;}",
-    ".vcard .cat-beauty{background:#FEF3F2;color:#C0392B;}",
-    ".vcard .cat-kids{background:#E6F1FB;color:#1A5C9A;}",
-    ".vcard .cat-home{background:#F7F6FC;color:#4A4761;border:.5px solid #EEEDF6;}",
-    ".vcard .cat-artisan{background:#FFF8E6;color:#8A5A00;}",
-    ".vcard .cat-biz{background:#F0F0F8;color:#4A4761;}",
+    ".vcard .badge-verified{background:rgba(0,0,228,.10);color:#0000E4;border:.5px solid rgba(0,0,228,.2);}",
+    ".vcard .cat-pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:500;border-radius:100px;padding:3px 10px;margin-bottom:8px;background:#F3EBFF;color:#6002EE;}",
     ".vcard-tagline{font-size:12.5px;color:#4A4761;line-height:1.5;margin-bottom:12px;}",
     ".vcard-actions{display:flex;gap:6px;flex-wrap:wrap;}",
     ".vcard .contact-btn{font-size:11px;font-weight:500;font-family:inherit;padding:5px 10px;border-radius:6px;border:.5px solid #EEEDF6;background:#F7F6FC;color:#4A4761;cursor:pointer;transition:all .1s;display:inline-flex;align-items:center;gap:4px;}",
@@ -121,11 +126,6 @@
     "#browse-filter-panel .filter-item:hover{background:#F7F6FC;color:#1A1829;}",
     "#browse-filter-panel .filter-item.active{background:#F3EBFF;color:#6002EE;font-weight:600;}",
     "#browse-filter-panel .fi-left{display:flex;align-items:center;gap:8px;}",
-    "#browse-filter-panel .filter-icon{font-size:14px;width:18px;text-align:center;flex-shrink:0;}",
-    "#browse-filter-panel .lk-mask-icon{display:inline-block;flex-shrink:0;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center;-webkit-mask-size:contain;mask-size:contain;}",
-    "#browse-filter-panel .lk-cat-icon{width:18px;height:18px;}",
-    "#browse-filter-panel .lk-tg-icon{width:16px;height:16px;}",
-    "#browse-filter-panel .lk-sort-icon{width:16px;height:16px;}",
     "#browse-filter-panel .lk-glyph-icon{font-size:13px;font-weight:700;width:16px;text-align:center;display:inline-block;flex-shrink:0;}",
     "#browse-filter-panel .filter-count-pill{font-size:10px;font-weight:600;background:#EEEDF6;color:#8E8BA6;border-radius:100px;padding:1px 7px;min-width:22px;text-align:center;}",
     "#browse-filter-panel .filter-item.active .filter-count-pill{background:rgba(96,2,238,.12);color:#6002EE;}",
@@ -187,10 +187,23 @@
     for (var i = 0; i < ids.length; i++) {
       if (CAT_BY_ID[ids[i]]) {
         var base = CAT_BY_ID[ids[i]], apiCat = _categoriesById[ids[i]];
-        return { pill: base.pill, emoji: base.emoji, bg: base.bg, label: (apiCat && apiCat.name) || base.label };
+        return { slug: base.slug, url: SLUG_TO_URL[base.slug], label: (apiCat && apiCat.name) || base.label };
       }
     }
-    return DEFAULT_CAT;
+    return { slug: DEFAULT_CAT.slug, url: null, label: DEFAULT_CAT.label };
+  }
+  function initials(name) {
+    var p = String(name || '').trim().split(/\s+/).filter(Boolean);
+    if (!p.length) return '?';
+    if (p.length === 1) return p[0].slice(0, 2).toUpperCase();
+    return (p[0].charAt(0) + p[1].charAt(0)).toUpperCase();
+  }
+  function vPhotoUrl(v) {
+    var p = v.profile_photo;
+    if (!p || typeof p !== 'string') return '';
+    if (/^https?:\/\//.test(p)) return p;
+    var base = window.LOKALI_FILE_BASE || 'https://x8ki-letl-twmt.n7.xano.io';
+    return base.replace(/\/$/, '') + (p.charAt(0) === '/' ? '' : '/') + p;
   }
   function vAreaLabel(v) {
     var ids = Array.isArray(v.locations_id) ? v.locations_id : (v.locations_id != null ? [v.locations_id] : []);
@@ -249,11 +262,17 @@
     });
   }
 
-  function maskIcon(url, color, cls) {
-    var s = ce('span', 'lk-mask-icon ' + cls);
-    s.style.webkitMaskImage = 'url("' + url + '")';
-    s.style.maskImage = 'url("' + url + '")';
+  // Self-contained masked icon: recolors any silhouette PNG/SVG to `color`. Works anywhere.
+  function maskIcon(url, color, size) {
+    var s = ce('span');
+    s.style.display = 'inline-block';
+    s.style.flexShrink = '0';
+    s.style.width = size + 'px';
+    s.style.height = size + 'px';
     s.style.backgroundColor = color;
+    var m = 'url("' + url + '") center / contain no-repeat';
+    s.style.webkitMask = m;
+    s.style.mask = m;
     return s;
   }
   function glyphIcon(glyph, color) {
@@ -273,7 +292,7 @@
       var item = ce('div', 'filter-item' + (c.slug === activeCategory ? ' active' : ''));
       item.setAttribute('data-category-slug', c.slug);
       var left = ce('div', 'fi-left');
-      left.appendChild(maskIcon(c.url, ICON_VIOLET, 'lk-cat-icon'));
+      left.appendChild(maskIcon(c.url, ICON_VIOLET, 18));
       left.appendChild(document.createTextNode(c.label));
       var pill = ce('span', 'filter-count-pill'); pill.textContent = '0';
       item.appendChild(left); item.appendChild(pill);
@@ -289,7 +308,7 @@
     TOGGLE_LIST.forEach(function (t) {
       var row = ce('div', 'lk-toggle');
       var label = ce('span', 'lk-toggle-label');
-      label.appendChild(t.url ? maskIcon(t.url, t.color, 'lk-tg-icon') : glyphIcon(t.glyph, t.color));
+      label.appendChild(t.url ? maskIcon(t.url, t.color, 16) : glyphIcon(t.glyph, t.color));
       label.appendChild(document.createTextNode(t.label));
       var sw = ce('span', 'toggle-switch'); sw.id = t.id;
       row.appendChild(label); row.appendChild(sw);
@@ -309,7 +328,7 @@
       var item = ce('div', 'filter-item' + (s.sort === activeSort ? ' active' : ''));
       item.id = s.id;
       var left = ce('div', 'fi-left');
-      left.appendChild(maskIcon(s.url, ICON_VIOLET, 'lk-sort-icon'));
+      left.appendChild(maskIcon(s.url, ICON_VIOLET, 16));
       left.appendChild(document.createTextNode(s.label));
       item.appendChild(left);
       item.addEventListener('click', function () { setSort(s.sort); });
@@ -371,9 +390,11 @@
   }
 
   function badge(cls, glyph, title) { var b = ce('span', 'badge ' + cls); b.textContent = glyph; b.title = title; return b; }
-  function addContact(parent, href, label) {
+  function addContact(parent, href, label, iconUrl) {
     if (!href) return;
-    var b = ce('button', 'contact-btn'); b.type = 'button'; b.textContent = label;
+    var b = ce('button', 'contact-btn'); b.type = 'button';
+    b.appendChild(maskIcon(iconUrl, 'currentColor', 13)); // icon follows button text color (incl. hover)
+    b.appendChild(document.createTextNode(label));
     b.addEventListener('click', function (ev) {
       ev.stopPropagation(); ev.preventDefault();
       if (href.indexOf('http') === 0) window.open(href, '_blank'); else window.location.href = href;
@@ -381,11 +402,27 @@
     parent.appendChild(b);
   }
 
+  function buildAvatar(v) {
+    var avatar = ce('div', 'vcard-avatar');
+    var photo = vPhotoUrl(v);
+    var fillInitials = function () {
+      avatar.className = 'vcard-avatar vcard-avatar-initials';
+      avatar.textContent = initials(vName(v));
+    };
+    if (photo) {
+      var img = ce('img', 'vcard-avatar-img'); img.src = photo; img.alt = '';
+      img.addEventListener('error', function () { if (img.parentNode) avatar.removeChild(img); fillInitials(); });
+      avatar.appendChild(img);
+    } else {
+      fillInitials();
+    }
+    return avatar;
+  }
+
   function buildCard(v) {
     var style = vCategoryStyle(v);
     var card = ce('div', 'vcard' + (vIsSpotlight(v) ? ' vcard-spotlight' : ''));
     var header = ce('div', 'vcard-header');
-    var avatar = ce('div', 'vcard-avatar'); avatar.textContent = style.emoji; avatar.style.backgroundColor = style.bg;
     var meta = ce('div', 'vcard-meta');
     var nameRow = ce('div', 'vcard-name-row');
     var name = ce('span', 'vcard-name'); name.textContent = vName(v); nameRow.appendChild(name);
@@ -394,20 +431,25 @@
     if (vIsVerified(v))  nameRow.appendChild(badge('badge-verified', '✓', 'Verified'));
     if (vIsSpotlight(v)) nameRow.appendChild(badge('badge-spotlight', '✦', 'Spotlight'));
     var area = ce('div', 'vcard-area');
-    area.appendChild(ce('span', 'vcard-area-dot'));
+    area.appendChild(maskIcon(ICON_PIN, AREA_GREY, 11));
     area.appendChild(document.createTextNode(' ' + vAreaLabel(v)));
     meta.appendChild(nameRow); meta.appendChild(area);
-    header.appendChild(avatar); header.appendChild(meta);
+    header.appendChild(buildAvatar(v)); header.appendChild(meta);
     card.appendChild(header);
 
-    var pill = ce('span', 'cat-pill ' + style.pill); pill.textContent = style.emoji + ' ' + style.label;
+    var pill = ce('span', 'cat-pill');
+    if (style.url) pill.appendChild(maskIcon(style.url, ICON_VIOLET, 13));
+    pill.appendChild(document.createTextNode(' ' + style.label));
     card.appendChild(pill);
+
     var tag = ce('div', 'vcard-tagline'); tag.textContent = vTagline(v); card.appendChild(tag);
 
+    var phone = v.phone_number;
     var actions = ce('div', 'vcard-actions');
-    addContact(actions, v.contact_email ? 'mailto:' + v.contact_email : null, '✉ Email');
-    addContact(actions, v.phone_number ? 'tel:' + v.phone_number : null, '📞 Call');
-    addContact(actions, (v.whatsapp_messages && v.phone_number) ? 'https://wa.me/' + digits(v.phone_number) : null, '💬 WhatsApp');
+    addContact(actions, v.contact_email ? 'mailto:' + v.contact_email : null, 'Email', ICON_EMAIL);
+    addContact(actions, phone ? 'tel:' + phone : null, 'Call', ICON_CALL);
+    addContact(actions, (v.text_messages && phone) ? 'sms:' + phone : null, 'Text', ICON_TEXT);
+    addContact(actions, (v.whatsapp_messages && phone) ? 'https://wa.me/' + digits(phone) : null, 'WhatsApp', ICON_WHATSAPP);
     card.appendChild(actions);
 
     var href = vProfileHref(v);
