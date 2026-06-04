@@ -1,32 +1,32 @@
 /**
  * Lokali — The Market (public vendor browse page).
  *
- * Powers /the-market: fetches vendors from Xano and RENDERS THE CARDS ITSELF
- * (builds the markup + injects the CSS), so it does not depend on a Webflow
- * card element/component. Also drives search / category / neighborhood / toggle
- * filters, sorting, active-filter chips, sidebar counts, and the mobile drawer.
+ * Powers /the-market. The script RENDERS BOTH the vendor cards AND the filter
+ * sidebar itself (builds the markup + injects the CSS), so it does not depend on
+ * Webflow elements/code-components for either. It drives search, category,
+ * neighborhood, the three toggles, sorting, active-filter chips, sidebar counts,
+ * and the mobile drawer.
  *
  * Load AFTER lokali-api-client.js. No auth required (public list endpoints).
  *
- * Contract (must exist in Webflow — light-DOM elements, NOT a code component):
- *   #browse-search                text input
- *   #browse-location              <select> (script populates options)
- *   #browse-result-count          <strong> (hero "N vendors found")
- *   #browse-grid-count            <strong> ("Showing N vendors")
- *   #browse-vendor-grid           an EMPTY div — the script fills it with cards
- *   #browse-empty-state           optional hidden empty state (sibling or child of the grid)
- *   #browse-active-filters        empty strip for chips
- *   [data-lokali-category-filter] wrapper; each .filter-item has [data-category-slug] + a .filter-count-pill
- *   #browse-toggle-new / -founding / -verified   the .toggle-switch elements
- *   #sort-match / #sort-new / #sort-az            desktop sort rows
- *   #browse-mobile-sort           mobile <select>
- *   #browse-mobile-filter-btn / #browse-filter-backdrop / #browse-sidebar / #browse-close-filters  (drawer)
+ * Required mount points in Webflow (plain light-DOM elements, NOT code components):
+ *   #browse-search          text input
+ *   #browse-location        <select> (script fills options)
+ *   #browse-result-count    <strong> ("N vendors found")
+ *   #browse-grid-count      <strong> ("Showing N vendors")
+ *   #browse-vendor-grid     EMPTY div — script fills with cards
+ *   #browse-filter-panel    EMPTY div — script fills with category list + toggles + sort
+ * Optional:
+ *   #browse-empty-state     hidden empty state (sibling/child of the grid)
+ *   #browse-active-filters  empty strip for chips
+ *   #browse-mobile-sort     mobile <select> (values best_match/newest/a_z)
+ *   #browse-mobile-filter-btn / #browse-filter-backdrop / #browse-sidebar / #browse-close-filters (drawer)
  *
  * Optional window overrides (set before this script):
- *   window.LOKALI_BROWSE_PROFILE_BASE  default '/vendors/'  (card click target prefix)
- *   window.LOKALI_VERIFIED_FIELD       vendor field for the Verified flag (default 'is_verified')
- *   window.LOKALI_SPOTLIGHT_FIELD      vendor field for the Spotlight flag (default 'is_spotlight')
- *   window.LOKALI_BROWSE_PER_PAGE      default 100 (page size when fetching a neighborhood)
+ *   window.LOKALI_BROWSE_PROFILE_BASE  default '/vendors/'
+ *   window.LOKALI_VERIFIED_FIELD       vendor field for Verified flag (default 'is_verified')
+ *   window.LOKALI_SPOTLIGHT_FIELD      vendor field for Spotlight flag (default 'is_spotlight')
+ *   window.LOKALI_BROWSE_PER_PAGE      default 100
  */
 (function () {
   'use strict';
@@ -34,9 +34,8 @@
   var PROFILE_BASE = (typeof window.LOKALI_BROWSE_PROFILE_BASE === 'string' && window.LOKALI_BROWSE_PROFILE_BASE) || '/vendors/';
   var PER_PAGE = (typeof window.LOKALI_BROWSE_PER_PAGE === 'number' && window.LOKALI_BROWSE_PER_PAGE) || 100;
   var AREA_KEY = 'LOKALI_BROWSE_AREA';
-  var NEW_WINDOW_MS = 7 * 24 * 60 * 60 * 1000; // "new this week"
+  var NEW_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 
-  /* Category style table keyed by Xano category id (guide §5.2). */
   var CAT_BY_ID = {
     1: { slug: 'handcrafted', pill: 'cat-artisan',  emoji: '🎨', bg: '#FFF8E6', label: 'Handcrafted Goods' },
     2: { slug: 'business',    pill: 'cat-biz',      emoji: '💼', bg: '#F0F0F8', label: 'Business' },
@@ -50,17 +49,38 @@
   var DEFAULT_CAT = { slug: 'other', pill: 'cat-biz', emoji: '•', bg: '#F0F0F8', label: 'Vendor' };
 
   var SLUG_TO_ID = {};
-  (function () {
-    for (var id in CAT_BY_ID) { if (CAT_BY_ID.hasOwnProperty(id)) SLUG_TO_ID[CAT_BY_ID[id].slug] = parseInt(id, 10); }
-  })();
-  // tolerate the mockup's short demo slugs as aliases of the canonical ones
+  (function () { for (var id in CAT_BY_ID) if (CAT_BY_ID.hasOwnProperty(id)) SLUG_TO_ID[CAT_BY_ID[id].slug] = parseInt(id, 10); })();
   SLUG_TO_ID.artisan = SLUG_TO_ID.handcrafted;
   SLUG_TO_ID.biz     = SLUG_TO_ID.business;
   SLUG_TO_ID.kids    = SLUG_TO_ID.children;
   SLUG_TO_ID.photo   = SLUG_TO_ID.events;
 
-  /* Card CSS — injected once so the script's cards are fully styled without Webflow. */
-  var CARD_CSS = [
+  // Sidebar lists (order + icons) — rendered by the script.
+  var CATEGORY_LIST = [
+    { slug: 'all',         icon: '✦', label: 'All categories' },
+    { slug: 'beauty',      icon: '💄', label: 'Beauty' },
+    { slug: 'business',    icon: '💼', label: 'Business' },
+    { slug: 'children',    icon: '📚', label: 'Children' },
+    { slug: 'events',      icon: '📸', label: 'Events' },
+    { slug: 'food',        icon: '🍽️', label: 'Food' },
+    { slug: 'handcrafted', icon: '🎨', label: 'Handcrafted Goods' },
+    { slug: 'home',        icon: '🏡', label: 'Home' },
+    { slug: 'wellness',    icon: '🧘', label: 'Wellness' }
+  ];
+  var TOGGLE_LIST = [
+    { key: 'new',      id: 'browse-toggle-new',      glyph: '●', color: '#1D6A45', label: 'New this week' },
+    { key: 'founding', id: 'browse-toggle-founding', glyph: '★', color: '#C9A22A', label: 'Founding vendors only' },
+    { key: 'verified', id: 'browse-toggle-verified', glyph: '✓', color: '#1565C0', label: 'Verified only' }
+  ];
+  var SORT_LIST = [
+    { sort: 'best_match', id: 'sort-match', icon: '⚡', label: 'Best match' },
+    { sort: 'newest',     id: 'sort-new',  icon: '🆕', label: 'Newest first' },
+    { sort: 'a_z',        id: 'sort-az',   icon: '🔤', label: 'A → Z' }
+  ];
+
+  /* Card + filter-panel CSS — injected once so the script's UI is fully styled. */
+  var CSS = [
+    // ── card ──
     ".vcard{background:#fff;border:.5px solid #EEEDF6;border-radius:12px;padding:1.1rem 1.15rem 1rem;cursor:pointer;transition:all .15s;position:relative;overflow:hidden;font-family:'Plus Jakarta Sans',sans-serif;}",
     ".vcard:hover{border-color:#D4AAFD;box-shadow:0 4px 16px rgba(96,2,238,.08);transform:translateY(-1px);}",
     ".vcard-spotlight{border-color:rgba(96,2,238,.2);background:linear-gradient(160deg,rgba(96,2,238,.02) 0%,#fff 60%);}",
@@ -88,7 +108,27 @@
     ".vcard-tagline{font-size:12.5px;color:#4A4761;line-height:1.5;margin-bottom:12px;}",
     ".vcard-actions{display:flex;gap:6px;flex-wrap:wrap;}",
     ".vcard .contact-btn{font-size:11px;font-weight:500;font-family:inherit;padding:5px 10px;border-radius:6px;border:.5px solid #EEEDF6;background:#F7F6FC;color:#4A4761;cursor:pointer;transition:all .1s;display:inline-flex;align-items:center;gap:4px;}",
-    ".vcard .contact-btn:hover{border-color:#6002EE;color:#6002EE;background:#F3EBFF;}"
+    ".vcard .contact-btn:hover{border-color:#6002EE;color:#6002EE;background:#F3EBFF;}",
+    // ── filter panel ──
+    "#browse-filter-panel{font-family:'Plus Jakarta Sans',sans-serif;}",
+    "#browse-filter-panel .lk-filter-section{margin-bottom:1.5rem;}",
+    "#browse-filter-panel .lk-filter-section:last-child{margin-bottom:0;}",
+    "#browse-filter-panel .lk-filter-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:#8E8BA6;margin-bottom:.6rem;}",
+    "#browse-filter-panel .filter-item{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;border-radius:8px;font-size:13px;color:#4A4761;cursor:pointer;transition:all .1s;margin-bottom:2px;user-select:none;}",
+    "#browse-filter-panel .filter-item:hover{background:#F7F6FC;color:#1A1829;}",
+    "#browse-filter-panel .filter-item.active{background:#F3EBFF;color:#6002EE;font-weight:600;}",
+    "#browse-filter-panel .fi-left{display:flex;align-items:center;gap:8px;}",
+    "#browse-filter-panel .filter-icon{font-size:14px;width:18px;text-align:center;flex-shrink:0;}",
+    "#browse-filter-panel .filter-count-pill{font-size:10px;font-weight:600;background:#EEEDF6;color:#8E8BA6;border-radius:100px;padding:1px 7px;min-width:22px;text-align:center;}",
+    "#browse-filter-panel .filter-item.active .filter-count-pill{background:rgba(96,2,238,.12);color:#6002EE;}",
+    "#browse-filter-panel .lk-divider{height:.5px;background:#EEEDF6;margin:1rem 0;}",
+    "#browse-filter-panel .lk-toggle{display:flex;align-items:center;justify-content:space-between;padding:6px 0;cursor:pointer;user-select:none;}",
+    "#browse-filter-panel .lk-toggle-label{font-size:13px;color:#4A4761;display:flex;align-items:center;gap:6px;}",
+    "#browse-filter-panel .lk-tg-ic{font-size:12px;font-weight:700;}",
+    "#browse-filter-panel .toggle-switch{width:32px;height:18px;border-radius:100px;background:#C8C6D8;position:relative;transition:background .18s;flex-shrink:0;}",
+    "#browse-filter-panel .toggle-switch.on{background:#1D6A45;}",
+    "#browse-filter-panel .toggle-switch::after{content:'';position:absolute;width:14px;height:14px;border-radius:50%;background:#fff;top:2px;left:2px;transition:left .18s;box-shadow:0 1px 3px rgba(0,0,0,.18);}",
+    "#browse-filter-panel .toggle-switch.on::after{left:16px;}"
   ].join('');
 
   // ── state ──
@@ -107,7 +147,7 @@
   var showVerifiedOnly = false;
   var searchTerm = '';
 
-  // ── tiny helpers ──
+  // ── helpers ──
   function el(id) { return document.getElementById(id); }
   function ce(tag, cls) { var e = document.createElement(tag); if (cls) e.className = cls; return e; }
   function setText(node, txt) { if (node) node.textContent = txt; }
@@ -120,14 +160,12 @@
     if (!d) return [];
     if (Array.isArray(d)) return d;
     var keys = ['items', 'records', 'data', 'vendors', 'result', 'results'], i;
-    for (i = 0; i < keys.length; i++) { if (Array.isArray(d[keys[i]])) return d[keys[i]]; }
-    if (d.data && typeof d.data === 'object') {
-      for (i = 0; i < keys.length; i++) { if (Array.isArray(d.data[keys[i]])) return d.data[keys[i]]; }
-    }
+    for (i = 0; i < keys.length; i++) if (Array.isArray(d[keys[i]])) return d[keys[i]];
+    if (d.data && typeof d.data === 'object') for (i = 0; i < keys.length; i++) if (Array.isArray(d.data[keys[i]])) return d.data[keys[i]];
     return [];
   }
 
-  // ── vendor field accessors (schema confirmed May 2026) ──
+  // ── vendor accessors ──
   function vName(v)    { return v.business_name || v.businessName || 'Vendor'; }
   function vTagline(v) { return v.business_tagline || v.tagline || v.business_description || ''; }
   function vCreated(v) { var c = v.created_at; if (c == null) return 0; return typeof c === 'number' ? c : (Date.parse(c) || 0); }
@@ -148,17 +186,14 @@
   }
   function vAreaLabel(v) {
     var ids = Array.isArray(v.locations_id) ? v.locations_id : (v.locations_id != null ? [v.locations_id] : []);
-    for (var i = 0; i < ids.length; i++) { if (_locationsById[ids[i]]) return _locationsById[ids[i]].label; }
+    for (var i = 0; i < ids.length; i++) if (_locationsById[ids[i]]) return _locationsById[ids[i]].label;
     return '';
   }
   function vProfileHref(v) { return PROFILE_BASE + (v.slug || v.id); }
 
   // ── reference data ──
   function loadRefData() {
-    return Promise.all([
-      window.LokaliAPI.data.categories(),
-      window.LokaliAPI.data.locations()
-    ]).then(function (res) {
+    return Promise.all([window.LokaliAPI.data.categories(), window.LokaliAPI.data.locations()]).then(function (res) {
       extractList(res[0] && res[0].data).forEach(function (c) {
         var id = c.id != null ? c.id : c.category_id;
         if (id != null) _categoriesById[id] = { id: id, name: c.name || c.category_name || '' };
@@ -184,9 +219,8 @@
   }
 
   function resolveInitialLocation() {
-    var byUrl = null;
+    var byUrl = null, byStore = null;
     try { byUrl = new URLSearchParams(window.location.search).get('location_id'); } catch (e) {}
-    var byStore = null;
     try { byStore = localStorage.getItem(AREA_KEY); } catch (e) {}
     var candidate = byUrl || byStore || 'all';
     if (candidate !== 'all' && !_locationsById[candidate]) candidate = 'all';
@@ -207,23 +241,78 @@
     });
   }
 
-  // ── sidebar counts ──
+  // ── render the filter sidebar (category list + toggles + sort) ──
+  function renderFilterPanel() {
+    var mount = el('browse-filter-panel');
+    if (!mount) { console.warn('[lokali-browse] #browse-filter-panel not found — filters disabled. Add an empty div with that ID.'); return; }
+    mount.innerHTML = '';
+
+    // Category
+    var cs = ce('div', 'lk-filter-section');
+    var cl = ce('div', 'lk-filter-label'); cl.textContent = 'Category'; cs.appendChild(cl);
+    CATEGORY_LIST.forEach(function (c) {
+      var item = ce('div', 'filter-item' + (c.slug === activeCategory ? ' active' : ''));
+      item.setAttribute('data-category-slug', c.slug);
+      var left = ce('div', 'fi-left');
+      var ic = ce('span', 'filter-icon'); ic.textContent = c.icon; left.appendChild(ic);
+      left.appendChild(document.createTextNode(c.label));
+      var pill = ce('span', 'filter-count-pill'); pill.textContent = '0';
+      item.appendChild(left); item.appendChild(pill);
+      item.addEventListener('click', function () { setCategory(c.slug); });
+      cs.appendChild(item);
+    });
+    mount.appendChild(cs);
+    mount.appendChild(ce('div', 'lk-divider'));
+
+    // Filter by (toggles)
+    var fs = ce('div', 'lk-filter-section');
+    var fl = ce('div', 'lk-filter-label'); fl.textContent = 'Filter by'; fs.appendChild(fl);
+    TOGGLE_LIST.forEach(function (t) {
+      var row = ce('div', 'lk-toggle');
+      var label = ce('span', 'lk-toggle-label');
+      var ic = ce('span', 'lk-tg-ic'); ic.textContent = t.glyph; ic.style.color = t.color; label.appendChild(ic);
+      label.appendChild(document.createTextNode(t.label));
+      var sw = ce('span', 'toggle-switch'); sw.id = t.id;
+      row.appendChild(label); row.appendChild(sw);
+      row.addEventListener('click', function () {
+        var cur = t.key === 'new' ? showNewOnly : (t.key === 'founding' ? showFoundingOnly : showVerifiedOnly);
+        setToggle(t.key, !cur);
+      });
+      fs.appendChild(row);
+    });
+    mount.appendChild(fs);
+    mount.appendChild(ce('div', 'lk-divider'));
+
+    // Sort
+    var ss = ce('div', 'lk-filter-section');
+    var sl = ce('div', 'lk-filter-label'); sl.textContent = 'Sort'; ss.appendChild(sl);
+    SORT_LIST.forEach(function (s) {
+      var item = ce('div', 'filter-item' + (s.sort === activeSort ? ' active' : ''));
+      item.id = s.id;
+      var left = ce('div', 'fi-left');
+      var ic = ce('span', 'filter-icon'); ic.textContent = s.icon; left.appendChild(ic);
+      left.appendChild(document.createTextNode(s.label));
+      item.appendChild(left);
+      item.addEventListener('click', function () { setSort(s.sort); });
+      ss.appendChild(item);
+    });
+    mount.appendChild(ss);
+  }
+
   function updateCategoryCounts() {
-    var container = document.querySelector('[data-lokali-category-filter]');
-    if (!container) return;
-    var items = container.querySelectorAll('.filter-item[data-category-slug]');
+    var items = document.querySelectorAll('#browse-filter-panel .filter-item[data-category-slug]');
     for (var i = 0; i < items.length; i++) {
       var slug = items[i].getAttribute('data-category-slug');
       var pill = items[i].querySelector('.filter-count-pill');
       if (!pill) continue;
       var count;
-      if (slug === 'all') { count = _allVendors.length; }
+      if (slug === 'all') count = _allVendors.length;
       else { var catId = SLUG_TO_ID[slug]; count = _allVendors.filter(function (v) { return vCategoryIds(v).indexOf(catId) !== -1; }).length; }
       pill.textContent = String(count);
     }
   }
 
-  // ── filter + sort + render ──
+  // ── filter + sort + render cards ──
   function applyFilters() {
     var q = searchTerm.toLowerCase().trim();
     var catId = activeCategory === 'all' ? null : SLUG_TO_ID[activeCategory];
@@ -232,10 +321,7 @@
       if (showNewOnly && !vIsNew(v)) return false;
       if (showFoundingOnly && !vIsFounding(v)) return false;
       if (showVerifiedOnly && !vIsVerified(v)) return false;
-      if (q) {
-        var hay = (vName(v) + ' ' + vTagline(v) + ' ' + vCategoryStyle(v).label).toLowerCase();
-        if (hay.indexOf(q) === -1) return false;
-      }
+      if (q) { var hay = (vName(v) + ' ' + vTagline(v) + ' ' + vCategoryStyle(v).label).toLowerCase(); if (hay.indexOf(q) === -1) return false; }
       return true;
     });
     sortVendors(visible);
@@ -246,9 +332,9 @@
   }
 
   function sortVendors(list) {
-    if (activeSort === 'a_z') { list.sort(function (a, b) { return vName(a).localeCompare(vName(b)); }); }
-    else if (activeSort === 'newest') { list.sort(function (a, b) { return vCreated(b) - vCreated(a); }); }
-    else { list.sort(function (a, b) { return rank(b) - rank(a) || (vCreated(b) - vCreated(a)); }); }
+    if (activeSort === 'a_z') list.sort(function (a, b) { return vName(a).localeCompare(vName(b)); });
+    else if (activeSort === 'newest') list.sort(function (a, b) { return vCreated(b) - vCreated(a); });
+    else list.sort(function (a, b) { return rank(b) - rank(a) || (vCreated(b) - vCreated(a)); });
   }
   function rank(v) { return (vIsSpotlight(v) ? 4 : 0) + (vIsFounding(v) ? 2 : 0) + (vIsVerified(v) ? 1 : 0); }
 
@@ -266,16 +352,12 @@
   }
 
   function badge(cls, glyph, title) { var b = ce('span', 'badge ' + cls); b.textContent = glyph; b.title = title; return b; }
-
   function addContact(parent, href, label) {
     if (!href) return;
-    var b = ce('button', 'contact-btn');
-    b.type = 'button';
-    b.textContent = label;
+    var b = ce('button', 'contact-btn'); b.type = 'button'; b.textContent = label;
     b.addEventListener('click', function (ev) {
       ev.stopPropagation(); ev.preventDefault();
-      if (href.indexOf('http') === 0) window.open(href, '_blank');
-      else window.location.href = href;
+      if (href.indexOf('http') === 0) window.open(href, '_blank'); else window.location.href = href;
     });
     parent.appendChild(b);
   }
@@ -283,7 +365,6 @@
   function buildCard(v) {
     var style = vCategoryStyle(v);
     var card = ce('div', 'vcard' + (vIsSpotlight(v) ? ' vcard-spotlight' : ''));
-
     var header = ce('div', 'vcard-header');
     var avatar = ce('div', 'vcard-avatar'); avatar.textContent = style.emoji; avatar.style.backgroundColor = style.bg;
     var meta = ce('div', 'vcard-meta');
@@ -302,9 +383,7 @@
 
     var pill = ce('span', 'cat-pill ' + style.pill); pill.textContent = style.emoji + ' ' + style.label;
     card.appendChild(pill);
-
-    var tag = ce('div', 'vcard-tagline'); tag.textContent = vTagline(v);
-    card.appendChild(tag);
+    var tag = ce('div', 'vcard-tagline'); tag.textContent = vTagline(v); card.appendChild(tag);
 
     var actions = ce('div', 'vcard-actions');
     addContact(actions, v.contact_email ? 'mailto:' + v.contact_email : null, '✉ Email');
@@ -317,23 +396,15 @@
     return card;
   }
 
-  function updateCounts(n) {
-    setText(el('browse-result-count'), String(n));
-    setText(el('browse-grid-count'), String(n));
-  }
+  function updateCounts(n) { setText(el('browse-result-count'), String(n)); setText(el('browse-grid-count'), String(n)); }
 
   // ── active filter chips ──
   function updateActiveFilters() {
     var strip = el('browse-active-filters');
     if (!strip) return;
     strip.innerHTML = '';
-    if (activeLocationId !== 'all' && _locationsById[activeLocationId]) {
-      addChip(strip, _locationsById[activeLocationId].name, function () { setLocation('all'); });
-    }
-    if (activeCategory !== 'all') {
-      var cs = CAT_BY_ID[SLUG_TO_ID[activeCategory]];
-      addChip(strip, cs ? cs.label : activeCategory, function () { setCategory('all'); });
-    }
+    if (activeLocationId !== 'all' && _locationsById[activeLocationId]) addChip(strip, _locationsById[activeLocationId].name, function () { setLocation('all'); });
+    if (activeCategory !== 'all') { var c = CAT_BY_ID[SLUG_TO_ID[activeCategory]]; addChip(strip, c ? c.label : activeCategory, function () { setCategory('all'); }); }
     if (showNewOnly)      addChip(strip, 'New this week',    function () { setToggle('new', false); });
     if (showFoundingOnly) addChip(strip, 'Founding vendors', function () { setToggle('founding', false); });
     if (showVerifiedOnly) addChip(strip, 'Verified',         function () { setToggle('verified', false); });
@@ -347,8 +418,7 @@
   function updateMobileIndicator() {
     var btn = el('browse-mobile-filter-btn');
     if (!btn) return;
-    var has = activeCategory !== 'all' || showNewOnly || showFoundingOnly || showVerifiedOnly || activeLocationId !== 'all' || !!searchTerm;
-    btn.classList.toggle('has-filters', has);
+    btn.classList.toggle('has-filters', activeCategory !== 'all' || showNewOnly || showFoundingOnly || showVerifiedOnly || activeLocationId !== 'all' || !!searchTerm);
   }
 
   // ── setters ──
@@ -360,7 +430,7 @@
   }
   function setCategory(slug) {
     activeCategory = slug;
-    var items = document.querySelectorAll('[data-lokali-category-filter] .filter-item[data-category-slug]');
+    var items = document.querySelectorAll('#browse-filter-panel .filter-item[data-category-slug]');
     for (var i = 0; i < items.length; i++) items[i].classList.toggle('active', items[i].getAttribute('data-category-slug') === slug);
     applyFilters();
   }
@@ -375,7 +445,7 @@
   function setSort(sort) {
     activeSort = sort;
     var ids = { best_match: 'sort-match', newest: 'sort-new', a_z: 'sort-az' };
-    ['sort-match', 'sort-new', 'sort-az'].forEach(function (id) { var r = el(id); if (r) r.classList.toggle('active', id === ids[sort]); });
+    SORT_LIST.forEach(function (s) { var r = el(s.id); if (r) r.classList.toggle('active', s.id === ids[sort]); });
     var msel = el('browse-mobile-sort'); if (msel && msel.value !== sort) msel.value = sort;
     applyFilters();
   }
@@ -392,43 +462,21 @@
     document.body.style.overflow = '';
   }
 
-  // ── events ──
+  // ── events (search/location/mobile/drawer; category/toggle/sort bound during render) ──
   function bindEvents() {
     var search = el('browse-search');
     if (search) search.addEventListener('input', debounce(function () { searchTerm = search.value || ''; applyFilters(); }, 200));
-
     var loc = el('browse-location');
     if (loc) loc.addEventListener('change', function () { setLocation(loc.value); });
-
-    var items = document.querySelectorAll('[data-lokali-category-filter] .filter-item[data-category-slug]');
-    for (var i = 0; i < items.length; i++) {
-      (function (item) { item.addEventListener('click', function () { setCategory(item.getAttribute('data-category-slug')); }); })(items[i]);
-    }
-
-    bindToggleRow('browse-toggle-new', 'new', function () { return showNewOnly; });
-    bindToggleRow('browse-toggle-founding', 'founding', function () { return showFoundingOnly; });
-    bindToggleRow('browse-toggle-verified', 'verified', function () { return showVerifiedOnly; });
-
-    bindSortRow('sort-match', 'best_match');
-    bindSortRow('sort-new', 'newest');
-    bindSortRow('sort-az', 'a_z');
     var msel = el('browse-mobile-sort'); if (msel) msel.addEventListener('change', function () { setSort(msel.value); });
-
     var openBtn = el('browse-mobile-filter-btn'); if (openBtn) openBtn.addEventListener('click', openFilters);
     var backdrop = el('browse-filter-backdrop'); if (backdrop) backdrop.addEventListener('click', closeFilters);
     var closeX = el('browse-close-filters'); if (closeX) closeX.addEventListener('click', closeFilters);
   }
-  function bindToggleRow(switchId, which, getState) {
-    var sw = el(switchId); if (!sw) return;
-    var row = sw.closest('.new-toggle, .founding-toggle, .verified-toggle') || sw.parentElement || sw;
-    row.addEventListener('click', function () { setToggle(which, !getState()); });
-  }
-  function bindSortRow(rowId, sort) { var r = el(rowId); if (r) r.addEventListener('click', function () { setSort(sort); }); }
 
   function injectStyles() {
     if (el('lokali-browse-styles')) return;
-    var s = ce('style'); s.id = 'lokali-browse-styles'; s.textContent = CARD_CSS;
-    document.head.appendChild(s);
+    var s = ce('style'); s.id = 'lokali-browse-styles'; s.textContent = CSS; document.head.appendChild(s);
   }
 
   // ── init ──
@@ -439,10 +487,10 @@
     _emptyState = el('browse-empty-state');
 
     injectStyles();
-    // clear any placeholder / leftover card (incl. a Webflow code-component host), keep the empty state
     Array.prototype.slice.call(_grid.children).forEach(function (k) { if (k !== _emptyState) _grid.removeChild(k); });
     if (_emptyState) hideEl(_emptyState);
 
+    renderFilterPanel();
     bindEvents();
 
     loadRefData()
