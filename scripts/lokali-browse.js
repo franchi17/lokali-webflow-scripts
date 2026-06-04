@@ -55,27 +55,30 @@
   SLUG_TO_ID.kids    = SLUG_TO_ID.children;
   SLUG_TO_ID.photo   = SLUG_TO_ID.events;
 
-  // Sidebar lists (order + icons) — rendered by the script.
+  // Sidebar lists. Icons are Webflow-hosted assets, recolored to match the design
+  // via CSS mask (so PNG/SVG and any source color all render in the brand color).
+  var ICON_VIOLET = '#6002EE';
+  var ASSET = 'https://cdn.prod.website-files.com/6989095758ae17edfc424d30/';
   var CATEGORY_LIST = [
-    { slug: 'all',         icon: '✦', label: 'All categories' },
-    { slug: 'beauty',      icon: '💄', label: 'Beauty' },
-    { slug: 'business',    icon: '💼', label: 'Business' },
-    { slug: 'children',    icon: '📚', label: 'Children' },
-    { slug: 'events',      icon: '📸', label: 'Events' },
-    { slug: 'food',        icon: '🍽️', label: 'Food' },
-    { slug: 'handcrafted', icon: '🎨', label: 'Handcrafted Goods' },
-    { slug: 'home',        icon: '🏡', label: 'Home' },
-    { slug: 'wellness',    icon: '🧘', label: 'Wellness' }
+    { slug: 'all',         label: 'All categories',    url: ASSET + '6a1af18050966f1b31aac321_star-regular.png' },
+    { slug: 'beauty',      label: 'Beauty',            url: ASSET + '6a18f2524e31974a75003735_hair%20dryer.svg' },
+    { slug: 'business',    label: 'Business',          url: ASSET + '6a18f6d4b01673d30ca9bcb8_briefcase.svg' },
+    { slug: 'children',    label: 'Children',          url: ASSET + '6a18f6d4f1bbd4795f5345bc_backpack.svg' },
+    { slug: 'events',      label: 'Events',            url: ASSET + '6a18f6d414c76bb968f180db_balloon.svg' },
+    { slug: 'food',        label: 'Food',              url: ASSET + '6a186b067365d964abee8918_utensils-solid.png' },
+    { slug: 'handcrafted', label: 'Handcrafted Goods', url: ASSET + '6a186b061a80eb9ba75f0d0a_scissors-solid.png' },
+    { slug: 'home',        label: 'Home',              url: ASSET + '6a186b06a37dcea6514f15f9_house-regular.png' },
+    { slug: 'wellness',    label: 'Wellness',          url: ASSET + '6a186b06cfcb6c4d6d1e1cf7_heart-regular.png' }
   ];
   var TOGGLE_LIST = [
-    { key: 'new',      id: 'browse-toggle-new',      glyph: '●', color: '#1D6A45', label: 'New this week' },
-    { key: 'founding', id: 'browse-toggle-founding', glyph: '★', color: '#C9A22A', label: 'Founding vendors only' },
-    { key: 'verified', id: 'browse-toggle-verified', glyph: '✓', color: '#1565C0', label: 'Verified only' }
+    { key: 'new',      id: 'browse-toggle-new',      label: 'New this week',         color: '#1D6A45', url: ASSET + '6a1af53c6b8fa6046c223ce9_bullhorn-solid.png' },
+    { key: 'founding', id: 'browse-toggle-founding', label: 'Founding vendors only', color: '#C9A22A', url: ASSET + '69f4dbb3533f0ee2046ab0fb_crown-solid.png' },
+    { key: 'verified', id: 'browse-toggle-verified', label: 'Verified only',         color: '#0000E4', glyph: '✓' }
   ];
   var SORT_LIST = [
-    { sort: 'best_match', id: 'sort-match', icon: '⚡', label: 'Best match' },
-    { sort: 'newest',     id: 'sort-new',  icon: '🆕', label: 'Newest first' },
-    { sort: 'a_z',        id: 'sort-az',   icon: '🔤', label: 'A → Z' }
+    { sort: 'best_match', id: 'sort-match', label: 'Best match',   url: ASSET + '6a1d92f85db0d873ff20900a_sort-solid.png' },
+    { sort: 'newest',     id: 'sort-new',  label: 'Newest first',  url: ASSET + '6a1d92f83a64390307583b8e_bolt-solid.png' },
+    { sort: 'a_z',        id: 'sort-az',   label: 'A → Z',         url: ASSET + '6a1d92f86dcb45f8402fe0ea_arrow-down-a-z-solid.png' }
   ];
 
   /* Card + filter-panel CSS — injected once so the script's UI is fully styled. */
@@ -119,6 +122,11 @@
     "#browse-filter-panel .filter-item.active{background:#F3EBFF;color:#6002EE;font-weight:600;}",
     "#browse-filter-panel .fi-left{display:flex;align-items:center;gap:8px;}",
     "#browse-filter-panel .filter-icon{font-size:14px;width:18px;text-align:center;flex-shrink:0;}",
+    "#browse-filter-panel .lk-mask-icon{display:inline-block;flex-shrink:0;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center;-webkit-mask-size:contain;mask-size:contain;}",
+    "#browse-filter-panel .lk-cat-icon{width:18px;height:18px;}",
+    "#browse-filter-panel .lk-tg-icon{width:16px;height:16px;}",
+    "#browse-filter-panel .lk-sort-icon{width:16px;height:16px;}",
+    "#browse-filter-panel .lk-glyph-icon{font-size:13px;font-weight:700;width:16px;text-align:center;display:inline-block;flex-shrink:0;}",
     "#browse-filter-panel .filter-count-pill{font-size:10px;font-weight:600;background:#EEEDF6;color:#8E8BA6;border-radius:100px;padding:1px 7px;min-width:22px;text-align:center;}",
     "#browse-filter-panel .filter-item.active .filter-count-pill{background:rgba(96,2,238,.12);color:#6002EE;}",
     "#browse-filter-panel .lk-divider{height:.5px;background:#EEEDF6;margin:1rem 0;}",
@@ -241,6 +249,17 @@
     });
   }
 
+  function maskIcon(url, color, cls) {
+    var s = ce('span', 'lk-mask-icon ' + cls);
+    s.style.webkitMaskImage = 'url("' + url + '")';
+    s.style.maskImage = 'url("' + url + '")';
+    s.style.backgroundColor = color;
+    return s;
+  }
+  function glyphIcon(glyph, color) {
+    var s = ce('span', 'lk-glyph-icon'); s.textContent = glyph; s.style.color = color; return s;
+  }
+
   // ── render the filter sidebar (category list + toggles + sort) ──
   function renderFilterPanel() {
     var mount = el('browse-filter-panel');
@@ -254,7 +273,7 @@
       var item = ce('div', 'filter-item' + (c.slug === activeCategory ? ' active' : ''));
       item.setAttribute('data-category-slug', c.slug);
       var left = ce('div', 'fi-left');
-      var ic = ce('span', 'filter-icon'); ic.textContent = c.icon; left.appendChild(ic);
+      left.appendChild(maskIcon(c.url, ICON_VIOLET, 'lk-cat-icon'));
       left.appendChild(document.createTextNode(c.label));
       var pill = ce('span', 'filter-count-pill'); pill.textContent = '0';
       item.appendChild(left); item.appendChild(pill);
@@ -270,7 +289,7 @@
     TOGGLE_LIST.forEach(function (t) {
       var row = ce('div', 'lk-toggle');
       var label = ce('span', 'lk-toggle-label');
-      var ic = ce('span', 'lk-tg-ic'); ic.textContent = t.glyph; ic.style.color = t.color; label.appendChild(ic);
+      label.appendChild(t.url ? maskIcon(t.url, t.color, 'lk-tg-icon') : glyphIcon(t.glyph, t.color));
       label.appendChild(document.createTextNode(t.label));
       var sw = ce('span', 'toggle-switch'); sw.id = t.id;
       row.appendChild(label); row.appendChild(sw);
@@ -290,7 +309,7 @@
       var item = ce('div', 'filter-item' + (s.sort === activeSort ? ' active' : ''));
       item.id = s.id;
       var left = ce('div', 'fi-left');
-      var ic = ce('span', 'filter-icon'); ic.textContent = s.icon; left.appendChild(ic);
+      left.appendChild(maskIcon(s.url, ICON_VIOLET, 'lk-sort-icon'));
       left.appendChild(document.createTextNode(s.label));
       item.appendChild(left);
       item.addEventListener('click', function () { setSort(s.sort); });
