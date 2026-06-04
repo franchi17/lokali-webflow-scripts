@@ -36,17 +36,17 @@
   var AREA_KEY = 'LOKALI_BROWSE_AREA';
   var NEW_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 
+  // label = short sidebar label; bg/text = card pill colors (icon is masked to `text`).
   var CAT_BY_ID = {
-    1: { slug: 'handcrafted', pill: 'cat-artisan',  emoji: '🎨', bg: '#FFF8E6', label: 'Handcrafted Goods' },
-    2: { slug: 'business',    pill: 'cat-biz',      emoji: '💼', bg: '#F0F0F8', label: 'Business' },
-    3: { slug: 'beauty',      pill: 'cat-beauty',   emoji: '💄', bg: '#FEF3F2', label: 'Beauty' },
-    4: { slug: 'children',    pill: 'cat-kids',     emoji: '📚', bg: '#E6F1FB', label: 'Children' },
-    5: { slug: 'events',      pill: 'cat-photo',    emoji: '📸', bg: '#F3EBFF', label: 'Events' },
-    6: { slug: 'food',        pill: 'cat-food',     emoji: '🍽️', bg: '#FFF3EA', label: 'Food' },
-    7: { slug: 'wellness',    pill: 'cat-wellness', emoji: '🧘', bg: '#EAFAF2', label: 'Wellness' },
-    8: { slug: 'home',        pill: 'cat-home',     emoji: '🏡', bg: '#F7F6FC', label: 'Home' }
+    1: { slug: 'handcrafted', label: 'Handcrafted Goods', bg: '#FFF8E6', text: '#8A5A00' },
+    2: { slug: 'business',    label: 'Business',          bg: '#F0F0F8', text: '#4A4761' },
+    3: { slug: 'beauty',      label: 'Beauty',            bg: '#FEF3F2', text: '#C0392B' },
+    4: { slug: 'children',    label: 'Children',          bg: '#E6F1FB', text: '#1A5C9A' },
+    5: { slug: 'events',      label: 'Events',            bg: '#F3EBFF', text: '#6002EE' },
+    6: { slug: 'food',        label: 'Food',              bg: '#FFF3EA', text: '#FF6B00' },
+    7: { slug: 'wellness',    label: 'Wellness',          bg: '#EAFAF2', text: '#1D6A45' },
+    8: { slug: 'home',        label: 'Home',              bg: '#F7F6FC', text: '#4A4761' }
   };
-  var DEFAULT_CAT = { slug: 'other', pill: 'cat-biz', emoji: '•', bg: '#F0F0F8', label: 'Vendor' };
 
   var SLUG_TO_ID = {};
   (function () { for (var id in CAT_BY_ID) if (CAT_BY_ID.hasOwnProperty(id)) SLUG_TO_ID[CAT_BY_ID[id].slug] = parseInt(id, 10); })();
@@ -109,12 +109,12 @@
     ".vcard-name-row{display:flex;align-items:center;gap:6px;margin-bottom:3px;flex-wrap:wrap;}",
     ".vcard-name{font-size:14px;font-weight:600;color:#1A1829;letter-spacing:-.2px;line-height:1.2;}",
     ".vcard-area{font-size:11px;color:#6B6880;display:flex;align-items:center;gap:4px;}",
-    ".vcard .badge{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:100px;font-size:10px;line-height:1;flex-shrink:0;font-weight:600;}",
-    ".vcard .badge-founding{background:rgba(201,162,42,.12);color:#C9A22A;border:.5px solid rgba(201,162,42,.25);}",
-    ".vcard .badge-new{background:#EAFAF2;color:#1D6A45;border:.5px solid rgba(29,106,69,.15);}",
-    ".vcard .badge-spotlight{background:rgba(96,2,238,.08);color:#6002EE;border:.5px solid rgba(96,2,238,.15);}",
-    ".vcard .badge-verified{background:rgba(0,0,228,.10);color:#0000E4;border:.5px solid rgba(0,0,228,.2);}",
-    ".vcard .cat-pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:500;border-radius:100px;padding:3px 10px;margin-bottom:8px;background:#F3EBFF;color:#6002EE;}",
+    ".vcard .badge{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:100px;font-size:12px;line-height:1;flex-shrink:0;font-weight:700;}",
+    ".vcard .badge-founding{background:rgba(201,162,42,.22);color:#C9A22A;border:1px solid rgba(201,162,42,.45);}",
+    ".vcard .badge-new{background:rgba(29,106,69,.18);color:#1D6A45;border:1px solid rgba(29,106,69,.35);}",
+    ".vcard .badge-spotlight{background:rgba(96,2,238,.15);color:#6002EE;border:1px solid rgba(96,2,238,.35);}",
+    ".vcard .badge-verified{background:rgba(0,0,228,.16);color:#0000E4;border:1px solid rgba(0,0,228,.4);}",
+    ".vcard .cat-pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:500;border-radius:100px;padding:3px 10px;margin-bottom:8px;}",
     ".vcard-tagline{font-size:12.5px;color:#4A4761;line-height:1.5;margin-bottom:12px;}",
     ".vcard-actions{display:flex;gap:6px;flex-wrap:wrap;}",
     ".vcard .contact-btn{font-size:11px;font-weight:500;font-family:inherit;padding:5px 10px;border-radius:6px;border:.5px solid #EEEDF6;background:#F7F6FC;color:#4A4761;cursor:pointer;transition:all .1s;display:inline-flex;align-items:center;gap:4px;}",
@@ -188,11 +188,11 @@
     var ids = vCategoryIds(v);
     for (var i = 0; i < ids.length; i++) {
       if (CAT_BY_ID[ids[i]]) {
-        var base = CAT_BY_ID[ids[i]], apiCat = _categoriesById[ids[i]];
-        return { slug: base.slug, url: SLUG_TO_URL[base.slug], label: (apiCat && apiCat.name) || base.label };
+        var b = CAT_BY_ID[ids[i]];
+        return { known: true, slug: b.slug, url: SLUG_TO_URL[b.slug], label: b.label, bg: b.bg, text: b.text };
       }
     }
-    return { slug: DEFAULT_CAT.slug, url: null, label: DEFAULT_CAT.label };
+    return { known: false, slug: '', url: null, label: '', bg: '', text: '' };
   }
   function initials(name) {
     var p = String(name || '').trim().split(/\s+/).filter(Boolean);
@@ -394,7 +394,7 @@
   // opts: { title, url+color (masked icon) | glyph (text, colored by CSS) }
   function badge(cls, opts) {
     var b = ce('span', 'badge ' + cls); b.title = opts.title;
-    if (opts.url) b.appendChild(maskIcon(opts.url, opts.color, 10));
+    if (opts.url) b.appendChild(maskIcon(opts.url, opts.color, 12));
     else b.textContent = opts.glyph;
     return b;
   }
@@ -445,10 +445,14 @@
     header.appendChild(buildAvatar(v)); header.appendChild(meta);
     card.appendChild(header);
 
-    var pill = ce('span', 'cat-pill');
-    if (style.url) pill.appendChild(maskIcon(style.url, ICON_VIOLET, 13));
-    pill.appendChild(document.createTextNode(' ' + style.label));
-    card.appendChild(pill);
+    if (style.known) {
+      var pill = ce('span', 'cat-pill');
+      pill.style.background = style.bg;
+      pill.style.color = style.text;
+      if (style.url) pill.appendChild(maskIcon(style.url, style.text, 13));
+      pill.appendChild(document.createTextNode(' ' + style.label));
+      card.appendChild(pill);
+    }
 
     var tag = ce('div', 'vcard-tagline'); tag.textContent = vTagline(v); card.appendChild(tag);
 
