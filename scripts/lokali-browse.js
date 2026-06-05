@@ -23,7 +23,7 @@
  *   #browse-mobile-filter-btn / #browse-filter-backdrop / #browse-sidebar / #browse-close-filters (drawer)
  *
  * Optional window overrides (set before this script):
- *   window.LOKALI_BROWSE_PROFILE_BASE  default '/vendors/'
+ *   window.LOKALI_BROWSE_PROFILE_BASE  default '/vendor?id=' (vendor listing page expects ?id={numeric id})
  *   window.LOKALI_VERIFIED_FIELD       vendor field for Verified flag (default 'is_verified')
  *   window.LOKALI_SPOTLIGHT_FIELD      vendor field for Spotlight flag (default 'is_spotlight')
  *   window.LOKALI_BROWSE_PER_PAGE      default 100
@@ -31,7 +31,7 @@
 (function () {
   'use strict';
 
-  var PROFILE_BASE = (typeof window.LOKALI_BROWSE_PROFILE_BASE === 'string' && window.LOKALI_BROWSE_PROFILE_BASE) || '/vendors/';
+  var PROFILE_BASE = (typeof window.LOKALI_BROWSE_PROFILE_BASE === 'string' && window.LOKALI_BROWSE_PROFILE_BASE) || '/vendor?id=';
   var PER_PAGE = (typeof window.LOKALI_BROWSE_PER_PAGE === 'number' && window.LOKALI_BROWSE_PER_PAGE) || 100;
   var AREA_KEY = 'LOKALI_BROWSE_AREA';
   var NEW_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
@@ -212,7 +212,12 @@
     for (var i = 0; i < ids.length; i++) if (_locationsById[ids[i]]) return _locationsById[ids[i]].label;
     return '';
   }
-  function vProfileHref(v) { return PROFILE_BASE + (v.slug || v.id); }
+  // Xano has no get-by-slug endpoint; the /vendor page resolves a numeric id from ?id=.
+  // Use the id by default; only fall back to slug if PROFILE_BASE is a slug-style path ('/.../').
+  function vProfileHref(v) {
+    var slugStyle = PROFILE_BASE.charAt(PROFILE_BASE.length - 1) === '/';
+    return PROFILE_BASE + ((slugStyle && v.slug) ? v.slug : v.id);
+  }
 
   // ── reference data ──
   function loadRefData() {
