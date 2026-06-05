@@ -117,8 +117,13 @@
     ".vcard .cat-pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:500;border-radius:100px;padding:3px 10px;margin-bottom:8px;}",
     ".vcard-tagline{font-size:12.5px;color:#4A4761;line-height:1.5;margin-bottom:12px;}",
     ".vcard-actions{display:flex;gap:6px;flex-wrap:wrap;}",
+    // Channel-branded contact buttons (colors mirror the vendor listing page).
     ".vcard .contact-btn{font-size:11px;font-weight:500;font-family:inherit;padding:5px 10px;border-radius:6px;border:.5px solid #EEEDF6;background:#F7F6FC;color:#4A4761;cursor:pointer;transition:all .1s;display:inline-flex;align-items:center;gap:4px;}",
-    ".vcard .contact-btn:hover{border-color:#6002EE;color:#6002EE;background:#F3EBFF;}",
+    ".vcard .contact-btn:hover{filter:brightness(.96);}",
+    ".vcard .contact-btn.cb-email{background:#6002EE;border-color:#6002EE;color:#fff;}",
+    ".vcard .contact-btn.cb-call{background:#F0F4FF;border-color:#BDC8F5;color:#1A3099;}",
+    ".vcard .contact-btn.cb-text{background:#fff;border-color:#C8C6D8;color:#1A1829;}",
+    ".vcard .contact-btn.cb-whatsapp{background:#EDFAF3;border-color:#A8DFC4;color:#1A6640;}",
     // ── filter panel ──
     "#browse-filter-panel{font-family:'Plus Jakarta Sans',sans-serif;}",
     "#browse-filter-panel .lk-filter-section{margin-bottom:1.5rem;}",
@@ -403,9 +408,9 @@
     else b.textContent = opts.glyph;
     return b;
   }
-  function addContact(parent, href, label, iconUrl) {
+  function addContact(parent, href, label, iconUrl, cls) {
     if (!href) return;
-    var b = ce('button', 'contact-btn'); b.type = 'button';
+    var b = ce('button', 'contact-btn' + (cls ? ' ' + cls : '')); b.type = 'button';
     b.appendChild(maskIcon(iconUrl, 'currentColor', 13)); // icon follows button text color (incl. hover)
     b.appendChild(document.createTextNode(label));
     b.addEventListener('click', function (ev) {
@@ -463,10 +468,10 @@
 
     var phone = v.phone_number;
     var actions = ce('div', 'vcard-actions');
-    addContact(actions, v.contact_email ? 'mailto:' + v.contact_email : null, 'Email', ICON_EMAIL);
-    addContact(actions, phone ? 'tel:' + phone : null, 'Call', ICON_CALL);
-    addContact(actions, (v.text_messages && phone) ? 'sms:' + phone : null, 'Text', ICON_TEXT);
-    addContact(actions, (v.whatsapp_messages && phone) ? 'https://wa.me/' + digits(phone) : null, 'WhatsApp', ICON_WHATSAPP);
+    addContact(actions, v.contact_email ? 'mailto:' + v.contact_email : null, 'Email', ICON_EMAIL, 'cb-email');
+    addContact(actions, phone ? 'tel:' + phone : null, 'Call', ICON_CALL, 'cb-call');
+    addContact(actions, (v.text_messages && phone) ? 'sms:' + phone : null, 'Text', ICON_TEXT, 'cb-text');
+    addContact(actions, (v.whatsapp_messages && phone) ? 'https://wa.me/' + digits(phone) : null, 'WhatsApp', ICON_WHATSAPP, 'cb-whatsapp');
     card.appendChild(actions);
 
     var href = vProfileHref(v);
