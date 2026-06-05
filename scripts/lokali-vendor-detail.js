@@ -112,7 +112,8 @@
     var link = $('vd-mini-link'); if (link && vendorId) link.href = '/vendor?id=' + encodeURIComponent(vendorId);
     if (!vendorId || !window.LokaliAPI) return;
     window.LokaliAPI.vendors.getById(vendorId).then(function (res) {
-      var v = unwrap(res); if (!v) return;
+      var v = unwrap(res); if (v && v.vendor) v = v.vendor; // { vendor: {...} } envelope
+      if (!v) return;
       setText('vd-mini-name', v.business_name);
       var av = $('vd-mini-avatar-img'); var photo = imgUrl(v.profile_photo); if (av && photo) av.src = photo;
       // CTA -> mailto

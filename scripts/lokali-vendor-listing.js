@@ -25,18 +25,82 @@
   function setText(id, val) { var el = document.getElementById(id); if (el) el.textContent = (val == null || val === '') ? el.textContent : String(val); }
   function show(el, on) { if (el) el.style.display = on ? '' : 'none'; }
   function digits(s) { return String(s || '').replace(/[^0-9]/g, ''); }
+  function ce(tag, cls) { var e = document.createElement(tag); if (cls) e.className = cls; return e; }
+
+  // ---- category pill styling (mirrors The Market vendor card) -----------
+  // bg/text = pill colors; url = the same masked category icon used on the card.
+  // Keyed by Xano category id (matches lokali-browse.js CAT_BY_ID).
+  var ASSET = 'https://cdn.prod.website-files.com/6989095758ae17edfc424d30/';
+  var CAT_BY_ID = {
+    1: { bg: '#FFF8E6', text: '#8A5A00', url: ASSET + '6a186b061a80eb9ba75f0d0a_scissors-solid.png' }, // Handcrafted
+    2: { bg: '#F0F0F8', text: '#4A4761', url: ASSET + '6a18f6d4b01673d30ca9bcb8_briefcase.svg' },       // Business
+    3: { bg: '#FEF3F2', text: '#C0392B', url: ASSET + '6a18f2524e31974a75003735_hair%20dryer.svg' },    // Beauty
+    4: { bg: '#E6F1FB', text: '#1A5C9A', url: ASSET + '6a18f6d4f1bbd4795f5345bc_backpack.svg' },        // Children
+    5: { bg: '#F3EBFF', text: '#6002EE', url: ASSET + '6a18f6d414c76bb968f180db_balloon.svg' },         // Events
+    6: { bg: '#FFF3EA', text: '#FF6B00', url: ASSET + '6a186b067365d964abee8918_utensils-solid.png' },  // Food
+    7: { bg: '#EAFAF2', text: '#1D6A45', url: ASSET + '6a186b06cfcb6c4d6d1e1cf7_heart-regular.png' },    // Wellness
+    8: { bg: '#F7F6FC', text: '#4A4761', url: ASSET + '6a186b06a37dcea6514f15f9_house-regular.png' }     // Home
+  };
+
+  // Self-contained masked icon: recolors any silhouette PNG/SVG to `color`.
+  function maskIcon(url, color, size) {
+    var s = ce('span');
+    s.style.display = 'inline-block';
+    s.style.flexShrink = '0';
+    s.style.width = size + 'px';
+    s.style.height = size + 'px';
+    s.style.backgroundColor = color;
+    var m = 'url("' + url + '") center / contain no-repeat';
+    s.style.webkitMask = m;
+    s.style.mask = m;
+    return s;
+  }
+
+  // Injected once: turns #vl-category into a card-style pill and aligns the
+  // founding/verified badge colors with the vendor card on The Market.
+  var PILL_CSS = [
+    "#vl-category.vl-cat-pill{display:inline-flex;align-items:center;gap:5px;border-radius:100px;padding:3px 10px;font-size:11px;font-weight:500;line-height:1.2;}",
+    ".vl-badge.vl-badge-founding{background:rgba(201,162,42,.22);color:#C9A22A;border:.5px solid rgba(201,162,42,.45);}",
+    ".vl-badge.vl-badge-verified{background:rgba(0,0,228,.16);color:#0000E4;border:.5px solid rgba(0,0,228,.4);}"
+  ].join('');
+  function injectStyles() {
+    if (document.getElementById('vl-pill-styles')) return;
+    var s = document.createElement('style'); s.id = 'vl-pill-styles'; s.textContent = PILL_CSS;
+    document.head.appendChild(s);
+  }
+
+  // Restyle the hero category text as the colored pill from the vendor card.
+  function styleCategoryPill(catId) {
+    var el = document.getElementById('vl-category');
+    var style = (catId != null) ? CAT_BY_ID[catId] : null;
+    if (!el || !style) return;
+    el.classList.add('vl-cat-pill');
+    el.style.background = style.bg;
+    el.style.color = style.text;
+    var row = el.parentNode; // hide the generic meta-row icon; the pill carries its own
+    if (row) { var ic = row.querySelector('svg.vl-ic'); if (ic) ic.style.display = 'none'; }
+    el.insertBefore(maskIcon(style.url, style.text, 13), el.firstChild);
+  }
 
   // ---- 1. interactivity -------------------------------------------------
+  function activateTab(name) {
+    $all('[data-vl-tab]').forEach(function (t) { t.classList.toggle('vl-stab-active', t.getAttribute('data-vl-tab') === name); });
+    $all('[data-vl-panel]').forEach(function (p) { show(p, p.getAttribute('data-vl-panel') === name); });
+  }
+  // Show/hide a whole tab (+ its panel). Used to hide Services/Products when a vendor has none.
+  function setTabVisible(name, vis) {
+    $all('[data-vl-tab="' + name + '"]').forEach(function (t) { show(t, vis); });
+    if (!vis) $all('[data-vl-panel="' + name + '"]').forEach(function (p) { show(p, false); });
+  }
+  // If the active tab got hidden (or none is active), activate the first still-visible tab.
+  function ensureActiveTab() {
+    var visible = $all('[data-vl-tab]').filter(function (t) { return t.style.display !== 'none'; });
+    if (visible.filter(function (t) { return t.classList.contains('vl-stab-active'); })[0]) return;
+    if (visible[0]) activateTab(visible[0].getAttribute('data-vl-tab'));
+  }
   function initTabs() {
-    var tabs = $all('[data-vl-tab]');
-    tabs.forEach(function (tab) {
-      tab.addEventListener('click', function () {
-        var name = tab.getAttribute('data-vl-tab');
-        tabs.forEach(function (t) { t.classList.toggle('vl-stab-active', t === tab); });
-        $all('[data-vl-panel]').forEach(function (p) {
-          show(p, p.getAttribute('data-vl-panel') === name);
-        });
-      });
+    $all('[data-vl-tab]').forEach(function (tab) {
+      tab.addEventListener('click', function () { activateTab(tab.getAttribute('data-vl-tab')); });
     });
   }
 
@@ -139,11 +203,11 @@
   function renderServices(list) {
     var grid = document.getElementById('vl-services-grid');
     var empty = document.getElementById('vl-services-empty');
-    setText('vl-count-services', list.length);
     var countEl = document.getElementById('vl-count-services'); if (countEl) countEl.textContent = String(list.length);
-    if (!grid) return;
+    setTabVisible('services', list.length > 0); // hide the tab entirely when there are no services
+    if (!grid) { ensureActiveTab(); return; }
     grid.innerHTML = '';
-    if (!list.length) { show(grid, false); show(empty, true); return; }
+    if (!list.length) { show(grid, false); show(empty, true); ensureActiveTab(); return; }
     show(grid, true); show(empty, false);
     list.forEach(function (s, i) {
       var p = servicePrice(s);
@@ -157,15 +221,17 @@
         href: s.id != null ? ('/service?id=' + s.id + (currentVendorId != null ? '&vendor=' + currentVendorId : '')) : '#'
       }));
     });
+    ensureActiveTab();
   }
 
   function renderProducts(list) {
     var grid = document.getElementById('vl-products-grid');
     var empty = document.getElementById('vl-products-empty');
     var countEl = document.getElementById('vl-count-products'); if (countEl) countEl.textContent = String(list.length);
-    if (!grid) return;
+    setTabVisible('products', list.length > 0); // hide the tab entirely when there are no products
+    if (!grid) { ensureActiveTab(); return; }
     grid.innerHTML = '';
-    if (!list.length) { show(grid, false); show(empty, true); return; }
+    if (!list.length) { show(grid, false); show(empty, true); ensureActiveTab(); return; }
     show(grid, true); show(empty, false);
     list.forEach(function (p, i) {
       var pr = productPrice(p);
@@ -179,6 +245,7 @@
         href: p.id != null ? ('/product-detail?id=' + p.id + (currentVendorId != null ? '&vendor=' + currentVendorId : '')) : '#'
       }));
     });
+    ensureActiveTab();
   }
 
   // ---- portfolio gallery (Pro/Featured plans, max 5) --------------------
@@ -294,11 +361,11 @@
     show(document.getElementById('vl-badge-verified'), !!v.address_verified);
 
     // category (first categories_id mapped via labels.categories)
+    var catId = (Array.isArray(v.categories_id) && v.categories_id.length) ? v.categories_id[0] : null;
     var catName = '';
-    if (Array.isArray(v.categories_id) && v.categories_id.length && labels.categories) {
-      catName = labels.categories[v.categories_id[0]] || '';
-    }
+    if (catId != null && labels.categories) catName = labels.categories[catId] || '';
     if (catName) { setText('vl-category', catName); setText('vl-about-category', catName); }
+    styleCategoryPill(catId); // colored pill + icon, matching the vendor card
 
     // area pills (locations_id mapped via labels.locations)
     var areas = document.getElementById('vl-areas');
@@ -361,6 +428,7 @@
       API.data.locations ? API.data.locations() : Promise.resolve({ data: [] })
     ]).then(function (res) {
       var v = unwrap(res[0]);
+      if (v && v.vendor) v = v.vendor; // GET vendor/id/{id} returns { vendor: {...} }
       if (!v || (res[0] && res[0].error)) { console.warn('[lokali-vendor-listing] vendor fetch failed', res[0] && res[0].error); return; }
       var labels = {
         categories: buildLabelMap(unwrap(res[1]), ['id', 'categories_id'], ['name', 'category_name', 'title']),
@@ -377,7 +445,7 @@
     });
   }
 
-  function init() { initTabs(); initSave(); hydrate(); }
+  function init() { injectStyles(); initTabs(); initSave(); hydrate(); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
 })();
