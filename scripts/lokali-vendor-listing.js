@@ -85,7 +85,11 @@
   // ---- 1. interactivity -------------------------------------------------
   function activateTab(name) {
     $all('[data-vl-tab]').forEach(function (t) { t.classList.toggle('vl-stab-active', t.getAttribute('data-vl-tab') === name); });
-    $all('[data-vl-panel]').forEach(function (p) { show(p, p.getAttribute('data-vl-panel') === name); });
+    // Inactive panels carry a Webflow combo class (inline-div-5/6/7) that sets display:none.
+    // Setting display:'' would just revert to that rule, so force the active panel to 'block'.
+    $all('[data-vl-panel]').forEach(function (p) {
+      p.style.display = (p.getAttribute('data-vl-panel') === name) ? 'block' : 'none';
+    });
   }
   // Show/hide a whole tab (+ its panel). Used to hide Services/Products when a vendor has none.
   function setTabVisible(name, vis) {
