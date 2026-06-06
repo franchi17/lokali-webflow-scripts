@@ -34,6 +34,9 @@
   var PROFILE_BASE = (typeof window.LOKALI_BROWSE_PROFILE_BASE === 'string' && window.LOKALI_BROWSE_PROFILE_BASE) || '/vendor?id=';
   var PER_PAGE = (typeof window.LOKALI_BROWSE_PER_PAGE === 'number' && window.LOKALI_BROWSE_PER_PAGE) || 100;
   var AREA_KEY = 'LOKALI_BROWSE_AREA';
+  // Remembers the visitor's filters + sort for this browser session, so the "Back to The Market"
+  // link on a vendor page returns them to the same filtered view.
+  var STATE_KEY = 'LOKALI_BROWSE_STATE';
   var NEW_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 
   // label = short sidebar label; bg/text = card pill colors (icon is masked to `text`).
@@ -379,6 +382,39 @@
     updateCounts(visible.length);
     updateActiveFilters();
     updateMobileIndicator();
+    persistState();
+  }
+
+  // ── filter/sort memory (sessionStorage) ──
+  function persistState() {
+    try {
+      sessionStorage.setItem(STATE_KEY, JSON.stringify({
+        c: activeCategory, l: activeLocationId, s: activeSort,
+        n: showNewOnly, f: showFoundingOnly, v: showVerifiedOnly, q: searchTerm
+      }));
+    } catch (e) {}
+  }
+  function restoreState() {
+    var s;
+    try { s = JSON.parse(sessionStorage.getItem(STATE_KEY) || 'null'); } catch (e) { s = null; }
+    if (!s) return false;
+    if (s.c) activeCategory = s.c;
+    if (s.l) activeLocationId = s.l;
+    if (s.s) activeSort = s.s;
+    showNewOnly = !!s.n; showFoundingOnly = !!s.f; showVerifiedOnly = !!s.v;
+    searchTerm = s.q || '';
+    return true;
+  }
+  // Reflect the (restored) state into controls that renderFilterPanel doesn't pre-set.
+  function syncFilterUI() {
+    if (activeLocationId !== 'all' && !_locationsById[activeLocationId]) activeLocationId = 'all';
+    TOGGLE_LIST.forEach(function (t) {
+      var on = t.key === 'new' ? showNewOnly : (t.key === 'founding' ? showFoundingOnly : showVerifiedOnly);
+      var sw = el(t.id); if (sw) sw.classList.toggle('on', on);
+    });
+    var search = el('browse-search'); if (search && search.value !== searchTerm) search.value = searchTerm;
+    var sel = el('browse-location'); if (sel) sel.value = String(activeLocationId);
+    var msel = el('browse-mobile-sort'); if (msel) msel.value = activeSort;
   }
 
   function sortVendors(list) {
@@ -573,14 +609,16 @@
     Array.prototype.slice.call(_grid.children).forEach(function (k) { if (k !== _emptyState) _grid.removeChild(k); });
     if (_emptyState) hideEl(_emptyState);
 
+    // Restore the visitor's saved filters/sort BEFORE rendering, so the panel reflects them.
+    var restored = restoreState();
     renderFilterPanel();
     bindEvents();
 
     loadRefData()
       .then(function () {
-        resolveInitialLocation();
+        if (!restored) resolveInitialLocation(); // saved session state wins over URL/localStorage default
         populateLocationSelect();
-        var sel = el('browse-location'); if (sel) sel.value = String(activeLocationId);
+        syncFilterUI();
         return fetchVendors();
       })
       .catch(function (err) {
