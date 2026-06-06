@@ -204,7 +204,9 @@
     return a;
   }
 
-  function renderServices(list) {
+  function renderServices(list, ok) {
+    // ok===false means the fetch failed — never hide the tab on a failure, only on a confirmed-empty success.
+    if (ok === false) { console.warn('[lokali-vendor-listing] services fetch failed — keeping Services tab'); ensureActiveTab(); return; }
     var grid = document.getElementById('vl-services-grid');
     var empty = document.getElementById('vl-services-empty');
     var countEl = document.getElementById('vl-count-services'); if (countEl) countEl.textContent = String(list.length);
@@ -228,7 +230,8 @@
     ensureActiveTab();
   }
 
-  function renderProducts(list) {
+  function renderProducts(list, ok) {
+    if (ok === false) { console.warn('[lokali-vendor-listing] products fetch failed — keeping Products tab'); ensureActiveTab(); return; } // fetch failed — leave the tab as-is
     var grid = document.getElementById('vl-products-grid');
     var empty = document.getElementById('vl-products-empty');
     var countEl = document.getElementById('vl-count-products'); if (countEl) countEl.textContent = String(list.length);
@@ -362,7 +365,7 @@
 
     // badges
     show(document.getElementById('vl-badge-founding'), !!v.is_founding_member);
-    show(document.getElementById('vl-badge-verified'), !!v.address_verified);
+    show(document.getElementById('vl-badge-verified'), !!(v.address_verified || v.is_verified));
 
     // category (first categories_id mapped via labels.categories)
     var catId = (Array.isArray(v.categories_id) && v.categories_id.length) ? v.categories_id[0] : null;
@@ -444,8 +447,8 @@
       var vid = v.id != null ? v.id : id;
       currentVendorId = vid;
       loadPortfolio(vid, v);
-      API.services.listByVendor(vid).then(function (sres) { renderServices(asArray(unwrap(sres))); });
-      API.products.listByVendor(vid).then(function (pres) { renderProducts(asArray(unwrap(pres))); });
+      API.services.listByVendor(vid).then(function (sres) { renderServices(asArray(unwrap(sres)), !(sres && sres.error)); });
+      API.products.listByVendor(vid).then(function (pres) { renderProducts(asArray(unwrap(pres)), !(pres && pres.error)); });
     });
   }
 
