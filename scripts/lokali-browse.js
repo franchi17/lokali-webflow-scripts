@@ -204,6 +204,15 @@
   function vIsVerified(v)  { var f = window.LOKALI_VERIFIED_FIELD; if (f && v[f] != null) return v[f] === true; return v.is_verified === true; }
   function vIsSpotlight(v) { var f = window.LOKALI_SPOTLIGHT_FIELD; if (f && v[f] != null) return v[f] === true; return v.is_spotlight === true || v.is_featured === true; }
   function vCategoryIds(v) { return Array.isArray(v.categories_id) ? v.categories_id : (v.categories_id != null ? [v.categories_id] : []); }
+  function vLocationIds(v) { return Array.isArray(v.locations_id) ? v.locations_id : (v.locations_id != null ? [v.locations_id] : []); }
+  // The Webflow page uses #location-select and #browse-sort; older markup used #browse-location
+  // and #browse-mobile-sort. Resolve whichever exists (the sort must be the <select>, not the wrapper).
+  function locSelectEl() { return el('browse-location') || el('location-select'); }
+  function sortSelectEl() {
+    var e = el('browse-sort'); if (e && e.tagName === 'SELECT') return e;
+    var m = el('browse-mobile-sort'); if (m && m.tagName === 'SELECT') return m;
+    return e || null;
+  }
   function vCategoryStyle(v) {
     var ids = vCategoryIds(v);
     for (var i = 0; i < ids.length; i++) {
@@ -257,8 +266,9 @@
   }
 
   function populateLocationSelect() {
-    var sel = el('browse-location');
+    var sel = locSelectEl();
     if (!sel) return;
+    if (!Object.keys(_locationsById).length) return; // keep existing options if Xano locations didn't load
     sel.innerHTML = '';
     var all = ce('option'); all.value = 'all'; all.textContent = 'All neighborhoods'; sel.appendChild(all);
     Object.keys(_locationsById).forEach(function (id) {
@@ -279,8 +289,9 @@
   function fetchVendors() {
     var loading = el('browse-loading');
     showEl(loading, 'block');
+    // Location is filtered client-side (Xano's ?location_id= currently returns nothing), so
+    // always load the full active set and let applyFilters() narrow by neighborhood.
     var params = { page: 1, per_page: PER_PAGE };
-    if (activeLocationId !== 'all') params.location_id = activeLocationId;
     return window.LokaliAPI.vendors.list(params).then(function (out) {
       hideEl(loading);
       _allVendors = extractList(out && out.data).filter(function (v) { return v && v.is_active !== false; });
@@ -381,8 +392,10 @@
   function applyFilters() {
     var q = searchTerm.toLowerCase().trim();
     var catId = activeCategory === 'all' ? null : SLUG_TO_ID[activeCategory];
+    var locId = activeLocationId === 'all' ? null : String(activeLocationId);
     var visible = _allVendors.filter(function (v) {
       if (catId != null && vCategoryIds(v).indexOf(catId) === -1) return false;
+      if (locId != null && vLocationIds(v).map(String).indexOf(locId) === -1) return false;
       if (showNewOnly && !vIsNew(v)) return false;
       if (showFoundingOnly && !vIsFounding(v)) return false;
       if (showVerifiedOnly && !vIsVerified(v)) return false;
@@ -425,8 +438,8 @@
       var sw = el(t.id); if (sw) sw.classList.toggle('on', on);
     });
     var search = el('browse-search'); if (search && search.value !== searchTerm) search.value = searchTerm;
-    var sel = el('browse-location'); if (sel) sel.value = String(activeLocationId);
-    var msel = el('browse-mobile-sort'); if (msel) msel.value = activeSort;
+    var sel = locSelectEl(); if (sel) sel.value = String(activeLocationId);
+    var msel = sortSelectEl(); if (msel) msel.value = activeSort;
   }
 
   function sortVendors(list) {
@@ -555,9 +568,9 @@
   // ── setters ──
   function setLocation(idOrAll) {
     activeLocationId = idOrAll;
-    var sel = el('browse-location'); if (sel) sel.value = String(idOrAll);
+    var sel = locSelectEl(); if (sel) sel.value = String(idOrAll);
     try { idOrAll === 'all' ? localStorage.removeItem(AREA_KEY) : localStorage.setItem(AREA_KEY, String(idOrAll)); } catch (e) {}
-    fetchVendors();
+    applyFilters(); // client-side neighborhood filter (no re-fetch)
   }
   function setCategory(slug) {
     activeCategory = slug;
@@ -577,7 +590,7 @@
     activeSort = sort;
     var ids = { best_match: 'sort-match', newest: 'sort-new', a_z: 'sort-az' };
     SORT_LIST.forEach(function (s) { var r = el(s.id); if (r) r.classList.toggle('active', s.id === ids[sort]); });
-    var msel = el('browse-mobile-sort'); if (msel && msel.value !== sort) msel.value = sort;
+    var msel = sortSelectEl(); if (msel && msel.value !== sort) msel.value = sort;
     applyFilters();
   }
 
@@ -597,9 +610,9 @@
   function bindEvents() {
     var search = el('browse-search');
     if (search) search.addEventListener('input', debounce(function () { searchTerm = search.value || ''; applyFilters(); }, 200));
-    var loc = el('browse-location');
+    var loc = locSelectEl();
     if (loc) loc.addEventListener('change', function () { setLocation(loc.value); });
-    var msel = el('browse-mobile-sort'); if (msel) msel.addEventListener('change', function () { setSort(msel.value); });
+    var msel = sortSelectEl(); if (msel) msel.addEventListener('change', function () { setSort(msel.value); });
     var openBtn = el('browse-mobile-filter-btn'); if (openBtn) openBtn.addEventListener('click', openFilters);
     var backdrop = el('browse-filter-backdrop'); if (backdrop) backdrop.addEventListener('click', closeFilters);
     var closeX = el('browse-close-filters'); if (closeX) closeX.addEventListener('click', closeFilters);
