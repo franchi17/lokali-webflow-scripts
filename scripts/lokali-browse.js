@@ -146,7 +146,10 @@
     "#browse-filter-panel .toggle-switch{width:32px;height:18px;border-radius:100px;background:#C8C6D8;position:relative;transition:background .18s;flex-shrink:0;}",
     "#browse-filter-panel .toggle-switch.on{background:#1D6A45;}",
     "#browse-filter-panel .toggle-switch::after{content:'';position:absolute;width:14px;height:14px;border-radius:50%;background:#fff;top:2px;left:2px;transition:left .18s;box-shadow:0 1px 3px rgba(0,0,0,.18);}",
-    "#browse-filter-panel .toggle-switch.on::after{left:16px;}"
+    "#browse-filter-panel .toggle-switch.on::after{left:16px;}",
+    // Mobile: vendor cards were stuck at 2 columns (Webflow grid is `1fr 1fr` with no
+    // responsive override) — too cramped on phones. Drop to a single column at ≤767px.
+    "@media screen and (max-width:767px){#browse-vendor-grid{grid-template-columns:1fr;}}"
   ].join('');
 
   // ── state ──
