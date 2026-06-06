@@ -26,6 +26,19 @@
   function show(el, on) { if (el) el.style.display = on ? '' : 'none'; }
   function digits(s) { return String(s || '').replace(/[^0-9]/g, ''); }
   function ce(tag, cls) { var e = document.createElement(tag); if (cls) e.className = cls; return e; }
+  function initials(name) {
+    var p = String(name || '').trim().split(/\s+/).filter(Boolean);
+    if (!p.length) return '?';
+    if (p.length === 1) return p[0].slice(0, 2).toUpperCase();
+    return (p[0].charAt(0) + p[1].charAt(0)).toUpperCase();
+  }
+  // profile_photo from Xano is often a relative /vault/... path — prepend the Xano file base.
+  function photoUrl(p) {
+    if (!p || typeof p !== 'string') return '';
+    if (/^https?:\/\//.test(p)) return p;
+    var base = window.LOKALI_FILE_BASE || 'https://x8ki-letl-twmt.n7.xano.io';
+    return base.replace(/\/$/, '') + (p.charAt(0) === '/' ? '' : '/') + p;
+  }
 
   // ---- category pill styling (mirrors The Market vendor card) -----------
   // bg/text = pill colors; url = the same masked category icon used on the card.
@@ -61,7 +74,9 @@
   var PILL_CSS = [
     "#vl-category.vl-cat-pill{display:inline-flex;align-items:center;gap:5px;border-radius:100px;padding:3px 10px;font-size:11px;font-weight:500;line-height:1.2;}",
     ".vl-badge.vl-badge-founding{background:rgba(201,162,42,.22);color:#C9A22A;border:.5px solid rgba(201,162,42,.45);}",
-    ".vl-badge.vl-badge-verified{background:rgba(0,0,228,.16);color:#0000E4;border:.5px solid rgba(0,0,228,.4);}"
+    ".vl-badge.vl-badge-verified{background:rgba(0,0,228,.16);color:#0000E4;border:.5px solid rgba(0,0,228,.4);}",
+    ".vl-avatar.vl-avatar-initials{display:flex;align-items:center;justify-content:center;}",
+    ".vl-avatar-txt{color:#6002EE;font-weight:600;font-size:30px;letter-spacing:.5px;font-family:'Plus Jakarta Sans',sans-serif;line-height:1;}"
   ].join('');
   function injectStyles() {
     if (document.getElementById('vl-pill-styles')) return;
@@ -358,10 +373,26 @@
     var tagEl = document.getElementById('vl-tagline');
     if (tagEl && !(v.business_tagline)) show(tagEl, false);
 
-    // avatar
+    // avatar — show the photo, falling back to initials when there's no image (or it fails to load)
     var av = document.getElementById('vl-avatar');
-    var photo = imgUrl(v.profile_photo);
-    if (av && photo) av.src = photo;
+    var circle = av ? av.parentNode : document.querySelector('.vl-avatar');
+    var photo = photoUrl(v.profile_photo);
+    function showInitials() {
+      if (av) av.style.display = 'none';
+      if (circle) {
+        circle.classList.add('vl-avatar-initials');
+        var txt = circle.querySelector('.vl-avatar-txt');
+        if (!txt) { txt = ce('span', 'vl-avatar-txt'); circle.appendChild(txt); }
+        txt.textContent = initials(v.business_name);
+      }
+    }
+    if (av && photo) {
+      av.style.display = '';
+      av.addEventListener('error', showInitials);
+      av.src = photo;
+    } else {
+      showInitials();
+    }
 
     // badges
     show(document.getElementById('vl-badge-founding'), !!v.is_founding_member);
