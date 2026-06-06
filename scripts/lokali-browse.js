@@ -149,7 +149,16 @@
     "#browse-filter-panel .toggle-switch.on::after{left:16px;}",
     // Mobile: vendor cards were stuck at 2 columns (Webflow grid is `1fr 1fr` with no
     // responsive override) — too cramped on phones. Drop to a single column at ≤767px.
-    "@media screen and (max-width:767px){#browse-vendor-grid{grid-template-columns:1fr;}}"
+    "@media screen and (max-width:767px){#browse-vendor-grid{grid-template-columns:1fr;}}",
+    // Mobile (≤991px): the filter sidebar had no drawer CSS, so it sat inline and clipped
+    // the vendor cards. Collapse the [sidebar | content] layout to one column and turn the
+    // sidebar into an off-canvas slide-in drawer (the Filter button toggles `.open` via JS).
+    "@media screen and (max-width:991px){" +
+      ".grid-template-columns{grid-template-columns:1fr!important;}" +
+      "#browse-sidebar{display:block!important;position:fixed!important;top:0;left:0;height:100vh;width:86vw;max-width:340px;z-index:200;transform:translateX(-100%);transition:transform .25s ease;overflow-y:auto;-webkit-overflow-scrolling:touch;border-radius:0;margin:0;box-shadow:2px 0 16px rgba(0,0,0,.12);}" +
+      "#browse-sidebar.open{transform:translateX(0);}" +
+      "#browse-filter-backdrop.open{display:block;}" +
+    "}"
   ].join('');
 
   // ── state ──
