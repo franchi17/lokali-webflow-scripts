@@ -135,6 +135,17 @@
   }
 
   // ---- 2. vendor id resolution -----------------------------------------
+  // Top-level Webflow paths that are real pages, never vendor slugs. The Worker
+  // already serves real pages first; this is a belt-and-suspenders guard so the
+  // /vendor template never mistakes its own path (or a sibling page) for a slug.
+  var RESERVED_ROOT_SLUGS = [
+    'vendor', 'vendors', 'about', 'pricing', 'the-market', 'login', 'sign-up',
+    'vendor-dashboard', 'vendor-resources', 'vendor-signup', 'contact-us', 'blog',
+    'search', 'product', 'product-detail', 'service', 'services', 'products',
+    'locations', 'categories', 'category', 'checkout', 'order-confirmation',
+    '401', '404', 'template-pages'
+  ];
+
   function resolveVendorId() {
     if (window.LOKALI_PUBLIC_VENDOR_ID != null && window.LOKALI_PUBLIC_VENDOR_ID !== '') {
       return String(window.LOKALI_PUBLIC_VENDOR_ID);
@@ -149,6 +160,14 @@
     }
     var m = (window.location.pathname || '').match(/\/vendors?\/([^\/?#]+)/i);
     if (m && m[1]) return decodeURIComponent(m[1]);
+    // Root-level clean URL: golokali.com/{slug} (the Cloudflare Worker rewrites
+    // the /vendor template onto the clean path). Take the first path segment as
+    // the slug, unless it's the template's own path or another reserved word.
+    var segs = (window.location.pathname || '').split('/').filter(Boolean);
+    if (segs.length === 1) {
+      var first = decodeURIComponent(segs[0]).toLowerCase();
+      if (RESERVED_ROOT_SLUGS.indexOf(first) === -1) return first;
+    }
     return null;
   }
 
@@ -460,8 +479,16 @@
     if (!id) { console.warn('[lokali-vendor-listing] no vendor id in URL'); return; }
     var API = window.LokaliAPI;
 
+    // Numeric → resolve by id (legacy ?id=). Non-numeric → treat as a slug and
+    // resolve via GET vendor/slug/{slug} (falls back to id-lookup if the client
+    // build doesn't yet have getBySlug).
+    var isNumericId = /^[0-9]+$/.test(String(id));
+    var vendorFetch = (!isNumericId && API.vendors.getBySlug)
+      ? API.vendors.getBySlug(id)
+      : API.vendors.getById(id);
+
     Promise.all([
-      API.vendors.getById(id),
+      vendorFetch,
       API.data.categories ? API.data.categories() : Promise.resolve({ data: [] }),
       API.data.locations ? API.data.locations() : Promise.resolve({ data: [] })
     ]).then(function (res) {

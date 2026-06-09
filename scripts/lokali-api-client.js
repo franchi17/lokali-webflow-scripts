@@ -8,6 +8,7 @@
   var DATA_BASE = 'https://x8ki-letl-twmt.n7.xano.io/api:sbR5HiCI';
   var DATA_LOCATIONS_BASE = 'https://x8ki-letl-twmt.n7.xano.io/api:kIWlCxMJ';
   var PLANS_BASE = 'https://x8ki-letl-twmt.n7.xano.io/api:svUNydf-';
+  var MEMBERS_BASE = 'https://x8ki-letl-twmt.n7.xano.io/api:vx-kSF0o';
   var TOKEN_KEY = 'LOKALI_AUTH_TOKEN';
 
   function getBase(base) {
@@ -20,6 +21,12 @@
         return window.LOKALI_PLANS_BASE;
       }
       return PLANS_BASE;
+    }
+    if (base === 'members') {
+      if (typeof window !== 'undefined' && typeof window.LOKALI_MEMBERS_BASE === 'string' && window.LOKALI_MEMBERS_BASE) {
+        return window.LOKALI_MEMBERS_BASE;
+      }
+      return MEMBERS_BASE;
     }
     if (base === 'dataLocations') {
       if (typeof window !== 'undefined' && typeof window.LOKALI_DATA_LOCATIONS_BASE === 'string' && window.LOKALI_DATA_LOCATIONS_BASE) {
@@ -226,7 +233,7 @@
       return request('auth', 'GET', 'me', null, true);
     },
     updateProfile: function (payload) {
-      return request('data', 'PATCH', 'user/edit_profile', payload || {}, true);
+      return request('members', 'PATCH', 'user/edit_profile', payload || {}, true);
     },
     logout: function () {
       clearToken();
@@ -248,10 +255,16 @@
       var categoryIdArray = Array.isArray(categoryId) ? categoryId : (categoryId != null ? [categoryId] : []);
       var locationsId = payload.locations_id;
       if (!Array.isArray(locationsId)) locationsId = locationsId != null ? [locationsId] : [];
+      // Tagline: accept either key, always send the real column name (business_tagline).
+      var taglineVal = payload.business_tagline != null ? String(payload.business_tagline)
+        : (payload.tagline != null ? String(payload.tagline) : '');
+      // Instagram: accept either key, always send the real column name (instagram_url).
+      var instagramVal = payload.instagram_url != null ? String(payload.instagram_url)
+        : (payload.instagram_handle != null ? String(payload.instagram_handle) : '');
       var body = {
         business_name:           payload.business_name != null ? String(payload.business_name) : '',
         business_description:    payload.business_description != null ? String(payload.business_description) : '',
-        tagline:                 payload.tagline != null ? String(payload.tagline) : '',
+        business_tagline:        taglineVal,
         website_url:             payload.website_url != null ? String(payload.website_url) : '',
         locations_id:            locationsId,
         category_id:             categoryIdArray,
@@ -261,16 +274,7 @@
         phone_number:            payload.phone_number != null ? String(payload.phone_number) : '',
         text_messages:           !!payload.text_messages,
         whatsapp_messages:       !!payload.whatsapp_messages,
-        instagram_handle:        payload.instagram_handle != null ? String(payload.instagram_handle) : '',
-        booking_link:            payload.booking_link != null ? String(payload.booking_link) : '',
-        response_time:           payload.response_time != null ? String(payload.response_time) : '',
-        accepts_custom_requests: !!payload.accepts_custom_requests,
-        highlight_women_owned:   !!payload.highlight_women_owned,
-        highlight_black_owned:   !!payload.highlight_black_owned,
-        highlight_latino_owned:  !!payload.highlight_latino_owned,
-        highlight_lgbtq_owned:   !!payload.highlight_lgbtq_owned,
-        highlight_veteran_owned: !!payload.highlight_veteran_owned,
-        highlight_eco_friendly:  !!payload.highlight_eco_friendly
+        instagram_url:           instagramVal
       };
       return request('vendors', 'PATCH', 'vendor/me', body, true);
     },
@@ -300,6 +304,9 @@
     },
     getById: function (vendorsId) {
       return request('vendors', 'GET', 'vendor/id/' + vendorsId, null, false);
+    },
+    getBySlug: function (slug) {
+      return request('vendors', 'GET', 'vendor/slug/' + encodeURIComponent(slug), null, false);
     },
     delete: function (vendorsId) {
       return request('vendors', 'DELETE', 'vendors/id/' + vendorsId, null, true);

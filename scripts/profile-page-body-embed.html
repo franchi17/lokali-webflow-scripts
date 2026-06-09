@@ -408,6 +408,7 @@ var LokaliProfilePage = (function () {
     _setTextValueAnyId(['input-business-name', 'business-name', 'business_name'], _v('business_name', 'businessName'));
     _setDescriptionValue(_v('business_description', 'businessDescription'));
     _setTextValueAnyId(['input-tagline', 'tagline', 'business-tagline', 'business_tagline'], _v('tagline', 'business_tagline', 'businessTagline'));
+    _setTextValueAnyId(['input-instagram', 'instagram', 'instagram-handle', 'instagram_handle', 'instagram_url'], _v('instagram_url', 'instagram_handle', 'instagram'));
     _setTextValueAnyId(['input-website', 'website', 'website_url'], _v('website_url', 'websiteUrl'));
     _setTextValueAnyId(['input-contact-email', 'contact-email', 'contact_email', 'public_email'], _v('contact_email', 'contactEmail'));
     var addressVal = _v('address');
@@ -779,6 +780,7 @@ var LokaliProfilePage = (function () {
       business_name:        _getValueByAnyId(['input-business-name', 'business-name', 'business_name']),
       business_description: businessDescription,
       tagline:              _getValueByAnyId(['input-tagline', 'tagline', 'business-tagline', 'business_tagline']),
+      instagram_handle:     _getValueByAnyId(['input-instagram', 'instagram', 'instagram-handle', 'instagram_handle', 'instagram_url']),
       website_url:          _getValueByAnyId(['input-website', 'website', 'website_url']),
       contact_email:        _getValueByAnyId(['input-contact-email', 'contact-email', 'contact_email', 'public_email']),
       phone_number:         phoneNumber,
@@ -829,6 +831,7 @@ var LokaliProfilePage = (function () {
       business_name:        payload.business_name != null ? String(payload.business_name) : '',
       business_description: payload.business_description != null ? String(payload.business_description) : '',
       tagline:              payload.tagline != null ? String(payload.tagline) : '',
+      instagram_handle:     payload.instagram_handle != null ? String(payload.instagram_handle) : '',
       website_url:          payload.website_url != null ? String(payload.website_url) : '',
       contact_email:        payload.contact_email != null ? String(payload.contact_email) : '',
       phone_number:         payload.phone_number != null ? String(payload.phone_number) : '',
