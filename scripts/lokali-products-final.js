@@ -7,6 +7,8 @@ const LokaliProductsPage = (() => {
   let imageRemoved = false;
   let dragSrc      = null;
   let _maxProducts = null;
+  let _maxProductPhotos = null;   // gallery cap (Free=1, Pro/Featured=5)
+  let _isProPlan = false;         // gallery is a Pro/Featured perk
   let _imagePreviewObjectUrl = null;
 
   let filterStatus   = 'all';
@@ -559,6 +561,7 @@ const LokaliProductsPage = (() => {
       if (ph)  ph.style.display = 'none';
       if (rem) rem.style.display = 'block';
     }
+    renderGallery(product.id);
   };
 
   const resetForm = () => {
@@ -576,6 +579,7 @@ const LokaliProductsPage = (() => {
 
     updatePriceVisibility();
     resetImagePreview();
+    renderGallery(null);
   };
 
   const revokeImagePreviewUrl = () => {
@@ -596,6 +600,163 @@ const LokaliProductsPage = (() => {
     if (ph)    ph.style.display  = 'flex';
     if (rem)   rem.style.display = 'none';
     imageRemoved = false;
+  };
+
+  // ---------------------------------------------------------------------------
+  // Per-product photo gallery (Pro & Featured). Self-mounting — no Webflow edits.
+  // Photos attach to a saved product id, so the gallery only enables in edit mode.
+  // ---------------------------------------------------------------------------
+  const XANO_ORIGIN = 'https://x8ki-letl-twmt.n7.xano.io';
+  let _galleryBusy = false;
+
+  const photoUrl = (u) => {
+    if (!u) return '';
+    const s = String(u).trim();
+    if (s.indexOf('http://') === 0 || s.indexOf('https://') === 0) return s;
+    if (s.indexOf('/') === 0) return XANO_ORIGIN + s;
+    return s;
+  };
+
+  const galleryHost = () => {
+    let host = document.getElementById('lok-product-gallery');
+    if (host) return host;
+    const anchorEl = el.imgPlaceholder() || el.imgThumb() || el.imgInput();
+    if (!anchorEl) return null;
+    const wrap = anchorEl.closest('.w-form, .form-field, [class*="image"], [class*="upload"]') || anchorEl.parentElement;
+    host = document.createElement('div');
+    host.id = 'lok-product-gallery';
+    host.style.cssText = 'margin-top:16px;font-family:"Plus Jakarta Sans",system-ui,sans-serif;';
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*';
+    fileInput.id = 'lok-product-gallery-input';
+    fileInput.style.display = 'none';
+    fileInput.addEventListener('change', onGalleryFile);
+    host.appendChild(fileInput);
+    const body = document.createElement('div');
+    body.id = 'lok-product-gallery-body';
+    host.appendChild(body);
+    if (wrap && wrap.parentElement) wrap.parentElement.insertBefore(host, wrap.nextSibling);
+    else (anchorEl.parentElement || document.body).appendChild(host);
+    return host;
+  };
+
+  const galleryInput = () => document.getElementById('lok-product-gallery-input');
+
+  let _galleryPhotos = [];
+
+  const renderGallery = async (productId) => {
+    const host = galleryHost();
+    if (!host) return;
+    const body = document.getElementById('lok-product-gallery-body');
+    if (!body) return;
+
+    const title = '<div style="font-size:13px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;color:#4A4761;margin-bottom:8px;">Photo gallery</div>';
+
+    // Locked for Free plans
+    if (!_isProPlan) {
+      body.innerHTML = title +
+        '<div style="border:1px dashed #c8c6d8;border-radius:10px;padding:16px;background:#F7F6FC;color:#4A4761;font-size:14px;line-height:1.5;">' +
+        '🔒 Add a <strong>photo gallery</strong> with Pro &amp; Featured — show up to ' + (_maxProductPhotos || 5) +
+        ' images per product so customers see more before they buy.</div>';
+      return;
+    }
+    // New product not saved yet
+    if (productId == null) {
+      body.innerHTML = title +
+        '<div style="border:1px dashed #c8c6d8;border-radius:10px;padding:16px;background:#F7F6FC;color:#4A4761;font-size:14px;">' +
+        'Save this product first, then reopen it to add up to ' + (_maxProductPhotos || 5) + ' gallery photos.</div>';
+      return;
+    }
+
+    body.innerHTML = title + '<div style="font-size:13px;color:#8E8BA6;">Loading photos…</div>';
+    const res = await window.LokaliAPI.products.listPhotos(productId);
+    if (res.error) {
+      body.innerHTML = title + '<div style="font-size:13px;color:#B1006A;">Couldn’t load gallery photos.</div>';
+      return;
+    }
+    const raw = res.data;
+    _galleryPhotos = (Array.isArray(raw) ? raw : (raw?.items || raw?.records || raw?.data || []))
+      .filter(p => p && p.is_active !== false)
+      .sort((a, b) => (a.sort_order ?? 9999) - (b.sort_order ?? 9999));
+
+    const cap = _maxProductPhotos || 5;
+    const count = _galleryPhotos.length;
+
+    let html = title +
+      '<div style="font-size:12px;color:#8E8BA6;margin-bottom:8px;">' + count + ' of ' + cap + ' photos</div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:10px;">';
+
+    _galleryPhotos.forEach((p) => {
+      html += '<div style="position:relative;width:84px;height:84px;border-radius:10px;overflow:hidden;border:1px solid #eeedf6;background:#F7F6FC;">' +
+        '<img src="' + photoUrl(p.image_url) + '" alt="" style="width:100%;height:100%;object-fit:cover;display:block;">' +
+        '<button type="button" data-photo-id="' + p.id + '" aria-label="Remove photo" ' +
+        'style="position:absolute;top:4px;right:4px;width:22px;height:22px;border:none;border-radius:50%;background:rgba(26,24,41,.72);color:#fff;font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;">×</button>' +
+        '</div>';
+    });
+
+    if (count < cap) {
+      html += '<button type="button" id="lok-gallery-add" ' +
+        'style="width:84px;height:84px;border-radius:10px;border:1.5px dashed #6002ee;background:#fff;color:#6002ee;font-size:28px;font-weight:300;cursor:pointer;display:flex;align-items:center;justify-content:center;">+</button>';
+    }
+    html += '</div>';
+    if (count >= cap) {
+      html += '<div style="font-size:12px;color:#8E8BA6;margin-top:8px;">You’ve reached your ' + cap + '-photo limit for this product.</div>';
+    }
+    body.innerHTML = html;
+
+    const addBtn = document.getElementById('lok-gallery-add');
+    if (addBtn) addBtn.addEventListener('click', () => { const gi = galleryInput(); if (gi) gi.click(); });
+    body.querySelectorAll('button[data-photo-id]').forEach((b) => {
+      b.addEventListener('click', () => deleteGalleryPhoto(b.getAttribute('data-photo-id')));
+    });
+  };
+
+  const onGalleryFile = async () => {
+    const gi = galleryInput();
+    const file = gi?.files?.[0];
+    if (!file || !editingId || _galleryBusy) { if (gi) gi.value = ''; return; }
+    if (file.type.indexOf('image/') !== 0) { if (gi) gi.value = ''; return; }
+    _galleryBusy = true;
+    const addBtn = document.getElementById('lok-gallery-add');
+    if (addBtn) { addBtn.textContent = '…'; addBtn.style.pointerEvents = 'none'; }
+    try {
+      const up = await window.LokaliAPI.products.uploadProductImage(file);
+      if (up.error) throw new Error(up.error);
+      const p = up.data?.path || up.data?.image_path || null;
+      const url = up.data?.url || up.data?.image_url || (p ? (XANO_ORIGIN + p) : null);
+      if (!url) throw new Error('Upload returned no URL');
+      const sort = _galleryPhotos.length;
+      const res = await window.LokaliAPI.products.addPhoto(editingId, url, sort);
+      if (res.error) {
+        if (res.data?.error_code === 'PRODUCT_PHOTO_LIMIT_REACHED' || /PHOTO_LIMIT/i.test(String(res.error))) {
+          alert('You’ve reached the photo limit for this product on your current plan.');
+        } else {
+          alert('Could not add photo: ' + res.error);
+        }
+      }
+    } catch (e) {
+      alert('Photo upload failed. Please try again.');
+    } finally {
+      _galleryBusy = false;
+      if (gi) gi.value = '';
+      await renderGallery(editingId);
+    }
+  };
+
+  const deleteGalleryPhoto = async (photoId) => {
+    if (!photoId || _galleryBusy) return;
+    if (!confirm('Remove this photo from the gallery?')) return;
+    _galleryBusy = true;
+    try {
+      const res = await window.LokaliAPI.products.deletePhoto(photoId);
+      if (res.error) alert('Could not remove photo: ' + res.error);
+    } catch (e) {
+      alert('Could not remove photo. Please try again.');
+    } finally {
+      _galleryBusy = false;
+      await renderGallery(editingId);
+    }
   };
 
   const buildPayload = (imageUrl) => {
@@ -810,6 +971,18 @@ const LokaliProductsPage = (() => {
     _maxProducts = billing?.features?.max_products
                 ?? billing?.subscription?.max_products
                 ?? null;
+
+    const planCode = String(
+      billing?.plan_code
+      ?? billing?.plan?.code
+      ?? billing?.subscription?.plan_code
+      ?? billing?.plan
+      ?? 'free'
+    ).toLowerCase();
+    _isProPlan = planCode === 'pro' || planCode === 'featured';
+    _maxProductPhotos = billing?.features?.max_product_photos
+                     ?? billing?.subscription?.max_product_photos
+                     ?? (_isProPlan ? 5 : 1);
 
     products.sort((a, b) => {
       const aOrder = a.sort_order ?? 9999;

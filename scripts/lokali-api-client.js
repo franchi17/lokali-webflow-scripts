@@ -375,6 +375,21 @@
     delete: function (id) {
       return request('services', 'DELETE', 'services/' + id, null, true);
     },
+    // --- Per-service photo gallery (owner; plan-gated by max_service_photos) ---
+    listPhotos: function (serviceId) {
+      return request('services', 'GET', encodeURIComponent(serviceId) + '/photos/list', null, true);
+    },
+    addPhoto: function (serviceId, imageUrl, sortOrder) {
+      var body = { image_url: imageUrl };
+      if (sortOrder != null) body.sort_order = sortOrder;
+      return request('services', 'POST', encodeURIComponent(serviceId) + '/photos', body, true);
+    },
+    updatePhoto: function (photoId, payload) {
+      return request('services', 'PATCH', 'service_photos/' + encodeURIComponent(photoId), payload || {}, true);
+    },
+    deletePhoto: function (photoId) {
+      return request('services', 'DELETE', 'service_photos/' + encodeURIComponent(photoId), null, true);
+    },
     uploadServiceImage: function (file) {
       var path =
         typeof window.LOKALI_SERVICE_IMAGE_UPLOAD_PATH === 'string' && window.LOKALI_SERVICE_IMAGE_UPLOAD_PATH.trim()
@@ -389,6 +404,19 @@
       return requestWithFormData('services', method, path, formData, true);
     }
   };
+
+  // Shared image uploader — posts multipart 'image' to the image-upload endpoint, returns a hosted URL.
+  function uploadImageGeneric(file) {
+    var path = (typeof window.LOKALI_IMAGE_UPLOAD_PATH === 'string' && window.LOKALI_IMAGE_UPLOAD_PATH.trim())
+      ? window.LOKALI_IMAGE_UPLOAD_PATH.replace(/^\//, '') : 'image-upload';
+    var baseKey = (typeof window.LOKALI_IMAGE_UPLOAD_BASE === 'string' && window.LOKALI_IMAGE_UPLOAD_BASE.trim())
+      ? window.LOKALI_IMAGE_UPLOAD_BASE.trim() : 'services';
+    var method = (typeof window.LOKALI_IMAGE_UPLOAD_METHOD === 'string' && window.LOKALI_IMAGE_UPLOAD_METHOD.trim())
+      ? window.LOKALI_IMAGE_UPLOAD_METHOD.trim().toUpperCase() : 'PATCH';
+    var fd = new FormData();
+    fd.append('image', file);
+    return requestWithFormData(baseKey, method, path, fd, true);
+  }
 
   var products = {
     getMine: function (includeInactive) {
@@ -451,6 +479,25 @@
     },
     delete: function (id) {
       return request('products', 'DELETE', 'products/' + id, null, true);
+    },
+    // --- Per-product photo gallery (owner; plan-gated by max_product_photos) ---
+    listPhotos: function (productId) {
+      return request('products', 'GET', encodeURIComponent(productId) + '/photos/list', null, true);
+    },
+    addPhoto: function (productId, imageUrl, sortOrder) {
+      var body = { image_url: imageUrl };
+      if (sortOrder != null) body.sort_order = sortOrder;
+      return request('products', 'POST', encodeURIComponent(productId) + '/photos', body, true);
+    },
+    updatePhoto: function (photoId, payload) {
+      return request('products', 'PATCH', 'product_photos/' + encodeURIComponent(photoId), payload || {}, true);
+    },
+    deletePhoto: function (photoId) {
+      return request('products', 'DELETE', 'product_photos/' + encodeURIComponent(photoId), null, true);
+    },
+    // Generic image uploader (returns a hosted URL); reuses the shared image-upload endpoint.
+    uploadProductImage: function (file) {
+      return uploadImageGeneric(file);
     }
   };
 
