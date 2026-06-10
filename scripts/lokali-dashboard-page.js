@@ -128,7 +128,39 @@
     }
   }
 
+  // Self-heal the listing-strength card. Webflow HTML Embeds can mangle pasted
+  // markup (a stray `<div<` truncates the whole card). If the card container
+  // exists but its inner markup is missing/broken, rebuild it here so the embed
+  // only needs the empty container (or even a broken one — we overwrite it).
+  var LS_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+  function lsItem(id, title, desc, pts) {
+    return '<div class="ls-item" data-ls-item="' + id + '">' +
+      '<div class="ls-check">' + LS_CHECK + '</div>' +
+      '<div class="ls-item-body"><div class="ls-item-title">' + title + '</div>' +
+      (desc ? '<div class="ls-item-desc">' + desc + '</div>' : '') + '</div>' +
+      '<div class="ls-points">+' + pts + ' pts</div></div>';
+  }
+  function ensureCardMarkup() {
+    var card = document.querySelector('[data-listing-strength]');
+    if (!card) return;
+    if (card.querySelector('[data-ls-item]')) return; // markup intact
+    card.innerHTML =
+      '<button class="ls-dismiss" data-ls-dismiss aria-label="Dismiss"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>' +
+      '<div class="ls-header"><div class="ls-header-left"><h3 class="ls-title">Your listing strength</h3><p class="ls-subtitle" data-ls-subtitle></p></div><div class="ls-score-value" data-ls-score></div></div>' +
+      '<div class="ls-progress-track"><div class="ls-progress-fill" data-ls-progress></div></div>' +
+      '<div class="ls-checklist" data-ls-checklist>' +
+        lsItem('business_name', 'Business name added', '', 10) +
+        lsItem('category', 'Category selected', '', 10) +
+        lsItem('profile_photo', 'Add a profile photo', 'Vendors with photos get 3× more contacts', 15) +
+        lsItem('bio', 'Write a bio <span style="color:#9A9AB0;font-weight:500;">(80+ characters)</span>', 'Your story is what makes a customer choose you over a directory', 20) +
+        lsItem('tagline', 'Add a tagline', 'One sentence. What you do and who you do it for.', 10) +
+        lsItem('has_listing', 'Add a service or product', "Customers can't book or buy without at least one listing", 20) +
+      '</div>' +
+      '<div class="ls-complete-state"><div class="ls-complete-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#1E8E3E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div><div class="ls-complete-body"><p class="ls-complete-title">Your listing is complete</p><p class="ls-complete-desc">Your profile is set up to get the most visibility on Lokali.</p></div></div>';
+  }
+
   function listingStrength(v, hasListing) {
+    ensureCardMarkup();
     var tasks = [
       { id: 'business_name', pts: 10, done: !!v.business_name },
       { id: 'category',      pts: 10, done: !!(v.categories_id && v.categories_id.length) },
@@ -188,6 +220,8 @@
 
   function init() {
     if (!window.LokaliDashboard || !window.LokaliDashboard.requireAuth()) return;
+
+    ensureCardMarkup(); // rebuild card markup first so the dismiss button below binds to it
 
     if (isDismissed()) {
       var card = document.querySelector('[data-listing-strength]');
