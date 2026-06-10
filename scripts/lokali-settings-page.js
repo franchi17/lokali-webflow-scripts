@@ -7,8 +7,9 @@
   ELEMENT IDs THIS SCRIPT LOOKS FOR (add in Webflow; anything missing is skipped safely):
     Inputs   : #settings-first-name (or existing #First-Name-Input), #settings-last-name (or #Last-Name-Input)
     Display  : #settings-email, #settings-account-type, #settings-current-plan
-    Buttons  : #settings-save-btn, #settings-view-plans, #settings-change-password (opens Clerk
-               account modal → Security tab for password change + last-changed date),
+    Buttons  : #settings-save-btn, #settings-view-plans,
+               #settings-change-email + #settings-change-password (both open the Clerk account
+               modal — Clerk manages email + password; Security tab shows last-changed date),
                #settings-deactivate, #settings-reactivate, #settings-delete
     Toggles  : #toggle-visibility-public  (on = listing live, off = deactivated)
                #toggle-visibility-reviews (PRO/FEATURED) — show public reviews
@@ -260,12 +261,12 @@
       window.location.href = (typeof window.LOKALI_PRICING_URL === 'string' && window.LOKALI_PRICING_URL) || '/pricing';
     });
 
-    // Change password → Clerk owns the password flow. Open Clerk's account modal;
-    // its Security tab is where the password is changed and shows when it last
-    // changed. No Xano password is stored, so there's nothing for us to call.
-    var pwBtn = $('settings-change-password');
-    if (pwBtn) pwBtn.addEventListener('click', function (e) {
-      e.preventDefault();
+    // Email + password are both Clerk-managed (Clerk owns identity). Both the
+    // "Change" email link and the "Update" password link open Clerk's account
+    // modal, where email addresses are managed and the password Security tab
+    // shows when it last changed. No Xano email/password is stored to write.
+    var openClerkAccount = function (e) {
+      if (e) e.preventDefault();
       if (window.Clerk && typeof window.Clerk.openUserProfile === 'function') {
         window.Clerk.openUserProfile();
       } else {
@@ -275,7 +276,11 @@
           else toast('error', 'Account manager unavailable. Please refresh and try again.');
         }, 800);
       }
-    });
+    };
+    var pwBtn = $('settings-change-password');
+    if (pwBtn) pwBtn.addEventListener('click', openClerkAccount);
+    var emailBtn = $('settings-change-email');
+    if (emailBtn) emailBtn.addEventListener('click', openClerkAccount);
 
     // Listing visibility toggle → reactivate (on) / deactivate (off)
     var vis = $('toggle-visibility-public');
