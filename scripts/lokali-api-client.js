@@ -507,6 +507,36 @@
     }
   };
 
+  var leads = {
+    // Customer-facing: submit the public inquiry form on a vendor's listing.
+    // payload: { name, email, message, phone?, context?, source?, website? (honeypot) }
+    submitInquiry: function (vendorId, payload) {
+      return request('vendors', 'POST', 'vendor/id/' + encodeURIComponent(vendorId) + '/inquiry', payload || {}, false);
+    },
+    // Customer-facing, fire-and-forget: log a direct-contact click
+    // (call|sms|whatsapp|email|instagram|website). keepalive so the request
+    // survives the page navigating to tel:/wa.me/instagram right after.
+    trackEvent: function (vendorId, eventType, source) {
+      try {
+        var url = getBase('vendors') + '/vendor/id/' + encodeURIComponent(vendorId) + '/lead-event';
+        fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          credentials: 'include',
+          keepalive: true,
+          body: JSON.stringify({ event_type: eventType, source: source || 'listing' })
+        }).catch(function () {});
+      } catch (e) {}
+    },
+    // Vendor-facing: inquiries (all, newest first) + contact clicks (last 30d).
+    getMine: function () {
+      return request('vendors', 'GET', 'vendor/me/leads', null, true);
+    },
+    markRead: function (inquiryId) {
+      return request('vendors', 'PATCH', 'vendor/me/leads/' + encodeURIComponent(inquiryId) + '/read', {}, true);
+    }
+  };
+
   var data = {
     categories: function () {
       return request('data', 'GET', 'categories', null, false);
@@ -523,6 +553,7 @@
     services: services,
     products: products,
     plans: plans,
+    leads: leads,
     data: data,
     getToken: getToken,
     setToken: setToken,

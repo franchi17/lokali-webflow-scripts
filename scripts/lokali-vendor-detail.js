@@ -129,6 +129,12 @@
         var body = "Hi " + (v.business_name || 'there') + ", I found your listing on Lokali and I'm interested in " +
           (itemName ? ('"' + itemName + '"') : (isProduct ? 'ordering this product' : 'this service')) + '.';
         cta.href = 'mailto:' + v.contact_email + '?subject=' + encodeURIComponent(subj) + '&body=' + encodeURIComponent(body);
+        // Log the contact click as a lead event (fire-and-forget; mailto still opens).
+        cta.addEventListener('click', function () {
+          if (window.LokaliAPI && window.LokaliAPI.leads) {
+            window.LokaliAPI.leads.trackEvent(v.id != null ? v.id : vendorId, 'email', isProduct ? 'product' : 'service');
+          }
+        });
       }
     });
   }

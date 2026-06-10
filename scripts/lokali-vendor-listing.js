@@ -346,6 +346,17 @@
   }
 
   // ---- contact channels -------------------------------------------------
+  // Log a direct-contact click as a lead event (fire-and-forget; the
+  // tel:/sms:/mailto:/wa.me navigation proceeds untouched).
+  function trackChannel(el, type) {
+    if (!el) return;
+    el.addEventListener('click', function () {
+      if (window.LokaliAPI && window.LokaliAPI.leads && currentVendorId != null) {
+        window.LokaliAPI.leads.trackEvent(currentVendorId, type, 'listing');
+      }
+    });
+  }
+
   function initContact(v) {
     var name = v.business_name || 'this vendor';
     var email = v.contact_email;
@@ -383,6 +394,13 @@
         igEl.href = 'https://instagram.com/' + clean;
       } else { show(igEl, false); }
     }
+
+    trackChannel(emailEl, 'email');
+    trackChannel(smsEl, 'sms');
+    trackChannel(waEl, 'whatsapp');
+    trackChannel(callEl, 'call');
+    trackChannel(igEl, 'instagram');
+    trackChannel(document.getElementById('vl-about-website'), 'website');
   }
 
   // ---- hero + about population ------------------------------------------
@@ -504,6 +522,11 @@
 
       var vid = v.id != null ? v.id : id;
       currentVendorId = vid;
+      // Announce the loaded vendor for companion scripts (lokali-inquiry.js
+      // mounts the "Send an inquiry" button off this). Window var covers the
+      // load-order race; the event covers scripts already listening.
+      window.LOKALI_LOADED_VENDOR = { id: vid, name: v.business_name || '' };
+      try { document.dispatchEvent(new CustomEvent('lokali:vendor-loaded', { detail: window.LOKALI_LOADED_VENDOR })); } catch (e) {}
       loadPortfolio(vid, v);
       API.services.listByVendor(vid).then(function (sres) { renderServices(asArray(unwrap(sres)), !(sres && sres.error)); });
       API.products.listByVendor(vid).then(function (pres) { renderProducts(asArray(unwrap(pres)), !(pres && pres.error)); });
