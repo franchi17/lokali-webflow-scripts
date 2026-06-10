@@ -114,6 +114,12 @@
     window.LokaliAPI.vendors.getById(vendorId).then(function (res) {
       var v = unwrap(res); if (v && v.vendor) v = v.vendor; // { vendor: {...} } envelope
       if (!v) return;
+      // Upgrade the back/mini links to the clean root URL once we know the slug
+      // (the ?id= hrefs set above keep working as a fallback in the meantime).
+      if (v.slug) {
+        if (back) back.href = '/' + v.slug;
+        if (link) link.href = '/' + v.slug;
+      }
       setText('vd-mini-name', v.business_name);
       var av = $('vd-mini-avatar-img'); var photo = imgUrl(v.profile_photo); if (av && photo) av.src = photo;
       // CTA -> mailto
