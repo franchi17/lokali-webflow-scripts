@@ -23,7 +23,7 @@
  *   #browse-mobile-filter-btn / #browse-filter-backdrop / #browse-sidebar / #browse-close-filters (drawer)
  *
  * Optional window overrides (set before this script):
- *   window.LOKALI_BROWSE_PROFILE_BASE  default '/vendor?id=' (vendor listing page expects ?id={numeric id})
+ *   window.LOKALI_BROWSE_PROFILE_BASE  default '/' (root-level /{slug}; vendors without a slug fall back to /vendor?id={id})
  *   window.LOKALI_VERIFIED_FIELD       vendor field for Verified flag (default 'is_verified')
  *   window.LOKALI_SPOTLIGHT_FIELD      vendor field for Spotlight flag (default 'is_spotlight')
  *   window.LOKALI_BROWSE_PER_PAGE      default 100
@@ -31,7 +31,7 @@
 (function () {
   'use strict';
 
-  var PROFILE_BASE = (typeof window.LOKALI_BROWSE_PROFILE_BASE === 'string' && window.LOKALI_BROWSE_PROFILE_BASE) || '/vendor?id=';
+  var PROFILE_BASE = (typeof window.LOKALI_BROWSE_PROFILE_BASE === 'string' && window.LOKALI_BROWSE_PROFILE_BASE) || '/';
   var PER_PAGE = (typeof window.LOKALI_BROWSE_PER_PAGE === 'number' && window.LOKALI_BROWSE_PER_PAGE) || 100;
   var AREA_KEY = 'LOKALI_BROWSE_AREA';
   // Remembers the visitor's filters + sort for this browser session, so the "Back to The Market"
@@ -241,11 +241,13 @@
     for (var i = 0; i < ids.length; i++) if (_locationsById[ids[i]]) return _locationsById[ids[i]].label;
     return '';
   }
-  // Xano has no get-by-slug endpoint; the /vendor page resolves a numeric id from ?id=.
-  // Use the id by default; only fall back to slug if PROFILE_BASE is a slug-style path ('/.../').
+  // Slug-style base ('.../'): link to the clean root URL /{slug} (served by the
+  // Cloudflare Worker). A vendor without a slug can't be resolved at the root, so
+  // fall back to the legacy /vendor?id={id} link rather than emitting a dead /{id}.
   function vProfileHref(v) {
     var slugStyle = PROFILE_BASE.charAt(PROFILE_BASE.length - 1) === '/';
-    return PROFILE_BASE + ((slugStyle && v.slug) ? v.slug : v.id);
+    if (slugStyle) return v.slug ? (PROFILE_BASE + v.slug) : ('/vendor?id=' + v.id);
+    return PROFILE_BASE + v.id;
   }
 
   // ── reference data ──
