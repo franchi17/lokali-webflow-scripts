@@ -7,7 +7,9 @@
   ELEMENT IDs THIS SCRIPT LOOKS FOR (add in Webflow; anything missing is skipped safely):
     Inputs   : #settings-first-name (or existing #First-Name-Input), #settings-last-name (or #Last-Name-Input)
     Display  : #settings-email, #settings-account-type, #settings-current-plan
-    Buttons  : #settings-save-btn, #settings-view-plans, #settings-deactivate, #settings-reactivate, #settings-delete
+    Buttons  : #settings-save-btn, #settings-view-plans, #settings-change-password (opens Clerk
+               account modal → Security tab for password change + last-changed date),
+               #settings-deactivate, #settings-reactivate, #settings-delete
     Toggles  : #toggle-visibility-public  (on = listing live, off = deactivated)
                #toggle-visibility-reviews (PRO/FEATURED) — show public reviews
                #toggle-notify-inquiry, #toggle-notify-announcements,
@@ -256,6 +258,23 @@
     if (viewPlans) viewPlans.addEventListener('click', function (e) {
       e.preventDefault();
       window.location.href = (typeof window.LOKALI_PRICING_URL === 'string' && window.LOKALI_PRICING_URL) || '/pricing';
+    });
+
+    // Change password → Clerk owns the password flow. Open Clerk's account modal;
+    // its Security tab is where the password is changed and shows when it last
+    // changed. No Xano password is stored, so there's nothing for us to call.
+    var pwBtn = $('settings-change-password');
+    if (pwBtn) pwBtn.addEventListener('click', function (e) {
+      e.preventDefault();
+      if (window.Clerk && typeof window.Clerk.openUserProfile === 'function') {
+        window.Clerk.openUserProfile();
+      } else {
+        toast('info', 'Opening your account… one moment.');
+        setTimeout(function () {
+          if (window.Clerk && typeof window.Clerk.openUserProfile === 'function') window.Clerk.openUserProfile();
+          else toast('error', 'Account manager unavailable. Please refresh and try again.');
+        }, 800);
+      }
     });
 
     // Listing visibility toggle → reactivate (on) / deactivate (off)
