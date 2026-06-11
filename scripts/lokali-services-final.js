@@ -793,14 +793,18 @@ const LokaliServicesPage = (() => {
     const count = _galleryPhotos.length;
 
     let html = title +
-      '<div style="font-size:12px;color:#8E8BA6;margin-bottom:8px;">' + count + ' of ' + cap + ' photos</div>' +
+      '<div style="font-size:12px;color:#8E8BA6;margin-bottom:8px;">' + count + ' of ' + cap + ' photos · shown on your public listing' +
+      (count > 1 ? ' · use ‹ › to reorder' : '') + '</div>' +
       '<div style="display:flex;flex-wrap:wrap;gap:10px;">';
 
-    _galleryPhotos.forEach((p) => {
+    const arrowStyle = 'position:absolute;bottom:4px;width:22px;height:22px;border:none;border-radius:50%;background:rgba(26,24,41,.72);color:#fff;font-size:13px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;';
+    _galleryPhotos.forEach((p, i) => {
       html += '<div style="position:relative;width:84px;height:84px;border-radius:10px;overflow:hidden;border:1px solid #eeedf6;background:#F7F6FC;">' +
         '<img src="' + photoUrl(p.image_url) + '" alt="" style="width:100%;height:100%;object-fit:cover;display:block;">' +
         '<button type="button" data-photo-id="' + p.id + '" aria-label="Remove photo" ' +
         'style="position:absolute;top:4px;right:4px;width:22px;height:22px;border:none;border-radius:50%;background:rgba(26,24,41,.72);color:#fff;font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;">×</button>' +
+        (i > 0 ? '<button type="button" data-move-id="' + p.id + '" data-move-dir="-1" aria-label="Move photo earlier" style="' + arrowStyle + 'left:4px;">‹</button>' : '') +
+        (i < count - 1 ? '<button type="button" data-move-id="' + p.id + '" data-move-dir="1" aria-label="Move photo later" style="' + arrowStyle + 'right:4px;bottom:4px;top:auto;">›</button>' : '') +
         '</div>';
     });
 
@@ -819,6 +823,34 @@ const LokaliServicesPage = (() => {
     body.querySelectorAll('button[data-photo-id]').forEach((b) => {
       b.addEventListener('click', () => deleteGalleryPhoto(b.getAttribute('data-photo-id')));
     });
+    body.querySelectorAll('button[data-move-id]').forEach((b) => {
+      b.addEventListener('click', () => moveGalleryPhoto(b.getAttribute('data-move-id'), parseInt(b.getAttribute('data-move-dir'), 10)));
+    });
+  };
+
+  const moveGalleryPhoto = async (photoId, dir) => {
+    if (_galleryBusy || !editingId) return;
+    const i = _galleryPhotos.findIndex((p) => String(p.id) === String(photoId));
+    const j = i + dir;
+    if (i < 0 || j < 0 || j >= _galleryPhotos.length) return;
+    _galleryBusy = true;
+    const reordered = [..._galleryPhotos];
+    const [moved] = reordered.splice(i, 1);
+    reordered.splice(j, 0, moved);
+    try {
+      const updates = reordered
+        .map((p, idx) => ({ p, idx }))
+        .filter(({ p, idx }) => p.sort_order !== idx)
+        .map(({ p, idx }) => window.LokaliAPI.services.updatePhoto(p.id, { sort_order: idx }));
+      const results = await Promise.all(updates);
+      const failed = results.find((r) => r && r.error);
+      if (failed) alert('Could not reorder photos: ' + failed.error);
+    } catch (e) {
+      alert('Could not reorder photos. Please try again.');
+    } finally {
+      _galleryBusy = false;
+      await renderGallery(editingId);
+    }
   };
 
   const onGalleryFile = async () => {
