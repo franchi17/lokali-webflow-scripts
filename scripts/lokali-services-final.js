@@ -735,7 +735,9 @@ const LokaliServicesPage = (() => {
     if (host) return host;
     const anchorEl = el.imgPlaceholder() || el.imgThumb() || el.imgInput();
     if (!anchorEl) return null;
-    const wrap = anchorEl.closest('.w-form, .form-field, [class*="image"], [class*="upload"]') || anchorEl.parentElement;
+    // Mount BELOW the form grid (inserting inside the grid makes the host a grid item and breaks field placement).
+    const wrap = anchorEl.closest('.w-layout-grid') || anchorEl.closest('[class*="grid"]') ||
+      anchorEl.closest('.w-form, .form-field, [class*="image"], [class*="upload"]') || anchorEl.parentElement;
     host = document.createElement('div');
     host.id = 'lok-service-gallery';
     host.style.cssText = 'margin-top:16px;font-family:"Plus Jakarta Sans",system-ui,sans-serif;';
