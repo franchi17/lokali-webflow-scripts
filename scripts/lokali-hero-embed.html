@@ -1,0 +1,68 @@
+<!--
+  Lokali hero - paste-in for Webflow
+  ==================================
+  Reproduces the hellobecca.com hero: muted looping background video with a
+  gentle parallax, plus fade/slide-in reveals on the headline and sub-text.
+
+  HOW TO USE
+  1. In Webflow, drop an "Embed" element where you want the hero (or paste the
+     <link>/<script> tags in Project Settings > Custom Code and build the hero
+     with native Webflow elements using the same classes / data- attributes).
+  2. Replace YOUR_VIDEO.mp4 and YOUR_POSTER.jpg with your own assets
+     (upload to Webflow Assets and copy their URLs, or host elsewhere).
+  3. Swap the headline / sub-text / button for your real copy.
+
+  Files load from jsDelivr off this repo. Use @main once merged, or pin a
+  branch/tag, e.g. @claude/squarespace-hero-scroll-im4y4t for testing.
+-->
+
+<link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/gh/franchi17/lokali-webflow-scripts@main/scripts/lokali-hero.css">
+
+<section class="lokali-hero" data-lokali-hero>
+  <div class="lokali-hero-media">
+    <video
+      data-lokali-hero-video
+      class="lokali-hero-video"
+      poster="YOUR_POSTER.jpg"
+      muted
+      loop
+      autoplay
+      playsinline
+      preload="auto">
+      <source src="YOUR_VIDEO.mp4" type="video/mp4">
+    </video>
+  </div>
+
+  <!-- Optional dark scrim for text legibility; delete if your footage is dark. -->
+  <div class="lokali-hero-overlay"></div>
+
+  <div class="lokali-hero-content w-container">
+    <h1 data-lokali-reveal>Hospitality reimagined</h1>
+    <p data-lokali-reveal data-lokali-reveal-delay="120">
+      We set the table for cultural connection and build legacies that last.
+    </p>
+    <a
+      href="#"
+      class="button"
+      data-lokali-reveal
+      data-lokali-reveal-delay="240">
+      Get started
+    </a>
+  </div>
+</section>
+
+<script
+  src="https://cdn.jsdelivr.net/gh/franchi17/lokali-webflow-scripts@main/scripts/lokali-hero.js"></script>
+
+<!--
+  REVEAL ELSEWHERE ON THE PAGE
+  Add  data-lokali-reveal  to any element further down the page (section
+  headings, cards, images) and it will fade/slide in as it scrolls into view.
+  Variants:
+    data-lokali-reveal="fade-up"  (default - fade + slide up)
+    data-lokali-reveal="fade"     (fade only)
+    data-lokali-reveal="zoom"     (fade + scale up)
+  Stagger items with  data-lokali-reveal-delay="120"  (milliseconds).
+-->
