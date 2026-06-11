@@ -239,8 +239,8 @@ const LokaliProductsPage = (() => {
     const inner = pill.firstElementChild || pill;
     if (selected) {
       pill.classList.add('filter-pill-selected');
-      inner.style.setProperty('background', '#EE6002', 'important');
-      inner.style.setProperty('background-color', '#EE6002', 'important');
+      inner.style.setProperty('background', '#FF8D00', 'important');
+      inner.style.setProperty('background-color', '#FF8D00', 'important');
       inner.style.setProperty('color', '#FFFFFF', 'important');
       inner.style.setProperty('border-color', 'transparent', 'important');
     } else {
