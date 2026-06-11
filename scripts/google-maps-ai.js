@@ -36,6 +36,28 @@
     var items = [];
     var activeIndex = -1;
     var debounceTimer = null;
+    var hadSuccess = false; // a new-API request has succeeded at least once
+    var usingLegacy = false; // fell back to the legacy widget
+
+    // The presence of AutocompleteSuggestion/Place in the JS library does not
+    // guarantee the key's project has "Places API (New)" enabled. If the first
+    // request is rejected with a permission/not-enabled error, fall back to the
+    // legacy widget for keys that only have the legacy Places API.
+    function isPermissionError(err) {
+      var msg = (err && (err.message || err.toString())) || '';
+      return /denied|not enabled|not authorized|unauthorized|permission|forbidden|api key/i.test(msg);
+    }
+
+    function fallbackToLegacy() {
+      usingLegacy = true;
+      hideDropdown();
+      if (!google.maps.places.Autocomplete) return;
+      try {
+        attachLegacyAutocomplete(input);
+      } catch (e) {
+        console.warn('Lokali: legacy autocomplete fallback failed', e);
+      }
+    }
 
     function ensureToken() {
       if (!sessionToken) sessionToken = new places.AutocompleteSessionToken();
@@ -132,11 +154,18 @@
       };
       places.AutocompleteSuggestion.fetchAutocompleteSuggestions(request)
         .then(function (res) {
+          hadSuccess = true;
           if (input.value.trim() !== query) return; // stale response
           renderSuggestions(res && res.suggestions);
         })
         .catch(function (err) {
           console.warn('Lokali: autocomplete fetch error', err);
+          // If the new API was never reachable and this looks like the key
+          // lacking "Places API (New)", switch to the legacy widget.
+          if (!hadSuccess && !usingLegacy && isPermissionError(err)) {
+            fallbackToLegacy();
+            return;
+          }
           hideDropdown();
         });
     }
@@ -144,6 +173,7 @@
     input.setAttribute('autocomplete', 'off');
 
     input.addEventListener('input', function () {
+      if (usingLegacy) return; // legacy widget now owns this input
       var q = input.value.trim();
       if (debounceTimer) clearTimeout(debounceTimer);
       if (q.length < MIN_CHARS) { hideDropdown(); return; }
