@@ -622,10 +622,23 @@ const LokaliServicesPage = (() => {
     });
   };
 
+  // Line the self-mounted gallery up with the field column above it.
+  const alignGalleryHost = () => {
+    const host = document.getElementById('lok-service-gallery');
+    const ref = el.fieldName();
+    if (!host || !ref) return;
+    const dx = ref.getBoundingClientRect().left - host.getBoundingClientRect().left;
+    if (dx > 0 && dx < 300) {
+      host.style.paddingLeft = dx + 'px';
+      host.style.paddingRight = dx + 'px';
+    }
+  };
+
   const showFormView = () => {
     el.listView()?.style && (el.listView().style.display = 'none');
     el.formView()?.style && (el.formView().style.display = 'block');
     fixFormActionButtons();
+    alignGalleryHost();
   };
 
   const openForm = (serviceId = null) => {
@@ -789,14 +802,14 @@ const LokaliServicesPage = (() => {
 
     if (!_isProPlan) {
       body.innerHTML = title +
-        '<div style="border:1px dashed #c8c6d8;border-radius:10px;padding:16px;background:#F7F6FC;color:#4A4761;font-size:14px;line-height:1.5;">' +
+        '<div style="color:#4A4761;font-size:14px;line-height:1.5;">' +
         '🔒 Add a <strong>photo gallery</strong> with Pro &amp; Featured — show up to ' + (_maxServicePhotos || 5) +
         ' images per service so customers see more of your work.</div>';
       return;
     }
     if (serviceId == null) {
       body.innerHTML = title +
-        '<div style="border:1px dashed #c8c6d8;border-radius:10px;padding:16px;background:#F7F6FC;color:#4A4761;font-size:14px;">' +
+        '<div style="color:#4A4761;font-size:14px;line-height:1.5;">' +
         'Save this service first, then reopen it to add up to ' + (_maxServicePhotos || 5) + ' gallery photos.</div>';
       return;
     }
