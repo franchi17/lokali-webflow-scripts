@@ -514,6 +514,8 @@ const LokaliProductsPage = (() => {
   const fixFormActionButtons = () => {
     [el.saveBtn(), el.cancelBtn(), el.deleteBtn()].forEach((b) => {
       if (!b) return;
+      b.style.setProperty('font-size', '12px', 'important');
+      b.querySelectorAll('div,span').forEach((t) => t.style.setProperty('font-size', '12px', 'important'));
       const w = parseFloat(getComputedStyle(b).width);
       if (!w || w > 60) return;
       b.style.setProperty('width', 'auto', 'important');
