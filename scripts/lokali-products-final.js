@@ -177,7 +177,11 @@ const LokaliProductsPage = (() => {
     wrapPrice:      () => document.getElementById('price-wrap-product-fixed'),
 
     imgInput:       () => resolveFileInput('product-img-input'),
-    imgThumb:       () => document.getElementById('product-img-thumb'),
+    // The styled square on this page is the "thumbnail preview" element (a leftover copy
+    // from the services form); #product-img-thumb is an unsized wrapper, so painting it
+    // shows nothing. Prefer the element that actually has dimensions.
+    imgThumb:       () => document.querySelector('#products-form-view .thumbnail-preview')
+                       || document.getElementById('product-img-thumb'),
     imgPlaceholder: () => document.getElementById('product-img-placeholder'),
     imgRemoveBtn:   () => document.getElementById('product-img-remove'),
   };
@@ -524,9 +528,24 @@ const LokaliProductsPage = (() => {
     });
   };
 
+  // The product form grid carries manual cell placements copied from the services form,
+  // which scatter/overlap the product fields (e.g. the Active checkbox over FULFILLMENT).
+  // Flow it as a column instead so the (sensible) element order governs layout.
+  const fixFormGridFlow = () => {
+    const grid = document.querySelector('#products-form-view .w-layout-grid.product-form-grid')
+              || document.querySelector('#products-form-view .w-layout-grid');
+    if (!grid || grid.dataset.lokFlow) return;
+    grid.dataset.lokFlow = '1';
+    grid.style.setProperty('display', 'flex', 'important');
+    grid.style.setProperty('flex-direction', 'column', 'important');
+    grid.style.setProperty('align-items', 'stretch', 'important');
+    grid.style.setProperty('gap', '18px', 'important');
+  };
+
   const showFormView = () => {
     el.listView()?.style && (el.listView().style.display = 'none');
     el.formView()?.style && (el.formView().style.display = 'block');
+    fixFormGridFlow();
     fixFormActionButtons();
   };
 
