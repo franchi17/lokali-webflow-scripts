@@ -422,6 +422,15 @@
 
     // avatar — show the photo, falling back to initials when there's no image (or it fails to load)
     var av = document.getElementById('vl-avatar');
+    // The Webflow build left a literal <imgraw> placeholder element here — browsers
+    // don't render it as an image, so swap it for a real <img> before setting src.
+    if (av && av.tagName !== 'IMG') {
+      var realImg = ce('img', av.className);
+      realImg.id = av.id;
+      realImg.alt = av.getAttribute('alt') || '';
+      av.parentNode.replaceChild(realImg, av);
+      av = realImg;
+    }
     var circle = av ? av.parentNode : document.querySelector('.vl-avatar');
     var photo = photoUrl(v.profile_photo);
     function showInitials() {
