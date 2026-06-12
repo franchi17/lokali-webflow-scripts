@@ -394,12 +394,22 @@
         igEl.href = 'https://instagram.com/' + clean;
       } else { show(igEl, false); }
     }
+    var webBtn = document.getElementById('vl-website');
+    if (webBtn) {
+      if (v.website_url) {
+        var wbu = v.website_url;
+        webBtn.href = /^https?:\/\//i.test(wbu) ? wbu : 'https://' + wbu;
+        webBtn.target = '_blank';
+        webBtn.rel = 'noopener';
+      } else { show(webBtn, false); }
+    }
 
     trackChannel(emailEl, 'email');
     trackChannel(smsEl, 'sms');
     trackChannel(waEl, 'whatsapp');
     trackChannel(callEl, 'call');
     trackChannel(igEl, 'instagram');
+    trackChannel(webBtn, 'website');
     trackChannel(document.getElementById('vl-about-website'), 'website');
   }
 
