@@ -197,15 +197,15 @@ const LokaliProductsPage = (() => {
 
   const applyFormErrorTypography = (node) => {
     if (!node) return;
-    node.style.fontFamily = '"Plus Jakarta Sans", "Plus Jakarta Sans Variable", system-ui, sans-serif';
-    node.style.fontSize = '14px';
-    node.style.lineHeight = '1.45';
-    node.style.fontWeight = '500';
-    node.style.color = '#B1006A';
+    node.style.setProperty('font-family', '"Plus Jakarta Sans", "Plus Jakarta Sans Variable", system-ui, sans-serif', 'important');
+    node.style.setProperty('font-size', '14px', 'important');
+    node.style.setProperty('line-height', '1.45', 'important');
+    node.style.setProperty('font-weight', '500', 'important');
+    node.style.setProperty('color', '#B1006A', 'important');
+    node.style.setProperty('letter-spacing', 'normal', 'important');
+    node.style.setProperty('text-transform', 'none', 'important');
     node.style.marginLeft = '1.25rem';
     node.style.marginRight = '1.25rem';
-    node.style.letterSpacing = 'normal';
-    node.style.textTransform = 'none';
   };
 
   const showError = (msg) => {
