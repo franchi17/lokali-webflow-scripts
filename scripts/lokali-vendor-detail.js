@@ -209,6 +209,13 @@
   }
 
   function init() {
+    // The category tag is business-wide, not per-service/product — remove the
+    // static mockup leftover (it showed the wrong hardcoded category anyway).
+    var catTag = $('vd-tag-cat');
+    if (catTag) {
+      var catWrap = catTag.parentNode && catTag.parentNode.classList && catTag.parentNode.classList.contains('vd-tag') ? catTag.parentNode : catTag;
+      show(catWrap, false);
+    }
     if (!window.LokaliAPI) { console.warn('[lokali-vendor-detail] LokaliAPI not loaded'); return; }
     var type = pageType();
     var p = params();
