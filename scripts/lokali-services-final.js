@@ -602,9 +602,30 @@ const LokaliServicesPage = (() => {
     clearError();
   };
 
+  // The Webflow "icon button" base class is a 25x25 circle (card edit/trash icons); when the
+  // form action buttons inherit it, the label clips. Un-squash only when that size is detected,
+  // so proper Designer styling (if added later) wins.
+  const fixFormActionButtons = () => {
+    [el.saveBtn(), el.cancelBtn(), el.deleteBtn()].forEach((b) => {
+      if (!b) return;
+      const w = parseFloat(getComputedStyle(b).width);
+      if (!w || w > 60) return;
+      b.style.setProperty('width', 'auto', 'important');
+      b.style.setProperty('height', 'auto', 'important');
+      b.style.setProperty('padding', '10px 20px', 'important');
+      b.style.setProperty('gap', '8px', 'important');
+      b.style.setProperty('display', b.style.display === 'none' ? 'none' : 'inline-flex', 'important');
+      b.style.setProperty('align-items', 'center', 'important');
+      b.style.setProperty('justify-content', 'center', 'important');
+      b.style.setProperty('border-radius', '12px', 'important');
+      b.style.setProperty('white-space', 'nowrap', 'important');
+    });
+  };
+
   const showFormView = () => {
     el.listView()?.style && (el.listView().style.display = 'none');
     el.formView()?.style && (el.formView().style.display = 'block');
+    fixFormActionButtons();
   };
 
   const openForm = (serviceId = null) => {
