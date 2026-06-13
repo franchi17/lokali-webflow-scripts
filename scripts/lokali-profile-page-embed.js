@@ -329,6 +329,9 @@ var LokaliProfilePage = (function () {
       var input = (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') ? el : (el.querySelector && (el.querySelector('input') || el.querySelector('textarea')));
       if (input) {
         input.value = str;
+        // Notify native listeners (e.g. Webflow's character counter) that the
+        // value changed — programmatic `.value =` doesn't fire input on its own.
+        try { input.dispatchEvent(new Event('input', { bubbles: true })); } catch (e) {}
         return;
       }
     }
