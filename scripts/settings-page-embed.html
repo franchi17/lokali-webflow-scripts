@@ -36,6 +36,15 @@
     return el.querySelector ? el.querySelector('input,textarea') : null;
   }
   function setText(el, v) { if (el) el.textContent = (v == null ? '' : String(v)); }
+  // Escape untrusted strings before interpolating into innerHTML.
+  function escapeHtml(v) {
+    return String(v == null ? '' : v)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
 
   function toast(type, msg) {
     var el = $('lokali-settings-toast');
@@ -167,14 +176,14 @@
     if (!slugAllowed()) {
       host.innerHTML = label +
         '<div style="border:1px dashed #c8c6d8;border-radius:10px;padding:14px;background:#F7F6FC;color:#4A4761;font-size:14px;line-height:1.5;">' +
-        '🔒 Claim your own link — like <strong>golokali.com/' + (currentSlug || 'your-name') + '</strong> — with Pro &amp; Featured.</div>';
+        '🔒 Claim your own link — like <strong>golokali.com/' + escapeHtml(currentSlug || 'your-name') + '</strong> — with Pro &amp; Featured.</div>';
       return;
     }
 
     host.innerHTML = label +
       '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
       '<span style="color:#8E8BA6;font-size:14px;">golokali.com/</span>' +
-      '<input id="lok-slug-input" type="text" value="' + currentSlug.replace(/"/g, '') + '" maxlength="30" autocomplete="off" spellcheck="false" ' +
+      '<input id="lok-slug-input" type="text" value="' + escapeHtml(currentSlug) + '" maxlength="30" autocomplete="off" spellcheck="false" ' +
       'style="flex:1;min-width:140px;border:1px solid #c8c6d8;border-radius:8px;padding:9px 12px;font-size:14px;color:#1A1829;background:#fff;font-family:inherit;">' +
       '<button type="button" id="lok-slug-save" style="border:none;border-radius:8px;background:#6002ee;color:#fff;padding:10px 16px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">Save URL</button>' +
       '</div>' +
