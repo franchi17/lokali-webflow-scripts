@@ -99,6 +99,14 @@ var LokaliPhoneInput = (function () {
 var LokaliProfilePage = (function () {
   'use strict';
 
+  // Debug logger — silent unless window.LOKALI_DEBUG is set. Keeps vendor PII
+  // (name, email, phone, address) and auth-token state out of the production console.
+  function dbg() {
+    if (typeof window !== 'undefined' && window.LOKALI_DEBUG && typeof console !== 'undefined' && console.log) {
+      console.log.apply(console, arguments);
+    }
+  }
+
   var SAVE_BTN   = 'profile-save-btn';
   var SUCCESS_ID = 'profile-save-success';
   var ERROR_ID   = 'profile-save-error';
@@ -165,6 +173,8 @@ var LokaliProfilePage = (function () {
   function _profilePhotoDisplayUrl(url) {
     if (!url || typeof url !== 'string') return url;
     var s = url.trim();
+    // Reject dangerous URL schemes before they reach img.src / background-image.
+    if (/^\s*(javascript|vbscript|data):/i.test(s)) return '';
     if (s.indexOf('http://') === 0 || s.indexOf('https://') === 0) return s;
     if (s.indexOf('/') === 0) {
       var origin = typeof window.LOKALI_XANO_ORIGIN === 'string' ? window.LOKALI_XANO_ORIGIN : 'https://x8ki-letl-twmt.n7.xano.io';
@@ -194,10 +204,10 @@ var LokaliProfilePage = (function () {
   }
 
   function init() {
-    console.log('[ProfilePage] init() called');
-    console.log('[ProfilePage] LokaliAPI available:', !!window.LokaliAPI);
-    console.log('[ProfilePage] LokaliDashboard available:', !!window.LokaliDashboard);
-    console.log('[ProfilePage] Token:', window.LokaliAPI && window.LokaliAPI.getToken ? (window.LokaliAPI.getToken() ? 'present' : 'MISSING') : 'N/A');
+    dbg('[ProfilePage] init() called');
+    dbg('[ProfilePage] LokaliAPI available:', !!window.LokaliAPI);
+    dbg('[ProfilePage] LokaliDashboard available:', !!window.LokaliDashboard);
+    dbg('[ProfilePage] Token:', window.LokaliAPI && window.LokaliAPI.getToken ? (window.LokaliAPI.getToken() ? 'present' : 'MISSING') : 'N/A');
     if (!window.LokaliDashboard.requireAuth()) {
       console.warn('[ProfilePage] Auth failed — redirecting to login');
       return;
@@ -208,15 +218,15 @@ var LokaliProfilePage = (function () {
     _initPhoneField();
     loadData()
       .then(function () {
-        console.log('[ProfilePage] loadData succeeded, _vendor:', JSON.stringify(_vendor).substring(0, 200));
-        console.log('[ProfilePage] business_name:', _vendor && _vendor.business_name);
-        console.log('[ProfilePage] Element #business-name:', document.getElementById('business-name'));
+        dbg('[ProfilePage] loadData succeeded, _vendor:', JSON.stringify(_vendor).substring(0, 200));
+        dbg('[ProfilePage] business_name:', _vendor && _vendor.business_name);
+        dbg('[ProfilePage] Element #business-name:', document.getElementById('business-name'));
         populateUI();
-        console.log('[ProfilePage] populateUI done, #business-name value:', (document.getElementById('business-name') || {}).value);
+        dbg('[ProfilePage] populateUI done, #business-name value:', (document.getElementById('business-name') || {}).value);
         bindEvents();
         setTimeout(function () {
           populateUI();
-          console.log('[ProfilePage] 2nd populateUI done, #business-name value:', (document.getElementById('business-name') || {}).value);
+          dbg('[ProfilePage] 2nd populateUI done, #business-name value:', (document.getElementById('business-name') || {}).value);
           if (typeof window.initLokaliAutocomplete === 'function') window.initLokaliAutocomplete();
         }, 800);
         if (typeof window.initLokaliAutocomplete === 'function') {
@@ -336,7 +346,7 @@ var LokaliProfilePage = (function () {
 
   function populateUI() {
     if (!_vendor) return;
-    console.log('[LokaliProfile] tagline value from API:', JSON.stringify(_vendor.tagline), '| business_tagline:', JSON.stringify(_vendor.business_tagline));
+    dbg('[LokaliProfile] tagline value from API:', JSON.stringify(_vendor.tagline), '| business_tagline:', JSON.stringify(_vendor.business_tagline));
 
     _setTextValueAnyId(['input-business-name', 'business-name', 'business_name'], _v('business_name', 'businessName'));
     _setDescriptionValue(_v('business_description', 'businessDescription'));
@@ -660,9 +670,7 @@ var LokaliProfilePage = (function () {
                       _setProfilePhotoPreviewSrc(newUrl);
                       _setPhotoUrlValue(newUrl);
                     }
-                    if (typeof console !== 'undefined' && console.log) {
-                      console.log('[ProfilePage] After refetch, profile_photo:', newUrl || '(empty)');
-                    }
+                    dbg('[ProfilePage] After refetch, profile_photo:', newUrl || '(empty)');
                   }
                 })
                 .then(function () { if (objectUrl) URL.revokeObjectURL(objectUrl); })
@@ -793,9 +801,7 @@ var LokaliProfilePage = (function () {
       return;
     }
     var body = _normalizePayload(payload);
-    if (typeof console !== 'undefined' && console.log) {
-      console.log('[ProfilePage] Save payload profile_photo:', body.profile_photo ? body.profile_photo.substring(0, 60) + (body.profile_photo.length > 60 ? '...' : '') : '(empty)');
-    }
+    dbg('[ProfilePage] Save payload profile_photo:', body.profile_photo ? body.profile_photo.substring(0, 60) + (body.profile_photo.length > 60 ? '...' : '') : '(empty)');
     window.LokaliAPI.vendors.updateMe(body)
       .then(function (res) {
         if (res.error) {
