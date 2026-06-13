@@ -9,6 +9,13 @@
   existing form elements/IDs.
 */
 (function () {
+  // Debug-gated logger: these traces dump vendor data (name, tagline, photo URL,
+  // save payloads). Silent in production; set window.LOKALI_DEBUG = true to enable.
+  function _dbg() {
+    if (window.LOKALI_DEBUG && window.console && console.log) {
+      console.log.apply(console, arguments);
+    }
+  }
   function injectStyle(id, css) {
     if (document.getElementById(id)) return;
     var s = document.createElement("style");
@@ -165,7 +172,10 @@ var LokaliProfilePage = (function () {
   function _profilePhotoDisplayUrl(url) {
     if (!url || typeof url !== 'string') return url;
     var s = url.trim();
+    // Block javascript:/data: schemes, protocol-relative //host, breakout chars.
+    if (!s || /[\s"'<>`\\]/.test(s) || /^(?:javascript|data|vbscript):/i.test(s)) return '';
     if (s.indexOf('http://') === 0 || s.indexOf('https://') === 0) return s;
+    if (s.indexOf('//') === 0) return '';
     if (s.indexOf('/') === 0) {
       var origin = typeof window.LOKALI_XANO_ORIGIN === 'string' ? window.LOKALI_XANO_ORIGIN : 'https://x8ki-letl-twmt.n7.xano.io';
       return origin.replace(/\/$/, '') + s;
@@ -194,10 +204,10 @@ var LokaliProfilePage = (function () {
   }
 
   function init() {
-    console.log('[ProfilePage] init() called');
-    console.log('[ProfilePage] LokaliAPI available:', !!window.LokaliAPI);
-    console.log('[ProfilePage] LokaliDashboard available:', !!window.LokaliDashboard);
-    console.log('[ProfilePage] Token:', window.LokaliAPI && window.LokaliAPI.getToken ? (window.LokaliAPI.getToken() ? 'present' : 'MISSING') : 'N/A');
+    _dbg('[ProfilePage] init() called');
+    _dbg('[ProfilePage] LokaliAPI available:', !!window.LokaliAPI);
+    _dbg('[ProfilePage] LokaliDashboard available:', !!window.LokaliDashboard);
+    _dbg('[ProfilePage] Token:', window.LokaliAPI && window.LokaliAPI.getToken ? (window.LokaliAPI.getToken() ? 'present' : 'MISSING') : 'N/A');
     if (!window.LokaliDashboard.requireAuth()) {
       console.warn('[ProfilePage] Auth failed — redirecting to login');
       return;
@@ -208,15 +218,15 @@ var LokaliProfilePage = (function () {
     _initPhoneField();
     loadData()
       .then(function () {
-        console.log('[ProfilePage] loadData succeeded, _vendor:', JSON.stringify(_vendor).substring(0, 200));
-        console.log('[ProfilePage] business_name:', _vendor && _vendor.business_name);
-        console.log('[ProfilePage] Element #business-name:', document.getElementById('business-name'));
+        _dbg('[ProfilePage] loadData succeeded, _vendor:', JSON.stringify(_vendor).substring(0, 200));
+        _dbg('[ProfilePage] business_name:', _vendor && _vendor.business_name);
+        _dbg('[ProfilePage] Element #business-name:', document.getElementById('business-name'));
         populateUI();
-        console.log('[ProfilePage] populateUI done, #business-name value:', (document.getElementById('business-name') || {}).value);
+        _dbg('[ProfilePage] populateUI done, #business-name value:', (document.getElementById('business-name') || {}).value);
         bindEvents();
         setTimeout(function () {
           populateUI();
-          console.log('[ProfilePage] 2nd populateUI done, #business-name value:', (document.getElementById('business-name') || {}).value);
+          _dbg('[ProfilePage] 2nd populateUI done, #business-name value:', (document.getElementById('business-name') || {}).value);
           if (typeof window.initLokaliAutocomplete === 'function') window.initLokaliAutocomplete();
         }, 800);
         if (typeof window.initLokaliAutocomplete === 'function') {
@@ -336,7 +346,7 @@ var LokaliProfilePage = (function () {
 
   function populateUI() {
     if (!_vendor) return;
-    console.log('[LokaliProfile] tagline value from API:', JSON.stringify(_vendor.tagline), '| business_tagline:', JSON.stringify(_vendor.business_tagline));
+    _dbg('[LokaliProfile] tagline value from API:', JSON.stringify(_vendor.tagline), '| business_tagline:', JSON.stringify(_vendor.business_tagline));
 
     _setTextValueAnyId(['input-business-name', 'business-name', 'business_name'], _v('business_name', 'businessName'));
     _setDescriptionValue(_v('business_description', 'businessDescription'));
@@ -661,7 +671,7 @@ var LokaliProfilePage = (function () {
                       _setPhotoUrlValue(newUrl);
                     }
                     if (typeof console !== 'undefined' && console.log) {
-                      console.log('[ProfilePage] After refetch, profile_photo:', newUrl || '(empty)');
+                      _dbg('[ProfilePage] After refetch, profile_photo:', newUrl || '(empty)');
                     }
                   }
                 })
@@ -794,7 +804,7 @@ var LokaliProfilePage = (function () {
     }
     var body = _normalizePayload(payload);
     if (typeof console !== 'undefined' && console.log) {
-      console.log('[ProfilePage] Save payload profile_photo:', body.profile_photo ? body.profile_photo.substring(0, 60) + (body.profile_photo.length > 60 ? '...' : '') : '(empty)');
+      _dbg('[ProfilePage] Save payload profile_photo:', body.profile_photo ? body.profile_photo.substring(0, 60) + (body.profile_photo.length > 60 ? '...' : '') : '(empty)');
     }
     window.LokaliAPI.vendors.updateMe(body)
       .then(function (res) {

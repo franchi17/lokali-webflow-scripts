@@ -761,7 +761,11 @@ const LokaliServicesPage = (() => {
   const photoUrl = (u) => {
     if (!u) return '';
     const s = String(u).trim();
+    // This value is interpolated into innerHTML below — block javascript:/data:
+    // schemes, protocol-relative //host, and chars that break out of the src="".
+    if (!s || /[\s"'<>`\\]/.test(s) || /^(?:javascript|data|vbscript):/i.test(s)) return '';
     if (s.indexOf('http://') === 0 || s.indexOf('https://') === 0) return s;
+    if (s.indexOf('//') === 0) return '';
     if (s.indexOf('/') === 0) return XANO_ORIGIN + s;
     return s;
   };

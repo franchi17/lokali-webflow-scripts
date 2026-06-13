@@ -30,10 +30,14 @@
     return [];
   }
   function imgUrl(v) {
-    if (!v) return '';
-    if (typeof v === 'string') return v;
-    if (typeof v === 'object') return v.url || v.path || '';
-    return '';
+    var s = '';
+    if (typeof v === 'string') s = v;
+    else if (v && typeof v === 'object') s = v.url || v.path || '';
+    if (!s || typeof s !== 'string') return '';
+    s = s.trim();
+    // Block javascript:/data: schemes + attribute/CSS-breakout chars.
+    if (!s || /[\s"'<>`\\]/.test(s) || /^(?:javascript|data|vbscript):/i.test(s)) return '';
+    return s;
   }
   function cents(n) { var x = Number(n); if (!isFinite(x)) return ''; return '$' + (x % 100 === 0 ? (x / 100).toFixed(0) : (x / 100).toFixed(2)); }
 

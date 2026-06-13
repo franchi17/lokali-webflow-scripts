@@ -232,7 +232,11 @@
   function vPhotoUrl(v) {
     var p = v.profile_photo;
     if (!p || typeof p !== 'string') return '';
+    p = p.trim();
+    // Block javascript:/data: schemes, protocol-relative //host, breakout chars.
+    if (!p || /[\s"'<>`\\]/.test(p) || /^(?:javascript|data|vbscript):/i.test(p)) return '';
     if (/^https?:\/\//.test(p)) return p;
+    if (p.indexOf('//') === 0) return '';
     var base = window.LOKALI_FILE_BASE || 'https://x8ki-letl-twmt.n7.xano.io';
     return base.replace(/\/$/, '') + (p.charAt(0) === '/' ? '' : '/') + p;
   }

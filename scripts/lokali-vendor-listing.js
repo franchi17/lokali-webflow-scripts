@@ -35,7 +35,12 @@
   // profile_photo from Xano is often a relative /vault/... path — prepend the Xano file base.
   function photoUrl(p) {
     if (!p || typeof p !== 'string') return '';
+    p = p.trim();
+    // Block javascript:/data: schemes, protocol-relative //host, and chars that
+    // could break out of an attribute/CSS url(). Allow http(s) + relative paths.
+    if (!p || /[\s"'<>`\\]/.test(p) || /^(?:javascript|data|vbscript):/i.test(p)) return '';
     if (/^https?:\/\//.test(p)) return p;
+    if (p.indexOf('//') === 0) return '';
     var base = window.LOKALI_FILE_BASE || 'https://x8ki-letl-twmt.n7.xano.io';
     return base.replace(/\/$/, '') + (p.charAt(0) === '/' ? '' : '/') + p;
   }
@@ -183,10 +188,13 @@
     return [];
   }
   function imgUrl(v) {
-    if (!v) return '';
-    if (typeof v === 'string') return v;
-    if (typeof v === 'object') return v.url || v.path || '';
-    return '';
+    var s = '';
+    if (typeof v === 'string') s = v;
+    else if (v && typeof v === 'object') s = v.url || v.path || '';
+    if (!s || typeof s !== 'string') return '';
+    s = s.trim();
+    if (!s || /[\s"'<>`\\]/.test(s) || /^(?:javascript|data|vbscript):/i.test(s)) return '';
+    return s;
   }
 
   // ---- price formatting -------------------------------------------------

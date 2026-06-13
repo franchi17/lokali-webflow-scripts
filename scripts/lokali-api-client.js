@@ -64,7 +64,9 @@
       var token = getToken();
       if (token) headers['Authorization'] = 'Bearer ' + token;
     }
-    var opts = { method: method, headers: headers, credentials: 'include' };
+    // Xano auth is Bearer-token (Authorization header), not cookies — so no
+    // credentials:'include'. Default mode keeps these cross-origin calls credential-free.
+    var opts = { method: method, headers: headers };
     if (body != null && method !== 'GET') opts.body = JSON.stringify(body);
 
     return fetch(url, opts)
@@ -192,7 +194,7 @@
       var token = getToken();
       if (token) headers['Authorization'] = 'Bearer ' + token;
     }
-    var opts = { method: method, headers: headers, credentials: 'include', body: formData };
+    var opts = { method: method, headers: headers, body: formData };
     return fetch(url, opts).then(parseResponse).catch(function (err) {
       return { data: null, error: err.message || 'Network error', status: 0 };
     });
@@ -522,7 +524,6 @@
         fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-          credentials: 'include',
           keepalive: true,
           body: JSON.stringify({ event_type: eventType, source: source || 'listing' })
         }).catch(function () {});
