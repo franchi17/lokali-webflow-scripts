@@ -1,0 +1,117 @@
+/*
+  Lokali — Mobile nav fix.
+  The Webflow header's native hamburger toggle is broken: the nav menu was wrapped in a
+  custom `.show-in-tablet` div (not a direct child of the navbar) so Webflow's built-in
+  open/close no longer fires, and the built-in `.w-nav-menu` still holds stale Localfinder
+  template links (Home / Professionals / Blog / Home-V1…). This script ignores that broken
+  menu, builds a clean mobile panel that mirrors the real Lokali nav, and wires the existing
+  hamburger button to open/close it.
+
+  Load SITEWIDE (Project Settings → Custom Code → Footer, or a sitewide <script> tag) so it
+  runs on every public page. Self-contained: injects its own CSS, no dependencies.
+
+  To change the menu, edit LINKS below.
+*/
+(function () {
+  'use strict';
+
+  var LINKS = [
+    { label: 'About',           href: '/about' },
+    { label: 'The Market',      href: '/the-market' },
+    { label: 'Pricing',         href: '/pricing' },
+    { label: 'Login',           href: '/login' },
+    { label: 'Become a Vendor', href: '/vendor-signup', cta: true }
+  ];
+
+  function injectCss() {
+    if (document.getElementById('lok-mnav-css')) return;
+    var s = document.createElement('style');
+    s.id = 'lok-mnav-css';
+    s.textContent = [
+      '#lok-mnav-panel{position:fixed;left:0;right:0;z-index:9998;display:none;flex-direction:column;',
+      'background:var(--snow,#F7F6FC);box-shadow:0 16px 30px rgba(15,23,42,.14);',
+      'padding:8px 20px 20px;font-family:"Plus Jakarta Sans",system-ui,sans-serif;',
+      'border-top:1px solid rgba(15,23,42,.06);box-sizing:border-box;',
+      'max-height:calc(100vh - var(--lok-h,96px));overflow-y:auto;-webkit-overflow-scrolling:touch;}',
+      '#lok-mnav-backdrop{position:fixed;inset:0;z-index:9997;display:none;background:rgba(15,23,42,.35);}',
+      'html.lok-mnav-open #lok-mnav-panel{display:flex;}',
+      'html.lok-mnav-open #lok-mnav-backdrop{display:block;}',
+      'html.lok-mnav-open{overflow:hidden;}',
+      '#lok-mnav-panel a{display:block;width:100%;box-sizing:border-box;padding:15px 6px;font-size:17px;',
+      'font-weight:500;line-height:1.2;color:var(--lokali-primary,#6002ee);text-decoration:none;',
+      'border-bottom:1px solid rgba(15,23,42,.06);}',
+      '#lok-mnav-panel a.lok-cta{margin-top:14px;text-align:center;background:var(--lokali-primary,#6002ee);',
+      'color:#fff;border-radius:10px;border-bottom:0;font-weight:600;padding:14px 6px;}'
+    ].join('');
+    document.head.appendChild(s);
+  }
+
+  function build(nav, btn) {
+    if (document.getElementById('lok-mnav-panel')) return;
+
+    var panel = document.createElement('nav');
+    panel.id = 'lok-mnav-panel';
+    panel.setAttribute('aria-label', 'Mobile navigation');
+    LINKS.forEach(function (l) {
+      var a = document.createElement('a');
+      a.href = l.href;
+      a.textContent = l.label;
+      if (l.cta) a.className = 'lok-cta';
+      panel.appendChild(a);
+    });
+
+    var backdrop = document.createElement('div');
+    backdrop.id = 'lok-mnav-backdrop';
+
+    document.body.appendChild(backdrop);
+    document.body.appendChild(panel);
+
+    function position() {
+      var bottom = Math.round(nav.getBoundingClientRect().bottom);
+      if (bottom < 0) bottom = 0;
+      document.documentElement.style.setProperty('--lok-h', bottom + 'px');
+      panel.style.top = bottom + 'px';
+    }
+
+    function setOpen(open) {
+      if (open) position();
+      document.documentElement.classList.toggle('lok-mnav-open', open);
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      btn.classList.toggle('w--open', open);
+    }
+
+    function isHamburgerVisible() {
+      return getComputedStyle(btn).display !== 'none';
+    }
+
+    // Capture phase + stopPropagation so we run before (and instead of) Webflow's dead handler.
+    btn.addEventListener('click', function (e) {
+      if (!isHamburgerVisible()) return; // desktop: let the normal nav be
+      e.preventDefault();
+      e.stopPropagation();
+      setOpen(!document.documentElement.classList.contains('lok-mnav-open'));
+    }, true);
+
+    panel.addEventListener('click', function (e) { if (e.target.closest('a')) setOpen(false); });
+    backdrop.addEventListener('click', function () { setOpen(false); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') setOpen(false); });
+    window.addEventListener('resize', function () {
+      if (!isHamburgerVisible()) setOpen(false);
+      else if (document.documentElement.classList.contains('lok-mnav-open')) position();
+    });
+  }
+
+  function init() {
+    var nav = document.querySelector('.w-nav') || document.querySelector('.header-wrapper');
+    if (!nav) return;
+    var btn = nav.querySelector('.w-nav-button') || nav.querySelector('.hamburger-menu-wrapper');
+    if (!btn) return;
+    injectCss();
+    build(nav, btn);
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+  // Re-run once after Webflow finishes wiring, in case the header renders late.
+  setTimeout(init, 1000);
+})();
