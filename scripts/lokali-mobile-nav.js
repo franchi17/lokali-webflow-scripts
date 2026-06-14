@@ -41,13 +41,34 @@
       'font-weight:500;line-height:1.2;color:var(--lokali-primary,#6002ee);text-decoration:none;',
       'border-bottom:1px solid rgba(15,23,42,.06);}',
       '#lok-mnav-panel a.lok-cta{margin-top:14px;text-align:center;background:var(--lokali-primary,#6002ee);',
-      'color:#fff;border-radius:10px;border-bottom:0;font-weight:600;padding:14px 6px;}'
+      'color:#fff;border-radius:10px;border-bottom:0;font-weight:600;padding:14px 6px;}',
+      // Hamburger -> X morph while the menu is open (two-bar hamburger; bars ~15px apart).
+      // The original bars are driven by Webflow IX2 (Web Animations API) which overrides
+      // even inline !important, so we hide them and render our own morphing icon instead.
+      '.hamburger-menu-wrapper .hamburger-menu-bar{display:none!important;}',
+      '.hamburger-menu-wrapper{display:flex!important;align-items:center;justify-content:center;}',
+      '.lok-burger{position:relative;width:30px;height:18px;flex:0 0 auto;}',
+      '.lok-burger span{position:absolute;left:0;right:0;height:3px;border-radius:20px;',
+      'background:#343A40;transition:transform .25s ease,top .25s ease;}',
+      '.lok-burger span:first-child{top:3px;}',
+      '.lok-burger span:last-child{top:12px;}',
+      'html.lok-mnav-open .lok-burger span:first-child{top:7.5px;transform:rotate(45deg);}',
+      'html.lok-mnav-open .lok-burger span:last-child{top:7.5px;transform:rotate(-45deg);}'
     ].join('');
     document.head.appendChild(s);
   }
 
   function build(nav, btn) {
     if (document.getElementById('lok-mnav-panel')) return;
+
+    // Our own hamburger/X icon (Webflow's IX2-managed bars are hidden via CSS).
+    if (!btn.querySelector('.lok-burger')) {
+      var icon = document.createElement('div');
+      icon.className = 'lok-burger';
+      icon.appendChild(document.createElement('span'));
+      icon.appendChild(document.createElement('span'));
+      btn.appendChild(icon);
+    }
 
     var panel = document.createElement('nav');
     panel.id = 'lok-mnav-panel';
