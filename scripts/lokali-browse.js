@@ -292,13 +292,25 @@
   }
 
   // ── fetch ──
-  function fetchVendors() {
+  // The vendor list is the page's core payload. LokaliAPI never rejects: a transient
+  // network/connection failure (common when a freshly-navigated page fires the fetch
+  // before the Xano connection is warm — e.g. clicking "Back to The Market") resolves
+  // with { data:null, error, status:0 }, which would silently render a blank grid
+  // showing "0" until the visitor refreshed. So retry a FAILED call a few times before
+  // giving up, and only fall through to an empty grid when the request truly succeeds.
+  function fetchVendors(attempt) {
+    attempt = attempt || 0;
     var loading = el('browse-loading');
     showEl(loading, 'block');
     // Location is filtered client-side (Xano's ?location_id= currently returns nothing), so
     // always load the full active set and let applyFilters() narrow by neighborhood.
     var params = { page: 1, per_page: PER_PAGE };
     return window.LokaliAPI.vendors.list(params).then(function (out) {
+      if (out && out.error && attempt < 3) {
+        return new Promise(function (resolve) {
+          setTimeout(function () { resolve(fetchVendors(attempt + 1)); }, 300 * (attempt + 1));
+        });
+      }
       hideEl(loading);
       _allVendors = extractList(out && out.data).filter(function (v) { return v && v.is_active !== false; });
       updateCategoryCounts();
@@ -660,4 +672,14 @@
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
+
+  // Safety net for the back/forward cache (bfcache): if a visitor left The Market
+  // while it was empty (e.g. mid-load) and then returns via the browser Back button,
+  // the page is restored from a snapshot and init() does NOT re-run — leaving a blank,
+  // vendor-less grid. Re-fetch on bfcache restore whenever no cards are showing.
+  window.addEventListener('pageshow', function (e) {
+    if (!e.persisted) return;
+    if (!window.LokaliAPI || !_grid) return;
+    if (_renderedCards.length === 0) fetchVendors();
+  });
 })();
