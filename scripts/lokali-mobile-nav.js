@@ -46,7 +46,10 @@
       // The original bars are driven by Webflow IX2 (Web Animations API) which overrides
       // even inline !important, so we hide them and render our own morphing icon instead.
       '.hamburger-menu-wrapper .hamburger-menu-bar{display:none!important;}',
-      '.hamburger-menu-wrapper{display:flex!important;align-items:center;justify-content:center;}',
+      // Only force the hamburger visible at the breakpoint where Webflow shows it (<=991px).
+      // Without the media-query scope this !important rule overrode Webflow's desktop
+      // display:none and the burger leaked onto desktop beside the full nav.
+      '@media screen and (max-width:991px){.hamburger-menu-wrapper{display:flex!important;align-items:center;justify-content:center;}}',
       '.lok-burger{position:relative;width:30px;height:18px;flex:0 0 auto;}',
       '.lok-burger span{position:absolute;left:0;right:0;height:3px;border-radius:20px;',
       'background:#343A40;transition:transform .25s ease,top .25s ease;}',

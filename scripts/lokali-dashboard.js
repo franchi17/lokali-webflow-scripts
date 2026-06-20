@@ -286,3 +286,48 @@
   }
 })();
 
+// Wire the static "View My Listing" sidebar link to the vendor's public page.
+// The Webflow template ships it with a dead href (/dashboard//view-listing → 404);
+// repoint it to golokali.com/{slug} (clean URL via the Cloudflare Worker), falling
+// back to /vendor?id={id} until the vendor has saved a slug. Runs on every dashboard
+// page since the sidebar (and this script) is sitewide on /vendor-dashboard.
+(function wireViewListingLink() {
+  'use strict';
+
+  var ORIGIN = 'https://www.golokali.com';
+
+  function findLink() {
+    var byHref = document.querySelector('a[href*="view-listing"]');
+    if (byHref) return byHref;
+    var links = document.querySelectorAll('a');
+    for (var i = 0; i < links.length; i++) {
+      if (/^\s*view\s*my\s*listing\s*$/i.test(links[i].textContent || '')) return links[i];
+    }
+    return null;
+  }
+
+  function publicListingUrl(v) {
+    return v && v.slug ? (ORIGIN + '/' + v.slug) : (ORIGIN + '/vendor?id=' + (v && v.id));
+  }
+
+  function run() {
+    var link = findLink();
+    if (!link) return;
+    if (!(window.LokaliAPI && window.LokaliAPI.vendors && window.LokaliAPI.vendors.me)) {
+      setTimeout(run, 300);
+      return;
+    }
+    window.LokaliAPI.vendors.me().then(function (res) {
+      if (!res || res.error || !res.data) return;
+      var v = res.data.vendor || res.data;
+      if (!v || (!v.slug && v.id == null)) return;
+      link.setAttribute('href', publicListingUrl(v));
+      link.setAttribute('target', '_blank');
+      link.setAttribute('rel', 'noopener');
+    }).catch(function () {});
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run);
+  else run();
+})();
+
