@@ -557,14 +557,22 @@
     // resolve via GET vendor/slug/{slug} (falls back to id-lookup if the client
     // build doesn't yet have getBySlug).
     var isNumericId = /^[0-9]+$/.test(String(id));
-    var vendorFetch = (!isNumericId && API.vendors.getBySlug)
-      ? API.vendors.getBySlug(id)
-      : API.vendors.getById(id);
+    // Vendor identity is the critical fetch — retry it (Xano can cold-start or drop the
+    // first request right after a navigation). Categories/locations are label data only:
+    // wrap them so a reject can never abort the whole Promise.all and strand the hero on its
+    // Webflow template placeholder ("Maria's Sweet Studio").
+    var vendorFetch = fetchListWithRetry(function () {
+      return (!isNumericId && API.vendors.getBySlug) ? API.vendors.getBySlug(id) : API.vendors.getById(id);
+    });
+    var catsFetch = (API.data.categories ? API.data.categories() : Promise.resolve({ data: [] }))
+      .catch(function () { return { data: [] }; });
+    var locsFetch = (API.data.locations ? API.data.locations() : Promise.resolve({ data: [] }))
+      .catch(function () { return { data: [] }; });
 
     Promise.all([
       vendorFetch,
-      API.data.categories ? API.data.categories() : Promise.resolve({ data: [] }),
-      API.data.locations ? API.data.locations() : Promise.resolve({ data: [] })
+      catsFetch,
+      locsFetch
     ]).then(function (res) {
       var v = unwrap(res[0]);
       if (v && v.vendor) v = v.vendor; // GET vendor/id/{id} returns { vendor: {...} }
