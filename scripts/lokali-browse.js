@@ -298,6 +298,7 @@
   // with { data:null, error, status:0 }, which would silently render a blank grid
   // showing "0" until the visitor refreshed. So retry a FAILED call a few times before
   // giving up, and only fall through to an empty grid when the request truly succeeds.
+  var FETCH_MAX_ATTEMPTS = 5;
   function fetchVendors(attempt) {
     attempt = attempt || 0;
     var loading = el('browse-loading');
@@ -305,16 +306,27 @@
     // Location is filtered client-side (Xano's ?location_id= currently returns nothing), so
     // always load the full active set and let applyFilters() narrow by neighborhood.
     var params = { page: 1, per_page: PER_PAGE };
-    return window.LokaliAPI.vendors.list(params).then(function (out) {
-      if (out && out.error && attempt < 3) {
+    // Retry both resolved-errors AND network rejections with backoff: Xano can cold-start
+    // for several seconds at launch, and the old code only retried resolved-errors (a thrown
+    // fetch fell straight through to a silent "0 vendors" that survived a manual refresh).
+    function retryOrGiveUp() {
+      if (attempt < FETCH_MAX_ATTEMPTS) {
         return new Promise(function (resolve) {
           setTimeout(function () { resolve(fetchVendors(attempt + 1)); }, 300 * (attempt + 1));
         });
       }
       hideEl(loading);
+      if (_emptyState && _renderedCards.length === 0) showEl(_emptyState, 'block');
+    }
+    return window.LokaliAPI.vendors.list(params).then(function (out) {
+      if (out && out.error) return retryOrGiveUp();
+      hideEl(loading);
       _allVendors = extractList(out && out.data).filter(function (v) { return v && v.is_active !== false; });
       updateCategoryCounts();
       applyFilters();
+    }, function (err) {
+      console.warn('[lokali-browse] vendors fetch rejected (attempt ' + attempt + '):', err);
+      return retryOrGiveUp();
     });
   }
 
@@ -657,7 +669,12 @@
     renderFilterPanel();
     bindEvents();
 
+    // Reference data (categories/locations) is non-critical: a failure must never block the
+    // vendor grid. Previously a rejected loadRefData() skipped fetchVendors() entirely and
+    // showed an empty market. Swallow its error so the chain always reaches fetchVendors();
+    // the filters just degrade gracefully without the ref labels.
     loadRefData()
+      .catch(function (err) { console.warn('[lokali-browse] ref data load failed, continuing:', err); })
       .then(function () {
         if (!restored) resolveInitialLocation(); // saved session state wins over URL/localStorage default
         populateLocationSelect();
@@ -665,7 +682,7 @@
         return fetchVendors();
       })
       .catch(function (err) {
-        console.error('[lokali-browse] init failed:', err);
+        console.error('[lokali-browse] vendor load failed:', err);
         if (_emptyState) showEl(_emptyState, 'block');
       });
   }

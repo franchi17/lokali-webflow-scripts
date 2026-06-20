@@ -517,12 +517,41 @@
     return map;
   }
 
+  // Retry wrapper for the per-vendor service/product fetches. Xano can cold-start or drop
+  // the first request right after a (back-)navigation; the old code called these once with
+  // no retry and no .catch, so any miss left the Webflow template's placeholder cards on
+  // screen. This retries resolved-errors AND network rejections a few times with backoff,
+  // then resolves to {error} so renderServices/renderProducts fall through cleanly.
+  function fetchListWithRetry(fn, attempt) {
+    attempt = attempt || 0;
+    var MAX = 3;
+    function later(next) {
+      return new Promise(function (r) { setTimeout(function () { r(fetchListWithRetry(fn, next)); }, 300 * next); });
+    }
+    return fn().then(function (out) {
+      if (out && out.error && attempt < MAX) return later(attempt + 1);
+      return out;
+    }, function (err) {
+      if (attempt < MAX) return later(attempt + 1);
+      return { error: err || true };
+    });
+  }
+
   // ---- 3/4. fetch + render ---------------------------------------------
   function hydrate() {
     if (!window.LokaliAPI) { console.warn('[lokali-vendor-listing] LokaliAPI not loaded'); return; }
     var id = resolveVendorId();
     if (!id) { console.warn('[lokali-vendor-listing] no vendor id in URL'); return; }
     var API = window.LokaliAPI;
+
+    // Strip the Webflow template's placeholder service/product cards up front, so a slow or
+    // failed fetch can never leave dummy data ("Custom birthday cakes", "Brownie gift box",
+    // etc.) on screen. renderServices/renderProducts repopulate with real cards or the
+    // empty state once the fetch resolves.
+    ['vl-services-grid', 'vl-products-grid'].forEach(function (gid) {
+      var g = document.getElementById(gid);
+      if (g) g.innerHTML = '';
+    });
 
     // Numeric → resolve by id (legacy ?id=). Non-numeric → treat as a slug and
     // resolve via GET vendor/slug/{slug} (falls back to id-lookup if the client
@@ -555,8 +584,10 @@
       window.LOKALI_LOADED_VENDOR = { id: vid, name: v.business_name || '' };
       try { document.dispatchEvent(new CustomEvent('lokali:vendor-loaded', { detail: window.LOKALI_LOADED_VENDOR })); } catch (e) {}
       loadPortfolio(vid, v);
-      API.services.listByVendor(vid).then(function (sres) { renderServices(asArray(unwrap(sres)), !(sres && sres.error)); });
-      API.products.listByVendor(vid).then(function (pres) { renderProducts(asArray(unwrap(pres)), !(pres && pres.error)); });
+      fetchListWithRetry(function () { return API.services.listByVendor(vid); })
+        .then(function (sres) { renderServices(asArray(unwrap(sres)), !(sres && sres.error)); });
+      fetchListWithRetry(function () { return API.products.listByVendor(vid); })
+        .then(function (pres) { renderProducts(asArray(unwrap(pres)), !(pres && pres.error)); });
     });
   }
 
