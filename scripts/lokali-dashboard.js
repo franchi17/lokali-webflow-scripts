@@ -2,6 +2,22 @@
 (function () {
   'use strict';
 
+  // Dashboard content must clear the fixed 200px sidebar (.section-11) on
+  // desktop. Content wrappers differ per page (div-block-38/39, container-11)
+  // and some center in the full width, sliding under the rail at ~1248px and
+  // narrower. Reserving the rail's width as body padding-left offsets all
+  // in-flow content uniformly; the fixed sidebar ignores body padding and
+  // stays pinned at left:0. Scoped to >=992px (tablet/mobile collapse the nav).
+  (function injectLayoutFix() {
+    // Dashboard pages only — never pad the body on public pages (no sidebar).
+    if (String(location.pathname || '').indexOf('/vendor-dashboard') === -1) return;
+    if (document.getElementById('lok-dashboard-layout-fix')) return;
+    var s = document.createElement('style');
+    s.id = 'lok-dashboard-layout-fix';
+    s.textContent = '@media (min-width:992px){body{padding-left:200px;}}';
+    (document.head || document.documentElement).appendChild(s);
+  })();
+
   window.LokaliDashboard = {
 
     requireAuth: function () {
