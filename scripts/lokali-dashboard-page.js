@@ -203,8 +203,12 @@
     if (previewBtn) previewBtn.href = v.slug ? ('/' + v.slug) : ('/vendor?id=' + v.id);
 
     // Stat cards
-    setId('stat-active-services', services.filter(function (s) { return !!s.is_active; }).length);
-    setId('stat-active-products', products.filter(function (p) { return !!p.is_active; }).length);
+    var activeServices = services.filter(function (s) { return !!s.is_active; }).length;
+    var activeProducts = products.filter(function (p) { return !!p.is_active; }).length;
+    setId('stat-active-services', activeServices);
+    // Webflow has a single combined "Active Products / Services" card bound to
+    // id="stat-active-products" — show the total of both, not products alone.
+    setId('stat-active-products', activeServices + activeProducts);
     // Profile views (this month). Needs an element with id="stat-profile-views" in Webflow.
     // Reads vendor.profile_views_month_count from vendor/me (0 until the public profile gets views).
     setId('stat-profile-views', (v.profile_views_month_count != null ? v.profile_views_month_count : 0));

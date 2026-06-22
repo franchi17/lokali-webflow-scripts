@@ -9,13 +9,6 @@
   existing form elements/IDs.
 */
 (function () {
-  // Debug-gated logger: these traces dump vendor data (name, tagline, photo URL,
-  // save payloads). Silent in production; set window.LOKALI_DEBUG = true to enable.
-  function _dbg() {
-    if (window.LOKALI_DEBUG && window.console && console.log) {
-      console.log.apply(console, arguments);
-    }
-  }
   function injectStyle(id, css) {
     if (document.getElementById(id)) return;
     var s = document.createElement("style");
@@ -105,6 +98,14 @@ var LokaliPhoneInput = (function () {
 
 var LokaliProfilePage = (function () {
   'use strict';
+
+  // Debug-gated logger: these traces dump vendor data (name, tagline, photo URL,
+  // save payloads). Silent in production; set window.LOKALI_DEBUG = true to enable.
+  function _dbg() {
+    if (window.LOKALI_DEBUG && window.console && console.log) {
+      console.log.apply(console, arguments);
+    }
+  }
 
   var SAVE_BTN   = 'profile-save-btn';
   var SUCCESS_ID = 'profile-save-success';

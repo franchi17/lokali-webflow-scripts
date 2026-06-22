@@ -79,6 +79,10 @@
     else calls.push(Promise.resolve(null));
     if (window.LokaliAPI.vendors && window.LokaliAPI.vendors.getPreferences) calls.push(window.LokaliAPI.vendors.getPreferences());
     else calls.push(Promise.resolve(null));
+    // auth/me does not carry the vendor record; fetch vendor/me so the listing
+    // visibility toggle (and any vendor-derived field) reflects real state.
+    if (window.LokaliAPI.vendors && window.LokaliAPI.vendors.me) calls.push(window.LokaliAPI.vendors.me());
+    else calls.push(Promise.resolve(null));
     return Promise.all(calls).then(function (res) {
       var me = res[0];
       if (me && me.error) {
@@ -88,6 +92,10 @@
       var d = (me && me.data) || {};
       _user = d.user || d;
       _vendor = d.vendor || (d.user ? null : d.vendor) || null;
+      var vendorRes = res[3];
+      if (vendorRes && !vendorRes.error && vendorRes.data) {
+        _vendor = vendorRes.data.vendor || vendorRes.data;
+      }
       var billing = res[1];
       if (billing && !billing.error && billing.data) {
         var b = billing.data;
