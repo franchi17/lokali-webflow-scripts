@@ -471,7 +471,12 @@ const LokaliServicesPage = (() => {
 
     const countEl = el.activeCount();
     if (countEl) {
-      if (_maxServices != null) {
+      if (_maxServices != null && _maxServices >= 100000) {
+        // Pro/Featured store an "unlimited" cap as a large sentinel (e.g. 99999999).
+        // Don't render the raw number — show that the plan is uncapped.
+        countEl.textContent =
+          `${activeCount} active service${activeCount === 1 ? '' : 's'} · unlimited on your plan`;
+      } else if (_maxServices != null) {
         const remaining = Math.max(0, _maxServices - totalCount);
         countEl.textContent =
           `${totalCount} of ${_maxServices} services · ${remaining} slot${remaining === 1 ? '' : 's'} left`;
