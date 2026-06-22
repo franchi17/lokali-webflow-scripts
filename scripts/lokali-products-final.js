@@ -834,6 +834,7 @@ const LokaliProductsPage = (() => {
     } finally {
       _galleryBusy = false;
       await renderGallery(editingId);
+      await syncCoverFromGallery();
     }
   };
 
@@ -866,6 +867,7 @@ const LokaliProductsPage = (() => {
       _galleryBusy = false;
       if (gi) gi.value = '';
       await renderGallery(editingId);
+      await syncCoverFromGallery();
     }
   };
 
@@ -881,7 +883,24 @@ const LokaliProductsPage = (() => {
     } finally {
       _galleryBusy = false;
       await renderGallery(editingId);
+      await syncCoverFromGallery();
     }
+  };
+
+  // After a user gallery action, the first photo becomes the cover. Persist it
+  // immediately so the card/listing thumbnail updates without waiting for Save,
+  // reusing the SAME full payload Save sends (Xano's PATCH requires all fields,
+  // and this matches existing save behavior — no field is dropped). Only runs
+  // after add/delete/reorder, never on initial open, so a legacy cover is safe.
+  const syncCoverFromGallery = async () => {
+    if (!_isProPlan || !editingId) return;
+    const prod = products.find(p => p.id === editingId);
+    const desired = _galleryPhotos.length ? _galleryPhotos[0].image_url : null;
+    if (prod && prod.image_url === desired) return;
+    const payload = buildPayload(desired);
+    if (!payload.product_name) return; // form mid-edit/invalid — Save will handle it
+    const res = await window.LokaliAPI.products.update(editingId, payload);
+    if (res && !res.error && prod) prod.image_url = desired;
   };
 
   const buildPayload = (imageUrl) => {
