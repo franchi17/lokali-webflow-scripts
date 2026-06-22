@@ -651,10 +651,23 @@ const LokaliServicesPage = (() => {
     }
   };
 
+  const applyPhotoUI = () => {
+    // Pro/Featured: the gallery is the only photo widget and its first photo is the
+    // cover, so hide the standalone "Service image" field to avoid two competing
+    // photo areas. Free keeps it (the gallery is locked for them).
+    if (!_isProPlan) return;
+    const anchor = el.imgThumb() || el.imgPlaceholder() || el.imgInput();
+    if (!anchor) return;
+    let section = anchor;
+    while (section && !/service image/i.test(section.textContent || '')) section = section.parentElement;
+    if (section) section.style.display = 'none';
+  };
+
   const showFormView = () => {
     el.listView()?.style && (el.listView().style.display = 'none');
     el.formView()?.style && (el.formView().style.display = 'block');
     fixFormActionButtons();
+    applyPhotoUI();
     alignGalleryHost();
   };
 
@@ -790,8 +803,12 @@ const LokaliServicesPage = (() => {
     if (host) return host;
     const anchorEl = el.imgPlaceholder() || el.imgThumb() || el.imgInput();
     if (!anchorEl) return null;
-    // Mount BELOW the form grid (inserting inside the grid makes the host a grid item and breaks field placement).
-    const wrap = anchorEl.closest('.w-layout-grid') || anchorEl.closest('[class*="grid"]') ||
+    // Mount the gallery right after the "Service image" section so Photos lead the
+    // form. That section sits ABOVE the form grid, so the host never becomes a grid
+    // item (which would break field placement). Fall back to after the grid.
+    let wrap = anchorEl;
+    while (wrap && !/service image/i.test(wrap.textContent || '')) wrap = wrap.parentElement;
+    if (!wrap) wrap = anchorEl.closest('.w-layout-grid') || anchorEl.closest('[class*="grid"]') ||
       anchorEl.closest('.w-form, .form-field, [class*="image"], [class*="upload"]') || anchorEl.parentElement;
     host = document.createElement('div');
     host.id = 'lok-service-gallery';
@@ -819,7 +836,7 @@ const LokaliServicesPage = (() => {
     const body = document.getElementById('lok-service-gallery-body');
     if (!body) return;
 
-    const title = '<div style="font-size:13px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;color:#4A4761;margin-bottom:8px;">Photo gallery</div>';
+    const title = '<div style="font-size:13px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;color:#4A4761;margin-bottom:8px;">Photos</div>';
 
     if (!_isProPlan) {
       body.innerHTML = title +
@@ -850,7 +867,7 @@ const LokaliServicesPage = (() => {
     const count = _galleryPhotos.length;
 
     let html = title +
-      '<div style="font-size:12px;color:#8E8BA6;margin-bottom:8px;">' + count + ' of ' + cap + ' photos · shown on your public listing' +
+      '<div style="font-size:12px;color:#8E8BA6;margin-bottom:8px;">' + count + ' of ' + cap + ' photos · the first photo is your cover' +
       (count > 1 ? ' · use ‹ › to reorder' : '') + '</div>' +
       '<div style="display:flex;flex-wrap:wrap;gap:10px;">';
 
@@ -1065,6 +1082,12 @@ const LokaliServicesPage = (() => {
       } else {
 
         imageUrl = null;
+      }
+
+      // Unified photos (Pro/Featured): the gallery is the cover source — the first
+      // photo becomes the card/listing thumbnail. The standalone image field is hidden.
+      if (_isProPlan && Array.isArray(_galleryPhotos) && _galleryPhotos.length) {
+        imageUrl = _galleryPhotos[0].image_url || imageUrl;
       }
 
       const payload = buildPayload(imageUrl);
