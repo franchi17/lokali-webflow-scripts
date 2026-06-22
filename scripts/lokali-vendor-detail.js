@@ -212,6 +212,34 @@
     }
   }
 
+  // Clean URL: /{vendorSlug}/services/{itemSlug} or /{vendorSlug}/products/{itemSlug}
+  // (the Cloudflare Worker serves the /service or /product-detail template here).
+  // Returns { vendorSlug, kind:'services'|'products', itemSlug } or null.
+  function pathItem() {
+    var segs = (window.location.pathname || '').split('/').filter(Boolean);
+    if (segs.length !== 3) return null;
+    var kind = decodeURIComponent(segs[1]).toLowerCase();
+    if (kind !== 'services' && kind !== 'products') return null;
+    return { vendorSlug: decodeURIComponent(segs[0]).toLowerCase(), kind: kind, itemSlug: decodeURIComponent(segs[2]) };
+  }
+
+  // Resolve a clean-URL item: vendor by slug → list that vendor's items → match by
+  // slug → hand off to the existing id-based hydrators (which fill vendor + gallery).
+  function hydrateFromSlug(info) {
+    var isProduct = info.kind === 'products';
+    window.LokaliAPI.vendors.getBySlug(info.vendorSlug).then(function (res) {
+      var v = unwrap(res); if (v && v.vendor) v = v.vendor;
+      if (!v || v.id == null) { console.warn('[vd] vendor not found for slug', info.vendorSlug); return; }
+      var listFn = isProduct ? window.LokaliAPI.products.listByVendor : window.LokaliAPI.services.listByVendor;
+      listFn(v.id).then(function (lres) {
+        var match = asArray(unwrap(lres)).filter(function (x) { return x && String(x.slug) === String(info.itemSlug); })[0];
+        if (!match || match.id == null) { console.warn('[vd] item not found for slug', info.itemSlug); return; }
+        if (isProduct) hydrateProduct(match.id, v.id);
+        else hydrateService(match.id, v.id);
+      });
+    });
+  }
+
   function init() {
     // The category tag is business-wide, not per-service/product — remove the
     // static mockup leftover (it showed the wrong hardcoded category anyway).
@@ -221,6 +249,9 @@
       show(catWrap, false);
     }
     if (!window.LokaliAPI) { console.warn('[lokali-vendor-detail] LokaliAPI not loaded'); return; }
+    // Prefer the clean URL; fall back to the legacy ?id=&vendor= query params.
+    var info = pathItem();
+    if (info) { hydrateFromSlug(info); return; }
     var type = pageType();
     var p = params();
     var id = p.get('id');

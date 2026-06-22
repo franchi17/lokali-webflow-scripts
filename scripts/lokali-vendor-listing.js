@@ -18,6 +18,8 @@
   'use strict';
 
   var currentVendorId = null; // set during hydrate(); used to build detail-page links
+  var currentVendorSlug = null; // set during hydrate(); used to build clean item/about URLs
+  var openAboutOnLoad = false; // true when the URL is /{slug}/about — open the About tab once loaded
 
   // ---- tiny DOM helpers -------------------------------------------------
   function $(sel, root) { return (root || document).querySelector(sel); }
@@ -173,6 +175,12 @@
       var first = decodeURIComponent(segs[0]).toLowerCase();
       if (RESERVED_ROOT_SLUGS.indexOf(first) === -1) return first;
     }
+    // Clean About URL: golokali.com/{slug}/about (Worker serves the /vendor
+    // template here too). Resolve the vendor and flag the About tab to open.
+    if (segs.length === 2 && decodeURIComponent(segs[1]).toLowerCase() === 'about') {
+      var vslug = decodeURIComponent(segs[0]).toLowerCase();
+      if (RESERVED_ROOT_SLUGS.indexOf(vslug) === -1) { openAboutOnLoad = true; return vslug; }
+    }
     return null;
   }
 
@@ -225,6 +233,19 @@
   }
 
   // ---- card rendering ---------------------------------------------------
+  // Clean item URL when we have both the vendor slug and the item slug:
+  //   /{vendorSlug}/services/{itemSlug}  ·  /{vendorSlug}/products/{itemSlug}
+  // Otherwise fall back to the legacy ?id= detail-page link (still works).
+  function itemHref(kind, item) {
+    if (currentVendorSlug && item.slug) {
+      return '/' + currentVendorSlug + '/' + kind + '/' + encodeURIComponent(item.slug);
+    }
+    var page = kind === 'services' ? '/service' : '/product-detail';
+    return item.id != null
+      ? (page + '?id=' + item.id + (currentVendorId != null ? '&vendor=' + currentVendorId : ''))
+      : '#';
+  }
+
   var IMG_TINTS = ['#FFF1E6', '#F3EBFF', '#EAFAF2', '#FEF9E6'];
   function cardEl(opts) {
     var a = document.createElement('a');
@@ -266,7 +287,7 @@
         image: imgUrl(s.image_url || s.image),
         tint: IMG_TINTS[i % IMG_TINTS.length],
         cta: p.quote ? 'Request quote' : 'Inquire',
-        href: s.id != null ? ('/service?id=' + s.id + (currentVendorId != null ? '&vendor=' + currentVendorId : '')) : '#'
+        href: itemHref('services', s)
       }));
     });
     ensureActiveTab();
@@ -291,7 +312,7 @@
         image: imgUrl(p.image_url || p.image),
         tint: IMG_TINTS[(i + 1) % IMG_TINTS.length],
         cta: 'Order', orange: true,
-        href: p.id != null ? ('/product-detail?id=' + p.id + (currentVendorId != null ? '&vendor=' + currentVendorId : '')) : '#'
+        href: itemHref('products', p)
       }));
     });
     ensureActiveTab();
@@ -586,6 +607,11 @@
 
       var vid = v.id != null ? v.id : id;
       currentVendorId = vid;
+      // Slug for building clean item/about URLs. Prefer the vendor's real slug;
+      // fall back to a non-numeric id used as the slug (legacy). Numeric id → no slug.
+      currentVendorSlug = v.slug || (/^[0-9]+$/.test(String(id)) ? null : String(id).toLowerCase());
+      // /{slug}/about deep-link: open the About tab (it's always visible).
+      if (openAboutOnLoad) activateTab('about');
       // Announce the loaded vendor for companion scripts (lokali-inquiry.js
       // mounts the "Send an inquiry" button off this). Window var covers the
       // load-order race; the event covers scripts already listening.
