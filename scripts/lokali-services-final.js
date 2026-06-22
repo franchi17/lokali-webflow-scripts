@@ -1,5 +1,15 @@
 const LokaliServicesPage = (() => {
 
+  // Delete is destructive — surface a danger color on hover (resting state stays
+  // neutral grey so it doesn't shout). currentColor drives the trash SVG stroke.
+  (function injectDeleteIconStyle() {
+    if (document.getElementById('lok-icon-btn-delete-style')) return;
+    var s = document.createElement('style');
+    s.id = 'lok-icon-btn-delete-style';
+    s.textContent = '.icon-btn--delete:hover{color:#C0152F;background:#FCEBED;border-color:#F2C4CB;}';
+    (document.head || document.documentElement).appendChild(s);
+  })();
+
   let services     = [];
   let editingId    = null;
   let imageRemoved = false;
@@ -809,7 +819,7 @@ const LokaliServicesPage = (() => {
     if (!_isProPlan) {
       body.innerHTML = title +
         '<div style="color:#4A4761;font-size:14px;line-height:1.5;">' +
-        '🔒 Add a <strong>photo gallery</strong> with Pro &amp; Featured — show up to ' + (_maxServicePhotos || 5) +
+        '🔒 Add a <strong>photo gallery</strong> with Pro &amp; Featured — show up to 5' +
         ' images per service so customers see more of your work.</div>';
       return;
     }

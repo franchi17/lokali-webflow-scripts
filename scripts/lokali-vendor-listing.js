@@ -481,7 +481,9 @@
 
     // badges
     show(document.getElementById('vl-badge-founding'), !!v.is_founding_member);
-    show(document.getElementById('vl-badge-verified'), !!(v.address_verified || v.is_verified));
+    // "Verified" = completed identity/business verification (a Pro/Featured perk),
+    // NOT mere address geocoding. address_verified must not trigger this badge.
+    show(document.getElementById('vl-badge-verified'), !!(v.is_verified || v.identity_status === 'verified'));
 
     // category (first categories_id mapped via labels.categories)
     var catId = (Array.isArray(v.categories_id) && v.categories_id.length) ? v.categories_id[0] : null;
