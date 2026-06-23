@@ -20,7 +20,7 @@
     { label: 'The Market',      href: '/the-market' },
     { label: 'Pricing',         href: '/pricing' },
     { label: 'Login',           href: '/login' },
-    { label: 'Become a Vendor', href: '/vendor-signup', cta: true }
+    { label: 'Become a Vendor', href: '/sign-up', cta: true }
   ];
 
   function injectCss() {
