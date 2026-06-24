@@ -129,18 +129,20 @@
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
   }
 
-  function whenReady(cb, tries) {
+  // Wait only for the api-client (loads via a script tag); the sidebar markup
+  // is server-rendered, so .div-block-29 is present up front on dashboard pages.
+  function whenApi(cb, tries) {
     tries = tries || 0;
-    var bottom = document.querySelector('.div-block-29');
-    var api = window.LokaliAPI && window.LokaliAPI.vendors;
-    if (bottom && api) return cb(bottom);
-    if (tries > 40) return; // ~10s; not a dashboard page or api never loaded
-    setTimeout(function () { whenReady(cb, tries + 1); }, 250);
+    if (window.LokaliAPI && window.LokaliAPI.vendors) return cb();
+    if (tries > 40) return; // ~10s; api never loaded
+    setTimeout(function () { whenApi(cb, tries + 1); }, 250);
   }
 
   function init() {
     if (document.getElementById('lok-acct')) return;
-    whenReady(function (bottom) {
+    var bottom = document.querySelector('.div-block-29');
+    if (!bottom) return; // not a dashboard page — bail immediately (no polling)
+    whenApi(function () {
       if (document.getElementById('lok-acct')) return;
       injectStyles();
       window.LokaliAPI.vendors.me().then(function (res) {
