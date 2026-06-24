@@ -143,6 +143,19 @@
     });
   }
 
+  // Log a service/product view (deduped per browser session) so the analytics
+  // page can rank top items. Fire-and-forget; needs the vendor id + item id.
+  function emitItemView(vendorId, source, itemId) {
+    try {
+      if (vendorId == null || itemId == null) return;
+      if (!window.LokaliAPI || !window.LokaliAPI.leads || typeof window.LokaliAPI.leads.trackView !== 'function') return;
+      var key = 'lok_viewed_' + source + '_' + itemId;
+      if (sessionStorage.getItem(key)) return;
+      sessionStorage.setItem(key, '1');
+      window.LokaliAPI.leads.trackView(vendorId, source, itemId);
+    } catch (e) {}
+  }
+
   // ---- service ----------------------------------------------------------
   function hydrateService(id, vendorParam) {
     window.LokaliAPI.services.getById(id).then(function (res) {
@@ -171,6 +184,7 @@
       var v2 = $('vd-meta-v2'); if (v2 && priceEl) v2.textContent = priceEl.textContent;
       fetchPhotos('services', SERVICE_PHOTOS_PATH, (s.id != null ? s.id : id), imgUrl(s.image_url || s.image)).then(buildGallery);
       var vid = vendorParam || s.vendors_id || s.vendor_id;
+      emitItemView(vid, 'service', s.id != null ? s.id : id);
       fillVendor(vid, name, false);
     });
   }
@@ -199,6 +213,7 @@
       setText('vd-meta-v3', p.is_custom ? 'Made to order' : 'Standard');
       fetchPhotos('products', PRODUCT_PHOTOS_PATH, (p.id != null ? p.id : id), imgUrl(p.image_url || p.image)).then(buildGallery);
       var vid = vendorParam || p.vendors_id || p.vendor_id;
+      emitItemView(vid, 'product', p.id != null ? p.id : id);
       fillVendor(vid, name, true);
     };
     if (vendorParam) {

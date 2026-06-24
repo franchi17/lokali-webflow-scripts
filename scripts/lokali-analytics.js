@@ -1,321 +1,246 @@
 /**
- * Lokali — vendor dashboard "Analytics" page.
+ * Lokali — vendor dashboard "Analytics" page (the insight page).
  *
- * Load AFTER scripts/lokali-api-client.js (needs window.LokaliAPI.leads +
- * an auth token set). Self-mounting: renders into <div id="lok-analytics-section">
- * — add that one empty div on the analytics page in Webflow. No-op if absent.
+ * Load AFTER scripts/lokali-api-client.js. Self-mounts into
+ * <div id="lok-analytics-section"></div> — no-op if absent.
  *
- * Pulls GET vendor/me/analytics (all-time totals + last 180 days of raw
- * inquiry / contact-click / view rows) and buckets everything client-side into:
- *   - this-month KPI cards (rolling 30 days) with month-over-month deltas
- *   - a views -> contacts -> inquiries conversion funnel
- *   - a 6-month trend chart (inline SVG, no external chart lib)
- *   - a contact-channel breakdown (last 30 days)
+ * Fetches (parallel): leads.analytics() (views/leads rows + totals),
+ * services.getMine() + products.getMine() (to name top items), vendors.me()
+ * (plan, for the tier-aware upsell). Everything is bucketed client-side.
+ *
+ * Renders: 3 KPIs (Storefront views, View→Lead rate, Leads → links to Leads
+ * page), a 30-day daily views chart, Top services / Top products by views
+ * (Phase 2 — needs page_views.item_id), and a tier-aware upgrade nudge.
+ * NOT shown (Phase 3, no data yet): search appearances, visitor location,
+ * search terms, category benchmark.
+ *
+ * See docs/vendor-leads-analytics-maintainer-guide.md for the data model.
  */
 (function () {
   'use strict';
 
-  var DAY30 = 30 * 24 * 60 * 60 * 1000;
-  var BUCKETS = 6; // rolling 30-day months shown in the trend
-
-  var INK = '#1A1530', PURPLE = '#6002EE', VIOLET = '#B794F6',
-      ORANGE = '#ff8d00', ORANGE_DK = '#e07b00',
-      SUB = '#6B6680', POS = '#0F9D58', NEG = '#D93025';
-
-  // Per-metric accent colors so the dashboard isn't all one hue.
-  var C_VIEWS = ORANGE, C_CONTACTS = PURPLE, C_INQUIRIES = VIOLET;
-
-  var CHANNEL_LABELS = {
-    call: 'Calls', sms: 'Texts', whatsapp: 'WhatsApp',
-    email: 'Emails', instagram: 'Instagram', website: 'Website'
-  };
+  var DAY = 24 * 60 * 60 * 1000, DAY30 = 30 * DAY;
+  var INK = '#1A1829', DUSK = '#4A4761', SLATE = '#8E8BA6',
+      VIOLET = '#6002EE', VIOLET_L = '#F3EBFF', ORANGE = '#FF8D00',
+      GREEN = '#1D6A45', GREEN_L = '#EAFAF2', RED = '#A32D2D', RED_L = '#FDECEC',
+      BORDER = '#EEEDF6', SNOW = '#F7F6FC', MIST = '#EEEDF6';
 
   var CSS = [
-    '#lok-analytics-section{font-family:"Plus Jakarta Sans",sans-serif;color:' + INK + ';}',
-    '.lok-an-card{background:#fff;border:1px solid #ECEAF3;border-radius:14px;padding:22px;margin-bottom:16px;}',
-    '.lok-an-h{font-size:17px;font-weight:700;margin:0 0 2px;}',
-    '.lok-an-sub{font-size:12.5px;color:' + SUB + ';margin:0 0 16px;}',
-    '.lok-an-kpis{display:flex;flex-wrap:wrap;gap:12px;}',
-    '.lok-an-kpi{flex:1 1 150px;min-width:150px;background:#F7F6FC;border-radius:12px;padding:16px;}',
-    '.lok-an-kpi .n{font-size:28px;font-weight:700;color:' + PURPLE + ';line-height:1.1;}',
-    '.lok-an-kpi .l{font-size:12px;color:' + SUB + ';font-weight:600;margin-top:2px;}',
-    '.lok-an-delta{display:inline-flex;align-items:center;gap:3px;font-size:11.5px;font-weight:700;margin-top:8px;border-radius:100px;padding:2px 9px;}',
-    '.lok-an-delta.up{color:' + POS + ';background:rgba(15,157,88,.10);}',
-    '.lok-an-delta.down{color:' + NEG + ';background:rgba(217,48,37,.10);}',
-    '.lok-an-delta.flat{color:' + SUB + ';background:#EFEDF6;}',
-    '.lok-an-funnel{display:flex;flex-wrap:wrap;align-items:stretch;gap:8px;}',
-    '.lok-an-fstep{flex:1 1 120px;min-width:120px;background:#F7F6FC;border-radius:12px;padding:14px 16px;position:relative;}',
-    '.lok-an-fstep .n{font-size:22px;font-weight:700;color:' + INK + ';}',
-    '.lok-an-fstep .l{font-size:12px;color:' + SUB + ';font-weight:600;}',
-    '.lok-an-fconv{font-size:11px;color:' + PURPLE + ';font-weight:700;margin-top:4px;}',
-    '.lok-an-chartwrap{width:100%;overflow:hidden;}',
-    '.lok-an-legend{display:flex;gap:16px;font-size:12px;color:' + SUB + ';margin-bottom:10px;}',
-    '.lok-an-legend span{display:inline-flex;align-items:center;gap:6px;}',
-    '.lok-an-dot{width:10px;height:10px;border-radius:3px;display:inline-block;}',
-    '.lok-an-bars{display:flex;flex-direction:column;gap:9px;}',
-    '.lok-an-bar-row{display:flex;align-items:center;gap:10px;font-size:12.5px;}',
-    '.lok-an-bar-lab{flex:0 0 78px;color:' + SUB + ';font-weight:600;}',
-    '.lok-an-bar-track{flex:1;background:#F0EEF7;border-radius:100px;height:14px;overflow:hidden;}',
-    '.lok-an-bar-fill{height:100%;background:' + PURPLE + ';border-radius:100px;min-width:2px;}',
-    '.lok-an-bar-val{flex:0 0 34px;text-align:right;font-weight:700;color:' + INK + ';}',
-    '.lok-an-empty{padding:16px 0;text-align:center;color:' + SUB + ';font-size:13.5px;}'
+    '#lok-analytics-section{font-family:"Plus Jakarta Sans",-apple-system,sans-serif;color:' + INK + ';}',
+    '#lok-analytics-section .an-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:1rem;}',
+    '#lok-analytics-section .an-card{background:#fff;border:.5px solid ' + BORDER + ';border-radius:10px;padding:1.25rem;}',
+    '#lok-analytics-section .an-kpi{display:flex;flex-direction:column;gap:6px;}',
+    '#lok-analytics-section .an-klabel{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:' + SLATE + ';}',
+    '#lok-analytics-section .an-kvalue{font-size:28px;font-weight:600;line-height:1;}',
+    '#lok-analytics-section .an-kvalue small{font-size:14px;font-weight:400;}',
+    '#lok-analytics-section .an-delta{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;border-radius:100px;padding:2px 8px;width:fit-content;}',
+    '#lok-analytics-section .an-delta.up{color:' + GREEN + ';background:' + GREEN_L + ';}',
+    '#lok-analytics-section .an-delta.down{color:' + RED + ';background:' + RED_L + ';}',
+    '#lok-analytics-section .an-delta.flat{color:' + SLATE + ';background:' + MIST + ';}',
+    '#lok-analytics-section .an-kdetail{font-size:11px;color:' + SLATE + ';}',
+    '#lok-analytics-section .an-klink{font-size:11px;font-weight:600;color:' + VIOLET + ';text-decoration:none;}',
+    '#lok-analytics-section .an-klink:hover{text-decoration:underline;}',
+    '#lok-analytics-section .an-ctitle{font-size:13px;font-weight:600;margin-bottom:1.1rem;}',
+    '#lok-analytics-section .an-bars{display:flex;align-items:flex-end;gap:3px;height:130px;}',
+    '#lok-analytics-section .an-bcol{flex:1;display:flex;align-items:flex-end;height:100%;}',
+    '#lok-analytics-section .an-bar{width:100%;border-radius:3px 3px 0 0;background:' + VIOLET_L + ';min-height:2px;position:relative;transition:background .12s;}',
+    '#lok-analytics-section .an-bcol:hover .an-bar{background:' + VIOLET + ';}',
+    '#lok-analytics-section .an-bar .tip{display:none;position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:' + INK + ';color:#fff;font-size:11px;font-weight:500;padding:3px 8px;border-radius:4px;white-space:nowrap;z-index:5;}',
+    '#lok-analytics-section .an-bcol:hover .tip{display:block;}',
+    '#lok-analytics-section .an-axis{display:flex;justify-content:space-between;margin-top:8px;}',
+    '#lok-analytics-section .an-axis span{font-size:10px;color:' + SLATE + ';}',
+    '#lok-analytics-section .an-two{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;}',
+    '#lok-analytics-section .an-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:.5px solid ' + BORDER + ';}',
+    '#lok-analytics-section .an-row:last-child{border-bottom:none;padding-bottom:0;}',
+    '#lok-analytics-section .an-row:first-child{padding-top:0;}',
+    '#lok-analytics-section .an-rnum{width:20px;height:20px;border-radius:5px;background:' + SNOW + ';color:' + SLATE + ';font-size:10px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;}',
+    '#lok-analytics-section .an-rnum.gold{background:#FEF3D6;color:#8B5E0A;}',
+    '#lok-analytics-section .an-rname{font-size:13px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
+    '#lok-analytics-section .an-rbarw{width:70px;height:5px;background:' + MIST + ';border-radius:100px;overflow:hidden;flex-shrink:0;}',
+    '#lok-analytics-section .an-rbar{height:100%;border-radius:100px;}',
+    '#lok-analytics-section .an-rval{font-size:12px;font-weight:500;color:' + DUSK + ';width:58px;text-align:right;flex-shrink:0;}',
+    '#lok-analytics-section .an-empty{font-size:12.5px;color:' + SLATE + ';padding:6px 0;}',
+    '#lok-analytics-section .an-up{border-radius:10px;padding:1rem 1.25rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;background:' + VIOLET_L + ';border:.5px solid #E5D4FD;flex-wrap:wrap;}',
+    '#lok-analytics-section .an-up-t{font-size:13px;font-weight:600;}',
+    '#lok-analytics-section .an-up-s{font-size:12px;color:' + DUSK + ';margin-top:2px;}',
+    '#lok-analytics-section .an-up-btn{font:inherit;font-size:12px;font-weight:600;color:#fff;background:' + VIOLET + ';border:none;border-radius:8px;padding:8px 16px;cursor:pointer;text-decoration:none;}',
+    '#lok-analytics-section .an-insight{background:#FFFCF0;border:.5px solid #F5E6A8;border-radius:10px;padding:.85rem 1.1rem;font-size:12px;color:#8a6d1a;line-height:1.55;margin-bottom:1rem;}',
+    '#lok-analytics-section .an-insight strong{color:#6b540f;}',
+    '@media(max-width:720px){#lok-analytics-section .an-grid{grid-template-columns:1fr;}#lok-analytics-section .an-two{grid-template-columns:1fr;}}'
   ].join('');
 
   function injectStyles() {
     if (document.getElementById('lok-an-styles')) return;
-    var s = document.createElement('style');
-    s.id = 'lok-an-styles';
-    s.textContent = CSS;
+    var s = document.createElement('style'); s.id = 'lok-an-styles'; s.textContent = CSS;
     document.head.appendChild(s);
   }
 
-  function ts(v) {
-    if (v == null) return 0;
-    if (typeof v === 'number') return v;
-    var n = Date.parse(v);
-    return isNaN(n) ? 0 : n;
+  function ts(v) { if (v == null) return 0; if (typeof v === 'number') return v; var n = Date.parse(v); return isNaN(n) ? 0 : n; }
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function inWin(rows, from, to) { var now = Date.now(); return rows.filter(function (r) { var d = now - ts(r.created_at); return d >= from && d < to; }).length; }
+  function nameOf(item) { return item && (item.name || item.title || item.service_name || item.product_name || ('#' + item.id)); }
+
+  function deltaChip(cur, prev, unit) {
+    var d = cur - prev, cls, arrow, txt;
+    if (d > 0) { cls = 'up'; arrow = '▲'; } else if (d < 0) { cls = 'down'; arrow = '▼'; } else { cls = 'flat'; arrow = '→'; }
+    if (unit === 'pts') txt = (d >= 0 ? '+' : '') + d.toFixed(1) + 'pts';
+    else if (prev === 0 && cur === 0) txt = 'no change';
+    else if (prev === 0) txt = 'new';
+    else txt = (d >= 0 ? '+' : '−') + Math.abs(Math.round(d / prev * 100)) + '%';
+    var c = el('div', 'an-delta ' + cls, arrow + ' ' + txt);
+    return c;
   }
 
-  function el(tag, cls, text) {
-    var e = document.createElement(tag);
-    if (cls) e.className = cls;
-    if (text != null) e.textContent = text;
-    return e;
+  function kpiCard(label, valueHtml, deltaEl, detail) {
+    var c = el('div', 'an-card'); var k = el('div', 'an-kpi');
+    k.appendChild(el('div', 'an-klabel', label));
+    var v = el('div', 'an-kvalue'); v.innerHTML = valueHtml; k.appendChild(v);
+    if (deltaEl) k.appendChild(deltaEl);
+    if (detail) { if (typeof detail === 'string') k.appendChild(el('div', 'an-kdetail', detail)); else k.appendChild(detail); }
+    c.appendChild(k); return c;
   }
 
-  // Which rolling-30-day bucket a timestamp falls in (0 = most recent 30 days).
-  // Returns -1 if older than the window we chart.
-  function bucketOf(t, now) {
-    var i = Math.floor((now - t) / DAY30);
-    return (i >= 0 && i < BUCKETS) ? i : -1;
-  }
-
-  // Build BUCKETS counts (index 0 = oldest, last = most recent) for a list of rows.
-  function bucketCounts(rows, now) {
-    var out = [];
-    for (var i = 0; i < BUCKETS; i++) out.push(0);
-    rows.forEach(function (r) {
-      var b = bucketOf(ts(r.created_at), now);
-      if (b >= 0) out[BUCKETS - 1 - b] += 1; // reverse so newest is last
+  function rankCard(title, rows, barColor) {
+    var c = el('div', 'an-card');
+    c.appendChild(el('div', 'an-ctitle', title));
+    if (!rows.length) { c.appendChild(el('div', 'an-empty', 'No views yet — they’ll appear here as people open your pages.')); return c; }
+    var max = rows[0].count || 1;
+    rows.forEach(function (r, i) {
+      var row = el('div', 'an-row');
+      var num = el('div', 'an-rnum' + (i === 0 ? ' gold' : ''), String(i + 1));
+      row.appendChild(num);
+      row.appendChild(el('div', 'an-rname', r.name));
+      var bw = el('div', 'an-rbarw'); var b = el('div', 'an-rbar');
+      b.style.width = Math.round(r.count / max * 100) + '%'; b.style.background = barColor;
+      bw.appendChild(b); row.appendChild(bw);
+      row.appendChild(el('div', 'an-rval', r.count + (r.count === 1 ? ' view' : ' views')));
+      c.appendChild(row);
     });
-    return out;
+    return c;
   }
 
-  function deltaChip(cur, prev) {
-    var d = cur - prev;
-    var cls, arrow, label;
-    if (d > 0) { cls = 'up'; arrow = '↑'; }
-    else if (d < 0) { cls = 'down'; arrow = '↓'; }
-    else { cls = 'flat'; arrow = '→'; }
-    if (prev === 0 && cur === 0) label = 'no change';
-    else if (prev === 0) label = 'new';
-    else label = Math.round(Math.abs(d) / prev * 100) + '%';
-    var chip = el('div', 'lok-an-delta ' + cls, arrow + ' ' + label);
-    chip.title = 'vs. previous 30 days (' + prev + ')';
-    return chip;
+  // tally views by item_id for a given source, map ids → names, top N
+  function topItems(views, source, items, n) {
+    var byId = {};
+    views.forEach(function (v) { if (v.source === source && v.item_id != null) byId[v.item_id] = (byId[v.item_id] || 0) + 1; });
+    var nameById = {};
+    (items || []).forEach(function (it) { if (it && it.id != null) nameById[it.id] = nameOf(it); });
+    return Object.keys(byId)
+      .map(function (id) { return { name: nameById[id] || ('#' + id), count: byId[id] }; })
+      .sort(function (a, b) { return b.count - a.count; })
+      .slice(0, n);
   }
 
-  function kpi(value, label, prev, color) {
-    var k = el('div', 'lok-an-kpi');
-    var n = el('div', 'n', String(value));
-    if (color) n.style.color = color;
-    k.appendChild(n);
-    k.appendChild(el('div', 'l', label));
-    k.appendChild(deltaChip(value, prev));
-    return k;
+  function dailyChart(views) {
+    // last 30 days, oldest→newest
+    var now = Date.now(), buckets = [];
+    for (var d = 29; d >= 0; d--) buckets.push(0);
+    views.forEach(function (v) { var age = Math.floor((now - ts(v.created_at)) / DAY); if (age >= 0 && age < 30) buckets[29 - age] += 1; });
+    var max = Math.max.apply(null, buckets.concat([1]));
+    var wrap = el('div', 'an-card');
+    wrap.appendChild(el('div', 'an-ctitle', 'Storefront views — last 30 days'));
+    var bars = el('div', 'an-bars');
+    buckets.forEach(function (cnt, i) {
+      var col = el('div', 'an-bcol');
+      var bar = el('div', 'an-bar');
+      bar.style.height = Math.max(2, Math.round(cnt / max * 100)) + '%';
+      if (cnt === max && cnt > 0) bar.style.background = VIOLET;
+      var daysAgo = 29 - i;
+      var label = daysAgo === 0 ? 'today' : daysAgo + 'd ago';
+      var tip = el('div', 'tip', cnt + (cnt === 1 ? ' view · ' : ' views · ') + label);
+      bar.appendChild(tip); col.appendChild(bar); bars.appendChild(col);
+    });
+    wrap.appendChild(bars);
+    var axis = el('div', 'an-axis');
+    ['30d ago', '3 wks', '2 wks', 'last wk', 'today'].forEach(function (t) { axis.appendChild(el('span', null, t)); });
+    wrap.appendChild(axis);
+    return wrap;
   }
 
-  function funnelStep(value, label, conv, color) {
-    var s = el('div', 'lok-an-fstep');
-    var n = el('div', 'n', String(value));
-    if (color) n.style.color = color;
-    s.appendChild(n);
-    s.appendChild(el('div', 'l', label));
-    if (conv != null) {
-      var c = el('div', 'lok-an-fconv', conv + '% convert');
-      if (color) c.style.color = color;
-      s.appendChild(c);
-    }
-    return s;
+  function isTopTier(vendor) {
+    if (!vendor) return false;
+    var p = String(vendor.plan || vendor.tier || vendor.plan_name || vendor.subscription_tier || vendor.plan_tier || '').toLowerCase();
+    return p.indexOf('featured') >= 0 || p.indexOf('spotlight') >= 0;
   }
 
-  function pct(part, whole) {
-    if (!whole) return 0;
-    return Math.round(part / whole * 100);
-  }
+  function render(mount, data, services, products, vendor) {
+    var views = (data && data.views) || [];
+    var inq = (data && data.inquiries) || [];
+    var con = (data && data.contacts) || [];
 
-  // Inline-SVG grouped bar chart: contacts + inquiries per month, with a views
-  // line overlaid on its own scale. Pure SVG so there's no chart-lib dependency.
-  function trendSVG(views, contacts, inquiries) {
-    var W = 620, H = 200, padL = 30, padR = 30, padT = 16, padB = 28;
-    var plotW = W - padL - padR, plotH = H - padT - padB;
-    var n = BUCKETS, slot = plotW / n;
-
-    var leadsMax = 1, viewsMax = 1, i;
-    for (i = 0; i < n; i++) {
-      leadsMax = Math.max(leadsMax, contacts[i] + inquiries[i]);
-      viewsMax = Math.max(viewsMax, views[i]);
-    }
-
-    var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Leads and views over the last 6 months">';
-    // baseline
-    svg += '<line x1="' + padL + '" y1="' + (padT + plotH) + '" x2="' + (W - padR) + '" y2="' + (padT + plotH) + '" stroke="#ECEAF3" stroke-width="1"/>';
-
-    var barW = Math.min(26, slot * 0.42);
-    var viewPts = [];
-    for (i = 0; i < n; i++) {
-      var cx = padL + slot * i + slot / 2;
-      var leadTot = contacts[i] + inquiries[i];
-      var hC = (contacts[i] / leadsMax) * plotH;
-      var hI = (inquiries[i] / leadsMax) * plotH;
-      var x = cx - barW / 2;
-      var yBase = padT + plotH;
-      // contacts (bottom segment)
-      if (contacts[i] > 0) {
-        svg += '<rect x="' + x.toFixed(1) + '" y="' + (yBase - hC).toFixed(1) + '" width="' + barW.toFixed(1) + '" height="' + hC.toFixed(1) + '" rx="3" fill="' + PURPLE + '"/>';
-      }
-      // inquiries (stacked on top)
-      if (inquiries[i] > 0) {
-        svg += '<rect x="' + x.toFixed(1) + '" y="' + (yBase - hC - hI).toFixed(1) + '" width="' + barW.toFixed(1) + '" height="' + hI.toFixed(1) + '" rx="3" fill="' + VIOLET + '"/>';
-      }
-      if (leadTot > 0) {
-        svg += '<text x="' + cx.toFixed(1) + '" y="' + (yBase - hC - hI - 5).toFixed(1) + '" text-anchor="middle" font-size="11" font-weight="700" fill="' + INK + '">' + leadTot + '</text>';
-      }
-      // x label: months ago (newest = "now")
-      var lab = (i === n - 1) ? 'now' : (n - 1 - i) + 'mo';
-      svg += '<text x="' + cx.toFixed(1) + '" y="' + (H - 9) + '" text-anchor="middle" font-size="10.5" fill="' + SUB + '">' + lab + '</text>';
-      // views point (own scale)
-      var vy = padT + plotH - (views[i] / viewsMax) * plotH;
-      viewPts.push(cx.toFixed(1) + ',' + vy.toFixed(1));
-    }
-    // views line (orange, so it reads clearly against the purple/violet bars)
-    svg += '<polyline points="' + viewPts.join(' ') + '" fill="none" stroke="' + C_VIEWS + '" stroke-width="2.5" stroke-linejoin="round"/>';
-    for (i = 0; i < n; i++) {
-      var p = viewPts[i].split(',');
-      svg += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="2.8" fill="' + ORANGE_DK + '"/>';
-    }
-    svg += '</svg>';
-    return svg;
-  }
-
-  function render(mount, data) {
-    var now = Date.now();
-    var inquiries = (data && Array.isArray(data.inquiries)) ? data.inquiries : [];
-    var contacts = (data && Array.isArray(data.contacts)) ? data.contacts : [];
-    var views = (data && Array.isArray(data.views)) ? data.views : [];
-    var totals = (data && data.totals) || {};
-
-    // rolling-30-day buckets (newest last)
-    var bV = bucketCounts(views, now);
-    var bC = bucketCounts(contacts, now);
-    var bI = bucketCounts(inquiries, now);
-    var last = BUCKETS - 1, prev = BUCKETS - 2;
-    var vNow = bV[last], vPrev = bV[prev];
-    var cNow = bC[last], cPrev = bC[prev];
-    var iNow = bI[last], iPrev = bI[prev];
+    var views30 = inWin(views, 0, DAY30), viewsPrev = inWin(views, DAY30, 2 * DAY30);
+    var leads30 = inWin(inq, 0, DAY30) + inWin(con, 0, DAY30);
+    var leadsPrev = inWin(inq, DAY30, 2 * DAY30) + inWin(con, DAY30, 2 * DAY30);
+    var rate = views30 ? (leads30 / views30 * 100) : 0;
+    var ratePrev = viewsPrev ? (leadsPrev / viewsPrev * 100) : 0;
 
     mount.innerHTML = '';
 
-    // --- KPI card (this month vs last) ---
-    var k = el('div', 'lok-an-card');
-    k.appendChild(el('h3', 'lok-an-h', 'This month'));
-    k.appendChild(el('p', 'lok-an-sub', 'Activity on your Lokali listing over the last 30 days, compared to the 30 days before.'));
-    var kpis = el('div', 'lok-an-kpis');
-    kpis.appendChild(kpi(vNow, 'Listing views', vPrev, C_VIEWS));
-    kpis.appendChild(kpi(cNow, 'Contact clicks', cPrev, C_CONTACTS));
-    kpis.appendChild(kpi(iNow, 'Inquiries', iPrev, C_INQUIRIES));
-    k.appendChild(kpis);
-    mount.appendChild(k);
+    // KPIs
+    var grid = el('div', 'an-grid');
+    grid.appendChild(kpiCard('Storefront views', String(views30), deltaChip(views30, viewsPrev), 'vs. previous 30 days'));
+    grid.appendChild(kpiCard('View → Lead rate', rate.toFixed(1) + '<small>%</small>', deltaChip(rate, ratePrev, 'pts'), 'Views that became leads'));
+    var leadsLink = el('a', 'an-klink', 'See all in Leads →'); leadsLink.href = '/vendor-dashboard/leads';
+    grid.appendChild(kpiCard('Leads', String(leads30), null, leadsLink));
+    mount.appendChild(grid);
 
-    // --- Funnel card ---
-    var f = el('div', 'lok-an-card');
-    f.appendChild(el('h3', 'lok-an-h', 'Your funnel (last 30 days)'));
-    f.appendChild(el('p', 'lok-an-sub', 'How many viewers go on to contact you and send an inquiry.'));
-    var funnel = el('div', 'lok-an-funnel');
-    funnel.appendChild(funnelStep(vNow, 'Listing views', null, C_VIEWS));
-    funnel.appendChild(funnelStep(cNow, 'Contact clicks', pct(cNow, vNow), C_CONTACTS));
-    funnel.appendChild(funnelStep(iNow, 'Inquiries', pct(iNow, cNow), C_INQUIRIES));
-    f.appendChild(funnel);
-    mount.appendChild(f);
-
-    // --- Trend card ---
-    var t = el('div', 'lok-an-card');
-    t.appendChild(el('h3', 'lok-an-h', 'Last 6 months'));
-    var legend = el('div', 'lok-an-legend');
-    function leg(color, label) {
-      var s = el('span');
-      var d = el('span', 'lok-an-dot'); d.style.background = color;
-      s.appendChild(d); s.appendChild(document.createTextNode(label));
-      return s;
+    // light real-data insight (peak day) — no Phase 3 benchmark data needed
+    if (views30 > 0) {
+      var ins = el('div', 'an-insight');
+      ins.innerHTML = '<strong>' + views30 + '</strong> people viewed your storefront in the last 30 days, and <strong>' +
+        rate.toFixed(0) + '%</strong> of them reached out. Adding photos and a second service is the fastest way to lift both numbers.';
+      mount.appendChild(ins);
     }
-    legend.appendChild(leg(C_CONTACTS, 'Contact clicks'));
-    legend.appendChild(leg(C_INQUIRIES, 'Inquiries'));
-    legend.appendChild(leg(C_VIEWS, 'Views'));
-    t.appendChild(legend);
-    var cw = el('div', 'lok-an-chartwrap');
-    cw.innerHTML = trendSVG(bV, bC, bI);
-    t.appendChild(cw);
-    mount.appendChild(t);
 
-    // --- Channel breakdown (last 30 days) ---
-    var ch = el('div', 'lok-an-card');
-    ch.appendChild(el('h3', 'lok-an-h', 'How customers reach out'));
-    ch.appendChild(el('p', 'lok-an-sub', 'Contact clicks by channel over the last 30 days.'));
-    var byType = {};
-    contacts.forEach(function (ev) {
-      if (now - ts(ev.created_at) >= DAY30) return;
-      var ty = ev.event_type || 'other';
-      byType[ty] = (byType[ty] || 0) + 1;
-    });
-    var keys = Object.keys(byType).sort(function (a, b) { return byType[b] - byType[a]; });
-    if (!keys.length) {
-      ch.appendChild(el('div', 'lok-an-empty',
-        'No contact clicks yet — when someone taps call, text or email on your listing, it shows up here.'));
-    } else {
-      var max = byType[keys[0]] || 1;
-      var bars = el('div', 'lok-an-bars');
-      keys.forEach(function (ty) {
-        var row = el('div', 'lok-an-bar-row');
-        row.appendChild(el('div', 'lok-an-bar-lab', CHANNEL_LABELS[ty] || ty));
-        var track = el('div', 'lok-an-bar-track');
-        var fill = el('div', 'lok-an-bar-fill');
-        fill.style.width = Math.round(byType[ty] / max * 100) + '%';
-        track.appendChild(fill);
-        row.appendChild(track);
-        row.appendChild(el('div', 'lok-an-bar-val', String(byType[ty])));
-        bars.appendChild(row);
-      });
-      ch.appendChild(bars);
+    // daily chart
+    mount.appendChild(dailyChart(views));
+
+    // top items
+    var topSvc = topItems(views, 'service', services, 5);
+    var topProd = topItems(views, 'product', products, 5);
+    var two = el('div', 'an-two');
+    two.appendChild(rankCard('Top services by views', topSvc, VIOLET));
+    two.appendChild(rankCard('Top products by views', topProd, ORANGE));
+    mount.appendChild(two);
+
+    // tier-aware upsell
+    if (!isTopTier(vendor)) {
+      var up = el('div', 'an-up');
+      var ut = el('div');
+      ut.appendChild(el('div', 'an-up-t', 'Get seen by more local customers'));
+      ut.appendChild(el('div', 'an-up-s', 'Featured vendors appear at the top of their category with a Featured badge on every listing.'));
+      up.appendChild(ut);
+      var btn = el('a', 'an-up-btn', 'Upgrade to Featured'); btn.href = '/pricing';
+      up.appendChild(btn);
+      mount.appendChild(up);
     }
-    mount.appendChild(ch);
-
-    // --- All-time footnote ---
-    var foot = el('p', 'lok-an-sub');
-    foot.style.textAlign = 'center';
-    foot.style.margin = '4px 0 0';
-    foot.textContent = 'All time: ' + (totals.views || 0) + ' views · ' +
-      (totals.contacts || 0) + ' contact clicks · ' + (totals.inquiries || 0) + ' inquiries';
-    mount.appendChild(foot);
   }
+
+  function unwrap(res) { return res && !res.error ? (res.data != null ? res.data : res) : null; }
+  function asArray(x) { if (Array.isArray(x)) return x; if (x && Array.isArray(x.items)) return x.items; return []; }
 
   function init() {
     var mount = document.getElementById('lok-analytics-section');
-    if (!mount) return; // page doesn't have the panel — no-op
+    if (!mount) return;
     if (!window.LokaliAPI || !window.LokaliAPI.leads || typeof window.LokaliAPI.leads.analytics !== 'function') {
-      console.warn('[lokali-analytics] LokaliAPI.leads.analytics not available');
-      return;
+      console.warn('[lokali-analytics] LokaliAPI.leads.analytics not available'); return;
     }
     injectStyles();
-    window.LokaliAPI.leads.analytics().then(function (res) {
-      if (!res || res.error) {
-        console.warn('[lokali-analytics] failed to load analytics:', res && res.error);
+    var API = window.LokaliAPI;
+    var calls = [
+      API.leads.analytics(),
+      API.services && API.services.getMine ? API.services.getMine() : Promise.resolve(null),
+      API.products && API.products.getMine ? API.products.getMine() : Promise.resolve(null),
+      API.vendors && API.vendors.me ? API.vendors.me() : Promise.resolve(null)
+    ];
+    Promise.all(calls).then(function (r) {
+      var data = unwrap(r[0]);
+      if (!data) {
         mount.innerHTML = '';
-        var c = el('div', 'lok-an-card');
-        c.appendChild(el('div', 'lok-an-empty', 'Analytics are taking a moment to load. Refresh in a few seconds.'));
-        mount.appendChild(c);
-        return;
+        var c = el('div', 'an-card'); c.appendChild(el('div', 'an-empty', 'Analytics are taking a moment to load. Refresh in a few seconds.'));
+        mount.appendChild(c); return;
       }
-      render(mount, res.data);
+      render(mount, data, asArray(unwrap(r[1])), asArray(unwrap(r[2])), unwrap(r[3]));
     });
   }
 

@@ -531,14 +531,17 @@
     },
     // Customer-facing, fire-and-forget: log a listing/service/product view.
     // Deduped per browser session by the caller so one visit = one row.
-    trackView: function (vendorId, source) {
+    // itemId (optional) attributes the view to a specific service/product.
+    trackView: function (vendorId, source, itemId) {
       try {
         var url = getBase('vendors') + '/vendor/id/' + encodeURIComponent(vendorId) + '/view';
+        var payload = { source: source || 'listing' };
+        if (itemId != null) payload.item_id = itemId;
         fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
           keepalive: true,
-          body: JSON.stringify({ source: source || 'listing' })
+          body: JSON.stringify(payload)
         }).catch(function () {});
       } catch (e) {}
     },
@@ -553,6 +556,14 @@
     },
     markRead: function (inquiryId) {
       return request('vendors', 'PATCH', 'vendor/me/leads/' + encodeURIComponent(inquiryId) + '/read', {}, true);
+    },
+    // Vendor-facing: set follow-up status (new|replied|won|closed) on a lead.
+    // Inquiries (form submissions) and contact-click events are separate tables.
+    setInquiryStatus: function (inquiryId, status) {
+      return request('vendors', 'PATCH', 'vendor/me/inquiry/' + encodeURIComponent(inquiryId) + '/status', { status: status }, true);
+    },
+    setEventStatus: function (eventId, status) {
+      return request('vendors', 'PATCH', 'vendor/me/event/' + encodeURIComponent(eventId) + '/status', { status: status }, true);
     }
   };
 
