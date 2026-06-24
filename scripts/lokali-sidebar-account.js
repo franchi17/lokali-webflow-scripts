@@ -1,175 +1,104 @@
 /**
- * Lokali — vendor dashboard sidebar account chip.
+ * Lokali — vendor dashboard sidebar account chip (HYDRATION ONLY).
  *
- * Turns the sidebar's bottom Settings/Logout group into a Claude-style account
- * chip: business name + plan + avatar, click to expand a menu (Settings,
- * Upgrade to Featured [if not top tier], Help, Logout).
+ * The chip STRUCTURE is built natively in the Webflow "Vendor Dashboard Sidebar"
+ * component (editable in the Designer). This script only:
+ *   - fills the avatar / business name / plan from vendors.me()
+ *   - toggles the expand/collapse menu
+ *   - hides the "Upgrade" row for top-tier vendors
+ * It does NOT inject DOM. No-op anywhere `.lok-acct` isn't present.
  *
- * Load site-wide (footer). No-op anywhere the dashboard sidebar isn't present
- * (guards on `.div-block-29`). Needs window.LokaliAPI (api-client) for vendors.me().
+ * Native element hooks (classes, set in Webflow):
+ *   .lok-acct (wrapper, gets .open) · .lok-acct-chip (click target)
+ *   .lok-acct-av · .lok-acct-name · .lok-acct-plan · .lok-acct-upgrade
  *
- * It MOVES the existing Settings + Logout <a> nodes into the menu (rather than
- * recreating them) so the Clerk logout handler bound to #button-logout in
- * lokali-clerk-auth.js keeps working. See the maintainer guide for the sidebar.
+ * Load site-wide (footer), after lokali-api-client.js. See the maintainer guide.
  */
 (function () {
   'use strict';
 
-  var INK = '#1A1829', DUSK = '#4A4761', SLATE = '#8E8BA6',
-      VIOLET = '#6002EE', VIOLET_L = '#F3EBFF', ORANGE = '#FF8D00', BORDER = '#EEEDF6';
-
-  var CSS = [
-    '#lok-acct{position:relative;width:100%;margin-top:auto;padding-top:10px;}',
-    '#lok-acct *{box-sizing:border-box;}',
-    '#lok-acct .lok-chip{display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;border-radius:10px;cursor:pointer;border:none;background:none;font-family:inherit;text-align:left;}',
-    '#lok-acct .lok-chip:hover{background:' + VIOLET_L + ';}',
-    '#lok-acct.open .lok-chip{background:' + VIOLET_L + ';}',
-    '#lok-acct .lok-av{width:32px;height:32px;border-radius:50%;flex-shrink:0;background:' + VIOLET + ';color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;background-size:cover;background-position:center;}',
-    '#lok-acct .lok-meta{flex:1;min-width:0;}',
-    '#lok-acct .lok-name{font-size:13px;font-weight:700;color:' + INK + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2;}',
-    '#lok-acct .lok-plan{font-size:11px;color:' + SLATE + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
-    '#lok-acct .lok-caret{flex-shrink:0;color:' + SLATE + ';transition:transform .15s;}',
-    '#lok-acct.open .lok-caret{transform:rotate(180deg);}',
-    '#lok-acct .lok-menu{position:absolute;left:0;right:0;bottom:calc(100% - 2px);background:#fff;border:0.5px solid ' + BORDER + ';border-radius:12px;box-shadow:0 10px 34px rgba(43,26,74,.14);padding:6px;display:none;z-index:50;}',
-    '#lok-acct.open .lok-menu{display:block;}',
-    // rows (both moved anchors and new ones get .lok-row)
-    '#lok-acct .lok-row{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;font-size:13px;font-weight:500;color:' + DUSK + ';text-decoration:none;cursor:pointer;background:none;border:none;width:100%;font-family:inherit;text-align:left;margin:0;}',
-    '#lok-acct .lok-row:hover{background:' + VIOLET_L + ';color:' + VIOLET + ';}',
-    '#lok-acct .lok-row svg{flex-shrink:0;}',
-    '#lok-acct .lok-row.is-upgrade{color:' + ORANGE + ';font-weight:600;}',
-    '#lok-acct .lok-row.is-upgrade:hover{background:#FFF3E6;color:' + ORANGE + ';}',
-    // normalize the moved Settings/Logout anchors (they carry .dashboard-btn)
-    '#lok-acct .lok-menu a.dashboard-btn{margin-bottom:0;}',
-    '#lok-acct .lok-menu a.dashboard-btn .dashboard-icon{width:16px;height:16px;}',
-    '#lok-acct .lok-divider{height:0.5px;background:' + BORDER + ';margin:6px 4px;}'
-  ].join('');
-
-  function injectStyles() {
-    if (document.getElementById('lok-acct-styles')) return;
-    var s = document.createElement('style'); s.id = 'lok-acct-styles'; s.textContent = CSS;
-    document.head.appendChild(s);
-  }
-  function el(t, c, h) { var e = document.createElement(t); if (c) e.className = c; if (h != null) e.innerHTML = h; return e; }
-  function ic(p) { return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + p + '</svg>'; }
-
   var XANO_ORIGIN = 'https://x8ki-letl-twmt.n7.xano.io';
 
   function planLabel(v) {
-    // No paid-tier field is exposed on the vendor record yet (launch = free /
-    // founding), so derive from is_founding_member + any future plan field.
     var p = String((v && (v.plan || v.tier || v.plan_name || v.subscription_tier || v.plan_tier)) || '').toLowerCase();
     if (p.indexOf('featured') >= 0 || p.indexOf('spotlight') >= 0) return { label: 'Featured', top: true };
     if (p.indexOf('pro') >= 0) return { label: 'Pro plan', top: false };
     if (v && v.is_founding_member) return { label: 'Founding member', top: false };
     return { label: 'Free plan', top: false };
   }
-
   function photoUrl(v) {
     var s = v && (v.profile_photo || v.photo || v.logo);
     if (!s || typeof s !== 'string') return '';
     s = s.trim();
     if (/[\s"'<>`\\]/.test(s) || /^(?:javascript|data|vbscript):/i.test(s)) return '';
-    if (s.charAt(0) === '/') return XANO_ORIGIN + s; // Xano vault relative path
+    if (s.charAt(0) === '/') return XANO_ORIGIN + s;
     return /^https?:\/\//i.test(s) ? s : '';
   }
   function initials(name) {
-    // only words that start with a letter/number (skip "&", "-", etc.)
     var parts = String(name || '').trim().split(/\s+/).filter(function (p) { return /^[a-z0-9]/i.test(p); });
     if (!parts.length) return '?';
     return (parts[0][0] + (parts[1] ? parts[1][0] : '')).toUpperCase();
   }
+  function setText(elm, t) { if (elm) elm.textContent = t; }
 
-  function build(bottom, data) {
-    // vendors.me() returns { vendor: {...} } — unwrap to the vendor record.
+  function hydrate(wrap, data) {
     var v = (data && data.vendor) ? data.vendor : (data || {});
-
-    var anchors = Array.prototype.slice.call(bottom.querySelectorAll('a'));
-    var settingsLink = anchors.filter(function (a) { return /\/settings/i.test(a.getAttribute('href') || ''); })[0];
-    var logoutLink = document.getElementById('button-logout') ||
-      anchors.filter(function (a) { return /logout/i.test(a.textContent || ''); })[0];
-
     var name = (v.business_name || v.name) || 'Your business';
-    var photo = photoUrl(v);
     var plan = planLabel(v);
+    var photo = photoUrl(v);
 
-    var wrap = el('div'); wrap.id = 'lok-acct';
-    var menu = el('div', 'lok-menu');
+    setText(wrap.querySelector('.lok-acct-name'), name);
+    setText(wrap.querySelector('.lok-acct-plan'), plan.label);
 
-    // Settings (move the real node, add row class)
-    if (settingsLink) { settingsLink.classList.add('lok-row'); menu.appendChild(settingsLink); }
-
-    // Upgrade (only if not top tier) — orange accent
-    if (!plan.top) {
-      var up = el('a', 'lok-row is-upgrade', ic('<polyline points="17 11 12 6 7 11"/><line x1="12" y1="6" x2="12" y2="18"/>') + '<span>Upgrade to Featured</span>');
-      up.href = '/pricing';
-      menu.appendChild(up);
+    var av = wrap.querySelector('.lok-acct-av');
+    if (av) {
+      av.textContent = initials(name);
+      if (photo) {
+        var img = document.createElement('img');
+        img.alt = '';
+        img.style.cssText = 'width:100%;height:100%;border-radius:inherit;object-fit:cover;display:block;';
+        img.onload = function () { av.textContent = ''; av.appendChild(img); };
+        img.onerror = function () { /* keep initials */ };
+        img.src = photo;
+      }
     }
 
-    // Help / Contact
-    var help = el('a', 'lok-row', ic('<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>') + '<span>Help &amp; contact</span>');
-    help.href = '/contact-us';
-    menu.appendChild(help);
-
-    menu.appendChild(el('div', 'lok-divider'));
-
-    // Logout (move the real node — preserves the Clerk handler on #button-logout)
-    if (logoutLink) { logoutLink.classList.add('lok-row'); menu.appendChild(logoutLink); }
-
-    // chip
-    var chip = el('div', 'lok-chip');
-    chip.setAttribute('role', 'button');
-    chip.setAttribute('tabindex', '0');
-    var av = el('div', 'lok-av');
-    av.textContent = initials(name); // always present as the fallback
-    if (photo) {
-      var img = document.createElement('img');
-      img.src = photo; img.alt = '';
-      img.style.cssText = 'width:100%;height:100%;border-radius:50%;object-fit:cover;';
-      img.onerror = function () { img.remove(); }; // broken photo → initials show
-      img.onload = function () { av.textContent = ''; av.appendChild(img); };
+    // Hide the upgrade row for top-tier vendors.
+    if (plan.top) {
+      var up = wrap.querySelector('.lok-acct-upgrade');
+      if (up) up.style.display = 'none';
     }
-    var meta = el('div', 'lok-meta');
-    var nm = el('div', 'lok-name'); nm.textContent = name;
-    var pl = el('div', 'lok-plan'); pl.textContent = plan.label;
-    meta.appendChild(nm); meta.appendChild(pl);
-    var caret = el('span', 'lok-caret', ic('<polyline points="18 15 12 9 6 15"/>'));
-    chip.appendChild(av); chip.appendChild(meta); chip.appendChild(caret);
-
-    wrap.appendChild(menu); wrap.appendChild(chip);
-
-    // mount: replace the bottom group's contents with the chip wrapper
-    bottom.innerHTML = '';
-    bottom.style.marginTop = 'auto';
-    bottom.style.display = 'block';
-    bottom.appendChild(wrap);
-
-    // toggle behavior
-    function close() { wrap.classList.remove('open'); }
-    chip.addEventListener('click', function (e) { e.stopPropagation(); wrap.classList.toggle('open'); });
-    chip.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); wrap.classList.toggle('open'); } });
-    document.addEventListener('click', function (e) { if (!wrap.contains(e.target)) close(); });
-    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
   }
 
-  // Wait only for the api-client (loads via a script tag); the sidebar markup
-  // is server-rendered, so .div-block-29 is present up front on dashboard pages.
+  function bindToggle(wrap) {
+    var chip = wrap.querySelector('.lok-acct-chip');
+    var menu = wrap.querySelector('.lok-acct-menu');
+    var caret = wrap.querySelector('.lok-acct-caret');
+    if (!chip || !menu || chip.getAttribute('data-lok-bound')) return;
+    chip.setAttribute('data-lok-bound', '1');
+    var open = false;
+    function set(o) { open = o; menu.style.display = o ? 'block' : 'none'; if (caret) caret.style.transform = o ? 'rotate(180deg)' : ''; }
+    set(false); // start closed regardless of the Designer default
+    chip.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); set(!open); });
+    document.addEventListener('click', function (e) { if (!wrap.contains(e.target)) set(false); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') set(false); });
+  }
+
   function whenApi(cb, tries) {
     tries = tries || 0;
     if (window.LokaliAPI && window.LokaliAPI.vendors) return cb();
-    if (tries > 40) return; // ~10s; api never loaded
+    if (tries > 40) return;
     setTimeout(function () { whenApi(cb, tries + 1); }, 250);
   }
 
   function init() {
-    if (document.getElementById('lok-acct')) return;
-    var bottom = document.querySelector('.div-block-29');
-    if (!bottom) return; // not a dashboard page — bail immediately (no polling)
+    var wrap = document.querySelector('.lok-acct');
+    if (!wrap) return; // native chip not on this page
+    bindToggle(wrap);
     whenApi(function () {
-      if (document.getElementById('lok-acct')) return;
-      injectStyles();
       window.LokaliAPI.vendors.me().then(function (res) {
-        build(bottom, (res && !res.error && res.data) ? res.data : null);
-      }).catch(function () { build(bottom, null); });
+        hydrate(wrap, (res && !res.error && res.data) ? res.data : null);
+      }).catch(function () {});
     });
   }
 
