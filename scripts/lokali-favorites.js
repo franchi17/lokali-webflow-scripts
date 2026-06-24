@@ -268,7 +268,6 @@
 
   // ── init ───────────────────────────────────────────────────
   function init() {
-    if (!api()) { return; } // api client not present on this page
     injectCSS();
     // React to the auth event emitted by lokali-clerk-auth.js after a sync.
     window.addEventListener('lokali:authed', function () { completePendingSave(); });
@@ -277,10 +276,23 @@
     renderSaved();
   }
 
+  // Wait for the API client (load order isn't guaranteed across page custom code
+  // + injected scripts). Give up after ~10s rather than hang.
+  function whenReady(cb) {
+    var tries = 0;
+    (function poll() {
+      if (window.LokaliAPI) { cb(); return; }
+      if (tries++ > 100) return;
+      setTimeout(poll, 100);
+    })();
+  }
+
+  function start() { whenReady(init); }
+
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
+    document.addEventListener('DOMContentLoaded', start);
   } else {
-    init();
+    start();
   }
 
   // Small public surface for debugging / manual triggers.
