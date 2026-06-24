@@ -619,6 +619,18 @@
       // load-order race; the event covers scripts already listening.
       window.LOKALI_LOADED_VENDOR = { id: vid, name: v.business_name || '' };
       try { document.dispatchEvent(new CustomEvent('lokali:vendor-loaded', { detail: window.LOKALI_LOADED_VENDOR })); } catch (e) {}
+      // Log a listing view, deduped per browser session so one visit = one row
+      // (the analytics page needs impressions for the views→contacts→inquiries
+      // funnel). Fire-and-forget; never blocks render.
+      try {
+        var vkey = 'lok_viewed_' + vid;
+        if (vid != null && window.LokaliAPI && window.LokaliAPI.leads &&
+            typeof window.LokaliAPI.leads.trackView === 'function' &&
+            !sessionStorage.getItem(vkey)) {
+          sessionStorage.setItem(vkey, '1');
+          window.LokaliAPI.leads.trackView(vid, 'listing');
+        }
+      } catch (e) {}
       loadPortfolio(vid, v);
       fetchListWithRetry(function () { return API.services.listByVendor(vid); })
         .then(function (sres) { renderServices(asArray(unwrap(sres)), !(sres && sres.error)); });

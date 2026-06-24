@@ -529,9 +529,27 @@
         }).catch(function () {});
       } catch (e) {}
     },
+    // Customer-facing, fire-and-forget: log a listing/service/product view.
+    // Deduped per browser session by the caller so one visit = one row.
+    trackView: function (vendorId, source) {
+      try {
+        var url = getBase('vendors') + '/vendor/id/' + encodeURIComponent(vendorId) + '/view';
+        fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          keepalive: true,
+          body: JSON.stringify({ source: source || 'listing' })
+        }).catch(function () {});
+      } catch (e) {}
+    },
     // Vendor-facing: inquiries (all, newest first) + contact clicks (last 30d).
     getMine: function () {
       return request('vendors', 'GET', 'vendor/me/leads', null, true);
+    },
+    // Vendor-facing: analytics feed (all-time totals + 180d raw rows) that powers
+    // the dashboard analytics page and the monthly digest.
+    analytics: function () {
+      return request('vendors', 'GET', 'vendor/me/analytics', null, true);
     },
     markRead: function (inquiryId) {
       return request('vendors', 'PATCH', 'vendor/me/leads/' + encodeURIComponent(inquiryId) + '/read', {}, true);
