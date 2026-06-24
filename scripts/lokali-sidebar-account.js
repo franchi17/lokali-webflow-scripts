@@ -52,12 +52,25 @@
   function el(t, c, h) { var e = document.createElement(t); if (c) e.className = c; if (h != null) e.innerHTML = h; return e; }
   function ic(p) { return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + p + '</svg>'; }
 
+  var XANO_ORIGIN = 'https://x8ki-letl-twmt.n7.xano.io';
+
   function planLabel(v) {
+    // No paid-tier field is exposed on the vendor record yet (launch = free /
+    // founding), so derive from is_founding_member + any future plan field.
     var p = String((v && (v.plan || v.tier || v.plan_name || v.subscription_tier || v.plan_tier)) || '').toLowerCase();
-    if (!p || p === 'free' || p === 'basic') return { label: 'Free plan', top: false };
     if (p.indexOf('featured') >= 0 || p.indexOf('spotlight') >= 0) return { label: 'Featured', top: true };
     if (p.indexOf('pro') >= 0) return { label: 'Pro plan', top: false };
-    return { label: p.charAt(0).toUpperCase() + p.slice(1), top: false };
+    if (v && v.is_founding_member) return { label: 'Founding member', top: false };
+    return { label: 'Free plan', top: false };
+  }
+
+  function photoUrl(v) {
+    var s = v && (v.profile_photo || v.photo || v.logo);
+    if (!s || typeof s !== 'string') return '';
+    s = s.trim();
+    if (/[\s"'<>`\\]/.test(s) || /^(?:javascript|data|vbscript):/i.test(s)) return '';
+    if (s.charAt(0) === '/') return XANO_ORIGIN + s; // Xano vault relative path
+    return /^https?:\/\//i.test(s) ? s : '';
   }
   function initials(name) {
     // only words that start with a letter/number (skip "&", "-", etc.)
@@ -66,15 +79,18 @@
     return (parts[0][0] + (parts[1] ? parts[1][0] : '')).toUpperCase();
   }
 
-  function build(bottom, vendor) {
+  function build(bottom, data) {
+    // vendors.me() returns { vendor: {...} } — unwrap to the vendor record.
+    var v = (data && data.vendor) ? data.vendor : (data || {});
+
     var anchors = Array.prototype.slice.call(bottom.querySelectorAll('a'));
     var settingsLink = anchors.filter(function (a) { return /\/settings/i.test(a.getAttribute('href') || ''); })[0];
     var logoutLink = document.getElementById('button-logout') ||
       anchors.filter(function (a) { return /logout/i.test(a.textContent || ''); })[0];
 
-    var name = (vendor && (vendor.business_name || vendor.name)) || 'Your business';
-    var photo = vendor && (vendor.profile_photo || vendor.photo || vendor.logo);
-    var plan = planLabel(vendor);
+    var name = (v.business_name || v.name) || 'Your business';
+    var photo = photoUrl(v);
+    var plan = planLabel(v);
 
     var wrap = el('div'); wrap.id = 'lok-acct';
     var menu = el('div', 'lok-menu');
@@ -104,8 +120,14 @@
     chip.setAttribute('role', 'button');
     chip.setAttribute('tabindex', '0');
     var av = el('div', 'lok-av');
-    if (photo) { av.style.backgroundImage = 'url("' + photo + '")'; av.textContent = ''; }
-    else av.textContent = initials(name);
+    av.textContent = initials(name); // always present as the fallback
+    if (photo) {
+      var img = document.createElement('img');
+      img.src = photo; img.alt = '';
+      img.style.cssText = 'width:100%;height:100%;border-radius:50%;object-fit:cover;';
+      img.onerror = function () { img.remove(); }; // broken photo → initials show
+      img.onload = function () { av.textContent = ''; av.appendChild(img); };
+    }
     var meta = el('div', 'lok-meta');
     var nm = el('div', 'lok-name'); nm.textContent = name;
     var pl = el('div', 'lok-plan'); pl.textContent = plan.label;
