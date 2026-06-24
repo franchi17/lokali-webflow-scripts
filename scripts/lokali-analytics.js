@@ -19,7 +19,11 @@
   var BUCKETS = 6; // rolling 30-day months shown in the trend
 
   var INK = '#1A1530', PURPLE = '#6002EE', VIOLET = '#B794F6',
+      ORANGE = '#ff8d00', ORANGE_DK = '#e07b00',
       SUB = '#6B6680', POS = '#0F9D58', NEG = '#D93025';
+
+  // Per-metric accent colors so the dashboard isn't all one hue.
+  var C_VIEWS = ORANGE, C_CONTACTS = PURPLE, C_INQUIRIES = VIOLET;
 
   var CHANNEL_LABELS = {
     call: 'Calls', sms: 'Texts', whatsapp: 'WhatsApp',
@@ -111,19 +115,27 @@
     return chip;
   }
 
-  function kpi(value, label, prev) {
+  function kpi(value, label, prev, color) {
     var k = el('div', 'lok-an-kpi');
-    k.appendChild(el('div', 'n', String(value)));
+    var n = el('div', 'n', String(value));
+    if (color) n.style.color = color;
+    k.appendChild(n);
     k.appendChild(el('div', 'l', label));
     k.appendChild(deltaChip(value, prev));
     return k;
   }
 
-  function funnelStep(value, label, conv) {
+  function funnelStep(value, label, conv, color) {
     var s = el('div', 'lok-an-fstep');
-    s.appendChild(el('div', 'n', String(value)));
+    var n = el('div', 'n', String(value));
+    if (color) n.style.color = color;
+    s.appendChild(n);
     s.appendChild(el('div', 'l', label));
-    if (conv != null) s.appendChild(el('div', 'lok-an-fconv', conv + '% convert'));
+    if (conv != null) {
+      var c = el('div', 'lok-an-fconv', conv + '% convert');
+      if (color) c.style.color = color;
+      s.appendChild(c);
+    }
     return s;
   }
 
@@ -176,11 +188,11 @@
       var vy = padT + plotH - (views[i] / viewsMax) * plotH;
       viewPts.push(cx.toFixed(1) + ',' + vy.toFixed(1));
     }
-    // views line
-    svg += '<polyline points="' + viewPts.join(' ') + '" fill="none" stroke="#CDB4F0" stroke-width="2" stroke-linejoin="round"/>';
+    // views line (orange, so it reads clearly against the purple/violet bars)
+    svg += '<polyline points="' + viewPts.join(' ') + '" fill="none" stroke="' + C_VIEWS + '" stroke-width="2.5" stroke-linejoin="round"/>';
     for (i = 0; i < n; i++) {
       var p = viewPts[i].split(',');
-      svg += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="2.6" fill="#9C6DE0"/>';
+      svg += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="2.8" fill="' + ORANGE_DK + '"/>';
     }
     svg += '</svg>';
     return svg;
@@ -209,9 +221,9 @@
     k.appendChild(el('h3', 'lok-an-h', 'This month'));
     k.appendChild(el('p', 'lok-an-sub', 'Activity on your Lokali listing over the last 30 days, compared to the 30 days before.'));
     var kpis = el('div', 'lok-an-kpis');
-    kpis.appendChild(kpi(vNow, 'Listing views', vPrev));
-    kpis.appendChild(kpi(cNow, 'Contact clicks', cPrev));
-    kpis.appendChild(kpi(iNow, 'Inquiries', iPrev));
+    kpis.appendChild(kpi(vNow, 'Listing views', vPrev, C_VIEWS));
+    kpis.appendChild(kpi(cNow, 'Contact clicks', cPrev, C_CONTACTS));
+    kpis.appendChild(kpi(iNow, 'Inquiries', iPrev, C_INQUIRIES));
     k.appendChild(kpis);
     mount.appendChild(k);
 
@@ -220,9 +232,9 @@
     f.appendChild(el('h3', 'lok-an-h', 'Your funnel (last 30 days)'));
     f.appendChild(el('p', 'lok-an-sub', 'How many viewers go on to contact you and send an inquiry.'));
     var funnel = el('div', 'lok-an-funnel');
-    funnel.appendChild(funnelStep(vNow, 'Views', null));
-    funnel.appendChild(funnelStep(cNow, 'Contacts', pct(cNow, vNow)));
-    funnel.appendChild(funnelStep(iNow, 'Inquiries', pct(iNow, cNow)));
+    funnel.appendChild(funnelStep(vNow, 'Views', null, C_VIEWS));
+    funnel.appendChild(funnelStep(cNow, 'Contacts', pct(cNow, vNow), C_CONTACTS));
+    funnel.appendChild(funnelStep(iNow, 'Inquiries', pct(iNow, cNow), C_INQUIRIES));
     f.appendChild(funnel);
     mount.appendChild(f);
 
@@ -236,9 +248,9 @@
       s.appendChild(d); s.appendChild(document.createTextNode(label));
       return s;
     }
-    legend.appendChild(leg(PURPLE, 'Contact clicks'));
-    legend.appendChild(leg(VIOLET, 'Inquiries'));
-    legend.appendChild(leg('#9C6DE0', 'Views'));
+    legend.appendChild(leg(C_CONTACTS, 'Contact clicks'));
+    legend.appendChild(leg(C_INQUIRIES, 'Inquiries'));
+    legend.appendChild(leg(C_VIEWS, 'Views'));
     t.appendChild(legend);
     var cw = el('div', 'lok-an-chartwrap');
     cw.innerHTML = trendSVG(bV, bC, bI);
