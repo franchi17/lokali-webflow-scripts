@@ -19,7 +19,14 @@
   // ──────────────────────────────────────────────
   var CLERK_SYNC_URL = window.LOKALI_CLERK_SYNC_URL || 'https://lokali-api.vercel.app/api/lokali/clerk-sync';
   var AFTER_SIGN_IN_PATH = '/vendor-dashboard/dashboard';
+  // Customers are NOT pushed into the vendor dashboard. If they signed up from a
+  // dedicated auth page we send them home; if they signed up inline (sign-up-to-save
+  // via a Clerk modal on a browse/detail page) they stay put and the 'lokali:authed'
+  // event lets the favorites/reviews script finish the pending action.
+  var CUSTOMER_AFTER_SIGN_IN_PATH = window.LOKALI_CUSTOMER_AFTER_SIGN_IN_PATH || '/';
   var SIGN_IN_PATH = '/login';
+  // Set by the sign-up-to-save flow before opening the Clerk modal: 'customer' | 'vendor'.
+  var SIGNUP_INTENT_KEY = 'lokali_signup_intent';
 
   /** Optional: set before this script to match your Webflow slugs, e.g.
    *  window.LOKALI_CLERK_AUTH_PATH_PREFIXES = ['/sign-up', '/signup', '/login'];
@@ -66,6 +73,50 @@
     } catch (e) {}
   }
 
+  // Signup intent: 'customer' or 'vendor'. Read once on first sync (Xano stamps
+  // role set-once), then cleared. Absent intent → Xano defaults to vendor.
+  function getSignupIntent() {
+    try {
+      var v = (sessionStorage.getItem(SIGNUP_INTENT_KEY) || '').trim().toLowerCase();
+      return (v === 'customer' || v === 'vendor') ? v : '';
+    } catch (e) { return ''; }
+  }
+  function clearSignupIntent() {
+    try { sessionStorage.removeItem(SIGNUP_INTENT_KEY); } catch (e) {}
+  }
+
+  // Resolve the signed-in user's role from Xano. Defaults to 'vendor' on any
+  // failure so existing vendor routing is never degraded.
+  function fetchRole() {
+    try {
+      return window.LokaliAPI.request('auth', 'GET', '/me', null, true)
+        .then(function (res) {
+          var role = res && res.data && res.data.user && res.data.user.role;
+          return role || 'vendor';
+        })
+        .catch(function () { return 'vendor'; });
+    } catch (e) {
+      return Promise.resolve('vendor');
+    }
+  }
+
+  // Route after a successful Clerk→Xano sync. Vendors go to the dashboard;
+  // customers are never forced there. Emits 'lokali:authed' with the role so
+  // page scripts (favorites, reviews) can react to inline sign-up-to-save.
+  function routeAfterAuth() {
+    fetchRole().then(function (role) {
+      try {
+        window.dispatchEvent(new CustomEvent('lokali:authed', { detail: { role: role } }));
+      } catch (e) {}
+      if (role === 'vendor') {
+        if (isAuthPage() || isHomePath()) window.location.href = AFTER_SIGN_IN_PATH;
+      } else {
+        // customer: only redirect away from a dedicated auth page; otherwise stay.
+        if (isAuthPage()) window.location.href = CUSTOMER_AFTER_SIGN_IN_PATH;
+      }
+    });
+  }
+
   function waitForDeps(cb) {
     var checks = 0;
     var interval = setInterval(function () {
@@ -100,6 +151,8 @@
       return Promise.resolve(null);
     }
 
+    var intent = getSignupIntent();
+
     return session.getToken().then(function (sessionJwt) {
       if (!sessionJwt) return null;
       return fetch(CLERK_SYNC_URL, {
@@ -108,7 +161,7 @@
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ' + sessionJwt
         },
-        body: '{}'
+        body: JSON.stringify(intent ? { intended_role: intent } : {})
       }).then(function (res) { return res.json(); });
     }).then(function (data) {
       _syncing = false;
@@ -119,6 +172,8 @@
       if (token && window.LokaliAPI) {
         window.LokaliAPI.setToken(token);
         markSynced();
+        // Role is now stamped in Xano; the intent has served its purpose.
+        clearSignupIntent();
       }
       return token;
     }).catch(function (err) {
@@ -176,14 +231,15 @@
     //  3) Home page — Clerk's after-sign-up fallback often lands here; we sync once
     //     then forward to the dashboard. Subsequent home visits do NOT re-sync
     //     because `existing` will be set.
-    if (!existing && (isAuthPage() || isDashboardPath() || isHomePath())) {
+    // Sync on auth/dashboard/home pages (existing behavior) OR whenever a
+    // sign-up-to-save intent is pending — the latter fires on a browse/detail
+    // page, where we must still mint the Xano token so the pending save can run.
+    if (!existing && (isAuthPage() || isDashboardPath() || isHomePath() || getSignupIntent())) {
       syncClerkUser(user).then(function (token) {
-        if (token && (isAuthPage() || isHomePath())) {
-          window.location.href = AFTER_SIGN_IN_PATH;
-        }
+        if (token) routeAfterAuth();
       });
     } else if (existing && isAuthPage()) {
-      window.location.href = AFTER_SIGN_IN_PATH;
+      routeAfterAuth();
     }
   }
 

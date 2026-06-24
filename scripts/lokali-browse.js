@@ -531,6 +531,9 @@
   function buildCard(v) {
     var style = vCategoryStyle(v);
     var card = ce('div', 'vcard' + (vIsSpotlight(v) ? ' vcard-spotlight' : ''));
+    // Expose the vendor id so lokali-favorites.js can attach a save/heart control
+    // without coupling favorites logic into this renderer.
+    if (v.id != null) card.dataset.vendorId = v.id;
     var header = ce('div', 'vcard-header');
     var meta = ce('div', 'vcard-meta');
     var nameRow = ce('div', 'vcard-name-row');

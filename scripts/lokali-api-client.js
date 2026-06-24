@@ -9,6 +9,7 @@
   var DATA_LOCATIONS_BASE = 'https://x8ki-letl-twmt.n7.xano.io/api:kIWlCxMJ';
   var PLANS_BASE = 'https://x8ki-letl-twmt.n7.xano.io/api:svUNydf-';
   var MEMBERS_BASE = 'https://x8ki-letl-twmt.n7.xano.io/api:vx-kSF0o';
+  var FAVORITES_BASE = 'https://x8ki-letl-twmt.n7.xano.io/api:PCL6GhXL';
   var TOKEN_KEY = 'LOKALI_AUTH_TOKEN';
 
   function getBase(base) {
@@ -27,6 +28,12 @@
         return window.LOKALI_MEMBERS_BASE;
       }
       return MEMBERS_BASE;
+    }
+    if (base === 'favorites') {
+      if (typeof window !== 'undefined' && typeof window.LOKALI_FAVORITES_BASE === 'string' && window.LOKALI_FAVORITES_BASE) {
+        return window.LOKALI_FAVORITES_BASE;
+      }
+      return FAVORITES_BASE;
     }
     if (base === 'dataLocations') {
       if (typeof window !== 'undefined' && typeof window.LOKALI_DATA_LOCATIONS_BASE === 'string' && window.LOKALI_DATA_LOCATIONS_BASE) {
