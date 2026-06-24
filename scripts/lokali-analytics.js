@@ -232,8 +232,8 @@
     f.appendChild(el('h3', 'lok-an-h', 'Your funnel (last 30 days)'));
     f.appendChild(el('p', 'lok-an-sub', 'How many viewers go on to contact you and send an inquiry.'));
     var funnel = el('div', 'lok-an-funnel');
-    funnel.appendChild(funnelStep(vNow, 'Views', null, C_VIEWS));
-    funnel.appendChild(funnelStep(cNow, 'Contacts', pct(cNow, vNow), C_CONTACTS));
+    funnel.appendChild(funnelStep(vNow, 'Listing views', null, C_VIEWS));
+    funnel.appendChild(funnelStep(cNow, 'Contact clicks', pct(cNow, vNow), C_CONTACTS));
     funnel.appendChild(funnelStep(iNow, 'Inquiries', pct(iNow, cNow), C_INQUIRIES));
     f.appendChild(funnel);
     mount.appendChild(f);
