@@ -11,6 +11,7 @@
   var MEMBERS_BASE = 'https://x8ki-letl-twmt.n7.xano.io/api:vx-kSF0o';
   var FAVORITES_BASE = 'https://x8ki-letl-twmt.n7.xano.io/api:PCL6GhXL';
   var SHARES_BASE = 'https://x8ki-letl-twmt.n7.xano.io/api:XU0t85ZI';
+  var REVIEWS_BASE = 'https://x8ki-letl-twmt.n7.xano.io/api:Dxpumhgk';
   var TOKEN_KEY = 'LOKALI_AUTH_TOKEN';
 
   function getBase(base) {
@@ -41,6 +42,12 @@
         return window.LOKALI_SHARES_BASE;
       }
       return SHARES_BASE;
+    }
+    if (base === 'reviews') {
+      if (typeof window !== 'undefined' && typeof window.LOKALI_REVIEWS_BASE === 'string' && window.LOKALI_REVIEWS_BASE) {
+        return window.LOKALI_REVIEWS_BASE;
+      }
+      return REVIEWS_BASE;
     }
     if (base === 'dataLocations') {
       if (typeof window !== 'undefined' && typeof window.LOKALI_DATA_LOCATIONS_BASE === 'string' && window.LOKALI_DATA_LOCATIONS_BASE) {
@@ -615,6 +622,41 @@
     }
   };
 
+  // Customer "My Account" settings (Authentication base). account.get() returns
+  // editable fields + created_at; account.update() PATCHes a whitelisted subset.
+  var account = {
+    get: function () {
+      return request('auth', 'GET', 'account', null, true);
+    },
+    update: function (payload) {
+      return request('auth', 'PATCH', 'account', payload || {}, true);
+    }
+  };
+
+  // Reviews (Reviews base). Public list-by-vendor is read without auth; the
+  // customer's own surfaces (mine/awaiting/create/update/remove) are authed and
+  // contact-gated server-side.
+  var reviews = {
+    forVendor: function (vendorId) {
+      return request('reviews', 'GET', 'reviews?vendors_id=' + encodeURIComponent(vendorId), null, false);
+    },
+    mine: function () {
+      return request('reviews', 'GET', 'reviews/mine', null, true);
+    },
+    awaiting: function () {
+      return request('reviews', 'GET', 'reviews/awaiting', null, true);
+    },
+    create: function (payload) {
+      return request('reviews', 'POST', 'reviews', payload || {}, true);
+    },
+    update: function (reviewId, payload) {
+      return request('reviews', 'PATCH', 'reviews/' + encodeURIComponent(reviewId), payload || {}, true);
+    },
+    remove: function (reviewId) {
+      return request('reviews', 'DELETE', 'reviews/' + encodeURIComponent(reviewId), null, true);
+    }
+  };
+
   var data = {
     categories: function () {
       return request('data', 'GET', 'categories', null, false);
@@ -633,6 +675,8 @@
     plans: plans,
     leads: leads,
     share: share,
+    account: account,
+    reviews: reviews,
     data: data,
     getToken: getToken,
     setToken: setToken,
