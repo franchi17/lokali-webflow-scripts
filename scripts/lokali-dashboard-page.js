@@ -73,15 +73,40 @@
   }
 
   // ── Share card buttons ─────────────────────────────────────────────────────
+  // The vendor's own Share & Grow link is routed through the Shares API so it
+  // carries an opaque ?via= token — that makes landings via the vendor's shared
+  // link trackable (Share & Grow "reach"). The token is stamped origin="vendor"
+  // server-side (the vendor owns this listing), so it is excluded from the
+  // public "shared by N neighbors" count. We mint once per browser session
+  // (cached) and upgrade the buttons' URL in place, so a click always reads the
+  // best URL available synchronously (no lost user-gesture for clipboard/share)
+  // and falls back to the plain public URL if the Shares API is unavailable.
+  function tokenizeShareUrl(v, ref) {
+    if (!v || v.id == null) return;
+    if (!(window.LokaliAPI && window.LokaliAPI.share && window.LokaliAPI.share.create)) return;
+    var key = 'lokali_vshare_' + v.id;
+    try {
+      var cached = sessionStorage.getItem(key);
+      if (cached) { ref.url = cached; return; }
+    } catch (e) {}
+    window.LokaliAPI.share.create(v.id, 'copy_link').then(function (res) {
+      var url = res && res.data && res.data.share_url;
+      if (!url) return;
+      ref.url = url;
+      try { sessionStorage.setItem(key, url); } catch (e) {}
+    }).catch(function () {});
+  }
+
   function wireShareButtons(v) {
-    var url = publicListingUrl(v);
+    var ref = { url: publicListingUrl(v) };
+    tokenizeShareUrl(v, ref);
 
     var copyBtn = document.getElementById('share-copy-link');
     if (copyBtn && !copyBtn.__wired) {
       copyBtn.__wired = true;
       copyBtn.addEventListener('click', function (e) {
         e.preventDefault();
-        copyToClipboard(url).then(function (ok) {
+        copyToClipboard(ref.url).then(function (ok) {
           if (ok) flashCopied(copyBtn.querySelector('.text-block-97') || copyBtn);
         });
       });
@@ -92,10 +117,10 @@
       shareBtn.__wired = true;
       shareBtn.addEventListener('click', function (e) {
         e.preventDefault();
-        var data = { title: (v.business_name || 'My Lokali profile'), url: url };
+        var data = { title: (v.business_name || 'My Lokali profile'), url: ref.url };
         if (navigator.share) { navigator.share(data).catch(function () {}); return; }
         // Desktop: no native share sheet → copy + show feedback so it doesn't feel dead.
-        copyToClipboard(url).then(function (ok) {
+        copyToClipboard(ref.url).then(function (ok) {
           if (ok) flashCopied(shareBtn.querySelector('.share') || shareBtn);
         });
       });
