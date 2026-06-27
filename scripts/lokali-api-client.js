@@ -10,6 +10,7 @@
   var PLANS_BASE = 'https://x8ki-letl-twmt.n7.xano.io/api:svUNydf-';
   var MEMBERS_BASE = 'https://x8ki-letl-twmt.n7.xano.io/api:vx-kSF0o';
   var FAVORITES_BASE = 'https://x8ki-letl-twmt.n7.xano.io/api:PCL6GhXL';
+  var SHARES_BASE = 'https://x8ki-letl-twmt.n7.xano.io/api:XU0t85ZI';
   var TOKEN_KEY = 'LOKALI_AUTH_TOKEN';
 
   function getBase(base) {
@@ -34,6 +35,12 @@
         return window.LOKALI_FAVORITES_BASE;
       }
       return FAVORITES_BASE;
+    }
+    if (base === 'shares') {
+      if (typeof window !== 'undefined' && typeof window.LOKALI_SHARES_BASE === 'string' && window.LOKALI_SHARES_BASE) {
+        return window.LOKALI_SHARES_BASE;
+      }
+      return SHARES_BASE;
     }
     if (base === 'dataLocations') {
       if (typeof window !== 'undefined' && typeof window.LOKALI_DATA_LOCATIONS_BASE === 'string' && window.LOKALI_DATA_LOCATIONS_BASE) {
@@ -574,6 +581,40 @@
     }
   };
 
+  var share = {
+    // Customer-facing (authed): mint an opaque ?via= share link for a vendor.
+    // Resolves to the standard { data, error, status } envelope; on success
+    // data = { share_code, share_url }. channel is optional
+    // (copy_link|whatsapp|sms|email|qr). origin is computed server-side.
+    create: function (vendorId, channel) {
+      var body = { vendors_id: vendorId };
+      if (channel) body.channel = channel;
+      return request('shares', 'POST', 'share/create', body, true);
+    },
+    // Landing log, fire-and-forget. Auto-picks the authed variant (stamps the
+    // lander + applies the self-bounce guard) when a Xano token is present, the
+    // public variant otherwise. Never blocks the page; failures are swallowed.
+    // keepalive so it survives if the page is still settling.
+    resolve: function (code, session) {
+      if (!code) return;
+      try {
+        var token = getToken();
+        var path = token ? 'share/resolve-auth' : 'share/resolve';
+        var url = getBase('shares') + '/' + path +
+          '?code=' + encodeURIComponent(code) +
+          '&landed_session=' + encodeURIComponent(session || '');
+        var headers = { Accept: 'application/json' };
+        if (token) headers['Authorization'] = 'Bearer ' + token;
+        fetch(url, { method: 'GET', headers: headers, keepalive: true }).catch(function () {});
+      } catch (e) {}
+    },
+    // Vendor-facing: the private share metric { unique_sharers, landings }.
+    // Owner-only server-side. Not a storefront/public surface.
+    count: function () {
+      return request('shares', 'GET', 'share/count', null, true);
+    }
+  };
+
   var data = {
     categories: function () {
       return request('data', 'GET', 'categories', null, false);
@@ -591,6 +632,7 @@
     products: products,
     plans: plans,
     leads: leads,
+    share: share,
     data: data,
     getToken: getToken,
     setToken: setToken,

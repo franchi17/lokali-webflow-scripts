@@ -182,6 +182,29 @@
     grid.appendChild(kpiCard('View → Lead rate', rate.toFixed(1) + '<small>%</small>', deltaChip(rate, ratePrev, 'pts'), 'Views that became leads'));
     var leadsLink = el('a', 'an-klink', 'See all in Leads →'); leadsLink.href = '/vendor-dashboard/leads';
     grid.appendChild(kpiCard('Leads', String(leads30), null, leadsLink));
+
+    // Shares KPI — word-of-mouth. Fetched separately from the Shares endpoint
+    // (unique customer sharers; the vendor's own Share & Grow links don't count).
+    var sharesCard = kpiCard('Shares', '<span style="color:#C8C6D8">…</span>', null, 'neighbors who shared your profile');
+    grid.appendChild(sharesCard);
+    if (window.LokaliAPI && window.LokaliAPI.share && window.LokaliAPI.share.count) {
+      window.LokaliAPI.share.count().then(function (res) {
+        var n = (res && res.data && res.data.unique_sharers) || 0;
+        var m = (res && res.data && res.data.landings) || 0;
+        var vEl = sharesCard.querySelector('.an-kvalue');
+        if (vEl) vEl.textContent = String(n);
+        var dEl = sharesCard.querySelector('.an-kdetail');
+        if (dEl) {
+          dEl.textContent = (n === 0)
+            ? 'neighbors who shared your profile'
+            : (n === 1 ? '1 neighbor' : n + ' neighbors') + (m > 0 ? ' · ' + m + (m === 1 ? ' visit' : ' visits') : '');
+        }
+      }).catch(function () {
+        var vEl2 = sharesCard.querySelector('.an-kvalue');
+        if (vEl2) vEl2.textContent = '0';
+      });
+    }
+
     mount.appendChild(grid);
 
     // light real-data insight (peak day) — no Phase 3 benchmark data needed
