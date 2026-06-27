@@ -139,7 +139,29 @@
       R + '.lk-empty a,' + R + '.lk-link{color:' + V + ';font-weight:600;text-decoration:none;}',
       // toast
       '.lk-ac-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:' + INK + ';color:#fff;font-family:' + F + ';font-size:13px;font-weight:500;padding:11px 18px;border-radius:10px;box-shadow:0 8px 28px rgba(26,24,41,.25);opacity:0;transition:all .28s ease;z-index:9999;}',
-      '.lk-ac-toast.show{transform:translateX(-50%) translateY(0);opacity:1;}'
+      '.lk-ac-toast.show{transform:translateX(-50%) translateY(0);opacity:1;}',
+      // ── mobile (≤640px) ──
+      '@media (max-width:640px){' +
+        '#lokali-account{padding:1rem 0 2.5rem;}' +
+        '#lokali-account .lk-band{flex-wrap:wrap;gap:12px;padding:18px;}' +
+        '#lokali-account .lk-greet{font-size:18px;}' +
+        '#lokali-account .lk-meta{font-size:12px;}' +
+        '#lokali-account .lk-stats{margin-left:0;width:100%;justify-content:flex-start;gap:32px;margin-top:2px;}' +
+        '#lokali-account .lk-seg-wrap{display:flex;width:100%;}' +
+        '#lokali-account .lk-seg{flex:1;justify-content:center;padding:9px 6px;}' +
+        '#lokali-account .lk-intro{font-size:12.5px;}' +
+        '#lokali-account .lk-row{flex-wrap:wrap;}' +
+        '#lokali-account .lk-row-info{flex-basis:calc(100% - 60px);}' +
+        '#lokali-account .lk-row-actions{width:100%;margin-top:6px;}' +
+        '#lokali-account .lk-row-actions .lk-btn.primary{flex:1;}' +
+        '#lokali-account .lk-row-actions .lk-btn.ghost{display:none;}' +
+        '#lokali-account .lk-set-row{flex-direction:column;align-items:stretch;gap:10px;}' +
+        '#lokali-account .lk-input,#lokali-account select.lk-input{width:100%;}' +
+        '#lokali-account .lk-review-head .when{float:none;display:block;margin-top:3px;}' +
+        '#lokali-account .lk-await{gap:10px;}' +
+        '#lokali-account .lk-await-cta{margin-left:52px;}' +
+        '#lokali-account .lk-composer-foot{flex-wrap:wrap;}' +
+      '}'
     ].join('');
     document.head.appendChild(s);
   }
