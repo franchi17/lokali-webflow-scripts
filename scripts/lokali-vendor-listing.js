@@ -130,15 +130,74 @@
     });
   }
 
-  function initSave() {
+  // ---- save / favorites: wire the designed #vl-save button to the Favorites API.
+  // Reflects state on the button (class 'vl-save-on' + '.vl-save-label' text).
+  // Signed-out: stash the pending vendor + a customer signup intent and open the
+  // Clerk sign-up modal; lokali-favorites.js (listening on 'lokali:authed')
+  // completes the save once the account exists — so the keys below are shared.
+  function vlSetSaveUI(saved) {
     var btn = document.getElementById('vl-save');
     if (!btn) return;
-    btn.addEventListener('click', function () {
-      var on = btn.classList.toggle('vl-save-on');
-      var label = btn.querySelector('.vl-save-label');
-      if (label) label.textContent = on ? 'Saved' : 'Save vendor';
-      // TODO: persist saved vendors (localStorage or Xano) when that feature lands.
+    btn.classList.toggle('vl-save-on', !!saved);
+    var label = btn.querySelector('.vl-save-label');
+    if (label) label.textContent = saved ? 'Saved' : 'Save vendor';
+  }
+
+  // Numeric vendor id for the Favorites API (never the slug). Prefer the resolved
+  // currentVendorId; fall back to the hero data attribute / ?id=.
+  function vlSaveVendorId() {
+    if (currentVendorId != null && /^[0-9]+$/.test(String(currentVendorId))) return Number(currentVendorId);
+    var el = document.querySelector('[data-lokali-vendor-id]');
+    var a = el && el.getAttribute('data-lokali-vendor-id');
+    if (a && /^[0-9]+$/.test(a.trim())) return Number(a.trim());
+    var qp = new URLSearchParams(window.location.search || '').get('id');
+    if (qp && /^[0-9]+$/.test(qp.trim())) return Number(qp.trim());
+    return null;
+  }
+
+  function vlHasToken() { var A = window.LokaliAPI; return !!(A && A.getToken && A.getToken()); }
+
+  function initSave() {
+    var btn = document.getElementById('vl-save');
+    if (!btn || btn.__lokaliSaveWired) return;
+    btn.__lokaliSaveWired = true;
+    btn.addEventListener('click', function (ev) {
+      ev.preventDefault();
+      var API = window.LokaliAPI;
+      var vid = vlSaveVendorId();
+      if (!API || !vid) return;
+      if (!vlHasToken()) {
+        try { sessionStorage.setItem('lokali_pending_fav', String(vid)); } catch (e) {}
+        try { sessionStorage.setItem('lokali_signup_intent', 'customer'); } catch (e) {}
+        if (window.Clerk && typeof window.Clerk.openSignUp === 'function') window.Clerk.openSignUp({});
+        else window.location.href = '/sign-up';
+        return;
+      }
+      var was = btn.classList.contains('vl-save-on');
+      var next = !was;
+      vlSetSaveUI(next); // optimistic
+      var p = next
+        ? API.request('favorites', 'POST', '/favorites', { vendors_id: vid }, true)
+        : API.request('favorites', 'DELETE', '/favorites/' + encodeURIComponent(vid), null, true);
+      p.then(function (res) { if (res && res.error) vlSetSaveUI(was); })
+       .catch(function () { vlSetSaveUI(was); });
     });
+    // Reflect the save once the customer finishes a sign-up-to-save flow.
+    window.addEventListener('lokali:authed', function () { setTimeout(refreshSaveState, 400); });
+  }
+
+  // Initial saved/unsaved state once we know the numeric id + have a token.
+  function refreshSaveState() {
+    var btn = document.getElementById('vl-save');
+    var API = window.LokaliAPI;
+    if (!btn || !API || !vlHasToken()) return;
+    var vid = vlSaveVendorId();
+    if (!vid) return;
+    API.request('favorites', 'GET', '/favorites', null, true).then(function (res) {
+      var rows = (res && res.data) || [];
+      var saved = Array.isArray(rows) && rows.some(function (r) { return r && Number(r.vendors_id) === Number(vid); });
+      vlSetSaveUI(saved);
+    }).catch(function () {});
   }
 
   // ---- 2. vendor id resolution -----------------------------------------
@@ -609,6 +668,7 @@
 
       var vid = v.id != null ? v.id : id;
       currentVendorId = vid;
+      refreshSaveState(); // light up the #vl-save button if this vendor is already saved
       // Slug for building clean item/about URLs. Prefer the vendor's real slug;
       // fall back to a non-numeric id used as the slug (legacy). Numeric id → no slug.
       currentVendorSlug = v.slug || (/^[0-9]+$/.test(String(id)) ? null : String(id).toLowerCase());

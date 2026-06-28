@@ -193,6 +193,10 @@
   }
 
   function decorateDetail() {
+    // If the listing has its own designed save button (#vl-save, wired by
+    // lokali-vendor-listing.js to the same Favorites API), don't inject a
+    // duplicate heart here.
+    if (document.getElementById('vl-save')) return;
     var anchor = document.getElementById(DETAIL_ANCHOR_ID);
     if (!anchor) return;
     var vid = resolveDetailVendorId(anchor);
