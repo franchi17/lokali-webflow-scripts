@@ -347,3 +347,37 @@
   else run();
 })();
 
+// Wire the sidebar "Logout" button site-wide on the dashboard. The Webflow
+// template ships #button-logout with a dead href (/dashboard/logout → 404), and
+// the real click handler is inline ONLY on the dashboard home page — so on every
+// OTHER dashboard page (settings/profile/services/products/analytics/leads) the
+// button fell through to that 404. This script loads on all /vendor-dashboard
+// pages, so bind here: prefer LokaliClerk.signOut() (full Clerk sign-out), with a
+// token-clear + /login fallback if Clerk isn't present. Idempotent (dataset flag);
+// on the home page the inline handler also runs — benign, its sync redirect wins.
+(function wireLogoutButton() {
+  'use strict';
+
+  function doSignOut(e) {
+    if (e) e.preventDefault();
+    if (window.LokaliClerk && typeof window.LokaliClerk.signOut === 'function') {
+      window.LokaliClerk.signOut();
+      return;
+    }
+    try {
+      if (window.LokaliAPI && window.LokaliAPI.clearToken) window.LokaliAPI.clearToken();
+    } catch (err) {}
+    window.location.href = '/login';
+  }
+
+  function run() {
+    var btn = document.getElementById('button-logout');
+    if (!btn || btn.dataset.lokaliLogoutBound) return;
+    btn.dataset.lokaliLogoutBound = '1';
+    btn.addEventListener('click', doSignOut);
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run);
+  else run();
+})();
+
