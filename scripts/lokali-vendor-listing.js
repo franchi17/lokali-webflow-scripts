@@ -83,7 +83,10 @@
     ".vl-badge.vl-badge-founding{background:rgba(201,162,42,.22);color:#C9A22A;border:.5px solid rgba(201,162,42,.45);}",
     ".vl-badge.vl-badge-verified{background:rgba(0,0,228,.16);color:#0000E4;border:.5px solid rgba(0,0,228,.4);}",
     ".vl-avatar.vl-avatar-initials{display:flex;align-items:center;justify-content:center;}",
-    ".vl-avatar-txt{color:#6002EE;font-weight:600;font-size:30px;letter-spacing:.5px;font-family:'Plus Jakarta Sans',sans-serif;line-height:1;}"
+    ".vl-avatar-txt{color:#6002EE;font-weight:600;font-size:30px;letter-spacing:.5px;font-family:'Plus Jakarta Sans',sans-serif;line-height:1;}",
+    // Saved state for the #vl-save button: violet-tinted, filled heart, "Saved".
+    ".vl-save.vl-save-on{background-color:#F3EBFF;border-color:#6002EE;color:#6002EE;}",
+    ".vl-save.vl-save-on svg,.vl-save.vl-save-on svg path{fill:currentColor;}"
   ].join('');
   function injectStyles() {
     if (document.getElementById('vl-pill-styles')) return;
@@ -140,7 +143,15 @@
     if (!btn) return;
     btn.classList.toggle('vl-save-on', !!saved);
     var label = btn.querySelector('.vl-save-label');
-    if (label) label.textContent = saved ? 'Saved' : 'Save vendor';
+    if (label) { label.textContent = saved ? 'Saved' : 'Save vendor'; return; }
+    // No label span — update the button's own text node, preserving the icon.
+    var nodes = btn.childNodes;
+    for (var i = nodes.length - 1; i >= 0; i--) {
+      if (nodes[i].nodeType === 3 && nodes[i].nodeValue && nodes[i].nodeValue.trim()) {
+        nodes[i].nodeValue = saved ? 'Saved' : 'Save vendor';
+        return;
+      }
+    }
   }
 
   // Numeric vendor id for the Favorites API (never the slug). Prefer the resolved
