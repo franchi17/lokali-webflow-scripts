@@ -539,12 +539,20 @@
     // Customer-facing, fire-and-forget: log a direct-contact click
     // (call|sms|whatsapp|email|instagram|website). keepalive so the request
     // survives the page navigating to tel:/wa.me/instagram right after.
+    // Auto-picks the authed variant (stamps user_id from $auth, server-verified)
+    // when a Xano token is present — that user_id is what unlocks the review gate
+    // ("you contacted this vendor → you can review them"); falls back to the
+    // anonymous endpoint when signed out.
     trackEvent: function (vendorId, eventType, source) {
       try {
-        var url = getBase('vendors') + '/vendor/id/' + encodeURIComponent(vendorId) + '/lead-event';
+        var token = getToken();
+        var path = token ? 'lead-event-auth' : 'lead-event';
+        var url = getBase('vendors') + '/vendor/id/' + encodeURIComponent(vendorId) + '/' + path;
+        var headers = { 'Content-Type': 'application/json', Accept: 'application/json' };
+        if (token) headers['Authorization'] = 'Bearer ' + token;
         fetch(url, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          headers: headers,
           keepalive: true,
           body: JSON.stringify({ event_type: eventType, source: source || 'listing' })
         }).catch(function () {});
