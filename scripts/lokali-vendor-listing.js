@@ -707,7 +707,106 @@
         .then(function (sres) { renderServices(asArray(unwrap(sres)), !(sres && sres.error)); });
       fetchListWithRetry(function () { return API.products.listByVendor(vid); })
         .then(function (pres) { renderProducts(asArray(unwrap(pres)), !(pres && pres.error)); });
+      renderReviews(vid, v.business_name || '');
     });
+  }
+
+  // ---- reviews (public testimonials) ------------------------------------
+  // Every public review passed the contact gate at create time, so each one is,
+  // by definition, a "verified contact" recommendation. No star averages at
+  // launch — a recommend boolean + the testimonial text. Empty state never shows
+  // a zero ("Be the first to recommend"). The reviews tab is always shown.
+  function injectReviewStyles() {
+    if (document.getElementById('vl-rev-styles')) return;
+    var s = document.createElement('style'); s.id = 'vl-rev-styles';
+    var FONT = '"Plus Jakarta Sans",sans-serif';
+    s.textContent = [
+      '.vl-rev-summary{font:600 15px/1.4 ' + FONT + ';color:#1A1829;margin-bottom:1rem;}',
+      '.vl-rev-summary strong{color:#6002EE;}',
+      '.vl-rev{background:#fff;border:.5px solid #EEEDF6;border-radius:12px;padding:16px 18px;margin-bottom:12px;}',
+      '.vl-rev-head{display:flex;align-items:center;gap:10px;margin-bottom:9px;}',
+      '.vl-rev-av{width:38px;height:38px;border-radius:50%;background:#F3EBFF;color:#6002EE;font:600 13px/1 ' + FONT + ';display:flex;align-items:center;justify-content:center;flex-shrink:0;text-transform:uppercase;}',
+      '.vl-rev-name{font:600 14px/1.2 ' + FONT + ';color:#1A1829;}',
+      '.vl-rev-verified{display:inline-flex;align-items:center;gap:4px;font:600 10.5px/1 ' + FONT + ';color:#2BB673;margin-top:3px;}',
+      '.vl-rev-pill{display:inline-flex;align-items:center;gap:5px;font:600 11px/1 ' + FONT + ';color:#2BB673;background:#E4F7EE;border-radius:100px;padding:4px 10px;margin-bottom:8px;}',
+      '.vl-rev-pill.no{color:#C0392B;background:#FDECEC;}',
+      '.vl-rev-body{font:400 13px/1.6 ' + FONT + ';color:#4A4761;}',
+      '.vl-rev-reply{margin-top:10px;padding:10px 12px;background:#F7F6FC;border-radius:8px;border-left:2px solid #6002EE;}',
+      '.vl-rev-reply-label{font:600 11px/1 ' + FONT + ';color:#6002EE;margin-bottom:4px;}',
+      '.vl-rev-reply-body{font:400 12.5px/1.55 ' + FONT + ';color:#4A4761;}',
+      '.vl-rev-when{font:500 11px/1 ' + FONT + ';color:#8E8BA6;margin-top:9px;}',
+      '.vl-rev-empty{text-align:center;padding:2.5rem 1.5rem;border:.5px dashed #C8C6D8;border-radius:14px;background:#fff;}',
+      '.vl-rev-empty-title{font:600 15px/1.3 ' + FONT + ';color:#1A1829;margin-bottom:5px;}',
+      '.vl-rev-empty-sub{font:400 13px/1.5 ' + FONT + ';color:#8E8BA6;}',
+      '.vl-rev-cta{display:inline-block;margin-top:14px;font:600 13px/1 ' + FONT + ';color:#6002EE;text-decoration:none;}'
+    ].join('');
+    document.head.appendChild(s);
+  }
+
+  function reviewWhen(v) {
+    var t = (typeof v === 'number') ? v : Date.parse(v); if (!t || isNaN(t)) return '';
+    var M = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    var d = new Date(t); return M[d.getMonth()] + ' ' + d.getFullYear();
+  }
+
+  function reviewCard(r) {
+    var card = ce('div', 'vl-rev');
+    var head = ce('div', 'vl-rev-head');
+    var av = ce('div', 'vl-rev-av'); av.textContent = initials(r.author_name || 'A neighbor');
+    head.appendChild(av);
+    var who = ce('div', 'vl-rev-who');
+    var nm = ce('div', 'vl-rev-name'); nm.textContent = r.author_name || 'A neighbor';
+    who.appendChild(nm);
+    var ver = ce('div', 'vl-rev-verified');
+    ver.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+    ver.appendChild(document.createTextNode(' Verified contact'));
+    who.appendChild(ver);
+    head.appendChild(who);
+    card.appendChild(head);
+    var rec = !!r.is_recommended;
+    var pill = ce('div', 'vl-rev-pill' + (rec ? '' : ' no'));
+    pill.textContent = rec ? '👍 Recommends' : '👎 Doesn’t recommend';
+    card.appendChild(pill);
+    if (r.comment) { var b = ce('div', 'vl-rev-body'); b.textContent = r.comment; card.appendChild(b); }
+    if (r.vendor_reply) {
+      var rep = ce('div', 'vl-rev-reply');
+      var rl = ce('div', 'vl-rev-reply-label'); rl.textContent = 'Response from the owner';
+      var rb = ce('div', 'vl-rev-reply-body'); rb.textContent = r.vendor_reply;
+      rep.appendChild(rl); rep.appendChild(rb); card.appendChild(rep);
+    }
+    if (r.created_at) { var w = ce('div', 'vl-rev-when'); w.textContent = reviewWhen(r.created_at); card.appendChild(w); }
+    return card;
+  }
+
+  function renderReviews(vendorId, vendorName) {
+    var panel = $('[data-vl-panel="reviews"]');
+    if (!panel) return;
+    injectReviewStyles();
+    setTabVisible('reviews', true); // always shown — never-zero "be the first" design
+    var API = window.LokaliAPI;
+    if (!API || !API.reviews || !API.reviews.forVendor) { ensureActiveTab(); return; }
+    API.reviews.forVendor(vendorId).then(function (res) {
+      var data = res && res.data; var items = (data && (data.items || data)) || [];
+      if (!Array.isArray(items)) items = [];
+      panel.innerHTML = '';
+      if (items.length) {
+        var rec = items.filter(function (r) { return r.is_recommended; }).length;
+        var sum = ce('div', 'vl-rev-summary');
+        var strong = ce('strong'); strong.textContent = String(rec);
+        sum.appendChild(strong);
+        sum.appendChild(document.createTextNode(' ' + (rec === 1 ? 'neighbor recommends ' : 'neighbors recommend ') + (vendorName || 'this vendor')));
+        panel.appendChild(sum);
+        items.forEach(function (r) { panel.appendChild(reviewCard(r)); });
+      } else {
+        var e = ce('div', 'vl-rev-empty');
+        var t = ce('div', 'vl-rev-empty-title'); t.textContent = 'Be the first to recommend ' + (vendorName || 'this vendor');
+        var sub = ce('div', 'vl-rev-empty-sub'); sub.textContent = 'Contacted them through Lokali? Share how it went.';
+        var cta = ce('a', 'vl-rev-cta'); cta.href = '/account#reviews'; cta.textContent = 'Leave a review →';
+        e.appendChild(t); e.appendChild(sub); e.appendChild(cta);
+        panel.appendChild(e);
+      }
+      ensureActiveTab();
+    }).catch(function () { ensureActiveTab(); });
   }
 
   function init() { injectStyles(); initTabs(); initSave(); hydrate(); }
