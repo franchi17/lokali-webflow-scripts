@@ -37,7 +37,7 @@
       + 'background:rgba(26,18,48,.55);backdrop-filter:blur(3px);padding:20px;}'
       + '.lok-wl-back.open{display:flex;}'
       + '.lok-wl-card{position:relative;width:100%;max-width:440px;background:#fff;border-radius:20px;'
-      + 'box-shadow:0 24px 70px rgba(40,20,90,.35);overflow:visible;font-family:inherit;animation:lokWlIn .22s ease;}'
+      + "box-shadow:0 24px 70px rgba(40,20,90,.35);overflow:visible;font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;animation:lokWlIn .22s ease;}"
       + '@keyframes lokWlIn{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:none}}'
       + '.lok-wl-top{height:6px;border-radius:20px 20px 0 0;background:linear-gradient(90deg,#B39AFD,#8B6CF0,#EEC1FF);}'
       + '.lok-wl-body{padding:30px 30px 28px;}'
@@ -61,7 +61,7 @@
       + '.lok-wl-done{text-align:center;padding:8px 0 4px;}.lok-wl-done .em{font-size:40px;line-height:1;display:block;margin:0 0 14px;}'
       + '.lok-wl-done h3{font-size:21px;color:#1f1638;margin:0 0 8px;font-weight:700;}'
       + '.lok-wl-done p{font-size:14.5px;color:#5d5470;line-height:1.5;margin:0 0 22px;}'
-      + '.pac-container{z-index:10001 !important;border-radius:12px;margin-top:4px;box-shadow:0 12px 30px rgba(40,20,90,.22);font-family:inherit;}';
+      + ".pac-container{z-index:10001 !important;border-radius:12px;margin-top:4px;box-shadow:0 12px 30px rgba(40,20,90,.22);font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;}";
     var s = document.createElement('style');
     s.id = 'lok-wl-css';
     s.textContent = css;
