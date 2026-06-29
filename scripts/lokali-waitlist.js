@@ -10,8 +10,10 @@
  * POSTs to the public Xano endpoint POST /waitlist (Contact group), which dedupes
  * by (email, place_id). No secrets here — the Maps key is referrer-restricted.
  *
- * Reuses the SAME Google Maps key already loaded on the vendor profile page
- * (referrer-restricted to golokali.com). Override via window.LOKALI_GMAPS_KEY.
+ * The Google Maps key is NEVER committed here — set it as a global in Webflow
+ * site-wide custom code (head):  <script>window.LOKALI_GMAPS_KEY='...';</script>
+ * Same referrer-restricted key the profile page uses. Without it, the city field
+ * gracefully degrades to a plain free-text input.
  *
  * Deploy: jsDelivr from this repo, site-wide footer (self-guards off-page).
  */
@@ -20,9 +22,7 @@
 
   var ENDPOINT = 'https://x8ki-letl-twmt.n7.xano.io/api:oYK_cDmG/waitlist';
   var SOURCE   = 'about_page';
-  var GMAPS_KEY = (typeof window.LOKALI_GMAPS_KEY === 'string' && window.LOKALI_GMAPS_KEY.trim())
-    ? window.LOKALI_GMAPS_KEY.trim()
-    : 'AIzaSyDra9dhcqbqFL1kFTsE4QWyETmVm-p8H_8';
+  var GMAPS_KEY = (typeof window.LOKALI_GMAPS_KEY === 'string') ? window.LOKALI_GMAPS_KEY.trim() : '';
   var TRIGGER_SEL = '#wl-trigger, [data-lokali-waitlist]';
 
   var built = false, mapsReady = false, mapsLoading = false, ac = null;
@@ -140,7 +140,10 @@
     if (mapsReady) { initAC(); return; }
     if (window.google && window.google.maps && window.google.maps.places) { mapsReady = true; initAC(); return; }
     if (mapsLoading) return;
-    if (!GMAPS_KEY) return; // no key — graceful free-text fallback
+    if (!GMAPS_KEY) { // no key — city field stays a plain text input
+      if (window.console) console.warn('[lokali-waitlist] window.LOKALI_GMAPS_KEY not set — city autocomplete disabled (free-text fallback).');
+      return;
+    }
     mapsLoading = true;
     window.__lokWlMapsReady = function () { mapsReady = true; initAC(); };
     var existing = document.querySelector('script[data-lok-wl-maps]');
