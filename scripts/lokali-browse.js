@@ -112,11 +112,14 @@
     ".vcard-name-row{display:flex;align-items:center;gap:6px;margin-bottom:3px;flex-wrap:wrap;}",
     ".vcard-name{font-size:14px;font-weight:600;color:#1A1829;letter-spacing:-.2px;line-height:1.2;}",
     ".vcard-area{font-size:11px;color:#6B6880;display:flex;align-items:center;gap:4px;}",
-    ".vcard .badge{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:100px;font-size:12px;line-height:1;flex-shrink:0;font-weight:700;}",
-    ".vcard .badge-founding{background:rgba(201,162,42,.22);color:#C9A22A;border:1px solid rgba(201,162,42,.45);}",
-    ".vcard .badge-new{background:rgba(29,106,69,.18);color:#1D6A45;border:1px solid rgba(29,106,69,.35);}",
-    ".vcard .badge-spotlight{background:rgba(96,2,238,.15);color:#6002EE;border:1px solid rgba(96,2,238,.35);}",
-    ".vcard .badge-verified{background:rgba(0,0,228,.16);color:#0000E4;border:1px solid rgba(0,0,228,.4);}",
+    // Badges live on their own row under the location (out of the way of the top-right heart),
+    // icon-only — a brighter/cleaner tint background with a darker icon on top.
+    ".vcard-badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px;}",
+    ".vcard .badge{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:100px;font-size:12px;line-height:1;flex-shrink:0;font-weight:700;}",
+    ".vcard .badge-founding{background:#FBE7A0;color:#9A6B00;border:1px solid rgba(154,107,0,.32);}",
+    ".vcard .badge-new{background:#C6F2DB;color:#11744A;border:1px solid rgba(17,116,74,.3);}",
+    ".vcard .badge-spotlight{background:#E2D2FF;color:#5A00E0;border:1px solid rgba(90,0,224,.3);}",
+    ".vcard .badge-verified{background:#D2DEFF;color:#1730C9;border:1px solid rgba(23,48,201,.3);}",
     ".vcard .cat-pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:500;border-radius:100px;padding:3px 10px;margin-bottom:8px;}",
     ".vcard-tagline{font-size:12.5px;color:#4A4761;line-height:1.5;margin-bottom:12px;}",
     ".vcard-actions{display:flex;gap:6px;flex-wrap:wrap;}",
@@ -538,14 +541,18 @@
     var meta = ce('div', 'vcard-meta');
     var nameRow = ce('div', 'vcard-name-row');
     var name = ce('span', 'vcard-name'); name.textContent = vName(v); nameRow.appendChild(name);
-    if (vIsFounding(v))  nameRow.appendChild(badge('badge-founding', { url: ICON_CROWN,    color: '#C9A22A', title: 'Founding vendor' }));
-    if (vIsNew(v))       nameRow.appendChild(badge('badge-new',      { url: ICON_BULLHORN, color: '#1D6A45', title: 'New this week' }));
-    if (vIsVerified(v))  nameRow.appendChild(badge('badge-verified', { glyph: '✓', title: 'Verified' }));
-    if (vIsSpotlight(v)) nameRow.appendChild(badge('badge-spotlight', { glyph: '✦', title: 'Spotlight' }));
     var area = ce('div', 'vcard-area');
     area.appendChild(maskIcon(ICON_PIN, AREA_GREY, 11));
     area.appendChild(document.createTextNode(' ' + vAreaLabel(v)));
     meta.appendChild(nameRow); meta.appendChild(area);
+    // Trust/status badges sit on their own row under the location — clear of the top-right
+    // heart — as bright filled pills (icon + label) instead of dull pale dots.
+    var badges = ce('div', 'vcard-badges');
+    if (vIsFounding(v))  badges.appendChild(badge('badge-founding',  { url: ICON_CROWN,    color: '#9A6B00', title: 'Founding vendor' }));
+    if (vIsNew(v))       badges.appendChild(badge('badge-new',       { url: ICON_BULLHORN, color: '#11744A', title: 'New this week' }));
+    if (vIsVerified(v))  badges.appendChild(badge('badge-verified',  { glyph: '✓', title: 'Verified' }));
+    if (vIsSpotlight(v)) badges.appendChild(badge('badge-spotlight', { glyph: '✦', title: 'Spotlight' }));
+    if (badges.children.length) meta.appendChild(badges);
     header.appendChild(buildAvatar(v)); header.appendChild(meta);
     card.appendChild(header);
 
