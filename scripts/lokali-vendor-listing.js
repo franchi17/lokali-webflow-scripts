@@ -321,16 +321,22 @@
     var a = document.createElement('a');
     a.className = 'vl-card';
     a.href = opts.href || '#';
-    var img = '<div class="vl-card-img" style="background:' + opts.tint + ';">' +
-      (opts.image ? '<img src="' + opts.image + '" alt="' + (opts.name || '') + '"/>' : '') + '</div>';
     var priceClass = 'vl-card-price' + (opts.quote ? ' vl-card-price-quote' : '');
     var ctaClass = 'vl-card-cta' + (opts.orange ? ' vl-card-cta-orange' : '');
-    a.innerHTML = img +
+    a.innerHTML = '<div class="vl-card-img" style="background:' + opts.tint + ';"></div>' +
       '<div class="vl-card-body"><div class="vl-card-top">' +
       '<div class="vl-card-name"></div>' +
       '<div class="' + priceClass + '"></div></div>' +
       '<div class="vl-card-desc"></div>' +
       '<div class="vl-card-foot"><span class="' + ctaClass + '">' + (opts.cta || 'Inquire') + '</span></div></div>';
+    // Build the image via properties (never interpolate vendor free-text into an
+    // attribute string) so a crafted item title can't break out into stored XSS.
+    if (opts.image) {
+      var imgEl = document.createElement('img');
+      imgEl.src = opts.image;
+      imgEl.alt = opts.name || '';
+      a.querySelector('.vl-card-img').appendChild(imgEl);
+    }
     a.querySelector('.vl-card-name').textContent = opts.name || 'Untitled';
     a.querySelector('.vl-card-price').textContent = opts.price || '';
     a.querySelector('.vl-card-desc').textContent = opts.desc || '';

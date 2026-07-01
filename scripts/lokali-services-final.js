@@ -878,7 +878,7 @@ const LokaliServicesPage = (() => {
     const arrowStyle = 'position:absolute;bottom:4px;width:22px;height:22px;border:none;border-radius:50%;background:rgba(26,24,41,.72);color:#fff;font-size:13px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;';
     _galleryPhotos.forEach((p, i) => {
       html += '<div style="position:relative;width:84px;height:84px;border-radius:10px;overflow:hidden;border:1px solid #eeedf6;background:#F7F6FC;">' +
-        '<img src="' + photoUrl(p.image_url) + '" alt="" style="width:100%;height:100%;object-fit:cover;display:block;">' +
+        '<img data-photo-idx="' + i + '" alt="" style="width:100%;height:100%;object-fit:cover;display:block;">' +
         '<button type="button" data-photo-id="' + p.id + '" aria-label="Remove photo" ' +
         'style="position:absolute;top:4px;right:4px;width:22px;height:22px;border:none;border-radius:50%;background:rgba(26,24,41,.72);color:#fff;font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;">×</button>' +
         (i > 0 ? '<button type="button" data-move-id="' + p.id + '" data-move-dir="-1" aria-label="Move photo earlier" style="' + arrowStyle + 'left:4px;">‹</button>' : '') +
@@ -895,6 +895,12 @@ const LokaliServicesPage = (() => {
       html += '<div style="font-size:12px;color:#8E8BA6;margin-top:8px;">You’ve reached your ' + cap + '-photo limit for this service.</div>';
     }
     body.innerHTML = html;
+    // Set image src via property (never interpolate the uploaded URL into an
+    // attribute string) so a crafted image_url can't inject markup.
+    body.querySelectorAll('img[data-photo-idx]').forEach((im) => {
+      const gp = _galleryPhotos[parseInt(im.getAttribute('data-photo-idx'), 10)];
+      if (gp) im.src = photoUrl(gp.image_url);
+    });
 
     const addBtn = document.getElementById('lok-gallery-add');
     if (addBtn) addBtn.addEventListener('click', () => { const gi = galleryInput(); if (gi) gi.click(); });
