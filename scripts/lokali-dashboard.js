@@ -18,6 +18,28 @@
     (document.head || document.documentElement).appendChild(s);
   })();
 
+  // Role guard: the vendor dashboard is vendors-only. A signed-in CUSTOMER who
+  // lands here (typed URL, stale link) is sent to their own hub at /account.
+  // Uses the cached role for an instant bounce, then confirms against the server.
+  // No token → left to requireAuth()/page scripts, which send to /login.
+  (function roleGuard() {
+    if (String(location.pathname || '').indexOf('/vendor-dashboard') === -1) return;
+    var TOKEN_KEY = 'LOKALI_AUTH_TOKEN', CACHE_KEY = 'LOKALI_ACCT_CACHE';
+    var t;
+    try { t = localStorage.getItem(TOKEN_KEY); } catch (e) { t = null; }
+    if (!t || t.length < 20) return; // no token → not our job (requireAuth → /login)
+    try {
+      var c = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+      if (c && c.role && c.role !== 'vendor') { window.location.replace('/account'); return; }
+    } catch (e) {}
+    var AUTH_BASE = (typeof window !== 'undefined' && window.LOKALI_AUTH_BASE) ||
+                    'https://x8ki-letl-twmt.n7.xano.io/api:mp2-aEJM';
+    fetch(AUTH_BASE + '/account', { headers: { Accept: 'application/json', Authorization: 'Bearer ' + t } })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (a) { if (a && a.role && a.role !== 'vendor') window.location.replace('/account'); })
+      .catch(function () {});
+  })();
+
   window.LokaliDashboard = {
 
     requireAuth: function () {

@@ -71,7 +71,7 @@
       ".lok-acct{position:relative;display:inline-flex;align-items:center;font-family:'Plus Jakarta Sans',-apple-system,sans-serif;}",
       ".lok-acct-trigger{display:inline-flex;align-items:center;gap:8px;cursor:pointer;background:none;border:none;padding:4px 8px 4px 4px;border-radius:100px;font-family:inherit;transition:background .12s;}",
       ".lok-acct-trigger:hover{background:rgba(96,2,238,.06);}",
-      ".lok-acct-av{width:30px;height:30px;border-radius:50%;background:#6002EE;color:#fff;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;text-transform:uppercase;}",
+      ".lok-acct-av{width:30px;height:30px;border-radius:50%;background:#F0E6FF;color:#6002EE;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;text-transform:uppercase;}",
       ".lok-acct-name{font-size:13px;font-weight:500;color:#1A1829;white-space:nowrap;}",
       ".lok-acct-caret{width:14px;height:14px;flex-shrink:0;color:#8E8BA6;transition:transform .15s;}",
       ".lok-acct.open .lok-acct-caret{transform:rotate(180deg);}",
@@ -112,11 +112,37 @@
   function menuItemsHTML(a) {
     var role = a && a.role;
     var html = '';
-    if (role === 'vendor') html += '<a href="' + DASH_URL + '" role="menuitem">My Dashboard</a>';
-    html += '<a href="' + ACCOUNT_URL + '" role="menuitem">My Account</a>';
+    // Label the two hubs by which "hat" they are, so a vendor (who has both) can
+    // tell them apart: the business dashboard vs. their personal saved/reviews.
+    if (role === 'vendor') {
+      html += '<a href="' + DASH_URL + '" role="menuitem">Vendor Dashboard</a>';
+      html += '<a href="' + ACCOUNT_URL + '" role="menuitem">My Account (Saved &amp; Reviews)</a>';
+    } else {
+      html += '<a href="' + ACCOUNT_URL + '" role="menuitem">My Account</a>';
+    }
     html += '<div class="lok-acct-sep"></div>';
     html += '<button type="button" class="lok-acct-signout" role="menuitem">Sign out</button>';
     return html;
+  }
+
+  // Hide the header "Become a Vendor" CTA once we know the user is already a
+  // vendor (it's redundant for them). Customers still see it. Scoped to the
+  // header + mobile nav only — footer "For Vendors" links are left alone.
+  function hideBecomeVendorForVendor() {
+    if (!acct || acct.role !== 'vendor') return;
+    var scopes = document.querySelectorAll(SCOPES);
+    for (var s = 0; s < scopes.length; s++) {
+      var links = scopes[s].querySelectorAll('a');
+      for (var i = 0; i < links.length; i++) {
+        var a = links[i];
+        var href = pathOf(a.getAttribute('href') || '');
+        var txt = (a.textContent || '').trim().toLowerCase();
+        if (href === '/sign-up' || txt === 'become a vendor') {
+          a.style.setProperty('display', 'none', 'important');
+          a.setAttribute('data-lok-bv-hidden', '1');
+        }
+      }
+    }
   }
 
   function buildAcctEl() {
@@ -185,6 +211,7 @@
       login.style.display = 'none';
       login.setAttribute('data-lok-auth-hidden', '1');
     }
+    hideBecomeVendorForVendor();
   }
 
   // Refill already-inserted menus with the current acct (initials/name/items).
@@ -228,7 +255,7 @@
 
   // Refresh role/name from the server and re-render (updates cache for next load).
   fetchAccount().then(function (a) {
-    if (a && (a.role || a.first_name)) { acct = a; setCache(a); render(); refreshExisting(); }
+    if (a && (a.role || a.first_name)) { acct = a; setCache(a); render(); refreshExisting(); hideBecomeVendorForVendor(); }
   });
 
   // Failsafe: stop observing, final pass, reveal anything still hidden.
