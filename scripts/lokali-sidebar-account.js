@@ -92,7 +92,11 @@
   }
 
   function init() {
-    var wrap = document.querySelector('.lok-acct');
+    // Target ONLY the native dashboard-sidebar chip. The header account menu
+    // (lokali-auth-nav.js) reuses the same .lok-acct/.lok-acct-name classes but
+    // marks its wrapper with data-lok-acct="1" — exclude it, or this would
+    // overwrite the header name with the vendor business_name ("Your business").
+    var wrap = document.querySelector('.lok-acct:not([data-lok-acct])');
     if (!wrap) return; // native chip not on this page
     bindToggle(wrap);
     whenApi(function () {
