@@ -45,7 +45,7 @@
     '#lok-analytics-section .an-bcol{flex:1;display:flex;align-items:flex-end;height:100%;}',
     '#lok-analytics-section .an-bar{width:100%;border-radius:3px 3px 0 0;background:' + VIOLET_L + ';min-height:2px;position:relative;transition:background .12s;}',
     '#lok-analytics-section .an-bcol:hover .an-bar{background:' + VIOLET + ';}',
-    '#lok-analytics-section .an-bar .tip{display:none;position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:' + INK + ';color:#fff;font-size:11px;font-weight:500;padding:3px 8px;border-radius:4px;white-space:nowrap;z-index:5;}',
+    '#lok-analytics-section .an-bar .tip{display:none;position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:' + VIOLET + ';color:#fff;font-size:11px;font-weight:500;padding:3px 8px;border-radius:4px;white-space:nowrap;z-index:5;}',
     '#lok-analytics-section .an-bcol:hover .tip{display:block;}',
     '#lok-analytics-section .an-axis{display:flex;justify-content:space-between;margin-top:8px;}',
     '#lok-analytics-section .an-axis span{font-size:10px;color:' + SLATE + ';}',

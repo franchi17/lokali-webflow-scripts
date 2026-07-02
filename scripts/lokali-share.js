@@ -69,7 +69,7 @@
       ".lk-share:hover{border-color:#D4AAFD;color:#6002EE;transform:translateY(-1px);}",
       ".lk-share svg{width:16px;height:16px;display:block;}",
       ".lk-share.is-busy{opacity:.55;pointer-events:none;}",
-      ".lk-share-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#1A1829;color:#fff;font:500 13px/1 'Plus Jakarta Sans',sans-serif;padding:11px 18px;border-radius:10px;box-shadow:0 8px 28px rgba(26,24,41,.25);opacity:0;transition:all .28s ease;z-index:9999;pointer-events:none;}",
+      ".lk-share-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#6002EE;color:#fff;font:500 13px/1 'Plus Jakarta Sans',sans-serif;padding:11px 18px;border-radius:10px;box-shadow:0 8px 28px rgba(96,2,238,.28);opacity:0;transition:all .28s ease;z-index:9999;pointer-events:none;}",
       ".lk-share-toast.show{transform:translateX(-50%) translateY(0);opacity:1;}",
       ".lk-share-teaser{font:500 13px/1.5 'Plus Jakarta Sans',sans-serif;color:#4A4761;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}",
       ".lk-share-teaser strong{color:#1A1829;font-weight:600;}",

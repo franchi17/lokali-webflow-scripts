@@ -217,9 +217,15 @@
   function render(v, services, products) {
     var hasListing = services.length > 0 || products.length > 0;
 
-    // Heading + subtitle
+    // Heading + subtitle. The subtitle used to repeat the business name right
+    // under "Good to see you, {name}" — show the tagline instead, or hide it.
     setId('vendor-name', v.business_name || 'Vendor');
-    setSel('.text-block-95', v.business_name || 'Your business'); // subtitle (location names not available from vendor/me)
+    var subEl = document.querySelector('.text-block-95');
+    if (subEl) {
+      var tagline = String(v.business_tagline || v.tagline || '').trim();
+      subEl.textContent = tagline;
+      subEl.style.display = tagline ? '' : 'none';
+    }
 
     // Share + preview links — clean /{slug} URL once the vendor has one.
     var publicUrl = v.slug ? ('golokali.com/' + v.slug) : ('golokali.com/vendor?id=' + v.id);
@@ -272,11 +278,27 @@
       window.LokaliAPI.products.getMine(false)
     ]).then(function (r) {
       var vendorRes = r[0];
-      if (vendorRes.error || !vendorRes.data) { window.location.href = '/login'; return; }
+      if (vendorRes.error || !vendorRes.data) {
+        // Only a genuine auth failure goes to /login. Transient errors (the
+        // Xano free-tier rate limit, cold starts, network blips) retry instead
+        // — bouncing a signed-in vendor to /login on a 429 looked like a
+        // forced logout.
+        if (vendorRes.status === 401 || vendorRes.status === 403) {
+          window.location.href = '/login';
+          return;
+        }
+        if (_initRetries < 2) {
+          _initRetries++;
+          setTimeout(init, 4000 * _initRetries);
+        }
+        return;
+      }
       var v = vendorRes.data.vendor || vendorRes.data;
       render(v, toArr(r[1].data), toArr(r[2].data));
     });
   }
+
+  var _initRetries = 0;
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();

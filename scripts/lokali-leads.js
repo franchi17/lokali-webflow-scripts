@@ -41,13 +41,15 @@
 
   var CSS = [
     '#lok-leads-page{font-family:"Plus Jakarta Sans",-apple-system,sans-serif;color:' + INK + ';}',
-    '#lok-leads-page .lp-hero{background:' + INK + ';border-radius:12px;padding:1.5rem 1.75rem;margin-bottom:1.25rem;display:flex;align-items:center;justify-content:space-between;gap:1.5rem;flex-wrap:wrap;}',
-    '#lok-leads-page .lp-hero-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.55);}',
-    '#lok-leads-page .lp-hero-value{font-size:40px;font-weight:700;color:#fff;line-height:1;margin-top:4px;}',
-    '#lok-leads-page .lp-hero-cum{font-size:12px;color:rgba(255,255,255,.55);margin-top:8px;}',
-    '#lok-leads-page .lp-hero-cum strong{color:#fff;font-weight:600;}',
-    '#lok-leads-page .lp-hero-delta{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:#6EE7A8;background:rgba(110,231,168,.12);border-radius:100px;padding:5px 12px;}',
-    '#lok-leads-page .lp-hero-delta.down{color:#FCA5A5;background:rgba(252,165,165,.12);}',
+    // Hero: light brand-gradient surface (was solid ink — Francesca wants no
+    // black/ink panels in the dashboard, 2026-07-02).
+    '#lok-leads-page .lp-hero{background:linear-gradient(120deg,' + VIOLET_L + ' 0%,#FFF3E4 100%);border:.5px solid ' + BORDER + ';border-radius:12px;padding:1.5rem 1.75rem;margin-bottom:1.25rem;display:flex;align-items:center;justify-content:space-between;gap:1.5rem;flex-wrap:wrap;}',
+    '#lok-leads-page .lp-hero-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:' + SLATE + ';}',
+    '#lok-leads-page .lp-hero-value{font-size:40px;font-weight:700;color:' + VIOLET + ';line-height:1;margin-top:4px;}',
+    '#lok-leads-page .lp-hero-cum{font-size:12px;color:' + DUSK + ';margin-top:8px;}',
+    '#lok-leads-page .lp-hero-cum strong{color:' + VIOLET + ';font-weight:600;}',
+    '#lok-leads-page .lp-hero-delta{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:' + GREEN + ';background:' + GREEN_L + ';border-radius:100px;padding:5px 12px;}',
+    '#lok-leads-page .lp-hero-delta.down{color:#B42318;background:#FEE4E2;}',
     '#lok-leads-page .lp-sources{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:1.25rem;}',
     '#lok-leads-page .lp-chip{background:#fff;border:.5px solid ' + BORDER + ';border-radius:10px;padding:.9rem 1rem;display:flex;align-items:center;gap:10px;}',
     '#lok-leads-page .lp-chip-ic{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:' + VIOLET_L + ';color:' + VIOLET + ';}',
