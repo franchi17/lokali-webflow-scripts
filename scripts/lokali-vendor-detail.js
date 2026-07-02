@@ -20,6 +20,24 @@
   function show(el, on) { if (el) el.style.display = on ? '' : 'none'; }
   function digits(s) { return String(s || '').replace(/[^0-9]/g, ''); }
   function unwrap(res) { return (res && res.data != null) ? res.data : res; }
+
+  // Retry a request on a transient error (Xano free-tier 429 / cold start /
+  // network). Without this, a rate-limited fetch left the page showing the
+  // Webflow TEMPLATE PLACEHOLDERS (a different demo vendor's name/category/
+  // item), because the hydrators only overwrite the markup on a successful
+  // response. Real fix for the underlying limit is the paid Xano tier.
+  function reqRetry(makeReq, tries) {
+    tries = tries || 4;
+    return makeReq().then(function (res) {
+      var transient = res && res.error &&
+        /rate|429|whoa|requests per|timeout|network|cold/i.test(String(res.error));
+      if (transient && tries > 1) {
+        return new Promise(function (r) { setTimeout(r, 1600); })
+          .then(function () { return reqRetry(makeReq, tries - 1); });
+      }
+      return res;
+    });
+  }
   function asArray(raw) {
     if (Array.isArray(raw)) return raw;
     if (raw && typeof raw === 'object') {
@@ -177,9 +195,10 @@
     var back = $('vd-back'); if (back && vendorId) back.href = '/vendor?id=' + encodeURIComponent(vendorId);
     var link = $('vd-mini-link'); if (link && vendorId) link.href = '/vendor?id=' + encodeURIComponent(vendorId);
     if (!vendorId || !window.LokaliAPI) return;
-    window.LokaliAPI.vendors.getById(vendorId).then(function (res) {
+    reqRetry(function () { return window.LokaliAPI.vendors.getById(vendorId); }).then(function (res) {
+      if (res && res.error) return; // gave up after retries — leave links as-is, don't render an error object as a vendor
       var v = unwrap(res); if (v && v.vendor) v = v.vendor; // { vendor: {...} } envelope
-      if (!v) return;
+      if (!v || v.error != null) return;
       // Upgrade the back/mini links to the clean root URL once we know the slug
       // (the ?id= hrefs set above keep working as a fallback in the meantime).
       if (v.slug) {
@@ -239,8 +258,9 @@
 
   // ---- service ----------------------------------------------------------
   function hydrateService(id, vendorParam) {
-    window.LokaliAPI.services.getById(id).then(function (res) {
-      var s = unwrap(res); if (!s) { console.warn('[vd] service not found'); return; }
+    reqRetry(function () { return window.LokaliAPI.services.getById(id); }).then(function (res) {
+      if (res && res.error) { console.warn('[vd] service load failed', res.error); return; }
+      var s = unwrap(res); if (!s || s.error != null) { console.warn('[vd] service not found'); return; }
       var name = s.service_name || s.name || '';
       setText('vd-name', name);
       document.title = name + ' — Lokali';
@@ -300,13 +320,17 @@
       fillVendor(vid, name, true);
     };
     if (vendorParam) {
-      window.LokaliAPI.products.listByVendor(vendorParam).then(function (res) {
+      reqRetry(function () { return window.LokaliAPI.products.listByVendor(vendorParam); }).then(function (res) {
+        if (res && res.error) { console.warn('[vd] product load failed', res.error); return; }
         var found = asArray(unwrap(res)).filter(function (x) { return String(x.id) === String(id); })[0];
         done(found);
       });
     } else {
       // last resort: owner endpoint (works only if logged in as owner)
-      window.LokaliAPI.products.getById(id).then(function (res) { done(unwrap(res)); });
+      reqRetry(function () { return window.LokaliAPI.products.getById(id); }).then(function (res) {
+        if (res && res.error) { console.warn('[vd] product load failed', res.error); return; }
+        done(unwrap(res));
+      });
     }
   }
 
@@ -325,11 +349,13 @@
   // slug → hand off to the existing id-based hydrators (which fill vendor + gallery).
   function hydrateFromSlug(info) {
     var isProduct = info.kind === 'products';
-    window.LokaliAPI.vendors.getBySlug(info.vendorSlug).then(function (res) {
+    reqRetry(function () { return window.LokaliAPI.vendors.getBySlug(info.vendorSlug); }).then(function (res) {
+      if (res && res.error) { console.warn('[vd] vendor slug load failed', res.error); return; }
       var v = unwrap(res); if (v && v.vendor) v = v.vendor;
-      if (!v || v.id == null) { console.warn('[vd] vendor not found for slug', info.vendorSlug); return; }
+      if (!v || v.error != null || v.id == null) { console.warn('[vd] vendor not found for slug', info.vendorSlug); return; }
       var listFn = isProduct ? window.LokaliAPI.products.listByVendor : window.LokaliAPI.services.listByVendor;
-      listFn(v.id).then(function (lres) {
+      reqRetry(function () { return listFn(v.id); }).then(function (lres) {
+        if (lres && lres.error) { console.warn('[vd] item list load failed', lres.error); return; }
         var match = asArray(unwrap(lres)).filter(function (x) { return x && String(x.slug) === String(info.itemSlug); })[0];
         if (!match || match.id == null) { console.warn('[vd] item not found for slug', info.itemSlug); return; }
         if (isProduct) hydrateProduct(match.id, v.id);
