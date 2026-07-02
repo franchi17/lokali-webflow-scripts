@@ -116,7 +116,10 @@
   // Verification is a paid perk. Whether the vendor is on Pro/Featured decides whether
   // they see the "Get Verified" button or the upsell. Cached once billing resolves so
   // renderStatus() can re-run (e.g. return-from-Stripe polling) without re-fetching.
-  var _isPro = false;
+  // Tri-state so we NEVER nag a paying vendor: 'pro' | 'free' | 'unknown'. Only a
+  // confirmed 'free' shows the upsell; 'unknown' (billing still loading / cold-start
+  // failure) keeps the button, so a Pro/Featured vendor can't be misrendered as Free.
+  var _planState = 'unknown';
 
   function planIsPro(billingData) {
     var b = billingData || {};
@@ -129,11 +132,13 @@
   }
 
   // ── render verification state ──────────────────────────────────────────────────
-  function renderStatus(status, isPro) {
+  function renderStatus(status, planState) {
     status = (status || 'unverified').toLowerCase();
     if (!STATUS_LABELS[status]) status = 'unverified';
     var isVerified = status === 'verified';
-    if (typeof isPro === 'boolean') _isPro = isPro; else isPro = _isPro;
+    if (planState === 'pro' || planState === 'free' || planState === 'unknown') _planState = planState;
+    else planState = _planState;
+    var confirmedFree = planState === 'free';
 
     // The "Get Verified" card disappears once verified (only if the wrapper opts in;
     // the settings card omits this so it can keep showing the earned badge).
@@ -151,17 +156,18 @@
       el.textContent = STATUS_LABELS[status];
     });
 
-    // The button: only for Pro/Featured, only when actionable (not verified, not
-    // pending). Reads "Try again" after a failure. Free vendors never see it.
+    // The button: shown when actionable (not verified/pending) AND the vendor is not
+    // confirmed Free. 'unknown' still shows it — optimistic, so a cold-start billing
+    // miss never hides the button from a paying vendor.
     $all('[data-lokali-verify]').forEach(function (btn) {
       var actionable = !(status === 'pending' || isVerified);
-      btn.style.display = (actionable && isPro) ? '' : 'none';
+      btn.style.display = (actionable && !confirmedFree) ? '' : 'none';
       if (status === 'failed') btn.textContent = 'Try again';
     });
 
-    // Upsell (Free vendors, not yet verified): "Upgrade to Pro to get verified".
+    // Upsell (Free vendors, not yet verified): shown ONLY on a confirmed Free plan.
     $all('[data-lokali-verify-upsell]').forEach(function (el) {
-      el.style.display = (!isVerified && !isPro) ? '' : 'none';
+      el.style.display = (!isVerified && confirmedFree) ? '' : 'none';
     });
 
     // Per-state visibility helpers.
@@ -183,24 +189,26 @@
 
   function delay(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
 
-  // Resolve the vendor's Pro/Featured status. Retries a definitive billing read so a
-  // transient cold-start miss doesn't wrongly downgrade a paying vendor to the upsell.
-  // Only gives up (→ false) after the whole retry window fails; the card's default
-  // markup shows the button meanwhile, so we bias toward showing (not nagging) on load.
-  function fetchIsPro(attempt) {
+  // Resolve the vendor's plan → 'pro' | 'free' | 'unknown'. Retries a definitive
+  // billing read (cold starts 401/empty until Xano wakes). Returns 'unknown' only if
+  // every attempt fails — and 'unknown' keeps the button shown, so a paying vendor is
+  // never downgraded to the upsell by a transient miss.
+  function fetchPlanState(attempt) {
     attempt = attempt || 0;
     var api = window.LokaliAPI;
     if (!(api && api.plans && typeof api.plans.getMyBilling === 'function')) {
-      return Promise.resolve(false);
+      return Promise.resolve('unknown');
     }
-    function retryOrGiveUp() {
-      if (attempt >= 5) return false;
-      return delay(700).then(function () { return fetchIsPro(attempt + 1); });
+    function retryOrUnknown() {
+      if (attempt >= 8) return 'unknown';
+      return delay(800).then(function () { return fetchPlanState(attempt + 1); });
     }
     return api.plans.getMyBilling().then(function (res) {
-      if (res && !res.error && res.data && hasPlanInfo(res.data)) return planIsPro(res.data);
-      return retryOrGiveUp();
-    }).catch(retryOrGiveUp);
+      if (res && !res.error && res.data && hasPlanInfo(res.data)) {
+        return planIsPro(res.data) ? 'pro' : 'free';
+      }
+      return retryOrUnknown();
+    }).catch(retryOrUnknown);
   }
 
   function loadStatus() {
@@ -215,7 +223,7 @@
           console.warn('[lokali-verification] vendors.me failed', err);
           return {};
         }),
-      fetchIsPro()
+      fetchPlanState()
     ]).then(function (out) {
       return renderStatus(out[0].identity_status, out[1]);
     });
