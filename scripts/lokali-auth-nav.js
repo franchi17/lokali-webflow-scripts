@@ -116,7 +116,7 @@
     // tell them apart: the business dashboard vs. their personal saved/reviews.
     if (role === 'vendor') {
       html += '<a href="' + DASH_URL + '" role="menuitem">Vendor Dashboard</a>';
-      html += '<a href="' + ACCOUNT_URL + '" role="menuitem">My Account (Saved &amp; Reviews)</a>';
+      html += '<a href="' + ACCOUNT_URL + '" role="menuitem">My Customer Account</a>';
     } else {
       html += '<a href="' + ACCOUNT_URL + '" role="menuitem">My Account</a>';
     }

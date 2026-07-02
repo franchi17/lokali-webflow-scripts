@@ -171,8 +171,10 @@
     var views30 = inWin(views, 0, DAY30), viewsPrev = inWin(views, DAY30, 2 * DAY30);
     var leads30 = inWin(inq, 0, DAY30) + inWin(con, 0, DAY30);
     var leadsPrev = inWin(inq, DAY30, 2 * DAY30) + inWin(con, DAY30, 2 * DAY30);
-    var rate = views30 ? (leads30 / views30 * 100) : 0;
-    var ratePrev = viewsPrev ? (leadsPrev / viewsPrev * 100) : 0;
+    // Clamp at 100 — sparse early data (e.g. 5 leads on 2 views) pushes the
+    // raw ratio over 100%, which reads as a broken stat to a vendor.
+    var rate = views30 ? Math.min(100, leads30 / views30 * 100) : 0;
+    var ratePrev = viewsPrev ? Math.min(100, leadsPrev / viewsPrev * 100) : 0;
 
     mount.innerHTML = '';
 

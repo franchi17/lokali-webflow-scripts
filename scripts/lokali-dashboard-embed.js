@@ -539,12 +539,14 @@
       }
       n++;
       if (n > ROOT_MAX_POLLS) {
-        console.error(
+        // Informational, not an error: the loader ships site-wide but the
+        // embed root only exists where the embed is actually used.
+        console.info(
           '[Lokali dashboard embed] No #' +
             ROOT_ID +
             ' after ~' +
             Math.round((ROOT_MAX_POLLS * ROOT_POLL_MS) / 1000) +
-            's. Add the HTML Embed from dashboard-body-embed.html on this page.'
+            's — nothing to mount on this page.'
         );
         return;
       }

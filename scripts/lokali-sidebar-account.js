@@ -1,12 +1,17 @@
 /**
- * Lokali — vendor dashboard sidebar account chip (HYDRATION ONLY).
+ * Lokali — vendor dashboard sidebar account chip.
  *
  * The chip STRUCTURE is built natively in the Webflow "Vendor Dashboard Sidebar"
- * component (editable in the Designer). This script only:
- *   - fills the avatar / business name / plan from vendors.me()
- *   - toggles the expand/collapse menu
+ * component (editable in the Designer). This script:
+ *   - fills the avatar / business name / plan (plan comes from the BILLING
+ *     endpoint — the vendor row itself carries no plan field)
+ *   - toggles the expand/collapse menu, and forces it to open UPWARD (the chip
+ *     sits at the bottom of the viewport; the native menu opened downward and
+ *     rendered entirely below the fold — bug #36)
  *   - hides the "Upgrade" row for top-tier vendors
- * It does NOT inject DOM. No-op anywhere `.lok-acct` isn't present.
+ *   - appends a "My Customer Account" row -> /account (bug #37: there was no
+ *     way back from the vendor dashboard to the customer side)
+ *   - retries once if the first fetch fails (Xano free-tier rate limit)
  *
  * Native element hooks (classes, set in Webflow):
  *   .lok-acct (wrapper, gets .open) · .lok-acct-chip (click target)
@@ -19,9 +24,27 @@
 
   var XANO_ORIGIN = 'https://x8ki-letl-twmt.n7.xano.io';
 
-  function planLabel(v) {
-    var p = String((v && (v.plan || v.tier || v.plan_name || v.subscription_tier || v.plan_tier)) || '').toLowerCase();
-    if (p.indexOf('featured') >= 0 || p.indexOf('spotlight') >= 0) return { label: 'Featured', top: true };
+  // #36 + polish: open the menu ABOVE the chip, and lay the native
+  // .dashboard-btn rows out horizontally (icon beside label, not stacked).
+  var MENU_CSS =
+    '.lok-acct .lok-acct-menu{top:auto !important;bottom:calc(100% + 6px) !important;}' +
+    '.lok-acct .lok-acct-menu .dashboard-btn{display:flex;flex-direction:row;align-items:center;gap:10px;padding:8px 12px;}' +
+    '.lok-acct .lok-acct-menu .dashboard-btn .icon-div{width:28px;height:28px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;}' +
+    '.lok-acct .lok-acct-menu .dashboard-btn .icon-div img{width:16px;height:16px;}';
+
+  function injectCss() {
+    if (document.getElementById('lok-acct-css')) return;
+    var st = document.createElement('style');
+    st.id = 'lok-acct-css';
+    st.textContent = MENU_CSS;
+    document.head.appendChild(st);
+  }
+
+  // Plan label from the flat billing payload (vendor/me/billing). The vendor
+  // row is only consulted for the founding fallback when billing is missing.
+  function planLabel(billing, v) {
+    var p = String((billing && (billing.plan || billing.plan_code)) || '').toLowerCase();
+    if (p.indexOf('featured') >= 0) return { label: 'Featured', top: true };
     if (p.indexOf('pro') >= 0) return { label: 'Pro plan', top: false };
     if (v && v.is_founding_member) return { label: 'Founding member', top: false };
     return { label: 'Free plan', top: false };
@@ -41,10 +64,10 @@
   }
   function setText(elm, t) { if (elm) elm.textContent = t; }
 
-  function hydrate(wrap, data) {
+  function hydrate(wrap, data, billing) {
     var v = (data && data.vendor) ? data.vendor : (data || {});
     var name = (v.business_name || v.name) || 'Your business';
-    var plan = planLabel(v);
+    var plan = planLabel(billing, v);
     var photo = photoUrl(v);
 
     setText(wrap.querySelector('.lok-acct-name'), name);
@@ -64,10 +87,24 @@
     }
 
     // Hide the upgrade row for top-tier vendors.
-    if (plan.top) {
-      var up = wrap.querySelector('.lok-acct-upgrade');
-      if (up) up.style.display = 'none';
-    }
+    var up = wrap.querySelector('.lok-acct-upgrade');
+    if (up) up.style.display = plan.top ? 'none' : '';
+  }
+
+  // #37 — a route back to the customer side. Reuses the .lok-acct-row style
+  // the native Upgrade/Help rows already carry.
+  function addCustomerAccountRow(wrap) {
+    var menu = wrap.querySelector('.lok-acct-menu');
+    if (!menu || menu.querySelector('[data-lok-customer-row]')) return;
+    var ref = menu.querySelector('.lok-acct-row:not(.lok-acct-upgrade)') || menu.querySelector('.lok-acct-row');
+    var a = document.createElement('a');
+    a.className = 'lok-acct-row';
+    a.setAttribute('data-lok-customer-row', '1');
+    a.href = '/account';
+    a.textContent = 'My Customer Account';
+    if (ref && ref.nextSibling) ref.parentNode.insertBefore(a, ref.nextSibling);
+    else if (ref) ref.parentNode.appendChild(a);
+    else menu.appendChild(a);
   }
 
   function bindToggle(wrap) {
@@ -91,6 +128,24 @@
     setTimeout(function () { whenApi(cb, tries + 1); }, 250);
   }
 
+  function fetchAndHydrate(wrap, attempt) {
+    var billingP = (window.LokaliAPI.plans && window.LokaliAPI.plans.getMyBilling)
+      ? window.LokaliAPI.plans.getMyBilling().catch(function () { return null; })
+      : Promise.resolve(null);
+    Promise.all([window.LokaliAPI.vendors.me(), billingP]).then(function (rs) {
+      var meRes = rs[0];
+      var billing = rs[1] && !rs[1].error ? (rs[1].data || rs[1]) : null;
+      if ((!meRes || meRes.error || !meRes.data) && attempt < 1) {
+        // Likely the free-tier rate limit — one quiet retry after a beat.
+        setTimeout(function () { fetchAndHydrate(wrap, attempt + 1); }, 3000);
+        return;
+      }
+      hydrate(wrap, (meRes && !meRes.error && meRes.data) ? meRes.data : null, billing);
+    }).catch(function () {
+      if (attempt < 1) setTimeout(function () { fetchAndHydrate(wrap, attempt + 1); }, 3000);
+    });
+  }
+
   function init() {
     // Target ONLY the native dashboard-sidebar chip. The header account menu
     // (lokali-auth-nav.js) reuses the same .lok-acct/.lok-acct-name classes but
@@ -98,12 +153,10 @@
     // overwrite the header name with the vendor business_name ("Your business").
     var wrap = document.querySelector('.lok-acct:not([data-lok-acct])');
     if (!wrap) return; // native chip not on this page
+    injectCss();
     bindToggle(wrap);
-    whenApi(function () {
-      window.LokaliAPI.vendors.me().then(function (res) {
-        hydrate(wrap, (res && !res.error && res.data) ? res.data : null);
-      }).catch(function () {});
-    });
+    addCustomerAccountRow(wrap);
+    whenApi(function () { fetchAndHydrate(wrap, 0); });
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);

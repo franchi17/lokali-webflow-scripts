@@ -94,18 +94,22 @@
   }
 
   // ── verify button ──────────────────────────────────────────────────────────────
+  // Delegated at the document level so a card injected AFTER this script loads (the
+  // settings/dashboard embeds mount their card via a small inline script) still works —
+  // no per-element binding, no ordering race.
   function bindVerifyButtons() {
-    $all('[data-lokali-verify]').forEach(function (btn) {
-      btn.addEventListener('click', function (e) {
-        e.preventDefault();
-        setButtonBusy(btn, true);
-        postForRedirect(START_URL, {})
-          .catch(function (err) {
-            setButtonBusy(btn, false);
-            console.error('[lokali-verification] start failed', err);
-            alert('Sorry — could not start verification. Please try again.');
-          });
-      });
+    document.addEventListener('click', function (e) {
+      var btn = e.target && e.target.closest ? e.target.closest('[data-lokali-verify]') : null;
+      if (!btn) return;
+      e.preventDefault();
+      if (btn.getAttribute('aria-busy') === 'true') return;
+      setButtonBusy(btn, true);
+      postForRedirect(START_URL, {})
+        .catch(function (err) {
+          setButtonBusy(btn, false);
+          console.error('[lokali-verification] start failed', err);
+          alert('Sorry — could not start verification. Please try again.');
+        });
     });
   }
 

@@ -348,6 +348,14 @@
     return v && v.slug ? (ORIGIN + '/' + v.slug) : (ORIGIN + '/vendor?id=' + (v && v.id));
   }
 
+  var attempts = 0;
+
+  function retry() {
+    // The template href is a dead 404 until this rewrite lands, so don't give
+    // up on one failed fetch (usually the Xano free-tier rate limit).
+    if (attempts < 3) setTimeout(run, 3000 * attempts);
+  }
+
   function run() {
     var link = findLink();
     if (!link) return;
@@ -355,14 +363,15 @@
       setTimeout(run, 300);
       return;
     }
+    attempts++;
     window.LokaliAPI.vendors.me().then(function (res) {
-      if (!res || res.error || !res.data) return;
+      if (!res || res.error || !res.data) return retry();
       var v = res.data.vendor || res.data;
-      if (!v || (!v.slug && v.id == null)) return;
+      if (!v || (!v.slug && v.id == null)) return retry();
       link.setAttribute('href', publicListingUrl(v));
       link.setAttribute('target', '_blank');
       link.setAttribute('rel', 'noopener');
-    }).catch(function () {});
+    }).catch(retry);
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run);

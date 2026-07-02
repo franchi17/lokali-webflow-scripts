@@ -71,10 +71,26 @@
       if (token) localStorage.setItem(TOKEN_KEY, token);
       else localStorage.removeItem(TOKEN_KEY);
     } catch (e) {}
+    _vendorMePromise = null; // identity changed — drop the cached vendor/me
   }
 
   function clearToken() {
     setToken(null);
+  }
+
+  // Shared in-flight/last-good cache for vendor/me. Every dashboard page has
+  // 3+ independent consumers (sidebar chip, My-Listing rewrite, page script,
+  // list fallbacks); without this each fired its own request and the burst
+  // regularly tripped Xano's free-tier 10 req/20s limit (intermittent
+  // "Your business" chips, dead links, empty lists). Failures are never
+  // cached; any vendor mutation or token change clears it.
+  var _vendorMePromise = null;
+
+  function invalidateVendorMe(p) {
+    return p.then(function (out) {
+      if (!out || !out.error) _vendorMePromise = null;
+      return out;
+    });
   }
 
   function request(base, method, path, body, useAuth) {
@@ -269,7 +285,15 @@
 
   var vendors = {
     me: function () {
-      return request('vendors', 'GET', 'vendor/me', null, true);
+      if (_vendorMePromise) return _vendorMePromise;
+      _vendorMePromise = request('vendors', 'GET', 'vendor/me', null, true).then(function (out) {
+        if (!out || out.error) _vendorMePromise = null;
+        return out;
+      }, function (err) {
+        _vendorMePromise = null;
+        throw err;
+      });
+      return _vendorMePromise;
     },
     updateMe: function (payload) {
       payload = payload || {};
@@ -299,7 +323,7 @@
         whatsapp_messages:       !!payload.whatsapp_messages,
         instagram_url:           instagramVal
       };
-      return request('vendors', 'PATCH', 'vendor/me', body, true);
+      return invalidateVendorMe(request('vendors', 'PATCH', 'vendor/me', body, true));
     },
     uploadProfilePhoto: function (file) {
       var path = typeof window.LOKALI_UPLOAD_PHOTO_PATH === 'string' ? window.LOKALI_UPLOAD_PHOTO_PATH : 'vendor/me/profile-photo';
@@ -309,10 +333,10 @@
       return requestWithFormData('vendors', 'POST', path, formData, true);
     },
     deactivate: function () {
-      return request('vendors', 'PATCH', 'vendor/me/deactivate', null, true);
+      return invalidateVendorMe(request('vendors', 'PATCH', 'vendor/me/deactivate', null, true));
     },
     reactivate: function () {
-      return request('vendors', 'PATCH', 'vendor/me/reactivate', null, true);
+      return invalidateVendorMe(request('vendors', 'PATCH', 'vendor/me/reactivate', null, true));
     },
     list: function (params) {
       var q = params || {};
@@ -338,43 +362,27 @@
 
   var services = {
     getMine: function (includeInactive) {
-      var path = mineListPath('vendors/me/services', 'LOKALI_SERVICES_GET_MINE_PATH', includeInactive);
-      var base = mineListBase('services', 'LOKALI_SERVICES_GET_MINE_BASE');
-      return request(base, 'GET', path, null, true).then(function (out) {
-        var userPath =
-          typeof window !== 'undefined' &&
-          typeof window.LOKALI_SERVICES_GET_MINE_PATH === 'string' &&
-          window.LOKALI_SERVICES_GET_MINE_PATH.trim();
-        var fallbackOn =
-          typeof window !== 'undefined' &&
-          window.LOKALI_SERVICES_GET_MINE_FALLBACK !== false &&
-          !userPath;
+      // Xano has no vendors/me/services endpoint — requesting it always 404'd
+      // ("Unable to locate request") before falling back, doubling the calls
+      // per page load on a rate-limited free tier. Default straight to the
+      // vendor-id list (vendors.me() is memoized, so this is ~1 request);
+      // an explicit LOKALI_SERVICES_GET_MINE_PATH override keeps the old flow.
+      var userPath =
+        typeof window !== 'undefined' &&
+        typeof window.LOKALI_SERVICES_GET_MINE_PATH === 'string' &&
+        window.LOKALI_SERVICES_GET_MINE_PATH.trim();
 
-        var tryVendorList = function () {
-          return resolveVendorIdForListFallback().then(function (vid) {
-            if (vid == null) return null;
-            return fetchServicesByVendorId(vid, includeInactive);
-          });
-        };
+      if (userPath) {
+        var path = mineListPath('vendors/me/services', 'LOKALI_SERVICES_GET_MINE_PATH', includeInactive);
+        var base = mineListBase('services', 'LOKALI_SERVICES_GET_MINE_BASE');
+        return request(base, 'GET', path, null, true);
+      }
 
-        if (!fallbackOn) {
-          return out;
+      return resolveVendorIdForListFallback().then(function (vid) {
+        if (vid == null) {
+          return { data: null, error: 'No vendor account for this login', status: 0 };
         }
-
-        if (out.error) {
-          return tryVendorList().then(function (out2) {
-            return out2 || out;
-          });
-        }
-
-        if (isEmptyServicesPayload(out.data)) {
-          return tryVendorList().then(function (out2) {
-            if (out2 && !out2.error && !isEmptyServicesPayload(out2.data)) return out2;
-            return out;
-          });
-        }
-
-        return out;
+        return fetchServicesByVendorId(vid, includeInactive);
       });
     },
     listByVendor: function (vendorId, useAuth) {
@@ -443,43 +451,27 @@
 
   var products = {
     getMine: function (includeInactive) {
-      var path = mineListPath('vendors/me/products', 'LOKALI_PRODUCTS_GET_MINE_PATH', includeInactive);
-      var base = mineListBase('products', 'LOKALI_PRODUCTS_GET_MINE_BASE');
-      return request(base, 'GET', path, null, true).then(function (out) {
-        var userPath =
-          typeof window !== 'undefined' &&
-          typeof window.LOKALI_PRODUCTS_GET_MINE_PATH === 'string' &&
-          window.LOKALI_PRODUCTS_GET_MINE_PATH.trim();
-        var fallbackOn =
-          typeof window !== 'undefined' &&
-          window.LOKALI_PRODUCTS_GET_MINE_FALLBACK !== false &&
-          !userPath;
+      // Xano has no vendors/me/products endpoint — requesting it always 404'd
+      // ("Unable to locate request") before falling back, doubling the calls
+      // per page load on a rate-limited free tier. Default straight to the
+      // vendor-id list (vendors.me() is memoized, so this is ~1 request);
+      // an explicit LOKALI_PRODUCTS_GET_MINE_PATH override keeps the old flow.
+      var userPath =
+        typeof window !== 'undefined' &&
+        typeof window.LOKALI_PRODUCTS_GET_MINE_PATH === 'string' &&
+        window.LOKALI_PRODUCTS_GET_MINE_PATH.trim();
 
-        var tryVendorList = function () {
-          return resolveVendorIdForListFallback().then(function (vid) {
-            if (vid == null) return null;
-            return fetchProductsByVendorId(vid, includeInactive);
-          });
-        };
+      if (userPath) {
+        var path = mineListPath('vendors/me/products', 'LOKALI_PRODUCTS_GET_MINE_PATH', includeInactive);
+        var base = mineListBase('products', 'LOKALI_PRODUCTS_GET_MINE_BASE');
+        return request(base, 'GET', path, null, true);
+      }
 
-        if (!fallbackOn) {
-          return out;
+      return resolveVendorIdForListFallback().then(function (vid) {
+        if (vid == null) {
+          return { data: null, error: 'No vendor account for this login', status: 0 };
         }
-
-        if (out.error) {
-          return tryVendorList().then(function (out2) {
-            return out2 || out;
-          });
-        }
-
-        if (isEmptyProductsPayload(out.data)) {
-          return tryVendorList().then(function (out2) {
-            if (out2 && !out2.error && !isEmptyProductsPayload(out2.data)) return out2;
-            return out;
-          });
-        }
-
-        return out;
+        return fetchProductsByVendorId(vid, includeInactive);
       });
     },
     listByVendor: function (vendorId, useAuth) {
