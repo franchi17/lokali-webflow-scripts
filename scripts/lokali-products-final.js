@@ -645,6 +645,7 @@ const LokaliProductsPage = (() => {
       if (rem) rem.style.display = 'block';
     }
     renderGallery(product.id);
+    setVideoUrl(product.video_url);
   };
 
   const resetForm = () => {
@@ -663,6 +664,7 @@ const LokaliProductsPage = (() => {
     updatePriceVisibility();
     resetImagePreview();
     renderGallery(null);
+    setVideoUrl('');
   };
 
   const revokeImagePreviewUrl = () => {
@@ -684,6 +686,50 @@ const LokaliProductsPage = (() => {
     if (rem)   rem.style.display = 'none';
     imageRemoved = false;
   };
+
+  // ---------------------------------------------------------------------------
+  // Optional showcase video (YouTube / Vimeo). Self-mounting input — no Webflow
+  // edits. Mirrors the server-side validation; the public detail page re-parses
+  // the id + allowlists the host before building the embed.
+  // ---------------------------------------------------------------------------
+  const VIDEO_URL_RE = /^https?:\/\/(www\.|m\.)?(youtube\.com\/(watch\?v=|embed\/|shorts\/|v\/)[\w-]{11}|youtu\.be\/[\w-]{11}|youtube-nocookie\.com\/embed\/[\w-]{11}|vimeo\.com\/\d{6,12}|player\.vimeo\.com\/video\/\d{6,12})/i;
+  const isValidVideoUrl = (u) => VIDEO_URL_RE.test(String(u || '').trim());
+  const VIDEO_HINT = 'Plays right on your listing. Works with YouTube (youtube.com / youtu.be) and Vimeo. Leave blank for none.';
+
+  const markVideoValidity = () => {
+    const inp = document.getElementById('lok-product-video-input');
+    const hint = document.getElementById('lok-product-video-hint');
+    if (!inp) return;
+    const v = inp.value.trim();
+    const bad = v && !isValidVideoUrl(v);
+    inp.style.borderColor = bad ? '#E4739A' : '#E6E4F0';
+    if (hint) { hint.style.color = bad ? '#B1006A' : '#8E8BA6'; hint.textContent = bad ? 'Enter a valid YouTube or Vimeo link (or leave blank).' : VIDEO_HINT; }
+  };
+
+  const videoHost = () => {
+    let host = document.getElementById('lok-product-video');
+    if (host) return host;
+    // Mount right after the photo gallery (both edit + create call renderGallery
+    // first, so the gallery host exists); fall back to the image section.
+    const anchorEl = document.getElementById('lok-product-gallery') || el.imgPlaceholder() || el.imgThumb() || el.imgInput();
+    if (!anchorEl) return null;
+    host = document.createElement('div');
+    host.id = 'lok-product-video';
+    host.style.cssText = 'margin-top:16px;font-family:"Plus Jakarta Sans",system-ui,sans-serif;';
+    host.innerHTML =
+      '<div style="font-size:13px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;color:#4A4761;margin-bottom:8px;">Showcase video <span style="font-weight:500;text-transform:none;color:#8E8BA6;">· optional</span></div>' +
+      '<input id="lok-product-video-input" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="Paste a YouTube or Vimeo link" style="width:100%;box-sizing:border-box;padding:11px 13px;border:1px solid #E6E4F0;border-radius:10px;font-size:14px;font-family:inherit;color:#1A1829;background:#fff;" />' +
+      '<div id="lok-product-video-hint" style="font-size:12px;color:#8E8BA6;margin-top:6px;line-height:1.5;">' + VIDEO_HINT + '</div>';
+    const parent = anchorEl.parentElement || document.body;
+    if (anchorEl.nextSibling) parent.insertBefore(host, anchorEl.nextSibling);
+    else parent.appendChild(host);
+    const inp = host.querySelector('#lok-product-video-input');
+    if (inp) inp.addEventListener('input', markVideoValidity);
+    return host;
+  };
+  const videoInput = () => { videoHost(); return document.getElementById('lok-product-video-input'); };
+  const readVideoUrl = () => (videoInput()?.value || '').trim();
+  const setVideoUrl = (v) => { const inp = videoInput(); if (inp) inp.value = v || ''; markVideoValidity(); };
 
   // ---------------------------------------------------------------------------
   // Per-product photo gallery (Pro & Featured). Self-mounting — no Webflow edits.
@@ -942,6 +988,11 @@ const LokaliProductsPage = (() => {
       pickup_only:         el.fieldPickupOnly()?.checked || false,
     };
 
+    // Showcase video: '' clears it, a valid URL sets it. Omit an invalid-but-nonempty
+    // value so background autosaves don't fail — the explicit Save blocks it via validate().
+    const vurl = readVideoUrl();
+    if (vurl === '' || isValidVideoUrl(vurl)) payload.video_url = vurl;
+
     return payload;
   };
 
@@ -951,6 +1002,8 @@ const LokaliProductsPage = (() => {
       const p = payload.price;
       if (p == null || p <= 0) return 'Please enter a valid price, or check "Price on request".';
     }
+    if (readVideoUrl() && !isValidVideoUrl(readVideoUrl()))
+      return 'Your video link must be a YouTube or Vimeo URL (or leave it blank).';
     return null;
   };
 

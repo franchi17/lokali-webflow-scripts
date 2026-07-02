@@ -110,6 +110,68 @@
     strip.addEventListener('mousemove', function (e) { if (!down) return; e.preventDefault(); strip.scrollLeft = startScroll - (e.pageX - startX); });
   }
 
+  // ---- showcase video (YouTube / Vimeo) ---------------------------------
+  // SECURITY: parse the vendor-supplied URL down to a host from a fixed allowlist
+  // + a strictly-formatted id, then build the iframe src ONLY from that parsed id.
+  // The raw URL is never interpolated into markup, so a crafted value can't inject.
+  function parseVideo(url) {
+    if (!url || typeof url !== 'string') return null;
+    var u;
+    try { u = new URL(url.trim()); } catch (e) { return null; }
+    if (u.protocol !== 'https:' && u.protocol !== 'http:') return null;
+    var host = u.hostname.replace(/^www\./, '').toLowerCase();
+    var YT = /^[A-Za-z0-9_-]{11}$/;
+    if (host === 'youtube.com' || host === 'm.youtube.com' || host === 'youtube-nocookie.com') {
+      var v = u.searchParams.get('v');
+      if (v && YT.test(v)) return { host: 'youtube', id: v };
+      var m = u.pathname.match(/^\/(?:embed|shorts|v)\/([A-Za-z0-9_-]{11})/);
+      return m ? { host: 'youtube', id: m[1] } : null;
+    }
+    if (host === 'youtu.be') {
+      var m2 = u.pathname.match(/^\/([A-Za-z0-9_-]{11})/);
+      return m2 ? { host: 'youtube', id: m2[1] } : null;
+    }
+    if (host === 'vimeo.com' || host === 'player.vimeo.com') {
+      var m3 = u.pathname.match(/\/(?:video\/)?(\d{6,12})(?:$|[/?#])/);
+      return m3 ? { host: 'vimeo', id: m3[1] } : null;
+    }
+    return null;
+  }
+
+  function embedSrc(v) {
+    if (!v) return null;
+    if (v.host === 'youtube') return 'https://www.youtube-nocookie.com/embed/' + v.id;
+    if (v.host === 'vimeo') return 'https://player.vimeo.com/video/' + v.id;
+    return null;
+  }
+
+  function renderVideo(rawUrl) {
+    var src = embedSrc(parseVideo(rawUrl));
+    if (!src) return;                       // no/invalid video → render nothing
+    if (document.getElementById('vd-video')) return; // guard against double-insert
+    var anchor = $('vd-gallery');
+    var parent = anchor ? anchor.parentNode : (document.querySelector('[data-vd-type]') || document.body);
+    if (!parent) return;
+    var wrap = document.createElement('div');
+    wrap.id = 'vd-video';
+    wrap.style.cssText = 'margin-top:18px;';
+    var ratio = document.createElement('div');
+    ratio.style.cssText = 'position:relative;width:100%;padding-top:56.25%;border-radius:14px;overflow:hidden;background:#000;';
+    var iframe = document.createElement('iframe');
+    iframe.src = src;                       // built only from the parsed id + allowlisted host
+    iframe.title = 'Showcase video';
+    iframe.loading = 'lazy';
+    iframe.referrerPolicy = 'strict-origin-when-cross-origin';
+    iframe.setAttribute('frameborder', '0');
+    iframe.setAttribute('allow', 'accelerometer; encrypted-media; gyroscope; picture-in-picture; fullscreen');
+    iframe.setAttribute('allowfullscreen', '');
+    iframe.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;border:0;';
+    ratio.appendChild(iframe);
+    wrap.appendChild(ratio);
+    if (anchor && anchor.nextSibling) parent.insertBefore(wrap, anchor.nextSibling);
+    else parent.appendChild(wrap);
+  }
+
   // ---- vendor mini-card + back link + CTA -------------------------------
   function fillVendor(vendorId, itemName, isProduct) {
     var back = $('vd-back'); if (back && vendorId) back.href = '/vendor?id=' + encodeURIComponent(vendorId);
@@ -183,6 +245,7 @@
       }
       var v2 = $('vd-meta-v2'); if (v2 && priceEl) v2.textContent = priceEl.textContent;
       fetchPhotos('services', SERVICE_PHOTOS_PATH, (s.id != null ? s.id : id), imgUrl(s.image_url || s.image)).then(buildGallery);
+      renderVideo(s.video_url);
       var vid = vendorParam || s.vendors_id || s.vendor_id;
       emitItemView(vid, 'service', s.id != null ? s.id : id);
       fillVendor(vid, name, false);
@@ -212,6 +275,7 @@
       setText('vd-meta-v2', fulfil);
       setText('vd-meta-v3', p.is_custom ? 'Made to order' : 'Standard');
       fetchPhotos('products', PRODUCT_PHOTOS_PATH, (p.id != null ? p.id : id), imgUrl(p.image_url || p.image)).then(buildGallery);
+      renderVideo(p.video_url);
       var vid = vendorParam || p.vendors_id || p.vendor_id;
       emitItemView(vid, 'product', p.id != null ? p.id : id);
       fillVendor(vid, name, true);
