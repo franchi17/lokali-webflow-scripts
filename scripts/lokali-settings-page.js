@@ -27,6 +27,7 @@
   var _user = null;
   var _vendor = null;
   var _plan = 'free';
+  var _planEnds = ''; // set when a portal cancel is pending (41g) — "ends <date>"
   var _customUrlAllowed = null; // plan.custom_profile_url when billing exposes it; else inferred from plan code
   var _prefs = null;            // vendor preferences (notifications + review visibility)
 
@@ -103,6 +104,15 @@
         if (b.plan && b.plan.code) _plan = b.plan.code;
         var feat = b.features || b.plan || {};
         if (typeof feat.custom_profile_url === 'boolean') _customUrlAllowed = feat.custom_profile_url;
+        // 41g — pending cancellation: plan runs until period end, then stops.
+        _planEnds = '';
+        if (b.cancel_at_period_end === true && b.current_period_end) {
+          var endsTs = b.current_period_end;
+          if (endsTs < 1e12) endsTs = endsTs * 1000; // tolerate unix seconds
+          try {
+            _planEnds = new Date(endsTs).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+          } catch (e) { _planEnds = ''; }
+        }
       }
       var prefsRes = res[2];
       if (prefsRes && !prefsRes.error && prefsRes.data) _prefs = prefsRes.data;
@@ -117,7 +127,7 @@
 
     setText($('settings-email'), (_user && _user.email) || '');
     setText($('settings-account-type'), _titlecase((_user && _user.role) || 'vendor'));
-    setText($('settings-current-plan'), _titlecase(_plan || 'free'));
+    setText($('settings-current-plan'), _titlecase(_plan || 'free') + (_planEnds ? ' — ends ' + _planEnds : ''));
 
     // Listing visibility = vendor.is_active
     var vis = $('toggle-visibility-public');

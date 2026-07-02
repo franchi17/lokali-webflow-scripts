@@ -170,6 +170,15 @@
     var plan = (b.plan || 'free').toLowerCase();
     var status = (b.plan_status || '').toLowerCase();
     var isFree = plan === 'free' || !plan;
+    var cancelPending = b.cancel_at_period_end === true; // 41g — portal cancel scheduled
+
+    // Xano returns epoch ms; tolerate seconds too (values < ~2001 in ms terms).
+    var ts = b.current_period_end;
+    if (ts && ts < 1e12) ts = ts * 1000;
+    var when = ts ? new Date(ts) : null;
+    var whenText = when
+      ? when.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+      : '';
 
     // Upgrade banner (Free only).
     var banner = document.getElementById('plan-upgrade-banner') ||
@@ -189,16 +198,12 @@
       el.textContent = PLAN_LABELS[plan] || 'Free';
     });
 
-    // Renewal date.
+    // Renewal date (with a pending cancel this is the END date, not a renewal).
     var renewalEls = $all('[data-lokali-renewal]');
     if (renewalEls.length) {
-      // Xano returns epoch ms; tolerate seconds too (values < ~2001 in ms terms).
-      var ts = b.current_period_end;
-      if (ts && ts < 1e12) ts = ts * 1000;
-      var when = ts ? new Date(ts) : null;
       renewalEls.forEach(function (el) {
         if (when && !isFree) {
-          el.textContent = when.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+          el.textContent = cancelPending ? 'Ends ' + whenText : whenText;
           el.style.display = '';
         } else {
           el.style.display = 'none';
@@ -206,9 +211,12 @@
       });
     }
 
-    // Non-active status note (e.g. past_due).
+    // Status note: pending cancellation (41g) or a non-active status (past_due…).
     $all('[data-lokali-plan-status]').forEach(function (el) {
-      if (status && status !== 'active' && status !== 'trialing' && !isFree) {
+      if (cancelPending && !isFree) {
+        el.textContent = whenText ? 'Cancels on ' + whenText : 'Cancellation pending';
+        el.style.display = '';
+      } else if (status && status !== 'active' && status !== 'trialing' && !isFree) {
         el.textContent = status.replace('_', ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); });
         el.style.display = '';
       } else {
