@@ -43,6 +43,9 @@
 
   var PLAN_LABELS = { free: 'Free', pro: 'Pro', featured: 'Featured' };
 
+  // Only fetch plan state where it's rendered — the script may load site-wide.
+  var ON_BILLING_PAGE = /^\/(vendor-dashboard|pricing)(\/|$)/.test(window.location.pathname);
+
   // ── helpers ──────────────────────────────────────────────────────────────────
   function $all(sel) { return Array.prototype.slice.call(document.querySelectorAll(sel)); }
 
@@ -189,7 +192,10 @@
     // Renewal date.
     var renewalEls = $all('[data-lokali-renewal]');
     if (renewalEls.length) {
-      var when = b.current_period_end ? new Date(b.current_period_end * 1000) : null;
+      // Xano returns epoch ms; tolerate seconds too (values < ~2001 in ms terms).
+      var ts = b.current_period_end;
+      if (ts && ts < 1e12) ts = ts * 1000;
+      var when = ts ? new Date(ts) : null;
       renewalEls.forEach(function (el) {
         if (when && !isFree) {
           el.textContent = when.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
@@ -238,6 +244,17 @@
     }, 1500);
   }
 
+  // ── settings page self-wire ─────────────────────────────────────────────────────
+  // The Settings "Subscription & Plan" card ships with a "Click HERE" Stripe row;
+  // tag it as a portal button so no Webflow attribute work is needed.
+  function tagSettingsPortalLink() {
+    if (!/^\/vendor-dashboard\/settings/.test(window.location.pathname)) return;
+    var link = document.querySelector('.div-block-158.stripe a');
+    if (link && !link.hasAttribute('data-lokali-portal')) {
+      link.setAttribute('data-lokali-portal', '');
+    }
+  }
+
   // ── boot ────────────────────────────────────────────────────────────────────────
   function waitForDeps(cb) {
     var checks = 0;
@@ -251,12 +268,26 @@
   function init() {
     bindIntervalControls();
     bindCheckoutButtons();
+    tagSettingsPortalLink();
     bindPortalButtons();
-    waitForDeps(function () {
-      loadBilling();
-      handleReturnFromStripe();
-    });
+    if (ON_BILLING_PAGE) {
+      waitForDeps(function () {
+        loadBilling();
+        handleReturnFromStripe();
+      });
+    }
   }
+
+  // Small public surface so other scripts (pricingcta.js) can start a checkout
+  // or open the portal without duplicating the auth/fetch plumbing.
+  window.LokaliBilling = {
+    checkout: function (plan, interval) {
+      return postForRedirect(CHECKOUT_URL, { plan: plan, interval: interval });
+    },
+    portal: function () {
+      return postForRedirect(PORTAL_URL, {});
+    }
+  };
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
