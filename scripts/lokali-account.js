@@ -76,6 +76,75 @@
     img.src = u;
   }
 
+  // ── #45: "Your area" → Google Places city autocomplete ─────────────────────
+  // Same pattern as the waitlist modal (lokali-waitlist.js): key from
+  // window.LOKALI_GMAPS_KEY (Webflow site-wide head), legacy places.Autocomplete
+  // restricted to cities, and a plain-text fallback whenever the key/script is
+  // missing or fails. Maps JS loads lazily on first FOCUS of the field so the
+  // account page pays nothing until the user actually edits their area.
+  // A picked city is normalized to "City, ST" (state/country short code), which
+  // The Market's #44 region-default matches by name-contains.
+  var _mapsLoading = false;
+  function loadMapsThen(cb) {
+    if (window.google && window.google.maps && window.google.maps.places) { cb(); return; }
+    var key = (typeof window.LOKALI_GMAPS_KEY === 'string') ? window.LOKALI_GMAPS_KEY.trim() : '';
+    if (!key) return; // no key configured — stay free-text
+    var prev = window.__lokAcctMapsReady;
+    window.__lokAcctMapsReady = function () { if (prev) { try { prev(); } catch (e) {} } cb(); };
+    if (_mapsLoading || document.querySelector('script[data-lok-acct-maps]') || document.querySelector('script[src*="maps.googleapis.com/maps/api/js"]')) {
+      // A Maps tag is already in flight (ours or another script's, possibly
+      // with a different callback name) — poll briefly until places is ready.
+      _mapsLoading = true;
+      var tries = 0;
+      var iv = setInterval(function () {
+        tries++;
+        if (window.google && window.google.maps && window.google.maps.places) { clearInterval(iv); cb(); }
+        else if (tries > 40) clearInterval(iv);
+      }, 250);
+      return;
+    }
+    _mapsLoading = true;
+    var s = document.createElement('script');
+    s.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(key) + '&libraries=places&callback=__lokAcctMapsReady';
+    s.async = true; s.defer = true; s.setAttribute('data-lok-acct-maps', '1');
+    s.onerror = function () { _mapsLoading = false; }; // stays free-text
+    document.head.appendChild(s);
+  }
+  function placeComp(list, type, useShort) {
+    for (var i = 0; i < (list || []).length; i++) {
+      if (list[i].types && list[i].types.indexOf(type) > -1) return useShort ? list[i].short_name : list[i].long_name;
+    }
+    return '';
+  }
+  function initAreaAutocomplete(input) {
+    if (!input || input.dataset.lokAcMaps) return;
+    input.dataset.lokAcMaps = '1';
+    input.setAttribute('placeholder', 'e.g. The Woodlands');
+    input.setAttribute('autocomplete', 'off'); // stop browser autofill fighting the Places dropdown
+    input.addEventListener('focus', function onFocus() {
+      input.removeEventListener('focus', onFocus);
+      loadMapsThen(function () {
+        if (input.dataset.lokAcBound) return;
+        input.dataset.lokAcBound = '1';
+        try {
+          var ac = new google.maps.places.Autocomplete(input, {
+            types: ['(cities)'],
+            fields: ['address_components', 'place_id', 'name']
+          });
+          ac.addListener('place_changed', function () {
+            var pl = ac.getPlace();
+            if (!pl || !pl.place_id) return;
+            var c = pl.address_components || [];
+            var city = placeComp(c, 'locality', false) || placeComp(c, 'postal_town', false)
+              || placeComp(c, 'administrative_area_level_3', false) || placeComp(c, 'sublocality', false) || (pl.name || '');
+            var st = placeComp(c, 'administrative_area_level_1', true) || placeComp(c, 'country', true);
+            if (city) input.value = st ? (city + ', ' + st) : city;
+          });
+        } catch (e) { /* free-text fallback */ }
+      });
+    });
+  }
+
   // ── styles (scoped under #lokali-account) ──────────────────
   function injectCSS() {
     if (document.getElementById('lokali-account-styles')) return;
@@ -491,6 +560,7 @@
     manage.appendChild(manageBtn); emailRow.appendChild(manage);
     pc.appendChild(emailRow);
     var areaIn = setInput('Your area', "We'll surface vendors near you first.", acc.region || '');
+    initAreaAutocomplete(areaIn.input); // #45 — Maps city autocomplete (free-text fallback)
     pc.appendChild(areaIn.row);
     pane.appendChild(pc);
 
