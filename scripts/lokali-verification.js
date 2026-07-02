@@ -5,18 +5,26 @@
  *   POST /verification/start -> { url }   (hosted Stripe Identity: gov ID + selfie)
  * Auth = the Clerk session JWT (same token lokali-clerk-auth.js uses), NOT the Xano token.
  *
- * Reads identity_status via LokaliAPI.vendors.me() to render UI state.
- * The badge itself is granted server-side by the Stripe webhook — this script is UI only.
+ * Reads identity_status via LokaliAPI.vendors.me() AND the plan via
+ * LokaliAPI.plans.getMyBilling() to render UI state. Verification is a PRO/FEATURED
+ * perk: the "Get Verified" button only shows for paid vendors; Free vendors see an
+ * upsell. The badge itself is granted server-side by the Stripe webhook — this
+ * script is UI only.
  *
  * ── Webflow wiring (add these attributes in the Designer) ──────────────────────
- * VERIFY BUTTON:  add  data-lokali-verify  — starts the Stripe Identity flow.
+ * VERIFY BUTTON:  add  data-lokali-verify  — starts the flow. Shown only for Pro/Featured
+ *                 vendors who aren't yet verified/pending. Hidden for Free.
+ * UPSELL:         add  data-lokali-verify-upsell — shown only to Free (not-verified) vendors,
+ *                 e.g. an <a href="/pricing">Upgrade to Pro to get verified →</a>.
  * VERIFY CARD:    add  data-lokali-verify-card  — hidden once the vendor is verified.
+ *                 (Optional. Omit it if you want the card to persist and show the badge.)
  * STATUS TEXT:    add  data-lokali-verify-status  — filled with a friendly status line.
- * BADGE:          add  data-lokali-verified-badge — shown only when verified.
+ * BADGE:          add  data-lokali-verified-badge — shown only when verified (safe to place
+ *                 on BOTH the dashboard home and settings; it renders wherever it appears).
  *
  * Optional per-state visibility: any element with data-lokali-verify-show="<states>"
  * (comma list of unverified|pending|verified|failed) is shown only in those states,
- * e.g. a "Try again" note with data-lokali-verify-show="failed".
+ * e.g. a "You're verified" note with data-lokali-verify-show="verified".
  *
  * ── Config (set before this script if your URLs differ) ────────────────────────
  *   window.LOKALI_BILLING_BASE = 'https://lokali-api.vercel.app/api/lokali';
@@ -101,18 +109,35 @@
     });
   }
 
+  // Verification is a paid perk. Whether the vendor is on Pro/Featured decides whether
+  // they see the "Get Verified" button or the upsell. Cached once billing resolves so
+  // renderStatus() can re-run (e.g. return-from-Stripe polling) without re-fetching.
+  var _isPro = false;
+
+  function planIsPro(billingData) {
+    var b = billingData || {};
+    var plan = b.plan_code
+      || (b.plan && typeof b.plan === 'object' ? b.plan.code : b.plan)
+      || (b.subscription && b.subscription.plan_code)
+      || b.plan_name || 'free';
+    plan = String(plan).toLowerCase();
+    return plan === 'pro' || plan === 'featured';
+  }
+
   // ── render verification state ──────────────────────────────────────────────────
-  function renderStatus(status) {
+  function renderStatus(status, isPro) {
     status = (status || 'unverified').toLowerCase();
     if (!STATUS_LABELS[status]) status = 'unverified';
     var isVerified = status === 'verified';
+    if (typeof isPro === 'boolean') _isPro = isPro; else isPro = _isPro;
 
-    // The "Get Verified" card disappears once verified.
+    // The "Get Verified" card disappears once verified (only if the wrapper opts in;
+    // the settings card omits this so it can keep showing the earned badge).
     $all('[data-lokali-verify-card]').forEach(function (el) {
       el.style.display = isVerified ? 'none' : '';
     });
 
-    // Dashboard badge.
+    // Verified badge — shown only when verified. Safe on dashboard + settings.
     $all('[data-lokali-verified-badge]').forEach(function (el) {
       el.style.display = isVerified ? '' : 'none';
     });
@@ -122,10 +147,17 @@
       el.textContent = STATUS_LABELS[status];
     });
 
-    // The button reads "Try again" after a failure; hidden while pending.
+    // The button: only for Pro/Featured, only when actionable (not verified, not
+    // pending). Reads "Try again" after a failure. Free vendors never see it.
     $all('[data-lokali-verify]').forEach(function (btn) {
-      btn.style.display = (status === 'pending' || isVerified) ? 'none' : '';
+      var actionable = !(status === 'pending' || isVerified);
+      btn.style.display = (actionable && isPro) ? '' : 'none';
       if (status === 'failed') btn.textContent = 'Try again';
+    });
+
+    // Upsell (Free vendors, not yet verified): "Upgrade to Pro to get verified".
+    $all('[data-lokali-verify-upsell]').forEach(function (el) {
+      el.style.display = (!isVerified && !isPro) ? '' : 'none';
     });
 
     // Per-state visibility helpers.
@@ -138,16 +170,32 @@
     return status;
   }
 
+  function fetchIsPro() {
+    var api = window.LokaliAPI;
+    if (!(api && api.plans && typeof api.plans.getMyBilling === 'function')) {
+      return Promise.resolve(false);
+    }
+    return api.plans.getMyBilling().then(function (res) {
+      if (!res || res.error || !res.data) return false;
+      return planIsPro(res.data);
+    }).catch(function () { return false; });
+  }
+
   function loadStatus() {
-    if (!(window.LokaliAPI && window.LokaliAPI.vendors && window.LokaliAPI.vendors.me)) {
+    var api = window.LokaliAPI;
+    if (!(api && api.vendors && api.vendors.me)) {
       return Promise.resolve(null);
     }
-    return window.LokaliAPI.vendors.me().then(function (res) {
-      var data = (res && (res.data || res)) || {};
-      return renderStatus(data.identity_status);
-    }).catch(function (err) {
-      console.warn('[lokali-verification] vendors.me failed', err);
-      return null;
+    return Promise.all([
+      api.vendors.me()
+        .then(function (res) { return (res && (res.data || res)) || {}; })
+        .catch(function (err) {
+          console.warn('[lokali-verification] vendors.me failed', err);
+          return {};
+        }),
+      fetchIsPro()
+    ]).then(function (out) {
+      return renderStatus(out[0].identity_status, out[1]);
     });
   }
 
