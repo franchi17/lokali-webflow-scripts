@@ -187,6 +187,25 @@
         if (link) link.href = '/' + v.slug;
       }
       setText('vd-mini-name', v.business_name);
+      // Real category. The template shipped #vd-mini-cat with a hardcoded
+      // "Food & Catering" placeholder that nothing overwrote, so every vendor's
+      // card showed that regardless of their actual category. The vendor
+      // endpoint returns categories_id (not the name), so map it locally —
+      // these are Lokali's fixed top-level categories (mirror the categories
+      // table); hide the line if the id can't be resolved rather than show a
+      // wrong label.
+      var CAT_NAMES = {
+        1: 'Handcrafted Goods', 2: 'Business Services', 3: 'Beauty',
+        4: 'Children & Education', 5: 'Events', 6: 'Food',
+        7: 'Health & Wellness', 8: 'Home Services'
+      };
+      var catId = Array.isArray(v.categories_id) ? v.categories_id[0] : v.categories_id;
+      var catName = (catId != null) ? CAT_NAMES[catId] : null;
+      var miniCat = $('vd-mini-cat');
+      if (miniCat) {
+        if (catName) { miniCat.textContent = catName; show(miniCat, true); }
+        else show(miniCat, false);
+      }
       var av = $('vd-mini-avatar-img'); var photo = imgUrl(v.profile_photo); if (av && photo) av.src = photo;
       // CTA -> mailto
       var cta = $('vd-cta-btn');
