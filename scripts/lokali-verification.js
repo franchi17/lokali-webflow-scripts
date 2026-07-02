@@ -238,12 +238,17 @@
   }
 
   // ── boot ────────────────────────────────────────────────────────────────────────
+  // Wait for the XANO AUTH TOKEN, not just Clerk/LokaliAPI. The token is minted by
+  // lokali-clerk-auth.js only after the Clerk→Xano sync; until it exists, vendor.me
+  // and getMyBilling 401 — which would misrender a paying vendor as Free. On a cold
+  // start the sync can take several seconds, so wait up to ~18s, then render anyway.
   function waitForDeps(cb) {
     var checks = 0;
     var iv = setInterval(function () {
       checks++;
-      if (window.Clerk && window.LokaliAPI) { clearInterval(iv); cb(); }
-      if (checks > 100) clearInterval(iv);
+      var tok = window.LokaliAPI && window.LokaliAPI.getToken && window.LokaliAPI.getToken();
+      if (window.Clerk && window.LokaliAPI && tok) { clearInterval(iv); cb(); }
+      else if (checks > 180) { clearInterval(iv); cb(); }
     }, 100);
   }
 
