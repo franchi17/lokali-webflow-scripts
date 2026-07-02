@@ -40,6 +40,42 @@
   function vendorOf(row) { return (row && (row.vendor || row._vendor)) || row || {}; }
   function vendorName(v) { return (v && (v.business_name || v.name)) || 'Vendor'; }
 
+  // The favorites/reviews endpoints return categories_id (not a name) — map it
+  // locally, same fixed 8-category table lokali-vendor-detail.js uses.
+  var CAT_NAMES = {
+    1: 'Handcrafted Goods', 2: 'Business Services', 3: 'Beauty',
+    4: 'Children & Education', 5: 'Events', 6: 'Food',
+    7: 'Health & Wellness', 8: 'Home Services'
+  };
+  function vendorCat(v) {
+    var c = v && (v.category || v.category_name);
+    if (c) return c;
+    var id = v && (Array.isArray(v.categories_id) ? v.categories_id[0] : v.categories_id);
+    return id != null ? (CAT_NAMES[id] || '') : '';
+  }
+
+  // Vendor profile photo, sanitized (same guard as the sidebar chip) — used to
+  // upgrade the initials thumbs to the real photo when one exists.
+  var XANO_ORIGIN = 'https://x8ki-letl-twmt.n7.xano.io';
+  function vendorPhotoUrl(v) {
+    var s = v && (v.profile_photo || v.photo || v.logo);
+    if (!s || typeof s !== 'string') return '';
+    s = s.trim();
+    if (/[\s"'<>`\\]/.test(s) || /^(?:javascript|data|vbscript):/i.test(s)) return '';
+    if (s.charAt(0) === '/') return XANO_ORIGIN + s;
+    return /^https?:\/\//i.test(s) ? s : '';
+  }
+  function thumbPhoto(node, v) {
+    var u = vendorPhotoUrl(v);
+    if (!u || !node) return;
+    var img = document.createElement('img');
+    img.alt = '';
+    img.style.cssText = 'width:100%;height:100%;border-radius:inherit;object-fit:cover;display:block;';
+    img.onload = function () { node.textContent = ''; node.appendChild(img); };
+    img.onerror = function () { /* keep initials */ };
+    img.src = u;
+  }
+
   // ── styles (scoped under #lokali-account) ──────────────────
   function injectCSS() {
     if (document.getElementById('lokali-account-styles')) return;
@@ -268,11 +304,13 @@
     var v = vendorOf(row);
     var vid = v.id != null ? v.id : row.vendors_id;
     var r = el('div', 'lk-row');
-    r.appendChild(el('div', 'lk-thumb', esc(initials(vendorName(v)) || 'V')));
+    var thumb = el('div', 'lk-thumb', esc(initials(vendorName(v)) || 'V'));
+    thumbPhoto(thumb, v); // upgrade to the real profile photo when there is one
+    r.appendChild(thumb);
     var info = el('div', 'lk-row-info');
     info.appendChild(el('div', 'lk-row-name', esc(vendorName(v))));
     var sub = el('div', 'lk-row-sub');
-    var cat = v.category || v.category_name || '';
+    var cat = vendorCat(v);
     sub.innerHTML = (cat ? '<span class="cat">' + esc(cat) + '</span>' : '') + (v.city ? (cat ? ' · ' : '') + esc(v.city) : '');
     info.appendChild(sub);
     r.appendChild(info);
@@ -329,7 +367,9 @@
     var vid = v.id != null ? v.id : row.vendors_id;
     var when = row.contacted_at || row.created_at || row.last_contacted_at;
     var r = el('div', 'lk-await');
-    r.appendChild(el('div', 'lk-await-av', esc(initials(vendorName(v)) || 'V')));
+    var av = el('div', 'lk-await-av', esc(initials(vendorName(v)) || 'V'));
+    thumbPhoto(av, v);
+    r.appendChild(av);
     var info = el('div', 'lk-await-info');
     info.appendChild(el('div', 'lk-await-name', esc(vendorName(v))));
     info.appendChild(el('div', 'lk-await-sub', when ? ('Contacted ' + esc(monthDay(when))) : 'You contacted this vendor'));
