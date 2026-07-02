@@ -229,6 +229,11 @@
     }, 100);
   }
 
+  // Re-render on demand — the settings/dashboard embeds call this right after they
+  // mount their card so state paints immediately (no wait for the deps poll below).
+  // Safe before deps load: loadStatus() no-ops until LokaliAPI is ready.
+  window.LokaliVerification = window.LokaliVerification || { refresh: loadStatus };
+
   function init() {
     bindVerifyButtons();
     waitForDeps(function () {
