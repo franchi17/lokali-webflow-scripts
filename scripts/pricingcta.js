@@ -50,6 +50,17 @@
           }
         }
 
+        // Anonymous visitor chose a paid plan: stash it so lokali-billing.js can
+        // resume this exact checkout right after their account is created
+        // (30-min shelf life), and mark the signup as vendor-intent.
+        if (plan !== 'free') {
+          try {
+            sessionStorage.setItem('lokali_pending_plan',
+              JSON.stringify({ plan: plan, interval: interval, ts: Date.now() }));
+            sessionStorage.setItem('lokali_signup_intent', 'vendor');
+          } catch (e) {}
+        }
+
         var url = SIGNUP_PATH + '?plan=' + encodeURIComponent(plan);
         if (plan !== 'free') url += '&interval=' + interval;
         window.location.href = url;

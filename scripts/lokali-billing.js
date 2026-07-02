@@ -255,6 +255,63 @@
     }
   }
 
+  // ── post-signup checkout resume ─────────────────────────────────────────────────
+  // pricingcta.js stashes the chosen paid plan when an ANONYMOUS visitor clicks
+  // Upgrade on /pricing; after the Clerk signup completes, this picks the stash up
+  // ONCE and sends the brand-new vendor straight into that Stripe Checkout.
+  // It waits for the Xano token (set when the first clerk-sync roundtrip finishes)
+  // so the server-side vendor-role stamp has landed before calling the role-gated
+  // checkout route. Any failure degrades silently — the user just stays on the
+  // page they landed on, upgradeable later from /pricing or Settings.
+  var PENDING_PLAN_KEY = 'lokali_pending_plan';
+  var PENDING_MAX_AGE_MS = 30 * 60 * 1000;
+
+  function readPendingPlan() {
+    try {
+      var raw = sessionStorage.getItem(PENDING_PLAN_KEY);
+      if (!raw) return null;
+      var p = JSON.parse(raw);
+      if (!p || !p.plan || p.plan === 'free') return null;
+      if (!p.ts || (Date.now() - p.ts) > PENDING_MAX_AGE_MS) return null;
+      return p;
+    } catch (e) { return null; }
+  }
+
+  function clearPendingPlan() {
+    try { sessionStorage.removeItem(PENDING_PLAN_KEY); } catch (e) {}
+  }
+
+  function resumePendingCheckout() {
+    if (!readPendingPlan()) return;
+    var waited = 0;
+    var iv = setInterval(function () {
+      waited += 500;
+      if (waited >= 30000) { clearInterval(iv); return; }
+      var user = window.Clerk && window.Clerk.user;
+      var haveToken = false;
+      try { haveToken = !!localStorage.getItem('LOKALI_AUTH_TOKEN'); } catch (e) {}
+      if (!user || !haveToken) return;
+      clearInterval(iv);
+
+      var pending = readPendingPlan();
+      if (!pending) return;
+      clearPendingPlan(); // one shot — never re-fire, even if checkout fails
+
+      var role = user.publicMetadata && user.publicMetadata.role;
+      if (role === 'customer') return; // wrong account type; drop the intent
+
+      var body = { plan: pending.plan, interval: pending.interval || 'month' };
+      postForRedirect(CHECKOUT_URL, body).catch(function () {
+        // The very first sync may still be stamping the role — retry once.
+        setTimeout(function () {
+          postForRedirect(CHECKOUT_URL, body).catch(function (err) {
+            console.warn('[lokali-billing] pending-plan resume failed; continuing normally', err);
+          });
+        }, 4000);
+      });
+    }, 500);
+  }
+
   // ── boot ────────────────────────────────────────────────────────────────────────
   function waitForDeps(cb) {
     var checks = 0;
@@ -270,12 +327,14 @@
     bindCheckoutButtons();
     tagSettingsPortalLink();
     bindPortalButtons();
-    if (ON_BILLING_PAGE) {
-      waitForDeps(function () {
+    waitForDeps(function () {
+      // Resume runs on ANY page — a fresh signup can land anywhere.
+      resumePendingCheckout();
+      if (ON_BILLING_PAGE) {
         loadBilling();
         handleReturnFromStripe();
-      });
-    }
+      }
+    });
   }
 
   // Small public surface so other scripts (pricingcta.js) can start a checkout
