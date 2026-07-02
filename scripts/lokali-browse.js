@@ -292,6 +292,39 @@
     var candidate = byUrl || byStore || 'all';
     if (candidate !== 'all' && !_locationsById[candidate]) candidate = 'all';
     activeLocationId = candidate;
+    // Nothing explicit anywhere → eligible for the account-region soft default (#44).
+    _locationWasDefaulted = (byUrl == null && byStore == null);
+  }
+
+  // #44 — soft-default the neighborhood to the signed-in user's saved
+  // "Your area" (account.region) when they've never chosen one explicitly
+  // (no ?location_id=, no stored pick, no restored session state). Runs
+  // async after ref data so it never blocks the grid, applies only if the
+  // dropdown is still untouched when the lookup lands, and is NOT persisted
+  // — any explicit pick (including "All neighborhoods") wins from then on.
+  var _locationWasDefaulted = false;
+  function applyRegionDefault() {
+    if (!_locationWasDefaulted || activeLocationId !== 'all') return;
+    var token = null;
+    try { token = localStorage.getItem('LOKALI_AUTH_TOKEN'); } catch (e) {}
+    if (!token) return; // signed out — no account to read
+    if (!(window.LokaliAPI.account && window.LokaliAPI.account.get)) return;
+    window.LokaliAPI.account.get().then(function (res) {
+      if (!res || res.error || !res.data) return;
+      var region = String(res.data.region || '').trim().toLowerCase();
+      if (!region) return;
+      if (activeLocationId !== 'all') return; // user picked one meanwhile
+      var ids = Object.keys(_locationsById);
+      for (var i = 0; i < ids.length; i++) {
+        var nm = String(_locationsById[ids[i]].name || '').trim().toLowerCase();
+        if (nm && (nm === region || region.indexOf(nm) !== -1 || nm.indexOf(region) !== -1)) {
+          activeLocationId = String(ids[i]);
+          var sel = locSelectEl(); if (sel) sel.value = activeLocationId;
+          applyFilters(); // client-side narrow — no re-fetch
+          return;
+        }
+      }
+    }).catch(function () {});
   }
 
   // ── fetch ──
@@ -609,7 +642,10 @@
   function setLocation(idOrAll) {
     activeLocationId = idOrAll;
     var sel = locSelectEl(); if (sel) sel.value = String(idOrAll);
-    try { idOrAll === 'all' ? localStorage.removeItem(AREA_KEY) : localStorage.setItem(AREA_KEY, String(idOrAll)); } catch (e) {}
+    // Store 'all' explicitly (don't remove the key): an explicit "All
+    // neighborhoods" pick must also suppress the #44 account-region default
+    // on future visits — a removed key would let it snap back.
+    try { localStorage.setItem(AREA_KEY, String(idOrAll)); } catch (e) {}
     applyFilters(); // client-side neighborhood filter (no re-fetch)
   }
   function setCategory(slug) {
@@ -689,6 +725,7 @@
         if (!restored) resolveInitialLocation(); // saved session state wins over URL/localStorage default
         populateLocationSelect();
         syncFilterUI();
+        applyRegionDefault(); // #44 — fire-and-forget; applies only while untouched
         return fetchVendors();
       })
       .catch(function (err) {
