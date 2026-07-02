@@ -303,14 +303,20 @@
   // dropdown is still untouched when the lookup lands, and is NOT persisted
   // — any explicit pick (including "All neighborhoods") wins from then on.
   var _locationWasDefaulted = false;
-  function applyRegionDefault() {
+  function applyRegionDefault(attempt) {
+    attempt = attempt || 0;
     if (!_locationWasDefaulted || activeLocationId !== 'all') return;
     var token = null;
     try { token = localStorage.getItem('LOKALI_AUTH_TOKEN'); } catch (e) {}
     if (!token) return; // signed out — no account to read
     if (!(window.LokaliAPI.account && window.LokaliAPI.account.get)) return;
     window.LokaliAPI.account.get().then(function (res) {
-      if (!res || res.error || !res.data) return;
+      // The page-load burst regularly trips the free-tier rate limit — retry a
+      // couple of times instead of silently dropping the default.
+      if (!res || res.error || !res.data) {
+        if (attempt < 2) setTimeout(function () { applyRegionDefault(attempt + 1); }, 4000 * (attempt + 1));
+        return;
+      }
       var region = String(res.data.region || '').trim().toLowerCase();
       if (!region) return;
       if (activeLocationId !== 'all') return; // user picked one meanwhile
