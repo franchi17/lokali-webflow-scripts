@@ -292,20 +292,24 @@
     var candidate = byUrl || byStore || 'all';
     if (candidate !== 'all' && !_locationsById[candidate]) candidate = 'all';
     activeLocationId = candidate;
-    // Nothing explicit anywhere → eligible for the account-region soft default (#44).
-    _locationWasDefaulted = (byUrl == null && byStore == null);
   }
 
   // #44 — soft-default the neighborhood to the signed-in user's saved
-  // "Your area" (account.region) when they've never chosen one explicitly
-  // (no ?location_id=, no stored pick, no restored session state). Runs
-  // async after ref data so it never blocks the grid, applies only if the
-  // dropdown is still untouched when the lookup lands, and is NOT persisted
-  // — any explicit pick (including "All neighborhoods") wins from then on.
-  var _locationWasDefaulted = false;
+  // "Your area" (account.region) when they've never chosen one explicitly.
+  // Eligibility is checked directly (dropdown at 'all' + no ?location_id= +
+  // no stored explicit pick) rather than via the restore path — restored
+  // session state always carries l:'all' for a user who never touched the
+  // filter, and must not suppress the default. Runs async after ref data so
+  // it never blocks the grid, applies only if the dropdown is still untouched
+  // when the lookup lands, and is NOT persisted — any explicit pick
+  // (including "All neighborhoods", which setLocation now stores) wins.
   function applyRegionDefault(attempt) {
     attempt = attempt || 0;
-    if (!_locationWasDefaulted || activeLocationId !== 'all') return;
+    if (activeLocationId !== 'all') return;
+    var byUrl = null, byStore = null;
+    try { byUrl = new URLSearchParams(window.location.search).get('location_id'); } catch (e) {}
+    try { byStore = localStorage.getItem(AREA_KEY); } catch (e) {}
+    if (byUrl != null || byStore != null) return; // explicit choice exists somewhere
     var token = null;
     try { token = localStorage.getItem('LOKALI_AUTH_TOKEN'); } catch (e) {}
     if (!token) return; // signed out — no account to read
