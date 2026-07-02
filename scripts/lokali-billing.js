@@ -247,6 +247,11 @@
     var tries = 0;
     var iv = setInterval(function () {
       tries++;
+      // The client memoizes getMyBilling; drop the cache each poll so we
+      // actually re-fetch and catch the webhook flipping the plan.
+      if (window.LokaliAPI && window.LokaliAPI.plans && window.LokaliAPI.plans.invalidateBilling) {
+        window.LokaliAPI.plans.invalidateBilling();
+      }
       loadBilling();
       if (tries >= 5) clearInterval(iv);
     }, 1500);

@@ -1292,10 +1292,22 @@ const LokaliServicesPage = (() => {
   };
 
   const loadData = async () => {
-    const [servicesRes, billingRes] = await Promise.all([
-      window.LokaliAPI.services.getMine(true),
-      window.LokaliAPI.plans.getMyBilling(),
-    ]);
+    // Both calls can transiently 429 on Xano's free tier (10 req/20s). If the
+    // BILLING call loses that race, plan detection falls back to "free" and the
+    // photo gallery wrongly locks for Pro/Featured vendors — so retry a few
+    // times on a transient error before giving up. (vendors.me + billing are
+    // memoized in the client, so retries don't re-hit the successful ones.)
+    const isTransient = (r) =>
+      r && r.error && /rate|429|whoa|requests per|timeout|network|cold/i.test(String(r.error));
+    let servicesRes, billingRes;
+    for (let attempt = 0; ; attempt++) {
+      [servicesRes, billingRes] = await Promise.all([
+        window.LokaliAPI.services.getMine(true),
+        window.LokaliAPI.plans.getMyBilling(),
+      ]);
+      if (attempt >= 3 || !(isTransient(servicesRes) || isTransient(billingRes))) break;
+      await new Promise((r) => setTimeout(r, 1800 * (attempt + 1)));
+    }
 
     if (servicesRes.error) throw new Error(servicesRes.error);
 

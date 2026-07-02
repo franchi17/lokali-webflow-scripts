@@ -72,6 +72,7 @@
       else localStorage.removeItem(TOKEN_KEY);
     } catch (e) {}
     _vendorMePromise = null; // identity changed — drop the cached vendor/me
+    _billingPromise = null;  // …and the cached plan/billing
   }
 
   function clearToken() {
@@ -516,10 +517,30 @@
     }
   };
 
+  // Shared in-flight/last-good cache for vendor/me/billing — same rationale as
+  // vendors.me. On a dashboard page THREE consumers call it near-simultaneously
+  // (the page script's plan gate, the sidebar chip, and lokali-billing.js,
+  // which treats every /vendor-dashboard/* path as a billing page). Firing it
+  // 3× per load was a top contributor to the free-tier 10 req/20s trips — and a
+  // rate-limited billing response reads as plan="free", which (e.g.) LOCKS the
+  // photo gallery for a paying Featured vendor. One shared request fixes that.
+  // Failures are never cached; a token change clears it.
+  var _billingPromise = null;
   var plans = {
     getMyBilling: function () {
-      return request('plans', 'GET', 'vendor/me/billing', null, true);
-    }
+      if (_billingPromise) return _billingPromise;
+      _billingPromise = request('plans', 'GET', 'vendor/me/billing', null, true).then(function (out) {
+        if (!out || out.error) _billingPromise = null;
+        return out;
+      }, function (err) {
+        _billingPromise = null;
+        throw err;
+      });
+      return _billingPromise;
+    },
+    // Drop the cached billing after a mutation that changes the plan
+    // (e.g. returning from Stripe checkout/portal). lokali-billing.js re-polls.
+    invalidateBilling: function () { _billingPromise = null; }
   };
 
   var leads = {
