@@ -174,15 +174,33 @@
     return status;
   }
 
-  function fetchIsPro() {
+  // A real billing response always carries a plan indicator; an empty/errored one
+  // (Xano free-tier cold start) does not. Only trust a response that has one.
+  function hasPlanInfo(d) {
+    return !!(d && (d.plan || d.plan_code || d.plan_name ||
+      (d.subscription && d.subscription.plan_code)));
+  }
+
+  function delay(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
+  // Resolve the vendor's Pro/Featured status. Retries a definitive billing read so a
+  // transient cold-start miss doesn't wrongly downgrade a paying vendor to the upsell.
+  // Only gives up (→ false) after the whole retry window fails; the card's default
+  // markup shows the button meanwhile, so we bias toward showing (not nagging) on load.
+  function fetchIsPro(attempt) {
+    attempt = attempt || 0;
     var api = window.LokaliAPI;
     if (!(api && api.plans && typeof api.plans.getMyBilling === 'function')) {
       return Promise.resolve(false);
     }
+    function retryOrGiveUp() {
+      if (attempt >= 5) return false;
+      return delay(700).then(function () { return fetchIsPro(attempt + 1); });
+    }
     return api.plans.getMyBilling().then(function (res) {
-      if (!res || res.error || !res.data) return false;
-      return planIsPro(res.data);
-    }).catch(function () { return false; });
+      if (res && !res.error && res.data && hasPlanInfo(res.data)) return planIsPro(res.data);
+      return retryOrGiveUp();
+    }).catch(retryOrGiveUp);
   }
 
   function loadStatus() {
