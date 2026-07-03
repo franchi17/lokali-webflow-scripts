@@ -21,6 +21,16 @@
   var currentVendorSlug = null; // set during hydrate(); used to build clean item/about URLs
   var openAboutOnLoad = false; // true when the URL is /{slug}/about — open the About tab once loaded
 
+  // #52 — the website/Instagram chips under the contact CTA floated ~80px
+  // apart (loose, unintentional). Pull them into one tight centered row.
+  (function injectLinkRowCss() {
+    if (document.getElementById('lok-vl-linkrow-css')) return;
+    var st = document.createElement('style');
+    st.id = 'lok-vl-linkrow-css';
+    st.textContent = '.div-block-179{display:flex !important;justify-content:center !important;align-items:center !important;gap:12px !important;}';
+    (document.head || document.documentElement).appendChild(st);
+  })();
+
   // ---- tiny DOM helpers -------------------------------------------------
   function $(sel, root) { return (root || document).querySelector(sel); }
   function $all(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }

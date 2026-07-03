@@ -14,7 +14,19 @@
     if (document.getElementById('lok-dashboard-layout-fix')) return;
     var s = document.createElement('style');
     s.id = 'lok-dashboard-layout-fix';
-    s.textContent = '@media (min-width:992px){body{padding-left:200px;}}';
+    s.textContent = '@media (min-width:992px){body{padding-left:200px;}}' +
+      // #49 — services/products cards render from a template with a -10px
+      // inline margin, so adjacent cards read as one slab. Real separation:
+      // gap + border + soft shadow (brand-light surfaces per the no-ink rule).
+      '.service-card[data-service-id],.product-card[data-product-id]{' +
+        'margin-bottom:16px !important;border:1px solid #ECE8F8 !important;' +
+        'border-radius:14px;background:#fff;box-shadow:0 1px 5px rgba(35,29,63,.07);}' +
+      // #50 — Edit/Delete were hover-revealed; always show them on desktop
+      // (mobile has no hover, so reveal everywhere). Beats any IX inline style.
+      '.service-card [data-action],.product-card [data-action],' +
+      '.service-card .icon-btn-edit,.product-card .icon-btn-edit,' +
+      '.service-card .icon-btn--delete,.product-card .icon-btn--delete{' +
+        'opacity:1 !important;visibility:visible !important;}';
     (document.head || document.documentElement).appendChild(s);
   })();
 

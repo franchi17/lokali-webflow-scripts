@@ -244,17 +244,23 @@
     return false;
   }
 
-  function wire() {
-    var t = Array.prototype.slice.call(document.querySelectorAll(TRIGGER_SEL));
-    if (!t.length) return;
-    t.forEach(function (el) {
-      if (el.dataset.lokWlBound) return;
-      el.dataset.lokWlBound = '1';
-      el.addEventListener('click', function (e) { e.preventDefault(); open(); });
-    });
+  // #56 — one DELEGATED listener instead of per-element binding, so CTAs that
+  // render AFTER DOMContentLoaded (The Market's code-island "Request your
+  // city →" button, any future injected card) open the modal too. The
+  // code-island anchor can't carry [data-lokali-waitlist] (its markup is a
+  // component prop), so it's matched by its text as a deliberate fallback.
+  function isCityCta(el) {
+    if (el.closest && el.closest(TRIGGER_SEL)) return true;
+    var a = el.closest ? el.closest('a[href="#"], a[href=""]') : null;
+    if (!a) return false;
+    var txt = (a.textContent || '').replace(/\s+/g, ' ').trim().toLowerCase();
+    return txt.indexOf('request your city') === 0 || txt.indexOf("don't see your city") === 0 || txt.indexOf('don’t see your city') === 0;
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', wire);
-  } else { wire(); }
+  document.addEventListener('click', function (e) {
+    var el = e.target;
+    if (!el || el.nodeType !== 1 || !isCityCta(el)) return;
+    e.preventDefault();
+    open();
+  }, true);
 })();

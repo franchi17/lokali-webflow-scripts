@@ -30,7 +30,39 @@
     '.lok-acct .lok-acct-menu{top:auto !important;bottom:calc(100% + 6px) !important;}' +
     '.lok-acct .lok-acct-menu .dashboard-btn{display:flex;flex-direction:row;align-items:center;gap:10px;padding:8px 12px;}' +
     '.lok-acct .lok-acct-menu .dashboard-btn .icon-div{width:28px;height:28px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;}' +
-    '.lok-acct .lok-acct-menu .dashboard-btn .icon-div img{width:16px;height:16px;}';
+    '.lok-acct .lok-acct-menu .dashboard-btn .icon-div img{width:16px;height:16px;}' +
+    // #51 — icon-bearing rows line up like the Settings row: icon box + label.
+    '.lok-acct .lok-acct-menu .lok-acct-row{display:flex;align-items:center;gap:10px;}' +
+    '.lok-acct .lok-acct-menu .lok-acct-row .lok-row-ic{width:28px;height:28px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;}' +
+    '.lok-acct .lok-acct-menu .lok-acct-row .lok-row-ic svg{width:16px;height:16px;display:block;}';
+
+  // #51 — 16px stroke icons (currentColor, so they inherit each row's text
+  // color) for the rows that shipped without one; sized to match Settings.
+  var ROW_ICONS = {
+    upgrade: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.9 6.26L21 9.27l-4.5 4.38L17.8 20 12 16.77 6.2 20l1.3-6.35L3 9.27l6.1-1.01z"/></svg>',
+    help: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 015.8 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+    customer: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'
+  };
+
+  function addRowIcon(row, key) {
+    if (!row || row.querySelector('.lok-row-ic')) return;
+    var ic = document.createElement('span');
+    ic.className = 'lok-row-ic';
+    ic.innerHTML = ROW_ICONS[key] || '';
+    row.insertBefore(ic, row.firstChild);
+  }
+
+  // Find the Help/contact row by destination (native markup has no hook class).
+  function decorateMenuRows(wrap) {
+    var menu = wrap.querySelector('.lok-acct-menu');
+    if (!menu) return;
+    addRowIcon(menu.querySelector('.lok-acct-upgrade'), 'upgrade');
+    addRowIcon(menu.querySelector('[data-lok-customer-row]'), 'customer');
+    Array.prototype.slice.call(menu.querySelectorAll('a.lok-acct-row')).forEach(function (a) {
+      var href = (a.getAttribute('href') || '').toLowerCase();
+      if (href.indexOf('contact') >= 0) addRowIcon(a, 'help');
+    });
+  }
 
   function injectCss() {
     if (document.getElementById('lok-acct-css')) return;
@@ -156,6 +188,7 @@
     injectCss();
     bindToggle(wrap);
     addCustomerAccountRow(wrap);
+    decorateMenuRows(wrap); // #51
     whenApi(function () { fetchAndHydrate(wrap, 0); });
   }
 

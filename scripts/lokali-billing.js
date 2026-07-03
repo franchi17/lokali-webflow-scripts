@@ -185,6 +185,34 @@
       document.querySelector('[data-lokali-upgrade-banner]');
     if (banner) banner.style.display = isFree ? '' : 'none';
 
+    // #47 — the "Pro & Featured only" chips (.plan-badge) on gated settings
+    // rows: HIDE them once the vendor is on an entitled paid plan (active or
+    // trialing — they have the features, the label is noise). On Free (or a
+    // lapsed paid plan, which readers treat as free) the chip STAYS as the
+    // explanation and the row's toggle is greyed out + locked so a Free
+    // vendor can't flip a switch that does nothing.
+    var entitled = !isFree && (status === '' || status === 'active' || status === 'trialing');
+    $all('.plan-badge').forEach(function (chip) {
+      chip.style.display = entitled ? 'none' : '';
+      // Find the settings row this chip belongs to (nearest ancestor that
+      // also contains the toggle) and lock/unlock its switch.
+      var row = chip.parentElement;
+      while (row && row !== document.body && !row.querySelector('.lk-toggle')) row = row.parentElement;
+      if (!row || row === document.body) return;
+      var toggle = row.querySelector('.lk-toggle');
+      var input = toggle && toggle.querySelector('input');
+      if (!toggle) return;
+      if (entitled) {
+        toggle.style.opacity = '';
+        toggle.style.pointerEvents = '';
+        if (input) input.disabled = false;
+      } else {
+        toggle.style.opacity = '0.4';
+        toggle.style.pointerEvents = 'none';
+        if (input) input.disabled = true;
+      }
+    });
+
     // Highlight the active plan card.
     $all('[data-lokali-plan-card]').forEach(function (card) {
       var isCurrent = card.getAttribute('data-lokali-plan-card') === plan;
