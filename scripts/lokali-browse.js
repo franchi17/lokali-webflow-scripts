@@ -31,6 +31,23 @@
 (function () {
   'use strict';
 
+  // #57 QA — the page's code-island "List your business free →" anchor ships
+  // with href="#" (dead). It lives in an OPEN shadow root, so resolve the real
+  // target via composedPath, stash the vendor signup intent (same key
+  // pricingcta.js uses; the clerk-sync role stamp reads it), and route to
+  // /sign-up. Delegated so it works whenever the island hydrates.
+  document.addEventListener('click', function (e) {
+    var el = (e.composedPath && e.composedPath()[0]) || e.target;
+    if (!el || el.nodeType !== 1 || !el.closest) return;
+    var a = el.closest('a[href="#"], a[href=""]');
+    if (!a) return;
+    var txt = (a.textContent || '').replace(/\s+/g, ' ').trim().toLowerCase();
+    if (txt.indexOf('list your business') !== 0) return;
+    e.preventDefault();
+    try { sessionStorage.setItem('lokali_signup_intent', 'vendor'); } catch (err) {}
+    window.location.href = '/sign-up';
+  }, true);
+
   var PROFILE_BASE = (typeof window.LOKALI_BROWSE_PROFILE_BASE === 'string' && window.LOKALI_BROWSE_PROFILE_BASE) || '/';
   var PER_PAGE = (typeof window.LOKALI_BROWSE_PER_PAGE === 'number' && window.LOKALI_BROWSE_PER_PAGE) || 100;
   var AREA_KEY = 'LOKALI_BROWSE_AREA';

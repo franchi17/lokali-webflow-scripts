@@ -258,7 +258,10 @@
   }
 
   document.addEventListener('click', function (e) {
-    var el = e.target;
+    // The Market's "Request your city →" lives inside a code-island's OPEN
+    // shadow root: document-level e.target is retargeted to the island host,
+    // so resolve the REAL click target through composedPath() first.
+    var el = (e.composedPath && e.composedPath()[0]) || e.target;
     if (!el || el.nodeType !== 1 || !isCityCta(el)) return;
     e.preventDefault();
     open();
