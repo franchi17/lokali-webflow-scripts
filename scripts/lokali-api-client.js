@@ -557,18 +557,30 @@
     // ("you contacted this vendor → you can review them"); falls back to the
     // anonymous endpoint when signed out.
     trackEvent: function (vendorId, eventType, source) {
+      // This write feeds the REVIEW GATE, so it must survive the free-tier
+      // rate-limit bursts (#18): retry up to 2× on 429/5xx/network failure
+      // (4s/8s backoff). Still fire-and-forget for callers; a non-429 4xx
+      // means the request itself is wrong — never retried.
       try {
         var token = getToken();
         var path = token ? 'lead-event-auth' : 'lead-event';
         var url = getBase('vendors') + '/vendor/id/' + encodeURIComponent(vendorId) + '/' + path;
         var headers = { 'Content-Type': 'application/json', Accept: 'application/json' };
         if (token) headers['Authorization'] = 'Bearer ' + token;
-        fetch(url, {
-          method: 'POST',
-          headers: headers,
-          keepalive: true,
-          body: JSON.stringify({ event_type: eventType, source: source || 'listing' })
-        }).catch(function () {});
+        var body = JSON.stringify({ event_type: eventType, source: source || 'listing' });
+        var attempt = function (triesLeft, delayMs) {
+          fetch(url, { method: 'POST', headers: headers, keepalive: true, body: body })
+            .then(function (res) {
+              if (res.ok || triesLeft <= 0) return;
+              if (res.status === 429 || res.status >= 500) {
+                setTimeout(function () { attempt(triesLeft - 1, delayMs * 2); }, delayMs);
+              }
+            })
+            .catch(function () {
+              if (triesLeft > 0) setTimeout(function () { attempt(triesLeft - 1, delayMs * 2); }, delayMs);
+            });
+        };
+        attempt(2, 4000);
       } catch (e) {}
     },
     // Customer-facing, fire-and-forget: log a listing/service/product view.
