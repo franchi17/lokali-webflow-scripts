@@ -10,8 +10,8 @@
  *     (edit / delete) + an inline recommend-or-not composer. Recommend-only model
  *     (no stars at launch); empty states never show a bare zero.
  *   • Settings — Name, Email (managed via Clerk), Area (region), 3 notification
- *     toggles, Sign out, Delete account (routes to /contact-us until the purge
- *     chain exists).
+ *     toggles, Sign out, Delete account (58a: type-DELETE confirm → Vercel
+ *     /account/delete → Stripe cancel + Xano purge + Clerk delete → sign-out).
  *
  * Depends on lokali-api-client.js (window.LokaliAPI with the account / reviews /
  * favorites namespaces). Auth via the Xano token; shows a sign-in prompt when
@@ -608,10 +608,57 @@
     outBtn.addEventListener('click', function () { try { api().clearToken(); } catch (e) {} window.location.href = '/login'; });
     outWrap.appendChild(outBtn); outRow.appendChild(outWrap); ac.appendChild(outRow);
     var delRow = el('div', 'lk-set-row');
-    delRow.innerHTML = '<div><div class="lk-set-label lk-danger">Delete account</div><div class="lk-set-help">Permanently remove your account, saves, and reviews. This can\'t be undone.</div></div>';
+    delRow.innerHTML = '<div><div class="lk-set-label lk-danger">Delete account</div><div class="lk-set-help">Permanently removes your account and saves. Reviews you wrote stay but lose your name. If you have a vendor listing, it and its reviews are deleted too. This can\'t be undone.</div></div>';
     var delWrap = el('div'); var delBtn = el('button', 'lk-btn danger', 'Delete');
-    delBtn.addEventListener('click', function () { window.location.href = '/contact-us'; });
     delWrap.appendChild(delBtn); delRow.appendChild(delWrap); ac.appendChild(delRow);
+
+    // 58a — inline type-to-confirm; calls the Vercel delete route (Stripe
+    // cancel -> Xano purge -> Clerk delete), then signs out. Brand surfaces
+    // only (no-ink rule) — light card, violet text, danger accents.
+    var confirmBox = el('div', 'lk-del-confirm');
+    confirmBox.style.cssText = 'display:none;padding:14px 16px;margin-top:2px;border:1px solid #F3D6D6;border-radius:12px;background:#FDF7F7;';
+    confirmBox.innerHTML = '<div class="lk-set-help" style="margin-bottom:8px;">Type <b>DELETE</b> to confirm. Your sign-in, saves and any vendor listing are removed immediately.</div>';
+    var confirmIn = el('input', 'lk-input'); confirmIn.type = 'text'; confirmIn.placeholder = 'Type DELETE';
+    confirmIn.style.cssText = 'max-width:200px;margin-right:8px;';
+    var confirmBtn = el('button', 'lk-btn danger', 'Permanently delete');
+    var cancelBtn = el('button', 'lk-btn ghost', 'Cancel');
+    cancelBtn.style.marginLeft = '8px';
+    confirmBox.appendChild(confirmIn); confirmBox.appendChild(confirmBtn); confirmBox.appendChild(cancelBtn);
+    ac.appendChild(confirmBox);
+
+    delBtn.addEventListener('click', function () {
+      confirmBox.style.display = confirmBox.style.display === 'none' ? 'block' : 'none';
+      if (confirmBox.style.display === 'block') confirmIn.focus();
+    });
+    cancelBtn.addEventListener('click', function () { confirmBox.style.display = 'none'; confirmIn.value = ''; });
+    confirmBtn.addEventListener('click', function () {
+      if (confirmIn.value.trim() !== 'DELETE') { toast('Type DELETE to confirm'); confirmIn.focus(); return; }
+      var clerk = window.Clerk;
+      if (!clerk || !clerk.session || typeof clerk.session.getToken !== 'function') {
+        toast('Please reload and sign in again'); return;
+      }
+      confirmBtn.disabled = true; confirmBtn.textContent = 'Deleting…';
+      var base = (window.LOKALI_BILLING_BASE || 'https://lokali-api.vercel.app/api/lokali').replace(/\/$/, '');
+      clerk.session.getToken().then(function (jwt) {
+        return fetch(base + '/account/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + jwt },
+          body: JSON.stringify({ confirm: 'DELETE' })
+        });
+      }).then(function (res) {
+        if (!res.ok) return res.json().catch(function () { return {}; }).then(function (b) { throw new Error(b && b.error ? b.error : 'delete_failed'); });
+        // Account is gone server-side; kill local state and the (now-dead) session.
+        try { api().clearToken(); } catch (e) {}
+        var bye = function () { window.location.href = '/'; };
+        try { clerk.signOut().then(bye, bye); } catch (e) { bye(); }
+      }).catch(function (err) {
+        confirmBtn.disabled = false; confirmBtn.textContent = 'Permanently delete';
+        var msg = (err && err.message) || '';
+        toast(msg === 'billing_cleanup_failed'
+          ? 'We couldn\'t close your subscription — try again in a minute or contact us.'
+          : 'Couldn\'t delete your account — please try again or contact us.');
+      });
+    });
     pane.appendChild(ac);
 
     return pane;
