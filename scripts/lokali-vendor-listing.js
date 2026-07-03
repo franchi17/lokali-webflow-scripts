@@ -882,7 +882,7 @@
     });
     actions.appendChild(send); actions.appendChild(cancel);
     var note = ce('div', 'vl-vreport-note');
-    note.textContent = 'Reports are reviewed by a person. The listing stays visible while we check.';
+    note.textContent = 'Reports are reviewed by a person — we may follow up at your account email. The listing stays visible while we check.';
     box.appendChild(sel); box.appendChild(ta); box.appendChild(actions); box.appendChild(note);
     wrap.appendChild(box);
     ta.focus();
