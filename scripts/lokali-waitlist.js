@@ -21,7 +21,17 @@
   'use strict';
 
   var ENDPOINT = 'https://x8ki-letl-twmt.n7.xano.io/api:oYK_cDmG/waitlist';
-  var SOURCE   = 'about_page';
+  // #46 — the modal opens from many pages now (about/home/market/contact), so
+  // attribute each signup to the page it came from instead of a fixed string.
+  var SOURCE = (function () {
+    var p = (window.location.pathname || '/').toLowerCase();
+    if (p.indexOf('/contact') === 0) return 'contact_page';
+    if (p.indexOf('/the-market') === 0) return 'market_page';
+    if (p.indexOf('/about') === 0) return 'about_page';
+    if (p === '/' || p === '') return 'home_page';
+    var seg = p.replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 40);
+    return seg ? seg + '_page' : 'home_page';
+  })();
   var GMAPS_KEY = (typeof window.LOKALI_GMAPS_KEY === 'string') ? window.LOKALI_GMAPS_KEY.trim() : '';
   var TRIGGER_SEL = '#wl-trigger, [data-lokali-waitlist]';
 

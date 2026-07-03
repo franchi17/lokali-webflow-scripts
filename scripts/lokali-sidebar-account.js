@@ -41,7 +41,8 @@
   var ROW_ICONS = {
     upgrade: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.9 6.26L21 9.27l-4.5 4.38L17.8 20 12 16.77 6.2 20l1.3-6.35L3 9.27l6.1-1.01z"/></svg>',
     help: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 015.8 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
-    customer: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'
+    customer: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+    signin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-4.5 4.5L19 4l3 3-4.5 4.5M11.39 11.61a5.5 5.5 0 11-7.78 7.78 5.5 5.5 0 017.78-7.78zm0 0L15.5 7.5"/></svg>'
   };
 
   function addRowIcon(row, key) {
@@ -58,6 +59,7 @@
     if (!menu) return;
     addRowIcon(menu.querySelector('.lok-acct-upgrade'), 'upgrade');
     addRowIcon(menu.querySelector('[data-lok-customer-row]'), 'customer');
+    addRowIcon(menu.querySelector('[data-lok-signin-row]'), 'signin');
     Array.prototype.slice.call(menu.querySelectorAll('a.lok-acct-row')).forEach(function (a) {
       var href = (a.getAttribute('href') || '').toLowerCase();
       if (href.indexOf('contact') >= 0) addRowIcon(a, 'help');
@@ -139,6 +141,32 @@
     else menu.appendChild(a);
   }
 
+  // #30 — vendors can change how they sign in (connected Google accounts,
+  // password, email addresses) without leaving the dashboard. Opens Clerk's
+  // built-in account-management modal — the same one customers get from the
+  // /account "Manage sign-in" button. Clerk is loaded site-wide by
+  // lokali-clerk-auth.js; if it's still booting when clicked, wait briefly.
+  function openClerkProfile(tries) {
+    var c = window.Clerk;
+    if (c && typeof c.openUserProfile === 'function') { c.openUserProfile(); return; }
+    if ((tries || 0) < 20) setTimeout(function () { openClerkProfile((tries || 0) + 1); }, 250);
+  }
+
+  function addManageSignInRow(wrap) {
+    var menu = wrap.querySelector('.lok-acct-menu');
+    if (!menu || menu.querySelector('[data-lok-signin-row]')) return;
+    var a = document.createElement('a');
+    a.className = 'lok-acct-row';
+    a.setAttribute('data-lok-signin-row', '1');
+    a.href = '#';
+    a.textContent = 'Manage sign-in';
+    a.addEventListener('click', function (e) { e.preventDefault(); openClerkProfile(0); });
+    var ref = menu.querySelector('[data-lok-customer-row]');
+    if (ref && ref.nextSibling) ref.parentNode.insertBefore(a, ref.nextSibling);
+    else if (ref) ref.parentNode.appendChild(a);
+    else menu.appendChild(a);
+  }
+
   function bindToggle(wrap) {
     var chip = wrap.querySelector('.lok-acct-chip');
     var menu = wrap.querySelector('.lok-acct-menu');
@@ -188,6 +216,7 @@
     injectCss();
     bindToggle(wrap);
     addCustomerAccountRow(wrap);
+    addManageSignInRow(wrap); // #30
     decorateMenuRows(wrap); // #51
     whenApi(function () { fetchAndHydrate(wrap, 0); });
   }
