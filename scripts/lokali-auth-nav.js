@@ -25,6 +25,32 @@
 (function () {
   'use strict';
 
+  // Vendor signup intent (#57 QA find): since the role default flipped to
+  // CUSTOMER (2026-07-01), any signup missing a stashed intent mints a
+  // customer — but only pricing CTAs were stashing 'vendor'. Delegate here
+  // (header script = every page): a click on ANY control whose text reads
+  // like a vendor signup stashes the intent clerk-sync reads. Non-link
+  // controls (e.g. the homepage "Join as a Vendor" div) also get routed.
+  document.addEventListener('click', function (e) {
+    var el = (e.composedPath && e.composedPath()[0]) || e.target;
+    if (!el || el.nodeType !== 1 || !el.closest) return;
+    var hit = null, node = el;
+    for (var i = 0; node && node !== document.body && i < 6; i++, node = node.parentElement) {
+      var t = (node.textContent || '').replace(/\s+/g, ' ').trim().toLowerCase();
+      if (t.length < 40 && (t === 'become a vendor' || t === 'sign up to be a vendor' || t === 'join as a vendor' || t.indexOf('list your business') === 0)) { hit = node; break; }
+    }
+    if (!hit) return;
+    try { sessionStorage.setItem('lokali_signup_intent', 'vendor'); } catch (err) {}
+    var a = hit.closest('a[href]');
+    var href = a ? (a.getAttribute('href') || '') : '';
+    if (!a || href === '#' || href === '') {
+      e.preventDefault();
+      window.location.href = '/sign-up';
+    }
+    // Real links (e.g. header "Become a Vendor" -> /sign-up) proceed normally
+    // with the intent now stashed.
+  }, true);
+
   var TOKEN_KEY = 'LOKALI_AUTH_TOKEN';
   var CACHE_KEY = 'LOKALI_ACCT_CACHE';
   var AUTH_BASE = (typeof window !== 'undefined' && window.LOKALI_AUTH_BASE) ||
