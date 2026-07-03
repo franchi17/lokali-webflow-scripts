@@ -598,6 +598,7 @@
     }
 
     initContact(v);
+    injectVendorReport(v);
     if (v.id != null) {
       var hero = document.querySelector('[data-lokali-vendor-id]');
       if (hero) hero.setAttribute('data-lokali-vendor-id', String(v.id));
@@ -743,6 +744,13 @@
       '.vl-rev-report-send{font:600 12px/1 ' + FONT + ';color:#fff;background:#6002EE;border:none;border-radius:100px;padding:8px 16px;cursor:pointer;}',
       '.vl-rev-report-cancel{font:500 12px/1 ' + FONT + ';color:#8E8BA6;background:none;border:none;padding:0;cursor:pointer;}',
       '.vl-rev-report-done{margin-top:10px;font:600 11.5px/1.4 ' + FONT + ';color:#6002EE;}',
+      '.vl-vreport{margin-top:28px;padding-top:14px;border-top:.5px solid #EEEDF6;}',
+      '.vl-vreport-link{font:500 11.5px/1 ' + FONT + ';color:#8E8BA6;background:none;border:none;padding:0;cursor:pointer;text-decoration:underline;}',
+      '.vl-vreport-link:hover{color:#C0392B;}',
+      '.vl-vreport-box{margin-top:10px;padding:12px;background:#FBF7FF;border:.5px solid #E4DCF7;border-radius:10px;max-width:480px;}',
+      '.vl-vreport-box select{display:block;width:100%;font:500 12.5px/1.4 ' + FONT + ';color:#1A1829;border:.5px solid #C8C6D8;border-radius:6px;padding:8px;background:#fff;margin-bottom:8px;}',
+      '.vl-vreport-box textarea{width:100%;min-height:64px;font:400 12.5px/1.5 ' + FONT + ';color:#1A1829;border:.5px solid #C8C6D8;border-radius:6px;padding:8px;box-sizing:border-box;resize:vertical;background:#fff;}',
+      '.vl-vreport-note{font:400 11px/1.5 ' + FONT + ';color:#8E8BA6;margin-top:6px;}',
       '.vl-rev-pill{display:inline-flex;align-items:center;gap:5px;font:600 11px/1 ' + FONT + ';color:#2BB673;background:#E4F7EE;border-radius:100px;padding:4px 10px;margin-bottom:8px;}',
       '.vl-rev-pill.no{color:#C0392B;background:#FDECEC;}',
       '.vl-rev-body{font:400 13px/1.6 ' + FONT + ';color:#4A4761;}',
@@ -800,6 +808,81 @@
     }
     if (r.created_at) { var w = ce('div', 'vl-rev-when'); w.textContent = reviewWhen(r.created_at); card.appendChild(w); }
     return card;
+  }
+
+  // ---- customer → vendor fraud flagging -----------------------------------
+  // Quiet "Report this vendor" link at the bottom of the About panel, for
+  // signed-in users who are NOT the owner (owners get the review-report flow
+  // instead; anonymous visitors have the contact form). Reporting never hides
+  // the listing — it queues a vendor_reports row for Lokali moderation.
+  var VREPORT_CATEGORIES = [
+    ['scam', 'Scam — took money / never showed'],
+    ['not_real', 'Not a real business'],
+    ['misleading', 'Misleading listing or photos'],
+    ['inappropriate', 'Inappropriate content'],
+    ['other', 'Something else']
+  ];
+
+  function injectVendorReport(v) {
+    var API = window.LokaliAPI;
+    if (!v || v.id == null || !API || !API.auth || !API.auth.getToken || !API.auth.getToken()) return;
+    if (!API.vendors || !API.vendors.reportVendor) return;
+    var mount = $('[data-vl-panel="about"]') || $('[data-vl-panel="reviews"]');
+    if (!mount || mount.querySelector('.vl-vreport')) return;
+    injectReviewStyles();
+    var render = function () {
+      if (mount.querySelector('.vl-vreport')) return;
+      var wrap = ce('div', 'vl-vreport');
+      var link = ce('button', 'vl-vreport-link');
+      link.type = 'button';
+      link.textContent = '🚩 Report this vendor';
+      link.addEventListener('click', function () { openVendorReportBox(wrap, link, v.id); });
+      wrap.appendChild(link);
+      mount.appendChild(wrap);
+    };
+    // Hide from the listing's own vendor (server blocks self-reports anyway).
+    if (API.vendors.me) {
+      API.vendors.me().then(function (vm) {
+        var mine = (vm && vm.data) || null;
+        if (mine && mine.vendor) mine = mine.vendor;
+        if (mine && String(mine.id) === String(v.id)) return;
+        render();
+      }).catch(render);
+    } else { render(); }
+  }
+
+  function openVendorReportBox(wrap, link, vendorId) {
+    if (wrap.querySelector('.vl-vreport-box')) return;
+    link.style.display = 'none';
+    var box = ce('div', 'vl-vreport-box');
+    var sel = document.createElement('select');
+    VREPORT_CATEGORIES.forEach(function (c) {
+      var o = document.createElement('option'); o.value = c[0]; o.textContent = c[1]; sel.appendChild(o);
+    });
+    var ta = document.createElement('textarea');
+    ta.placeholder = 'Tell us what happened — the more detail, the faster we can act.';
+    ta.maxLength = 1000;
+    var actions = ce('div', 'vl-rev-report-actions');
+    var send = ce('button', 'vl-rev-report-send'); send.type = 'button'; send.textContent = 'Send report';
+    var cancel = ce('button', 'vl-rev-report-cancel'); cancel.type = 'button'; cancel.textContent = 'Cancel';
+    cancel.addEventListener('click', function () { box.remove(); link.style.display = ''; });
+    send.addEventListener('click', function () {
+      var reason = String(ta.value || '').trim();
+      if (reason.length < 5) { ta.focus(); return; }
+      send.disabled = true; send.textContent = 'Sending…';
+      window.LokaliAPI.vendors.reportVendor(vendorId, sel.value, reason).then(function (res) {
+        if (res && res.error) { send.disabled = false; send.textContent = 'Send report'; return; }
+        var done = ce('div', 'vl-rev-report-done');
+        done.textContent = 'Thank you — the Lokali team will look into this.';
+        box.replaceWith(done);
+      }).catch(function () { send.disabled = false; send.textContent = 'Send report'; });
+    });
+    actions.appendChild(send); actions.appendChild(cancel);
+    var note = ce('div', 'vl-vreport-note');
+    note.textContent = 'Reports are reviewed by a person. The listing stays visible while we check.';
+    box.appendChild(sel); box.appendChild(ta); box.appendChild(actions); box.appendChild(note);
+    wrap.appendChild(box);
+    ta.focus();
   }
 
   // ---- vendor-owner fraud flagging ---------------------------------------

@@ -681,6 +681,12 @@
     // it queues a review_reports row for human moderation.
     report: function (reviewId, reason) {
       return request('vendors', 'POST', 'vendor/me/reviews/' + encodeURIComponent(reviewId) + '/report', { reason: reason }, true);
+    },
+    // Signed-in user flags a VENDOR as fraudulent (mirror of report above).
+    // Never hides the listing; queues a vendor_reports row for moderation.
+    // category: scam | not_real | misleading | inappropriate | other.
+    reportVendor: function (vendorId, category, reason) {
+      return request('vendors', 'POST', 'vendor/id/' + encodeURIComponent(vendorId) + '/report', { category: category, reason: reason }, true);
     }
   };
 
