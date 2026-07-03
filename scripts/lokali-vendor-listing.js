@@ -746,7 +746,7 @@
       '.vl-rev-report-done{margin-top:10px;font:600 11.5px/1.4 ' + FONT + ';color:#6002EE;}',
       '.vl-vreport{margin-top:28px;padding-top:14px;border-top:.5px solid #EEEDF6;}',
       '.vl-vreport-link{font:500 11.5px/1 ' + FONT + ';color:#8E8BA6;background:none;border:none;padding:0;cursor:pointer;text-decoration:underline;}',
-      '.vl-vreport-link:hover{color:#C0392B;}',
+      '.vl-vreport-link:hover{color:#EE0290;}',
       '.vl-vreport-box{margin-top:10px;padding:12px;background:#FBF7FF;border:.5px solid #E4DCF7;border-radius:10px;max-width:480px;}',
       '.vl-vreport-box select{display:block;width:100%;font:500 12.5px/1.4 ' + FONT + ';color:#1A1829;border:.5px solid #C8C6D8;border-radius:6px;padding:8px;background:#fff;margin-bottom:8px;}',
       '.vl-vreport-box textarea{width:100%;min-height:64px;font:400 12.5px/1.5 ' + FONT + ';color:#1A1829;border:.5px solid #C8C6D8;border-radius:6px;padding:8px;box-sizing:border-box;resize:vertical;background:#fff;}',
