@@ -734,6 +734,15 @@
       '.vl-rev-av{width:38px;height:38px;border-radius:50%;background:#F3EBFF;color:#6002EE;font:600 13px/1 ' + FONT + ';display:flex;align-items:center;justify-content:center;flex-shrink:0;text-transform:uppercase;}',
       '.vl-rev-name{font:600 14px/1.2 ' + FONT + ';color:#1A1829;}',
       '.vl-rev-verified{display:inline-flex;align-items:center;gap:4px;font:600 10.5px/1 ' + FONT + ';color:#2BB673;margin-top:3px;}',
+      '.vl-rev-verified.vl-rev-contacted{color:#8E8BA6;font-weight:500;}',
+      '.vl-rev-report{display:inline-block;margin-top:10px;font:500 11px/1 ' + FONT + ';color:#8E8BA6;background:none;border:none;padding:0;cursor:pointer;text-decoration:underline;}',
+      '.vl-rev-report:hover{color:#C0392B;}',
+      '.vl-rev-report-box{margin-top:10px;padding:10px 12px;background:#FBF7FF;border:.5px solid #E4DCF7;border-radius:8px;}',
+      '.vl-rev-report-box textarea{width:100%;min-height:64px;font:400 12.5px/1.5 ' + FONT + ';color:#1A1829;border:.5px solid #C8C6D8;border-radius:6px;padding:8px;box-sizing:border-box;resize:vertical;background:#fff;}',
+      '.vl-rev-report-actions{display:flex;gap:10px;margin-top:8px;align-items:center;}',
+      '.vl-rev-report-send{font:600 12px/1 ' + FONT + ';color:#fff;background:#6002EE;border:none;border-radius:100px;padding:8px 16px;cursor:pointer;}',
+      '.vl-rev-report-cancel{font:500 12px/1 ' + FONT + ';color:#8E8BA6;background:none;border:none;padding:0;cursor:pointer;}',
+      '.vl-rev-report-done{margin-top:10px;font:600 11.5px/1.4 ' + FONT + ';color:#6002EE;}',
       '.vl-rev-pill{display:inline-flex;align-items:center;gap:5px;font:600 11px/1 ' + FONT + ';color:#2BB673;background:#E4F7EE;border-radius:100px;padding:4px 10px;margin-bottom:8px;}',
       '.vl-rev-pill.no{color:#C0392B;background:#FDECEC;}',
       '.vl-rev-body{font:400 13px/1.6 ' + FONT + ';color:#4A4761;}',
@@ -757,15 +766,24 @@
 
   function reviewCard(r) {
     var card = ce('div', 'vl-rev');
+    if (r.id != null) card.setAttribute('data-rev-id', String(r.id));
     var head = ce('div', 'vl-rev-head');
     var av = ce('div', 'vl-rev-av'); av.textContent = initials(r.author_name || 'A neighbor');
     head.appendChild(av);
     var who = ce('div', 'vl-rev-who');
     var nm = ce('div', 'vl-rev-name'); nm.textContent = r.author_name || 'A neighbor';
     who.appendChild(nm);
-    var ver = ce('div', 'vl-rev-verified');
-    ver.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
-    ver.appendChild(document.createTextNode(' Verified contact'));
+    // Two trust tiers: inquiry-sourced reviews (Lokali provably delivered the
+    // message) get the green "Verified contact" check; click-sourced ones
+    // (call/sms/whatsapp/email intent) get a neutral "Contacted through Lokali".
+    var isVerified = r.is_verified_contact === true;
+    var ver = ce('div', 'vl-rev-verified' + (isVerified ? '' : ' vl-rev-contacted'));
+    if (isVerified) {
+      ver.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+      ver.appendChild(document.createTextNode(' Verified contact'));
+    } else {
+      ver.textContent = 'Contacted through Lokali';
+    }
     who.appendChild(ver);
     head.appendChild(who);
     card.appendChild(head);
@@ -782,6 +800,57 @@
     }
     if (r.created_at) { var w = ce('div', 'vl-rev-when'); w.textContent = reviewWhen(r.created_at); card.appendChild(w); }
     return card;
+  }
+
+  // ---- vendor-owner fraud flagging ---------------------------------------
+  // If the signed-in user OWNS this listing, each review card gets a quiet
+  // "Report" link → inline reason box → POST vendor/me/reviews/{id}/report.
+  // Reporting never hides the review — it queues for Lokali moderation.
+  function maybeAddReportButtons(panel, vendorId) {
+    var API = window.LokaliAPI;
+    if (!API || !API.auth || !API.auth.getToken || !API.auth.getToken()) return;
+    if (!API.vendors || !API.vendors.me || !API.reviews || !API.reviews.report) return;
+    API.vendors.me().then(function (vm) {
+      var v = (vm && vm.data) || null;
+      if (v && v.vendor) v = v.vendor; // unwrap if nested
+      if (!v || String(v.id) !== String(vendorId)) return; // not the owner
+      $all('[data-rev-id]', panel).forEach(function (card) {
+        if (card.querySelector('.vl-rev-report')) return;
+        var btn = ce('button', 'vl-rev-report');
+        btn.type = 'button';
+        btn.textContent = 'Report as fraudulent';
+        btn.addEventListener('click', function () { openReportBox(card, btn); });
+        card.appendChild(btn);
+      });
+    }).catch(function () {});
+  }
+
+  function openReportBox(card, btn) {
+    if (card.querySelector('.vl-rev-report-box')) return;
+    btn.style.display = 'none';
+    var box = ce('div', 'vl-rev-report-box');
+    var ta = document.createElement('textarea');
+    ta.placeholder = 'Why do you believe this review is fake? (e.g. never a customer, wrong business, spam)';
+    ta.maxLength = 1000;
+    var actions = ce('div', 'vl-rev-report-actions');
+    var send = ce('button', 'vl-rev-report-send'); send.type = 'button'; send.textContent = 'Send report';
+    var cancel = ce('button', 'vl-rev-report-cancel'); cancel.type = 'button'; cancel.textContent = 'Cancel';
+    cancel.addEventListener('click', function () { box.remove(); btn.style.display = ''; });
+    send.addEventListener('click', function () {
+      var reason = String(ta.value || '').trim();
+      if (reason.length < 5) { ta.focus(); return; }
+      send.disabled = true; send.textContent = 'Sending…';
+      window.LokaliAPI.reviews.report(card.getAttribute('data-rev-id'), reason).then(function (res) {
+        if (res && res.error) { send.disabled = false; send.textContent = 'Send report'; return; }
+        var done = ce('div', 'vl-rev-report-done');
+        done.textContent = 'Flagged for review — the Lokali team will take a look. The review stays visible while we check.';
+        box.replaceWith(done);
+      }).catch(function () { send.disabled = false; send.textContent = 'Send report'; });
+    });
+    actions.appendChild(send); actions.appendChild(cancel);
+    box.appendChild(ta); box.appendChild(actions);
+    card.appendChild(box);
+    ta.focus();
   }
 
   function renderReviews(vendorId, vendorName) {
@@ -803,6 +872,7 @@
         sum.appendChild(document.createTextNode(' ' + (rec === 1 ? 'neighbor recommends ' : 'neighbors recommend ') + (vendorName || 'this vendor')));
         panel.appendChild(sum);
         items.forEach(function (r) { panel.appendChild(reviewCard(r)); });
+        maybeAddReportButtons(panel, vendorId);
       } else {
         var e = ce('div', 'vl-rev-empty');
         var t = ce('div', 'vl-rev-empty-title'); t.textContent = 'Be the first to recommend ' + (vendorName || 'this vendor');

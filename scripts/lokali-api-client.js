@@ -675,6 +675,12 @@
     },
     remove: function (reviewId) {
       return request('reviews', 'DELETE', 'reviews/' + encodeURIComponent(reviewId), null, true);
+    },
+    // Vendor-owner flags a review on their own listing as fraudulent (vendors
+    // group — the ownership check is server-side). Never hides the review;
+    // it queues a review_reports row for human moderation.
+    report: function (reviewId, reason) {
+      return request('vendors', 'POST', 'vendor/me/reviews/' + encodeURIComponent(reviewId) + '/report', { reason: reason }, true);
     }
   };
 
