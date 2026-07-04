@@ -147,23 +147,30 @@
     else planState = _planState;
     var confirmedFree = planState === 'free';
     var trialLocked = planState === 'trial' && !isVerified && status !== 'pending';
+    // 48 — badge is a paid perk: an identity-verified vendor whose plan LAPSED
+    // (confirmed Free) has the public badge hidden server-side; mirror that here
+    // and explain, instead of showing a badge the public listing doesn't have.
+    var lapsedVerified = isVerified && confirmedFree;
 
     // The "Get Verified" card disappears once verified (only if the wrapper opts in;
-    // the settings card omits this so it can keep showing the earned badge).
+    // the settings card omits this so it can keep showing the earned badge). A
+    // lapsed-verified vendor keeps the card — it carries the explanation + CTA.
     $all('[data-lokali-verify-card]').forEach(function (el) {
-      el.style.display = isVerified ? 'none' : '';
+      el.style.display = (isVerified && !lapsedVerified) ? 'none' : '';
     });
 
-    // Verified badge — shown only when verified. Safe on dashboard + settings.
+    // Verified badge — shown only when verified AND the plan is live.
     $all('[data-lokali-verified-badge]').forEach(function (el) {
-      el.style.display = isVerified ? '' : 'none';
+      el.style.display = (isVerified && !lapsedVerified) ? '' : 'none';
     });
 
-    // Status line. Trial-locked vendors get the WHY instead of "Not verified".
+    // Status line. Trial-locked / lapsed vendors get the WHY.
     $all('[data-lokali-verify-status]').forEach(function (el) {
-      el.textContent = trialLocked
-        ? 'Unlocks after your first plan payment'
-        : STATUS_LABELS[status];
+      el.textContent = lapsedVerified
+        ? 'Verified — your badge is hidden while your plan is inactive'
+        : (trialLocked
+          ? 'Unlocks after your first plan payment'
+          : STATUS_LABELS[status]);
     });
 
     // The button: shown when actionable (not verified/pending) AND the vendor is not
@@ -176,16 +183,20 @@
       if (status === 'failed') btn.textContent = 'Try again';
     });
 
-    // Upsell (Free vendors, not yet verified): shown ONLY on a confirmed Free plan.
+    // Upsell: Free not-yet-verified vendors ("get verified"), and lapsed-verified
+    // vendors (re-subscribe to show the badge again — no re-verification).
     $all('[data-lokali-verify-upsell]').forEach(function (el) {
-      el.style.display = (!isVerified && confirmedFree) ? '' : 'none';
+      el.style.display = confirmedFree && (!isVerified || lapsedVerified) ? '' : 'none';
+      if (lapsedVerified) el.textContent = 'Re-subscribe to show your badge →';
     });
 
-    // Per-state visibility helpers.
+    // Per-state visibility helpers. Lapsed-verified matches no state, so e.g.
+    // the "badge now shows on your public listing" note stays hidden (untrue).
+    var showStatus = lapsedVerified ? 'lapsed' : status;
     $all('[data-lokali-verify-show]').forEach(function (el) {
       var states = (el.getAttribute('data-lokali-verify-show') || '')
         .split(',').map(function (s) { return s.trim().toLowerCase(); });
-      el.style.display = states.indexOf(status) !== -1 ? '' : 'none';
+      el.style.display = states.indexOf(showStatus) !== -1 ? '' : 'none';
     });
 
     return status;
