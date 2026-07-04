@@ -326,6 +326,17 @@
       };
       return invalidateVendorMe(request('vendors', 'PATCH', 'vendor/me', body, true));
     },
+    // Vendor notification/visibility preferences (settings-page toggles).
+    // #57 QA 2026-07-04: the settings page has always guarded on these two
+    // methods existing — they never did, so toggle hydration AND per-toggle
+    // saves silently no-op'd. GET returns the flat prefs object; PATCH accepts
+    // a partial {key: bool} and upserts the vendor's row.
+    getPreferences: function () {
+      return request('vendors', 'GET', 'vendor/me/preferences', null, true);
+    },
+    updatePreferences: function (payload) {
+      return request('vendors', 'PATCH', 'vendor/me/preferences', payload || {}, true);
+    },
     uploadProfilePhoto: function (file) {
       var path = typeof window.LOKALI_UPLOAD_PHOTO_PATH === 'string' ? window.LOKALI_UPLOAD_PHOTO_PATH : 'vendor/me/profile-photo';
       var fieldName = typeof window.LOKALI_UPLOAD_PHOTO_FIELD === 'string' ? window.LOKALI_UPLOAD_PHOTO_FIELD : 'profile_photo';
