@@ -316,7 +316,12 @@
 
   waitForDeps(function () {
     window.Clerk.load({
-      ui: { ClerkUI: window.__internal_ClerkUICtor }
+      ui: { ClerkUI: window.__internal_ClerkUICtor },
+      // Brand ALL Clerk UI (sign-in/up widgets + the openUserProfile "Manage
+      // sign-in" modal) with Plus Jakarta Sans — the site font, already loaded
+      // site-wide — instead of Clerk's default sans. Global default; individual
+      // open/mount calls inherit it, so no per-call appearance is needed.
+      appearance: { variables: { fontFamily: "'Plus Jakarta Sans', sans-serif" } }
     }).then(function () {
       handleAuthState();
       mountClerkUI();

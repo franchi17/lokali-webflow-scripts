@@ -710,13 +710,32 @@
       // Log a listing view, deduped per browser session so one visit = one row
       // (the analytics page needs impressions for the views→contacts→inquiries
       // funnel). Fire-and-forget; never blocks render.
+      // A vendor previewing their OWN listing must NOT inflate their view count
+      // — the metric should mean "other people looked at you". So for a
+      // signed-in visitor we first resolve who they are (vendors.me is memoized,
+      // one cheap call) and skip the emit when it's the owner. Anonymous
+      // visitors — the common case — emit immediately, unchanged.
       try {
         var vkey = 'lok_viewed_' + vid;
-        if (vid != null && window.LokaliAPI && window.LokaliAPI.leads &&
+        var canView = vid != null && window.LokaliAPI && window.LokaliAPI.leads &&
             typeof window.LokaliAPI.leads.trackView === 'function' &&
-            !sessionStorage.getItem(vkey)) {
-          sessionStorage.setItem(vkey, '1');
-          window.LokaliAPI.leads.trackView(vid, 'listing');
+            !sessionStorage.getItem(vkey);
+        if (canView) {
+          var emitView = function () {
+            sessionStorage.setItem(vkey, '1');
+            window.LokaliAPI.leads.trackView(vid, 'listing');
+          };
+          var tok = window.LokaliAPI.getToken && window.LokaliAPI.getToken();
+          if (!tok) {
+            emitView();
+          } else {
+            // Signed in: skip only if this is the viewer's own vendor listing.
+            window.LokaliAPI.vendors.me().then(function (res) {
+              var mineId = res && res.data && res.data.vendor && res.data.vendor.id;
+              if (mineId != null && Number(mineId) === Number(vid)) return; // owner preview — don't count
+              emitView();
+            }, function () { emitView(); }); // not a vendor / lookup failed — count it
+          }
         }
       } catch (e) {}
       loadPortfolio(vid, v);

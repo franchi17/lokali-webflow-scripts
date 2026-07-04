@@ -240,9 +240,13 @@
     // Webflow has a single combined "Active Products / Services" card bound to
     // id="stat-active-products" — show the total of both, not products alone.
     setId('stat-active-products', activeServices + activeProducts);
-    // Profile views (this month). Needs an element with id="stat-profile-views" in Webflow.
-    // Reads vendor.profile_views_month_count from vendor/me (0 until the public profile gets views).
-    setId('stat-profile-views', (v.profile_views_month_count != null ? v.profile_views_month_count : 0));
+    // Profile views. Needs an element with id="stat-profile-views" in Webflow.
+    // vendor/me now returns profile_views_total computed LIVE from page_views
+    // (same source as the analytics page, so the two numbers agree). Falls back
+    // to the legacy month_count key, then 0.
+    var profileViews = v.profile_views_total != null ? v.profile_views_total
+      : (v.profile_views_month_count != null ? v.profile_views_month_count : 0);
+    setId('stat-profile-views', profileViews);
 
     // Listing strength card + top "Listing Strength" stat card (mirror same %)
     var pct = listingStrength(v, hasListing);
