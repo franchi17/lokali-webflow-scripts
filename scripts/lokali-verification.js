@@ -108,7 +108,10 @@
         .catch(function (err) {
           setButtonBusy(btn, false);
           console.error('[lokali-verification] start failed', err);
-          alert('Sorry — could not start verification. Please try again.');
+          // #48: the server refuses unpaid/free plans with a human-readable
+          // reason — surface it instead of the generic line.
+          var m = err && err.message ? String(err.message) : '';
+          alert(/plan|payment/i.test(m) ? m : 'Sorry — could not start verification. Please try again.');
         });
     });
   }
@@ -116,9 +119,13 @@
   // Verification is a paid perk. Whether the vendor is on Pro/Featured decides whether
   // they see the "Get Verified" button or the upsell. Cached once billing resolves so
   // renderStatus() can re-run (e.g. return-from-Stripe polling) without re-fetching.
-  // Tri-state so we NEVER nag a paying vendor: 'pro' | 'free' | 'unknown'. Only a
-  // confirmed 'free' shows the upsell; 'unknown' (billing still loading / cold-start
-  // failure) keeps the button, so a Pro/Featured vendor can't be misrendered as Free.
+  // Four states so we NEVER nag a paying vendor: 'pro' (paid + active) | 'trial'
+  // (Pro/Featured but no successful payment yet — founding free trial; #48: the
+  // server refuses to start verification until the first real charge, so show why
+  // instead of a dead button) | 'free' | 'unknown'. Only a confirmed 'free' shows
+  // the upsell; 'unknown' (billing still loading / cold-start failure) keeps the
+  // button, so a Pro/Featured vendor can't be misrendered as Free — the server
+  // gate enforces payment regardless.
   var _planState = 'unknown';
 
   function planIsPro(billingData) {
@@ -136,9 +143,10 @@
     status = (status || 'unverified').toLowerCase();
     if (!STATUS_LABELS[status]) status = 'unverified';
     var isVerified = status === 'verified';
-    if (planState === 'pro' || planState === 'free' || planState === 'unknown') _planState = planState;
+    if (planState === 'pro' || planState === 'trial' || planState === 'free' || planState === 'unknown') _planState = planState;
     else planState = _planState;
     var confirmedFree = planState === 'free';
+    var trialLocked = planState === 'trial' && !isVerified && status !== 'pending';
 
     // The "Get Verified" card disappears once verified (only if the wrapper opts in;
     // the settings card omits this so it can keep showing the earned badge).
@@ -151,17 +159,20 @@
       el.style.display = isVerified ? '' : 'none';
     });
 
-    // Status line.
+    // Status line. Trial-locked vendors get the WHY instead of "Not verified".
     $all('[data-lokali-verify-status]').forEach(function (el) {
-      el.textContent = STATUS_LABELS[status];
+      el.textContent = trialLocked
+        ? 'Unlocks after your first plan payment'
+        : STATUS_LABELS[status];
     });
 
     // The button: shown when actionable (not verified/pending) AND the vendor is not
-    // confirmed Free. 'unknown' still shows it — optimistic, so a cold-start billing
-    // miss never hides the button from a paying vendor.
+    // confirmed Free or trial-locked. 'unknown' still shows it — optimistic, so a
+    // cold-start billing miss never hides the button from a paying vendor (#48: the
+    // server enforces payment anyway).
     $all('[data-lokali-verify]').forEach(function (btn) {
       var actionable = !(status === 'pending' || isVerified);
-      btn.style.display = (actionable && !confirmedFree) ? '' : 'none';
+      btn.style.display = (actionable && !confirmedFree && !trialLocked) ? '' : 'none';
       if (status === 'failed') btn.textContent = 'Try again';
     });
 
@@ -205,7 +216,13 @@
     }
     return api.plans.getMyBilling().then(function (res) {
       if (res && !res.error && res.data && hasPlanInfo(res.data)) {
-        return planIsPro(res.data) ? 'pro' : 'free';
+        if (!planIsPro(res.data)) return 'free';
+        // Paid plan — but a founding trial hasn't PAID yet (#48). billing_GET
+        // only ever reports 'active'|'trialing' for a live sub, so anything
+        // that isn't explicitly 'trialing' stays optimistic 'pro'.
+        var st = String(res.data.plan_status
+          || (res.data.subscription && res.data.subscription.status) || '').toLowerCase();
+        return st === 'trialing' ? 'trial' : 'pro';
       }
       return retryOrUnknown();
     }).catch(retryOrUnknown);
