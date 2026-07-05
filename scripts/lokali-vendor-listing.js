@@ -104,6 +104,10 @@
     // column, so they clearly read as links rather than outreach buttons.
     ".vl-links-row{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:12px;}",
     ".vl-meta-link{display:inline-flex;align-items:center;gap:5px;color:#6002EE;font-size:12.5px;font-weight:600;text-decoration:none;min-width:0;}",
+    // Optical centering: lowercase-heavy labels (domains, @handles) carry their
+    // visual weight below the geometric midline, so a mathematically centered
+    // icon reads high — nudge it down half a pixel.
+    ".vl-meta-link>span:not(.vl-link-label){transform:translateY(.5px);}",
     ".vl-meta-link:hover .vl-link-label{text-decoration:underline;}",
     ".vl-meta-link .vl-link-label{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}",
     // Save button — mirrors the market heart (lokali-favorites.js): white base,
