@@ -688,6 +688,7 @@ const LokaliProductsPage = (() => {
 
     updatePriceVisibility();
     resetImagePreview();
+    _pendingGalleryPhotos = [];
     renderGallery(null);
     setVideoUrl('');
   };
@@ -808,6 +809,11 @@ const LokaliProductsPage = (() => {
   const galleryInput = () => document.getElementById('lok-product-gallery-input');
 
   let _galleryPhotos = [];
+  // Add-mode staging: photos uploaded to storage but not yet attached (a brand-new
+  // product has no id until it's saved). On Save the product is created, then each
+  // of these is attached to its id — so vendors add photos while creating an item
+  // exactly like when editing, with no "save first, then reopen" step.
+  let _pendingGalleryPhotos = [];
 
   const renderGallery = async (productId) => {
     const host = galleryHost();
@@ -829,11 +835,10 @@ const LokaliProductsPage = (() => {
         ' images per product so customers see more before they buy.</div>';
       return;
     }
-    // New product not saved yet
+    // New product (no id yet): stage photos in the browser — they attach to the
+    // product on Save, so vendors add photos while creating, not after.
     if (productId == null) {
-      body.innerHTML = title +
-        '<div style="color:#4A4761;font-size:14px;line-height:1.5;">' +
-        'Save this product first, then reopen it to add up to ' + (_maxProductPhotos || 5) + ' gallery photos.</div>';
+      renderPendingGallery(body, title);
       return;
     }
 
@@ -893,6 +898,59 @@ const LokaliProductsPage = (() => {
     });
   };
 
+  // Add-mode gallery: renders the staged (not-yet-attached) photos. Add uploads to
+  // storage and pushes here; remove/reorder are local array ops; the first photo is
+  // the cover. All of these attach to the product on Save (see handleSave).
+  const renderPendingGallery = (body, title) => {
+    const cap = _maxProductPhotos || 5;
+    const count = _pendingGalleryPhotos.length;
+    const arrowStyle = 'position:absolute;bottom:4px;width:22px;height:22px;border:none;border-radius:50%;background:rgba(26,24,41,.72);color:#fff;font-size:13px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;';
+    let html = title +
+      '<div style="font-size:12px;color:#8E8BA6;margin-bottom:8px;">' + count + ' of ' + cap + ' photos · the first photo is your cover' +
+      (count > 1 ? ' · use ‹ › to reorder' : '') + '</div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:10px;">';
+    _pendingGalleryPhotos.forEach((p, i) => {
+      html += '<div style="position:relative;width:84px;height:84px;border-radius:10px;overflow:hidden;border:1px solid #eeedf6;background:#F7F6FC;">' +
+        '<img data-pending-idx="' + i + '" alt="" style="width:100%;height:100%;object-fit:cover;display:block;">' +
+        '<button type="button" data-pending-remove="' + i + '" aria-label="Remove photo" ' +
+        'style="position:absolute;top:4px;right:4px;width:22px;height:22px;border:none;border-radius:50%;background:rgba(26,24,41,.72);color:#fff;font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;">×</button>' +
+        (i > 0 ? '<button type="button" data-pending-move="' + i + '" data-move-dir="-1" aria-label="Move photo earlier" style="' + arrowStyle + 'left:4px;">‹</button>' : '') +
+        (i < count - 1 ? '<button type="button" data-pending-move="' + i + '" data-move-dir="1" aria-label="Move photo later" style="' + arrowStyle + 'right:4px;bottom:4px;top:auto;">›</button>' : '') +
+        '</div>';
+    });
+    if (count < cap) {
+      html += '<button type="button" id="lok-gallery-add" ' +
+        'style="width:84px;height:84px;border-radius:10px;border:1.5px dashed #6002ee;background:#fff;color:#6002ee;font-size:28px;font-weight:300;cursor:pointer;display:flex;align-items:center;justify-content:center;">+</button>';
+    }
+    html += '</div>';
+    html += '<div style="font-size:12px;color:#8E8BA6;margin-top:8px;">' +
+      (count ? 'These photos are added to your product when you hit Save.' : 'Add up to ' + cap + ' photos — they’re saved with your product.') + '</div>';
+    body.innerHTML = html;
+    body.querySelectorAll('img[data-pending-idx]').forEach((im) => {
+      const gp = _pendingGalleryPhotos[parseInt(im.getAttribute('data-pending-idx'), 10)];
+      if (gp) im.src = photoUrl(gp.url);
+    });
+    const addBtn = document.getElementById('lok-gallery-add');
+    if (addBtn) addBtn.addEventListener('click', () => { const gi = galleryInput(); if (gi) gi.click(); });
+    body.querySelectorAll('button[data-pending-remove]').forEach((b) => {
+      b.addEventListener('click', () => {
+        _pendingGalleryPhotos.splice(parseInt(b.getAttribute('data-pending-remove'), 10), 1);
+        renderGallery(null);
+      });
+    });
+    body.querySelectorAll('button[data-pending-move]').forEach((b) => {
+      b.addEventListener('click', () => {
+        const i = parseInt(b.getAttribute('data-pending-move'), 10);
+        const dir = parseInt(b.getAttribute('data-move-dir'), 10);
+        const j = i + dir;
+        if (j < 0 || j >= _pendingGalleryPhotos.length) return;
+        const [m] = _pendingGalleryPhotos.splice(i, 1);
+        _pendingGalleryPhotos.splice(j, 0, m);
+        renderGallery(null);
+      });
+    });
+  };
+
   const moveGalleryPhoto = async (photoId, dir) => {
     if (_galleryBusy || !editingId) return;
     const i = _galleryPhotos.findIndex((p) => String(p.id) === String(photoId));
@@ -922,8 +980,34 @@ const LokaliProductsPage = (() => {
   const onGalleryFile = async () => {
     const gi = galleryInput();
     const file = gi?.files?.[0];
-    if (!file || !editingId || _galleryBusy) { if (gi) gi.value = ''; return; }
+    if (!file || _galleryBusy) { if (gi) gi.value = ''; return; }
     if (file.type.indexOf('image/') !== 0) { if (gi) gi.value = ''; return; }
+
+    // Add mode (no product id yet): upload to storage and stage locally — the
+    // photo attaches to the product on Save. No addPhoto call (nothing to attach to).
+    if (!editingId) {
+      const cap = _maxProductPhotos || 5;
+      if (_pendingGalleryPhotos.length >= cap) { if (gi) gi.value = ''; return; }
+      _galleryBusy = true;
+      const addBtn0 = document.getElementById('lok-gallery-add');
+      if (addBtn0) { addBtn0.textContent = '…'; addBtn0.style.pointerEvents = 'none'; }
+      try {
+        const up = await window.LokaliAPI.products.uploadProductImage(file);
+        if (up.error) throw new Error(up.error);
+        const pp = up.data?.path || up.data?.image_path || null;
+        const purl = up.data?.url || up.data?.image_url || (pp ? (XANO_ORIGIN + pp) : null);
+        if (!purl) throw new Error('Upload returned no URL');
+        _pendingGalleryPhotos.push({ url: purl });
+      } catch (e) {
+        alert('Photo upload failed. Please try again.');
+      } finally {
+        _galleryBusy = false;
+        if (gi) gi.value = '';
+        renderGallery(null);
+      }
+      return;
+    }
+
     _galleryBusy = true;
     const addBtn = document.getElementById('lok-gallery-add');
     if (addBtn) { addBtn.textContent = '…'; addBtn.style.pointerEvents = 'none'; }
@@ -1074,8 +1158,13 @@ const LokaliProductsPage = (() => {
 
       // Unified photos (Pro/Featured): the gallery is the cover source — the first
       // photo becomes the card/listing thumbnail. The standalone image field is hidden.
-      if (_isProPlan && Array.isArray(_galleryPhotos) && _galleryPhotos.length) {
-        imageUrl = _galleryPhotos[0].image_url || imageUrl;
+      // Edit mode reads the attached gallery; add mode reads the staged photos.
+      if (_isProPlan) {
+        if (Array.isArray(_galleryPhotos) && _galleryPhotos.length) {
+          imageUrl = _galleryPhotos[0].image_url || imageUrl;
+        } else if (_pendingGalleryPhotos.length) {
+          imageUrl = _pendingGalleryPhotos[0].url || imageUrl;
+        }
       }
 
       const payload = buildPayload(imageUrl);
@@ -1098,6 +1187,19 @@ const LokaliProductsPage = (() => {
         }
         throw new Error(result.error);
       }
+
+      // Add-mode staging: the product now exists, so attach the photos we staged
+      // while it had no id. First staged photo is already the cover (set above).
+      if (!editingId && _isProPlan && _pendingGalleryPhotos.length) {
+        const newId = result.data?.id ?? result.data?.product?.id
+          ?? (Array.isArray(result.data?.records) ? result.data.records[0]?.id : null) ?? null;
+        if (newId != null) {
+          for (let i = 0; i < _pendingGalleryPhotos.length; i++) {
+            try { await window.LokaliAPI.products.addPhoto(newId, _pendingGalleryPhotos[i].url, i); } catch (e) {}
+          }
+        }
+      }
+      _pendingGalleryPhotos = [];
 
       await loadData();
       showListView();
