@@ -10,6 +10,28 @@ const LokaliServicesPage = (() => {
     (document.head || document.documentElement).appendChild(s);
   })();
 
+  // #62 field-alignment + #61 required markers. The Webflow detail/pricing field
+  // wrappers carry a stray margin:0 20px that insets them ~20px from the section
+  // headers, video, checkboxes and action buttons (all at the panel column) —
+  // making the field block look indented with ragged right edges. Zero those
+  // margins so every row shares one left/right edge. Scoped to the form view so
+  // nothing else on the page is affected. `.lok-req` styles the required "*".
+  (function injectFormPolishStyle() {
+    if (document.getElementById('lok-services-form-polish-style')) return;
+    var s = document.createElement('style');
+    s.id = 'lok-services-form-polish-style';
+    s.textContent =
+      '#services-form-view .div-block-84,' +
+      '#services-form-view .div-block-85,' +
+      '#services-form-view .div-block-89,' +
+      '#services-form-view #price-wrap-fixed,' +
+      '#services-form-view #price-wrap-starting,' +
+      '#services-form-view #price-wrap-range,' +
+      '#services-form-view #price-wrap-quote{margin-left:0!important;margin-right:0!important;}' +
+      '#services-form-view .form-text-header .lok-req{color:#E0245E;font-weight:700;}';
+    (document.head || document.documentElement).appendChild(s);
+  })();
+
   let services     = [];
   let editingId    = null;
   let imageRemoved = false;
@@ -1341,8 +1363,26 @@ const LokaliServicesPage = (() => {
     requestAnimationFrame(reconcileListDom);
   };
 
+  // #61 required-field markers. The Webflow field labels are static, so mark the
+  // genuinely-required ones once (Service = service name only; everything else is
+  // optional per the Xano schema). validate() already blocks an empty name.
+  const markRequiredFields = () => {
+    ['service-name'].forEach((id) => {
+      const inp = document.getElementById(id);
+      const label = inp && inp.previousElementSibling;
+      if (!label || !label.classList || !label.classList.contains('form-text-header')) return;
+      if (label.querySelector('.lok-req')) return;
+      const star = document.createElement('span');
+      star.className = 'lok-req';
+      star.setAttribute('aria-hidden', 'true');
+      star.textContent = ' *';
+      label.appendChild(star);
+    });
+  };
+
   const bindEvents = () => {
 
+    markRequiredFields();
     el.addBtn()?.addEventListener('click', () => openForm(null));
 
     el.pillAll()?.addEventListener('click',      () => setStatusFilter('all'));

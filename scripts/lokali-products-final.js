@@ -12,6 +12,24 @@ const LokaliProductsPage = (() => {
     (document.head || document.documentElement).appendChild(s);
   })();
 
+  // #62 field-alignment + #61 required markers. Product name/description wrappers
+  // carry a stray margin:0 20px (inset ~20px from the section headers and other
+  // fields); two fields carry a stray margin-right:20px (ragged right edge). Zero
+  // them so every row shares one left/right edge. Scoped to the form view.
+  // `.lok-req` styles the required "*".
+  (function injectFormPolishStyle() {
+    if (document.getElementById('lok-products-form-polish-style')) return;
+    var p = document.createElement('style');
+    p.id = 'lok-products-form-polish-style';
+    p.textContent =
+      '#products-form-view .div-block-84,' +
+      '#products-form-view .div-block-85{margin-left:0!important;margin-right:0!important;}' +
+      '#products-form-view .div-block-121,' +
+      '#products-form-view .div-block-123{margin-right:0!important;}' +
+      '#products-form-view .form-text-header .lok-req{color:#E0245E;font-weight:700;}';
+    (document.head || document.documentElement).appendChild(p);
+  })();
+
   let products     = [];
   let editingId    = null;
   let imageRemoved = false;
@@ -954,7 +972,7 @@ const LokaliProductsPage = (() => {
     const desired = _galleryPhotos.length ? _galleryPhotos[0].image_url : null;
     if (prod && prod.image_url === desired) return;
     const payload = buildPayload(desired);
-    if (!payload.product_name) return; // form mid-edit/invalid — Save will handle it
+    if (!payload.product_name || !payload.product_description) return; // form mid-edit/invalid — Save will handle it
     const res = await window.LokaliAPI.products.update(editingId, payload);
     if (res && !res.error && prod) prod.image_url = desired;
   };
@@ -998,6 +1016,7 @@ const LokaliProductsPage = (() => {
 
   const validate = (payload) => {
     if (!payload.product_name)  return 'Please enter a product name.';
+    if (!payload.product_description) return 'Please enter a product description.';
     if (!payload.is_quote_based) {
       const p = payload.price;
       if (p == null || p <= 0) return 'Please enter a valid price, or check "Price on request".';
@@ -1220,8 +1239,25 @@ const LokaliProductsPage = (() => {
     requestAnimationFrame(reconcileListDom);
   };
 
+  // #61 required-field markers. Product name AND description are both required by
+  // the Xano schema (validate() enforces both). Mark the static Webflow labels.
+  const markRequiredFields = () => {
+    ['product-name', 'product-description'].forEach((id) => {
+      const inp = document.getElementById(id);
+      const label = inp && inp.previousElementSibling;
+      if (!label || !label.classList || !label.classList.contains('form-text-header')) return;
+      if (label.querySelector('.lok-req')) return;
+      const star = document.createElement('span');
+      star.className = 'lok-req';
+      star.setAttribute('aria-hidden', 'true');
+      star.textContent = ' *';
+      label.appendChild(star);
+    });
+  };
+
   const bindEvents = () => {
 
+    markRequiredFields();
     el.addBtn()?.addEventListener('click', () => openForm(null));
 
     el.pillAll()?.addEventListener('click',      () => setStatusFilter('all'));
