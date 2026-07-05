@@ -87,6 +87,69 @@
     }).catch(function () { return fb; });
   }
 
+  // ---- click-to-enlarge lightbox (#63) ----------------------------------
+  // Self-contained (no external lib). Lazily builds a full-screen overlay the
+  // first time a photo is clicked. Dismiss on ✕ / Esc / backdrop click; prev/next
+  // (arrows + ← → keys) when there's more than one photo. The <img> src is always
+  // set via the property from a known photo URL (never innerHTML) — SEC-001 safe.
+  var _lbApi = null;
+  function ensureLightbox() {
+    if (_lbApi) return _lbApi;
+    var FONT = '"Plus Jakarta Sans",system-ui,sans-serif';
+    var st = document.createElement('style');
+    st.textContent = [
+      '.lok-lb{position:fixed;inset:0;z-index:2147483000;display:none;align-items:center;justify-content:center;background:rgba(20,16,40,.9);}',
+      '.lok-lb.lok-lb-open{display:flex;}',
+      '.lok-lb-img{max-width:92vw;max-height:88vh;border-radius:10px;box-shadow:0 16px 60px rgba(0,0,0,.55);user-select:none;-webkit-user-drag:none;}',
+      '.lok-lb-btn{position:absolute;background:rgba(255,255,255,.16);border:none;color:#fff;cursor:pointer;border-radius:50%;width:44px;height:44px;font:400 24px/1 ' + FONT + ';display:flex;align-items:center;justify-content:center;transition:background .15s;}',
+      '.lok-lb-btn:hover{background:rgba(255,255,255,.3);}',
+      '.lok-lb-close{top:18px;right:18px;}',
+      '.lok-lb-prev{left:18px;top:50%;transform:translateY(-50%);}',
+      '.lok-lb-next{right:18px;top:50%;transform:translateY(-50%);}',
+      '.lok-lb-count{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);color:#fff;font:600 13px/1 ' + FONT + ';background:rgba(255,255,255,.16);border-radius:100px;padding:7px 14px;}'
+    ].join('');
+    (document.head || document.documentElement).appendChild(st);
+    var mkBtn = function (cls, txt, label) {
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'lok-lb-btn ' + cls;
+      b.textContent = txt; b.setAttribute('aria-label', label); return b;
+    };
+    var ov = document.createElement('div'); ov.className = 'lok-lb'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true');
+    var img = document.createElement('img'); img.className = 'lok-lb-img'; img.alt = '';
+    var close = mkBtn('lok-lb-close', '✕', 'Close');
+    var prev = mkBtn('lok-lb-prev', '‹', 'Previous photo');
+    var next = mkBtn('lok-lb-next', '›', 'Next photo');
+    var count = document.createElement('div'); count.className = 'lok-lb-count';
+    ov.appendChild(img); ov.appendChild(close); ov.appendChild(prev); ov.appendChild(next); ov.appendChild(count);
+    document.body.appendChild(ov);
+    var urls = [], idx = 0;
+    var render = function () {
+      img.src = urls[idx] || '';
+      var multi = urls.length > 1;
+      count.textContent = (idx + 1) + ' / ' + urls.length;
+      prev.style.display = next.style.display = count.style.display = multi ? '' : 'none';
+    };
+    var go = function (d) { if (!urls.length) return; idx = (idx + d + urls.length) % urls.length; render(); };
+    var closeIt = function () { ov.classList.remove('lok-lb-open'); img.removeAttribute('src'); document.body.style.overflow = ''; };
+    close.addEventListener('click', closeIt);
+    prev.addEventListener('click', function (e) { e.stopPropagation(); go(-1); });
+    next.addEventListener('click', function (e) { e.stopPropagation(); go(1); });
+    img.addEventListener('click', function (e) { e.stopPropagation(); });
+    ov.addEventListener('click', function (e) { if (e.target === ov) closeIt(); });
+    document.addEventListener('keydown', function (e) {
+      if (!ov.classList.contains('lok-lb-open')) return;
+      if (e.key === 'Escape') closeIt();
+      else if (e.key === 'ArrowLeft') go(-1);
+      else if (e.key === 'ArrowRight') go(1);
+    });
+    _lbApi = { open: function (list, start) {
+      urls = (list || []).filter(Boolean); if (!urls.length) return;
+      idx = Math.max(0, Math.min(start || 0, urls.length - 1));
+      render(); ov.classList.add('lok-lb-open'); document.body.style.overflow = 'hidden';
+    } };
+    return _lbApi;
+  }
+  function openLightbox(urls, start) { ensureLightbox().open(urls, start); }
+
   // ---- gallery ----------------------------------------------------------
   function buildGallery(images) {
     var gallery = $('vd-gallery');
@@ -101,6 +164,12 @@
       f.className = 'vd-frame ' + (i === 0 ? 'vd-frame-main' : 'vd-frame-peek');
       var img = document.createElement('img');
       img.src = src; img.alt = '';
+      img.style.cursor = 'zoom-in';
+      // Click to enlarge — but ignore the click that ends a drag-scroll (#63).
+      f.addEventListener('click', function () {
+        if (gallery.__lokDragged) { gallery.__lokDragged = false; return; }
+        openLightbox(list, i);
+      });
       f.appendChild(img);
       gallery.appendChild(f);
       if (pips) {
@@ -122,10 +191,10 @@
       for (var i = 0; i < pipEls.length; i++) pipEls[i].classList.toggle('vd-pip-active', i === idx);
     }, { passive: true });
     var down = false, startX = 0, startScroll = 0;
-    strip.addEventListener('mousedown', function (e) { down = true; startX = e.pageX; startScroll = strip.scrollLeft; });
+    strip.addEventListener('mousedown', function (e) { down = true; startX = e.pageX; startScroll = strip.scrollLeft; strip.__lokDragged = false; });
     strip.addEventListener('mouseleave', function () { down = false; });
     strip.addEventListener('mouseup', function () { down = false; });
-    strip.addEventListener('mousemove', function (e) { if (!down) return; e.preventDefault(); strip.scrollLeft = startScroll - (e.pageX - startX); });
+    strip.addEventListener('mousemove', function (e) { if (!down) return; e.preventDefault(); if (Math.abs(e.pageX - startX) > 6) strip.__lokDragged = true; strip.scrollLeft = startScroll - (e.pageX - startX); });
   }
 
   // ---- showcase video (YouTube / Vimeo) ---------------------------------
