@@ -21,15 +21,9 @@
   var currentVendorSlug = null; // set during hydrate(); used to build clean item/about URLs
   var openAboutOnLoad = false; // true when the URL is /{slug}/about — open the About tab once loaded
 
-  // #52 — the website/Instagram chips under the contact CTA floated ~80px
-  // apart (loose, unintentional). Pull them into one tight centered row.
-  (function injectLinkRowCss() {
-    if (document.getElementById('lok-vl-linkrow-css')) return;
-    var st = document.createElement('style');
-    st.id = 'lok-vl-linkrow-css';
-    st.textContent = '.div-block-179{display:flex !important;justify-content:center !important;align-items:center !important;gap:12px !important;}';
-    (document.head || document.documentElement).appendChild(st);
-  })();
+  // Website/Instagram link-row layout now lives in PILL_CSS (.vl-link-chip);
+  // the chips flex so a lone survivor (vendor has only one of the two) goes
+  // full width instead of sitting in half a grid cell.
 
   // ---- tiny DOM helpers -------------------------------------------------
   function $(sel, root) { return (root || document).querySelector(sel); }
@@ -86,22 +80,91 @@
     return s;
   }
 
-  // Injected once: turns #vl-category into a card-style pill and aligns the
-  // founding/verified badge colors with the vendor card on The Market.
+  // Injected once: turns #vl-category into a card-style pill, aligns the hero
+  // badges with the vendor-card palette on The Market, restyles the
+  // website/Instagram links as contact-family chips, and gives #vl-save the
+  // market heart language. Appended after the Webflow stylesheet, so these
+  // single-class rules win the cascade at equal specificity.
   var PILL_CSS = [
     "#vl-category.vl-cat-pill{display:inline-flex;align-items:center;gap:5px;border-radius:100px;padding:3px 10px;font-size:11px;font-weight:500;line-height:1.2;}",
-    ".vl-badge.vl-badge-founding{background:rgba(201,162,42,.22);color:#C9A22A;border:.5px solid rgba(201,162,42,.45);}",
-    ".vl-badge.vl-badge-verified{background:rgba(0,0,228,.16);color:#0000E4;border:.5px solid rgba(0,0,228,.4);}",
+    // Badges — exact palette of .badge-founding / .badge-verified on the market cards.
+    ".vl-badge.vl-badge-founding{background:#FBE7A0;color:#9A6B00;border:1px solid rgba(154,107,0,.32);}",
+    ".vl-badge.vl-badge-verified{background:#D2DEFF;color:#1730C9;border:1px solid rgba(23,48,201,.3);}",
     ".vl-avatar.vl-avatar-initials{display:flex;align-items:center;justify-content:center;}",
     ".vl-avatar-txt{color:#6002EE;font-weight:600;font-size:30px;letter-spacing:.5px;font-family:'Plus Jakarta Sans',sans-serif;line-height:1;}",
-    // Saved state for the #vl-save button: violet-tinted, filled heart, "Saved".
-    ".vl-save.vl-save-on{background-color:#F3EBFF;border-color:#6002EE;color:#6002EE;}",
-    ".vl-save.vl-save-on svg,.vl-save.vl-save-on svg path{fill:currentColor;}"
+    // Contact buttons: subtle lift on hover + visible keyboard focus.
+    ".vl-ch{transition:transform .12s,box-shadow .12s;}",
+    ".vl-ch:hover{transform:translateY(-1px);box-shadow:0 3px 10px rgba(26,24,41,.08);}",
+    ".vl-ch:focus-visible,.vl-link-chip:focus-visible,.vl-save:focus-visible{outline:2px solid #6002EE;outline-offset:2px;}",
+    // Website/Instagram: labeled chips in the same family as the contact
+    // buttons (tint bg + deep text + soft border) but quieter — they're not
+    // review-gate outreach channels, so they must not outrank Call/Text/Email.
+    ".div-block-179{display:flex !important;gap:8px !important;width:100%;grid-column-gap:8px !important;grid-row-gap:8px !important;}",
+    ".vl-link-chip{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:8px;padding:8px 6px;font-size:12px;font-weight:500;line-height:1;text-decoration:none;white-space:nowrap;transition:transform .12s,box-shadow .12s;}",
+    ".vl-link-chip:hover{transform:translateY(-1px);box-shadow:0 3px 10px rgba(26,24,41,.08);}",
+    ".vl-link-chip.vl-link-web{color:#4A4761;background:#F7F6FC;border:.5px solid #DDDBEA;}",
+    ".vl-link-chip.vl-link-ig{color:#B42A82;background:#FDEFF7;border:.5px solid #F2C7E2;}",
+    // Room for the two labeled chips side by side on desktop.
+    ".vl-channels{min-width:180px;}",
+    // Save button — mirrors the market heart (lokali-favorites.js): white base,
+    // outline heart; saved = violet tint + filled #6002EE heart.
+    ".vl-save{background-color:#fff;border:.5px solid #EEEDF6;color:#1A1829;font-size:13px;font-weight:600;padding:8px 14px;grid-column-gap:7px;grid-row-gap:7px;transition:background .12s,border-color .12s,transform .12s;}",
+    ".vl-save:hover{border-color:#D4AAFD;}",
+    ".vl-save svg{width:15px;height:15px;display:block;}",
+    ".vl-save .vl-heart{fill:none;stroke:#6B6880;stroke-width:1.8;transition:fill .12s,stroke .12s;}",
+    ".vl-save.vl-save-on{background-color:#F3EBFF;border-color:#D4AAFD;color:#6002EE;}",
+    ".vl-save.vl-save-on .vl-heart{fill:#6002EE;stroke:#6002EE;}",
+    // Mobile: Webflow already stacks the hero; tighten the tall button pile
+    // into a 2×2 contact grid, link row + save full width, ≥44px tap targets.
+    "@media (max-width:767px){",
+    ".vl-channels{display:grid !important;grid-template-columns:1fr 1fr;gap:8px;min-width:0;width:100%;}",
+    ".div-block-179{grid-column:1 / -1;}",
+    ".vl-ch,.vl-link-chip,.vl-save{min-height:44px;}",
+    ".vl-ch{font-size:14px;}",
+    ".vl-link-chip{font-size:13px;}",
+    ".vl-save{font-size:14px;}",
+    ".vl-hero-right{width:100%;align-items:stretch;}",
+    "}"
   ].join('');
   function injectStyles() {
     if (document.getElementById('vl-pill-styles')) return;
     var s = document.createElement('style'); s.id = 'vl-pill-styles'; s.textContent = PILL_CSS;
     document.head.appendChild(s);
+  }
+
+  // ---- hero chrome (badges / link chips / save button markup) ------------
+  // The hero is static Webflow DOM, so these swaps run once at init, before
+  // any data arrives; initContact() later only sets hrefs / hides the anchors.
+  var ICON_CROWN = ASSET + '69f4dbb3533f0ee2046ab0fb_crown-solid.png';      // = market card founding badge
+  var ICON_GLOBE = ASSET + '69f8b5e89bc57b40690cbc77_globe-solid.png';
+  var ICON_IG    = ASSET + '69f8b5e8a4030414bb433441_instagram-brands-solid.png';
+  var HEART_PATH = 'M12 20.5l-1.4-1.27C5.6 14.86 2.5 12.07 2.5 8.6 2.5 6.1 4.5 4.1 7 4.1c1.5 0 2.95.7 3.9 1.81C11.85 4.8 13.3 4.1 14.8 4.1c2.5 0 4.5 2 4.5 4.5 0 3.47-3.1 6.26-8.1 10.63L12 20.5z'; // same heart as the market cards
+
+  function styleHeroChrome() {
+    // Founding badge: star SVG → the crown used on the market cards.
+    var fb = document.getElementById('vl-badge-founding');
+    if (fb) {
+      var star = fb.querySelector('svg');
+      if (star) fb.replaceChild(maskIcon(ICON_CROWN, '#9A6B00', 11), star);
+    }
+    // Website/Instagram: bare icon squares → labeled chips.
+    function makeChip(id, cls, iconUrl, color, label) {
+      var a = document.getElementById(id);
+      if (!a) return;
+      a.className = 'vl-link-chip ' + cls; // drop the w-node grid classes; flex row now
+      a.innerHTML = '';
+      a.appendChild(maskIcon(iconUrl, color, 13));
+      a.appendChild(document.createTextNode(label));
+    }
+    makeChip('vl-website', 'vl-link-web', ICON_GLOBE, '#4A4761', 'Website');
+    makeChip('vl-ig', 'vl-link-ig', ICON_IG, '#B42A82', 'Instagram');
+    // Save button: rebuild content as market heart + label.
+    var btn = document.getElementById('vl-save');
+    if (btn) {
+      btn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="vl-heart" d="' + HEART_PATH + '"/></svg><span class="vl-save-label">Save vendor</span>';
+      btn.setAttribute('role', 'button');
+      btn.setAttribute('aria-pressed', 'false');
+    }
   }
 
   // Restyle the hero category text as the colored pill from the vendor card.
@@ -152,6 +215,8 @@
     var btn = document.getElementById('vl-save');
     if (!btn) return;
     btn.classList.toggle('vl-save-on', !!saved);
+    btn.setAttribute('aria-pressed', saved ? 'true' : 'false');
+    btn.title = saved ? 'Saved' : 'Save vendor';
     var label = btn.querySelector('.vl-save-label');
     if (label) { label.textContent = saved ? 'Saved' : 'Save vendor'; return; }
     // No label span — update the button's own text node, preserving the icon.
@@ -1125,7 +1190,7 @@
     });
   }
 
-  function init() { injectStyles(); initTabs(); initSave(); hydrate(); }
+  function init() { injectStyles(); styleHeroChrome(); initTabs(); initSave(); hydrate(); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
 })();
