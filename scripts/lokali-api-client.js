@@ -705,6 +705,12 @@
     report: function (reviewId, reason) {
       return request('vendors', 'POST', 'vendor/me/reviews/' + encodeURIComponent(reviewId) + '/report', { reason: reason }, true);
     },
+    // Vendor-owner posts a public reply to a review on their own listing
+    // (vendors group — ownership enforced server-side). Writes vendor_reply;
+    // shows as "Response from the owner" on the public listing.
+    reply: function (reviewId, replyText) {
+      return request('vendors', 'PATCH', 'vendor/me/reviews/' + encodeURIComponent(reviewId) + '/reply', { reply: replyText }, true);
+    },
     // Signed-in user flags a VENDOR as fraudulent (mirror of report above).
     // Never hides the listing; queues a vendor_reports row for moderation.
     // category: scam | not_real | misleading | inappropriate | other.

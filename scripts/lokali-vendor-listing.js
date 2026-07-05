@@ -773,6 +773,8 @@
       '.vl-rev-report-send{font:600 12px/1 ' + FONT + ';color:#fff;background:#6002EE;border:none;border-radius:100px;padding:8px 16px;cursor:pointer;}',
       '.vl-rev-report-cancel{font:500 12px/1 ' + FONT + ';color:#8E8BA6;background:none;border:none;padding:0;cursor:pointer;}',
       '.vl-rev-report-done{margin-top:10px;font:600 11.5px/1.4 ' + FONT + ';color:#6002EE;}',
+      '.vl-rev-reply-btn{display:inline-block;margin-top:10px;margin-right:14px;font:600 11.5px/1 ' + FONT + ';color:#6002EE;background:#F3EBFF;border:none;border-radius:100px;padding:6px 14px;cursor:pointer;}',
+      '.vl-rev-reply-btn:hover{background:#E9DCFF;}',
       '.vl-vreport{margin-top:28px;padding-top:14px;border-top:.5px solid #EEEDF6;}',
       '.vl-vreport-link{font:500 11.5px/1 ' + FONT + ';color:#8E8BA6;background:none;border:none;padding:0;cursor:pointer;text-decoration:underline;}',
       '.vl-vreport-link:hover{color:#EE0290;}',
@@ -917,10 +919,13 @@
     ta.focus();
   }
 
-  // ---- vendor-owner fraud flagging ---------------------------------------
-  // If the signed-in user OWNS this listing, each review card gets a quiet
-  // "Report" link → inline reason box → POST vendor/me/reviews/{id}/report.
-  // Reporting never hides the review — it queues for Lokali moderation.
+  // ---- vendor-owner review controls --------------------------------------
+  // If the signed-in user OWNS this listing, each review card gets owner-only
+  // controls: a "Reply" button → inline box → PATCH vendor/me/reviews/{id}/reply
+  // (public "Response from the owner"), shown only while the review has no reply
+  // yet; and a quiet "Report" link → POST .../report for fraudulent reviews.
+  // Neither ever hides the review — replies are public, reports queue for
+  // Lokali moderation. One vendors.me() resolves the owner for both.
   function maybeAddReportButtons(panel, vendorId) {
     var API = window.LokaliAPI;
     if (!API || !API.auth || !API.auth.getToken || !API.auth.getToken()) return;
@@ -929,7 +934,16 @@
       var v = (vm && vm.data) || null;
       if (v && v.vendor) v = v.vendor; // unwrap if nested
       if (!v || String(v.id) !== String(vendorId)) return; // not the owner
+      var canReply = !!API.reviews.reply;
       $all('[data-rev-id]', panel).forEach(function (card) {
+        // Reply — only when this review has no owner response yet.
+        if (canReply && !card.querySelector('.vl-rev-reply') && !card.querySelector('.vl-rev-reply-btn')) {
+          var rbtn = ce('button', 'vl-rev-reply-btn');
+          rbtn.type = 'button';
+          rbtn.textContent = 'Reply';
+          rbtn.addEventListener('click', function () { openReplyBox(card, rbtn); });
+          card.appendChild(rbtn);
+        }
         if (card.querySelector('.vl-rev-report')) return;
         var btn = ce('button', 'vl-rev-report');
         btn.type = 'button';
@@ -938,6 +952,41 @@
         card.appendChild(btn);
       });
     }).catch(function () {});
+  }
+
+  // Owner-only inline reply composer on a review card. On success it drops the
+  // "Response from the owner" block into the card (above the date) and removes
+  // the Reply button — mirroring how reviewCard() renders a persisted reply.
+  function openReplyBox(card, btn) {
+    if (card.querySelector('.vl-rev-reply-box')) return;
+    btn.style.display = 'none';
+    var box = ce('div', 'vl-rev-report-box'); box.classList.add('vl-rev-reply-box');
+    var ta = document.createElement('textarea');
+    ta.placeholder = 'Write a public reply — a quick thank-you goes a long way.';
+    ta.maxLength = 1000;
+    var actions = ce('div', 'vl-rev-report-actions');
+    var send = ce('button', 'vl-rev-report-send'); send.type = 'button'; send.textContent = 'Post reply';
+    var cancel = ce('button', 'vl-rev-report-cancel'); cancel.type = 'button'; cancel.textContent = 'Cancel';
+    cancel.addEventListener('click', function () { box.remove(); btn.style.display = ''; });
+    send.addEventListener('click', function () {
+      var reply = String(ta.value || '').trim();
+      if (reply.length < 1) { ta.focus(); return; }
+      send.disabled = true; send.textContent = 'Posting…';
+      window.LokaliAPI.reviews.reply(card.getAttribute('data-rev-id'), reply).then(function (res) {
+        if (res && res.error) { send.disabled = false; send.textContent = 'Post reply'; return; }
+        var rep = ce('div', 'vl-rev-reply');
+        var rl = ce('div', 'vl-rev-reply-label'); rl.textContent = 'Response from the owner';
+        var rb = ce('div', 'vl-rev-reply-body'); rb.textContent = reply;
+        rep.appendChild(rl); rep.appendChild(rb);
+        var when = card.querySelector('.vl-rev-when');
+        if (when) card.insertBefore(rep, when); else card.appendChild(rep);
+        box.remove();
+      }).catch(function () { send.disabled = false; send.textContent = 'Post reply'; });
+    });
+    actions.appendChild(send); actions.appendChild(cancel);
+    box.appendChild(ta); box.appendChild(actions);
+    card.appendChild(box);
+    ta.focus();
   }
 
   function openReportBox(card, btn) {
@@ -996,8 +1045,14 @@
         e.appendChild(t); e.appendChild(sub); e.appendChild(cta);
         panel.appendChild(e);
       }
-      ensureActiveTab();
-    }).catch(function () { ensureActiveTab(); });
+      // #reviews deep-link (the review-notification email points here so the
+      // owner lands straight on the Reviews tab where the Reply controls are).
+      if ((window.location.hash || '').toLowerCase() === '#reviews') activateTab('reviews');
+      else ensureActiveTab();
+    }).catch(function () {
+      if ((window.location.hash || '').toLowerCase() === '#reviews') activateTab('reviews');
+      else ensureActiveTab();
+    });
   }
 
   function init() { injectStyles(); initTabs(); initSave(); hydrate(); }
