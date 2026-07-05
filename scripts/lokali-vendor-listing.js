@@ -87,25 +87,25 @@
   // single-class rules win the cascade at equal specificity.
   var PILL_CSS = [
     "#vl-category.vl-cat-pill{display:inline-flex;align-items:center;gap:5px;border-radius:100px;padding:3px 10px;font-size:11px;font-weight:500;line-height:1.2;}",
-    // Badges — exact palette of .badge-founding / .badge-verified on the market cards.
-    ".vl-badge.vl-badge-founding{background:#FBE7A0;color:#9A6B00;border:1px solid rgba(154,107,0,.32);}",
-    ".vl-badge.vl-badge-verified{background:#D2DEFF;color:#1730C9;border:1px solid rgba(23,48,201,.3);}",
+    // Badges — market-card hues at the pale tint level of the Call/WhatsApp
+    // buttons (#F0F4FF / #EDFAF3); both sit together on one row under the name.
+    ".vl-badge-row{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 8px;}",
+    ".vl-badge-row .vl-badge{margin:0;}",
+    ".vl-badge.vl-badge-founding{background:#FDF6DF;color:#9A6B00;border:.5px solid #EFDFA8;}",
+    ".vl-badge.vl-badge-verified{background:#EEF3FF;color:#1730C9;border:.5px solid #C9D6F8;}",
     ".vl-avatar.vl-avatar-initials{display:flex;align-items:center;justify-content:center;}",
     ".vl-avatar-txt{color:#6002EE;font-weight:600;font-size:30px;letter-spacing:.5px;font-family:'Plus Jakarta Sans',sans-serif;line-height:1;}",
     // Contact buttons: subtle lift on hover + visible keyboard focus.
     ".vl-ch{transition:transform .12s,box-shadow .12s;}",
     ".vl-ch:hover{transform:translateY(-1px);box-shadow:0 3px 10px rgba(26,24,41,.08);}",
-    ".vl-ch:focus-visible,.vl-link-chip:focus-visible,.vl-save:focus-visible{outline:2px solid #6002EE;outline-offset:2px;}",
-    // Website/Instagram: labeled chips in the same family as the contact
-    // buttons (tint bg + deep text + soft border) but quieter — they're not
-    // review-gate outreach channels, so they must not outrank Call/Text/Email.
-    ".div-block-179{display:flex !important;gap:8px !important;width:100%;grid-column-gap:8px !important;grid-row-gap:8px !important;}",
-    ".vl-link-chip{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:8px;padding:8px 6px;font-size:12px;font-weight:500;line-height:1;text-decoration:none;white-space:nowrap;transition:transform .12s,box-shadow .12s;}",
-    ".vl-link-chip:hover{transform:translateY(-1px);box-shadow:0 3px 10px rgba(26,24,41,.08);}",
-    ".vl-link-chip.vl-link-web{color:#4A4761;background:#F7F6FC;border:.5px solid #DDDBEA;}",
-    ".vl-link-chip.vl-link-ig{color:#B42A82;background:#FDEFF7;border:.5px solid #F2C7E2;}",
-    // Room for the two labeled chips side by side on desktop.
-    ".vl-channels{min-width:180px;}",
+    ".vl-ch:focus-visible,.vl-meta-link:focus-visible,.vl-save:focus-visible{outline:2px solid #6002EE;outline-offset:2px;}",
+    // Website/Instagram: profile links under the vendor's meta (Instagram-bio
+    // style — icon + domain/@handle in brand violet), NOT in the contact
+    // column, so they clearly read as links rather than outreach buttons.
+    ".vl-links-row{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:12px;}",
+    ".vl-meta-link{display:inline-flex;align-items:center;gap:5px;color:#6002EE;font-size:12.5px;font-weight:600;text-decoration:none;min-width:0;}",
+    ".vl-meta-link:hover .vl-link-label{text-decoration:underline;}",
+    ".vl-meta-link .vl-link-label{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}",
     // Save button — mirrors the market heart (lokali-favorites.js): white base,
     // outline heart; saved = violet tint + filled #6002EE heart.
     ".vl-save{background-color:#fff;border:.5px solid #EEEDF6;color:#1A1829;font-size:13px;font-weight:600;padding:8px 14px;grid-column-gap:7px;grid-row-gap:7px;transition:background .12s,border-color .12s,transform .12s;}",
@@ -115,14 +115,12 @@
     ".vl-save.vl-save-on{background-color:#F3EBFF;border-color:#D4AAFD;color:#6002EE;}",
     ".vl-save.vl-save-on .vl-heart{fill:#6002EE;stroke:#6002EE;}",
     // Mobile: Webflow already stacks the hero; tighten the tall button pile
-    // into a 2×2 contact grid, link row + save full width, ≥44px tap targets.
+    // into a 2×2 contact grid, save full width, ≥44px tap targets.
     "@media (max-width:767px){",
     ".vl-channels{display:grid !important;grid-template-columns:1fr 1fr;gap:8px;min-width:0;width:100%;}",
-    ".div-block-179{grid-column:1 / -1;}",
-    ".vl-ch,.vl-link-chip,.vl-save{min-height:44px;}",
-    ".vl-ch{font-size:14px;}",
-    ".vl-link-chip{font-size:13px;}",
-    ".vl-save{font-size:14px;}",
+    ".vl-ch,.vl-save{min-height:44px;}",
+    ".vl-ch,.vl-save{font-size:14px;}",
+    ".vl-meta-link{font-size:13.5px;min-height:32px;}",
     ".vl-hero-right{width:100%;align-items:stretch;}",
     "}"
   ].join('');
@@ -147,17 +145,50 @@
       var star = fb.querySelector('svg');
       if (star) fb.replaceChild(maskIcon(ICON_CROWN, '#9A6B00', 11), star);
     }
-    // Website/Instagram: bare icon squares → labeled chips.
-    function makeChip(id, cls, iconUrl, color, label) {
-      var a = document.getElementById(id);
-      if (!a) return;
-      a.className = 'vl-link-chip ' + cls; // drop the w-node grid classes; flex row now
-      a.innerHTML = '';
-      a.appendChild(maskIcon(iconUrl, color, 13));
-      a.appendChild(document.createTextNode(label));
+    // Badges: out of the name row (where >1 badge wraps messily around the
+    // name) onto their own single row directly under it.
+    var vb = document.getElementById('vl-badge-verified');
+    var nameRow = document.querySelector('.vl-name-row');
+    if (nameRow && (fb || vb)) {
+      var brow = ce('div', 'vl-badge-row');
+      if (fb) brow.appendChild(fb);
+      if (vb) brow.appendChild(vb);
+      nameRow.parentNode.insertBefore(brow, nameRow.nextSibling);
     }
-    makeChip('vl-website', 'vl-link-web', ICON_GLOBE, '#4A4761', 'Website');
-    makeChip('vl-ig', 'vl-link-ig', ICON_IG, '#B42A82', 'Instagram');
+    // Website/Instagram: out of the contact column, into an Instagram-bio
+    // style link row at the bottom of the vendor meta. initContact() later
+    // fills the labels with the real domain / @handle and hides absentees.
+    function makeMetaLink(id, iconUrl, fallbackLabel) {
+      var a = document.getElementById(id);
+      if (!a) return null;
+      a.className = 'vl-meta-link'; // drop the w-node grid classes
+      a.innerHTML = '';
+      a.appendChild(maskIcon(iconUrl, '#6002EE', 13));
+      var lbl = ce('span', 'vl-link-label');
+      lbl.textContent = fallbackLabel;
+      a.appendChild(lbl);
+      return a;
+    }
+    var webA = makeMetaLink('vl-website', ICON_GLOBE, 'Website');
+    var igA = makeMetaLink('vl-ig', ICON_IG, 'Instagram');
+    var meta = document.querySelector('.vl-meta');
+    if (meta && (webA || igA)) {
+      var lrow = ce('div', 'vl-links-row');
+      lrow.id = 'vl-links-row';
+      if (webA) lrow.appendChild(webA);
+      if (igA) lrow.appendChild(igA);
+      meta.appendChild(lrow);
+    }
+    // The old 2-cell grid the links lived in is now empty — drop it.
+    var oldRow = document.querySelector('.div-block-179');
+    if (oldRow && oldRow.parentNode) oldRow.parentNode.removeChild(oldRow);
+    // "Part of the Lokali community since …" duplicates the About tab's
+    // Member-since row — hide it here to declutter the hero.
+    var since = document.getElementById('vl-since');
+    if (since && since.closest) {
+      var srow = since.closest('.vl-meta-row');
+      if (srow) srow.style.display = 'none';
+    }
     // Save button: rebuild content as market heart + label.
     var btn = document.getElementById('vl-save');
     if (btn) {
@@ -636,12 +667,21 @@
       if (phone) { callEl.href = 'tel:+1' + phone; }
       else { show(callEl, false); }
     }
+    // Label helper for the meta links (set by styleHeroChrome); falls back to
+    // the static "Website"/"Instagram" text when there's no span to fill.
+    function setLinkLabel(el, text) {
+      var lbl = el && el.querySelector && el.querySelector('.vl-link-label');
+      if (lbl && text) lbl.textContent = text;
+    }
     var igEl = document.getElementById('vl-ig');
+    var handle = v.instagram_handle || v.instagram;
     if (igEl) {
-      var handle = v.instagram_handle || v.instagram;
       if (handle) {
         var clean = String(handle).replace(/^@/, '').replace(/^https?:\/\/(www\.)?instagram\.com\//i, '').replace(/\/$/, '');
         igEl.href = 'https://instagram.com/' + clean;
+        igEl.target = '_blank';
+        igEl.rel = 'noopener';
+        setLinkLabel(igEl, '@' + clean);
       } else { show(igEl, false); }
     }
     var webBtn = document.getElementById('vl-website');
@@ -651,8 +691,14 @@
         webBtn.href = /^https?:\/\//i.test(wbu) ? wbu : 'https://' + wbu;
         webBtn.target = '_blank';
         webBtn.rel = 'noopener';
+        // Instagram-bio style: show the bare domain, not a generic "Website".
+        var domain = String(wbu).replace(/^https?:\/\//i, '').replace(/^www\./i, '').replace(/\/.*$/, '');
+        setLinkLabel(webBtn, domain);
       } else { show(webBtn, false); }
     }
+    // Neither link → drop the whole row (kills its top margin).
+    var linksRow = document.getElementById('vl-links-row');
+    if (linksRow && !v.website_url && !handle) show(linksRow, false);
 
     trackChannel(emailEl, 'email');
     trackChannel(smsEl, 'sms');
