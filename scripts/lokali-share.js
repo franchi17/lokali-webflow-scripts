@@ -100,6 +100,11 @@
       var p = new URLSearchParams(window.location.search).get('id');
       if (p) return p;
     } catch (e) {}
+    // Clean slug URLs (/{slug}) have no ?id= — lokali-vendor-listing.js
+    // announces the resolved vendor via this window var + the
+    // 'lokali:vendor-loaded' event (which re-runs decorateShareButton below).
+    var lv = window.LOKALI_LOADED_VENDOR;
+    if (lv && lv.id != null) return lv.id;
     return null;
   }
 
@@ -171,7 +176,8 @@
     btn.type = 'button';
     btn.className = 'lk-share';
     btn.setAttribute('data-vendor-id', String(vid));
-    var nm = anchor.getAttribute('data-vendor-name');
+    var nm = anchor.getAttribute('data-vendor-name') ||
+      (window.LOKALI_LOADED_VENDOR && window.LOKALI_LOADED_VENDOR.name) || '';
     if (nm) btn.setAttribute('data-vendor-name', nm);
     btn.innerHTML = shareSVG() + '<span>Share</span>';
     btn.addEventListener('click', function (ev) { onShareClick(vid, btn, ev); });
@@ -232,6 +238,9 @@
   function init() {
     injectCSS();
     window.addEventListener('lokali:authed', function () { completePendingShare(); });
+    // Slug-routed listing pages resolve their vendor asynchronously; mount the
+    // button once the listing announces it (no-op if already decorated).
+    document.addEventListener('lokali:vendor-loaded', function () { decorateShareButton(); });
     detectLanding();
     decorateShareButton();
     renderTeaser();

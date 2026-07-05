@@ -110,6 +110,14 @@
     ".vl-meta-link>span:not(.vl-link-label){transform:translateY(.5px);}",
     ".vl-meta-link:hover .vl-link-label{text-decoration:underline;}",
     ".vl-meta-link .vl-link-label{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}",
+    // Share + Save: one row of half-width buttons under the contact stack —
+    // same action family (about the vendor, not contacting them). The share
+    // button is injected into #lokali-share-detail by lokali-share.js.
+    // Grid (not flex): equal 1fr columns regardless of label widths.
+    ".vl-actions-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;}",
+    ".vl-actions-row #lokali-share-detail{display:flex;min-width:0;}",
+    ".vl-actions-row #lokali-share-detail .lk-share{flex:1;justify-content:center;padding:8px 10px;}",
+    ".vl-actions-row #vl-save{min-width:0;padding:8px 10px;}",
     // Save button — mirrors the market heart (lokali-favorites.js): white base,
     // outline heart; saved = violet tint + filled #6002EE heart.
     ".vl-save{background-color:#fff;border:.5px solid #EEEDF6;color:#1A1829;font-size:13px;font-weight:600;padding:8px 14px;grid-column-gap:7px;grid-row-gap:7px;transition:background .12s,border-color .12s,transform .12s;}",
@@ -118,12 +126,18 @@
     ".vl-save .vl-heart{fill:none;stroke:#6B6880;stroke-width:1.8;transition:fill .12s,stroke .12s;}",
     ".vl-save.vl-save-on{background-color:#F3EBFF;border-color:#D4AAFD;color:#6002EE;}",
     ".vl-save.vl-save-on .vl-heart{fill:#6002EE;stroke:#6002EE;}",
+    // Desktop: the action column must have a DEFINITE width — it was
+    // content-sized, which makes the Share/Save row's width:100% circular and
+    // the browser then sizes the two buttons by content instead of 50/50.
+    "@media (min-width:768px){",
+    ".vl-hero-right{width:184px;align-items:stretch;}",
+    "}",
     // Mobile: Webflow already stacks the hero; tighten the tall button pile
     // into a 2×2 contact grid, save full width, ≥44px tap targets.
     "@media (max-width:767px){",
     ".vl-channels{display:grid !important;grid-template-columns:1fr 1fr;gap:8px;min-width:0;width:100%;}",
-    ".vl-ch,.vl-save{min-height:44px;}",
-    ".vl-ch,.vl-save{font-size:14px;}",
+    ".vl-ch,.vl-save,.vl-actions-row .lk-share{min-height:44px;}",
+    ".vl-ch,.vl-save,.vl-actions-row .lk-share{font-size:14px;}",
     ".vl-meta-link{font-size:13.5px;min-height:32px;}",
     ".vl-hero-right{width:100%;align-items:stretch;}",
     "}"
@@ -193,12 +207,23 @@
       var srow = since.closest('.vl-meta-row');
       if (srow) srow.style.display = 'none';
     }
-    // Save button: rebuild content as market heart + label.
+    // Save button: rebuild content as market heart + label. Short "Save"
+    // label (same as the market's inline heart) so it fits the shared row.
     var btn = document.getElementById('vl-save');
     if (btn) {
-      btn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="vl-heart" d="' + HEART_PATH + '"/></svg><span class="vl-save-label">Save vendor</span>';
+      btn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="vl-heart" d="' + HEART_PATH + '"/></svg><span class="vl-save-label">Save</span>';
       btn.setAttribute('role', 'button');
       btn.setAttribute('aria-pressed', 'false');
+      btn.setAttribute('aria-label', 'Save vendor');
+    }
+    // Share + Save side by side: wrap the share mount (lokali-share.js fills
+    // it) and the save button in one flex row at the foot of the action column.
+    var shareAnchor = document.getElementById('lokali-share-detail');
+    if (btn && shareAnchor && btn.parentNode) {
+      var arow = ce('div', 'vl-actions-row');
+      btn.parentNode.insertBefore(arow, btn);
+      arow.appendChild(shareAnchor);
+      arow.appendChild(btn);
     }
   }
 
@@ -253,7 +278,7 @@
     btn.setAttribute('aria-pressed', saved ? 'true' : 'false');
     btn.title = saved ? 'Saved' : 'Save vendor';
     var label = btn.querySelector('.vl-save-label');
-    if (label) { label.textContent = saved ? 'Saved' : 'Save vendor'; return; }
+    if (label) { label.textContent = saved ? 'Saved' : 'Save'; return; }
     // No label span — update the button's own text node, preserving the icon.
     var nodes = btn.childNodes;
     for (var i = nodes.length - 1; i >= 0; i--) {
