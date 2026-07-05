@@ -817,8 +817,8 @@ const LokaliProductsPage = (() => {
 
     const title = '<div style="font-size:13px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;color:#4A4761;margin-bottom:8px;">Photos</div>' +
       '<a href="/vendor-resources/product-photo-guide" target="_blank" rel="noopener" ' +
-      'style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#6002ee;text-decoration:none;margin:-2px 0 12px;">' +
-      '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" style="flex-shrink:0;"><circle cx="12" cy="12" r="9" stroke="#6002ee" stroke-width="2"/><path d="M12 11v5M12 8h.01" stroke="#6002ee" stroke-width="2" stroke-linecap="round"/></svg>' +
+      'style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#ee6002;text-decoration:none;margin:-2px 0 12px;">' +
+      '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" style="flex-shrink:0;"><circle cx="12" cy="12" r="9" stroke="#ee6002" stroke-width="2"/><path d="M12 11v5M12 8h.01" stroke="#ee6002" stroke-width="2" stroke-linecap="round"/></svg>' +
       'Photo size &amp; tips guide</a>';
 
     // Locked for Free plans
