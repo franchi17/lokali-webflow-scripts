@@ -26,6 +26,13 @@ const LokaliProductsPage = (() => {
       '#products-form-view .div-block-85{margin-left:0!important;margin-right:0!important;}' +
       '#products-form-view .div-block-121,' +
       '#products-form-view .div-block-123{margin-right:0!important;}' +
+      // Checkbox boxes carried a leftover Webflow float-era margin (`-20px` on
+      // Quote-based/Shipping/Pickup/Custom, `0` on Active) that left them
+      // misaligned against the field column once the wrappers became flex.
+      // Normalize: box sits at the wrapper's flex start (aligned with the inputs
+      // above) with an 8px gap to its label.
+      '#products-form-view .w-checkbox{padding-left:0!important;gap:0!important;align-items:center;}' +
+      '#products-form-view .w-checkbox-input{margin:0 8px 0 0!important;}' +
       '#products-form-view .form-text-header .lok-req{color:#E0245E;font-weight:700;}';
     (document.head || document.documentElement).appendChild(p);
   })();

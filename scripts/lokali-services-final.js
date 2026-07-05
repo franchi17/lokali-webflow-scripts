@@ -28,6 +28,12 @@ const LokaliServicesPage = (() => {
       '#services-form-view #price-wrap-starting,' +
       '#services-form-view #price-wrap-range,' +
       '#services-form-view #price-wrap-quote{margin-left:0!important;margin-right:0!important;}' +
+      // Checkbox boxes carried a leftover Webflow float-era margin (`-20px` on
+      // some, `0` on others) that left them misaligned against the field column
+      // once the wrappers became flex. Normalize: box sits at the wrapper's flex
+      // start (aligned with the inputs above) with an 8px gap to its label.
+      '#services-form-view .w-checkbox{padding-left:0!important;gap:0!important;align-items:center;}' +
+      '#services-form-view .w-checkbox-input{margin:0 8px 0 0!important;}' +
       '#services-form-view .form-text-header .lok-req{color:#E0245E;font-weight:700;}';
     (document.head || document.documentElement).appendChild(s);
   })();
