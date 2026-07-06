@@ -1444,22 +1444,41 @@ const LokaliServicesPage = (() => {
 
     services = normalizeServiceList(servicesRes.data);
 
-    const billing = billingRes?.data;
-    _maxServices = billing?.features?.max_services
-                ?? billing?.subscription?.max_services
-                ?? null;
+    // Only trust the billing response when the call actually succeeded. On a
+    // transient Xano free-tier 429/cold-start the call errors, and we must NOT
+    // downgrade a paid vendor to "free" (that wrongly locks the photo gallery
+    // mid-session). Cache the last-known-good plan and fall back to it instead.
+    const PLAN_CACHE_KEY = 'lok_plan_services_v1';
+    const billing = (billingRes && !billingRes.error) ? billingRes.data : null;
 
-    const planCode = String(
-      billing?.plan_code
-      ?? billing?.plan?.code
-      ?? billing?.subscription?.plan_code
-      ?? billing?.plan
-      ?? 'free'
-    ).toLowerCase();
-    _isProPlan = planCode === 'pro' || planCode === 'featured';
-    _maxServicePhotos = billing?.features?.max_service_photos
-                     ?? billing?.subscription?.max_service_photos
-                     ?? (_isProPlan ? 5 : 1);
+    if (billing) {
+      _maxServices = billing?.features?.max_services
+                  ?? billing?.subscription?.max_services
+                  ?? null;
+      const planCode = String(
+        billing?.plan_code
+        ?? billing?.plan?.code
+        ?? billing?.subscription?.plan_code
+        ?? billing?.plan
+        ?? 'free'
+      ).toLowerCase();
+      _isProPlan = planCode === 'pro' || planCode === 'featured';
+      _maxServicePhotos = billing?.features?.max_service_photos
+                       ?? billing?.subscription?.max_service_photos
+                       ?? (_isProPlan ? 5 : 1);
+      try {
+        sessionStorage.setItem(PLAN_CACHE_KEY, JSON.stringify({ pro: _isProPlan, maxPhotos: _maxServicePhotos, maxItems: _maxServices }));
+      } catch (e) {}
+    } else {
+      // Billing call failed — reuse this session's last-known-good plan so a
+      // hiccup doesn't lock a paid vendor's gallery. Only default to free/locked
+      // if we've never seen a successful billing response this session.
+      let cached = null;
+      try { cached = JSON.parse(sessionStorage.getItem(PLAN_CACHE_KEY) || 'null'); } catch (e) {}
+      _isProPlan = cached ? !!cached.pro : false;
+      _maxServicePhotos = cached ? (cached.maxPhotos ?? (_isProPlan ? 5 : 1)) : 1;
+      _maxServices = cached ? (cached.maxItems ?? null) : null;
+    }
 
     services.sort((a, b) => {
       const aOrder = a.sort_order ?? 9999;
