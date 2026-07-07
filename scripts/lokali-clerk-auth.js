@@ -174,6 +174,22 @@
         markSynced();
         // Role is now stamped in Xano; the intent has served its purpose.
         clearSignupIntent();
+      } else if (data && data.ok === true && data.backend === 'supabase') {
+        // Supabase backend: the sync provisions the user server-side and
+        // returns {ok, role, backend} with NO token — the browser talks to
+        // Supabase with its Clerk JWT directly. Persist the acct cache that
+        // lokali-auth-nav.js paints from (its Xano-token signal is gone).
+        markSynced();
+        clearSignupIntent();
+        try {
+          var u = (window.Clerk && window.Clerk.user) || null;
+          localStorage.setItem('LOKALI_ACCT_CACHE', JSON.stringify({
+            role: data.role || (u && u.publicMetadata && u.publicMetadata.role) || null,
+            first_name: (u && u.firstName) || '',
+            last_name: (u && u.lastName) || ''
+          }));
+        } catch (e) {}
+        return 'supabase-ok';
       }
       return token;
     }).catch(function (err) {

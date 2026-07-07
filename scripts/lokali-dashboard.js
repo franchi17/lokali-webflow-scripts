@@ -37,6 +37,28 @@
   (function roleGuard() {
     if (String(location.pathname || '').indexOf('/vendor-dashboard') === -1) return;
     var TOKEN_KEY = 'LOKALI_AUTH_TOKEN', CACHE_KEY = 'LOKALI_ACCT_CACHE';
+
+    if (window.LOKALI_BACKEND === 'supabase') {
+      // No Xano token exists — instant bounce off the cached role (written by
+      // clerk-auth on sync), then confirm against Clerk (publicMetadata.role
+      // is stamped server-side by clerk-sync).
+      try {
+        var sc = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+        if (sc && sc.role && sc.role !== 'vendor') { window.location.replace('/account'); return; }
+      } catch (e) {}
+      var tries = 0;
+      (function poll() {
+        var C = window.Clerk;
+        if (C && C.loaded) {
+          var role = C.user && C.user.publicMetadata && C.user.publicMetadata.role;
+          if (role && role !== 'vendor') window.location.replace('/account');
+          return;
+        }
+        if (++tries <= 40) setTimeout(poll, 250);
+      })();
+      return;
+    }
+
     var t;
     try { t = localStorage.getItem(TOKEN_KEY); } catch (e) { t = null; }
     if (!t || t.length < 20) return; // no token → not our job (requireAuth → /login)

@@ -29,7 +29,17 @@
   'use strict';
 
   // ─── CONFIG ──────────────────────────────────────────────────────────────
-  var ENDPOINT  = 'https://x8ki-letl-twmt.n7.xano.io/api:oYK_cDmG/contact'; // Xano POST /contact (Contact group)
+  // Supabase-backend mode (dormant until cutover): same field names, POSTed to
+  // the Vercel route (/api/lokali/contact) instead of Xano. Base derived from
+  // the clerk-sync URL the site already defines, overridable directly.
+  var ENDPOINT = (function () {
+    if (window.LOKALI_BACKEND === 'supabase') {
+      var base = window.LOKALI_VERCEL_API_BASE ||
+        (window.LOKALI_CLERK_SYNC_URL ? String(window.LOKALI_CLERK_SYNC_URL).replace(/\/clerk-sync\/?$/, '') : '');
+      if (base) return base.replace(/\/$/, '') + '/contact';
+    }
+    return 'https://x8ki-letl-twmt.n7.xano.io/api:oYK_cDmG/contact'; // Xano POST /contact (Contact group)
+  })();
   var TRANSPORT = 'json';    // 'json' for Xano/custom · 'form' for Brevo sibforms
 
   // Only used when TRANSPORT === 'form' (Brevo). Maps our field → Brevo attr.

@@ -20,7 +20,16 @@
 (function () {
   'use strict';
 
-  var ENDPOINT = 'https://x8ki-letl-twmt.n7.xano.io/api:oYK_cDmG/waitlist';
+  // Supabase-backend mode (dormant until cutover): same field names, POSTed to
+  // the Vercel route (/api/lokali/waitlist) instead of Xano.
+  var ENDPOINT = (function () {
+    if (window.LOKALI_BACKEND === 'supabase') {
+      var base = window.LOKALI_VERCEL_API_BASE ||
+        (window.LOKALI_CLERK_SYNC_URL ? String(window.LOKALI_CLERK_SYNC_URL).replace(/\/clerk-sync\/?$/, '') : '');
+      if (base) return base.replace(/\/$/, '') + '/waitlist';
+    }
+    return 'https://x8ki-letl-twmt.n7.xano.io/api:oYK_cDmG/waitlist';
+  })();
   // #46 — the modal opens from many pages now (about/home/market/contact), so
   // attribute each signup to the page it came from instead of a fixed string.
   var SOURCE = (function () {

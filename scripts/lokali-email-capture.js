@@ -25,7 +25,16 @@
 
   // ─── CONFIG ──────────────────────────────────────────────────────────────
   // Xano Contact group (api:oYK_cDmG) → POST /email/interest.
-  var ENDPOINT = 'https://x8ki-letl-twmt.n7.xano.io/api:oYK_cDmG/email/interest';
+  // Supabase-backend mode (dormant until cutover): same field names, POSTed to
+  // the Vercel route (/api/lokali/interest) instead of Xano.
+  var ENDPOINT = (function () {
+    if (window.LOKALI_BACKEND === 'supabase') {
+      var base = window.LOKALI_VERCEL_API_BASE ||
+        (window.LOKALI_CLERK_SYNC_URL ? String(window.LOKALI_CLERK_SYNC_URL).replace(/\/clerk-sync\/?$/, '') : '');
+      if (base) return base.replace(/\/$/, '') + '/interest';
+    }
+    return 'https://x8ki-letl-twmt.n7.xano.io/api:oYK_cDmG/email/interest';
+  })();
   var FORM_ID  = 'wf-form-Newsletter';
   var SOURCE   = 'homepage_capture';
   // ─────────────────────────────────────────────────────────────────────────

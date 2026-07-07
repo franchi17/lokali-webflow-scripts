@@ -1067,7 +1067,11 @@
   function injectVendorReport(v) {
     var API = window.LokaliAPI;
     if (!v || v.id == null || !API || !API.auth || !API.auth.getToken || !API.auth.getToken()) return;
-    if (!API.vendors || !API.vendors.reportVendor) return;
+    // reportVendor lives under the `reviews` group in the client (it POSTs to
+    // vendor/id/{id}/report). The old `API.vendors.reportVendor` guard was
+    // always falsey → this whole "Report this vendor" button never rendered on
+    // live (pre-existing bug, surfaced during the 2026-07-07 Supabase audit).
+    if (!API.reviews || !API.reviews.reportVendor) return;
     var mount = $('[data-vl-panel="about"]') || $('[data-vl-panel="reviews"]');
     if (!mount || mount.querySelector('.vl-vreport')) return;
     injectReviewStyles();
@@ -1114,7 +1118,7 @@
       var reason = String(ta.value || '').trim();
       if (reason.length < 5) { ta.focus(); return; }
       send.disabled = true; send.textContent = 'Sending…';
-      window.LokaliAPI.vendors.reportVendor(vendorId, sel.value, reason).then(function (res) {
+      window.LokaliAPI.reviews.reportVendor(vendorId, sel.value, reason).then(function (res) {
         if (res && res.error) { send.disabled = false; send.textContent = 'Send report'; return; }
         var done = ce('div', 'vl-rev-report-done');
         done.textContent = 'Thank you — the Lokali team will look into this.';

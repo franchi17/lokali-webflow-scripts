@@ -61,7 +61,14 @@
   var SCOPES   = '.header-wrapper, #lok-mnav-panel';
   var HIDE_CSS = '.header-wrapper a[href$="/login"], #lok-mnav-panel a[href$="/login"]';
 
+  // Supabase-backend mode (dormant until cutover): there is no Xano token —
+  // Clerk owns the session. "Signed in" at parse time = the acct cache that
+  // lokali-clerk-auth.js writes after each Clerk sync (same instant-paint
+  // behavior the Xano token gave us; the cache was already the paint source).
+  var SUPA_MODE = (typeof window !== 'undefined' && window.LOKALI_BACKEND === 'supabase');
+
   function token() {
+    if (SUPA_MODE) return getCache() ? 'clerk' : null;
     try { var t = localStorage.getItem(TOKEN_KEY); return (t && t.length > 20) ? t : null; }
     catch (e) { return null; }
   }
@@ -261,6 +268,39 @@
   function fetchAccount() {
     var t = token();
     if (!t) return Promise.resolve(null);
+    if (SUPA_MODE) {
+      // Refresh role/name from Clerk once it boots (publicMetadata.role is
+      // stamped server-side by clerk-sync). If Clerk is up with NO session the
+      // cache is stale (signed out in another tab) — clear it and reset once.
+      return new Promise(function (resolve) {
+        var tries = 0;
+        (function poll() {
+          var C = window.Clerk;
+          if (C && C.loaded) {
+            if (C.user) {
+              try { sessionStorage.removeItem('LOKALI_NAV_RESET'); } catch (e) {}
+              var meta = C.user.publicMetadata || {};
+              var cached = getCache() || {};
+              return resolve({
+                role: meta.role || cached.role || null,
+                first_name: C.user.firstName || cached.first_name || '',
+                last_name: C.user.lastName || cached.last_name || ''
+              });
+            }
+            clearAll();
+            try {
+              if (!sessionStorage.getItem('LOKALI_NAV_RESET')) {
+                sessionStorage.setItem('LOKALI_NAV_RESET', '1');
+                window.location.reload();
+              }
+            } catch (e) {}
+            return resolve(null);
+          }
+          if (++tries > 40) return resolve(getCache()); // Clerk never booted — keep the cached paint
+          setTimeout(poll, 250);
+        })();
+      });
+    }
     return fetch(AUTH_BASE + '/account', { headers: { Accept: 'application/json', Authorization: 'Bearer ' + t } })
       .then(function (r) { return r.ok ? r.json() : null; })
       .catch(function () { return null; });
