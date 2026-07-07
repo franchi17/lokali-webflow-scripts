@@ -115,10 +115,38 @@
   function clerkSession() {
     try { return (window.Clerk && window.Clerk.session) || null; } catch (e) { return null; }
   }
+  // The signed-in cache clerk-auth/auth-nav maintain in localStorage. It's the
+  // SYNCHRONOUS "was signed in" signal — the Xano token used to fill this role;
+  // Clerk itself boots asynchronously (deferred script), so page-load guards
+  // (requireAuth) that check getToken() at parse time need this. Live-cutover
+  // bug 2026-07-07: without it the dashboard bounced signed-in vendors to
+  // /login because Clerk hadn't booted when the guard ran.
+  function acctCache() {
+    try { return JSON.parse(localStorage.getItem('LOKALI_ACCT_CACHE') || 'null'); } catch (e) { return null; }
+  }
+  // Wait (bounded) for Clerk to finish booting, so authed calls carry the JWT
+  // instead of racing it and landing anonymous (the app_user 401s at load).
+  // Resolves immediately once Clerk is loaded — signed-out stays signed-out.
+  var _clerkReadyP = null;
+  function waitForClerk() {
+    if (window.Clerk && window.Clerk.loaded) return Promise.resolve();
+    if (_clerkReadyP) return _clerkReadyP;
+    _clerkReadyP = new Promise(function (resolve) {
+      var tries = 0;
+      (function poll() {
+        if (window.Clerk && window.Clerk.loaded) return resolve();
+        if (++tries > 40) return resolve(); // ~10s cap — fall through anonymous
+        setTimeout(poll, 250);
+      })();
+    });
+    return _clerkReadyP;
+  }
   function clerkTokenP() {
-    var s = clerkSession();
-    if (!s) return Promise.resolve(null);
-    try { return s.getToken(); } catch (e) { return Promise.resolve(null); }
+    return waitForClerk().then(function () {
+      var s = clerkSession();
+      if (!s) return null;
+      try { return s.getToken(); } catch (e) { return null; }
+    });
   }
 
   // Lazily self-provision/locate the app_user row and cache its id — needed only
@@ -128,7 +156,9 @@
   var _appUserP = null;
   function ensureAppUser() {
     if (_appUserP) return _appUserP;
-    _appUserP = SAPI().auth.ensureUser().then(function (res) {
+    _appUserP = waitForClerk().then(function () {
+      return SAPI().auth.ensureUser();
+    }).then(function (res) {
       if (res && res.error) { _appUserP = null; }
       return SAPI().auth.currentUserId();
     }, function () { _appUserP = null; return null; });
@@ -143,7 +173,9 @@
 
   function vendorMe() {
     if (_meP) return _meP;
-    _meP = SAPI().vendors.me().then(function (res) {
+    _meP = waitForClerk().then(function () {
+      return SAPI().vendors.me();
+    }).then(function (res) {
       if (!res || res.error || !res.data) {
         _meP = null;
         return envelope({ data: null, error: (res && res.error) || 'No vendor account for this login' });
@@ -303,16 +335,18 @@
     // Xano /me returned the auth user; consumers read both `data.<field>` and
     // `data.user.<field>` — provide both.
     me: function () {
-      if (!clerkSession()) return Promise.resolve(fail('Not signed in', 401));
-      return SAPI().account.get().then(function (res) {
-        var out = envelope(res);
-        if (out.error || !out.data) return out.error ? out : fail('Not signed in', 401);
-        normalizeTs(out.data);
-        var u = out.data;
-        var data = {};
-        for (var k in u) if (Object.prototype.hasOwnProperty.call(u, k)) data[k] = u[k];
-        data.user = u;
-        return { data: data, error: null, status: 200 };
+      return waitForClerk().then(function () {
+        if (!clerkSession()) return fail('Not signed in', 401);
+        return SAPI().account.get().then(function (res) {
+          var out = envelope(res);
+          if (out.error || !out.data) return out.error ? out : fail('Not signed in', 401);
+          normalizeTs(out.data);
+          var u = out.data;
+          var data = {};
+          for (var k in u) if (Object.prototype.hasOwnProperty.call(u, k)) data[k] = u[k];
+          data.user = u;
+          return { data: data, error: null, status: 200 };
+        });
       });
     },
     updateProfile: function (payload) {
@@ -327,7 +361,15 @@
       invalidateMe(); invalidateBilling(); _appUserP = null;
       return Promise.resolve({ data: null, error: null, status: 200 });
     },
-    getToken: function () { return clerkSession() ? 'clerk-session' : null; },
+    // SYNCHRONOUS signed-in signal. Clerk boots async (deferred), so page-load
+    // guards calling this at parse time would see null and bounce signed-in
+    // users to /login (live cutover bug). The acct cache = "signed in on this
+    // browser" persisted by clerk-auth/auth-nav; real auth still happens on
+    // every request via the Clerk JWT.
+    getToken: function () {
+      if (clerkSession()) return 'clerk-session';
+      return acctCache() ? 'clerk-cached' : null;
+    },
     setToken: function () { invalidateMe(); invalidateBilling(); },
     clearToken: function () { invalidateMe(); invalidateBilling(); _appUserP = null; }
   };
@@ -766,7 +808,9 @@
 
   var account = {
     get: function () {
-      return SAPI().account.get().then(function (res) {
+      return waitForClerk().then(function () {
+        return SAPI().account.get();
+      }).then(function (res) {
         var out = envelope(res);
         if (!out.error) normalizeTs(out.data);
         return out;
@@ -903,7 +947,9 @@
 
     if (base === 'favorites') {
       if (m === 'GET') {
-        return SAPI().favorites.list().then(function (res) {
+        return waitForClerk().then(function () {
+          return SAPI().favorites.list();
+        }).then(function (res) {
           var out = envelope(res);
           if (out.error) return out;
           var rows = out.data || [];
