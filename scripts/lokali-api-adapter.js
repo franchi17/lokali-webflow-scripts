@@ -176,11 +176,17 @@
     _meP = waitForClerk().then(function () {
       return SAPI().vendors.me();
     }).then(function (res) {
-      if (!res || res.error || !res.data) {
+      // get_my_vendor() is `returns vendors` (a composite): when the caller has
+      // NO vendor row it returns a ROW OF NULLS, not SQL NULL — PostgREST
+      // serializes that as {id:null,...}. So "no vendor" must be detected by a
+      // null id, not just a null payload (else a customer / not-yet-provisioned
+      // vendor reads back as a blank vendor). Live cutover fix 2026-07-07.
+      var row = res && res.data;
+      if (!res || res.error || !row || row.id == null) {
         _meP = null;
         return envelope({ data: null, error: (res && res.error) || 'No vendor account for this login' });
       }
-      var vendor = vendorAliases(normalizeTs(res.data));
+      var vendor = vendorAliases(normalizeTs(row));
       // Xano's vendor/me computes profile_views_total live from page_views.
       return SAPI().analytics.pageViewCount(vendor.id).then(function (cRes) {
         vendor.profile_views_total = (cRes && typeof cRes.count === 'number') ? cRes.count : 0;
