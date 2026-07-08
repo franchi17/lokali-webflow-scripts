@@ -54,7 +54,8 @@
     if (!el) {
       el = document.createElement('div');
       el.id = 'lokali-settings-toast';
-      el.style.cssText = 'position:fixed;top:24px;left:50%;transform:translateX(-50%);z-index:9999;padding:12px 20px;border-radius:999px;box-shadow:0 8px 20px rgba(15,23,42,.2);font-size:14px;font-weight:500;color:#fff;display:none;max-width:90vw;text-align:center;';
+      el.style.cssText = 'position:fixed;top:24px;left:50%;transform:translateX(-50%);z-index:9999;padding:12px 20px;border-radius:999px;box-shadow:0 8px 20px rgba(15,23,42,.2);' +
+        "font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:500;color:#fff;display:none;max-width:90vw;text-align:center;";
       document.body.appendChild(el);
     }
     el.style.background = type === 'success' ? '#047857' : (type === 'info' ? '#4a26fd' : '#b91c1c');
@@ -324,26 +325,68 @@
     var react = $('settings-reactivate');
     if (react) react.addEventListener('click', function (e) { e.preventDefault(); setListingVisible(true, visInput); });
 
+    // Real account deletion — the same 58a chain the /account page uses
+    // (Vercel /account/delete: Stripe cancel → backend purge → Clerk delete
+    // → sign-out). Replaces the old native confirm() pair + a
+    // vendors.deleteMe call that never existed on any backend, which made
+    // this button silently no-op behind a fake "request received" toast.
     var del = $('settings-delete');
-    if (del) del.addEventListener('click', function (e) {
-      e.preventDefault();
-      if (!confirm('Delete your account? Your listing is hidden immediately and your data is permanently removed after review.')) return;
-      if (!confirm('Are you absolutely sure? This cannot be undone once processed.')) return;
-      if (!window.LokaliAPI.vendors || !window.LokaliAPI.vendors.deleteMe) {
-        toast('info', 'Deletion request received. Our team will review and follow up by email.');
-        return;
-      }
-      window.LokaliAPI.vendors.deleteMe().then(function (res) {
-        if (res.error) { toast('error', res.error || 'Could not process the request.'); return; }
-        toast('info', 'Your listing is now hidden and your deletion request was received.');
-        setTimeout(function () {
-          if (window.LokaliAPI.clearToken) window.LokaliAPI.clearToken();
-          window.location.href = '/';
-        }, 2500);
-      }).catch(function () {
-        toast('error', 'Network error. Please try again.');
+    if (del) {
+      var delCard = document.createElement('div');
+      delCard.id = 'settings-delete-confirm';
+      delCard.style.cssText = 'display:none;margin-top:12px;padding:14px 16px;border:1px solid #F3D6D6;' +
+        "border-radius:12px;background:#FDF7F7;font-family:'Plus Jakarta Sans',sans-serif;";
+      var delHelp = document.createElement('div');
+      delHelp.style.cssText = 'font-size:13px;color:#6B6580;margin-bottom:10px;';
+      delHelp.appendChild(document.createTextNode('Type '));
+      var bTag = document.createElement('b'); bTag.textContent = 'DELETE';
+      delHelp.appendChild(bTag);
+      delHelp.appendChild(document.createTextNode(' to confirm. Your sign-in, listing and all account data are permanently removed.'));
+      var delIn = document.createElement('input');
+      delIn.type = 'text'; delIn.placeholder = 'Type DELETE';
+      delIn.style.cssText = 'max-width:180px;margin-right:8px;padding:9px 12px;border:1px solid #ECE8F8;border-radius:10px;font:inherit;';
+      var delGo = document.createElement('button');
+      delGo.type = 'button'; delGo.textContent = 'Permanently delete';
+      delGo.style.cssText = 'padding:9px 16px;border:0;border-radius:999px;background:#E0245E;color:#fff;font:inherit;font-weight:600;cursor:pointer;margin-right:8px;';
+      var delNo = document.createElement('button');
+      delNo.type = 'button'; delNo.textContent = 'Cancel';
+      delNo.style.cssText = 'padding:9px 16px;border:1px solid #ECE8F8;border-radius:999px;background:#fff;color:#231D3F;font:inherit;font-weight:600;cursor:pointer;';
+      delCard.appendChild(delHelp); delCard.appendChild(delIn); delCard.appendChild(delGo); delCard.appendChild(delNo);
+      if (del.parentNode) del.parentNode.insertBefore(delCard, del.nextSibling);
+
+      del.addEventListener('click', function (e) {
+        e.preventDefault();
+        delCard.style.display = delCard.style.display === 'none' ? 'block' : 'none';
+        if (delCard.style.display === 'block') delIn.focus();
       });
-    });
+      delNo.addEventListener('click', function () { delCard.style.display = 'none'; delIn.value = ''; });
+      delGo.addEventListener('click', function () {
+        if (delIn.value.trim() !== 'DELETE') { toast('error', 'Type DELETE to confirm'); delIn.focus(); return; }
+        var clerk = window.Clerk;
+        if (!clerk || !clerk.session || typeof clerk.session.getToken !== 'function') {
+          toast('error', 'Please reload and sign in again'); return;
+        }
+        delGo.disabled = true; delGo.textContent = 'Deleting…';
+        var base = (window.LOKALI_BILLING_BASE || 'https://lokali-api.vercel.app/api/lokali').replace(/\/$/, '');
+        clerk.session.getToken().then(function (jwt) {
+          return fetch(base + '/account/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + jwt },
+            body: JSON.stringify({ confirm: 'DELETE' })
+          });
+        }).then(function (res) {
+          if (!res.ok) return res.json().catch(function () { return {}; }).then(function (b) { throw new Error(b && b.error ? b.error : 'delete_failed'); });
+          try { if (window.LokaliAPI.clearToken) window.LokaliAPI.clearToken(); } catch (e2) {}
+          var bye = function () { window.location.href = '/'; };
+          try { clerk.signOut().then(bye, bye); } catch (e3) { bye(); }
+        }).catch(function (err) {
+          delGo.disabled = false; delGo.textContent = 'Permanently delete';
+          toast('error', (err && err.message) === 'billing_cleanup_failed'
+            ? "We couldn't close your subscription — try again in a minute or contact us."
+            : "Couldn't delete your account — please try again or contact us.");
+        });
+      });
+    }
 
     // Preference toggles → persisted via vendor/me/preferences
     var prefMap = {
