@@ -372,6 +372,7 @@
         '.lok-role-card:hover{border-color:#D4AAFD;background:#F9F5FF;transform:translateY(-1px);}' +
         '.lok-role-card:focus-visible{outline:2px solid #6002EE;outline-offset:2px;}' +
         '.lok-role-card .lok-role-title{display:block;font-size:16px;font-weight:700;color:#231D3F;margin-bottom:3px;}' +
+        '.lok-role-icon{width:18px;height:18px;margin-right:9px;vertical-align:-2px;display:inline-block;}' +
         '.lok-role-card .lok-role-desc{display:block;font-size:13px;color:#6B6580;line-height:1.45;}' +
         '.lok-role-gate .lok-role-login{margin-top:16px;font-size:13px;text-align:center;color:#6B6580;}' +
         '.lok-role-gate .lok-role-login a{color:#6002EE;font-weight:600;text-decoration:none;}' +
@@ -389,13 +390,31 @@
     var cards = document.createElement('div');
     cards.className = 'lok-role-cards';
 
-    function card(emoji, title, desc, role) {
+    // Font Awesome 6 solid icons, inlined as SVG (no FA dependency on the
+    // page): bag-shopping for the customer card, shop for the vendor card.
+    function faIcon(viewBox, pathD, color) {
+      var NS = 'http://www.w3.org/2000/svg';
+      var svg = document.createElementNS(NS, 'svg');
+      svg.setAttribute('viewBox', viewBox);
+      svg.setAttribute('class', 'lok-role-icon');
+      svg.setAttribute('aria-hidden', 'true');
+      var p = document.createElementNS(NS, 'path');
+      p.setAttribute('d', pathD);
+      p.setAttribute('fill', color);
+      svg.appendChild(p);
+      return svg;
+    }
+    var FA_BAG = 'M160 112c0-35.3 28.7-64 64-64s64 28.7 64 64l0 48-128 0 0-48zm-48 48l-64 0c-26.5 0-48 21.5-48 48L0 464c0 26.5 21.5 48 48 48l352 0c26.5 0 48-21.5 48-48l0-256c0-26.5-21.5-48-48-48l-64 0 0-48C336 50.1 285.9 0 224 0S112 50.1 112 112l0 48zm24 48a24 24 0 1 1 0 48 24 24 0 1 1 0-48zm152 24a24 24 0 1 1 48 0 24 24 0 1 1 -48 0z';
+    var FA_SHOP = 'M36.8 192l566.3 0c20.3 0 36.8-16.5 36.8-36.8c0-7.3-2.2-14.4-6.2-20.4L558.2 21.4C549.3 8 534.4 0 518.3 0L121.7 0c-16 0-31 8-39.9 21.4L6.2 134.7c-4 6.1-6.2 13.2-6.2 20.4C0 175.5 16.5 192 36.8 192zM64 224l0 160 0 80c0 26.5 21.5 48 48 48l224 0c26.5 0 48-21.5 48-48l0-80 0-160-64 0 0 160-192 0 0-160-64 0zm448 0l0 256c0 17.7 14.3 32 32 32s32-14.3 32-32l0-256-64 0z';
+
+    function card(icon, title, desc, role) {
       var b = document.createElement('button');
       b.type = 'button';
       b.className = 'lok-role-card';
       var t = document.createElement('span');
       t.className = 'lok-role-title';
-      t.textContent = emoji + '  ' + title;
+      t.appendChild(icon);
+      t.appendChild(document.createTextNode(title));
       var d = document.createElement('span');
       d.className = 'lok-role-desc';
       d.textContent = desc;
@@ -410,8 +429,8 @@
       return b;
     }
 
-    cards.appendChild(card('🛍️', "I'm here to shop", 'Discover local makers, save favorites, and reach out to vendors near you.', 'customer'));
-    cards.appendChild(card('🏪', "I'm a vendor", 'List my business and get found by nearby customers. Free to start.', 'vendor'));
+    cards.appendChild(card(faIcon('0 0 448 512', FA_BAG, '#FF8D00'), "I'm here to shop", 'Discover local makers, save favorites, and reach out to vendors near you.', 'customer'));
+    cards.appendChild(card(faIcon('0 0 640 512', FA_SHOP, '#6002EE'), "I'm a vendor", 'List my business and get found by nearby customers. Free to start.', 'vendor'));
 
     var login = document.createElement('div');
     login.className = 'lok-role-login';
