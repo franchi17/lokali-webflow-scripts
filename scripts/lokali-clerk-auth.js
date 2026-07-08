@@ -85,9 +85,78 @@
     try { sessionStorage.removeItem(SIGNUP_INTENT_KEY); } catch (e) {}
   }
 
-  // Resolve the signed-in user's role from Xano. Defaults to 'vendor' on any
-  // failure so existing vendor routing is never degraded.
+  // ── Supabase-mode helpers ─────────────────────────────────────────────────
+  // Under LOKALI_BACKEND=supabase there is no Xano token; "provisioned" means
+  // clerk-sync has stamped publicMetadata.role on the Clerk user. The adapter's
+  // getToken() intentionally returns a truthy sentinel for ANY signed-in Clerk
+  // user (so page-load guards don't bounce Clerk's slow boot) — so it can NOT
+  // be the "already provisioned" signal here: using it made syncClerkUser
+  // unreachable and left new signups unprovisioned + crash-looping between
+  // /login and the dashboard (2026-07-08).
+  function supaMode() {
+    return window.LOKALI_BACKEND === 'supabase';
+  }
+  function clerkRole() {
+    try {
+      var u = window.Clerk && window.Clerk.user;
+      return (u && u.publicMetadata && u.publicMetadata.role) || '';
+    } catch (e) { return ''; }
+  }
+  function cachedRole() {
+    try {
+      var c = JSON.parse(localStorage.getItem('LOKALI_ACCT_CACHE') || 'null');
+      return (c && c.role) || '';
+    } catch (e) { return ''; }
+  }
+  function writeAcctCache(role) {
+    try {
+      var u = (window.Clerk && window.Clerk.user) || null;
+      localStorage.setItem('LOKALI_ACCT_CACHE', JSON.stringify({
+        role: role || null,
+        first_name: (u && u.firstName) || '',
+        last_name: (u && u.lastName) || ''
+      }));
+    } catch (e) {}
+  }
+  // Circuit breaker: never issue more than a few auth redirects per tab per
+  // half-minute. A guard regression once bounced /login ↔ /vendor-dashboard
+  // ~7×/sec and hard-crashed the tab; with this, any future bug degrades to
+  // "stops redirecting" instead of a dead tab.
+  var REDIRECT_LOG_KEY = 'lokali_auth_redirects';
+  function redirectBudgetOk() {
+    try {
+      var now = Date.now();
+      var log = JSON.parse(sessionStorage.getItem(REDIRECT_LOG_KEY) || '[]')
+        .filter(function (t) { return now - t < 30000; });
+      if (log.length >= 4) {
+        console.warn('[Lokali] auth redirect suppressed (loop breaker)');
+        return false;
+      }
+      log.push(now);
+      sessionStorage.setItem(REDIRECT_LOG_KEY, JSON.stringify(log));
+      return true;
+    } catch (e) { return true; }
+  }
+
+  // Resolve the signed-in user's role.
+  // Supabase mode: role truth is Clerk publicMetadata (stamped server-side by
+  // clerk-sync). The acct cache is checked first because a just-completed sync
+  // writes the server-returned role there before Clerk's cached user object
+  // reflects the new metadata; a reload() picks it up otherwise. Resolves NULL
+  // for a signed-in-but-unprovisioned user — callers must not route into
+  // guarded pages on null (routing there is what crash-looped).
   function fetchRole() {
+    if (supaMode()) {
+      var r = cachedRole() || clerkRole();
+      if (r) return Promise.resolve(r);
+      try {
+        return window.Clerk.user.reload()
+          .then(function () { return clerkRole() || null; })
+          .catch(function () { return null; });
+      } catch (e) { return Promise.resolve(null); }
+    }
+    // Xano mode: resolve from the backend; defaults to 'vendor' on any failure
+    // so existing vendor routing is never degraded.
     try {
       return window.LokaliAPI.request('auth', 'GET', '/me', null, true)
         .then(function (res) {
@@ -100,19 +169,22 @@
     }
   }
 
-  // Route after a successful Clerk→Xano sync. Vendors go to the dashboard;
+  // Route after a successful Clerk→backend sync. Vendors go to the dashboard;
   // customers are never forced there. Emits 'lokali:authed' with the role so
   // page scripts (favorites, reviews) can react to inline sign-up-to-save.
+  // A null role (signed in, provisioning incomplete) routes NOWHERE.
   function routeAfterAuth() {
     fetchRole().then(function (role) {
+      if (!role) return; // unprovisioned — never push into guarded pages
+      if (supaMode()) writeAcctCache(role);
       try {
         window.dispatchEvent(new CustomEvent('lokali:authed', { detail: { role: role } }));
       } catch (e) {}
       if (role === 'vendor') {
-        if (isAuthPage() || isHomePath()) window.location.href = AFTER_SIGN_IN_PATH;
+        if ((isAuthPage() || isHomePath()) && redirectBudgetOk()) window.location.href = AFTER_SIGN_IN_PATH;
       } else {
         // customer: only redirect away from a dedicated auth page; otherwise stay.
-        if (isAuthPage()) window.location.href = CUSTOMER_AFTER_SIGN_IN_PATH;
+        if (isAuthPage() && redirectBudgetOk()) window.location.href = CUSTOMER_AFTER_SIGN_IN_PATH;
       }
     });
   }
@@ -232,15 +304,31 @@
     if (!window.Clerk.isSignedIn) {
       window.LokaliAPI.clearToken();
       clearSyncCooldown();
+      // Signed out: a stale acct cache would keep painting the account menu
+      // and let the dashboard guards wave through an anonymous visitor.
+      try { localStorage.removeItem('LOKALI_ACCT_CACHE'); } catch (e) {}
       return;
     }
 
     var user = window.Clerk.user;
     if (!user) return;
 
-    var existing = window.LokaliAPI.getToken();
+    // "Already provisioned" signal. Xano: the minted token. Supabase: the role
+    // clerk-sync stamped on Clerk publicMetadata — NOT the adapter's getToken()
+    // sentinel, which is truthy for every signed-in Clerk user and would make
+    // the sync branch unreachable (new signups were never provisioned and
+    // crash-looped between /login and the dashboard, 2026-07-08).
+    var existing;
+    if (supaMode()) {
+      existing = clerkRole() || null;
+      // Heal the synchronous signed-in signal the page-load guards read
+      // (requireAuth checks the acct cache before Clerk has booted).
+      if (existing) writeAcctCache(existing);
+    } else {
+      existing = window.LokaliAPI.getToken();
+    }
 
-    // Trigger a sync in three situations (all gated by NO existing Xano token,
+    // Trigger a sync in three situations (all gated by NOT provisioned yet,
     // which is what prevents the request loop on every page navigation):
     //  1) Auth page — user just signed in/up via Clerk widget.
     //  2) Dashboard page — script needs a token for API calls.
@@ -249,7 +337,7 @@
     //     because `existing` will be set.
     // Sync on auth/dashboard/home pages (existing behavior) OR whenever a
     // sign-up-to-save intent is pending — the latter fires on a browse/detail
-    // page, where we must still mint the Xano token so the pending save can run.
+    // page, where we must still provision so the pending save can run.
     if (!existing && (isAuthPage() || isDashboardPath() || isHomePath() || getSignupIntent())) {
       syncClerkUser(user).then(function (token) {
         if (token) routeAfterAuth();
