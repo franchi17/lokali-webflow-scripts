@@ -347,6 +347,111 @@
     }
   }
 
+  // ── Sign-up role gate ──────────────────────────────────────────────────────
+  // Role is SET-ONCE at provisioning, and clerk-sync can only stamp the right
+  // one if a signup intent is stashed. The CTA flows stash it ("Become a
+  // Vendor" → vendor, sign-up-to-save → customer), but anyone reaching
+  // /sign-up cold — typed URL, or the "Sign up" link at the bottom of the
+  // /login widget — has NO intent and would get the server default silently.
+  // So with no intent we ask first, stash the answer, then mount the widget.
+  function renderRoleChooser(signUpEl) {
+    if (signUpEl.getAttribute('data-lok-role-gate') === '1') return;
+    signUpEl.setAttribute('data-lok-role-gate', '1');
+
+    if (!document.getElementById('lok-role-gate-css')) {
+      var css = document.createElement('style');
+      css.id = 'lok-role-gate-css';
+      css.textContent =
+        '.lok-role-gate{max-width:420px;margin:0 auto;padding:8px 0;font-family:inherit;}' +
+        '.lok-role-gate h3{margin:0 0 6px;font-size:22px;color:#231D3F;text-align:center;}' +
+        '.lok-role-gate p{margin:0 0 18px;font-size:14px;color:#6B6580;text-align:center;}' +
+        '.lok-role-gate .lok-role-cards{display:flex;flex-direction:column;gap:12px;}' +
+        '.lok-role-card{display:block;width:100%;text-align:left;background:#fff;' +
+          'border:1.5px solid #ECE8F8;border-radius:14px;padding:16px 18px;cursor:pointer;' +
+          'font-family:inherit;transition:border-color .15s,background .15s,transform .15s;}' +
+        '.lok-role-card:hover{border-color:#D4AAFD;background:#F9F5FF;transform:translateY(-1px);}' +
+        '.lok-role-card:focus-visible{outline:2px solid #6002EE;outline-offset:2px;}' +
+        '.lok-role-card .lok-role-title{display:block;font-size:16px;font-weight:700;color:#231D3F;margin-bottom:3px;}' +
+        '.lok-role-card .lok-role-desc{display:block;font-size:13px;color:#6B6580;line-height:1.45;}' +
+        '.lok-role-gate .lok-role-login{margin-top:16px;font-size:13px;text-align:center;color:#6B6580;}' +
+        '.lok-role-gate .lok-role-login a{color:#6002EE;font-weight:600;text-decoration:none;}' +
+        '.lok-role-note{max-width:420px;margin:0 auto 4px;font-size:13px;color:#6B6580;text-align:center;}' +
+        '.lok-role-note a{color:#6002EE;font-weight:600;text-decoration:none;cursor:pointer;}';
+      document.head.appendChild(css);
+    }
+
+    var wrap = document.createElement('div');
+    wrap.className = 'lok-role-gate';
+    var h = document.createElement('h3');
+    h.textContent = 'How will you use Lokali?';
+    var sub = document.createElement('p');
+    sub.textContent = 'This sets up the right account for you.';
+    var cards = document.createElement('div');
+    cards.className = 'lok-role-cards';
+
+    function card(emoji, title, desc, role) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'lok-role-card';
+      var t = document.createElement('span');
+      t.className = 'lok-role-title';
+      t.textContent = emoji + '  ' + title;
+      var d = document.createElement('span');
+      d.className = 'lok-role-desc';
+      d.textContent = desc;
+      b.appendChild(t);
+      b.appendChild(d);
+      b.addEventListener('click', function () {
+        try { sessionStorage.setItem(SIGNUP_INTENT_KEY, role); } catch (e) {}
+        signUpEl.removeAttribute('data-lok-role-gate');
+        signUpEl.innerHTML = '';
+        mountSignUpGate(signUpEl);
+      });
+      return b;
+    }
+
+    cards.appendChild(card('🛍️', "I'm here to shop", 'Discover local makers, save favorites, and reach out to vendors near you.', 'customer'));
+    cards.appendChild(card('🏪', "I'm a vendor", 'List my business and get found by nearby customers. Free to start.', 'vendor'));
+
+    var login = document.createElement('div');
+    login.className = 'lok-role-login';
+    login.appendChild(document.createTextNode('Already have an account? '));
+    var loginA = document.createElement('a');
+    loginA.href = SIGN_IN_PATH;
+    loginA.textContent = 'Log in';
+    login.appendChild(loginA);
+
+    wrap.appendChild(h);
+    wrap.appendChild(sub);
+    wrap.appendChild(cards);
+    wrap.appendChild(login);
+    signUpEl.appendChild(wrap);
+  }
+
+  function mountSignUpGate(signUpEl) {
+    var intent = getSignupIntent();
+    if (!intent) { renderRoleChooser(signUpEl); return; }
+    if (signUpEl.getAttribute('data-lok-mounted') === '1') return;
+    signUpEl.setAttribute('data-lok-mounted', '1');
+    // Small "signing up as X — change" note so a mis-click is recoverable
+    // (role is set-once server-side, so this is the last chance to switch).
+    var note = document.createElement('div');
+    note.className = 'lok-role-note';
+    note.appendChild(document.createTextNode(
+      intent === 'vendor' ? 'Signing up as a vendor. ' : 'Signing up as a customer. '));
+    var change = document.createElement('a');
+    change.textContent = 'Change';
+    change.addEventListener('click', function () {
+      clearSignupIntent();
+      window.location.reload();
+    });
+    note.appendChild(change);
+    signUpEl.appendChild(note);
+    var mountPoint = document.createElement('div');
+    signUpEl.appendChild(mountPoint);
+    window.Clerk.mountSignUp(mountPoint);
+  }
+
   function mountClerkUI() {
     var signInEl = document.getElementById('clerk-sign-in');
     var signUpEl = document.getElementById('clerk-sign-up');
@@ -368,7 +473,7 @@
     } else {
       if (userBtnEl) userBtnEl.style.display = 'none';
       if (signInEl) window.Clerk.mountSignIn(signInEl);
-      if (signUpEl) window.Clerk.mountSignUp(signUpEl);
+      if (signUpEl) mountSignUpGate(signUpEl);
     }
   }
 
