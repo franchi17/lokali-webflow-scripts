@@ -20,7 +20,7 @@
  *
  * ACTIVATION (cutover, reversible):
  *   <script>window.LOKALI_BACKEND = 'supabase';
- *           window.LOKALI_CLERK_SYNC_URL = 'https://lokali-api.vercel.app/api/lokali/clerk-sync';</script>
+ *           window.LOKALI_AUTH_SYNC_URL = 'https://lokali-api.vercel.app/api/lokali/auth-sync';</script>
  *   …then load lokali-supabase-client.js + this file AFTER lokali-api-client.js.
  *   Flag off/absent → this file only exposes window.LokaliSupabaseAdapter for
  *   testing and touches nothing (the Xano client keeps window.LokaliAPI).
@@ -111,52 +111,55 @@
     return v;
   }
 
-  // ── auth/session plumbing (Clerk owns identity now) ───────────────────────
-  function clerkSession() {
-    try { return (window.Clerk && window.Clerk.session) || null; } catch (e) { return null; }
+  // ── auth/session plumbing (Supabase Auth owns identity now) ───────────────
+  // Live session check via LokaliAuth (lokali-auth.js) — sync, from the
+  // last-known supabase session.
+  function liveSession() {
+    try { return !!(window.LokaliAuth && window.LokaliAuth.isSignedIn()); } catch (e) { return false; }
   }
-  // The signed-in cache clerk-auth/auth-nav maintain in localStorage. It's the
+  // The signed-in cache lokali-auth/auth-nav maintain in localStorage. It's the
   // SYNCHRONOUS "was signed in" signal — the Xano token used to fill this role;
-  // Clerk itself boots asynchronously (deferred script), so page-load guards
+  // supabase-js boots asynchronously (dynamic import), so page-load guards
   // (requireAuth) that check getToken() at parse time need this. Live-cutover
   // bug 2026-07-07: without it the dashboard bounced signed-in vendors to
-  // /login because Clerk hadn't booted when the guard ran.
+  // /login because the auth SDK hadn't booted when the guard ran.
   function acctCache() {
     try { return JSON.parse(localStorage.getItem('LOKALI_ACCT_CACHE') || 'null'); } catch (e) { return null; }
   }
-  // Wait (bounded) for Clerk to finish booting, so authed calls carry the JWT
-  // instead of racing it and landing anonymous (the app_user 401s at load).
-  // Resolves immediately once Clerk is loaded — signed-out stays signed-out.
-  var _clerkReadyP = null;
-  function waitForClerk() {
-    if (window.Clerk && window.Clerk.loaded) return Promise.resolve();
-    if (_clerkReadyP) return _clerkReadyP;
-    _clerkReadyP = new Promise(function (resolve) {
+  // Wait (bounded) for the auth controller to finish booting, so authed calls
+  // carry the JWT instead of racing it and landing anonymous (the app_user
+  // 401s at load). Resolves once the initial session is known — signed-out
+  // stays signed-out.
+  var _authReadyP = null;
+  function waitForAuth() {
+    if (_authReadyP) return _authReadyP;
+    _authReadyP = new Promise(function (resolve) {
       var tries = 0;
       (function poll() {
-        if (window.Clerk && window.Clerk.loaded) return resolve();
+        if (window.LokaliAuth && window.LokaliAuth.ready) {
+          return window.LokaliAuth.ready.then(resolve, resolve);
+        }
         if (++tries > 40) return resolve(); // ~10s cap — fall through anonymous
         setTimeout(poll, 250);
       })();
     });
-    return _clerkReadyP;
+    return _authReadyP;
   }
-  function clerkTokenP() {
-    return waitForClerk().then(function () {
-      var s = clerkSession();
-      if (!s) return null;
-      try { return s.getToken(); } catch (e) { return null; }
+  function authTokenP() {
+    return waitForAuth().then(function () {
+      if (!window.LokaliAuth) return null;
+      try { return window.LokaliAuth.token(); } catch (e) { return null; }
     });
   }
 
   // Lazily self-provision/locate the app_user row and cache its id — needed only
   // by "my own rows" reads (reviews.mine). Deliberately LAZY, never on load:
-  // on a fresh vendor signup clerk-sync must reach the server first (role is
+  // on a fresh vendor signup auth-sync must reach the server first (role is
   // set-once); by the time a user opens a my-reviews surface, that's long done.
   var _appUserP = null;
   function ensureAppUser() {
     if (_appUserP) return _appUserP;
-    _appUserP = waitForClerk().then(function () {
+    _appUserP = waitForAuth().then(function () {
       return SAPI().auth.ensureUser();
     }).then(function (res) {
       if (res && res.error) { _appUserP = null; }
@@ -173,7 +176,7 @@
 
   function vendorMe() {
     if (_meP) return _meP;
-    _meP = waitForClerk().then(function () {
+    _meP = waitForAuth().then(function () {
       return SAPI().vendors.me();
     }).then(function (res) {
       // get_my_vendor() is `returns vendors` (a composite): when the caller has
@@ -335,14 +338,14 @@
   // ═══════════════════════════════════════════════════════════════════════════
 
   var auth = {
-    login: function () { return Promise.resolve(fail('Password login is retired — sign in with Clerk.', 410)); },
-    googleLogin: function () { return Promise.resolve(fail('Google login goes through Clerk now.', 410)); },
-    signup: function () { return Promise.resolve(fail('Signup goes through Clerk now.', 410)); },
+    login: function () { return Promise.resolve(fail('Password login moved — use the Lokali login form on /login.', 410)); },
+    googleLogin: function () { return Promise.resolve(fail('Google login goes through the /login page now.', 410)); },
+    signup: function () { return Promise.resolve(fail('Signup goes through /sign-up now.', 410)); },
     // Xano /me returned the auth user; consumers read both `data.<field>` and
     // `data.user.<field>` — provide both.
     me: function () {
-      return waitForClerk().then(function () {
-        if (!clerkSession()) return fail('Not signed in', 401);
+      return waitForAuth().then(function () {
+        if (!liveSession()) return fail('Not signed in', 401);
         return SAPI().account.get().then(function (res) {
           var out = envelope(res);
           if (out.error || !out.data) return out.error ? out : fail('Not signed in', 401);
@@ -367,14 +370,16 @@
       invalidateMe(); invalidateBilling(); _appUserP = null;
       return Promise.resolve({ data: null, error: null, status: 200 });
     },
-    // SYNCHRONOUS signed-in signal. Clerk boots async (deferred), so page-load
-    // guards calling this at parse time would see null and bounce signed-in
-    // users to /login (live cutover bug). The acct cache = "signed in on this
-    // browser" persisted by clerk-auth/auth-nav; real auth still happens on
-    // every request via the Clerk JWT.
+    // SYNCHRONOUS signed-in signal. supabase-js boots async (dynamic import),
+    // so page-load guards calling this at parse time would see null and bounce
+    // signed-in users to /login (live cutover bug). The acct cache = "signed in
+    // on this browser" persisted by lokali-auth/auth-nav; real auth still
+    // happens on every request via the Supabase JWT. The sentinel VALUES are
+    // opaque — consumers only truthy-check them (verified 2026-07-08: no
+    // script string-compares 'clerk-session').
     getToken: function () {
-      if (clerkSession()) return 'clerk-session';
-      return acctCache() ? 'clerk-cached' : null;
+      if (liveSession()) return 'sb-session';
+      return acctCache() ? 'sb-cached' : null;
     },
     setToken: function () { invalidateMe(); invalidateBilling(); },
     clearToken: function () { invalidateMe(); invalidateBilling(); _appUserP = null; }
@@ -708,12 +713,13 @@
     trackEvent: function (vendorId, eventType, source) {
       // Fire-and-forget with keepalive, exactly like the Xano client — this
       // write feeds the review gate, and the page often navigates to tel:/wa.me
-      // immediately. Signed-in callers carry the Clerk token so the DB trigger
-      // stamps user_id (the gate key); anonymous falls back to the anon insert.
+      // immediately. Signed-in callers carry the Supabase access token so the
+      // DB trigger stamps user_id (the gate key); anonymous falls back to the
+      // anon insert.
       try {
         var row = { vendors_id: vendorId, event_type: eventType, source: source || 'listing' };
-        clerkTokenP().then(function (token) { keepaliveInsert('lead_events', row, token); },
-                           function () { keepaliveInsert('lead_events', row, null); });
+        authTokenP().then(function (token) { keepaliveInsert('lead_events', row, token); },
+                          function () { keepaliveInsert('lead_events', row, null); });
       } catch (e) {}
     },
     trackView: function (vendorId, source, itemId) {
@@ -814,7 +820,7 @@
 
   var account = {
     get: function () {
-      return waitForClerk().then(function () {
+      return waitForAuth().then(function () {
         return SAPI().account.get();
       }).then(function (res) {
         var out = envelope(res);
@@ -953,7 +959,7 @@
 
     if (base === 'favorites') {
       if (m === 'GET') {
-        return waitForClerk().then(function () {
+        return waitForAuth().then(function () {
           return SAPI().favorites.list();
         }).then(function (res) {
           var out = envelope(res);

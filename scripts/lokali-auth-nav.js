@@ -9,9 +9,9 @@
   On the mobile panel (#lok-mnav-panel) the same items render as a stacked list.
 
   Role/name come from GET {AUTH_BASE}/account using the Xano token in
-  localStorage['LOKALI_AUTH_TOKEN'] (synced by lokali-clerk-auth.js, shared
-  across the origin so it works on every page — no dependency on api-client or
-  the Clerk SDK being loaded here). The last result is cached in
+  localStorage['LOKALI_AUTH_TOKEN'] (Xano mode; shared across the origin so it
+  works on every page — no dependency on api-client being loaded here), or from
+  window.LokaliAuth in Supabase mode. The last result is cached in
   localStorage['LOKALI_ACCT_CACHE'] so the menu paints instantly on the next
   page, before the network call returns.
 
@@ -29,7 +29,7 @@
   // CUSTOMER (2026-07-01), any signup missing a stashed intent mints a
   // customer — but only pricing CTAs were stashing 'vendor'. Delegate here
   // (header script = every page): a click on ANY control whose text reads
-  // like a vendor signup stashes the intent clerk-sync reads. Non-link
+  // like a vendor signup stashes the intent the auth sync reads. Non-link
   // controls (e.g. the homepage "Join as a Vendor" div) also get routed.
   document.addEventListener('click', function (e) {
     var el = (e.composedPath && e.composedPath()[0]) || e.target;
@@ -62,13 +62,13 @@
   var HIDE_CSS = '.header-wrapper a[href$="/login"], #lok-mnav-panel a[href$="/login"]';
 
   // Supabase-backend mode (dormant until cutover): there is no Xano token —
-  // Clerk owns the session. "Signed in" at parse time = the acct cache that
-  // lokali-clerk-auth.js writes after each Clerk sync (same instant-paint
+  // supabase-js owns the session. "Signed in" at parse time = the acct cache
+  // that lokali-auth.js writes after each auth-sync (same instant-paint
   // behavior the Xano token gave us; the cache was already the paint source).
   var SUPA_MODE = (typeof window !== 'undefined' && window.LOKALI_BACKEND === 'supabase');
 
   function token() {
-    if (SUPA_MODE) return getCache() ? 'clerk' : null;
+    if (SUPA_MODE) return getCache() ? 'supabase' : null;
     try { var t = localStorage.getItem(TOKEN_KEY); return (t && t.length > 20) ? t : null; }
     catch (e) { return null; }
   }
@@ -217,8 +217,8 @@
     clearAll();
     function go() { window.location.href = LOGIN_URL; }
     try {
-      if (window.Clerk && typeof window.Clerk.signOut === 'function') {
-        window.Clerk.signOut().then(go).catch(go);
+      if (window.LokaliAuth && typeof window.LokaliAuth.signOut === 'function') {
+        window.LokaliAuth.signOut().then(go).catch(go);
         return;
       }
     } catch (e) {}
@@ -269,34 +269,42 @@
     var t = token();
     if (!t) return Promise.resolve(null);
     if (SUPA_MODE) {
-      // Refresh role/name from Clerk once it boots (publicMetadata.role is
-      // stamped server-side by clerk-sync). If Clerk is up with NO session the
-      // cache is stale (signed out in another tab) — clear it and reset once.
+      // Refresh role/name from LokaliAuth once it boots (role comes from the
+      // acct cache → get_my_role() RPC via lokali-auth.js). If auth is up with
+      // NO session the cache is stale (signed out in another tab) — clear it
+      // and reset once.
       return new Promise(function (resolve) {
         var tries = 0;
         (function poll() {
-          var C = window.Clerk;
-          if (C && C.loaded) {
-            if (C.user) {
-              try { sessionStorage.removeItem('LOKALI_NAV_RESET'); } catch (e) {}
-              var meta = C.user.publicMetadata || {};
-              var cached = getCache() || {};
-              return resolve({
-                role: meta.role || cached.role || null,
-                first_name: C.user.firstName || cached.first_name || '',
-                last_name: C.user.lastName || cached.last_name || ''
-              });
-            }
-            clearAll();
-            try {
-              if (!sessionStorage.getItem('LOKALI_NAV_RESET')) {
-                sessionStorage.setItem('LOKALI_NAV_RESET', '1');
-                window.location.reload();
+          var A = window.LokaliAuth;
+          if (A) {
+            A.ready.then(function () {
+              if (A.isSignedIn()) {
+                try { sessionStorage.removeItem('LOKALI_NAV_RESET'); } catch (e) {}
+                var u = A.user() || {};
+                var meta = u.user_metadata || {};
+                var cached = getCache() || {};
+                A.fetchRole().then(function (role) {
+                  resolve({
+                    role: role || cached.role || null,
+                    first_name: meta.first_name || cached.first_name || '',
+                    last_name: meta.last_name || cached.last_name || ''
+                  });
+                });
+                return;
               }
-            } catch (e) {}
-            return resolve(null);
+              clearAll();
+              try {
+                if (!sessionStorage.getItem('LOKALI_NAV_RESET')) {
+                  sessionStorage.setItem('LOKALI_NAV_RESET', '1');
+                  window.location.reload();
+                }
+              } catch (e) {}
+              resolve(null);
+            });
+            return;
           }
-          if (++tries > 40) return resolve(getCache()); // Clerk never booted — keep the cached paint
+          if (++tries > 40) return resolve(getCache()); // LokaliAuth never booted — keep the cached paint
           setTimeout(poll, 250);
         })();
       });

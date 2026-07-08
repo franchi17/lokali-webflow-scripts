@@ -269,7 +269,7 @@
   // ---- save / favorites: wire the designed #vl-save button to the Favorites API.
   // Reflects state on the button (class 'vl-save-on' + '.vl-save-label' text).
   // Signed-out: stash the pending vendor + a customer signup intent and open the
-  // Clerk sign-up modal; lokali-favorites.js (listening on 'lokali:authed')
+  // LokaliAuth sign-up overlay; lokali-favorites.js (listening on 'lokali:authed')
   // completes the save once the account exists — so the keys below are shared.
   function vlSetSaveUI(saved) {
     var btn = document.getElementById('vl-save');
@@ -315,7 +315,7 @@
       if (!vlHasToken()) {
         try { sessionStorage.setItem('lokali_pending_fav', String(vid)); } catch (e) {}
         try { sessionStorage.setItem('lokali_signup_intent', 'customer'); } catch (e) {}
-        if (window.Clerk && typeof window.Clerk.openSignUp === 'function') window.Clerk.openSignUp({});
+        if (window.LokaliAuth && typeof window.LokaliAuth.openSignUp === 'function') window.LokaliAuth.openSignUp();
         else window.location.href = '/sign-up';
         return;
       }

@@ -9,19 +9,20 @@
  *      element's data-vendor-id, or window.LOKALI_VENDOR_ID).
  *   3. Saved page: renders the customer's saved vendors into #lokali-saved-grid.
  *
- * Auth: uses the Xano token via window.LokaliAPI. If the user isn't signed in,
+ * Auth: uses the session token via window.LokaliAPI. If the user isn't signed in,
  * clicking a heart starts "sign up to save" — it stashes the pending vendor,
- * stamps a customer signup intent, and opens the Clerk modal. lokali-clerk-auth.js
- * mints the Xano token and emits `lokali:authed`, which we catch to finish the save.
+ * stamps a customer signup intent, and opens the LokaliAuth sign-up overlay.
+ * lokali-auth.js completes the sync and emits `lokali:authed`, which we catch
+ * to finish the save.
  *
- * Depends on: lokali-api-client.js (window.LokaliAPI, with the 'favorites' base)
- * and lokali-clerk-auth.js (signup intent + the 'lokali:authed' event).
+ * Depends on: the API client (window.LokaliAPI, with the 'favorites' base)
+ * and lokali-auth.js (signup intent + the 'lokali:authed' event).
  */
 (function () {
   'use strict';
 
   var PENDING_FAV_KEY = 'lokali_pending_fav';     // vendor id to save after sign-up
-  var SIGNUP_INTENT_KEY = 'lokali_signup_intent'; // read by lokali-clerk-auth.js
+  var SIGNUP_INTENT_KEY = 'lokali_signup_intent'; // read by lokali-auth.js
   var BROWSE_GRID_ID = 'browse-vendor-grid';
   var DETAIL_ANCHOR_ID = 'lokali-fav-detail';
   var SAVED_GRID_ID = 'lokali-saved-grid';
@@ -138,12 +139,12 @@
   }
 
   function openAuthModal() {
-    if (window.Clerk && typeof window.Clerk.openSignUp === 'function') {
-      window.Clerk.openSignUp({});
-    } else if (window.Clerk && typeof window.Clerk.openSignIn === 'function') {
-      window.Clerk.openSignIn({});
+    if (window.LokaliAuth && typeof window.LokaliAuth.openSignUp === 'function') {
+      window.LokaliAuth.openSignUp();
+    } else if (window.LokaliAuth && typeof window.LokaliAuth.openSignIn === 'function') {
+      window.LokaliAuth.openSignIn();
     } else {
-      // Clerk not ready / not present on this page → fall back to the sign-up page.
+      // LokaliAuth not ready / not present on this page → fall back to the sign-up page.
       window.location.href = '/sign-up';
     }
   }
@@ -273,7 +274,7 @@
   // ── init ───────────────────────────────────────────────────
   function init() {
     injectCSS();
-    // React to the auth event emitted by lokali-clerk-auth.js after a sync.
+    // React to the auth event emitted by lokali-auth.js after a sync.
     window.addEventListener('lokali:authed', function () { completePendingSave(); });
     decorateBrowse();
     decorateDetail();

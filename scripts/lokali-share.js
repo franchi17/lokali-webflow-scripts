@@ -20,17 +20,17 @@
  *
  * Auth: customer sharing requires sign-in (an anonymous share can't be
  * attributed, so we never mint one). If not signed in, clicking Share stashes
- * the pending vendor, stamps a customer signup intent, and opens the Clerk
- * modal; on `lokali:authed` we finish by minting + copying the link.
+ * the pending vendor, stamps a customer signup intent, and opens the LokaliAuth
+ * sign-up overlay; on `lokali:authed` we finish by minting + copying the link.
  *
- * Depends on: lokali-api-client.js (window.LokaliAPI, with the 'shares' base)
- * and, for the sign-up-to-share path, lokali-clerk-auth.js.
+ * Depends on: the API client (window.LokaliAPI, with the 'shares' base)
+ * and, for the sign-up-to-share path, lokali-auth.js.
  */
 (function () {
   'use strict';
 
   var PENDING_SHARE_KEY = 'lokali_pending_share'; // vendor id to share after sign-up
-  var SIGNUP_INTENT_KEY = 'lokali_signup_intent'; // read by lokali-clerk-auth.js
+  var SIGNUP_INTENT_KEY = 'lokali_signup_intent'; // read by lokali-auth.js
   var SID_KEY = 'lokali_sid';                     // anonymous first-party landing-dedup id
   var RESOLVED_KEY = 'lokali_via_resolved';       // codes already resolved this session
   var SHARE_ANCHOR_ID = 'lokali-share-detail';
@@ -156,10 +156,10 @@
   }
 
   function openAuthModal() {
-    if (window.Clerk && typeof window.Clerk.openSignUp === 'function') {
-      window.Clerk.openSignUp({});
-    } else if (window.Clerk && typeof window.Clerk.openSignIn === 'function') {
-      window.Clerk.openSignIn({});
+    if (window.LokaliAuth && typeof window.LokaliAuth.openSignUp === 'function') {
+      window.LokaliAuth.openSignUp();
+    } else if (window.LokaliAuth && typeof window.LokaliAuth.openSignIn === 'function') {
+      window.LokaliAuth.openSignIn();
     } else {
       window.location.href = '/sign-up';
     }

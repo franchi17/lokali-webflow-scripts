@@ -40,18 +40,26 @@
 
     if (window.LOKALI_BACKEND === 'supabase') {
       // No Xano token exists — instant bounce off the cached role (written by
-      // clerk-auth on sync), then confirm against Clerk (publicMetadata.role
-      // is stamped server-side by clerk-sync).
+      // lokali-auth.js on sync), then confirm via LokaliAuth (cache →
+      // get_my_role() RPC, DB truth).
       try {
         var sc = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
         if (sc && sc.role && sc.role !== 'vendor') { window.location.replace('/account'); return; }
       } catch (e) {}
       var tries = 0;
       (function poll() {
-        var C = window.Clerk;
-        if (C && C.loaded) {
-          var role = C.user && C.user.publicMetadata && C.user.publicMetadata.role;
-          if (role && role !== 'vendor') window.location.replace('/account');
+        var A = window.LokaliAuth;
+        if (A) {
+          A.ready.then(function () {
+            var role = A.role();
+            if (role) {
+              if (role !== 'vendor') window.location.replace('/account');
+              return;
+            }
+            A.fetchRole().then(function (r) {
+              if (r && r !== 'vendor') window.location.replace('/account');
+            });
+          });
           return;
         }
         if (++tries <= 40) setTimeout(poll, 250);
@@ -417,14 +425,19 @@
 // the real click handler is inline ONLY on the dashboard home page — so on every
 // OTHER dashboard page (settings/profile/services/products/analytics/leads) the
 // button fell through to that 404. This script loads on all /vendor-dashboard
-// pages, so bind here: prefer LokaliClerk.signOut() (full Clerk sign-out), with a
-// token-clear + /login fallback if Clerk isn't present. Idempotent (dataset flag);
+// pages, so bind here: prefer LokaliAuth.signOut() (full sign-out; LokaliClerk is
+// its compat alias), with a token-clear + /login fallback if the auth controller
+// isn't present. Idempotent (dataset flag);
 // on the home page the inline handler also runs — benign, its sync redirect wins.
 (function wireLogoutButton() {
   'use strict';
 
   function doSignOut(e) {
     if (e) e.preventDefault();
+    if (window.LokaliAuth && typeof window.LokaliAuth.signOut === 'function') {
+      window.LokaliAuth.signOut();
+      return;
+    }
     if (window.LokaliClerk && typeof window.LokaliClerk.signOut === 'function') {
       window.LokaliClerk.signOut();
       return;

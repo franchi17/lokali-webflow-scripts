@@ -31,11 +31,13 @@
   // ─── CONFIG ──────────────────────────────────────────────────────────────
   // Supabase-backend mode (dormant until cutover): same field names, POSTed to
   // the Vercel route (/api/lokali/contact) instead of Xano. Base derived from
-  // the clerk-sync URL the site already defines, overridable directly.
+  // LOKALI_AUTH_SYNC_URL (canonical) or the legacy LOKALI_CLERK_SYNC_URL,
+  // overridable directly (same derivation as lokali-supabase-client.js).
   var ENDPOINT = (function () {
     if (window.LOKALI_BACKEND === 'supabase') {
       var base = window.LOKALI_VERCEL_API_BASE ||
-        (window.LOKALI_CLERK_SYNC_URL ? String(window.LOKALI_CLERK_SYNC_URL).replace(/\/clerk-sync\/?$/, '') : '');
+        (window.LOKALI_AUTH_SYNC_URL ? String(window.LOKALI_AUTH_SYNC_URL).replace(/\/(auth-sync|clerk-sync)\/?$/, '') :
+         window.LOKALI_CLERK_SYNC_URL ? String(window.LOKALI_CLERK_SYNC_URL).replace(/\/(auth-sync|clerk-sync)\/?$/, '') : '');
       if (base) return base.replace(/\/$/, '') + '/contact';
     }
     return 'https://x8ki-letl-twmt.n7.xano.io/api:oYK_cDmG/contact'; // Xano POST /contact (Contact group)

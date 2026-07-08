@@ -4,7 +4,7 @@
  * Pairs with the Vercel endpoints in my-clerk-app/app/api/lokali/billing/*:
  *   POST /billing/checkout  -> { url }   (hosted Stripe Checkout)
  *   POST /billing/portal    -> { url }   (Stripe Customer Portal: manage/cancel/switch)
- * Auth = the Clerk session JWT (same token lokali-clerk-auth.js uses), NOT the Xano token.
+ * Auth = the Supabase access token (via LokaliAuth.token()), NOT the Xano token.
  *
  * Reads the current plan via LokaliAPI.plans.getMyBilling() to render UI state.
  * Entitlement itself is granted server-side by the Stripe webhook — this script is UI only.
@@ -32,11 +32,16 @@
 (function () {
   'use strict';
 
+  // Base derived from LOKALI_AUTH_SYNC_URL (canonical) or the legacy
+  // LOKALI_CLERK_SYNC_URL, overridable directly (same derivation as
+  // lokali-supabase-client.js).
   var BILLING_BASE =
     (window.LOKALI_BILLING_BASE ||
-      (window.LOKALI_CLERK_SYNC_URL
-        ? window.LOKALI_CLERK_SYNC_URL.replace(/\/clerk-sync\/?$/, '')
-        : 'https://lokali-api.vercel.app/api/lokali')).replace(/\/$/, '');
+      (window.LOKALI_AUTH_SYNC_URL
+        ? String(window.LOKALI_AUTH_SYNC_URL).replace(/\/(auth-sync|clerk-sync)\/?$/, '')
+        : window.LOKALI_CLERK_SYNC_URL
+          ? String(window.LOKALI_CLERK_SYNC_URL).replace(/\/(auth-sync|clerk-sync)\/?$/, '')
+          : 'https://lokali-api.vercel.app/api/lokali')).replace(/\/$/, '');
 
   var CHECKOUT_URL = BILLING_BASE + '/billing/checkout';
   var PORTAL_URL = BILLING_BASE + '/billing/portal';
@@ -49,16 +54,16 @@
   // ── helpers ──────────────────────────────────────────────────────────────────
   function $all(sel) { return Array.prototype.slice.call(document.querySelectorAll(sel)); }
 
-  function clerkToken() {
-    var session = window.Clerk && window.Clerk.session;
-    if (!session || typeof session.getToken !== 'function') {
-      return Promise.reject(new Error('No Clerk session'));
+  function authToken() {
+    var A = window.LokaliAuth;
+    if (!A || typeof A.token !== 'function') {
+      return Promise.reject(new Error('No auth session'));
     }
-    return session.getToken();
+    return A.token();
   }
 
   function postForRedirect(url, body) {
-    return clerkToken().then(function (jwt) {
+    return authToken().then(function (jwt) {
       if (!jwt) throw new Error('Not signed in');
       return fetch(url, {
         method: 'POST',
@@ -298,12 +303,13 @@
 
   // ── post-signup checkout resume ─────────────────────────────────────────────────
   // pricingcta.js stashes the chosen paid plan when an ANONYMOUS visitor clicks
-  // Upgrade on /pricing; after the Clerk signup completes, this picks the stash up
+  // Upgrade on /pricing; after the signup completes, this picks the stash up
   // ONCE and sends the brand-new vendor straight into that Stripe Checkout.
-  // It waits for the Xano token (set when the first clerk-sync roundtrip finishes)
-  // so the server-side vendor-role stamp has landed before calling the role-gated
-  // checkout route. Any failure degrades silently — the user just stays on the
-  // page they landed on, upgradeable later from /pricing or Settings.
+  // It waits for a signed-in session WITH a known role (the role lands in the
+  // acct cache when the first auth-sync roundtrip finishes) so the server-side
+  // vendor-role stamp has landed before calling the role-gated checkout route.
+  // Any failure degrades silently — the user just stays on the page they landed
+  // on, upgradeable later from /pricing or Settings.
   var PENDING_PLAN_KEY = 'lokali_pending_plan';
   var PENDING_MAX_AGE_MS = 30 * 60 * 1000;
 
@@ -328,17 +334,16 @@
     var iv = setInterval(function () {
       waited += 500;
       if (waited >= 30000) { clearInterval(iv); return; }
-      var user = window.Clerk && window.Clerk.user;
-      var haveToken = false;
-      try { haveToken = !!localStorage.getItem('LOKALI_AUTH_TOKEN'); } catch (e) {}
-      if (!user || !haveToken) return;
+      var A = window.LokaliAuth;
+      var signedIn = !!(A && typeof A.isSignedIn === 'function' && A.isSignedIn());
+      var role = (signedIn && typeof A.role === 'function') ? A.role() : null;
+      if (!signedIn || !role) return; // role = auth-sync finished (role stamp landed)
       clearInterval(iv);
 
       var pending = readPendingPlan();
       if (!pending) return;
       clearPendingPlan(); // one shot — never re-fire, even if checkout fails
 
-      var role = user.publicMetadata && user.publicMetadata.role;
       if (role === 'customer') return; // wrong account type; drop the intent
 
       var body = { plan: pending.plan, interval: pending.interval || 'month' };
@@ -358,7 +363,7 @@
     var checks = 0;
     var iv = setInterval(function () {
       checks++;
-      if (window.Clerk && window.LokaliAPI) { clearInterval(iv); cb(); }
+      if (window.LokaliAuth && window.LokaliAPI) { clearInterval(iv); cb(); }
       if (checks > 100) clearInterval(iv);
     }, 100);
   }

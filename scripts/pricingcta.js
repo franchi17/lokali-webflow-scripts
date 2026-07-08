@@ -1,14 +1,14 @@
 /*
   Lokali — Pricing plan CTA routing.
   Wires every pricing-card button (`[data-plan]`) on the /pricing page so clicking it
-  sends the visitor to the Clerk signup at /sign-up. The chosen plan (and billing
+  sends the visitor to the signup at /sign-up. The chosen plan (and billing
   interval for paid tiers) is carried along as query params.
 
   Billing: signed-in VENDORS clicking a paid plan go straight to Stripe Checkout via
   lokali-billing.js (window.LokaliBilling, loaded site-wide); a signed-in vendor
   clicking Free goes to their dashboard. Everyone else lands on /sign-up with
   ?plan / &interval carried along so post-signup upgrade prompting stays possible.
-  The Clerk/role check happens at CLICK time (Clerk loads async, site-wide).
+  The auth/role check happens at CLICK time (LokaliAuth loads async, site-wide).
 
   Replaces the old Webflow-hosted pricingcta-0.0.1.js, which pointed at the legacy
   /vendor-signup page. Reads the Annual/Monthly state from #billing-toggle[data-period]
@@ -33,8 +33,9 @@
         var plan = btn.getAttribute('data-plan');
         var interval = btn.getAttribute('data-interval') || currentInterval();
 
-        var user = window.Clerk && window.Clerk.user;
-        var role = user && user.publicMetadata && user.publicMetadata.role;
+        var A = window.LokaliAuth;
+        var signedIn = !!(A && typeof A.isSignedIn === 'function' && A.isSignedIn());
+        var role = (signedIn && typeof A.role === 'function') ? A.role() : null;
         if (role === 'vendor') {
           if (plan === 'free') { window.location.href = '/vendor-dashboard/dashboard'; return; }
           if (window.LokaliBilling && typeof window.LokaliBilling.checkout === 'function') {

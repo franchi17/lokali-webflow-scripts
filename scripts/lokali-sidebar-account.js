@@ -141,15 +141,15 @@
     else menu.appendChild(a);
   }
 
-  // #30 — vendors can change how they sign in (connected Google accounts,
-  // password, email addresses) without leaving the dashboard. Opens Clerk's
-  // built-in account-management modal — the same one customers get from the
-  // /account "Manage sign-in" button. Clerk is loaded site-wide by
-  // lokali-clerk-auth.js; if it's still booting when clicked, wait briefly.
-  function openClerkProfile(tries) {
-    var c = window.Clerk;
-    if (c && typeof c.openUserProfile === 'function') { c.openUserProfile(); return; }
-    if ((tries || 0) < 20) setTimeout(function () { openClerkProfile((tries || 0) + 1); }, 250);
+  // #30 — vendors can change how they sign in (password, email addresses)
+  // without leaving the dashboard. Opens the LokaliAuth account panel — the
+  // same one customers get from the /account "Manage sign-in" button. The
+  // auth controller (lokali-auth.js) is loaded site-wide; if it's still
+  // booting when clicked, wait briefly.
+  function openAccountPanel(tries) {
+    var a = window.LokaliAuth;
+    if (a && typeof a.openAccountPanel === 'function') { a.openAccountPanel(); return; }
+    if ((tries || 0) < 20) setTimeout(function () { openAccountPanel((tries || 0) + 1); }, 250);
   }
 
   function addManageSignInRow(wrap) {
@@ -160,7 +160,7 @@
     a.setAttribute('data-lok-signin-row', '1');
     a.href = '#';
     a.textContent = 'Manage sign-in';
-    a.addEventListener('click', function (e) { e.preventDefault(); openClerkProfile(0); });
+    a.addEventListener('click', function (e) { e.preventDefault(); openAccountPanel(0); });
     var ref = menu.querySelector('[data-lok-customer-row]');
     if (ref && ref.nextSibling) ref.parentNode.insertBefore(a, ref.nextSibling);
     else if (ref) ref.parentNode.appendChild(a);

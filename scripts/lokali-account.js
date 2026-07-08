@@ -9,9 +9,9 @@
  *   • Reviews — "Awaiting your review" (contacted-not-reviewed) + "Your reviews"
  *     (edit / delete) + an inline recommend-or-not composer. Recommend-only model
  *     (no stars at launch); empty states never show a bare zero.
- *   • Settings — Name, Email (managed via Clerk), Area (region), 3 notification
+ *   • Settings — Name, Email (managed via the LokaliAuth account panel), Area (region), 3 notification
  *     toggles, Sign out, Delete account (58a: type-DELETE confirm → Vercel
- *     /account/delete → Stripe cancel + Xano purge + Clerk delete → sign-out).
+ *     /account/delete → Stripe cancel + backend purge + auth-user delete → sign-out).
  *
  * Depends on lokali-api-client.js (window.LokaliAPI with the account / reviews /
  * favorites namespaces). Auth via the Xano token; shows a sign-in prompt when
@@ -554,7 +554,7 @@
     var manage = el('div', null);
     var manageBtn = el('button', 'lk-btn ghost', 'Manage sign-in');
     manageBtn.addEventListener('click', function () {
-      if (window.Clerk && typeof window.Clerk.openUserProfile === 'function') window.Clerk.openUserProfile();
+      if (window.LokaliAuth && typeof window.LokaliAuth.openAccountPanel === 'function') window.LokaliAuth.openAccountPanel();
       else toast('Manage your sign-in from the account menu');
     });
     manage.appendChild(manageBtn); emailRow.appendChild(manage);
@@ -613,7 +613,7 @@
     delWrap.appendChild(delBtn); delRow.appendChild(delWrap); ac.appendChild(delRow);
 
     // 58a — inline type-to-confirm; calls the Vercel delete route (Stripe
-    // cancel -> Xano purge -> Clerk delete), then signs out. Brand surfaces
+    // cancel -> backend purge -> auth-user delete), then signs out. Brand surfaces
     // only (no-ink rule) — light card, violet text, danger accents.
     var confirmBox = el('div', 'lk-del-confirm');
     confirmBox.style.cssText = 'display:none;padding:14px 16px;margin-top:2px;border:1px solid #F3D6D6;border-radius:12px;background:#FDF7F7;';
@@ -633,13 +633,14 @@
     cancelBtn.addEventListener('click', function () { confirmBox.style.display = 'none'; confirmIn.value = ''; });
     confirmBtn.addEventListener('click', function () {
       if (confirmIn.value.trim() !== 'DELETE') { toast('Type DELETE to confirm'); confirmIn.focus(); return; }
-      var clerk = window.Clerk;
-      if (!clerk || !clerk.session || typeof clerk.session.getToken !== 'function') {
+      var auth = window.LokaliAuth;
+      if (!auth || typeof auth.token !== 'function' || !auth.isSignedIn()) {
         toast('Please reload and sign in again'); return;
       }
       confirmBtn.disabled = true; confirmBtn.textContent = 'Deleting…';
       var base = (window.LOKALI_BILLING_BASE || 'https://lokali-api.vercel.app/api/lokali').replace(/\/$/, '');
-      clerk.session.getToken().then(function (jwt) {
+      auth.token().then(function (jwt) {
+        if (!jwt) throw new Error('not_signed_in');
         return fetch(base + '/account/delete', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + jwt },
@@ -650,7 +651,7 @@
         // Account is gone server-side; kill local state and the (now-dead) session.
         try { api().clearToken(); } catch (e) {}
         var bye = function () { window.location.href = '/'; };
-        try { clerk.signOut().then(bye, bye); } catch (e) { bye(); }
+        try { auth.signOut().then(bye, bye); } catch (e) { bye(); }
       }).catch(function (err) {
         confirmBtn.disabled = false; confirmBtn.textContent = 'Permanently delete';
         var msg = (err && err.message) || '';

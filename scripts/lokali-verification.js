@@ -3,7 +3,7 @@
  *
  * Pairs with the Vercel endpoint in my-clerk-app/app/api/lokali/verification/*:
  *   POST /verification/start -> { url }   (hosted Stripe Identity: gov ID + selfie)
- * Auth = the Clerk session JWT (same token lokali-clerk-auth.js uses), NOT the Xano token.
+ * Auth = the Supabase access token (via LokaliAuth.token()), NOT the Xano token.
  *
  * Reads identity_status via LokaliAPI.vendors.me() AND the plan via
  * LokaliAPI.plans.getMyBilling() to render UI state. Verification is a PRO/FEATURED
@@ -33,11 +33,16 @@
 (function () {
   'use strict';
 
+  // Base derived from LOKALI_AUTH_SYNC_URL (canonical) or the legacy
+  // LOKALI_CLERK_SYNC_URL, overridable directly (same derivation as
+  // lokali-supabase-client.js).
   var API_BASE =
     (window.LOKALI_BILLING_BASE ||
-      (window.LOKALI_CLERK_SYNC_URL
-        ? window.LOKALI_CLERK_SYNC_URL.replace(/\/clerk-sync\/?$/, '')
-        : 'https://lokali-api.vercel.app/api/lokali')).replace(/\/$/, '');
+      (window.LOKALI_AUTH_SYNC_URL
+        ? String(window.LOKALI_AUTH_SYNC_URL).replace(/\/(auth-sync|clerk-sync)\/?$/, '')
+        : window.LOKALI_CLERK_SYNC_URL
+          ? String(window.LOKALI_CLERK_SYNC_URL).replace(/\/(auth-sync|clerk-sync)\/?$/, '')
+          : 'https://lokali-api.vercel.app/api/lokali')).replace(/\/$/, '');
 
   var START_URL = API_BASE + '/verification/start';
 
@@ -51,16 +56,16 @@
   // ── helpers ──────────────────────────────────────────────────────────────────
   function $all(sel) { return Array.prototype.slice.call(document.querySelectorAll(sel)); }
 
-  function clerkToken() {
-    var session = window.Clerk && window.Clerk.session;
-    if (!session || typeof session.getToken !== 'function') {
-      return Promise.reject(new Error('No Clerk session'));
+  function authToken() {
+    var A = window.LokaliAuth;
+    if (!A || typeof A.token !== 'function') {
+      return Promise.reject(new Error('No auth session'));
     }
-    return session.getToken();
+    return A.token();
   }
 
   function postForRedirect(url, body) {
-    return clerkToken().then(function (jwt) {
+    return authToken().then(function (jwt) {
       if (!jwt) throw new Error('Not signed in');
       return fetch(url, {
         method: 'POST',
@@ -274,16 +279,16 @@
   }
 
   // ── boot ────────────────────────────────────────────────────────────────────────
-  // Wait for the XANO AUTH TOKEN, not just Clerk/LokaliAPI. The token is minted by
-  // lokali-clerk-auth.js only after the Clerk→Xano sync; until it exists, vendor.me
-  // and getMyBilling 401 — which would misrender a paying vendor as Free. On a cold
-  // start the sync can take several seconds, so wait up to ~18s, then render anyway.
+  // Wait for an AUTHED API CLIENT, not just LokaliAuth/LokaliAPI. Until the
+  // session token is available, vendor.me and getMyBilling 401 — which would
+  // misrender a paying vendor as Free. On a cold start the first sync can take
+  // several seconds, so wait up to ~18s, then render anyway.
   function waitForDeps(cb) {
     var checks = 0;
     var iv = setInterval(function () {
       checks++;
       var tok = window.LokaliAPI && window.LokaliAPI.getToken && window.LokaliAPI.getToken();
-      if (window.Clerk && window.LokaliAPI && tok) { clearInterval(iv); cb(); }
+      if (window.LokaliAuth && window.LokaliAPI && tok) { clearInterval(iv); cb(); }
       else if (checks > 180) { clearInterval(iv); cb(); }
     }, 100);
   }

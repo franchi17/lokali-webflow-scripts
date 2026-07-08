@@ -168,6 +168,8 @@
 
   function handleAuthFailure(status) {
     if (status !== 401) return false;
+    // LokaliClerk is the compat alias exposed by lokali-auth.js
+    // ({signOut, onXano401}) — onXano401 tries one resync+reload first.
     if (
       window.LokaliClerk &&
       typeof window.LokaliClerk.onXano401 === 'function' &&

@@ -1,15 +1,15 @@
 /*
   Lokali — Settings page wiring.
   Hosted version of the former inline settings-page-embed.html paste; load with ONE <script defer src> tag on the Settings page after the sitewide bundle.
-  Requires (already site-wide): lokali-api-client.js, lokali-clerk-auth.js, lokali-dashboard.js.
+  Requires (already site-wide): the API client (lokali-api-adapter.js), lokali-auth.js, lokali-dashboard.js.
   Optional: lokali-billing.js (for the Stripe portal/upgrade buttons via data-lokali-portal / data-lokali-checkout).
 
   ELEMENT IDs THIS SCRIPT LOOKS FOR (add in Webflow; anything missing is skipped safely):
     Inputs   : #settings-first-name (or existing #First-Name-Input), #settings-last-name (or #Last-Name-Input)
     Display  : #settings-email, #settings-account-type, #settings-current-plan
     Buttons  : #settings-save-btn, #settings-view-plans,
-               #settings-change-email + #settings-change-password (both open the Clerk account
-               modal — Clerk manages email + password; Security tab shows last-changed date),
+               #settings-change-email + #settings-change-password (both open the LokaliAuth
+               account panel — email + password are managed there),
                #settings-deactivate, #settings-reactivate, #settings-delete
     Toggles  : #toggle-visibility-public  (on = listing live, off = deactivated)
                #toggle-visibility-reviews (PRO/FEATURED) — show public reviews
@@ -289,26 +289,26 @@
       window.location.href = (typeof window.LOKALI_PRICING_URL === 'string' && window.LOKALI_PRICING_URL) || '/pricing';
     });
 
-    // Email + password are both Clerk-managed (Clerk owns identity). Both the
-    // "Change" email link and the "Update" password link open Clerk's account
-    // modal, where email addresses are managed and the password Security tab
-    // shows when it last changed. No Xano email/password is stored to write.
-    var openClerkAccount = function (e) {
+    // Email + password are both auth-managed (Supabase owns identity). Both the
+    // "Change" email link and the "Update" password link open the LokaliAuth
+    // account panel, where email and password changes are handled. No Xano
+    // email/password is stored to write.
+    var openAuthAccount = function (e) {
       if (e) e.preventDefault();
-      if (window.Clerk && typeof window.Clerk.openUserProfile === 'function') {
-        window.Clerk.openUserProfile();
+      if (window.LokaliAuth && typeof window.LokaliAuth.openAccountPanel === 'function') {
+        window.LokaliAuth.openAccountPanel();
       } else {
         toast('info', 'Opening your account… one moment.');
         setTimeout(function () {
-          if (window.Clerk && typeof window.Clerk.openUserProfile === 'function') window.Clerk.openUserProfile();
+          if (window.LokaliAuth && typeof window.LokaliAuth.openAccountPanel === 'function') window.LokaliAuth.openAccountPanel();
           else toast('error', 'Account manager unavailable. Please refresh and try again.');
         }, 800);
       }
     };
     var pwBtn = $('settings-change-password');
-    if (pwBtn) pwBtn.addEventListener('click', openClerkAccount);
+    if (pwBtn) pwBtn.addEventListener('click', openAuthAccount);
     var emailBtn = $('settings-change-email');
-    if (emailBtn) emailBtn.addEventListener('click', openClerkAccount);
+    if (emailBtn) emailBtn.addEventListener('click', openAuthAccount);
 
     // Listing visibility toggle → reactivate (on) / deactivate (off)
     var vis = $('toggle-visibility-public');
@@ -326,8 +326,8 @@
     if (react) react.addEventListener('click', function (e) { e.preventDefault(); setListingVisible(true, visInput); });
 
     // Real account deletion — the same 58a chain the /account page uses
-    // (Vercel /account/delete: Stripe cancel → backend purge → Clerk delete
-    // → sign-out). Replaces the old native confirm() pair + a
+    // (Vercel /account/delete: Stripe cancel → backend purge → auth-user
+    // delete → sign-out). Replaces the old native confirm() pair + a
     // vendors.deleteMe call that never existed on any backend, which made
     // this button silently no-op behind a fake "request received" toast.
     var del = $('settings-delete');
@@ -362,13 +362,14 @@
       delNo.addEventListener('click', function () { delCard.style.display = 'none'; delIn.value = ''; });
       delGo.addEventListener('click', function () {
         if (delIn.value.trim() !== 'DELETE') { toast('error', 'Type DELETE to confirm'); delIn.focus(); return; }
-        var clerk = window.Clerk;
-        if (!clerk || !clerk.session || typeof clerk.session.getToken !== 'function') {
+        var auth = window.LokaliAuth;
+        if (!auth || typeof auth.token !== 'function' || !auth.isSignedIn()) {
           toast('error', 'Please reload and sign in again'); return;
         }
         delGo.disabled = true; delGo.textContent = 'Deleting…';
         var base = (window.LOKALI_BILLING_BASE || 'https://lokali-api.vercel.app/api/lokali').replace(/\/$/, '');
-        clerk.session.getToken().then(function (jwt) {
+        auth.token().then(function (jwt) {
+          if (!jwt) throw new Error('not_signed_in');
           return fetch(base + '/account/delete', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + jwt },
@@ -378,7 +379,7 @@
           if (!res.ok) return res.json().catch(function () { return {}; }).then(function (b) { throw new Error(b && b.error ? b.error : 'delete_failed'); });
           try { if (window.LokaliAPI.clearToken) window.LokaliAPI.clearToken(); } catch (e2) {}
           var bye = function () { window.location.href = '/'; };
-          try { clerk.signOut().then(bye, bye); } catch (e3) { bye(); }
+          try { auth.signOut().then(bye, bye); } catch (e3) { bye(); }
         }).catch(function (err) {
           delGo.disabled = false; delGo.textContent = 'Permanently delete';
           toast('error', (err && err.message) === 'billing_cleanup_failed'

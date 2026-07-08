@@ -2,25 +2,21 @@
  * lokali-supabase-client.js
  * ---------------------------------------------------------------------------
  * The browser's connection to Supabase — the replacement for the Xano base
- * URLs in lokali-api-client.js. Built for the Xano -> Supabase migration.
- *
- * STATUS: parallel build. This file is NOT loaded on the live site yet. It is
- * developed and tested alongside the live Xano client, and only swapped in at
- * cutover. Loading it does nothing to the current site.
+ * URLs in lokali-api-client.js. Built for the Xano -> Supabase migration;
+ * updated for the Clerk -> Supabase Auth migration (Phase D).
  *
  * WHAT IT DOES
  *   1. Creates a Supabase client using the project URL + PUBLISHABLE key. Both
  *      are safe in the browser — they're public by design; the Row-Level
  *      Security policies (rls.sql) are what actually protect the data.
- *   2. Bridges Clerk -> Supabase: every request carries the signed-in user's
- *      Clerk session token (via the `accessToken` option). Supabase validates
- *      it against the Clerk domain we registered (clerk.golokali.com) and
- *      exposes the Clerk user id to RLS as `auth.jwt() ->> 'sub'` — which is
- *      exactly what our policies match against `app_user.clerk_user_id`.
- *      Logged-out visitors send no token and are treated as anonymous (fine for
- *      the public read paths).
+ *   2. supabase-js OWNS auth sessions now (Supabase Auth — sign-in happens in
+ *      lokali-auth.js). Sessions persist in localStorage, tokens auto-refresh,
+ *      and OAuth / email-confirmation / recovery codes in the URL are picked up
+ *      automatically (PKCE flow). RLS identity is `auth.uid()` (the
+ *      auth.users uuid), matched against `app_user.auth_user_id`. Logged-out
+ *      visitors are anonymous (fine for the public read paths).
  *
- * USAGE (once live): `await window.LokaliSupabaseReady;` then use
+ * USAGE: `await window.LokaliSupabaseReady;` then use
  *   `window.LokaliSupabase.from('vendors').select(...)` etc.
  * ---------------------------------------------------------------------------
  */
@@ -36,33 +32,20 @@
     (typeof window !== 'undefined' && window.LOKALI_SUPABASE_PUBLISHABLE_KEY) ||
     'sb_publishable_--wRW6DD_9ZCBqfb0kJUww_0lzfzs39';
 
-  // Returns the current Clerk session token, or null when logged out / Clerk
-  // not yet booted. Supabase calls this on every request, so a user who logs in
-  // mid-session is picked up automatically (no client re-init needed).
-  function clerkAccessToken() {
-    try {
-      if (typeof window !== 'undefined' && window.Clerk && window.Clerk.session) {
-        return window.Clerk.session.getToken();
-      }
-    } catch (e) {
-      // fall through to anonymous
-    }
-    return Promise.resolve(null);
-  }
-
   // Load supabase-js (ESM) from jsDelivr — the same CDN the rest of the Lokali
   // scripts already ship from — and build the singleton client.
   window.LokaliSupabaseReady = import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm')
     .then(function (mod) {
       var createClient = mod.createClient;
       var client = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-        accessToken: function () { return clerkAccessToken(); },
         auth: {
-          // Clerk owns sessions; Supabase should not try to persist/refresh its
-          // own auth state or read tokens from the URL.
-          persistSession: false,
-          autoRefreshToken: false,
-          detectSessionInUrl: false
+          // supabase-js owns sessions (Supabase Auth): persist across loads,
+          // refresh tokens automatically, and detect the auth code that email
+          // confirmations / OAuth / password-recovery links put in the URL.
+          persistSession: true,
+          autoRefreshToken: true,
+          detectSessionInUrl: true,
+          flowType: 'pkce'
         }
       });
       window.LokaliSupabase = client;
@@ -73,6 +56,21 @@
       try { console.error('[lokali-supabase] failed to init', err); } catch (e) {}
       throw err;
     });
+
+  // Current Supabase access token, or null when logged out / not yet booted.
+  // Resolved fresh per request so a user who logs in mid-session is picked up.
+  function sessionAccessToken() {
+    try {
+      return window.LokaliSupabaseReady.then(function (c) {
+        return c.auth.getSession().then(function (r) {
+          var s = r && r.data && r.data.session;
+          return (s && s.access_token) || null;
+        });
+      }).catch(function () { return null; });
+    } catch (e) {
+      return Promise.resolve(null);
+    }
+  }
 
   // -------------------------------------------------------------------------
   // Read API — the Supabase equivalents of the LokaliAPI read methods the
@@ -86,20 +84,21 @@
     return window.LokaliSupabaseReady.then(function (c) { return run(c); });
   }
 
-  // Base URL of the Vercel API (my-clerk-app). A couple of writes go through a
-  // route instead of straight to Supabase — the inquiry + review submits, which
-  // must fire a Brevo email server-side. Derived from LOKALI_CLERK_SYNC_URL (the
-  // same base the billing/clerk-sync scripts already use), overridable directly.
+  // Base URL of the Vercel API. A couple of writes go through a route instead
+  // of straight to Supabase — the inquiry + review submits, which must fire a
+  // Brevo email server-side. Derived from LOKALI_AUTH_SYNC_URL (canonical) or
+  // the legacy LOKALI_CLERK_SYNC_URL, overridable directly.
   function vercelApiBase() {
     if (typeof window === 'undefined') return '';
     if (window.LOKALI_VERCEL_API_BASE) return String(window.LOKALI_VERCEL_API_BASE).replace(/\/$/, '');
-    if (window.LOKALI_CLERK_SYNC_URL) return String(window.LOKALI_CLERK_SYNC_URL).replace(/\/clerk-sync\/?$/, '');
+    if (window.LOKALI_AUTH_SYNC_URL) return String(window.LOKALI_AUTH_SYNC_URL).replace(/\/(auth-sync|clerk-sync)\/?$/, '');
+    if (window.LOKALI_CLERK_SYNC_URL) return String(window.LOKALI_CLERK_SYNC_URL).replace(/\/(auth-sync|clerk-sync)\/?$/, '');
     return '';
   }
   // POST JSON to a Vercel route; resolves to { data, error } like supabase-js.
   function postRoute(path, payload, withAuth) {
     var url = vercelApiBase() + path;
-    var authP = withAuth ? clerkAccessToken() : Promise.resolve(null);
+    var authP = withAuth ? sessionAccessToken() : Promise.resolve(null);
     return authP.then(function (token) {
       var headers = { 'Content-Type': 'application/json' };
       if (token) headers['Authorization'] = 'Bearer ' + token;
@@ -276,7 +275,7 @@
             .order('created_at', { ascending: false });
         });
       },
-      // Post a review — goes through the /review route (verifies Clerk, runs the
+      // Post a review — goes through the /review route (verifies the Supabase JWT, runs the
       // contact gate via admin_submit_review, emails the vendor). Returns
       // { data: { ok, id, verified, flagged, ... } | { ok:false, reason }, error }.
       create: function (payload) {
@@ -332,9 +331,9 @@
         return withClient(function (c) { return c.rpc('reviews_awaiting'); });
       }
     },
-    // --- Authenticated (Clerk-signed-in) surface --------------------------
+    // --- Authenticated (signed-in) surface --------------------------------
     auth: {
-      // Call once right after Clerk login: self-provisions the app_user row so
+      // Call once right after login: self-provisions the app_user row so
       // RLS can match this user. Returns { data: <app_user row>, error }.
       ensureUser: function (profile) {
         profile = profile || {};
