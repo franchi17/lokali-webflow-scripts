@@ -7,7 +7,9 @@
     var s = document.createElement('style');
     s.id = id;
     s.textContent =
-      '#clerk-sign-in, #clerk-sign-up { display: flex; justify-content: center; width: 100%; padding: 2rem 1rem; box-sizing: border-box; }' +
+      // column: the sign-up mount stacks the role-gate note ABOVE the widget
+      // (row put them side by side).
+      '#clerk-sign-in, #clerk-sign-up { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; padding: 2rem 1rem; box-sizing: border-box; }' +
       '#clerk-sign-in > *, #clerk-sign-up > * { max-width: 100%; }';
     document.head.appendChild(s);
   })();
@@ -468,7 +470,10 @@
     signUpEl.appendChild(note);
     var mountPoint = document.createElement('div');
     signUpEl.appendChild(mountPoint);
-    window.Clerk.mountSignUp(mountPoint);
+    // signInUrl: keep the widget's "Sign in" footer link on OUR /login page —
+    // the instance default sends users to the Clerk-hosted Account Portal
+    // (accounts.golokali.com), leaving the site entirely.
+    window.Clerk.mountSignUp(mountPoint, { signInUrl: SIGN_IN_PATH });
   }
 
   function mountClerkUI() {
@@ -491,7 +496,11 @@
       if (userBtnEl) window.Clerk.mountUserButton(userBtnEl);
     } else {
       if (userBtnEl) userBtnEl.style.display = 'none';
-      if (signInEl) window.Clerk.mountSignIn(signInEl);
+      // signUpUrl: the widget's "Sign up" footer link must land on OUR
+      // /sign-up (where the role gate lives) — the instance default points at
+      // the Clerk-hosted portal (accounts.golokali.com/sign-up), which
+      // bypasses the role chooser so the account gets the default role.
+      if (signInEl) window.Clerk.mountSignIn(signInEl, { signUpUrl: '/sign-up' });
       if (signUpEl) mountSignUpGate(signUpEl);
     }
   }
