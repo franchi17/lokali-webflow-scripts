@@ -40,6 +40,16 @@
   })();
   var FORM_ID  = 'wf-form-Newsletter';
   var SOURCE   = 'homepage_capture';
+
+  // The Market "LOKALI LETTER" box: a Webflow code island (open shadow DOM)
+  // that renders #browse-newsletter-email + #browse-newsletter-btn with NO
+  // behavior of its own — found dead in the 2026-07-09 smoke (typed emails
+  // went nowhere). Stopgap per Francesca's call: capture to the same
+  // endpoint tagged source='lokali_letter' so the contacts can be
+  // re-segmented in Brevo once #54 defines what the Letter actually is.
+  var MARKET_SOURCE   = 'lokali_letter';
+  var MARKET_INPUT_ID = 'browse-newsletter-email';
+  var MARKET_BTN_ID   = 'browse-newsletter-btn';
   // ─────────────────────────────────────────────────────────────────────────
 
   function init() {
@@ -116,9 +126,79 @@
       });
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
+  // ─── The Market island binding ────────────────────────────────────────────
+  function findInIslands(id) {
+    var isles = document.querySelectorAll('code-island');
+    for (var i = 0; i < isles.length; i++) {
+      var sr = isles[i].shadowRoot;
+      var el = sr && sr.getElementById(id);
+      if (el) return el;
+    }
+    return null;
+  }
+
+  function flashInvalid(input) {
+    try {
+      input.focus();
+      input.style.outline = '2px solid #E0245E';
+      setTimeout(function () { input.style.outline = ''; }, 1600);
+    } catch (e) {}
+  }
+
+  // Islands hydrate after page load — poll briefly until the ids appear
+  // (self-guards: on pages without the island this drains quietly).
+  function initMarketIsland(tries) {
+    var input = findInIslands(MARKET_INPUT_ID);
+    var btn = findInIslands(MARKET_BTN_ID);
+    if (!input || !btn) {
+      if (tries > 0) setTimeout(function () { initMarketIsland(tries - 1); }, 500);
+      return;
+    }
+    if (btn.__lokaliWired) return;
+    btn.__lokaliWired = true;
+
+    var idleLabel = btn.textContent;
+    function submitIsland() {
+      if (btn.disabled) return;
+      var email = String(input.value || '').trim();
+      if (!email || email.indexOf('@') < 1 || email.length < 5) { flashInvalid(input); return; }
+      btn.disabled = true;
+      btn.textContent = 'Saving…';
+      fetch(ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email, source: MARKET_SOURCE })
+      })
+        .then(function (r) { return r.ok; })
+        .catch(function () { return false; })
+        .then(function (ok) {
+          if (ok) {
+            // Terminal success state: keep the button disabled.
+            btn.textContent = 'Subscribed ✓';
+            input.value = '';
+            input.disabled = true;
+          } else {
+            btn.disabled = false;
+            btn.textContent = idleLabel;
+            flashInvalid(input);
+          }
+        });
+    }
+
+    btn.addEventListener('click', submitIsland);
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); submitIsland(); }
+    });
+  }
+
+  function boot() {
     init();
+    initMarketIsland(30); // ~15s hydration window
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
   }
 })();
