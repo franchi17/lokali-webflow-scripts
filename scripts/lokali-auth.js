@@ -192,10 +192,12 @@
   var _session = null;      // last-known session
   var _user = null;         // last-known user
   var _recoveryMode = false; // PASSWORD_RECOVERY in progress — never route away
+  var _confirming = false;   // email-confirm / OAuth code exchange in progress — show a loading card, never a blank page
 
   function setSession(session) {
     _session = session || null;
     _user = (session && session.user) || null;
+    if (_session) _confirming = false; // signed in — drop the loading state
   }
 
   var _readyResolve;
@@ -396,6 +398,14 @@
       '.lok-auth-turnstile{margin:0 0 14px;display:flex;justify-content:center;}',
       // spinner
       '.lok-auth-spin{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:lokAuthSpin .7s linear infinite;vertical-align:-3px;}',
+      // large spinner for the "Signing you in…" loading card (on a light surface)
+      '.lok-auth-spin-lg{width:26px;height:26px;border-width:3px;border-color:rgba(96,2,238,.22);border-top-color:#6002EE;vertical-align:0;}',
+      // password show/hide toggle
+      '.lok-auth-inwrap{position:relative;}',
+      '.lok-auth-inwrap input{padding-right:46px;}',
+      '.lok-auth-reveal{position:absolute;top:0;right:0;height:100%;width:44px;border:none;background:transparent;cursor:pointer;color:#8A82A6;display:flex;align-items:center;justify-content:center;padding:0;min-height:0;}',
+      '.lok-auth-reveal:hover{color:#6002EE;}',
+      '.lok-auth-reveal svg{width:20px;height:20px;}',
       '@keyframes lokAuthSpin{to{transform:rotate(360deg);}}',
       // success / check-email state
       '.lok-auth-check{text-align:center;padding:8px 0;}',
@@ -450,6 +460,8 @@
     if (text != null) n.textContent = text;
     return n;
   }
+  var EYE_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>';
+  var EYE_OFF_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
   function inputField(labelText, type, autocomplete, placeholder) {
     var wrap = el('div', 'lok-auth-field');
     var id = 'lok-in-' + Math.random().toString(36).slice(2, 8);
@@ -461,7 +473,27 @@
     if (autocomplete) input.setAttribute('autocomplete', autocomplete);
     if (placeholder) input.placeholder = placeholder;
     wrap.appendChild(lb);
-    wrap.appendChild(input);
+    if (type === 'password') {
+      // Wrap so a show/hide eye toggle can sit inside the field.
+      var iw = el('div', 'lok-auth-inwrap');
+      iw.appendChild(input);
+      var tog = document.createElement('button');
+      tog.type = 'button';
+      tog.className = 'lok-auth-reveal';
+      tog.setAttribute('aria-label', 'Show password');
+      tog.innerHTML = EYE_SVG;
+      tog.addEventListener('click', function () {
+        var show = input.type === 'password';
+        input.type = show ? 'text' : 'password';
+        tog.innerHTML = show ? EYE_OFF_SVG : EYE_SVG;
+        tog.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+        input.focus();
+      });
+      iw.appendChild(tog);
+      wrap.appendChild(iw);
+    } else {
+      wrap.appendChild(input);
+    }
     return { wrap: wrap, input: input };
   }
   function primaryBtn(label) {
@@ -1139,6 +1171,10 @@
       return;
     }
 
+    // Code exchange in progress — keep the "Signing you in…" card, don't flash
+    // the sign-in form underneath it.
+    if (_confirming) return;
+
     if (userBtnEl) userBtnEl.style.display = 'none';
     if (signInEl) {
       signInEl.style.display = '';
@@ -1170,6 +1206,34 @@
       openOverlay(function (body) { renderRecovery(body); });
     }
   }
+
+  // Loading + failure cards for the email-confirm / OAuth code-exchange landing,
+  // so a confirmation link never shows a blank page while the code is exchanged.
+  function confirmMount() { return document.getElementById('clerk-sign-in') || document.getElementById('clerk-sign-up'); }
+  function renderConfirming(root) {
+    root.innerHTML = '';
+    var box = el('div', 'lok-auth'), card = el('div', 'lok-auth-card'), chk = el('div', 'lok-auth-check');
+    var icon = el('div', 'lok-auth-check-icon');
+    icon.innerHTML = '<span class="lok-auth-spin lok-auth-spin-lg"></span>';
+    chk.appendChild(icon);
+    chk.appendChild(el('h2', null, 'Signing you in…'));
+    chk.appendChild(el('p', 'lok-auth-sub', 'Just a moment while we confirm your account.'));
+    card.appendChild(chk); box.appendChild(card); root.appendChild(box);
+  }
+  function renderConfirmError(root) {
+    root.innerHTML = '';
+    var box = el('div', 'lok-auth'), card = el('div', 'lok-auth-card'), chk = el('div', 'lok-auth-check');
+    var icon = el('div', 'lok-auth-check-icon');
+    icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="#6002EE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16.5" x2="12" y2="16.5"/></svg>';
+    chk.appendChild(icon);
+    chk.appendChild(el('h2', null, 'This link couldn’t be confirmed'));
+    chk.appendChild(el('p', 'lok-auth-sub', 'Confirmation links open only in the same browser you signed up on, and they expire after a while. Try logging in, or request a fresh link.'));
+    var btn = primaryBtn('Go to log in'); btn.type = 'button';
+    btn.addEventListener('click', function () { window.location.href = SIGN_IN_PATH; });
+    card.appendChild(chk); card.appendChild(btn); box.appendChild(card); root.appendChild(box);
+  }
+  function showConfirmingUI() { var m = confirmMount(); if (!m) return; injectStyles(); m.style.display = ''; m.setAttribute('data-lok-mounted', '1'); renderConfirming(m); }
+  function showConfirmError() { var m = confirmMount(); if (m) renderConfirmError(m); }
 
   // ──────────────────────────────────────────────────────────────────────────
   // PUBLIC API — FROZEN CONTRACT (Phase D2 sweeps build against this)
@@ -1270,6 +1334,23 @@
   // ──────────────────────────────────────────────────────────────────────────
   // BOOT
   // ──────────────────────────────────────────────────────────────────────────
+  // Email-confirm / OAuth landings carry an auth code in the URL. Show a loading
+  // card IMMEDIATELY (before the client even boots) so the page is never blank
+  // while the code is exchanged — and if nothing signs us in within ~12s (link
+  // opened in a different browser than sign-up so the PKCE verifier is missing,
+  // or it expired), show a clear, actionable error instead of a stuck spinner.
+  (function primeConfirming() {
+    var hasCode = /[?&#](code|token_hash|type)=/.test(window.location.search + window.location.hash);
+    if (!hasCode || !isAuthPage()) return;
+    _confirming = true;
+    function go() { showConfirmingUI(); }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go);
+    else go();
+    setTimeout(function () {
+      if (_confirming && !_session && !_recoveryMode) { _confirming = false; showConfirmError(); }
+    }, 12000);
+  })();
+
   // NOTE: waitForSupabase() resolves *with* window.LokaliSupabaseReady (a
   // promise), and Promise resolution adopts thenables — so `c` here is already
   // the resolved client (or null on timeout), NOT a promise. Do not .then it.
