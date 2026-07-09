@@ -1162,11 +1162,13 @@
     injectStyles();
 
     if (_session) {
-      // Signed in on an auth page: routing takes over; hide the forms so they
-      // don't flash. (The old Clerk user button is gone — the header account
-      // menu in lokali-auth-nav.js is the signed-in UI now.)
-      if (signInEl) signInEl.style.display = 'none';
-      if (signUpEl) signUpEl.style.display = 'none';
+      // Signed in on an auth page: sync + routing take over. Show a brief loading
+      // card (not a blank page) while we redirect to the dashboard. (The old Clerk
+      // user button is gone — the header account menu is the signed-in UI now.)
+      var routeMount = signInEl || signUpEl;
+      if (routeMount) { routeMount.style.display = ''; renderConfirming(routeMount); }
+      if (signInEl && signInEl !== routeMount) signInEl.style.display = 'none';
+      if (signUpEl && signUpEl !== routeMount) signUpEl.style.display = 'none';
       if (userBtnEl) userBtnEl.style.display = 'none';
       return;
     }
@@ -1217,7 +1219,7 @@
     icon.innerHTML = '<span class="lok-auth-spin lok-auth-spin-lg"></span>';
     chk.appendChild(icon);
     chk.appendChild(el('h2', null, 'Signing you in…'));
-    chk.appendChild(el('p', 'lok-auth-sub', 'Just a moment while we confirm your account.'));
+    chk.appendChild(el('p', 'lok-auth-sub', 'Just a moment…'));
     card.appendChild(chk); box.appendChild(card); root.appendChild(box);
   }
   function renderConfirmError(root) {
