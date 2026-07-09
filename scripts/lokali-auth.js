@@ -1367,6 +1367,28 @@
         setSession(r && r.data && r.data.session);
         _readyResolve();
 
+        // CROSS-DEVICE email confirmation / recovery: a `token_hash` link works in
+        // ANY browser (unlike the PKCE `?code=` flow, which needs the verifier from
+        // the sign-up browser). supabase-js auto-handles `?code=` but NOT
+        // `token_hash` — verify it explicitly here. The Supabase email templates
+        // point confirmation links at `/login?token_hash=…&type=email`.
+        if (!_session) {
+          var _q = new URLSearchParams(window.location.search);
+          var _th = _q.get('token_hash');
+          var _ty = _q.get('type');
+          if (_th && _ty) {
+            var _isRecovery = /recovery/i.test(_ty);
+            if (_isRecovery) _recoveryMode = true;
+            c.auth.verifyOtp({ token_hash: _th, type: _ty }).then(function (res) {
+              try { history.replaceState(null, '', window.location.pathname); } catch (e) {}
+              if (res && res.error) { _confirming = false; _recoveryMode = false; showConfirmError(); return; }
+              // success: setSession (via onAuthStateChange SIGNED_IN) clears _confirming
+              // and routing takes over; for recovery we show the set-password form.
+              if (_isRecovery) showRecoveryUI();
+            }).catch(function () { _confirming = false; _recoveryMode = false; showConfirmError(); });
+          }
+        }
+
         // If the URL carries an auth code (email confirm / OAuth return /
         // recovery link, PKCE flow), hold routing briefly so a trailing
         // PASSWORD_RECOVERY event can flip _recoveryMode before we redirect.
