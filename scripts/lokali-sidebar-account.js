@@ -222,6 +222,29 @@
     else menu.appendChild(a);
   }
 
+  // #67 round 4 — the mobile-nav footer embed's setClosed() fires on ANY
+  // sidebar-link click WITHOUT checking the breakpoint, leaving an inline
+  // 'transform: translateX(-100%) !important' on the sidebar wrapper
+  // (.div-block-27) on DESKTOP. A transformed ancestor becomes the containing
+  // block for position:fixed children, so the rail un-pins from the viewport
+  // and floats mid-page (pre-existing bug; the round-2 width collapse turned
+  // its former subtle 44px nudge into a full overlap). Strip the transform on
+  // desktop — and keep stripping, since the embed re-adds it on every click.
+  // (Inline !important can't be beaten from a stylesheet, hence JS.)
+  function killStrayDrawerTransform() {
+    var w = document.querySelector('.div-block-27');
+    if (!w || w.__lokTransformGuard) return;
+    w.__lokTransformGuard = true;
+    var mqDesk = window.matchMedia('(min-width: 992px)');
+    function strip() {
+      if (mqDesk.matches && w.style.transform) w.style.removeProperty('transform');
+    }
+    strip();
+    new MutationObserver(strip).observe(w, { attributes: true, attributeFilter: ['style'] });
+    if (mqDesk.addEventListener) mqDesk.addEventListener('change', strip);
+    else if (mqDesk.addListener) mqDesk.addListener(strip);
+  }
+
   function bindToggle(wrap) {
     var chip = wrap.querySelector('.lok-acct-chip');
     var menu = wrap.querySelector('.lok-acct-menu');
@@ -270,6 +293,7 @@
     var wrap = document.querySelector('.lok-acct:not([data-lok-acct])');
     if (!wrap) return; // native chip not on this page
     injectCss();
+    killStrayDrawerTransform(); // #67 round 4
     bindToggle(wrap);
     addCustomerAccountRow(wrap);
     addManageSignInRow(wrap); // #30
