@@ -276,7 +276,8 @@
     var a = el.closest ? el.closest('a[href="#"], a[href=""]') : null;
     if (!a) return false;
     var txt = (a.textContent || '').replace(/\s+/g, ' ').trim().toLowerCase();
-    return txt.indexOf('request your city') === 0 || txt.indexOf("don't see your city") === 0 || txt.indexOf('don’t see your city') === 0;
+    return txt.indexOf('request your city') === 0 || txt.indexOf("don't see your city") === 0 || txt.indexOf('don’t see your city') === 0 ||
+      txt.indexOf("don't see your neighborhood") === 0 || txt.indexOf('don’t see your neighborhood') === 0;
   }
 
   document.addEventListener('click', function (e) {
