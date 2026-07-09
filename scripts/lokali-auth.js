@@ -1379,7 +1379,14 @@
           if (_th && _ty) {
             var _isRecovery = /recovery/i.test(_ty);
             if (_isRecovery) _recoveryMode = true;
-            c.auth.verifyOtp({ token_hash: _th, type: _ty }).then(function (res) {
+            var _verify = function (t) { return c.auth.verifyOtp({ token_hash: _th, type: t }); };
+            _verify(_ty).then(function (res) {
+              // Signup confirm tokens are minted as 'email' in some Supabase configs
+              // and 'signup' in others — if the URL type fails, try the other common
+              // confirm type before giving up (recovery is unambiguous, so skip there).
+              if (res && res.error && !_isRecovery && _ty !== 'signup') return _verify('signup');
+              return res;
+            }).then(function (res) {
               try { history.replaceState(null, '', window.location.pathname); } catch (e) {}
               if (res && res.error) { _confirming = false; _recoveryMode = false; showConfirmError(); return; }
               // success: setSession (via onAuthStateChange SIGNED_IN) clears _confirming
