@@ -26,15 +26,46 @@
 
   // #36 + polish: open the menu ABOVE the chip, and lay the native
   // .dashboard-btn rows out horizontally (icon beside label, not stacked).
+  // #67 — one type ramp for EVERY row. Natively the menu mixes two row kinds:
+  // .dashboard-btn (Settings/Logout, bold <strong> labels) and .lok-acct-row
+  // (Upgrade/Help + our injected rows, plain anchors, no padding) — which is
+  // exactly the font-size/weight inconsistency Francesca flagged. Both kinds
+  // now share the same font, size, weight, color, padding, radius and hover.
   var MENU_CSS =
-    '.lok-acct .lok-acct-menu{top:auto !important;bottom:calc(100% + 6px) !important;}' +
-    '.lok-acct .lok-acct-menu .dashboard-btn{display:flex;flex-direction:row;align-items:center;gap:10px;padding:8px 12px;}' +
+    '.lok-acct .lok-acct-menu{top:auto !important;bottom:calc(100% + 6px) !important;' +
+      'background:#fff;border:1px solid #ECECF4;border-radius:12px;' +
+      'box-shadow:0 12px 32px rgba(38,10,80,0.12);padding:6px;min-width:224px;}' +
+    '.lok-acct .lok-acct-menu .dashboard-btn,' +
+    '.lok-acct .lok-acct-menu .lok-acct-row{' +
+      'display:flex;flex-direction:row;align-items:center;gap:10px;padding:9px 12px;' +
+      "font-family:'Plus Jakarta Sans',sans-serif;font-size:13.5px;font-weight:600;" +
+      'color:#44445A;line-height:1.2;text-decoration:none;border-radius:8px;' +
+      'white-space:nowrap;transition:background .12s ease,color .12s ease;}' +
+    // Neutralize the native bold <strong> so Settings/Logout match the rest.
+    '.lok-acct .lok-acct-menu .dashboard-btn strong.dashboard-menu{' +
+      "font-family:'Plus Jakarta Sans',sans-serif;font-size:13.5px;font-weight:600;}" +
+    '.lok-acct .lok-acct-menu .dashboard-btn:hover,' +
+    '.lok-acct .lok-acct-menu .lok-acct-row:hover{background:#F3EBFF;color:#6002EE;}' +
     '.lok-acct .lok-acct-menu .dashboard-btn .icon-div{width:28px;height:28px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;}' +
     '.lok-acct .lok-acct-menu .dashboard-btn .icon-div img{width:16px;height:16px;}' +
     // #51 — icon-bearing rows line up like the Settings row: icon box + label.
-    '.lok-acct .lok-acct-menu .lok-acct-row{display:flex;align-items:center;gap:10px;}' +
     '.lok-acct .lok-acct-menu .lok-acct-row .lok-row-ic{width:28px;height:28px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;}' +
-    '.lok-acct .lok-acct-menu .lok-acct-row .lok-row-ic svg{width:16px;height:16px;display:block;}';
+    '.lok-acct .lok-acct-menu .lok-acct-row .lok-row-ic svg{width:16px;height:16px;display:block;}' +
+    // #67 — quiet divider before Logout.
+    '.lok-acct .lok-acct-menu #button-logout{border-top:1px solid #EFEFF5;margin-top:6px;padding-top:10px;border-radius:0 0 8px 8px;}' +
+    // #67 — chip layout: caret right-aligned and vertically centered against
+    // the whole chip (it used to hug the name/plan column — "mis-placed").
+    '.lok-acct .lok-acct-chip{display:flex;align-items:center;gap:10px;cursor:pointer;}' +
+    '.lok-acct .lok-acct-chip .lok-acct-meta{flex:1 1 auto;min-width:0;}' +
+    '.lok-acct .lok-acct-chip .lok-acct-name{font-family:\'Plus Jakarta Sans\',sans-serif;font-size:13.5px;font-weight:700;color:#2E2E3F;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}' +
+    '.lok-acct .lok-acct-chip .lok-acct-plan{font-family:\'Plus Jakarta Sans\',sans-serif;font-size:11.5px;font-weight:500;color:#8A8AA0;}' +
+    '.lok-acct .lok-acct-caret{margin-left:auto;flex:0 0 auto;width:26px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:8px;color:#6B6B80;transition:transform .18s ease,background .12s ease,color .12s ease;}' +
+    '.lok-acct .lok-acct-caret svg{width:14px;height:14px;display:block;}' +
+    '.lok-acct .lok-acct-chip:hover .lok-acct-caret{background:#F3EBFF;color:#6002EE;}';
+
+  // #67 — a real chevron instead of the native "⌄" text glyph (which sat on
+  // the text baseline and read as floating/misaligned).
+  var CARET_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
 
   // #51 — 16px stroke icons (currentColor, so they inherit each row's text
   // color) for the rows that shipped without one; sized to match Settings.
@@ -53,10 +84,22 @@
     row.insertBefore(ic, row.firstChild);
   }
 
+  // #67(a) — the native row says "Upgrade to Featured", but a vendor could go
+  // to Pro OR Featured, so don't hard-code the tier. Swaps only the label
+  // text node, preserving the injected icon span.
+  function setRowLabel(row, label) {
+    if (!row) return;
+    for (var i = 0; i < row.childNodes.length; i++) {
+      var n = row.childNodes[i];
+      if (n.nodeType === 3 && n.nodeValue && n.nodeValue.trim()) { n.nodeValue = label; return; }
+    }
+  }
+
   // Find the Help/contact row by destination (native markup has no hook class).
   function decorateMenuRows(wrap) {
     var menu = wrap.querySelector('.lok-acct-menu');
     if (!menu) return;
+    setRowLabel(menu.querySelector('.lok-acct-upgrade'), 'Upgrade'); // #67(a)
     addRowIcon(menu.querySelector('.lok-acct-upgrade'), 'upgrade');
     addRowIcon(menu.querySelector('[data-lok-customer-row]'), 'customer');
     addRowIcon(menu.querySelector('[data-lok-signin-row]'), 'signin');
@@ -173,6 +216,7 @@
     var caret = wrap.querySelector('.lok-acct-caret');
     if (!chip || !menu || chip.getAttribute('data-lok-bound')) return;
     chip.setAttribute('data-lok-bound', '1');
+    if (caret) caret.innerHTML = CARET_SVG; // #67(b) — replace the "⌄" glyph
     var open = false;
     function set(o) { open = o; menu.style.display = o ? 'block' : 'none'; if (caret) caret.style.transform = o ? 'rotate(180deg)' : ''; }
     set(false); // start closed regardless of the Designer default
