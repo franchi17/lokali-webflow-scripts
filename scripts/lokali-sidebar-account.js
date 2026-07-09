@@ -61,7 +61,19 @@
     '.lok-acct .lok-acct-chip .lok-acct-plan{font-family:\'Plus Jakarta Sans\',sans-serif;font-size:11.5px;font-weight:500;color:#8A8AA0;}' +
     '.lok-acct .lok-acct-caret{margin-left:auto;flex:0 0 auto;width:26px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:8px;color:#6B6B80;transition:transform .18s ease,background .12s ease,color .12s ease;}' +
     '.lok-acct .lok-acct-caret svg{width:14px;height:14px;display:block;}' +
-    '.lok-acct .lok-acct-chip:hover .lok-acct-caret{background:#F3EBFF;color:#6002EE;}';
+    '.lok-acct .lok-acct-chip:hover .lok-acct-caret{background:#F3EBFF;color:#6002EE;}' +
+    // #67 round 2 (Francesca 2026-07-09) — page-layout fixes, safe here because
+    // this CSS is only injected on pages that have the sidebar chip:
+    // (1) The sidebar's in-flow wrapper (.div-block-27, 186px) still occupied
+    //     layout width even though the actual sidebar (.section-11) is
+    //     position:fixed AND the v1.4.21 fix already offsets the body by
+    //     230px — a doubled offset that left ~186px of dead space and made
+    //     the left rail read "way too wide". Collapse the wrapper; the fixed
+    //     sidebar child is unaffected by its parent's width.
+    '.div-block-27{width:0 !important;min-width:0 !important;flex:0 0 0 !important;}' +
+    // (2) The KPI-card row sat at the exact pixel the page heading ends —
+    //     give the "Good to see you" header breathing room.
+    '.div-block-41{margin-top:20px !important;}';
 
   // #67 — a real chevron instead of the native "⌄" text glyph (which sat on
   // the text baseline and read as floating/misaligned).
