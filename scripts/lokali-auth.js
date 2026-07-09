@@ -1396,6 +1396,27 @@
           }
         }
 
+        // A stored session can be STALE — the account was deleted, or the token
+        // revoked. supabase-js keeps serving it from localStorage until an API
+        // call 401s, but on /login nothing makes such a call, so the form stays
+        // hidden ("signed in") forever and the user is stranded. Validate the
+        // session against the server once on boot; if it's dead, sign out so the
+        // login form appears. (Skips the recovery flow, which owns its own UI.)
+        if (_session && !_recoveryMode) {
+          c.auth.getUser().then(function (ures) {
+            var uerr = ures && ures.error;
+            // Only a definitive auth rejection (401/403) proves the session is
+            // dead. Ignore transient/network errors so a blip never logs a valid
+            // user out.
+            if (uerr && (uerr.status === 401 || uerr.status === 403)) {
+              c.auth.signOut().catch(function () {});
+              setSession(null);
+              _confirming = false;
+              try { mountAuthUI(); } catch (e) {}
+            }
+          }).catch(function () {});
+        }
+
         // If the URL carries an auth code (email confirm / OAuth return /
         // recovery link, PKCE flow), hold routing briefly so a trailing
         // PASSWORD_RECOVERY event can flip _recoveryMode before we redirect.
