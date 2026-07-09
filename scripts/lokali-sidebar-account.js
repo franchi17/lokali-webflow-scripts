@@ -73,7 +73,16 @@
     '.div-block-27{width:0 !important;min-width:0 !important;flex:0 0 0 !important;}' +
     // (2) The KPI-card row sat at the exact pixel the page heading ends —
     //     give the "Good to see you" header breathing room.
-    '.div-block-41{margin-top:20px !important;}';
+    '.div-block-41{margin-top:20px !important;}' +
+    // #67 round 5 — (3) unify the content offset. lokali-dashboard.js pads the
+    // body 200px (stale: the rail was once 200 wide; it's 230 now), so on
+    // every page except dashboard-home (whose page embed pads 230) content
+    // started 30px UNDER the rail with ~10px visible gap. One value, all pages.
+    '@media (min-width:992px){body{padding-left:230px !important;}}' +
+    // (4) current-page nav row: Webflow stamps w--current but styles nothing —
+    // give it the solid pressed state so vendors can see where they are.
+    '.section-11 .dashboard-btn.w--current{background:#F3EBFF;border-radius:8px;}' +
+    '.section-11 .dashboard-btn.w--current,.section-11 .dashboard-btn.w--current strong.dashboard-menu{color:#6002EE;}';
 
   // #67 — a real chevron instead of the native "⌄" text glyph (which sat on
   // the text baseline and read as floating/misaligned).
