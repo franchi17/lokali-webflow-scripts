@@ -354,7 +354,11 @@
       '#clerk-sign-in, #clerk-sign-up { display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%; padding:2rem 1rem; box-sizing:border-box; }',
       '#clerk-sign-in > *, #clerk-sign-up > * { max-width:100%; }',
       // card + form
-      ".lok-auth{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif;width:100%;max-width:400px;margin:0 auto;box-sizing:border-box;}",
+      ".lok-auth{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif;width:100%;max-width:440px;margin:0 auto;box-sizing:border-box;}",
+      // Page mounts sit inside a Webflow wrapper whose descendant rule forces
+      // max-width:100% on .lok-auth — win with id specificity + !important so the
+      // form stays a centered card, not full-bleed. (Overlay .lok-auth unaffected.)
+      '#clerk-sign-in .lok-auth,#clerk-sign-up .lok-auth{max-width:440px !important;margin-left:auto !important;margin-right:auto !important;}',
       '.lok-auth *,.lok-auth *:before,.lok-auth *:after{box-sizing:border-box;font-family:inherit;}',
       '.lok-auth-card{background:#fff;border:1px solid #ECE8F8;border-radius:16px;padding:32px 28px;box-shadow:0 10px 30px rgba(35,29,63,.08);}',
       '.lok-auth h2{margin:0 0 6px;font-size:22px;font-weight:700;color:#231D3F;text-align:center;line-height:1.3;}',
