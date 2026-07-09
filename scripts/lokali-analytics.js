@@ -27,7 +27,10 @@
 
   var CSS = [
     '#lok-analytics-section{font-family:"Plus Jakarta Sans",-apple-system,sans-serif;color:' + INK + ';}',
-    '#lok-analytics-section .an-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:1rem;}',
+    // 4 KPI cards → one row of 4 on desktop, 2×2 on middling widths, 1-wide on
+    // phones (was repeat(3,1fr): 3 across + a stray 4th on its own row).
+    '#lok-analytics-section .an-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:1rem;}',
+    '@media(max-width:1100px) and (min-width:721px){#lok-analytics-section .an-grid{grid-template-columns:1fr 1fr;}}',
     '#lok-analytics-section .an-card{background:#fff;border:.5px solid ' + BORDER + ';border-radius:10px;padding:1.25rem;}',
     '#lok-analytics-section .an-kpi{display:flex;flex-direction:column;gap:6px;}',
     '#lok-analytics-section .an-klabel{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:' + SLATE + ';}',
