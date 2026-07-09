@@ -34,22 +34,22 @@
   var MENU_CSS =
     '.lok-acct .lok-acct-menu{top:auto !important;bottom:calc(100% + 6px) !important;' +
       'background:#fff;border:1px solid #ECECF4;border-radius:12px;' +
-      'box-shadow:0 12px 32px rgba(38,10,80,0.12);padding:6px;min-width:224px;}' +
+      'box-shadow:0 12px 32px rgba(38,10,80,0.12);padding:6px;left:0;right:0;min-width:0;width:auto;}' +
     '.lok-acct .lok-acct-menu .dashboard-btn,' +
     '.lok-acct .lok-acct-menu .lok-acct-row{' +
-      'display:flex;flex-direction:row;align-items:center;gap:10px;padding:9px 12px;' +
-      "font-family:'Plus Jakarta Sans',sans-serif;font-size:13.5px;font-weight:600;" +
+      'display:flex;flex-direction:row;align-items:center;gap:8px;padding:9px 10px;' +
+      "font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:600;" +
       'color:#44445A;line-height:1.2;text-decoration:none;border-radius:8px;' +
-      'white-space:nowrap;transition:background .12s ease,color .12s ease;}' +
+      'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:background .12s ease,color .12s ease;}' +
     // Neutralize the native bold <strong> so Settings/Logout match the rest.
     '.lok-acct .lok-acct-menu .dashboard-btn strong.dashboard-menu{' +
-      "font-family:'Plus Jakarta Sans',sans-serif;font-size:13.5px;font-weight:600;}" +
+      "font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:600;}" +
     '.lok-acct .lok-acct-menu .dashboard-btn:hover,' +
     '.lok-acct .lok-acct-menu .lok-acct-row:hover{background:#F3EBFF;color:#6002EE;}' +
-    '.lok-acct .lok-acct-menu .dashboard-btn .icon-div{width:28px;height:28px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;}' +
+    '.lok-acct .lok-acct-menu .dashboard-btn .icon-div{width:24px;height:24px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;}' +
     '.lok-acct .lok-acct-menu .dashboard-btn .icon-div img{width:16px;height:16px;}' +
     // #51 — icon-bearing rows line up like the Settings row: icon box + label.
-    '.lok-acct .lok-acct-menu .lok-acct-row .lok-row-ic{width:28px;height:28px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;}' +
+    '.lok-acct .lok-acct-menu .lok-acct-row .lok-row-ic{width:24px;height:24px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;}' +
     '.lok-acct .lok-acct-menu .lok-acct-row .lok-row-ic svg{width:16px;height:16px;display:block;}' +
     // #67 — quiet divider before Logout.
     '.lok-acct .lok-acct-menu #button-logout{border-top:1px solid #EFEFF5;margin-top:6px;padding-top:10px;border-radius:0 0 8px 8px;}' +
