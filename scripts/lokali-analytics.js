@@ -160,13 +160,18 @@
     return wrap;
   }
 
-  function isTopTier(vendor) {
-    if (!vendor) return false;
-    var p = String(vendor.plan || vendor.tier || vendor.plan_name || vendor.subscription_tier || vendor.plan_tier || '').toLowerCase();
+  // Plan truth comes from the BILLING endpoint — the vendor row carries no
+  // plan field (same trap lokali-sidebar-account.js documents), so the old
+  // vendor-only check was ALWAYS false and the upsell never hid.
+  function isTopTier(vendor, billing) {
+    var p = String(
+      (billing && (billing.plan || billing.plan_code)) ||
+      (vendor && (vendor.plan || vendor.tier || vendor.plan_name || vendor.subscription_tier || vendor.plan_tier)) || ''
+    ).toLowerCase();
     return p.indexOf('featured') >= 0 || p.indexOf('spotlight') >= 0;
   }
 
-  function render(mount, data, services, products, vendor) {
+  function render(mount, data, services, products, vendor, billing) {
     var views = (data && data.views) || [];
     var inq = (data && data.inquiries) || [];
     var con = (data && data.contacts) || [];
@@ -231,14 +236,15 @@
     two.appendChild(rankCard('Top products by views', topProd, ORANGE));
     mount.appendChild(two);
 
-    // tier-aware upsell
-    if (!isTopTier(vendor)) {
+    // tier-aware upsell — hidden once the vendor is on the top tier (#67:
+    // tier-agnostic label; a vendor could pick Pro or Featured on /pricing).
+    if (!isTopTier(vendor, billing)) {
       var up = el('div', 'an-up');
       var ut = el('div');
       ut.appendChild(el('div', 'an-up-t', 'Get seen by more local customers'));
       ut.appendChild(el('div', 'an-up-s', 'Featured vendors appear at the top of their category with a Featured badge on every listing.'));
       up.appendChild(ut);
-      var btn = el('a', 'an-up-btn', 'Upgrade to Featured'); btn.href = '/pricing';
+      var btn = el('a', 'an-up-btn', 'Upgrade'); btn.href = '/pricing';
       up.appendChild(btn);
       mount.appendChild(up);
     }
@@ -259,7 +265,9 @@
       API.leads.analytics(),
       API.services && API.services.getMine ? API.services.getMine() : Promise.resolve(null),
       API.products && API.products.getMine ? API.products.getMine() : Promise.resolve(null),
-      API.vendors && API.vendors.me ? API.vendors.me() : Promise.resolve(null)
+      API.vendors && API.vendors.me ? API.vendors.me() : Promise.resolve(null),
+      // Billing = plan truth (vendor row has no plan field); best-effort.
+      API.plans && API.plans.getMyBilling ? API.plans.getMyBilling().catch(function () { return null; }) : Promise.resolve(null)
     ];
     Promise.all(calls).then(function (r) {
       var data = unwrap(r[0]);
@@ -268,7 +276,7 @@
         var c = el('div', 'an-card'); c.appendChild(el('div', 'an-empty', 'Analytics are taking a moment to load. Refresh in a few seconds.'));
         mount.appendChild(c); return;
       }
-      render(mount, data, asArray(unwrap(r[1])), asArray(unwrap(r[2])), unwrap(r[3]));
+      render(mount, data, asArray(unwrap(r[1])), asArray(unwrap(r[2])), unwrap(r[3]), unwrap(r[4]));
     });
   }
 
