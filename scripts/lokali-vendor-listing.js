@@ -817,12 +817,86 @@
       } else { web.textContent = '—'; web.removeAttribute('href'); }
     }
 
+    renderPayLinks(v);
     initContact(v);
     injectVendorReport(v);
     if (v.id != null) {
       var hero = document.querySelector('[data-lokali-vendor-id]');
       if (hero) hero.setAttribute('data-lokali-vendor-id', String(v.id));
     }
+  }
+
+  // ---- payment links (About tab) ----------------------------------------
+  // Vendor-provided P2P handles → on-brand pay buttons in the About tab. Handles
+  // are re-sanitized here (defense in depth) and the URL is built from a fixed
+  // template — a raw handle never becomes an href. The generic link must be
+  // https:// or it's dropped. Clicks log a lead_event (venmo|cashapp|paypal|other_pay).
+  function _payHandle(raw) {
+    if (raw == null) return '';
+    var s = String(raw).trim().replace(/^[@$]/, '');
+    return /^[A-Za-z0-9._-]{1,30}$/.test(s) ? s : '';
+  }
+  function _payHttps(raw) {
+    if (!raw) return '';
+    try { var u = new URL(String(raw).trim()); return u.protocol === 'https:' ? u.href : ''; }
+    catch (e) { return ''; }
+  }
+  function renderPayLinks(v) {
+    var existing = document.getElementById('lok-pay-links');
+    if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
+
+    var methods = [];
+    var vm = _payHandle(v.venmo_username);
+    if (vm) methods.push({ type: 'venmo', label: 'Venmo', href: 'https://venmo.com/u/' + vm });
+    var ca = _payHandle(v.cashapp_cashtag);
+    if (ca) methods.push({ type: 'cashapp', label: 'Cash App', href: 'https://cash.app/$' + ca });
+    var pp = _payHandle(v.paypalme_slug);
+    if (pp) methods.push({ type: 'paypal', label: 'PayPal', href: 'https://paypal.me/' + pp });
+    var other = _payHttps(v.other_pay_url);
+    if (other) {
+      var lbl = (v.other_pay_label && String(v.other_pay_label).trim())
+        || String(other).replace(/^https:\/\//i, '').replace(/^www\./i, '').replace(/\/.*$/, '');
+      methods.push({ type: 'other_pay', label: lbl, href: other });
+    }
+    if (!methods.length) return;
+
+    // Anchor into the About tab, just below the website detail.
+    var anchor = document.getElementById('vl-about-website') || document.getElementById('vl-about-bio');
+    if (!anchor) return;
+    var row = anchor.closest ? (anchor.closest('[class*="vl-detail"]') || anchor.parentNode) : anchor.parentNode;
+    if (!row || !row.parentNode) return;
+
+    var wrap = ce('div'); wrap.id = 'lok-pay-links';
+    wrap.style.cssText = 'margin-top:16px;font-family:"Plus Jakarta Sans",sans-serif;';
+
+    var head = ce('div');
+    head.textContent = 'Pay ' + (v.business_name || 'this vendor');
+    head.style.cssText = 'font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#8E8BA6;margin-bottom:8px;';
+    wrap.appendChild(head);
+
+    var btnRow = ce('div');
+    btnRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;';
+    methods.forEach(function (m) {
+      var a = ce('a');
+      a.href = m.href;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      a.textContent = m.label;
+      a.style.cssText = 'display:inline-flex;align-items:center;font-family:"Plus Jakarta Sans",sans-serif;font-size:13px;font-weight:600;color:#6002EE;background:#fff;border:1px solid #6002EE;border-radius:100px;padding:8px 16px;text-decoration:none;transition:background .12s,color .12s;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+      a.addEventListener('mouseenter', function () { a.style.background = '#6002EE'; a.style.color = '#fff'; });
+      a.addEventListener('mouseleave', function () { a.style.background = '#fff'; a.style.color = '#6002EE'; });
+      trackChannel(a, m.type);
+      btnRow.appendChild(a);
+    });
+    wrap.appendChild(btnRow);
+
+    var disc = ce('div');
+    disc.textContent = "Payments go directly to the vendor. Lokali doesn't process or guarantee them.";
+    disc.style.cssText = 'margin-top:8px;font-size:11px;color:#8E8BA6;line-height:1.4;';
+    wrap.appendChild(disc);
+
+    if (row.nextSibling) row.parentNode.insertBefore(wrap, row.nextSibling);
+    else row.parentNode.appendChild(wrap);
   }
 
   // ---- labels (categories + locations) ----------------------------------

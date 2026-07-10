@@ -139,7 +139,10 @@
     'business_name', 'business_description', 'business_tagline', 'website_url',
     'instagram_url', 'locations_id', 'categories_id', 'profile_photo',
     'text_messages', 'whatsapp_messages', 'phone_number', 'phone_visible',
-    'contact_email', 'address'
+    'contact_email', 'address',
+    // P2P payment handles (stored bare; URL built at render time).
+    'venmo_username', 'cashapp_cashtag', 'paypalme_slug',
+    'other_pay_url', 'other_pay_label'
     // NB: 'slug' is intentionally NOT here — it changes only via vendors.changeSlug
     // (the validated/rate-limited path) or the auto-slug trigger.
   ];
@@ -173,7 +176,8 @@
     'website_url,instagram_url,locations_id,categories_id,profile_photo,' +
     'text_messages,whatsapp_messages,phone_number,phone_visible,contact_email,' +
     'created_at,is_active,slug,is_founding_member,' +
-    'is_spotlight,spotlight_until,is_verified';
+    'is_spotlight,spotlight_until,is_verified,' +
+    'venmo_username,cashapp_cashtag,paypalme_slug,other_pay_url,other_pay_label';
   // Photo-gallery kind -> its table + parent-id column.
   var PHOTO_TABLES = {
     service: { table: 'service_photos', parent: 'services_id' },

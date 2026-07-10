@@ -111,6 +111,44 @@
     return v;
   }
 
+  // Payment-link clicks are a DISTINCT signal from contact leads: they don't
+  // enter the "Leads" KPI or the follow-up inbox — they get their own count.
+  var PAYMENT_EVENT_TYPES = { venmo: 1, cashapp: 1, paypal: 1, other_pay: 1 };
+  function isPaymentEvent(e) { return !!(e && PAYMENT_EVENT_TYPES[e.event_type]); }
+
+  // ── payment-handle normalization ──────────────────────────────────────────
+  // Venmo/Cash App/PayPal.me are stored BARE (no @, $, or URL); the render side
+  // builds the canonical link. Strip common prefixes, then whitelist the charset
+  // so the constructed href can never carry an injection. Empty/invalid → ''.
+  function normalizePayHandle(raw) {
+    if (raw == null) return '';
+    var s = String(raw).trim();
+    if (!s) return '';
+    s = s.replace(/^https?:\/\//i, '').replace(/^www\./i, '');
+    // Drop a known host prefix if the vendor pasted a full URL.
+    s = s.replace(/^venmo\.com\/(u\/)?/i, '')
+         .replace(/^account\.venmo\.com\/(u\/)?/i, '')
+         .replace(/^cash\.app\//i, '')
+         .replace(/^paypal\.me\//i, '');
+    s = s.replace(/^[@$]/, '').replace(/\/.*$/, '').trim();      // strip @/$ + any path tail
+    if (!/^[A-Za-z0-9._-]{1,30}$/.test(s)) return '';            // charset + length guard
+    return s;
+  }
+
+  // The generic "other" link is a full URL we can't template, so it must be
+  // https:// (kills javascript:/data:/http:) and parse cleanly. Anything else → ''.
+  function normalizePayUrl(raw) {
+    if (raw == null) return '';
+    var s = String(raw).trim();
+    if (!s) return '';
+    if (!/^https:\/\//i.test(s)) { if (/^[a-z]+:/i.test(s)) return ''; s = 'https://' + s; }
+    try {
+      var u = new URL(s);
+      if (u.protocol !== 'https:') return '';
+      return u.href;
+    } catch (e) { return ''; }
+  }
+
   // ── auth/session plumbing (Supabase Auth owns identity now) ───────────────
   // Live session check via LokaliAuth (lokali-auth.js) — sync, from the
   // last-known supabase session.
@@ -441,8 +479,18 @@
         text_messages: !!payload.text_messages,
         whatsapp_messages: !!payload.whatsapp_messages,
         instagram_url: payload.instagram_url != null ? String(payload.instagram_url)
-          : (payload.instagram_handle != null ? String(payload.instagram_handle) : '')
+          : (payload.instagram_handle != null ? String(payload.instagram_handle) : ''),
+        // P2P payment handles — normalized to bare identifiers (the render side
+        // builds venmo.com/u/…, cash.app/$…, paypal.me/… from these). The generic
+        // link is validated to https:// only; anything else is dropped to ''.
+        venmo_username:  normalizePayHandle(payload.venmo_username),
+        cashapp_cashtag: normalizePayHandle(payload.cashapp_cashtag),
+        paypalme_slug:   normalizePayHandle(payload.paypalme_slug),
+        other_pay_url:   normalizePayUrl(payload.other_pay_url),
+        other_pay_label: payload.other_pay_label != null ? String(payload.other_pay_label).trim().slice(0, 40) : ''
       };
+      // A generic link with no valid URL clears its label too (no orphan label).
+      if (!fields.other_pay_url) fields.other_pay_label = '';
       return withVendor(function (vid) {
         return SAPI().vendors.updateProfile(vid, fields).then(function (res) {
           invalidateMe();
@@ -769,6 +817,7 @@
           var cutoff = Date.now() - THIRTY_D;
           var inquiries = normalizeTs(iq.data || []);
           var events = normalizeTs(ev.data || []).filter(function (e) {
+            if (isPaymentEvent(e)) return false; // payment clicks are a separate metric
             return typeof e.created_at === 'number' ? e.created_at >= cutoff : true;
           });
           return { data: { inquiries: inquiries, events_30d: events }, error: null, status: 200 };
@@ -790,7 +839,10 @@
           var now = Date.now();
           var winStart = now - ONE80_D;
           var inquiries = normalizeTs(iq.data || []);
-          var events = normalizeTs(ev.data || []);
+          var allEvents = normalizeTs(ev.data || []);
+          // Split payment-link clicks off from contact leads — they're their own metric.
+          var payEvents = allEvents.filter(isPaymentEvent);
+          var events = allEvents.filter(function (e) { return !isPaymentEvent(e); });
           var views = normalizeTs(pv.data || []);
           var unread = inquiries.filter(function (i) { return i.is_read !== true; }).length;
           function inWindow(r) { return typeof r.created_at === 'number' ? r.created_at >= winStart : true; }
@@ -800,12 +852,14 @@
               window_start: winStart,
               totals: {
                 inquiries: inquiries.length,           // all-time (full table for this vendor)
-                contacts: events.length,               // all-time
+                contacts: events.length,               // all-time (payment clicks excluded)
+                payment_clicks: payEvents.length,      // all-time, separate from contacts
                 views: typeof viewsTotal === 'number' ? viewsTotal : views.length,
                 unread: unread
               },
               inquiries: inquiries.filter(inWindow).map(function (i) { return { created_at: i.created_at }; }),
               contacts: events.filter(inWindow).map(function (e) { return { created_at: e.created_at, event_type: e.event_type }; }),
+              payment_clicks: payEvents.filter(inWindow).map(function (e) { return { created_at: e.created_at, event_type: e.event_type }; }),
               views: views.map(function (v) { return { created_at: v.created_at, source: v.source, item_id: v.item_id }; })
             },
             error: null, status: 200

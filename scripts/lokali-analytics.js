@@ -245,6 +245,8 @@
     var views = (data && data.views) || [];
     var inq = (data && data.inquiries) || [];
     var con = (data && data.contacts) || [];
+    var pay = (data && data.payment_clicks) || [];
+    var pay30 = inWin(pay, 0, DAY30), payPrev = inWin(pay, DAY30, 2 * DAY30);
 
     var views30 = inWin(views, 0, DAY30), viewsPrev = inWin(views, DAY30, 2 * DAY30);
     var leads30 = inWin(inq, 0, DAY30) + inWin(con, 0, DAY30);
@@ -262,6 +264,10 @@
     grid.appendChild(kpiCard('View → Lead rate', rate.toFixed(1) + '<small>%</small>', deltaChip(rate, ratePrev, 'pts'), 'Views that became leads'));
     var leadsLink = el('a', 'an-klink', 'See all in Leads →'); leadsLink.href = '/vendor-dashboard/leads';
     grid.appendChild(kpiCard('Leads', String(leads30), null, leadsLink));
+
+    // Payment clicks — taps on the vendor's Venmo/Cash App/PayPal/other pay links.
+    // A distinct, high-intent signal; deliberately NOT folded into Leads.
+    grid.appendChild(kpiCard('Payment clicks', String(pay30), deltaChip(pay30, payPrev), 'taps to pay you directly'));
 
     // Shares KPI — word-of-mouth. Fetched separately from the Shares endpoint
     // (unique customer sharers; the vendor's own Share & Grow links don't count).

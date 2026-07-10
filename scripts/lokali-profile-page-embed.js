@@ -348,8 +348,50 @@ var LokaliProfilePage = (function () {
     return '';
   }
 
+  // The Webflow form has no native inputs for payment handles, so we inject them
+  // (heading + input pairs) right after the Instagram field, reusing the exact
+  // Webflow classes so they inherit the form's styling. Idempotent.
+  var _PAY_FIELDS = [
+    { id: 'input-venmo',         label: 'Venmo username',      ph: 'eg. your-venmo-name (no @)' },
+    { id: 'input-cashapp',       label: 'Cash App $Cashtag',   ph: 'eg. yourcashtag (no $)' },
+    { id: 'input-paypal',        label: 'PayPal.Me',           ph: 'eg. yourpaypalname' },
+    { id: 'input-otherpay-url',  label: 'Other payment link',  ph: 'https://…' },
+    { id: 'input-otherpay-label', label: 'Label for the link (optional)', ph: 'eg. Buy Me a Coffee' }
+  ];
+  function _injectPaymentFields() {
+    if (document.getElementById('input-venmo')) return; // already injected
+    var anchor = document.getElementById('input-instagram') || document.getElementById('website');
+    if (!anchor || !anchor.parentNode) return;
+    var parent = anchor.parentNode;
+    // Insert after the anchor input (and after any heading that follows it).
+    var insertAfter = anchor;
+    var frag = document.createDocumentFragment();
+    var groupHeading = document.createElement('div');
+    groupHeading.className = 'input-heading';
+    groupHeading.textContent = 'Payment links (optional)';
+    groupHeading.style.marginTop = '6px';
+    frag.appendChild(groupHeading);
+    _PAY_FIELDS.forEach(function (f) {
+      var h = document.createElement('div');
+      h.className = 'input-heading';
+      h.textContent = f.label;
+      var inp = document.createElement('input');
+      inp.className = 'input-field w-input';
+      inp.setAttribute('maxlength', '256');
+      inp.type = 'text';
+      inp.id = f.id;
+      inp.placeholder = f.ph;
+      inp.autocomplete = 'off';
+      frag.appendChild(h);
+      frag.appendChild(inp);
+    });
+    if (insertAfter.nextSibling) parent.insertBefore(frag, insertAfter.nextSibling);
+    else parent.appendChild(frag);
+  }
+
   function populateUI() {
     if (!_vendor) return;
+    _injectPaymentFields();
     _dbg('[LokaliProfile] tagline value from API:', JSON.stringify(_vendor.tagline), '| business_tagline:', JSON.stringify(_vendor.business_tagline));
 
     _setTextValueAnyId(['input-business-name', 'business-name', 'business_name'], _v('business_name', 'businessName'));
@@ -357,6 +399,11 @@ var LokaliProfilePage = (function () {
     _setTextValueAnyId(['input-tagline', 'tagline', 'business-tagline', 'business_tagline'], _v('tagline', 'business_tagline', 'businessTagline'));
     _setTextValueAnyId(['input-instagram', 'instagram', 'instagram-handle', 'instagram_handle', 'instagram_url'], _v('instagram_url', 'instagram_handle', 'instagram'));
     _setTextValueAnyId(['input-website', 'website', 'website_url'], _v('website_url', 'websiteUrl'));
+    _setTextValueAnyId(['input-venmo'], _v('venmo_username'));
+    _setTextValueAnyId(['input-cashapp'], _v('cashapp_cashtag'));
+    _setTextValueAnyId(['input-paypal'], _v('paypalme_slug'));
+    _setTextValueAnyId(['input-otherpay-url'], _v('other_pay_url'));
+    _setTextValueAnyId(['input-otherpay-label'], _v('other_pay_label'));
     _setTextValueAnyId(['input-contact-email', 'contact-email', 'contact_email', 'public_email'], _v('contact_email', 'contactEmail'));
     var addressVal = _v('address');
     var addressEl = _getAddressEl();
@@ -729,6 +776,11 @@ var LokaliProfilePage = (function () {
       tagline:              _getValueByAnyId(['input-tagline', 'tagline', 'business-tagline', 'business_tagline']),
       instagram_handle:     _getValueByAnyId(['input-instagram', 'instagram', 'instagram-handle', 'instagram_handle', 'instagram_url']),
       website_url:          _getValueByAnyId(['input-website', 'website', 'website_url']),
+      venmo_username:       _getValueByAnyId(['input-venmo']),
+      cashapp_cashtag:      _getValueByAnyId(['input-cashapp']),
+      paypalme_slug:        _getValueByAnyId(['input-paypal']),
+      other_pay_url:        _getValueByAnyId(['input-otherpay-url']),
+      other_pay_label:      _getValueByAnyId(['input-otherpay-label']),
       contact_email:        _getValueByAnyId(['input-contact-email', 'contact-email', 'contact_email', 'public_email']),
       phone_number:         phoneNumber,
       address:              addressValue,
@@ -780,6 +832,11 @@ var LokaliProfilePage = (function () {
       tagline:              payload.tagline != null ? String(payload.tagline) : '',
       instagram_handle:     payload.instagram_handle != null ? String(payload.instagram_handle) : '',
       website_url:          payload.website_url != null ? String(payload.website_url) : '',
+      venmo_username:       payload.venmo_username != null ? String(payload.venmo_username) : '',
+      cashapp_cashtag:      payload.cashapp_cashtag != null ? String(payload.cashapp_cashtag) : '',
+      paypalme_slug:        payload.paypalme_slug != null ? String(payload.paypalme_slug) : '',
+      other_pay_url:        payload.other_pay_url != null ? String(payload.other_pay_url) : '',
+      other_pay_label:      payload.other_pay_label != null ? String(payload.other_pay_label) : '',
       contact_email:        payload.contact_email != null ? String(payload.contact_email) : '',
       phone_number:         payload.phone_number != null ? String(payload.phone_number) : '',
       address:              payload.address != null ? String(payload.address) : '',
