@@ -235,6 +235,20 @@
       R + '.lk-toggle.on{background:' + V + ';}',
       R + '.lk-toggle.on::after{transform:translateX(17px);}',
       R + '.lk-save-bar{display:flex;justify-content:flex-end;margin:1.25rem 0 2rem;}',
+      // #66 Phase 1 — "Open your storefront" card (shown to people without one).
+      R + '.lk-sf{background:linear-gradient(135deg,#F3EBFF 0%,#FAF7FF 50%,#FFF4EC 100%);border:.5px solid ' + VM + ';border-radius:16px;padding:18px 20px;margin-bottom:1.5rem;display:flex;align-items:center;gap:16px;}',
+      R + '.lk-sf-icon{width:46px;height:46px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:' + V + ';color:#fff;box-shadow:0 4px 14px rgba(96,2,238,.22);}',
+      R + '.lk-sf-body{flex:1;min-width:0;}',
+      R + '.lk-sf-title{font-size:15px;font-weight:600;letter-spacing:-.2px;}',
+      R + '.lk-sf-sub{font-size:12.5px;color:' + DUSK + ';margin-top:3px;line-height:1.5;}',
+      R + '.lk-sf-cta{font-family:' + F + ';font-size:12.5px;font-weight:600;color:#fff;background:#FF8D00;border:none;border-radius:9px;padding:9px 15px;cursor:pointer;flex-shrink:0;transition:opacity .12s;}',
+      R + '.lk-sf-cta:hover{opacity:.9;}',
+      R + '.lk-sf-form{flex-basis:100%;margin-top:12px;padding-top:14px;border-top:.5px solid ' + VM + ';display:none;}',
+      R + '.lk-sf.open .lk-sf-form{display:block;}',
+      R + '.lk-sf-label{font-size:12px;font-weight:600;color:' + INK + ';margin-bottom:7px;}',
+      R + '.lk-sf-in{font-family:' + F + ';font-size:14px;color:' + INK + ';background:#fff;border:.5px solid ' + FOG + ';border-radius:9px;padding:10px 13px;width:100%;max-width:360px;}',
+      R + '.lk-sf-in:focus{outline:none;border-color:' + V + ';}',
+      R + '.lk-sf-foot{display:flex;gap:8px;margin-top:11px;}',
       R + '.lk-danger{color:#C0392B;}',
       R + '.lk-btn.danger{background:#fff;border:.5px solid #E8B4AE;color:#C0392B;}',
       R + '.lk-btn.danger:hover{background:#FDF0EE;}',
@@ -253,6 +267,9 @@
         '#lokali-account .lk-greet{font-size:18px;}' +
         '#lokali-account .lk-meta{font-size:12px;}' +
         '#lokali-account .lk-stats{margin-left:0;width:100%;justify-content:flex-start;gap:32px;margin-top:2px;}' +
+        '#lokali-account .lk-sf{flex-wrap:wrap;gap:12px;padding:16px;}' +
+        '#lokali-account .lk-sf-body{flex-basis:calc(100% - 62px);}' +
+        '#lokali-account .lk-sf-cta{width:100%;margin-left:0;}' +
         '#lokali-account .lk-seg-wrap{display:flex;width:100%;}' +
         '#lokali-account .lk-seg{flex:1;justify-content:center;padding:9px 6px;}' +
         '#lokali-account .lk-intro{font-size:12.5px;}' +
@@ -280,21 +297,30 @@
   }
 
   // ── state ──────────────────────────────────────────────────
-  var state = { account: null, saved: [], mine: [], awaiting: [] };
+  var state = { account: null, saved: [], mine: [], awaiting: [], hasStorefront: false };
 
   // ── data load ──────────────────────────────────────────────
   function loadAll() {
     var A = api();
+    // #66 Phase 1 — also ask whether this person already owns a storefront, so
+    // the "Open your storefront" card only shows to those who don't. vendors.me()
+    // returns { data: { vendor } } for owners, { data: null } otherwise.
+    var meP = (A.vendors && A.vendors.me)
+      ? A.vendors.me().catch(function () { return { data: null }; })
+      : Promise.resolve({ data: null });
     return Promise.all([
       A.account.get().catch(function () { return { data: null }; }),
       A.request('favorites', 'GET', '/favorites', null, true).catch(function () { return { data: [] }; }),
       A.reviews.mine().catch(function () { return { data: [] }; }),
-      A.reviews.awaiting().catch(function () { return { data: [] }; })
+      A.reviews.awaiting().catch(function () { return { data: [] }; }),
+      meP
     ]).then(function (r) {
       state.account = (r[0] && r[0].data) || {};
       state.saved = arr(r[1] && r[1].data);
       state.mine = arr(r[2] && r[2].data);
       state.awaiting = arr(r[3] && r[3].data);
+      var v = r[4] && r[4].data && r[4].data.vendor;
+      state.hasStorefront = !!(v && v.id != null);
     });
   }
 
@@ -326,6 +352,10 @@
     band.appendChild(stats);
     mount.appendChild(band);
 
+    // #66 Phase 1 — the person-first unlock: people who don't own a storefront
+    // get a card to open one (free). Owners never see it.
+    if (!state.hasStorefront) mount.appendChild(renderStorefrontCTA());
+
     // segmented
     var pane = currentPane();
     var seg = el('div', 'lk-seg-wrap');
@@ -355,6 +385,72 @@
     var segs = mount.querySelectorAll('.lk-seg');
     var idx = PANES.indexOf(pane);
     for (var i = 0; i < segs.length; i++) segs[i].classList.toggle('is-active', i === idx);
+  }
+
+  // ── #66 Phase 1: "Open your storefront" card ───────────────
+  // One login, one person, both capabilities: a shopper can open a storefront
+  // and start selling without a second account. Confirm the business name →
+  // account.openStorefront (server promotes role customer→vendor + creates the
+  // vendors row) → hard-nav to the dashboard (re-boots as a vendor).
+  var SF_REASONS = {
+    name_required: 'Enter a name for your storefront.',
+    admin_cannot_open: "This account can't open a storefront.",
+    unauthorized: 'Please sign in again.'
+  };
+  function renderStorefrontCTA() {
+    var card = el('div', 'lk-sf');
+    card.appendChild(el('div', 'lk-sf-icon',
+      '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.5-5h15L21 9"/><path d="M4 9v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9"/><path d="M3 9a2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 3 0"/><path d="M9 20v-6h6v6"/></svg>'));
+    var body = el('div', 'lk-sf-body');
+    body.appendChild(el('div', 'lk-sf-title', 'Open your storefront'));
+    body.appendChild(el('div', 'lk-sf-sub', "You're all set up to shop. Selling on Lokali too? Open a storefront — it's free to start, and locals can find, contact, and review you."));
+    card.appendChild(body);
+    var cta = el('button', 'lk-sf-cta', 'Open your storefront — free');
+    card.appendChild(cta);
+
+    // Inline confirm form (business name).
+    var form = el('div', 'lk-sf-form');
+    form.appendChild(el('div', 'lk-sf-label', "What's your business called?"));
+    var input = el('input', 'lk-sf-in'); input.type = 'text'; input.placeholder = 'e.g. Pancha Ventures'; input.maxLength = 120;
+    form.appendChild(input);
+    var foot = el('div', 'lk-sf-foot');
+    var create = el('button', 'lk-btn primary', 'Create storefront');
+    var cancel = el('button', 'lk-btn ghost', 'Cancel');
+    foot.appendChild(create); foot.appendChild(cancel);
+    form.appendChild(foot);
+    card.appendChild(form);
+
+    cta.addEventListener('click', function () {
+      var opening = !card.classList.contains('open');
+      card.classList.toggle('open', opening);
+      if (opening) input.focus();
+    });
+    cancel.addEventListener('click', function () { card.classList.remove('open'); });
+    function submit() {
+      var name = (input.value || '').trim();
+      if (!name) { toast(SF_REASONS.name_required); input.focus(); return; }
+      create.disabled = true; create.textContent = 'Creating…';
+      api().account.openStorefront(name).then(function (res) {
+        var d = res && res.data;
+        if (res && res.error) { create.disabled = false; create.textContent = 'Create storefront'; toast('Couldn’t open your storefront — please try again.'); return; }
+        if (!d || d.ok !== true) {
+          create.disabled = false; create.textContent = 'Create storefront';
+          toast(SF_REASONS[d && d.reason] || 'Couldn’t open your storefront — please try again.');
+          return;
+        }
+        // Keep the synchronous role cache honest so the header/menu paint as a
+        // vendor immediately; the dashboard boot re-confirms via get_my_role().
+        try {
+          var c = JSON.parse(localStorage.getItem('LOKALI_ACCT_CACHE') || 'null') || {};
+          c.role = 'vendor'; localStorage.setItem('LOKALI_ACCT_CACHE', JSON.stringify(c));
+        } catch (e) {}
+        toast('Storefront created — taking you to your dashboard…');
+        setTimeout(function () { window.location.href = '/vendor-dashboard/dashboard'; }, 700);
+      });
+    }
+    create.addEventListener('click', submit);
+    input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); submit(); } });
+    return card;
   }
 
   // ── pane: Saved ────────────────────────────────────────────

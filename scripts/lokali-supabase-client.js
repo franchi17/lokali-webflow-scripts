@@ -682,15 +682,13 @@
             .not('id', 'is', null).select().maybeSingle();
         });
       },
-      // #66 Phase 1 — the person-first unlock. Opens a storefront for the caller
-      // (creates their vendors row + free subscription) and promotes their role
-      // customer->vendor, once, server-side (open_storefront is security definer
-      // and acts only on current_app_user_id()). Returns { data: { ok, vendors_id,
-      // role, is_new_vendor } | { ok:false, reason }, error }.
+      // #66 Phase 1 — the person-first unlock. Goes through the /open-storefront
+      // route (not a direct RPC) so the server can fire the Brevo vendor-list add
+      // + welcome email after admin_open_storefront creates the vendors row + free
+      // subscription and promotes role customer->vendor. Returns { data: { ok,
+      // vendors_id, role, is_new_vendor } | { ok:false, reason }, error }.
       openStorefront: function (businessName) {
-        return withClient(function (c) {
-          return c.rpc('open_storefront', { p_business_name: businessName || null });
-        });
+        return postRoute('/open-storefront', { businessName: businessName || null }, true);
       }
     },
     // Public founding-programme status for a community ("X spots left" banner).
