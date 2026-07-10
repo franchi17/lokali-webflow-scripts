@@ -249,6 +249,14 @@
       R + '.lk-sf-in{font-family:' + F + ';font-size:14px;color:' + INK + ';background:#fff;border:.5px solid ' + FOG + ';border-radius:9px;padding:10px 13px;width:100%;max-width:360px;}',
       R + '.lk-sf-in:focus{outline:none;border-color:' + V + ';}',
       R + '.lk-sf-foot{display:flex;gap:8px;margin-top:11px;}',
+      // #66 Phase 2 — owner "switch back to storefront" strip.
+      R + '.lk-sfr{display:flex;align-items:center;gap:13px;background:#fff;border:.5px solid ' + BORDER + ';border-radius:14px;padding:13px 16px;margin-bottom:1.5rem;}',
+      R + '.lk-sfr-ic{width:38px;height:38px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:' + VL + ';color:' + V + ';}',
+      R + '.lk-sfr-body{flex:1;min-width:0;}',
+      R + '.lk-sfr-title{font-size:13.5px;font-weight:600;}',
+      R + '.lk-sfr-sub{font-size:12px;color:' + SLATE + ';margin-top:2px;}',
+      R + '.lk-sfr-cta{font-family:' + F + ';font-size:12.5px;font-weight:600;color:' + V + ';background:' + VL + ';border-radius:9px;padding:9px 14px;text-decoration:none;flex-shrink:0;transition:background .12s;}',
+      R + '.lk-sfr-cta:hover{background:' + VM + ';}',
       R + '.lk-danger{color:#C0392B;}',
       R + '.lk-btn.danger{background:#fff;border:.5px solid #E8B4AE;color:#C0392B;}',
       R + '.lk-btn.danger:hover{background:#FDF0EE;}',
@@ -270,6 +278,9 @@
         '#lokali-account .lk-sf{flex-wrap:wrap;gap:12px;padding:16px;}' +
         '#lokali-account .lk-sf-body{flex-basis:calc(100% - 62px);}' +
         '#lokali-account .lk-sf-cta{width:100%;margin-left:0;}' +
+        '#lokali-account .lk-sfr{flex-wrap:wrap;}' +
+        '#lokali-account .lk-sfr-body{flex-basis:calc(100% - 51px);}' +
+        '#lokali-account .lk-sfr-cta{width:100%;text-align:center;}' +
         '#lokali-account .lk-seg-wrap{display:flex;width:100%;}' +
         '#lokali-account .lk-seg{flex:1;justify-content:center;padding:9px 6px;}' +
         '#lokali-account .lk-intro{font-size:12.5px;}' +
@@ -297,7 +308,7 @@
   }
 
   // ── state ──────────────────────────────────────────────────
-  var state = { account: null, saved: [], mine: [], awaiting: [], hasStorefront: false };
+  var state = { account: null, saved: [], mine: [], awaiting: [], hasStorefront: false, storefrontName: '' };
 
   // ── data load ──────────────────────────────────────────────
   function loadAll() {
@@ -321,6 +332,7 @@
       state.awaiting = arr(r[3] && r[3].data);
       var v = r[4] && r[4].data && r[4].data.vendor;
       state.hasStorefront = !!(v && v.id != null);
+      state.storefrontName = (v && (v.business_name || v.name)) || '';
     });
   }
 
@@ -352,9 +364,11 @@
     band.appendChild(stats);
     mount.appendChild(band);
 
-    // #66 Phase 1 — the person-first unlock: people who don't own a storefront
-    // get a card to open one (free). Owners never see it.
+    // #66 — this is the person's home. People without a storefront get the
+    // "open one (free)" card (Phase 1); owners get a switch-back-to-storefront
+    // strip (Phase 2 identity switcher, person side).
     if (!state.hasStorefront) mount.appendChild(renderStorefrontCTA());
+    else mount.appendChild(renderStorefrontReturn());
 
     // segmented
     var pane = currentPane();
@@ -457,6 +471,25 @@
       setTimeout(function () { input.focus(); }, 60);
     }
     return card;
+  }
+
+  // #66 Phase 2 — owners land here in their SHOPPING space; give them a one-click
+  // switch back to their storefront (mirrors the header/sidebar switcher). Pure
+  // navigation — one login, two spaces.
+  function renderStorefrontReturn() {
+    var strip = el('div', 'lk-sfr');
+    strip.appendChild(el('div', 'lk-sfr-ic',
+      '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.5-5h15L21 9"/><path d="M4 9v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9"/><path d="M3 9a2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 3 0"/><path d="M9 20v-6h6v6"/></svg>'));
+    var body = el('div', 'lk-sfr-body');
+    body.appendChild(el('div', 'lk-sfr-title', "You're in your shopping space"));
+    body.appendChild(el('div', 'lk-sfr-sub', state.storefrontName
+      ? ('Managing ' + esc(state.storefrontName) + '? Switch to your storefront.')
+      : 'Switch to your storefront to manage your listing.'));
+    strip.appendChild(body);
+    var go = el('a', 'lk-sfr-cta', 'Go to storefront →');
+    go.href = '/vendor-dashboard/dashboard';
+    strip.appendChild(go);
+    return strip;
   }
 
   // ── pane: Saved ────────────────────────────────────────────

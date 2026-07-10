@@ -125,6 +125,20 @@
       ".lok-acct-menu a:hover,.lok-acct-menu button:hover{background:#F7F6FC;color:#6002EE;}",
       ".lok-acct-sep{height:.5px;background:#EEEDF6;margin:6px 4px;}",
       ".lok-acct-menu .lok-acct-signout{color:#8E8BA6;}",
+      // #66 Phase 2 — identity switcher rows.
+      ".lok-acct-menu{min-width:210px;}",
+      ".lok-acct-cap{font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:#B3B1C6;padding:6px 12px 3px;}",
+      ".lok-acct-menu a.lok-idsw{display:flex;align-items:center;gap:10px;padding:8px 10px;}",
+      ".lok-acct-menu a.lok-idsw:hover{background:#F7F6FC;}",
+      ".lok-idsw-ic{width:30px;height:30px;border-radius:8px;background:#F0E6FF;color:#6002EE;display:flex;align-items:center;justify-content:center;flex-shrink:0;}",
+      ".lok-idsw-ic svg{width:16px;height:16px;}",
+      ".lok-idsw-txt{display:flex;flex-direction:column;min-width:0;line-height:1.25;}",
+      ".lok-idsw-name{font-size:13px;font-weight:600;color:#1A1829;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px;}",
+      ".lok-idsw-sub{font-size:11px;font-weight:500;color:#8E8BA6;}",
+      ".lok-idsw.is-current .lok-idsw-ic{background:#6002EE;color:#fff;}",
+      ".lok-idsw.is-current .lok-idsw-name{color:#6002EE;}",
+      ".lok-idsw-dot{margin-left:auto;width:7px;height:7px;border-radius:50%;background:#2BB673;flex-shrink:0;}",
+      "#lok-mnav-panel .lok-idsw-name{max-width:none;}",
       // mobile panel: render the menu inline (no trigger, no dropdown chrome)
       "#lok-mnav-panel .lok-acct{display:block;width:100%;}",
       "#lok-mnav-panel .lok-acct-trigger{display:none;}",
@@ -153,14 +167,40 @@
     return '<svg class="lok-acct-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>';
   }
 
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  // #66 Phase 2 — identity-switcher icons (storefront vs. person).
+  var IC_STORE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.5-5h15L21 9"/><path d="M4 9v10a1 1 0 001 1h14a1 1 0 001-1V9"/><path d="M3 9a2.5 2.5 0 005 0 2.5 2.5 0 005 0 2.5 2.5 0 005 0 2.5 2.5 0 003 0"/><path d="M9 20v-6h6v6"/></svg>';
+  var IC_SHOP = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+
+  function idRow(href, icon, name, sub, current) {
+    return '<a href="' + href + '" role="menuitem" class="lok-idsw' + (current ? ' is-current' : '') + '">' +
+      '<span class="lok-idsw-ic">' + icon + '</span>' +
+      '<span class="lok-idsw-txt"><span class="lok-idsw-name">' + esc(name) + '</span>' +
+      '<span class="lok-idsw-sub">' + esc(sub) + '</span></span>' +
+      (current ? '<span class="lok-idsw-dot" title="You’re here"></span>' : '') +
+    '</a>';
+  }
+
   function menuItemsHTML(a) {
     var role = a && a.role;
     var html = '';
-    // Label the two hubs by which "hat" they are, so a vendor (who has both) can
-    // tell them apart: the business dashboard vs. their personal saved/reviews.
+    // #66 Phase 2 — a person who owns a storefront gets an identity switcher, not
+    // two look-alike links: their Storefront (the business) ↔ their Shopping space
+    // (saves/reviews/account). One login, one session — pure navigation. People
+    // without a storefront just see "My Account" (nothing to switch between).
     if (role === 'vendor') {
-      html += '<a href="' + DASH_URL + '" role="menuitem">Vendor Dashboard</a>';
-      html += '<a href="' + ACCOUNT_URL + '" role="menuitem">My Customer Account</a>';
+      var path = (window.location.pathname || '').replace(/\/+$/, '');
+      var inStore = path.indexOf('/vendor-dashboard') === 0;
+      var store = (a && a.business_name || '').trim() || 'My storefront';
+      var person = (a && a.first_name || '').trim();
+      html += '<div class="lok-acct-cap">Switch to</div>';
+      html += idRow(DASH_URL, IC_STORE, store, 'Storefront', inStore);
+      html += idRow(ACCOUNT_URL, IC_SHOP, person || 'Shopping', person ? 'Shopping' : 'Saves & reviews', !inStore);
     } else {
       html += '<a href="' + ACCOUNT_URL + '" role="menuitem">My Account</a>';
     }
@@ -299,7 +339,8 @@
                   resolve({
                     role: role || cached.role || null,
                     first_name: meta.first_name || cached.first_name || '',
-                    last_name: meta.last_name || cached.last_name || ''
+                    last_name: meta.last_name || cached.last_name || '',
+                    business_name: cached.business_name || ''  // #66 P2 switcher label
                   });
                 });
                 return;
@@ -338,9 +379,25 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ready);
   else ready();
 
+  // #66 Phase 2 — the switcher labels the storefront row with the business name.
+  // The acct cache doesn't carry it (role/name only), so a vendor with no cached
+  // business_name gets it once via vendors.me(), then it's cached for instant
+  // paint next time. Best-effort; the row falls back to "My storefront" meanwhile.
+  function ensureStoreName() {
+    if (!acct || acct.role !== 'vendor' || (acct.business_name || '').trim()) return;
+    var A = window.LokaliAPI;
+    if (!A || !A.vendors || !A.vendors.me) return;
+    A.vendors.me().then(function (res) {
+      var v = res && !res.error && res.data && (res.data.vendor || res.data);
+      var bn = v && (v.business_name || v.name);
+      if (bn) { acct.business_name = String(bn); setCache(acct); refreshExisting(); }
+    }).catch(function () {});
+  }
+
   // Refresh role/name from the server and re-render (updates cache for next load).
   fetchAccount().then(function (a) {
     if (a && (a.role || a.first_name)) { acct = a; setCache(a); render(); refreshExisting(); hideBecomeVendorForVendor(); }
+    ensureStoreName();
   });
 
   // Failsafe: stop observing, final pass, reveal anything still hidden.

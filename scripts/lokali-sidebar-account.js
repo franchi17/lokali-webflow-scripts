@@ -168,6 +168,7 @@
     var plan = planLabel(billing, v);
     var photo = photoUrl(v);
 
+    if (v.business_name) cacheStoreName(v.business_name); // #66 P2 → header switcher
     setText(wrap.querySelector('.lok-acct-name'), name);
     setText(wrap.querySelector('.lok-acct-plan'), plan.label);
 
@@ -189,8 +190,30 @@
     if (up) up.style.display = plan.top ? 'none' : '';
   }
 
-  // #37 — a route back to the customer side. Reuses the .lok-acct-row style
-  // the native Upgrade/Help rows already carry.
+  // The person-shopping label for the switch row: "Francesca — shopping" when we
+  // know the first name (from the acct cache), else a plain "Switch to shopping".
+  function readCache() {
+    try { return JSON.parse(localStorage.getItem('LOKALI_ACCT_CACHE') || 'null'); } catch (e) { return null; }
+  }
+  function personShoppingLabel() {
+    var c = readCache();
+    var f = (c && c.first_name || '').trim();
+    return f ? (f + ' — shopping') : 'Switch to shopping';
+  }
+  // Persist the storefront (business) name into the acct cache so the HEADER
+  // identity switcher (lokali-auth-nav.js) can label the storefront row without
+  // its own fetch. #66 Phase 2.
+  function cacheStoreName(name) {
+    if (!name) return;
+    try {
+      var c = readCache() || {};
+      if (c.business_name !== name) { c.business_name = name; localStorage.setItem('LOKALI_ACCT_CACHE', JSON.stringify(c)); }
+    } catch (e) {}
+  }
+
+  // #37 / #66 Phase 2 — the route to the person's SHOPPING space. Was framed as
+  // "My Customer Account"; now it's the person side of the identity switcher.
+  // Reuses the .lok-acct-row style the native Upgrade/Help rows carry.
   function addCustomerAccountRow(wrap) {
     var menu = wrap.querySelector('.lok-acct-menu');
     if (!menu || menu.querySelector('[data-lok-customer-row]')) return;
@@ -199,7 +222,7 @@
     a.className = 'lok-acct-row';
     a.setAttribute('data-lok-customer-row', '1');
     a.href = '/account';
-    a.textContent = 'My Customer Account';
+    a.textContent = personShoppingLabel();
     if (ref && ref.nextSibling) ref.parentNode.insertBefore(a, ref.nextSibling);
     else if (ref) ref.parentNode.appendChild(a);
     else menu.appendChild(a);
