@@ -450,6 +450,12 @@
     }
     create.addEventListener('click', submit);
     input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); submit(); } });
+    // Deep-link from the header "Become a Vendor" CTA (#66): land with the form
+    // already open and focused so it reads as one continuous action.
+    if ((location.hash || '').toLowerCase() === '#storefront') {
+      card.classList.add('open');
+      setTimeout(function () { input.focus(); }, 60);
+    }
     return card;
   }
 

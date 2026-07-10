@@ -41,14 +41,25 @@
     }
     if (!hit) return;
     try { sessionStorage.setItem('lokali_signup_intent', 'vendor'); } catch (err) {}
+    // #66: a signed-in person already HAS an account — "Become a Vendor" must not
+    // send them to /sign-up, which bounces an authenticated user to the homepage
+    // (dead end). Route them to the account hub's "Open your storefront" card
+    // instead. (Vendors already have this CTA hidden; a customer opens a
+    // storefront and is promoted server-side.)
+    if (token()) {
+      e.preventDefault();
+      var c = getCache();
+      window.location.href = (c && c.role === 'vendor') ? DASH_URL : (ACCOUNT_URL + '#storefront');
+      return;
+    }
+    // Signed OUT: real links (header "Become a Vendor" -> /sign-up) proceed
+    // normally with the intent stashed; non-link controls get routed manually.
     var a = hit.closest('a[href]');
     var href = a ? (a.getAttribute('href') || '') : '';
     if (!a || href === '#' || href === '') {
       e.preventDefault();
       window.location.href = '/sign-up';
     }
-    // Real links (e.g. header "Become a Vendor" -> /sign-up) proceed normally
-    // with the intent now stashed.
   }, true);
 
   var TOKEN_KEY = 'LOKALI_AUTH_TOKEN';
