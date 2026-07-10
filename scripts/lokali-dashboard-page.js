@@ -214,7 +214,7 @@
     return pct;
   }
 
-  function render(v, services, products) {
+  function render(v, services, products, leadsData) {
     var hasListing = services.length > 0 || products.length > 0;
 
     // Heading + subtitle. The subtitle used to repeat the business name right
@@ -248,9 +248,34 @@
       : (v.profile_views_month_count != null ? v.profile_views_month_count : 0);
     setId('stat-profile-views', profileViews);
 
-    // Listing strength card + top "Listing Strength" stat card (mirror same %)
-    var pct = listingStrength(v, hasListing);
-    setId('stat-profile-complete', pct + '%');
+    // Third stat card: "Leads this month" (was a Listing Strength mirror —
+    // redundant with the checklist card right below, and static once 100%).
+    // Same 30-day inquiries+contacts count as the analytics page's Leads KPI,
+    // so the two pages always agree. The Webflow card's label is static text,
+    // so retitle it here; the value element keeps its legacy id.
+    var DAY30 = 30 * 24 * 60 * 60 * 1000;
+    function in30(rows) {
+      var now = Date.now();
+      return (rows || []).filter(function (r) {
+        var t = Date.parse(r.created_at || r.created || 0);
+        return t && (now - t) < DAY30;
+      }).length;
+    }
+    var leads30 = leadsData ? (in30(leadsData.inquiries) + in30(leadsData.contacts)) : 0;
+    var statLeads = document.getElementById('stat-profile-complete');
+    if (statLeads) {
+      statLeads.textContent = String(leads30);
+      // Retitle the static Webflow label ("Listing Strength") on the same card.
+      var cardEl = statLeads, label = null;
+      for (var i = 0; i < 4 && cardEl && !label; i++) {
+        cardEl = cardEl.parentElement;
+        label = cardEl && cardEl.querySelector('.dashboard-card-header');
+      }
+      if (label) label.textContent = 'Leads this month';
+    }
+    // The big checklist card below still needs its update — listingStrength()
+    // writes data-ls-score/-progress as a side effect, so keep the call.
+    listingStrength(v, hasListing);
 
     // Share card buttons + quick-action cards
     wireShareButtons(v);
@@ -279,7 +304,12 @@
     Promise.all([
       window.LokaliAPI.vendors.me(),
       window.LokaliAPI.services.getMine(false),
-      window.LokaliAPI.products.getMine(false)
+      window.LokaliAPI.products.getMine(false),
+      // Leads for the "Leads this month" stat card — same endpoint the
+      // analytics page uses, so the two numbers always agree. Best-effort.
+      (window.LokaliAPI.leads && window.LokaliAPI.leads.analytics)
+        ? window.LokaliAPI.leads.analytics().catch(function () { return null; })
+        : Promise.resolve(null)
     ]).then(function (r) {
       var vendorRes = r[0];
       if (vendorRes.error || !vendorRes.data) {
@@ -298,7 +328,9 @@
         return;
       }
       var v = vendorRes.data.vendor || vendorRes.data;
-      render(v, toArr(r[1].data), toArr(r[2].data));
+      var leadsRes = r[3];
+      var leadsData = leadsRes && !leadsRes.error ? (leadsRes.data != null ? leadsRes.data : leadsRes) : null;
+      render(v, toArr(r[1].data), toArr(r[2].data), leadsData);
     });
   }
 
