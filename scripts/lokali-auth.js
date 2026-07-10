@@ -850,7 +850,7 @@
   function renderRoleChooser(root, opts) {
     var wrap = el('div', 'lok-role-gate');
     var h = el('h3', null, 'How will you use Lokali?');
-    var sub = el('p', null, 'This sets up the right account for you.');
+    var sub = el('p', null, 'Just your starting point — every account can shop, and you can open a storefront anytime.');
     var cards = el('div', 'lok-role-cards');
 
     // Font Awesome 6 solid icons, inlined as SVG (no FA dependency on the
@@ -887,8 +887,8 @@
       return b;
     }
 
-    cards.appendChild(card(faIcon('0 0 448 512', FA_BAG, '#FF8D00'), "I'm here to shop", 'Discover local makers, save favorites, and reach out to vendors near you.', 'customer'));
-    cards.appendChild(card(faIcon('0 0 640 512', FA_SHOP, '#6002EE'), "I'm a vendor", 'List my business and get found by nearby customers. Free to start.', 'vendor'));
+    cards.appendChild(card(faIcon('0 0 448 512', FA_BAG, '#FF8D00'), "I'm here to shop", 'Discover local makers, save favorites, and message the businesses near you.', 'customer'));
+    cards.appendChild(card(faIcon('0 0 640 512', FA_SHOP, '#6002EE'), "I want to sell", 'Open a storefront to list your business and get found by locals. Free to start — you can still shop, too.', 'vendor'));
 
     var login = el('div', 'lok-role-login');
     login.appendChild(document.createTextNode('Already have an account? '));
@@ -924,11 +924,12 @@
     var box = el('div', 'lok-auth');
     var card = el('div', 'lok-auth-card');
 
-    // "Signing up as X — Change" note: role is set-once server-side, so this
-    // is the last chance to switch before the account is minted.
+    // Person-first "starting point" note (#66): every account can shop; the
+    // vendor answer just fast-tracks storefront setup. "Change" re-opens the
+    // chooser before the account is minted.
     var note = el('div', 'lok-role-note');
     note.appendChild(document.createTextNode(
-      intent === 'vendor' ? 'Signing up as a vendor. ' : 'Signing up as a customer. '));
+      intent === 'vendor' ? 'Setting up your storefront. ' : 'Signing up to shop. '));
     var change = document.createElement('a');
     change.textContent = 'Change';
     change.addEventListener('click', function () {
