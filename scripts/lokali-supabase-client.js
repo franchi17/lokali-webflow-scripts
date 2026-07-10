@@ -589,12 +589,13 @@
           });
         });
       },
-      review: function (reviewId, vendorId, reportedUserId, reason) {
+      // SEC-016: reported_user_id + vendors_id are DERIVED server-side from the
+      // flagged review (set_review_report_subject trigger) — the browser can't
+      // misattribute a report, so we send only which review + why.
+      review: function (reviewId, reason) {
         return withClient(function (c) {
           return c.from('review_reports').insert({
-            reviews_id: reviewId, vendors_id: vendorId,
-            reported_user_id: reportedUserId != null ? reportedUserId : null,
-            reason: reason || null
+            reviews_id: reviewId, reason: reason || null
           });
         });
       }

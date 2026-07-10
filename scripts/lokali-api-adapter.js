@@ -938,12 +938,12 @@
       return SAPI().reviews.removeMine(reviewId).then(envelope);
     },
     report: function (reviewId, reason) {
-      return withVendor(function (vid) {
-        return SAPI().reports.review(reviewId, vid, null, reason).then(function (res) {
-          var out = envelope(res);
-          if (out.error) return out;
-          return { data: { ok: true }, error: null, status: 200 };
-        });
+      // SEC-016: vendors_id + reported_user_id are derived server-side from the
+      // review, so we no longer resolve/send the owner's vendor id here.
+      return SAPI().reports.review(reviewId, reason).then(function (res) {
+        var out = envelope(res);
+        if (out.error) return out;
+        return { data: { ok: true }, error: null, status: 200 };
       });
     },
     reply: function (reviewId, replyText) {
