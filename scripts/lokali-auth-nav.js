@@ -37,7 +37,7 @@
     var hit = null, node = el;
     for (var i = 0; node && node !== document.body && i < 6; i++, node = node.parentElement) {
       var t = (node.textContent || '').replace(/\s+/g, ' ').trim().toLowerCase();
-      if (t.length < 40 && (t === 'become a vendor' || t === 'sign up to be a vendor' || t === 'join as a vendor' || t.indexOf('list your business') === 0)) { hit = node; break; }
+      if (t.length < 40 && (t === 'open a storefront' || t === 'open my storefront' || t === 'sell on lokali' || t === 'become a vendor' || t === 'sign up to be a vendor' || t === 'join as a vendor' || t.indexOf('list your business') === 0)) { hit = node; break; }
     }
     if (!hit) return;
     try { sessionStorage.setItem('lokali_signup_intent', 'vendor'); } catch (err) {}
@@ -221,7 +221,7 @@
         var a = links[i];
         var href = pathOf(a.getAttribute('href') || '');
         var txt = (a.textContent || '').trim().toLowerCase();
-        if (href === '/sign-up' || txt === 'become a vendor') {
+        if (href === '/sign-up' || txt === 'become a vendor' || txt === 'open a storefront') {
           a.style.setProperty('display', 'none', 'important');
           a.setAttribute('data-lok-bv-hidden', '1');
         }
