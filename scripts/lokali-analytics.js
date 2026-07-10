@@ -52,7 +52,9 @@
     '#lok-analytics-section .an-bcol:hover .tip{display:block;}',
     '#lok-analytics-section .an-axis{display:flex;justify-content:space-between;margin-top:8px;}',
     '#lok-analytics-section .an-axis span{font-size:10px;color:' + SLATE + ';}',
-    '#lok-analytics-section .an-two{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;}',
+    // margin-top separates the Top-services/products row from the storefront
+    // views chart above it (they sat flush — "squished", Francesca 2026-07-09).
+    '#lok-analytics-section .an-two{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:20px;margin-bottom:1rem;}',
     '#lok-analytics-section .an-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:.5px solid ' + BORDER + ';}',
     '#lok-analytics-section .an-row:last-child{border-bottom:none;padding-bottom:0;}',
     '#lok-analytics-section .an-row:first-child{padding-top:0;}',
