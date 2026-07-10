@@ -9,8 +9,11 @@
  * (plan, for the tier-aware upsell). Everything is bucketed client-side.
  *
  * Renders: 3 KPIs (Storefront views, View→Lead rate, Leads → links to Leads
- * page), a 30-day daily views chart, Top services / Top products by views
- * (Phase 2 — needs page_views.item_id), and a tier-aware upgrade nudge.
+ * page), a daily/weekly views chart with a range selector (30d free; 90d and
+ * 6mo are a Pro/Featured perk — the server clamps free vendors to 60d of
+ * rows and reports history_days, so the lock here mirrors real enforcement),
+ * Top services / Top products by views (Phase 2 — needs page_views.item_id),
+ * and a tier-aware upgrade nudge.
  * NOT shown (Phase 3, no data yet): search appearances, visitor location,
  * search terms, category benchmark.
  *
@@ -44,6 +47,16 @@
     '#lok-analytics-section .an-klink{font-size:11px;font-weight:600;color:' + VIOLET + ';text-decoration:none;}',
     '#lok-analytics-section .an-klink:hover{text-decoration:underline;}',
     '#lok-analytics-section .an-ctitle{font-size:13px;font-weight:600;margin-bottom:1.1rem;}',
+    // chart header row: title left, range tabs right (wraps on phones)
+    '#lok-analytics-section .an-chead{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:1.1rem;}',
+    '#lok-analytics-section .an-chead .an-ctitle{margin-bottom:0;}',
+    '#lok-analytics-section .an-tabs{display:flex;gap:3px;background:' + SNOW + ';border-radius:8px;padding:3px;}',
+    '#lok-analytics-section .an-tab{font-family:inherit;font-size:11px;font-weight:600;color:' + DUSK + ';background:transparent;border:none;border-radius:6px;padding:5px 10px;cursor:pointer;white-space:nowrap;}',
+    '#lok-analytics-section .an-tab.on{background:#fff;color:' + VIOLET + ';box-shadow:0 1px 2px rgba(26,24,41,.10);}',
+    '#lok-analytics-section .an-tab.locked{color:' + SLATE + ';}',
+    '#lok-analytics-section .an-lock-note{margin-top:12px;background:' + VIOLET_L + ';border:.5px solid #E5D4FD;border-radius:8px;padding:8px 12px;font-size:12px;color:' + DUSK + ';}',
+    '#lok-analytics-section .an-lock-note a{color:' + VIOLET + ';font-weight:600;text-decoration:none;}',
+    '#lok-analytics-section .an-lock-note a:hover{text-decoration:underline;}',
     '#lok-analytics-section .an-bars{display:flex;align-items:flex-end;gap:3px;height:130px;}',
     '#lok-analytics-section .an-bcol{flex:1;display:flex;align-items:flex-end;height:100%;}',
     '#lok-analytics-section .an-bar{width:100%;border-radius:3px 3px 0 0;background:' + VIOLET_L + ';min-height:2px;position:relative;transition:background .12s;}',
@@ -136,29 +149,84 @@
       .slice(0, n);
   }
 
-  function dailyChart(views) {
-    // last 30 days, oldest→newest
-    var now = Date.now(), buckets = [];
-    for (var d = 29; d >= 0; d--) buckets.push(0);
-    views.forEach(function (v) { var age = Math.floor((now - ts(v.created_at)) / DAY); if (age >= 0 && age < 30) buckets[29 - age] += 1; });
-    var max = Math.max.apply(null, buckets.concat([1]));
+  // Views chart with a range selector. 30 days = daily bars, for everyone;
+  // 90 days / 6 months = weekly bars, a Pro/Featured perk. The lock mirrors
+  // real server enforcement (RLS clamps a free vendor's page_views reads to
+  // 60d) — unlocking it client-side would just draw an empty chart.
+  var RANGES = [
+    { days: 30,  label: '30 days',  title: 'last 30 days' },
+    { days: 90,  label: '90 days',  title: 'last 90 days' },
+    { days: 180, label: '6 months', title: 'last 6 months' }
+  ];
+
+  function viewsChart(views, paid) {
     var wrap = el('div', 'an-card');
-    wrap.appendChild(el('div', 'an-ctitle', 'Storefront views — last 30 days'));
-    var bars = el('div', 'an-bars');
-    buckets.forEach(function (cnt, i) {
-      var col = el('div', 'an-bcol');
-      var bar = el('div', 'an-bar');
-      bar.style.height = Math.max(2, Math.round(cnt / max * 100)) + '%';
-      if (cnt === max && cnt > 0) bar.style.background = VIOLET;
-      var daysAgo = 29 - i;
-      var label = daysAgo === 0 ? 'today' : daysAgo + 'd ago';
-      var tip = el('div', 'tip', cnt + (cnt === 1 ? ' view · ' : ' views · ') + label);
-      bar.appendChild(tip); col.appendChild(bar); bars.appendChild(col);
+    var head = el('div', 'an-chead');
+    var title = el('div', 'an-ctitle');
+    var tabs = el('div', 'an-tabs');
+    head.appendChild(title); head.appendChild(tabs);
+    wrap.appendChild(head);
+    var body = el('div');
+    wrap.appendChild(body);
+    var note = null, buttons = [];
+
+    function draw(days, rangeTitle) {
+      title.textContent = 'Storefront views — ' + rangeTitle;
+      body.innerHTML = '';
+      var weekly = days > 30;               // daily bars read fine up to ~30
+      var span = weekly ? 7 * DAY : DAY;
+      var n = weekly ? Math.round(days / 7) : days;
+      var now = Date.now(), buckets = [];
+      for (var i = 0; i < n; i++) buckets.push(0);
+      views.forEach(function (v) {
+        var idx = Math.floor((now - ts(v.created_at)) / span);
+        if (idx >= 0 && idx < n) buckets[n - 1 - idx] += 1;
+      });
+      var max = Math.max.apply(null, buckets.concat([1]));
+      var bars = el('div', 'an-bars');
+      buckets.forEach(function (cnt, i) {
+        var col = el('div', 'an-bcol');
+        var bar = el('div', 'an-bar');
+        bar.style.height = Math.max(2, Math.round(cnt / max * 100)) + '%';
+        if (cnt === max && cnt > 0) bar.style.background = VIOLET;
+        var ago = n - 1 - i;
+        var label = weekly ? (ago === 0 ? 'this wk' : ago + 'wk ago')
+                           : (ago === 0 ? 'today' : ago + 'd ago');
+        var tip = el('div', 'tip', cnt + (cnt === 1 ? ' view · ' : ' views · ') + label);
+        bar.appendChild(tip); col.appendChild(bar); bars.appendChild(col);
+      });
+      body.appendChild(bars);
+      var axis = el('div', 'an-axis');
+      var axisLabels = days === 30 ? ['30d ago', '3 wks', '2 wks', 'last wk', 'today']
+                     : days === 90 ? ['90d ago', '60d', '30d', 'today']
+                                   : ['6mo ago', '4mo', '2mo', 'today'];
+      axisLabels.forEach(function (t) { axis.appendChild(el('span', null, t)); });
+      body.appendChild(axis);
+    }
+
+    RANGES.forEach(function (r) {
+      var locked = r.days > 30 && !paid;
+      var b = el('button', 'an-tab' + (r.days === 30 ? ' on' : '') + (locked ? ' locked' : ''),
+                 r.label + (locked ? ' 🔒' : ''));
+      b.type = 'button';
+      if (locked) b.title = '90-day and 6-month history comes with the Pro and Featured plans';
+      b.addEventListener('click', function () {
+        if (locked) {
+          if (!note) {
+            note = el('div', 'an-lock-note');
+            note.innerHTML = '90-day and 6-month view history is included with the Pro and Featured plans. <a href="/pricing">Upgrade →</a>';
+            wrap.appendChild(note);
+          }
+          return;
+        }
+        buttons.forEach(function (x) { x.className = x.className.replace(/ ?\bon\b/, ''); });
+        b.className += ' on';
+        draw(r.days, r.title);
+      });
+      buttons.push(b); tabs.appendChild(b);
     });
-    wrap.appendChild(bars);
-    var axis = el('div', 'an-axis');
-    ['30d ago', '3 wks', '2 wks', 'last wk', 'today'].forEach(function (t) { axis.appendChild(el('span', null, t)); });
-    wrap.appendChild(axis);
+
+    draw(30, RANGES[0].title);
     return wrap;
   }
 
@@ -227,8 +295,11 @@
       mount.appendChild(ins);
     }
 
-    // daily chart
-    mount.appendChild(dailyChart(views));
+    // views chart with plan-gated range selector. Paid truth = the billing
+    // payload's features.analytics_enabled (present on both backends); the
+    // server clamps free vendors' rows regardless of what renders here.
+    var paidHist = !!(billing && billing.features && billing.features.analytics_enabled);
+    mount.appendChild(viewsChart(views, paidHist));
 
     // top items
     var topSvc = topItems(views, 'service', services, 5);

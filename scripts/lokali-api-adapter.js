@@ -191,8 +191,8 @@
       }
       var vendor = vendorAliases(normalizeTs(row));
       // Xano's vendor/me computes profile_views_total live from page_views.
-      return SAPI().analytics.pageViewCount(vendor.id).then(function (cRes) {
-        vendor.profile_views_total = (cRes && typeof cRes.count === 'number') ? cRes.count : 0;
+      return allTimeViewCount(vendor.id).then(function (n) {
+        vendor.profile_views_total = n;
         return { data: { vendor: vendor }, error: null, status: 200 };
       }, function () {
         vendor.profile_views_total = 0;
@@ -208,6 +208,25 @@
       if (out && !out.error && out.data && out.data.vendor) return out.data.vendor.id;
       return null;
     });
+  }
+
+  // All-time page-view count. Prefers the my_page_view_count RPC — the
+  // page_views owner-read RLS policy clamps raw reads to the plan's history
+  // window (60d free / 180d paid), which would silently turn a direct count
+  // into "last 60 days" for free vendors. Falls back to the direct count for
+  // the gap between this script deploying and the SQL patch being applied.
+  function allTimeViewCount(vid) {
+    function direct() {
+      return SAPI().analytics.pageViewCount(vid).then(function (cRes) {
+        return (cRes && typeof cRes.count === 'number') ? cRes.count : 0;
+      }, function () { return 0; });
+    }
+    try {
+      return SAPI().analytics.myViewCount().then(function (res) {
+        if (res && !res.error && typeof res.data === 'number') return res.data;
+        return direct();
+      }, direct);
+    } catch (e) { return direct(); }
   }
 
   // Runs fn(vendorId) once the caller's vendor id is known; standard error if not.
@@ -364,6 +383,18 @@
         if (out.error) return out;
         normalizeTs(out.data);
         return { data: out.data || { ok: true }, error: null, status: 200 };
+      });
+    },
+    // #66 Phase 1 — open a storefront (person-first unlock). Promotes the caller
+    // customer->vendor + creates their vendors row server-side. Busts the memoized
+    // vendor/billing caches so the (now-vendor) session reads fresh; the caller
+    // then hard-navs to /dashboard, which re-boots role from get_my_role(). The
+    // jsonb ({ ok, vendors_id, ... } | { ok:false, reason }) rides through as data.
+    openStorefront: function (businessName) {
+      return SAPI().account.openStorefront(businessName).then(function (res) {
+        var out = envelope(res);
+        if (!out.error) { invalidateMe(); invalidateBilling(); }
+        return out;
       });
     },
     logout: function () {
@@ -748,12 +779,12 @@
       return withVendor(function (vid) {
         var sinceIso = new Date(Date.now() - ONE80_D).toISOString();
         return Promise.all([
-          SAPI().analytics.pageViews(vid, sinceIso),
+          SAPI().analytics.pageViews(vid, sinceIso), // RLS clamps to the plan window
           SAPI().leads.inquiries(vid),
           SAPI().leads.events(vid),
-          SAPI().analytics.pageViewCount(vid) // all-time
+          allTimeViewCount(vid) // all-time (RPC, immune to the window clamp)
         ]).then(function (rs) {
-          var pv = rs[0] || {}, iq = rs[1] || {}, ev = rs[2] || {}, pc = rs[3] || {};
+          var pv = rs[0] || {}, iq = rs[1] || {}, ev = rs[2] || {}, viewsTotal = rs[3];
           var firstErr = pv.error || iq.error || ev.error;
           if (firstErr) return envelope({ error: firstErr });
           var now = Date.now();
@@ -770,7 +801,7 @@
               totals: {
                 inquiries: inquiries.length,           // all-time (full table for this vendor)
                 contacts: events.length,               // all-time
-                views: typeof pc.count === 'number' ? pc.count : views.length,
+                views: typeof viewsTotal === 'number' ? viewsTotal : views.length,
                 unread: unread
               },
               inquiries: inquiries.filter(inWindow).map(function (i) { return { created_at: i.created_at }; }),

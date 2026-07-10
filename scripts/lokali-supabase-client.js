@@ -546,7 +546,10 @@
           return q.order('created_at', { ascending: false });
         });
       },
-      // Fast count-only query (head request) for KPI tiles.
+      // Fast count-only query (head request) for KPI tiles. NOTE: RLS clamps
+      // owner reads of page_views to the plan's history window (60d free /
+      // 180d paid), so this counts within that window — use myViewCount() for
+      // a true all-time total.
       pageViewCount: function (vendorId, sinceIso) {
         return withClient(function (c) {
           var q = c.from('page_views').select('id', { count: 'exact', head: true })
@@ -554,6 +557,11 @@
           if (sinceIso) q = q.gte('created_at', sinceIso);
           return q;
         });
+      },
+      // All-time views count via security-definer RPC — immune to the
+      // plan-window clamp on raw page_views reads (count only, own vendor only).
+      myViewCount: function () {
+        return withClient(function (c) { return c.rpc('my_page_view_count'); });
       }
     },
     // Vendor asks a past contact for a review (review-gate seed rows).
@@ -672,6 +680,16 @@
           // PostgREST predicate.
           return c.from('app_user').update(pick(fields, APP_USER_EDITABLE))
             .not('id', 'is', null).select().maybeSingle();
+        });
+      },
+      // #66 Phase 1 — the person-first unlock. Opens a storefront for the caller
+      // (creates their vendors row + free subscription) and promotes their role
+      // customer->vendor, once, server-side (open_storefront is security definer
+      // and acts only on current_app_user_id()). Returns { data: { ok, vendors_id,
+      // role, is_new_vendor } | { ok:false, reason }, error }.
+      openStorefront: function (businessName) {
+        return withClient(function (c) {
+          return c.rpc('open_storefront', { p_business_name: businessName || null });
         });
       }
     },
