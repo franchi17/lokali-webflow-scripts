@@ -86,10 +86,13 @@
     // give it the solid pressed state so vendors can see where they are.
     '.section-11 .dashboard-btn.w--current{background:#F3EBFF;border-radius:8px;}' +
     '.section-11 .dashboard-btn.w--current,.section-11 .dashboard-btn.w--current strong.dashboard-menu{color:#6002EE;}' +
-    // Breathing room between the main nav items (the container is .div-block-28,
-    // NOT the account-menu dropdown). Items sat 1px apart, so a hover pill butted
-    // right up against the pressed (w--current) pill and read as one chunky block.
-    '.div-block-28 .dashboard-btn{margin-bottom:6px;}';
+    // Slimmer main-nav rows (container = .div-block-28, NOT the account dropdown).
+    // Each row was 52px — a 40px icon box (holding a 20px icon) plus 6px top/bottom
+    // padding — so the hover + pressed pills read as chunky blocks. Trim the
+    // padding and the oversized icon box → ~36px pills. Gap between rows is left
+    // as-is (Francesca: don't widen the gap, just make the rows narrower).
+    '.div-block-28 .dashboard-btn{padding-top:4px;padding-bottom:4px;}' +
+    '.div-block-28 .dashboard-btn .icon-div{height:28px;}';
 
   // #67 — a real chevron instead of the native "⌄" text glyph (which sat on
   // the text baseline and read as floating/misaligned).
