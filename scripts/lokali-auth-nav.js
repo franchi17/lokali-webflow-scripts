@@ -136,11 +136,11 @@
       ".lok-idsw-name{font-size:13px;font-weight:600;color:#1A1829;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px;}",
       ".lok-idsw-sub{font-size:11px;font-weight:500;color:#8E8BA6;}",
       ".lok-idsw.is-current .lok-idsw-ic{background:#6002EE;color:#fff;}",
-      ".lok-idsw.is-current .lok-idsw-name{color:#6002EE;}",
+      // Both switcher names stay ink in every state (the current row is signalled
+      // by the icon tile + the green dot, not by recolouring the name) — so the
+      // shopping name always matches the storefront name above it.
       // Shopping row = orange cart on a soft-orange tile (shopper colour code),
-      // held the SAME in the current state (no violet/solid takeover). The NAME
-      // is intentionally NOT overridden — it matches the storefront row's text
-      // (ink, or violet when current) for a consistent switcher.
+      // held the SAME in the current state (no violet/solid takeover).
       ".lok-idsw--shop .lok-idsw-ic{background:#FFF2DF;color:#FF8D00;}",
       ".lok-idsw--shop.is-current .lok-idsw-ic{background:#FFF2DF;color:#FF8D00;}",
       ".lok-idsw-dot{margin-left:auto;width:7px;height:7px;border-radius:50%;background:#2BB673;flex-shrink:0;}",
