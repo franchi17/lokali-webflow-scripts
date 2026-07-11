@@ -89,9 +89,9 @@
     // Slimmer main-nav rows (container = .div-block-28, NOT the account dropdown).
     // Each row was 52px — a 40px icon box (holding a 20px icon) plus 6px top/bottom
     // padding — so the hover + pressed pills read as chunky blocks. Trim the
-    // padding and the oversized icon box → ~36px pills. Gap between rows is left
-    // as-is (Francesca: don't widen the gap, just make the rows narrower).
-    '.div-block-28 .dashboard-btn{padding-top:4px;padding-bottom:4px;}' +
+    // padding and the oversized icon box → ~36px pills, plus a 5px gap between rows
+    // so adjacent hover/pressed pills have clear breathing room (Francesca).
+    '.div-block-28 .dashboard-btn{padding-top:4px;padding-bottom:4px;margin-bottom:5px;}' +
     '.div-block-28 .dashboard-btn .icon-div{height:28px;}';
 
   // #67 — a real chevron instead of the native "⌄" text glyph (which sat on
