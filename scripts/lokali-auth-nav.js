@@ -37,7 +37,7 @@
     var hit = null, node = el;
     for (var i = 0; node && node !== document.body && i < 6; i++, node = node.parentElement) {
       var t = (node.textContent || '').replace(/\s+/g, ' ').trim().toLowerCase();
-      if (t.length < 40 && (t === 'open a storefront' || t === 'open my storefront' || t === 'sell on lokali' || t === 'become a vendor' || t === 'sign up to be a vendor' || t === 'join as a vendor' || t.indexOf('list your business') === 0)) { hit = node; break; }
+      if (t.length < 40 && (/^open (a|your|my) storefront$/.test(t) || t === 'sell on lokali' || t === 'become a vendor' || t === 'sign up to be a vendor' || t === 'join as a vendor' || t.indexOf('list your business') === 0)) { hit = node; break; }
     }
     if (!hit) return;
     try { sessionStorage.setItem('lokali_signup_intent', 'vendor'); } catch (err) {}
@@ -137,6 +137,10 @@
       ".lok-idsw-sub{font-size:11px;font-weight:500;color:#8E8BA6;}",
       ".lok-idsw.is-current .lok-idsw-ic{background:#6002EE;color:#fff;}",
       ".lok-idsw.is-current .lok-idsw-name{color:#6002EE;}",
+      // Shopping row = orange (shopper), overriding the violet default above.
+      ".lok-idsw--shop .lok-idsw-ic{background:#FFF0E1;color:#FF8D00;}",
+      ".lok-idsw--shop.is-current .lok-idsw-ic{background:#FF8D00;color:#fff;}",
+      ".lok-idsw--shop.is-current .lok-idsw-name{color:#FF8D00;}",
       ".lok-idsw-dot{margin-left:auto;width:7px;height:7px;border-radius:50%;background:#2BB673;flex-shrink:0;}",
       "#lok-mnav-panel .lok-idsw-name{max-width:none;}",
       // mobile panel: render the menu inline (no trigger, no dropdown chrome)
@@ -175,10 +179,13 @@
 
   // #66 Phase 2 — identity-switcher icons (storefront vs. person).
   var IC_STORE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.5-5h15L21 9"/><path d="M4 9v10a1 1 0 001 1h14a1 1 0 001-1V9"/><path d="M3 9a2.5 2.5 0 005 0 2.5 2.5 0 005 0 2.5 2.5 0 005 0 2.5 2.5 0 003 0"/><path d="M9 20v-6h6v6"/></svg>';
-  var IC_SHOP = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+  // Shopping = Font Awesome (free solid) cart-shopping. Fill-based (not stroke),
+  // and coloured orange via the .lok-idsw--shop CSS — orange = shopper, purple =
+  // storefront, the site-wide identity colour code.
+  var IC_SHOP = '<svg viewBox="0 0 576 512" fill="currentColor"><path d="M0 24C0 10.7 10.7 0 24 0L69.5 0c22 0 41.5 12.8 50.6 32l411 0c26.3 0 45.5 25 38.6 50.4l-41 152.3c-8.5 31.4-37 53.3-69.5 53.3l-288.5 0 5.4 28.5c2.2 11.3 12.1 19.5 23.6 19.5L488 488c13.3 0 24 10.7 24 24s-10.7 24-24 24l-288.3 0c-34.6 0-64.3-24.6-70.7-58.5L77.4 54.5c-.7-3.8-4-6.5-7.9-6.5L24 48C10.7 48 0 37.3 0 24zM128 464a48 48 0 1 1 96 0 48 48 0 1 1 -96 0zm336-48a48 48 0 1 1 0 96 48 48 0 1 1 0-96z"/></svg>';
 
-  function idRow(href, icon, name, sub, current) {
-    return '<a href="' + href + '" role="menuitem" class="lok-idsw' + (current ? ' is-current' : '') + '">' +
+  function idRow(href, icon, name, sub, current, shop) {
+    return '<a href="' + href + '" role="menuitem" class="lok-idsw' + (shop ? ' lok-idsw--shop' : '') + (current ? ' is-current' : '') + '">' +
       '<span class="lok-idsw-ic">' + icon + '</span>' +
       '<span class="lok-idsw-txt"><span class="lok-idsw-name">' + esc(name) + '</span>' +
       '<span class="lok-idsw-sub">' + esc(sub) + '</span></span>' +
@@ -199,8 +206,8 @@
       var store = (a && a.business_name || '').trim() || 'My storefront';
       var person = (a && a.first_name || '').trim();
       html += '<div class="lok-acct-cap">Switch to</div>';
-      html += idRow(DASH_URL, IC_STORE, store, 'Storefront', inStore);
-      html += idRow(ACCOUNT_URL, IC_SHOP, person || 'Shopping', person ? 'Shopping' : 'Saves & reviews', !inStore);
+      html += idRow(DASH_URL, IC_STORE, store, 'Storefront', inStore, false);
+      html += idRow(ACCOUNT_URL, IC_SHOP, person || 'Shopping', person ? 'Shopping' : 'Saves & reviews', !inStore, true);
     } else {
       html += '<a href="' + ACCOUNT_URL + '" role="menuitem">My Account</a>';
     }
@@ -221,7 +228,7 @@
         var a = links[i];
         var href = pathOf(a.getAttribute('href') || '');
         var txt = (a.textContent || '').trim().toLowerCase();
-        if (href === '/sign-up' || txt === 'become a vendor' || txt === 'open a storefront') {
+        if (href === '/sign-up' || txt === 'become a vendor' || /^open (a|your|my) storefront$/.test(txt)) {
           a.style.setProperty('display', 'none', 'important');
           a.setAttribute('data-lok-bv-hidden', '1');
         }
