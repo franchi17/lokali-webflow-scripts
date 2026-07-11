@@ -348,9 +348,10 @@ var LokaliProfilePage = (function () {
     return '';
   }
 
-  // The Webflow form has no native inputs for payment handles, so we inject them
-  // (heading + input pairs) right after the Instagram field, reusing the exact
-  // Webflow classes so they inherit the form's styling. Idempotent.
+  // The Webflow form has no native inputs for payment handles, so we build a
+  // "Payment Links" card that matches the other form sections (Business
+  // Information / About Your Business) and drop it in right below the card that
+  // holds the website/Instagram links. Idempotent.
   var _PAY_FIELDS = [
     { id: 'input-venmo',         label: 'Venmo username',      ph: 'eg. your-venmo-name (no @)' },
     { id: 'input-cashapp',       label: 'Cash App $Cashtag',   ph: 'eg. yourcashtag (no $)' },
@@ -358,19 +359,40 @@ var LokaliProfilePage = (function () {
     { id: 'input-otherpay-url',  label: 'Other payment link',  ph: 'https://…' },
     { id: 'input-otherpay-label', label: 'Label for the link (optional)', ph: 'eg. Buy Me a Coffee' }
   ];
+  // Font Awesome "dollar-sign" glyph as inline SVG — FA isn't loaded on the page,
+  // and the other card icons are purple PNGs. Fill #6002EE (sampled from the
+  // live .heading-icon) so it matches their colour exactly; the .heading-icon
+  // class gives it the same size + purple badge as the others.
+  var _PAY_ICON = '<svg class="heading-icon purple" width="25" height="25" viewBox="0 0 320 512" fill="#6002EE" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M160 0c17.7 0 32 14.3 32 32V67.7c11.8 2.4 23.1 6.4 33.7 12c15.6 8.3 21.5 27.7 13.2 43.3s-27.7 21.5-43.3 13.2c-5.3-2.8-11.1-4.8-17.5-6c-9.6-1.8-19.4-1.7-28.5 .1c-4.5 .9-8.6 2.2-12.2 3.9c-3.6 1.7-6.3 3.7-8.1 5.7c-1.7 1.9-3 4.5-3.5 8.6c-.5 4.1 .1 6.5 .8 8c.8 1.7 2.3 3.6 5.1 5.8c6.3 5 15.9 8.8 28.3 13.2l.7 .2c11.2 3.9 25.6 9 37.1 16.7c6.2 4.1 12.5 9.4 17.3 16.4c4.9 7.2 8 15.6 9.1 25.1c2 16.9-1.8 32.4-9.9 45.2c-8 12.6-19.6 21.5-32.7 27.5c-5 2.3-10.3 4.1-15.7 5.5V480c0 17.7-14.3 32-32 32s-32-14.3-32-32V444.4c-11-2.7-22.4-6.9-32.6-11.7c-5.5-2.6-11.6-5.4-17.9-8.4c-15.7-7.4-22.5-26.3-15.1-42s26.3-22.5 42-15.1c8.4 4 15.3 7.4 21.5 10.4c9.6 4.6 18.9 7.6 26.4 8.9c9.6 1.6 19.1 1.4 28.1-.5c4.5-.9 8.6-2.2 12.2-3.9c3.6-1.7 6.3-3.7 8.1-5.7c1.7-1.9 3-4.5 3.5-8.6c.5-4.1-.1-6.5-.8-8c-.8-1.7-2.3-3.6-5.1-5.8c-6.3-5-15.9-8.8-28.3-13.2l-.7-.2c-11.2-3.9-25.6-9-37.1-16.7c-6.2-4.1-12.5-9.4-17.3-16.4c-4.9-7.2-8-15.6-9.1-25.1c-2-16.9 1.8-32.4 9.9-45.2c8-12.6 19.6-21.5 32.7-27.5c5-2.3 10.3-4.1 15.7-5.5V32c0-17.7 14.3-32 32-32z"/></svg>';
   function _injectPaymentFields() {
-    if (document.getElementById('input-venmo')) return; // already injected
+    if (document.getElementById('lok-pay-card')) return; // already injected
     var anchor = document.getElementById('input-instagram') || document.getElementById('website');
-    if (!anchor || !anchor.parentNode) return;
-    var parent = anchor.parentNode;
-    // Insert after the anchor input (and after any heading that follows it).
-    var insertAfter = anchor;
-    var frag = document.createDocumentFragment();
-    var groupHeading = document.createElement('div');
-    groupHeading.className = 'input-heading';
-    groupHeading.textContent = 'Payment links (optional)';
-    groupHeading.style.marginTop = '6px';
-    frag.appendChild(groupHeading);
+    if (!anchor) return;
+    var anchorSection = anchor.closest && (anchor.closest('section') || anchor.closest('.section-12'));
+    if (!anchorSection || !anchorSection.parentNode) return;
+
+    var section = document.createElement('section');
+    section.className = 'section-12';
+    section.id = 'lok-pay-card';
+
+    var head = document.createElement('div');
+    head.className = 'form-heading-div';
+    head.innerHTML = _PAY_ICON + '<div class="section-heading">Payment Links</div>';
+    section.appendChild(head);
+
+    var grid = document.createElement('div');
+    grid.className = 'w-layout-grid grid';
+    var col = document.createElement('div');
+    col.className = 'div-block-47';
+
+    var sub = document.createElement('div');
+    sub.className = 'input-heading';
+    sub.textContent = 'Let customers pay you directly — enter just your username and we build the link.';
+    sub.style.fontWeight = '400';
+    sub.style.opacity = '.7';
+    sub.style.marginBottom = '6px';
+    col.appendChild(sub);
+
     _PAY_FIELDS.forEach(function (f) {
       var h = document.createElement('div');
       h.className = 'input-heading';
@@ -382,11 +404,14 @@ var LokaliProfilePage = (function () {
       inp.id = f.id;
       inp.placeholder = f.ph;
       inp.autocomplete = 'off';
-      frag.appendChild(h);
-      frag.appendChild(inp);
+      col.appendChild(h);
+      col.appendChild(inp);
     });
-    if (insertAfter.nextSibling) parent.insertBefore(frag, insertAfter.nextSibling);
-    else parent.appendChild(frag);
+    grid.appendChild(col);
+    section.appendChild(grid);
+
+    if (anchorSection.nextSibling) anchorSection.parentNode.insertBefore(section, anchorSection.nextSibling);
+    else anchorSection.parentNode.appendChild(section);
   }
 
   function populateUI() {
