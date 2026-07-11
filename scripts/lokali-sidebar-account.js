@@ -51,9 +51,6 @@
     // #51 — icon-bearing rows line up like the Settings row: icon box + label.
     '.lok-acct .lok-acct-menu .lok-acct-row .lok-row-ic{width:24px;height:24px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;}' +
     '.lok-acct .lok-acct-menu .lok-acct-row .lok-row-ic svg{width:16px;height:16px;display:block;}' +
-    // #66 — the shopping switch row's cart icon stays orange (shopper) even on
-    // hover (colour set on the icon span, so the row's hover colour can't win).
-    '.lok-acct .lok-acct-menu .lok-acct-row[data-lok-customer-row] .lok-row-ic{color:#FF8D00;}' +
     // #67 — quiet divider before Logout.
     '.lok-acct .lok-acct-menu #button-logout{border-top:1px solid #EFEFF5;margin-top:6px;padding-top:10px;border-radius:0 0 8px 8px;}' +
     // #67 — chip layout: caret right-aligned and vertically centered against
@@ -103,9 +100,10 @@
   var ROW_ICONS = {
     upgrade: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.9 6.26L21 9.27l-4.5 4.38L17.8 20 12 16.77 6.2 20l1.3-6.35L3 9.27l6.1-1.01z"/></svg>',
     help: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 015.8 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
-    // #66 — shopping side of the identity switcher: Font Awesome (free solid)
-    // cart-shopping, coloured orange (shopper) via CSS. Fill-based, not stroke.
-    shopping: '<svg viewBox="0 0 576 512" fill="currentColor"><path d="M0 24C0 10.7 10.7 0 24 0L69.5 0c22 0 41.5 12.8 50.6 32l411 0c26.3 0 45.5 25 38.6 50.4l-41 152.3c-8.5 31.4-37 53.3-69.5 53.3l-288.5 0 5.4 28.5c2.2 11.3 12.1 19.5 23.6 19.5L488 488c13.3 0 24 10.7 24 24s-10.7 24-24 24l-288.3 0c-34.6 0-64.3-24.6-70.7-58.5L77.4 54.5c-.7-3.8-4-6.5-7.9-6.5L24 48C10.7 48 0 37.3 0 24zM128 464a48 48 0 1 1 96 0 48 48 0 1 1 -96 0zm336-48a48 48 0 1 1 0 96 48 48 0 1 1 0-96z"/></svg>',
+    // #66 — shopping side of the identity switcher: outline cart-shopping,
+    // stroke to match the other menu-row icons (no special colour here — see the
+    // menu CSS; the row icon inherits the row's neutral/hover colour like the rest).
+    shopping: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>',
     signin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-4.5 4.5L19 4l3 3-4.5 4.5M11.39 11.61a5.5 5.5 0 11-7.78 7.78 5.5 5.5 0 017.78-7.78zm0 0L15.5 7.5"/></svg>'
   };
 

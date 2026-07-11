@@ -137,10 +137,12 @@
       ".lok-idsw-sub{font-size:11px;font-weight:500;color:#8E8BA6;}",
       ".lok-idsw.is-current .lok-idsw-ic{background:#6002EE;color:#fff;}",
       ".lok-idsw.is-current .lok-idsw-name{color:#6002EE;}",
-      // Shopping row = orange (shopper), overriding the violet default above.
-      ".lok-idsw--shop .lok-idsw-ic{background:#FFF0E1;color:#FF8D00;}",
-      ".lok-idsw--shop.is-current .lok-idsw-ic{background:#FF8D00;color:#fff;}",
-      ".lok-idsw--shop.is-current .lok-idsw-name{color:#FF8D00;}",
+      // Shopping row = orange cart on a soft-orange tile (shopper colour code),
+      // held the SAME in the current state (no violet/solid takeover). The NAME
+      // is intentionally NOT overridden — it matches the storefront row's text
+      // (ink, or violet when current) for a consistent switcher.
+      ".lok-idsw--shop .lok-idsw-ic{background:#FFF2DF;color:#FF8D00;}",
+      ".lok-idsw--shop.is-current .lok-idsw-ic{background:#FFF2DF;color:#FF8D00;}",
       ".lok-idsw-dot{margin-left:auto;width:7px;height:7px;border-radius:50%;background:#2BB673;flex-shrink:0;}",
       "#lok-mnav-panel .lok-idsw-name{max-width:none;}",
       // mobile panel: render the menu inline (no trigger, no dropdown chrome)
@@ -179,10 +181,11 @@
 
   // #66 Phase 2 — identity-switcher icons (storefront vs. person).
   var IC_STORE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.5-5h15L21 9"/><path d="M4 9v10a1 1 0 001 1h14a1 1 0 001-1V9"/><path d="M3 9a2.5 2.5 0 005 0 2.5 2.5 0 005 0 2.5 2.5 0 005 0 2.5 2.5 0 003 0"/><path d="M9 20v-6h6v6"/></svg>';
-  // Shopping = Font Awesome (free solid) cart-shopping. Fill-based (not stroke),
-  // and coloured orange via the .lok-idsw--shop CSS — orange = shopper, purple =
-  // storefront, the site-wide identity colour code.
-  var IC_SHOP = '<svg viewBox="0 0 576 512" fill="currentColor"><path d="M0 24C0 10.7 10.7 0 24 0L69.5 0c22 0 41.5 12.8 50.6 32l411 0c26.3 0 45.5 25 38.6 50.4l-41 152.3c-8.5 31.4-37 53.3-69.5 53.3l-288.5 0 5.4 28.5c2.2 11.3 12.1 19.5 23.6 19.5L488 488c13.3 0 24 10.7 24 24s-10.7 24-24 24l-288.3 0c-34.6 0-64.3-24.6-70.7-58.5L77.4 54.5c-.7-3.8-4-6.5-7.9-6.5L24 48C10.7 48 0 37.3 0 24zM128 464a48 48 0 1 1 96 0 48 48 0 1 1 -96 0zm336-48a48 48 0 1 1 0 96 48 48 0 1 1 0-96z"/></svg>';
+  // Shopping = outline cart-shopping (regular style, matching the outline
+  // storefront glyph above). Coloured orange via .lok-idsw--shop — orange =
+  // shopper, purple = storefront. (Font Awesome isn't loaded site-wide, so we
+  // inline an equivalent stroke cart rather than an <i class="fa-...">.)
+  var IC_SHOP = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>';
 
   function idRow(href, icon, name, sub, current, shop) {
     return '<a href="' + href + '" role="menuitem" class="lok-idsw' + (shop ? ' lok-idsw--shop' : '') + (current ? ' is-current' : '') + '">' +
