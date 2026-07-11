@@ -893,12 +893,17 @@
       a.href = m.href;
       a.target = '_blank';
       a.rel = 'noopener noreferrer';
-      a.title = m.label;
       a.setAttribute('aria-label', 'Pay via ' + m.label);
-      a.innerHTML = m.icon;
-      a.style.cssText = 'display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;flex:0 0 auto;color:#6002EE;background:#fff;border:1px solid #6002EE;border-radius:50%;text-decoration:none;transition:background .12s,color .12s;';
-      a.addEventListener('mouseenter', function () { a.style.background = '#6002EE'; a.style.color = '#fff'; });
-      a.addEventListener('mouseleave', function () { a.style.background = '#fff'; a.style.color = '#6002EE'; });
+      a.innerHTML = m.icon; // set BEFORE appending the tooltip (innerHTML replaces children)
+      a.style.cssText = 'position:relative;display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;flex:0 0 auto;color:#6002EE;background:#fff;border:1px solid #6002EE;border-radius:50%;text-decoration:none;transition:background .12s,color .12s;';
+      // Hover tooltip with the app name / link label. Right-anchored so the
+      // rightmost icon's tooltip doesn't overflow the card edge.
+      var tip = ce('span');
+      tip.textContent = m.label;
+      tip.style.cssText = 'position:absolute;bottom:calc(100% + 8px);right:0;background:#6002EE;color:#fff;font-family:"Plus Jakarta Sans",sans-serif;font-size:11px;font-weight:600;padding:4px 8px;border-radius:6px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .12s;box-shadow:0 4px 12px rgba(38,10,80,.22);z-index:2;';
+      a.appendChild(tip);
+      a.addEventListener('mouseenter', function () { a.style.background = '#6002EE'; a.style.color = '#fff'; tip.style.opacity = '1'; });
+      a.addEventListener('mouseleave', function () { a.style.background = '#fff'; a.style.color = '#6002EE'; tip.style.opacity = '0'; });
       trackChannel(a, m.type);
       btnRow.appendChild(a);
     });
