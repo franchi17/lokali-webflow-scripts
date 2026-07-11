@@ -841,58 +841,74 @@
     try { var u = new URL(String(raw).trim()); return u.protocol === 'https:' ? u.href : ''; }
     catch (e) { return ''; }
   }
+  // Brand marks (Font Awesome 7 free, viewBox 640) as inline SVG — fill is
+  // currentColor so each icon flips violet->white with its button on hover.
+  // 'other' falls back to the FA dollar-sign (a generic pay link has no brand).
+  var _PAY_ICONS = {
+    venmo:   '<svg viewBox="0 0 640 640" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M530.5 78.8C547.9 107.5 555.8 137 555.8 174.3C555.8 293.3 453.9 447.8 371.1 556.4L182.2 556.4L106.4 104.9L271.8 89.2L311.9 410.5C349.3 349.7 395.5 254.2 395.5 189.1C395.5 153.5 389.4 129.2 379.8 109.2L530.5 78.8z"/></svg>',
+    cashapp: '<svg viewBox="0 0 640 640" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M536.3 160.9C526.9 134.4 506 113.5 479.5 103.9C455.4 96 433.2 96 387.9 96L252 96C207.2 96 184.8 96 160.7 103.5C134.2 113.1 113.3 134 103.7 160.5C96 184.8 96 207.2 96 252.2L96 387.8C96 433 96 455.2 103.5 479.3C113.1 505.8 134 526.7 160.5 536.3C184.8 544 207.2 544 252.1 544L387.8 544C432.8 544 455.2 544 479.4 536.3C505.9 526.7 526.8 505.8 536.4 479.3C544.1 455 544.1 432.6 544.1 387.8L544.1 252.3C544.1 207.3 544.1 184.9 536.4 160.8zM419.1 249.4L393.3 270.5C391 272.4 387.8 272 386 269.6C372.8 253.4 352.3 244.2 329.9 244.2C304.9 244.2 289.3 255.1 289.3 270.4C288.9 283.2 301 290 338.4 298.1C385.6 308.1 407.1 327.8 407.1 360.8C407.1 402.2 373.4 432.7 320.7 436.1L315.6 460.6C315.2 462.9 313 464.7 310.5 464.7L269.9 464.7C266.5 464.7 264.1 461.5 264.8 458.3L271.2 431C245.2 423.5 224 409 211.9 391.3C210.4 389 210.8 386 213 384.3L241.2 362.3C243.5 360.4 247 361 248.7 363.4C263.6 384.3 286.7 396.7 314.4 396.7C339.4 396.7 358.2 384.5 358.2 367C358.2 353.6 348.8 347.4 317 340.8C262.8 329.1 241.2 309 241.2 275.9C241.2 237.5 273.4 208.7 322.1 204.9L327.4 179.5C327.8 177.2 330 175.4 332.5 175.4L372.4 175.4C375.6 175.4 378.2 178.4 377.5 181.6L371.3 210C392.2 216.4 409.3 227.9 420 242.2C421.7 244.3 421.3 247.5 419.1 249.2z"/></svg>',
+    paypal:  '<svg viewBox="0 0 640 640" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M239.9 359.9C236.4 379.1 222.5 468.6 218.4 493.9C218.1 495.7 217.4 496.4 215.4 496.4L140.8 496.4C133.2 496.4 127.7 489.8 128.7 482.5L187.3 110.6C188.8 101 197.4 93.7 207.3 93.7C359.6 93.7 372.4 90 411.3 105.1C471.4 128.4 476.9 184.6 455.3 245.4C433.8 308 382.8 334.9 315.2 335.7C271.8 336.4 245.7 328.7 239.9 359.9zM485.6 216C483.8 214.7 483.1 214.2 482.6 217.3C480.6 228.7 477.5 239.8 473.8 250.9C433.9 364.7 323.3 354.8 269.3 354.8C263.2 354.8 259.2 358.1 258.4 364.2C235.8 504.6 231.3 533.9 231.3 533.9C230.3 541 234.8 546.8 241.9 546.8L305.4 546.8C314 546.8 321.1 540.5 322.8 531.9C323.5 526.5 321.7 538 337.2 440.6C341.8 418.6 351.5 420.9 366.5 420.9C437.5 420.9 492.9 392.1 509.4 308.6C515.9 273.8 514 237.2 485.6 216z"/></svg>',
+    other:   '<svg viewBox="0 0 640 640" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M296 88C296 74.7 306.7 64 320 64C333.3 64 344 74.7 344 88L344 128L400 128C417.7 128 432 142.3 432 160C432 177.7 417.7 192 400 192L285.1 192C260.2 192 240 212.2 240 237.1C240 259.6 256.5 278.6 278.7 281.8L370.3 294.9C424.1 302.6 464 348.6 464 402.9C464 463.2 415.1 512 354.9 512L344 512L344 552C344 565.3 333.3 576 320 576C306.7 576 296 565.3 296 552L296 512L224 512C206.3 512 192 497.7 192 480C192 462.3 206.3 448 224 448L354.9 448C379.8 448 400 427.8 400 402.9C400 380.4 383.5 361.4 361.3 358.2L269.7 345.1C215.9 337.5 176 291.4 176 237.1C176 176.9 224.9 128 285.1 128L296 128L296 88z"/></svg>'
+  };
   function renderPayLinks(v) {
     var existing = document.getElementById('lok-pay-links');
     if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
 
     var methods = [];
     var vm = _payHandle(v.venmo_username);
-    if (vm) methods.push({ type: 'venmo', label: 'Venmo', href: 'https://venmo.com/u/' + vm });
+    if (vm) methods.push({ type: 'venmo', label: 'Venmo', href: 'https://venmo.com/u/' + vm, icon: _PAY_ICONS.venmo });
     var ca = _payHandle(v.cashapp_cashtag);
-    if (ca) methods.push({ type: 'cashapp', label: 'Cash App', href: 'https://cash.app/$' + ca });
+    if (ca) methods.push({ type: 'cashapp', label: 'Cash App', href: 'https://cash.app/$' + ca, icon: _PAY_ICONS.cashapp });
     var pp = _payHandle(v.paypalme_slug);
-    if (pp) methods.push({ type: 'paypal', label: 'PayPal', href: 'https://paypal.me/' + pp });
+    if (pp) methods.push({ type: 'paypal', label: 'PayPal', href: 'https://paypal.me/' + pp, icon: _PAY_ICONS.paypal });
     var other = _payHttps(v.other_pay_url);
     if (other) {
       var lbl = (v.other_pay_label && String(v.other_pay_label).trim())
         || String(other).replace(/^https:\/\//i, '').replace(/^www\./i, '').replace(/\/.*$/, '');
-      methods.push({ type: 'other_pay', label: lbl, href: other });
+      methods.push({ type: 'other_pay', label: lbl, href: other, icon: _PAY_ICONS.other });
     }
     if (!methods.length) return;
 
-    // Anchor into the About tab, just below the website detail.
+    // Its OWN row directly BELOW the Website detail. NB: .vl-about-website carries
+    // class vl-detail-v, so closest('[class*="vl-detail"]') matched the link itself
+    // and crammed this into the flex Website row — target .vl-detail-row instead.
     var anchor = document.getElementById('vl-about-website') || document.getElementById('vl-about-bio');
     if (!anchor) return;
-    var row = anchor.closest ? (anchor.closest('[class*="vl-detail"]') || anchor.parentNode) : anchor.parentNode;
+    var row = (anchor.closest && anchor.closest('.vl-detail-row')) || anchor.parentNode;
     if (!row || !row.parentNode) return;
 
     var wrap = ce('div'); wrap.id = 'lok-pay-links';
-    wrap.style.cssText = 'margin-top:16px;font-family:"Plus Jakarta Sans",sans-serif;';
+    wrap.style.cssText = 'margin-top:14px;font-family:"Plus Jakarta Sans",sans-serif;';
 
-    var head = ce('div');
-    head.textContent = 'Pay ' + (v.business_name || 'this vendor');
-    head.style.cssText = 'font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#8E8BA6;margin-bottom:8px;';
-    wrap.appendChild(head);
+    // Label on the left, icon buttons right-aligned — mirrors the detail rows.
+    var line = ce('div');
+    line.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:12px;';
+    var k = ce('span', 'vl-detail-k');
+    k.textContent = 'Pay ' + (v.business_name || 'this vendor');
 
     var btnRow = ce('div');
-    btnRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;';
+    btnRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;';
     methods.forEach(function (m) {
       var a = ce('a');
       a.href = m.href;
       a.target = '_blank';
       a.rel = 'noopener noreferrer';
-      a.textContent = m.label;
-      a.style.cssText = 'display:inline-flex;align-items:center;font-family:"Plus Jakarta Sans",sans-serif;font-size:13px;font-weight:600;color:#6002EE;background:#fff;border:1px solid #6002EE;border-radius:100px;padding:8px 16px;text-decoration:none;transition:background .12s,color .12s;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+      a.title = m.label;
+      a.setAttribute('aria-label', 'Pay via ' + m.label);
+      a.innerHTML = m.icon;
+      a.style.cssText = 'display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;flex:0 0 auto;color:#6002EE;background:#fff;border:1px solid #6002EE;border-radius:50%;text-decoration:none;transition:background .12s,color .12s;';
       a.addEventListener('mouseenter', function () { a.style.background = '#6002EE'; a.style.color = '#fff'; });
       a.addEventListener('mouseleave', function () { a.style.background = '#fff'; a.style.color = '#6002EE'; });
       trackChannel(a, m.type);
       btnRow.appendChild(a);
     });
-    wrap.appendChild(btnRow);
+    line.appendChild(k);
+    line.appendChild(btnRow);
+    wrap.appendChild(line);
 
     var disc = ce('div');
     disc.textContent = "Payments go directly to the vendor. Lokali doesn't process or guarantee them.";
-    disc.style.cssText = 'margin-top:8px;font-size:11px;color:#8E8BA6;line-height:1.4;';
+    disc.style.cssText = 'text-align:right;font-size:11px;color:#8E8BA6;line-height:1.4;margin-top:6px;';
     wrap.appendChild(disc);
 
     if (row.nextSibling) row.parentNode.insertBefore(wrap, row.nextSibling);
