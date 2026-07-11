@@ -582,26 +582,28 @@
         });
       }
     },
-    // Moderation reports. reporter_user_id is stamped by a DB trigger from the
-    // verified token — never sent (or forgeable) here. The queue is admin-read
-    // only (RLS), so the reporter gets back nothing but a success/failure.
+    // Moderation reports. Both directions go through the /report routes (verify
+    // the Supabase JWT, resolve the reporter, enforce self-report/owner + dedup
+    // guards, insert via the service role, then fire the "FRAUD REPORT" team
+    // alert + reporter autoresponder). This REPLACED a direct table insert that
+    // wrote a SILENT row — no email fired, no guards ran — after the Xano→
+    // Supabase cutover dropped the old endpoints (restored for 55f-1). The
+    // queue stays admin-read only (RLS); the reporter gets back only { ok, id }.
     reports: {
       vendor: function (vendorId, category, reason) {
-        return withClient(function (c) {
-          return c.from('vendor_reports').insert({
-            vendors_id: vendorId, category: category || null, reason: reason || null
-          });
-        });
+        return postRoute('/report/vendor', {
+          vendorId: vendorId,
+          category: category || null,
+          reason: reason || null
+        }, true);
       },
-      // SEC-016: reported_user_id + vendors_id are DERIVED server-side from the
-      // flagged review (set_review_report_subject trigger) — the browser can't
-      // misattribute a report, so we send only which review + why.
+      // reviewId + reason only; the route derives vendors_id + reported_user_id
+      // from the flagged review server-side (SEC-016) and enforces owner-only.
       review: function (reviewId, reason) {
-        return withClient(function (c) {
-          return c.from('review_reports').insert({
-            reviews_id: reviewId, reason: reason || null
-          });
-        });
+        return postRoute('/report/review', {
+          reviewId: reviewId,
+          reason: reason || null
+        }, true);
       }
     },
     // --- Image storage (Supabase Storage) --------------------------------
