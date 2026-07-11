@@ -85,7 +85,11 @@
     // (4) current-page nav row: Webflow stamps w--current but styles nothing —
     // give it the solid pressed state so vendors can see where they are.
     '.section-11 .dashboard-btn.w--current{background:#F3EBFF;border-radius:8px;}' +
-    '.section-11 .dashboard-btn.w--current,.section-11 .dashboard-btn.w--current strong.dashboard-menu{color:#6002EE;}';
+    '.section-11 .dashboard-btn.w--current,.section-11 .dashboard-btn.w--current strong.dashboard-menu{color:#6002EE;}' +
+    // Breathing room between the main nav items (the container is .div-block-28,
+    // NOT the account-menu dropdown). Items sat 1px apart, so a hover pill butted
+    // right up against the pressed (w--current) pill and read as one chunky block.
+    '.div-block-28 .dashboard-btn{margin-bottom:6px;}';
 
   // #67 — a real chevron instead of the native "⌄" text glyph (which sat on
   // the text baseline and read as floating/misaligned).
