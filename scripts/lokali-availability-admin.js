@@ -587,7 +587,7 @@
     }).join('');
 
     var intro = isSlot
-      ? 'Your open hours &mdash; shown on your storefront. Bookable appointments are generated inside them from the length &amp; buffer above; tap a window to give that one custom timing.'
+      ? 'Your open hours &mdash; shown on your storefront. Bookable appointments are generated inside them from the length &amp; buffer above; tap a window to give that one custom timing. Closing for lunch? Add two windows (e.g. 9&ndash;12 and 1&ndash;5) &mdash; the gap stays unbookable.'
       : 'Your open hours &mdash; shown on your storefront so customers know when you’re available. Split days (e.g. a lunch break) are just two windows.';
     this.$hours.innerHTML =
       '<div class="ava-card">' +
