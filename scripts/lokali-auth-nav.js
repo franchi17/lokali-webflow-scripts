@@ -148,7 +148,10 @@
       // mobile panel: render the menu inline (no trigger, no dropdown chrome)
       "#lok-mnav-panel .lok-acct{display:block;width:100%;}",
       "#lok-mnav-panel .lok-acct-trigger{display:none;}",
-      "#lok-mnav-panel .lok-acct-menu{display:block;position:static;border:none;box-shadow:none;padding:0;min-width:0;}",
+      // On the mobile panel the switcher is inline — drop the desktop dropdown's
+      // white card (border/shadow/padding already cleared); background:none too so
+      // it sits flush on the panel's lavender instead of a floating white block.
+      "#lok-mnav-panel .lok-acct-menu{display:block;position:static;border:none;box-shadow:none;padding:0;min-width:0;background:none;}",
       "#lok-mnav-panel .lok-acct-menu a,#lok-mnav-panel .lok-acct-menu button{padding:12px 0;font-size:15px;}"
     ].join('');
     (document.head || document.documentElement).appendChild(s);

@@ -19,6 +19,16 @@
     { label: 'About',           href: '/about' },
     { label: 'The Market',      href: '/the-market' },
     { label: 'Pricing',         href: '/pricing' },
+    // Resources = a tap-to-expand accordion of the vendor-resources guides
+    // (mirrors the desktop "Resources" dropdown from lokali-resources-nav.js).
+    { label: 'Resources', children: [
+      { label: 'Profile Photo Guide', href: '/vendor-resources/profile-photo-guide' },
+      { label: 'Categories Guide',    href: '/vendor-resources/categories-guide' },
+      { label: 'Product Photo Guide', href: '/vendor-resources/product-photo-guide' },
+      { label: 'Service Photo Guide', href: '/vendor-resources/service-photo-guide' },
+      { label: 'Availability Guide',  href: '/vendor-resources/availability-guide' }
+    ] },
+    { label: 'Contact us',      href: '/contact-us' },
     { label: 'Login',           href: '/login' },
     { label: 'Become a Vendor', href: '/sign-up', cta: true }
   ];
@@ -42,6 +52,18 @@
       'border-bottom:1px solid rgba(15,23,42,.06);}',
       '#lok-mnav-panel a.lok-cta{margin-top:14px;text-align:center;background:var(--lokali-primary,#6002ee);',
       'color:#fff;border-radius:10px;border-bottom:0;font-weight:600;padding:14px 6px;}',
+      // Resources accordion: header row matches the other links; caret flips; sub-links
+      // reveal indented with a smooth max-height transition.
+      '#lok-mnav-panel .lok-mnav-acc{display:flex;align-items:center;justify-content:space-between;width:100%;',
+      'box-sizing:border-box;padding:15px 6px;font-family:inherit;font-size:17px;font-weight:500;line-height:1.2;',
+      'color:var(--lokali-primary,#6002ee);background:none;border:none;border-bottom:1px solid rgba(15,23,42,.06);',
+      'cursor:pointer;text-align:left;}',
+      '#lok-mnav-panel .lok-mnav-car{width:9px;height:9px;border-right:2px solid currentColor;',
+      'border-bottom:2px solid currentColor;transform:rotate(45deg);transition:transform .2s;flex-shrink:0;margin-right:4px;}',
+      '#lok-mnav-panel .lok-mnav-grp.open .lok-mnav-car{transform:rotate(-135deg);}',
+      '#lok-mnav-panel .lok-mnav-sub{max-height:0;overflow:hidden;transition:max-height .25s ease;}',
+      '#lok-mnav-panel .lok-mnav-grp.open .lok-mnav-sub{max-height:360px;}',
+      '#lok-mnav-panel .lok-mnav-sub a{padding-left:20px;font-size:15px;}',
       // Hamburger -> X morph while the menu is open (two-bar hamburger; bars ~15px apart).
       // The original bars are driven by Webflow IX2 (Web Animations API) which overrides
       // even inline !important, so we hide them and render our own morphing icon instead.
@@ -77,6 +99,33 @@
     panel.id = 'lok-mnav-panel';
     panel.setAttribute('aria-label', 'Mobile navigation');
     LINKS.forEach(function (l) {
+      if (l.children) {
+        // Accordion group (Resources): a tappable header + collapsible sub-links.
+        var grp = document.createElement('div');
+        grp.className = 'lok-mnav-grp';
+        var hdr = document.createElement('button');
+        hdr.type = 'button';
+        hdr.className = 'lok-mnav-acc';
+        hdr.setAttribute('aria-expanded', 'false');
+        hdr.innerHTML = l.label + '<i class="lok-mnav-car" aria-hidden="true"></i>';
+        var sub = document.createElement('div');
+        sub.className = 'lok-mnav-sub';
+        l.children.forEach(function (c) {
+          var sa = document.createElement('a');
+          sa.href = c.href;
+          sa.textContent = c.label;
+          sub.appendChild(sa);
+        });
+        hdr.addEventListener('click', function (e) {
+          e.preventDefault();
+          var open = grp.classList.toggle('open');
+          hdr.setAttribute('aria-expanded', open ? 'true' : 'false');
+        });
+        grp.appendChild(hdr);
+        grp.appendChild(sub);
+        panel.appendChild(grp);
+        return;
+      }
       var a = document.createElement('a');
       a.href = l.href;
       a.textContent = l.label;
