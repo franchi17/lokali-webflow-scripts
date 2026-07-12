@@ -118,13 +118,10 @@
   }
 
   Page.prototype.shell = function () {
+    // No internal header — the Webflow page heading ("Availability" + subtitle)
+    // is the single source of truth, so the widget starts straight at the inbox.
     this.mount.className = 'lok-ava';
     this.mount.innerHTML =
-      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">' +
-        '<div><p style="margin:0;font-size:17px;font-weight:600;color:#3E3A55;">Availability</p>' +
-        '<p class="ava-sub" style="margin:1px 0 0;">Limited-capacity orders, confirmed by you</p></div>' +
-        '<span class="ava-chip" style="background:#FBEEDD;color:#B5793B;font-weight:600;">Pro feature</span>' +
-      '</div>' +
       '<div class="ava-inbox"></div>' +
       '<div class="ava-settings"></div>' +
       '<div class="ava-daysoff"></div>' +
