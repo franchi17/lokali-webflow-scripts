@@ -26,7 +26,13 @@
       '.service-card [data-action],.product-card [data-action],' +
       '.service-card .icon-btn-edit,.product-card .icon-btn-edit,' +
       '.service-card .icon-btn--delete,.product-card .icon-btn--delete{' +
-        'opacity:1 !important;visibility:visible !important;}';
+        'opacity:1 !important;visibility:visible !important;}' +
+      // Sidebar nav-label fix: the Leads + Availability links use
+      // <div class="text-block-17"> (no font-size of its own), while the other
+      // nav items use <strong class="dashboard-menu"> (16px). On services/products
+      // pages an ancestor font-size (24px) cascades into the unstyled label and
+      // blows it up. Pin it to match .dashboard-menu so it can't inherit the leak.
+      '.dashboard-btn .text-block-17{font-size:16px !important;font-weight:500;line-height:26px;}';
     (document.head || document.documentElement).appendChild(s);
   })();
 
