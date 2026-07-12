@@ -94,7 +94,7 @@
     trig.setAttribute('type', 'button');
     trig.setAttribute('aria-haspopup', 'true');
     trig.setAttribute('aria-expanded', 'false');
-    trig.innerHTML = 'Vendor Resources<i class="lok-res-car" aria-hidden="true"></i>';
+    trig.innerHTML = 'Resources<i class="lok-res-car" aria-hidden="true"></i>';
 
     var panel = buildPanel();
     li.appendChild(trig);
