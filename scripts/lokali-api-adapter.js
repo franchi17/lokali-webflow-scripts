@@ -509,15 +509,19 @@
       });
     },
     updatePreferences: function (payload) {
+      payload = payload || {};
       return withVendor(function (vid) {
-        return SAPI().preferences.save(vid, payload || {}).then(function (res) {
+        return SAPI().preferences.save(vid, payload).then(function (res) {
           if (res && res.error) return envelope(res);
+          // 58k-A3 parity: mirror notify_promotional → Brevo MARKETING_OPTIN via a
+          // server route (the browser can't hold the Brevo key). Fire-and-forget so
+          // a Brevo hiccup never fails the save; only when the consent flag was set.
+          if (Object.prototype.hasOwnProperty.call(payload, 'notify_promotional')) {
+            try { SAPI().preferences.syncMarketing(); } catch (e) {}
+          }
           return { data: prefsShape(res && res.data), error: null, status: 200 };
         });
       });
-      // NOTE (parity gap, tracked in CUTOVER.md): the Xano PATCH also mirrored
-      // notify_promotional → Brevo MARKETING_OPTIN. A browser client can't hold
-      // the Brevo key; that mirror moves to a small Vercel route post-cutover.
     },
     uploadProfilePhoto: function (file) {
       return withVendor(function (vid) {

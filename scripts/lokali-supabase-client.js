@@ -658,6 +658,13 @@
               return c.from('vendor_preferences').insert(allowed).select().maybeSingle();
             });
         });
+      },
+      // 58k-A3 marketing-consent mirror. The browser can't hold the Brevo key, so
+      // after a prefs save that touched notify_promotional the adapter pings this
+      // Vercel route, which reads the SAVED flag and syncs the vendor's Brevo
+      // MARKETING_OPTIN attribute. Best-effort; never blocks the save.
+      syncMarketing: function () {
+        return postRoute('/preferences/marketing-sync', {}, true);
       }
     },
     leads: {
