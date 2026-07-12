@@ -17,8 +17,9 @@
  *      on the storefront as "Hours"; in slot mode the bookable appointments are
  *      GENERATED inside each window from the length + buffer (avail_expand_slots),
  *      with an optional per-window timing override. Saved to availability_hours.
- *   4. Days off — month calendar; tap a date to block/unblock. Owner sees the
- *      raw confirmed/cap counts here (customers never do).
+ *   4. Days off — month calendar; tap a date to block/unblock. Owner-only raw
+ *      numbers per date: confirmed/cap in quantity mode, booked/generated-slots
+ *      in slot mode (customers never see either).
  *   5. Waitlist — waiting/offered people per sold-out date, "Offer spot" calls
  *      offer_waitlist_spot (the emailing of the customer is a tracked follow-up).
  *
@@ -148,6 +149,7 @@
     this.vendorId = vendor.id;
     this.cfg = null;            // availability_config row (or defaults)
     this.dates = {};            // iso -> availability_date row (this month)
+    this.slotRows = {};         // iso -> availability_slot rows (this month; slot mode)
     this.viewMonth = firstOfMonth(new Date());
     this.pending = [];
     this.hours = [];            // availability_hours rows (weekly schedule)
@@ -183,7 +185,8 @@
       API.pendingRequests(this.vendorId),
       API.listHours(this.vendorId),
       API.listWaitlist(this.vendorId),
-      API.waitlistOpen(this.vendorId)          // waitlist = Featured-only perk
+      API.waitlistOpen(this.vendorId),         // waitlist = Featured-only perk
+      API.listSlots(this.vendorId, from, to)   // slot-mode booked counts for the calendar
     ]).then(function (r) {
       self.cfg = (r[0] && r[0].data) || {
         vendors_id: self.vendorId, is_enabled: false, capacity_mode: 'quantity',
@@ -197,6 +200,10 @@
       self.hours = (r[3] && r[3].data) || [];
       self.waitlist = (r[4] && r[4].data) || [];
       self.waitlistPlan = (r[5] && r[5].data) === true;
+      self.slotRows = {};
+      ((r[6] && r[6].data) || []).forEach(function (s) {
+        (self.slotRows[s.the_date] = self.slotRows[s.the_date] || []).push(s);
+      });
       self.renderAll();
     });
   };
@@ -217,6 +224,44 @@
   Page.prototype.usedFor = function (dISO) {
     var row = this.dates[dISO];
     return row ? (row.confirmed_units || 0) : 0;
+  };
+  // Slot-mode per-date picture: total = slots GENERATED from the weekly hours
+  // (same integer-minute expansion the server does), booked = materialized slot
+  // rows that are full. { booked, total }; total 0 => no hours that weekday.
+  Page.prototype.slotInfoFor = function (dISO) {
+    var p = dISO.split('-');
+    var wd = new Date(+p[0], +p[1] - 1, +p[2]).getDay();
+    var def = this.curDefaults();
+    var total = 0;
+    this.hours.forEach(function (h) {
+      if (h.weekday !== wd || h.is_active === false) return;
+      total += expandWindow(
+        toMin(h.open_time), toMin(h.close_time),
+        h.slot_minutes != null ? h.slot_minutes : def.dur,
+        h.buffer_minutes != null ? h.buffer_minutes : def.buf
+      ).length;
+    });
+    var booked = (this.slotRows[dISO] || []).filter(function (s) {
+      return (s.booked_count || 0) >= (s.capacity || 1);
+    }).length;
+    return { booked: booked, total: total };
+  };
+  // Re-read this month's per-date rows (+ slot rows) and redraw the calendar.
+  Page.prototype.refreshMonth = function () {
+    var self = this;
+    var from = iso(firstOfMonth(this.viewMonth)), to = iso(lastOfMonth(this.viewMonth));
+    return Promise.all([
+      API.listDates(this.vendorId, from, to),
+      API.listSlots(this.vendorId, from, to)
+    ]).then(function (r) {
+      self.dates = {};
+      ((r[0] && r[0].data) || []).forEach(function (d) { self.dates[d.the_date] = d; });
+      self.slotRows = {};
+      ((r[1] && r[1].data) || []).forEach(function (s) {
+        (self.slotRows[s.the_date] = self.slotRows[s.the_date] || []).push(s);
+      });
+      self.renderDaysOff();
+    });
   };
 
   Page.prototype.renderInbox = function () {
@@ -275,14 +320,10 @@
           if (btn.getAttribute('data-a') === 'confirm' && API.notifyConfirmed) {
             try { API.notifyConfirmed(id); } catch (e) {}
           }
-          // Refresh counters + waitlist (a confirm changes the date's remaining).
+          // Refresh counters (a confirm changes the date's remaining — quantity
+          // units AND slot booked-counts both live in refreshMonth's re-read).
           self.pending = self.pending.filter(function (p) { return p.id !== id; });
-          API.listDates(self.vendorId, iso(firstOfMonth(self.viewMonth)), iso(lastOfMonth(self.viewMonth)))
-            .then(function (rr) {
-              self.dates = {};
-              ((rr && rr.data) || []).forEach(function (d) { self.dates[d.the_date] = d; });
-              self.renderDaysOff();
-            });
+          self.refreshMonth();
         } else {
           actions.innerHTML = '<span class="ava-chip" style="background:#FAE9E2;color:#9E5F44;">' +
             (res.reason === 'would_oversell' ? 'Would oversell this date' : 'Couldn’t update — reload') + '</span>';
@@ -348,9 +389,10 @@
           var hint = self.$settings.querySelector('.ava-leadhint');
           if (hint) hint.textContent = leadHint(+b.textContent);
         }
-        // Length/buffer feed the slot preview — refresh it live in slot mode.
+        // Length/buffer feed the slot preview + calendar totals — refresh live.
         if ((f === 'slot_minutes' || f === 'buffer_minutes') && self.cfg.capacity_mode === 'slot') {
           self.renderHours();
+          self.renderDaysOff();
         }
       });
     });
@@ -371,6 +413,7 @@
       var sr = self.$settings.querySelector('.ava-slotrow');
       if (sr) sr.style.display = (m === 'slot') ? 'flex' : 'none';
       self.renderHours();                         // hours are shown both modes; preview only in slot
+      self.renderDaysOff();                       // calendar numbers switch meaning with the mode
     });
     seg('.ava-hold', 'data-h', function (h) {
       self.$settings.querySelector('.ava-holdwin').style.display = (h === 'on_inquiry') ? '' : 'none';
@@ -407,6 +450,7 @@
           Object.assign(self.cfg, fields);
           self.renderInbox();
           self.renderHours();
+          self.renderDaysOff();
         }
       });
     });
@@ -415,6 +459,7 @@
   // ---- 3. Days off (+ owner counts) ------------------------------------------
   Page.prototype.renderDaysOff = function () {
     var self = this;
+    var isSlot = this.cfg.capacity_mode === 'slot';
     var from = firstOfMonth(this.viewMonth), last = lastOfMonth(this.viewMonth);
     var pad = (from.getDay() + 6) % 7;
     var html = '<div class="ava-card">' +
@@ -426,7 +471,10 @@
             MONTHS[from.getMonth()] + ' ' + from.getFullYear() + '</span>' +
           '<span class="ava-mnav" data-d="1" style="cursor:pointer;color:' + BRAND + ';font-size:17px;">&#8250;</span>' +
         '</div></div>' +
-      '<p class="ava-sub" style="margin:0 0 8px;">Tap a date to block it. Numbers show confirmed of cap — only you see these.</p>' +
+      '<p class="ava-sub" style="margin:0 0 8px;">' +
+        (isSlot
+          ? 'Tap a date to block it. Numbers show booked of that day’s slots — only you see these.'
+          : 'Tap a date to block it. Numbers show confirmed of cap — only you see these.') + '</p>' +
       '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:5px;font-size:11px;color:#B0ACBC;text-align:center;margin-bottom:5px;">' +
       DOW_MON.map(function (d) { return '<div>' + d + '</div>'; }).join('') + '</div>' +
       '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:5px;">';
@@ -436,10 +484,20 @@
       var dISO = iso(new Date(from.getFullYear(), from.getMonth(), i));
       var row = this.dates[dISO];
       var blocked = row && row.is_blocked;
-      var used = this.usedFor(dISO), cap = this.capFor(dISO);
+      var sub;
+      if (blocked) {
+        sub = '';
+      } else if (isSlot) {
+        // booked of generated slots; a day with no hours shows no number (it
+        // reads 'off' to customers anyway).
+        var si = this.slotInfoFor(dISO);
+        sub = si.total ? si.booked + '/' + si.total : '';
+      } else {
+        sub = this.usedFor(dISO) + '/' + this.capFor(dISO);
+      }
       html += '<div class="ava-cell' + (blocked ? ' off' : '') + '" data-date="' + dISO + '">' +
         '<span>' + i + '</span>' +
-        (blocked ? '' : '<span style="font-size:9px;font-weight:400;">' + used + '/' + cap + '</span>') +
+        (sub ? '<span style="font-size:9px;font-weight:400;">' + sub + '</span>' : '') +
         '</div>';
     }
     html += '</div></div>';
@@ -448,12 +506,7 @@
     this.$daysoff.querySelectorAll('.ava-mnav').forEach(function (n) {
       n.addEventListener('click', function () {
         self.viewMonth = new Date(self.viewMonth.getFullYear(), self.viewMonth.getMonth() + Number(n.getAttribute('data-d')), 1);
-        API.listDates(self.vendorId, iso(firstOfMonth(self.viewMonth)), iso(lastOfMonth(self.viewMonth)))
-          .then(function (r) {
-            self.dates = {};
-            ((r && r.data) || []).forEach(function (d) { self.dates[d.the_date] = d; });
-            self.renderDaysOff();
-          });
+        self.refreshMonth();
       });
     });
     this.$daysoff.querySelectorAll('.ava-cell[data-date]').forEach(function (cell) {
@@ -604,6 +657,7 @@
     return API.listHours(this.vendorId).then(function (rr) {
       self.hours = (rr && rr.data) || [];
       self.renderHours();
+      self.renderDaysOff();     // slot-mode calendar totals derive from the hours
     });
   };
 

@@ -365,6 +365,15 @@
                     { onConflict: 'vendors_id,the_date' });
         });
       },
+      // Materialized per-date slot rows for the month (slot mode; owner-only via
+      // RLS). The dashboard's Days-off calendar shows booked-of-generated counts.
+      listSlots: function (vendorId, fromISO, toISO) {
+        return withClient(function (c) {
+          return c.from('availability_slot')
+            .select('the_date,slot_time,booked_count,capacity,hold_expires_at')
+            .eq('vendors_id', vendorId).gte('the_date', fromISO).lte('the_date', toISO);
+        });
+      },
       // Weekly HOURS schedule (the unified open→close windows). Doubles as the
       // storefront "Hours" and, in slot mode, the source the bookable times are
       // generated from (server-side avail_expand_slots). weekday: 0=Sun … 6=Sat.
