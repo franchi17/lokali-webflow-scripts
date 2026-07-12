@@ -93,7 +93,7 @@
     ".vl-badge-row .vl-badge{margin:0;}",
     ".vl-badge.vl-badge-founding{background:#FDF6DF;color:#9A6B00;border:.5px solid #EFDFA8;}",
     ".vl-badge.vl-badge-verified{background:#EEF3FF;color:#1730C9;border:.5px solid #C9D6F8;}",
-    ".vl-badge.vl-badge-featured{background:#6002EE;color:#fff;border:.5px solid #6002EE;}",
+    ".vl-badge.vl-badge-featured{background:#FAE4FC;color:#D602EE;border:.5px solid rgba(214,2,238,.3);}",
     ".vl-avatar.vl-avatar-initials{display:flex;align-items:center;justify-content:center;}",
     ".vl-avatar-txt{color:#6002EE;font-weight:600;font-size:30px;letter-spacing:.5px;font-family:'Plus Jakarta Sans',sans-serif;line-height:1;}",
     // Contact buttons: subtle lift on hover + visible keyboard focus.

@@ -139,7 +139,7 @@
     ".vcard .badge-verified{background:#D2DEFF;color:#1730C9;border:1px solid rgba(23,48,201,.3);}",
     // Featured = the paid TIER (always-on). Solid brand violet so the top tier
     // stands out from the light status pills; distinct from the Spotlight rotation.
-    ".vcard .badge-featured{background:#6002EE;color:#fff;border:1px solid #6002EE;}",
+    ".vcard .badge-featured{background:#FAE4FC;color:#D602EE;border:1px solid rgba(214,2,238,.28);}",
     ".vcard .cat-pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:500;border-radius:100px;padding:3px 10px;margin-bottom:8px;}",
     ".vcard-tagline{font-size:12.5px;color:#4A4761;line-height:1.5;margin-bottom:12px;}",
     ".vcard-actions{display:flex;gap:6px;flex-wrap:wrap;}",
