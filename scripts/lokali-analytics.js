@@ -150,16 +150,18 @@
   }
 
   // Views chart with a range selector. 30 days = daily bars, for everyone;
-  // 90 days / 6 months = weekly bars, a Pro/Featured perk. The lock mirrors
-  // real server enforcement (RLS clamps a free vendor's page_views reads to
-  // 60d) — unlocking it client-side would just draw an empty chart.
+  // 90 days / 6 months = weekly bars (Pro + Featured); 12 months = monthly bars
+  // (Featured only, #73). The lock mirrors real server enforcement (RLS clamps
+  // page_views reads to the plan window — free 60d / Pro 180d / Featured 360d),
+  // so unlocking a tab client-side would just draw a short/empty chart.
   var RANGES = [
-    { days: 30,  label: '30 days',  title: 'last 30 days' },
-    { days: 90,  label: '90 days',  title: 'last 90 days' },
-    { days: 180, label: '6 months', title: 'last 6 months' }
+    { days: 30,  label: '30 days',   title: 'last 30 days' },
+    { days: 90,  label: '90 days',   title: 'last 90 days' },
+    { days: 180, label: '6 months',  title: 'last 6 months' },
+    { days: 360, label: '12 months', title: 'last 12 months' }
   ];
 
-  function viewsChart(views, paid) {
+  function viewsChart(views, maxDays) {
     var wrap = el('div', 'an-card');
     var head = el('div', 'an-chead');
     var title = el('div', 'an-ctitle');
@@ -173,9 +175,10 @@
     function draw(days, rangeTitle) {
       title.textContent = 'Storefront views — ' + rangeTitle;
       body.innerHTML = '';
-      var weekly = days > 30;               // daily bars read fine up to ~30
-      var span = weekly ? 7 * DAY : DAY;
-      var n = weekly ? Math.round(days / 7) : days;
+      var perBar = days >= 360 ? 30 : (days > 30 ? 7 : 1);  // days/bar: daily / weekly / monthly
+      var unit = days >= 360 ? 'mo' : (days > 30 ? 'wk' : 'd');
+      var span = perBar * DAY;
+      var n = Math.round(days / perBar);
       var now = Date.now(), buckets = [];
       for (var i = 0; i < n; i++) buckets.push(0);
       views.forEach(function (v) {
@@ -190,8 +193,8 @@
         bar.style.height = Math.max(2, Math.round(cnt / max * 100)) + '%';
         if (cnt === max && cnt > 0) bar.style.background = VIOLET;
         var ago = n - 1 - i;
-        var label = weekly ? (ago === 0 ? 'this wk' : ago + 'wk ago')
-                           : (ago === 0 ? 'today' : ago + 'd ago');
+        var label = ago === 0 ? (unit === 'd' ? 'today' : 'this ' + unit)
+                              : ago + unit + ' ago';
         var tip = el('div', 'tip', cnt + (cnt === 1 ? ' view · ' : ' views · ') + label);
         bar.appendChild(tip); col.appendChild(bar); bars.appendChild(col);
       });
@@ -199,24 +202,26 @@
       var axis = el('div', 'an-axis');
       var axisLabels = days === 30 ? ['30d ago', '3 wks', '2 wks', 'last wk', 'today']
                      : days === 90 ? ['90d ago', '60d', '30d', 'today']
-                                   : ['6mo ago', '4mo', '2mo', 'today'];
+                     : days === 180 ? ['6mo ago', '4mo', '2mo', 'today']
+                                    : ['12mo ago', '8mo', '4mo', 'today'];
       axisLabels.forEach(function (t) { axis.appendChild(el('span', null, t)); });
       body.appendChild(axis);
     }
 
     RANGES.forEach(function (r) {
-      var locked = r.days > 30 && !paid;
+      var locked = r.days > maxDays;
+      // The 12-month tab is Featured-only; 90d/6mo are Pro+Featured.
+      var msg = r.days > 180
+        ? '12-month view history is a Featured-plan perk.'
+        : '90-day and 6-month view history is included with the Pro and Featured plans.';
       var b = el('button', 'an-tab' + (r.days === 30 ? ' on' : '') + (locked ? ' locked' : ''),
                  r.label + (locked ? ' 🔒' : ''));
       b.type = 'button';
-      if (locked) b.title = '90-day and 6-month history comes with the Pro and Featured plans';
+      if (locked) b.title = msg;
       b.addEventListener('click', function () {
         if (locked) {
-          if (!note) {
-            note = el('div', 'an-lock-note');
-            note.innerHTML = '90-day and 6-month view history is included with the Pro and Featured plans. <a href="/pricing">Upgrade →</a>';
-            wrap.appendChild(note);
-          }
+          if (!note) { note = el('div', 'an-lock-note'); wrap.appendChild(note); }
+          note.innerHTML = msg + ' <a href="/pricing">Upgrade →</a>';
           return;
         }
         buttons.forEach(function (x) { x.className = x.className.replace(/ ?\bon\b/, ''); });
@@ -301,11 +306,13 @@
       mount.appendChild(ins);
     }
 
-    // views chart with plan-gated range selector. Paid truth = the billing
-    // payload's features.analytics_enabled (present on both backends); the
-    // server clamps free vendors' rows regardless of what renders here.
+    // views chart with plan-gated range selector. The selectable window is the
+    // vendor's plan tier: Featured 360d / Pro 180d / free 30d (paid truth =
+    // billing.features.analytics_enabled; Featured via isTopTier). The server
+    // clamps the actual rows regardless of what renders here (#73).
     var paidHist = !!(billing && billing.features && billing.features.analytics_enabled);
-    mount.appendChild(viewsChart(views, paidHist));
+    var maxDays = isTopTier(vendor, billing) ? 360 : (paidHist ? 180 : 30);
+    mount.appendChild(viewsChart(views, maxDays));
 
     // top items
     var topSvc = topItems(views, 'service', services, 5);
