@@ -388,7 +388,7 @@
   // client's card list — browse renders description/contact bits).
   var VENDOR_LIST_COLS = 'id,business_name,business_tagline,business_description,website_url,' +
     'locations_id,categories_id,profile_photo,text_messages,whatsapp_messages,' +
-    'contact_email,phone_number,slug,created_at,is_founding_member,is_verified,is_spotlight';
+    'contact_email,phone_number,slug,created_at,is_founding_member,is_verified,is_spotlight,is_featured';
 
   // ═══════════════════════════════════════════════════════════════════════════
   // The legacy surface
@@ -928,7 +928,7 @@
 
   // Public vendor-card fields (SEC-002 list) for the my-reviews join.
   var VENDOR_CARD_COLS = 'id,business_name,business_tagline,business_description,' +
-    'profile_photo,locations_id,categories_id,slug,is_founding_member,is_verified,is_spotlight';
+    'profile_photo,locations_id,categories_id,slug,is_founding_member,is_verified,is_spotlight,is_featured';
 
   var reviews = {
     forVendor: function (vendorId) {
