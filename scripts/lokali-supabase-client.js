@@ -176,7 +176,7 @@
     'website_url,instagram_url,locations_id,categories_id,profile_photo,' +
     'text_messages,whatsapp_messages,phone_number,phone_visible,contact_email,' +
     'created_at,is_active,slug,is_founding_member,' +
-    'is_spotlight,spotlight_until,is_verified,' +
+    'is_spotlight,spotlight_until,is_verified,is_featured,' +
     'venmo_username,cashapp_cashtag,paypalme_slug,other_pay_url,other_pay_label';
   // Photo-gallery kind -> its table + parent-id column.
   var PHOTO_TABLES = {
@@ -207,7 +207,7 @@
         return withClient(function (c) {
           var q = c.from('vendors').select(
             'id,business_name,business_tagline,slug,profile_photo,' +
-            'locations_id,categories_id,is_verified,is_founding_member'
+            'locations_id,categories_id,is_verified,is_featured,is_founding_member'
           );
           if (opts.categoryId != null) q = q.contains('categories_id', [opts.categoryId]);
           if (opts.locationId != null) q = q.contains('locations_id', [opts.locationId]);

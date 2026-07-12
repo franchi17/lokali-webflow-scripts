@@ -137,6 +137,9 @@
     ".vcard .badge-new{background:#C6F2DB;color:#11744A;border:1px solid rgba(17,116,74,.3);}",
     ".vcard .badge-spotlight{background:#E2D2FF;color:#5A00E0;border:1px solid rgba(90,0,224,.3);}",
     ".vcard .badge-verified{background:#D2DEFF;color:#1730C9;border:1px solid rgba(23,48,201,.3);}",
+    // Featured = the paid TIER (always-on). Solid brand violet so the top tier
+    // stands out from the light status pills; distinct from the Spotlight rotation.
+    ".vcard .badge-featured{background:#6002EE;color:#fff;border:1px solid #6002EE;}",
     ".vcard .cat-pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:500;border-radius:100px;padding:3px 10px;margin-bottom:8px;}",
     ".vcard-tagline{font-size:12.5px;color:#4A4761;line-height:1.5;margin-bottom:12px;}",
     ".vcard-actions{display:flex;gap:6px;flex-wrap:wrap;}",
@@ -222,7 +225,10 @@
   function vIsNew(v)       { var t = vCreated(v); return t > 0 && (Date.now() - t) < NEW_WINDOW_MS; }
   function vIsFounding(v)  { return v.is_founding_member === true; }
   function vIsVerified(v)  { var f = window.LOKALI_VERIFIED_FIELD; if (f && v[f] != null) return v[f] === true; return v.is_verified === true; }
-  function vIsSpotlight(v) { var f = window.LOKALI_SPOTLIGHT_FIELD; if (f && v[f] != null) return v[f] === true; return v.is_spotlight === true || v.is_featured === true; }
+  function vIsSpotlight(v) { var f = window.LOKALI_SPOTLIGHT_FIELD; if (f && v[f] != null) return v[f] === true; return v.is_spotlight === true; }
+  // Featured = the paid TIER (server-synced is_featured), distinct from the
+  // time-boxed Spotlight rotation above. (#73)
+  function vIsFeatured(v)  { return v.is_featured === true; }
   function vCategoryIds(v) { return Array.isArray(v.categories_id) ? v.categories_id : (v.categories_id != null ? [v.categories_id] : []); }
   function vLocationIds(v) { return Array.isArray(v.locations_id) ? v.locations_id : (v.locations_id != null ? [v.locations_id] : []); }
   // The Webflow page uses #location-select and #browse-sort; older markup used #browse-location
@@ -608,6 +614,7 @@
     // Trust/status badges sit on their own row under the location — clear of the top-right
     // heart — as bright filled pills (icon + label) instead of dull pale dots.
     var badges = ce('div', 'vcard-badges');
+    if (vIsFeatured(v))  badges.appendChild(badge('badge-featured',  { glyph: '★', title: 'Featured' }));
     if (vIsFounding(v))  badges.appendChild(badge('badge-founding',  { url: ICON_CROWN,    color: '#9A6B00', title: 'Founding vendor' }));
     if (vIsNew(v))       badges.appendChild(badge('badge-new',       { url: ICON_BULLHORN, color: '#11744A', title: 'New this week' }));
     if (vIsVerified(v))  badges.appendChild(badge('badge-verified',  { glyph: '✓', title: 'Verified' }));
