@@ -102,7 +102,8 @@
       '.lok-ava .ava-step span{cursor:pointer;font-size:17px;color:' + BRAND + ';user-select:none;}' +
       '.lok-ava .ava-cell{aspect-ratio:1;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;' +
         'font-size:12px;font-weight:500;cursor:pointer;background:#F6F2FD;color:#5D4F9E;border:1px solid #EAE4F8;}' +
-      '.lok-ava .ava-cell.off{background:#F1EFF5;color:#B0ACBC;text-decoration:line-through;border:1px solid #E7E4F0;}' +
+      '.lok-ava .ava-cell.off{background:#FAE9E2;color:#9E5F44;border:1px solid #EBC3B2;}' +
+      '.lok-ava .ava-cell.err{outline:2px solid #DFA284;outline-offset:-2px;}' +
       '.lok-ava .ava-cell.pad{background:transparent;border:none;cursor:default;}' +
       '.lok-ava .ava-row{display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid #F2EFF8;}' +
       '.lok-ava .ava-row:last-child{border-bottom:none;}' +
@@ -486,7 +487,7 @@
       var blocked = row && row.is_blocked;
       var sub;
       if (blocked) {
-        sub = '';
+        sub = 'Off';                 // explicit label — a bare strikethrough read as "nothing happened"
       } else if (isSlot) {
         // booked of generated slots; a day with no hours shows no number (it
         // reads 'off' to customers anyway).
@@ -515,7 +516,17 @@
         var row = self.dates[dISO];
         var nowBlocked = !(row && row.is_blocked);
         API.setDateBlocked(self.vendorId, dISO, nowBlocked).then(function (r) {
-          if (r && r.error) return; // plan gate / not signed in — leave as-is
+          if (r && r.error) {
+            // Never fail silently — flash the cell and say why in the caption.
+            cell.classList.add('err');
+            var hintEl = self.$daysoff.querySelector('.ava-sub');
+            if (hintEl) {
+              hintEl.textContent = 'Couldn’t save that change — check you’re signed in on a Pro or Featured plan, then reload.';
+              hintEl.style.color = '#9E5F44';
+            }
+            setTimeout(function () { cell.classList.remove('err'); }, 1600);
+            return;
+          }
           self.dates[dISO] = Object.assign({}, row || { the_date: dISO, confirmed_units: 0 }, { is_blocked: nowBlocked });
           self.renderDaysOff();
         });
