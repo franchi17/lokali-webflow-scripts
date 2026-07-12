@@ -10,12 +10,15 @@
  *      confirm_availability_inquiry RPC); the per-date "N of cap left" chip
  *      updates from the RPC's returned derived status + a re-read.
  *   2. Settings — enable toggle, capacity mode, daily cap, "Limited" threshold,
- *      lead time, hold mode (+ window). Saved via availability_config upsert;
- *      RLS enforces owns_vendor + the Pro/Featured plan gate server-side.
- *   3. Days off — month calendar; tap a date to block/unblock. Owner sees the
+ *      Minimum notice (was "lead time"), booking length + buffer (slot mode),
+ *      hold mode (+ window). Saved via availability_config upsert; RLS enforces
+ *      owns_vendor + the Pro/Featured plan gate server-side.
+ *   3. Hours — one weekly open→close schedule (split days = two windows). Shown
+ *      on the storefront as "Hours"; in slot mode the bookable appointments are
+ *      GENERATED inside each window from the length + buffer (avail_expand_slots),
+ *      with an optional per-window timing override. Saved to availability_hours.
+ *   4. Days off — month calendar; tap a date to block/unblock. Owner sees the
  *      raw confirmed/cap counts here (customers never do).
- *   4. Weekly template (slot mode only) — recurring slots per weekday + per-date
- *      overrides ride the same Days-off calendar.
  *   5. Waitlist — waiting/offered people per sold-out date, "Offer spot" calls
  *      offer_waitlist_spot (the emailing of the customer is a tracked follow-up).
  *
@@ -46,13 +49,34 @@
     var p = isoStr.split('-'); var d = new Date(+p[0], +p[1] - 1, +p[2]);
     return WDAYS[d.getDay()] + ', ' + MONTHS[d.getMonth()].slice(0, 3) + ' ' + d.getDate();
   }
-  function hhmm(t) { return String(t || '').slice(0, 5); }
   function esc(s) { return String(s == null ? '' : s).replace(/[<>&"]/g, function (c) {
     return ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' })[c];
   }); }
   function initials(name) {
     var p = String(name || '?').trim().split(/\s+/);
     return ((p[0] || '?')[0] + (p[1] ? p[1][0] : '')).toUpperCase();
+  }
+  function toMin(t) { var p = String(t == null ? '0:0' : t).split(':'); return (+p[0]) * 60 + (+p[1]); }
+  function fmt12(min) {
+    min = ((min % 1440) + 1440) % 1440;
+    var h = Math.floor(min / 60), m = min % 60, ap = h < 12 ? 'AM' : 'PM', h12 = h % 12 || 12;
+    return h12 + ':' + (m < 10 ? '0' + m : m) + ' ' + ap;
+  }
+  // Same expansion the server does (avail_expand_slots) — integer minutes, so the
+  // vendor preview is exactly what customers will see.
+  function expandWindow(openM, closeM, dur, buf) {
+    var out = [], cur = openM, n = 0;
+    if (!dur || dur < 1) return out;
+    while (cur + dur <= closeM && n < 200) { out.push(cur); cur += dur + Math.max(buf, 0); n++; }
+    return out;
+  }
+  // Plain-English caption for the old "lead time" (renamed "Minimum notice").
+  function leadHint(h) {
+    h = +h || 0;
+    var human = h <= 0 ? 'no minimum — same-day requests are fine'
+      : h < 24 ? 'about ' + h + ' hour' + (h === 1 ? '' : 's') + ' ahead'
+      : 'about ' + Math.round(h / 24) + ' day' + (Math.round(h / 24) === 1 ? '' : 's') + ' ahead';
+    return 'How far ahead customers must request — ' + human + '. Dates inside this window show as closed.';
   }
 
   function injectStyles() {
@@ -89,7 +113,22 @@
       '.lok-ava .ava-tchip u{cursor:pointer;text-decoration:none;opacity:.55;font-style:normal;}' +
       '.lok-ava .ava-save{font-family:inherit;font-size:14px;font-weight:600;color:#fff;background:' + BRAND + ';' +
         'border:none;border-radius:10px;padding:11px 22px;cursor:pointer;}' +
-      '.lok-ava .ava-note{font-size:12px;color:#8B8798;line-height:1.5;}';
+      '.lok-ava .ava-note{font-size:12px;color:#8B8798;line-height:1.5;}' +
+      '.lok-ava .ava-hday{display:flex;align-items:flex-start;gap:12px;padding:9px 0;border-bottom:1px solid #F4F1FB;}' +
+      '.lok-ava .ava-hday:last-child{border-bottom:none;}' +
+      '.lok-ava .ava-hlabel{width:74px;flex-shrink:0;font-size:13px;font-weight:600;color:#5D4F9E;padding-top:7px;}' +
+      '.lok-ava .ava-hwins{flex:1;min-width:120px;display:flex;flex-direction:column;gap:6px;}' +
+      '.lok-ava .ava-hwin{background:#F6F2FD;border:1px solid #E9E3F7;border-radius:10px;padding:7px 11px;}' +
+      '.lok-ava .ava-hwin .ava-htime{font-size:13px;font-weight:600;color:#4B4666;}' +
+      '.lok-ava .ava-hwin u{cursor:pointer;text-decoration:none;color:#B0A9C4;font-style:normal;margin-left:8px;float:right;}' +
+      '.lok-ava .ava-hprev{display:block;margin-top:4px;font-size:11px;color:#8B8798;line-height:1.6;}' +
+      '.lok-ava .ava-hovr{display:inline-block;margin-top:5px;font-size:11px;font-weight:500;color:#6C6880;background:#EFEAFB;border-radius:999px;padding:2px 9px;cursor:pointer;}' +
+      '.lok-ava .ava-hovr.cust{background:#E7DEFA;color:#5D4F9E;}' +
+      '.lok-ava .ava-hadd{display:flex;align-items:center;gap:6px;flex-shrink:0;flex-wrap:wrap;}' +
+      '.lok-ava .ava-hadd input[type=time]{font-family:inherit;font-size:12px;color:#45415A;border:1px solid #E4DEF4;border-radius:8px;padding:5px 7px;background:#FCFBFE;}' +
+      '.lok-ava .ava-ovr{margin-top:6px;display:flex;align-items:center;gap:7px;flex-wrap:wrap;}' +
+      '.lok-ava .ava-ovr input{width:56px;font-family:inherit;font-size:12px;color:#45415A;border:1px solid #E4DEF4;border-radius:8px;padding:4px 7px;background:#fff;}' +
+      '.lok-ava .ava-ovr label{font-size:11px;color:#8B8798;}';
     var s = document.createElement('style');
     s.id = 'lok-ava-styles';
     s.textContent = css;
@@ -111,8 +150,9 @@
     this.dates = {};            // iso -> availability_date row (this month)
     this.viewMonth = firstOfMonth(new Date());
     this.pending = [];
-    this.template = [];
+    this.hours = [];            // availability_hours rows (weekly schedule)
     this.waitlist = [];
+    this._editOvr = null;       // window id whose per-day override editor is open
     this.shell();
     this.loadAll();
   }
@@ -124,13 +164,13 @@
     this.mount.innerHTML =
       '<div class="ava-inbox"></div>' +
       '<div class="ava-settings"></div>' +
+      '<div class="ava-hours"></div>' +
       '<div class="ava-daysoff"></div>' +
-      '<div class="ava-template"></div>' +
       '<div class="ava-waitlist"></div>';
     this.$inbox = this.mount.querySelector('.ava-inbox');
     this.$settings = this.mount.querySelector('.ava-settings');
+    this.$hours = this.mount.querySelector('.ava-hours');
     this.$daysoff = this.mount.querySelector('.ava-daysoff');
-    this.$template = this.mount.querySelector('.ava-template');
     this.$waitlist = this.mount.querySelector('.ava-waitlist');
   };
 
@@ -141,19 +181,20 @@
       API.getConfig(this.vendorId),
       API.listDates(this.vendorId, from, to),
       API.pendingRequests(this.vendorId),
-      API.listTemplate(this.vendorId),
+      API.listHours(this.vendorId),
       API.listWaitlist(this.vendorId),
       API.waitlistOpen(this.vendorId)          // waitlist = Featured-only perk
     ]).then(function (r) {
       self.cfg = (r[0] && r[0].data) || {
         vendors_id: self.vendorId, is_enabled: false, capacity_mode: 'quantity',
         hold_mode: 'on_confirm', hold_window_hours: 24, limited_threshold: 5,
-        lead_time_hours: 12, default_daily_cap: 30, _absent: true
+        lead_time_hours: 12, default_daily_cap: 30, slot_minutes: 60, buffer_minutes: 0,
+        _absent: true
       };
       self.dates = {};
       ((r[1] && r[1].data) || []).forEach(function (row) { self.dates[row.the_date] = row; });
       self.pending = (r[2] && r[2].data) || [];
-      self.template = (r[3] && r[3].data) || [];
+      self.hours = (r[3] && r[3].data) || [];
       self.waitlist = (r[4] && r[4].data) || [];
       self.waitlistPlan = (r[5] && r[5].data) === true;
       self.renderAll();
@@ -163,8 +204,8 @@
   Page.prototype.renderAll = function () {
     this.renderInbox();
     this.renderSettings();
+    this.renderHours();
     this.renderDaysOff();
-    this.renderTemplate();
     this.renderWaitlist();
   };
 
@@ -229,6 +270,11 @@
           actions.innerHTML = btn.getAttribute('data-a') === 'confirm'
             ? '<span class="ava-chip" style="background:#E7F3EC;color:#3E7C5E;">✓ Confirmed · customer keeps their spot</span>'
             : '<span class="ava-sub">Declined</span>';
+          // Email the customer their request is confirmed (best-effort; the RPC
+          // already committed the state — a mail failure must not undo it).
+          if (btn.getAttribute('data-a') === 'confirm' && API.notifyConfirmed) {
+            try { API.notifyConfirmed(id); } catch (e) {}
+          }
           // Refresh counters + waitlist (a confirm changes the date's remaining).
           self.pending = self.pending.filter(function (p) { return p.id !== id; });
           API.listDates(self.vendorId, iso(firstOfMonth(self.viewMonth)), iso(lastOfMonth(self.viewMonth)))
@@ -248,6 +294,8 @@
   // ---- 2. Settings ----------------------------------------------------------
   Page.prototype.renderSettings = function () {
     var self = this, c = this.cfg;
+    var slotMin = c.slot_minutes != null ? c.slot_minutes : 60;
+    var bufMin = c.buffer_minutes != null ? c.buffer_minutes : 0;
     this.$settings.innerHTML =
       '<div class="ava-card">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">' +
@@ -260,13 +308,20 @@
           '<div data-m="quantity" class="' + (c.capacity_mode === 'quantity' ? 'on' : '') + '">By quantity</div>' +
           '<div data-m="slot" class="' + (c.capacity_mode === 'slot' ? 'on' : '') + '">By time slot</div>' +
         '</div>' +
-        '<div style="display:flex;flex-wrap:wrap;gap:18px;margin-bottom:14px;">' +
+        '<div style="display:flex;flex-wrap:wrap;gap:18px;margin-bottom:6px;">' +
           '<div class="ava-caprow"><p class="ava-sub" style="margin:0 0 4px;">Orders per day</p>' +
             '<span class="ava-step" data-f="default_daily_cap"><span data-d="-1">&#8722;</span><b>' + c.default_daily_cap + '</b><span data-d="1">+</span></span></div>' +
           '<div><p class="ava-sub" style="margin:0 0 4px;">Show &ldquo;Limited&rdquo; at</p>' +
             '<span class="ava-step" data-f="limited_threshold"><span data-d="-1">&#8722;</span><b>' + c.limited_threshold + '</b><span data-d="1">+</span></span></div>' +
-          '<div><p class="ava-sub" style="margin:0 0 4px;">Lead time (hours)</p>' +
+          '<div><p class="ava-sub" style="margin:0 0 4px;">Minimum notice (hours)</p>' +
             '<span class="ava-step" data-f="lead_time_hours"><span data-d="-1">&#8722;</span><b>' + c.lead_time_hours + '</b><span data-d="1">+</span></span></div>' +
+        '</div>' +
+        '<p class="ava-note ava-leadhint" style="margin:0 0 14px;">' + leadHint(c.lead_time_hours) + '</p>' +
+        '<div class="ava-slotrow" style="display:flex;flex-wrap:wrap;gap:18px;margin-bottom:14px;">' +
+          '<div><p class="ava-sub" style="margin:0 0 4px;">Booking length (min)</p>' +
+            '<span class="ava-step" data-f="slot_minutes"><span data-d="-5">&#8722;</span><b>' + slotMin + '</b><span data-d="5">+</span></span></div>' +
+          '<div><p class="ava-sub" style="margin:0 0 4px;">Buffer between (min)</p>' +
+            '<span class="ava-step" data-f="buffer_minutes"><span data-d="-5">&#8722;</span><b>' + bufMin + '</b><span data-d="5">+</span></span></div>' +
         '</div>' +
         '<p class="ava-sub" style="margin:0 0 4px;">When a customer requests</p>' +
         '<div class="ava-seg ava-hold" style="margin-bottom:6px;">' +
@@ -287,8 +342,16 @@
         if (!d) return;
         var b = st.querySelector('b');
         var f = st.getAttribute('data-f');
-        var min = f === 'hold_window_hours' ? 1 : 0;
+        var min = f === 'hold_window_hours' ? 1 : f === 'slot_minutes' ? 5 : 0;
         b.textContent = String(Math.max(min, (+b.textContent) + Number(d)));
+        if (f === 'lead_time_hours') {
+          var hint = self.$settings.querySelector('.ava-leadhint');
+          if (hint) hint.textContent = leadHint(+b.textContent);
+        }
+        // Length/buffer feed the slot preview — refresh it live in slot mode.
+        if ((f === 'slot_minutes' || f === 'buffer_minutes') && self.cfg.capacity_mode === 'slot') {
+          self.renderHours();
+        }
       });
     });
     // segmented controls
@@ -303,13 +366,20 @@
       });
     }
     seg('.ava-mode', 'data-m', function (m) {
+      self.cfg.capacity_mode = m;                 // reflect the pending choice for the preview
       self.$settings.querySelector('.ava-caprow').style.display = (m === 'slot') ? 'none' : '';
-      self.$template.style.display = (m === 'slot') ? '' : 'none';
+      var sr = self.$settings.querySelector('.ava-slotrow');
+      if (sr) sr.style.display = (m === 'slot') ? 'flex' : 'none';
+      self.renderHours();                         // hours are shown both modes; preview only in slot
     });
     seg('.ava-hold', 'data-h', function (h) {
       self.$settings.querySelector('.ava-holdwin').style.display = (h === 'on_inquiry') ? '' : 'none';
     });
-    if (c.capacity_mode === 'slot') this.$settings.querySelector('.ava-caprow').style.display = 'none';
+    if (c.capacity_mode === 'slot') {
+      this.$settings.querySelector('.ava-caprow').style.display = 'none';
+    } else {
+      this.$settings.querySelector('.ava-slotrow').style.display = 'none';
+    }
 
     this.$settings.querySelector('.ava-save').addEventListener('click', function () {
       var read = function (f) { return +self.$settings.querySelector('.ava-step[data-f=' + f + '] b').textContent; };
@@ -321,6 +391,8 @@
         limited_threshold: read('limited_threshold'),
         lead_time_hours: read('lead_time_hours'),
         hold_window_hours: read('hold_window_hours'),
+        slot_minutes: read('slot_minutes'),
+        buffer_minutes: read('buffer_minutes'),
         updated_at: new Date().toISOString()
       };
       var msg = self.$settings.querySelector('.ava-savemsg');
@@ -334,6 +406,7 @@
           msg.style.color = '#3E7C5E';
           Object.assign(self.cfg, fields);
           self.renderInbox();
+          self.renderHours();
         }
       });
     });
@@ -397,52 +470,140 @@
     });
   };
 
-  // ---- 4. Weekly template (slot mode) ----------------------------------------
-  Page.prototype.renderTemplate = function () {
-    var self = this;
-    var rows = [1, 2, 3, 4, 5, 6, 0].map(function (wd) {   // display Mon..Sun
-      var slots = self.template.filter(function (t) { return t.weekday === wd && t.is_active !== false; });
-      var chips = slots.map(function (t) {
-        return '<span class="ava-tchip">' + esc(hhmm(t.slot_time)) +
-          ' <u data-del="' + t.id + '">&#10005;</u></span>';
-      }).join('');
-      return '<div style="display:flex;align-items:flex-start;gap:12px;padding:7px 0;">' +
-        '<span style="width:38px;font-size:13px;font-weight:500;color:#6C6880;padding-top:5px;">' + WDAYS[wd] + '</span>' +
-        '<div style="flex:1;">' + (chips || '<span class="ava-sub" style="line-height:30px;">Day off</span>') + '</div>' +
-        '<span style="display:inline-flex;gap:6px;align-items:center;">' +
-          '<input type="time" data-wd="' + wd + '" step="300" />' +
-          '<button class="ava-btn2" data-add="' + wd + '">Add</button></span></div>';
-    }).join('');
-    this.$template.innerHTML =
-      '<div class="ava-card">' +
-        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">' +
-          '<h3>Weekly slots</h3><span class="ava-sub">Repeats every week · block single dates above</span></div>' +
-        rows + '</div>';
-    this.$template.style.display = this.cfg.capacity_mode === 'slot' ? '' : 'none';
+  // ---- 4. Weekly hours (unified: storefront hours + slot generation) ----------
+  // Live default length/buffer, read straight from the settings steppers so the
+  // slot preview updates before the vendor even hits Save; falls back to cfg.
+  Page.prototype.curDefaults = function () {
+    var sd = this.$settings && this.$settings.querySelector('.ava-step[data-f=slot_minutes] b');
+    var bd = this.$settings && this.$settings.querySelector('.ava-step[data-f=buffer_minutes] b');
+    return {
+      dur: sd ? +sd.textContent : (this.cfg.slot_minutes != null ? this.cfg.slot_minutes : 60),
+      buf: bd ? +bd.textContent : (this.cfg.buffer_minutes != null ? this.cfg.buffer_minutes : 0)
+    };
+  };
 
-    this.$template.addEventListener('click', function (e) {
-      var del = e.target.closest('[data-del]');
+  Page.prototype.renderHours = function () {
+    var self = this;
+    var isSlot = this.cfg.capacity_mode === 'slot';
+    var def = this.curDefaults();
+    var byDay = {};
+    this.hours.forEach(function (h) { (byDay[h.weekday] = byDay[h.weekday] || []).push(h); });
+
+    var rows = [1, 2, 3, 4, 5, 6, 0].map(function (wd) {   // display Mon..Sun
+      var wins = (byDay[wd] || []).slice().sort(function (a, b) { return toMin(a.open_time) - toMin(b.open_time); });
+      var chips = wins.map(function (w) {
+        var openM = toMin(w.open_time), closeM = toMin(w.close_time);
+        var eDur = w.slot_minutes != null ? w.slot_minutes : def.dur;
+        var eBuf = w.buffer_minutes != null ? w.buffer_minutes : def.buf;
+        var custom = (w.slot_minutes != null || w.buffer_minutes != null);
+        var extra = '';
+        if (isSlot) {
+          if (self._editOvr === w.id) {
+            extra =
+              '<div class="ava-ovr" data-ovrfor="' + w.id + '">' +
+                '<label>Length <input type="number" class="ava-ovrdur" min="5" step="5" value="' + eDur + '" /></label>' +
+                '<label>Buffer <input type="number" class="ava-ovrbuf" min="0" step="5" value="' + eBuf + '" /></label>' +
+                '<button class="ava-btn2 ava-ovrsave" data-ovrsave="' + w.id + '">Save</button>' +
+                (custom ? '<u class="ava-sub ava-ovrreset" data-ovrreset="' + w.id + '" style="cursor:pointer;">use default</u>' : '') +
+                '<u class="ava-sub ava-ovrcancel" data-ovrcancel="' + w.id + '" style="cursor:pointer;">cancel</u>' +
+              '</div>';
+          } else {
+            var slots = expandWindow(openM, closeM, eDur, eBuf);
+            extra =
+              '<span class="ava-hprev">' +
+                (slots.length ? slots.map(fmt12).join(' · ') : 'no slot fits — widen this window or lower the length') +
+              '</span>' +
+              '<span class="ava-hovr' + (custom ? ' cust' : '') + '" data-ovr="' + w.id + '">' +
+                eDur + ' min' + (eBuf ? ' · ' + eBuf + ' buffer' : '') + (custom ? ' (custom)' : '') +
+              '</span>';
+          }
+        }
+        return '<div class="ava-hwin" data-h="' + w.id + '">' +
+            '<span class="ava-htime">' + fmt12(openM) + ' – ' + fmt12(closeM) + '</span>' +
+            '<u data-delh="' + w.id + '" title="Remove">&#10005;</u>' + extra + '</div>';
+      }).join('');
+      return '<div class="ava-hday">' +
+          '<span class="ava-hlabel">' + WDAYS[wd] + '</span>' +
+          '<div class="ava-hwins">' + (chips || '<span class="ava-sub" style="line-height:32px;">Closed</span>') + '</div>' +
+          '<span class="ava-hadd">' +
+            '<input type="time" class="ava-hopen" data-wd="' + wd + '" step="300" />' +
+            '<span style="color:#B0ACBC;font-size:12px;">to</span>' +
+            '<input type="time" class="ava-hclose" data-wd="' + wd + '" step="300" />' +
+            '<button class="ava-btn2" data-addh="' + wd + '">Add</button></span>' +
+        '</div>';
+    }).join('');
+
+    var intro = isSlot
+      ? 'Your open hours &mdash; shown on your storefront. Bookable appointments are generated inside them from the length &amp; buffer above; tap a window to give that one custom timing.'
+      : 'Your open hours &mdash; shown on your storefront so customers know when you’re available. Split days (e.g. a lunch break) are just two windows.';
+    this.$hours.innerHTML =
+      '<div class="ava-card">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">' +
+          '<h3>Hours</h3><span class="ava-sub">Repeats every week</span></div>' +
+        '<p class="ava-note" style="margin:0 0 12px;">' + intro + '</p>' +
+        rows + '</div>';
+
+    if (this._hoursWired) return;
+    this._hoursWired = true;
+    this.$hours.addEventListener('click', function (e) {
+      // remove a window
+      var del = e.target.closest('[data-delh]');
       if (del) {
-        API.removeTemplateSlot(Number(del.getAttribute('data-del'))).then(function (r) {
+        var did = Number(del.getAttribute('data-delh'));
+        API.removeHours(did).then(function (r) {
           if (r && r.error) return;
-          self.template = self.template.filter(function (t) { return t.id !== Number(del.getAttribute('data-del')); });
-          self.renderTemplate();
+          self.hours = self.hours.filter(function (h) { return h.id !== did; });
+          self.renderHours();
         });
         return;
       }
-      var add = e.target.closest('button[data-add]');
+      // open / cancel / save / reset the per-window override editor
+      var ovr = e.target.closest('[data-ovr]');
+      if (ovr) { self._editOvr = Number(ovr.getAttribute('data-ovr')); self.renderHours(); return; }
+      var cancel = e.target.closest('[data-ovrcancel]');
+      if (cancel) { self._editOvr = null; self.renderHours(); return; }
+      var reset = e.target.closest('[data-ovrreset]');
+      if (reset) {
+        var rid = Number(reset.getAttribute('data-ovrreset'));
+        API.updateHours(rid, { slot_minutes: null, buffer_minutes: null }).then(function () {
+          self._editOvr = null; self.reloadHours();
+        });
+        return;
+      }
+      var save = e.target.closest('[data-ovrsave]');
+      if (save) {
+        var sid = Number(save.getAttribute('data-ovrsave'));
+        var box = self.$hours.querySelector('[data-ovrfor="' + sid + '"]');
+        var dur = Math.max(5, +(box.querySelector('.ava-ovrdur').value) || 5);
+        var buf = Math.max(0, +(box.querySelector('.ava-ovrbuf').value) || 0);
+        API.updateHours(sid, { slot_minutes: dur, buffer_minutes: buf }).then(function () {
+          self._editOvr = null; self.reloadHours();
+        });
+        return;
+      }
+      // add a window
+      var add = e.target.closest('button[data-addh]');
       if (add) {
-        var wd = Number(add.getAttribute('data-add'));
-        var input = self.$template.querySelector('input[data-wd="' + wd + '"]');
-        if (!input || !input.value) return;
-        API.addTemplateSlot(self.vendorId, wd, input.value, 1).then(function (r) {
-          if (r && r.error) return;
-          API.listTemplate(self.vendorId).then(function (rr) {
-            self.template = (rr && rr.data) || [];
-            self.renderTemplate();
-          });
+        var wd = Number(add.getAttribute('data-addh'));
+        var openEl = self.$hours.querySelector('.ava-hopen[data-wd="' + wd + '"]');
+        var closeEl = self.$hours.querySelector('.ava-hclose[data-wd="' + wd + '"]');
+        var open = openEl && openEl.value, close = closeEl && closeEl.value;
+        if (!open || !close) { (openEl || closeEl).focus(); return; }
+        if (toMin(close) <= toMin(open)) { closeEl.style.borderColor = '#DFA284'; closeEl.focus(); return; }
+        add.textContent = '…'; add.disabled = true;
+        API.addHours(self.vendorId, wd, open, close).then(function (r) {
+          if (r && r.error) { add.textContent = 'Add'; add.disabled = false; return; }
+          self.reloadHours();
         });
       }
+    });
+  };
+
+  Page.prototype.reloadHours = function () {
+    var self = this;
+    return API.listHours(this.vendorId).then(function (rr) {
+      self.hours = (rr && rr.data) || [];
+      self.renderHours();
     });
   };
 
@@ -495,6 +656,10 @@
         cellEl.innerHTML = res.ok
           ? '<span class="ava-chip" style="background:#E7F3EC;color:#3E7C5E;">Offer sent · 6h to claim</span>'
           : '<span class="ava-chip" style="background:#FAE9E2;color:#9E5F44;">Couldn’t offer</span>';
+        // Email the waitlisted customer the spot's theirs (best-effort).
+        if (res.ok && API.notifyOffered) {
+          try { API.notifyOffered(id); } catch (e) {}
+        }
       });
     });
   };

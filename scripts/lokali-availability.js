@@ -10,9 +10,11 @@
  * where the section should appear (same convention as #lokali-share-detail). If
  * that element is absent it falls back to inserting before the services grid.
  *
- * Self-hiding: availability_calendar() returns [] when the vendor isn't on the
- * feature (disabled or not on a Pro/Featured plan) — we render nothing then, so
- * non-participating storefronts look exactly as they do today.
+ * Self-hiding: it probes availability_calendar() AND availability_hours_public()
+ * — both return [] when the vendor isn't on the feature (disabled / not on a
+ * Pro/Featured plan), so non-participating storefronts look exactly as today. A
+ * vendor may publish Hours without turning the booking calendar on; in that case
+ * only the "Hours" block renders (no date picker).
  *
  * Mode is inferred per date click: availability_slots(date) returns times for a
  * slot-mode vendor and [] for a quantity-mode vendor (a slot-mode date with no
@@ -55,6 +57,15 @@
   function esc(s) { return String(s == null ? '' : s).replace(/[<>&"]/g, function (c) {
     return ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' })[c];
   }); }
+  // Friendly 12-hour labels. Server times are "HH:MM" (24h); we show "2:00 PM"
+  // to customers but always submit the raw 24h string the RPC expects.
+  function toMin(t) { var p = String(t == null ? '0:0' : t).split(':'); return (+p[0]) * 60 + (+p[1]); }
+  function fmt12(t) {
+    var min = ((toMin(t) % 1440) + 1440) % 1440;
+    var h = Math.floor(min / 60), m = min % 60, ap = h < 12 ? 'AM' : 'PM', h12 = h % 12 || 12;
+    return h12 + ':' + (m < 10 ? '0' + m : m) + ' ' + ap;
+  }
+  var WDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];  // schema weekday 0=Sun
 
   // ---- vendor id resolution ------------------------------------------------
   var RESERVED = ['the-market','vendor','vendors','pricing','about','contact-us','account',
@@ -180,20 +191,39 @@
   }
 
   // ---- rendering -----------------------------------------------------------
-  function Widget(mount, vendorId) {
+  function Widget(mount, vendorId, hours, hasCalendar) {
     this.mount = mount;
     this.vendorId = vendorId;
+    this.hours = hours || [];         // [{weekday, open, close}] from hoursPublic
+    this.hasCalendar = !!hasCalendar; // false => hours-only storefront (booking off)
     this.viewMonth = firstOfMonth(new Date());
     this.statusByDate = {};
     this.selected = null;
     this.render();
-    this.loadMonth();
+    if (this.hasCalendar) this.loadMonth();
   }
 
-  Widget.prototype.render = function () {
-    this.mount.className = 'lok-av';
-    this.mount.innerHTML =
-      '<div class="av-card" style="margin-bottom:14px;">' +
+  // "Hours" card — the vendor's weekly open→close schedule (split days render as
+  // "9:00 AM – 12:00 PM, 2:00 – 5:00 PM"). Empty string when the vendor set none.
+  Widget.prototype.hoursHTML = function () {
+    if (!this.hours.length) return '';
+    var byDay = {};
+    this.hours.forEach(function (h) { (byDay[h.weekday] = byDay[h.weekday] || []).push(h); });
+    var rows = [1, 2, 3, 4, 5, 6, 0].map(function (wd) {
+      var wins = (byDay[wd] || []).slice().sort(function (a, b) { return toMin(a.open) - toMin(b.open); });
+      var closed = !wins.length;
+      var val = closed ? 'Closed'
+        : wins.map(function (w) { return fmt12(w.open) + ' – ' + fmt12(w.close); }).join(', ');
+      return '<div style="display:flex;justify-content:space-between;gap:14px;padding:6px 0;border-top:1px solid #F4F1FB;">' +
+        '<span style="font-size:13px;font-weight:600;color:#4B4666;">' + WDAYS[wd] + '</span>' +
+        '<span style="font-size:13px;color:' + (closed ? '#B0ACBC' : '#6C6880') + ';text-align:right;">' + esc(val) + '</span></div>';
+    }).join('');
+    return '<div class="av-card av-hours" style="margin-bottom:14px;">' +
+      '<p style="margin:0 0 4px;font-size:15px;font-weight:600;color:#3E3A55;">Hours</p>' + rows + '</div>';
+  };
+
+  Widget.prototype.calendarHTML = function () {
+    return '<div class="av-card" style="margin-bottom:14px;">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">' +
           '<p style="margin:0;font-size:15px;font-weight:600;color:#3E3A55;">Pick a date</p>' +
           '<div style="display:flex;align-items:center;gap:10px;">' +
@@ -213,6 +243,12 @@
         '</div>' +
       '</div>' +
       '<div class="av-panel av-card"></div>';
+  };
+
+  Widget.prototype.render = function () {
+    this.mount.className = 'lok-av';
+    this.mount.innerHTML = this.hoursHTML() + (this.hasCalendar ? this.calendarHTML() : '');
+    if (!this.hasCalendar) return;    // hours-only: nothing else to wire
 
     var self = this;
     this.mount.querySelectorAll('.av-nav').forEach(function (n) {
@@ -342,7 +378,7 @@
       var label = av ? 'Available' : (s.status === 'held' ? 'On hold' : 'Booked');
       return '<div class="av-slot' + (av ? ' pick' : '') + '" data-t="' + esc(s.time) + '" data-idx="' + idx + '" ' +
         'style="background:' + col.bg + ';color:' + col.fg + ';border:1px solid ' + col.bd + ';">' +
-        '<span>' + esc(s.time) + '</span><span style="font-size:12px;">' + label + '</span></div>';
+        '<span>' + esc(fmt12(s.time)) + '</span><span style="font-size:12px;">' + label + '</span></div>';
     }).join('');
     this.panel.innerHTML =
       '<p style="margin:0 0 12px;font-size:15px;font-weight:600;color:#3E3A55;">Book a slot for ' + esc(prettyDate(dISO)) + '</p>' +
@@ -360,7 +396,7 @@
         el.classList.add('on');
         picked.time = el.getAttribute('data-t');
         send.removeAttribute('disabled');
-        send.textContent = 'Request ' + picked.time;
+        send.textContent = 'Request ' + fmt12(picked.time);
       });
     });
     send.addEventListener('click', function () {
@@ -478,16 +514,21 @@
   function boot() {
     getVendorId().then(function (vid) {
       if (!vid) return;
-      // Probe the current month first; only build the section if the vendor is
-      // actually on the feature (non-empty derived calendar).
+      // Probe the booking calendar AND the published Hours together. Build the
+      // section if EITHER is present: a vendor may show hours without turning the
+      // booking calendar on. Both empty => not on the feature -> render nothing.
       var from = firstOfMonth(new Date()), to = lastOfMonth(new Date());
-      API.calendar(vid, iso(from), iso(to)).then(function (r) {
-        var rows = (r && r.data) || [];
-        if (!rows.length) return;               // vendor not on availability -> render nothing
+      Promise.all([
+        API.calendar(vid, iso(from), iso(to)),
+        API.hoursPublic ? API.hoursPublic(vid) : Promise.resolve({ data: [] })
+      ]).then(function (res) {
+        var calRows = (res[0] && res[0].data) || [];
+        var hours = (res[1] && res[1].data) || [];
+        if (!calRows.length && !hours.length) return;
         var mount = findMount();
         if (!mount) return;
         injectStyles();
-        new Widget(mount, vid);
+        new Widget(mount, vid, hours, calRows.length > 0);
       });
     });
   }

@@ -287,6 +287,13 @@
           return c.rpc('availability_slots', { p_vendors_id: vendorId, p_date: dateISO });
         });
       },
+      // Public weekly hours for the storefront "Hours" block (Pro/Featured perk).
+      // Returns [] for a free/off-plan vendor. Derived read — never a raw count.
+      hoursPublic: function (vendorId) {
+        return withClient(function (c) {
+          return c.rpc('availability_hours_public', { p_vendors_id: vendorId });
+        });
+      },
       // Public date-aware inquiry -> /availability/submit (service-role RPC +
       // vendor notify). No auth (open to logged-out visitors). Returns
       // { data: { ok, inquiry_id } | { ok:false, reason }, error }.
@@ -358,24 +365,34 @@
                     { onConflict: 'vendors_id,the_date' });
         });
       },
-      // Weekly slot template (slot mode).
-      listTemplate: function (vendorId) {
+      // Weekly HOURS schedule (the unified open→close windows). Doubles as the
+      // storefront "Hours" and, in slot mode, the source the bookable times are
+      // generated from (server-side avail_expand_slots). weekday: 0=Sun … 6=Sat.
+      // slotMin/bufferMin null => inherit the config default (per-window override).
+      listHours: function (vendorId) {
         return withClient(function (c) {
-          return c.from('availability_slot_template').select('*')
-            .eq('vendors_id', vendorId).order('weekday').order('slot_time');
+          return c.from('availability_hours').select('*')
+            .eq('vendors_id', vendorId).order('weekday').order('open_time');
         });
       },
-      addTemplateSlot: function (vendorId, weekday, time, capacity) {
+      addHours: function (vendorId, weekday, open, close, slotMin, bufferMin) {
         return withClient(function (c) {
-          return c.from('availability_slot_template').insert({
-            vendors_id: vendorId, weekday: weekday, slot_time: time,
-            slot_capacity: capacity || 1
+          return c.from('availability_hours').insert({
+            vendors_id: vendorId, weekday: weekday,
+            open_time: open, close_time: close,
+            slot_minutes: slotMin != null ? slotMin : null,
+            buffer_minutes: bufferMin != null ? bufferMin : null
           });
         });
       },
-      removeTemplateSlot: function (slotTemplateId) {
+      updateHours: function (hoursId, fields) {
         return withClient(function (c) {
-          return c.from('availability_slot_template').delete().eq('id', slotTemplateId);
+          return c.from('availability_hours').update(fields || {}).eq('id', hoursId);
+        });
+      },
+      removeHours: function (hoursId) {
+        return withClient(function (c) {
+          return c.from('availability_hours').delete().eq('id', hoursId);
         });
       },
       // Pending date-tagged requests (the confirm inbox).
@@ -410,6 +427,16 @@
         return withClient(function (c) {
           return c.rpc('offer_waitlist_spot', { p_waitlist_id: waitlistId, p_hours: hours || 6 });
         });
+      },
+      // Customer-facing emails, fired best-effort by the dashboard right after a
+      // successful confirm/offer. These go through the Vercel route (Brevo needs
+      // the server key + the confirm/offer RPCs never return the customer email);
+      // the route re-verifies the vendor session + row ownership. Authed POST.
+      notifyConfirmed: function (inquiryId) {
+        return postRoute('/availability/notify', { kind: 'confirm', inquiryId: inquiryId }, true);
+      },
+      notifyOffered: function (waitlistId) {
+        return postRoute('/availability/notify', { kind: 'offer', waitlistId: waitlistId }, true);
       }
     },
     reviews: {
