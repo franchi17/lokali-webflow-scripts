@@ -103,6 +103,7 @@
       '.lok-ava .ava-cell{aspect-ratio:1;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;' +
         'font-size:12px;font-weight:500;cursor:pointer;background:#F6F2FD;color:#5D4F9E;border:1px solid #EAE4F8;}' +
       '.lok-ava .ava-cell.off{background:#FAE9E2;color:#9E5F44;border:1px solid #EBC3B2;}' +
+      '.lok-ava .ava-cell.closed{background:#FAFAFC;color:#C9C5D6;border:1px solid #F0EDF5;}' +
       '.lok-ava .ava-cell.err{outline:2px solid #DFA284;outline-offset:-2px;}' +
       '.lok-ava .ava-cell.pad{background:transparent;border:none;cursor:default;}' +
       '.lok-ava .ava-row{display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid #F2EFF8;}' +
@@ -485,18 +486,19 @@
       var dISO = iso(new Date(from.getFullYear(), from.getMonth(), i));
       var row = this.dates[dISO];
       var blocked = row && row.is_blocked;
-      var sub;
+      var sub, closed = false;
       if (blocked) {
         sub = 'Off';                 // explicit label — a bare strikethrough read as "nothing happened"
       } else if (isSlot) {
-        // booked of generated slots; a day with no hours shows no number (it
-        // reads 'off' to customers anyway).
+        // booked of generated slots; a weekday with no hours is CLOSED to
+        // customers, so grey it out — active vs inactive at a glance.
         var si = this.slotInfoFor(dISO);
-        sub = si.total ? si.booked + '/' + si.total : '';
+        closed = si.total === 0;
+        sub = closed ? '' : si.booked + '/' + si.total;
       } else {
         sub = this.usedFor(dISO) + '/' + this.capFor(dISO);
       }
-      html += '<div class="ava-cell' + (blocked ? ' off' : '') + '" data-date="' + dISO + '">' +
+      html += '<div class="ava-cell' + (blocked ? ' off' : closed ? ' closed' : '') + '" data-date="' + dISO + '">' +
         '<span>' + i + '</span>' +
         (sub ? '<span style="font-size:9px;font-weight:400;">' + sub + '</span>' : '') +
         '</div>';
