@@ -266,6 +266,152 @@
         return withClient(function (c) { return c.rpc('set_vendor_active', { p_active: true }); });
       }
     },
+    // #71 availability / limited-capacity. Reads are anon RPCs that return DERIVED
+    // status only (never raw counts). Writes are the two public routes (service
+    // role + vendor notify). Owner actions (confirm/decline/offer) are added by
+    // the dashboard client — they're authenticated RPCs gated by owns_vendor().
+    availability: {
+      // Derived per-date status for [fromISO, toISO] (YYYY-MM-DD). Empty array
+      // when the vendor isn't on the feature -> the storefront shows no calendar.
+      calendar: function (vendorId, fromISO, toISO) {
+        return withClient(function (c) {
+          return c.rpc('availability_calendar', {
+            p_vendors_id: vendorId, p_from: fromISO, p_to: toISO
+          });
+        });
+      },
+      // Open slot times for one date (slot mode). Empty for quantity mode — the
+      // storefront uses that emptiness to pick the qty stepper vs the slot list.
+      slots: function (vendorId, dateISO) {
+        return withClient(function (c) {
+          return c.rpc('availability_slots', { p_vendors_id: vendorId, p_date: dateISO });
+        });
+      },
+      // Public date-aware inquiry -> /availability/submit (service-role RPC +
+      // vendor notify). No auth (open to logged-out visitors). Returns
+      // { data: { ok, inquiry_id } | { ok:false, reason }, error }.
+      submitInquiry: function (payload) {
+        payload = payload || {};
+        return postRoute('/availability/submit', {
+          vendorId: payload.vendorId,
+          date: payload.date,
+          qty: payload.qty != null ? payload.qty : null,
+          slotTime: payload.slotTime || null,
+          name: payload.name || null,
+          email: payload.email || null,
+          phone: payload.phone || null,
+          message: payload.message || null,
+          website: payload.website || null
+        }, false);
+      },
+      // Public waitlist join for a sold-out date -> /availability/waitlist.
+      joinWaitlist: function (payload) {
+        payload = payload || {};
+        return postRoute('/availability/waitlist', {
+          vendorId: payload.vendorId,
+          date: payload.date,
+          email: payload.email,
+          name: payload.name || null,
+          qty: payload.qty != null ? payload.qty : null,
+          slotTime: payload.slotTime || null,
+          website: payload.website || null
+        }, false);
+      },
+
+      // ---- OWNER methods (vendor dashboard /vendor-dashboard/availability). ----
+      // All RLS-scoped to owns_vendor(); config writes additionally require the
+      // Pro/Featured plan gate server-side. Raw counts are owner-visible here.
+      hasPlan: function (vendorId) {
+        return withClient(function (c) {
+          return c.rpc('has_availability_plan', { p_vendors_id: vendorId });
+        });
+      },
+      // Waitlist is FEATURED-only. anon-callable: the storefront decides whether
+      // a sold-out date shows the join form or a plain sold-out message.
+      waitlistOpen: function (vendorId) {
+        return withClient(function (c) {
+          return c.rpc('has_waitlist_plan', { p_vendors_id: vendorId });
+        });
+      },
+      getConfig: function (vendorId) {
+        return withClient(function (c) {
+          return c.from('availability_config').select('*').eq('vendors_id', vendorId).maybeSingle();
+        });
+      },
+      saveConfig: function (vendorId, fields) {
+        var row = Object.assign({ vendors_id: vendorId }, fields || {});
+        return withClient(function (c) {
+          return c.from('availability_config').upsert(row, { onConflict: 'vendors_id' });
+        });
+      },
+      // Per-date rows for the month (blackouts + confirmed counts; owner-only read).
+      listDates: function (vendorId, fromISO, toISO) {
+        return withClient(function (c) {
+          return c.from('availability_date').select('*')
+            .eq('vendors_id', vendorId).gte('the_date', fromISO).lte('the_date', toISO);
+        });
+      },
+      setDateBlocked: function (vendorId, dateISO, blocked) {
+        return withClient(function (c) {
+          return c.from('availability_date')
+            .upsert({ vendors_id: vendorId, the_date: dateISO, is_blocked: !!blocked },
+                    { onConflict: 'vendors_id,the_date' });
+        });
+      },
+      // Weekly slot template (slot mode).
+      listTemplate: function (vendorId) {
+        return withClient(function (c) {
+          return c.from('availability_slot_template').select('*')
+            .eq('vendors_id', vendorId).order('weekday').order('slot_time');
+        });
+      },
+      addTemplateSlot: function (vendorId, weekday, time, capacity) {
+        return withClient(function (c) {
+          return c.from('availability_slot_template').insert({
+            vendors_id: vendorId, weekday: weekday, slot_time: time,
+            slot_capacity: capacity || 1
+          });
+        });
+      },
+      removeTemplateSlot: function (slotTemplateId) {
+        return withClient(function (c) {
+          return c.from('availability_slot_template').delete().eq('id', slotTemplateId);
+        });
+      },
+      // Pending date-tagged requests (the confirm inbox).
+      pendingRequests: function (vendorId) {
+        return withClient(function (c) {
+          return c.from('inquiries')
+            .select('id,created_at,customer_name,customer_email,customer_phone,message,requested_date,requested_qty,slot_id,availability_status')
+            .eq('vendors_id', vendorId).eq('availability_status', 'pending')
+            .order('requested_date').order('created_at');
+        });
+      },
+      // Confirm / decline — the ONLY capacity movers, owner-only RPCs.
+      confirm: function (inquiryId) {
+        return withClient(function (c) {
+          return c.rpc('confirm_availability_inquiry', { p_inquiry_id: inquiryId });
+        });
+      },
+      decline: function (inquiryId) {
+        return withClient(function (c) {
+          return c.rpc('decline_availability_inquiry', { p_inquiry_id: inquiryId });
+        });
+      },
+      // Waitlist queue + offer-a-freed-spot.
+      listWaitlist: function (vendorId) {
+        return withClient(function (c) {
+          return c.from('availability_waitlist').select('*')
+            .eq('vendors_id', vendorId).in('status', ['waiting', 'offered'])
+            .order('the_date').order('created_at');
+        });
+      },
+      offerSpot: function (waitlistId, hours) {
+        return withClient(function (c) {
+          return c.rpc('offer_waitlist_spot', { p_waitlist_id: waitlistId, p_hours: hours || 6 });
+        });
+      }
+    },
     reviews: {
       // Public, approved reviews for a vendor (RLS enforces is_approved AND the
       // vendor's show_public_reviews preference — patch_reviews_privacy.sql).
