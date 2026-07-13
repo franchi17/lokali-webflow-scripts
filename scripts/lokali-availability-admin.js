@@ -131,7 +131,15 @@
       '.lok-ava .ava-hadd input[type=time]{font-family:inherit;font-size:12px;color:#45415A;border:1px solid #E4DEF4;border-radius:8px;padding:5px 7px;background:#FCFBFE;}' +
       '.lok-ava .ava-ovr{margin-top:6px;display:flex;align-items:center;gap:7px;flex-wrap:wrap;}' +
       '.lok-ava .ava-ovr input{width:56px;font-family:inherit;font-size:12px;color:#45415A;border:1px solid #E4DEF4;border-radius:8px;padding:4px 7px;background:#fff;}' +
-      '.lok-ava .ava-ovr label{font-size:11px;color:#8B8798;}';
+      '.lok-ava .ava-ovr label{font-size:11px;color:#8B8798;}' +
+      // Mobile: the day-hours row [label][windows][start–end + Add] overflowed
+      // 375px and clipped the "Add" button. Let it wrap so the add-window
+      // controls drop to their own full-width line under the label+windows.
+      '@media (max-width:600px){' +
+        '.lok-ava .ava-hday{flex-wrap:wrap;}' +
+        '.lok-ava .ava-hwins{flex-basis:calc(100% - 86px);}' +
+        '.lok-ava .ava-hadd{flex-basis:100%;margin-top:6px;}' +
+      '}';
     var s = document.createElement('style');
     s.id = 'lok-ava-styles';
     s.textContent = css;
