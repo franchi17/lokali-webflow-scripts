@@ -118,6 +118,15 @@
       '.div-block-127 > *{width:100% !important;min-width:0 !important;box-sizing:border-box !important;}',
       '.main-content-area{margin-left:0 !important;margin-right:0 !important;',
       'padding-left:16px !important;padding-right:16px !important;box-sizing:border-box !important;width:100% !important;}',
+      // Services/products add-edit form: the JS-injected photo gallery + showcase
+      // video blocks (lokali-*-final.js, SRI-pinned so not editable on the fly)
+      // can be forced wide by their grid cell, and .form-view{overflow:hidden}
+      // then CLIPS the video hint mid-sentence. Cap the injected hosts against
+      // the viewport (their left offset is card 16px + grid margin 20px ≈ 37px,
+      // so 100vw - 64px keeps them inside the card) and let the hint wrap.
+      '#lok-product-gallery,#lok-product-video,#lok-service-gallery,#lok-service-video{',
+      'max-width:calc(100vw - 64px) !important;min-width:0 !important;box-sizing:border-box !important;}',
+      '#lok-product-video-hint,#lok-service-video-hint{white-space:normal !important;overflow-wrap:anywhere;}',
       '.div-block-39 img,.div-block-39 svg,.main-content-area img,.main-content-area svg{max-width:100%;}',
       '.div-block-39 input,.div-block-39 textarea,.div-block-39 select,',
       '.main-content-area input,.main-content-area textarea,.main-content-area select{max-width:100%;}',
