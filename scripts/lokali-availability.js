@@ -153,16 +153,19 @@
     if (tabs.length && panels.length) {
       // Clone an existing tab button so the injected one inherits the exact
       // Webflow classes/typography; retarget it to the new panel.
-      var proto = tabs[0];
+      // Prefer a PLAIN-TEXT tab (Reviews/About) as the prototype: the old code
+      // cloned tabs[0] ("Services" + count chip) and its deepest-child walk
+      // only sees ELEMENT children, so it relabeled the count CHIP — the tab
+      // rendered as "Services [Availability]" instead of a plain "Availability".
+      var proto = null;
+      for (var ti = 0; ti < tabs.length; ti++) {
+        if (tabs[ti].children.length === 0) { proto = tabs[ti]; break; }
+      }
+      proto = proto || tabs[0];
       var btn = proto.cloneNode(true);
       btn.classList.remove('vl-stab-active');
       btn.setAttribute('data-vl-tab', 'availability');
-      // Replace the deepest text node with our label (buttons may nest spans).
-      var labelHost = btn;
-      while (labelHost.children.length === 1 && labelHost.children[0].childNodes.length) {
-        labelHost = labelHost.children[0];
-      }
-      labelHost.textContent = 'Availability';
+      btn.textContent = 'Availability';
       btn.addEventListener('click', function () { activateTab('availability'); });
       proto.parentNode.appendChild(btn);
 
