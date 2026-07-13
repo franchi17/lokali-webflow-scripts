@@ -143,20 +143,9 @@
       // held the SAME in the current state (no violet/solid takeover).
       ".lok-idsw--shop .lok-idsw-ic{background:#FFF2DF;color:#FF8D00;}",
       ".lok-idsw--shop.is-current .lok-idsw-ic{background:#FFF2DF;color:#FF8D00;}",
-      ".lok-idsw-dot{margin-left:auto;width:7px;height:7px;border-radius:50%;background:#2BB673;flex-shrink:0;}",
-      "#lok-mnav-panel .lok-idsw-name{max-width:none;}",
-      // mobile panel: render the menu inline (no trigger, no dropdown chrome)
-      "#lok-mnav-panel .lok-acct{display:block;width:100%;}",
-      "#lok-mnav-panel .lok-acct-trigger{display:none;}",
-      // On the mobile panel the switcher is inline — drop the desktop dropdown's
-      // white card (border/shadow/padding already cleared); background:none too so
-      // it sits flush on the panel's lavender instead of a floating white block.
-      "#lok-mnav-panel .lok-acct-menu{display:block;position:static;border:none;box-shadow:none;padding:0;min-width:0;background:none;}",
-      "#lok-mnav-panel .lok-acct-menu a,#lok-mnav-panel .lok-acct-menu button{padding:12px 0;font-size:15px;}",
-      // The panel's own '#lok-mnav-panel a{display:block}' rule (ID specificity)
-      // beat '.lok-acct-menu a.lok-idsw{display:flex}', stacking the icon ABOVE
-      // the name/role text. Re-assert flex at ID specificity.
-      "#lok-mnav-panel .lok-acct-menu a.lok-idsw{display:flex;align-items:center;gap:10px;}"
+      ".lok-idsw-dot{margin-left:auto;width:7px;height:7px;border-radius:50%;background:#2BB673;flex-shrink:0;}"
+      // (No #lok-mnav-panel switcher rules: the menu is header-chip only now —
+      // render() skips the hamburger panel, which just gets its Login hidden.)
     ].join('');
     (document.head || document.documentElement).appendChild(s);
   }
@@ -306,11 +295,16 @@
       var links = scope.querySelectorAll('a'), login = null;
       for (var i = 0; i < links.length; i++) { if (isLoginLink(links[i])) { login = links[i]; break; } }
       if (!login) continue;
+      login.style.display = 'none';
+      login.setAttribute('data-lok-auth-hidden', '1');
+      // The hamburger panel only loses its Login link — no switcher there.
+      // The header chip (always visible, mobile included) already carries the
+      // identity switcher; duplicating it in the panel showed it twice
+      // (Francesca, 2026-07-13).
+      if (scope.id === 'lok-mnav-panel') continue;
       var el = buildAcctEl();
       fillAcctEl(el, acct); // el is detached here → no observer churn
       login.parentNode.insertBefore(el, login);
-      login.style.display = 'none';
-      login.setAttribute('data-lok-auth-hidden', '1');
     }
     hideBecomeVendorForVendor();
   }
