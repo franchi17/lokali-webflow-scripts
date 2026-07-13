@@ -55,9 +55,24 @@
     s = s.trim();
     // Block javascript:/data: schemes + attribute/CSS-breakout chars.
     if (!s || /[\s"'<>`\\]/.test(s) || /^(?:javascript|data|vbscript):/i.test(s)) return '';
-    return s;
+    if (/^https?:\/\//.test(s)) return s;
+    if (s.indexOf('//') === 0) return '';
+    // Relative path (Xano-era /vault/... uploads): resolve against the file
+    // base like lokali-vendor-listing.js photoUrl() does — returned as-is it
+    // resolved against golokali.com and 404'd (vendor avatar showed as an
+    // empty circle on service/product pages).
+    var base = window.LOKALI_FILE_BASE || 'https://x8ki-letl-twmt.n7.xano.io';
+    return base.replace(/\/$/, '') + (s.charAt(0) === '/' ? '' : '/') + s;
   }
   function cents(n) { var x = Number(n); if (!isFinite(x)) return ''; return '$' + (x % 100 === 0 ? (x / 100).toFixed(0) : (x / 100).toFixed(2)); }
+  // Hide the .vd-meta-row containing the given key element (placeholder rows
+  // the template pre-fills with sample text, e.g. "Lead time / 5–7 days").
+  function hideMetaRow(keyId) {
+    var k = $(keyId);
+    var row = k && k.closest ? k.closest('.vd-meta-row') : null;
+    if (row) row.style.display = 'none';
+    else if (k) { k.style.display = 'none'; var val = $(keyId.replace('-k', '-v')); if (val) val.style.display = 'none'; }
+  }
 
   function pageType() {
     var el = document.querySelector('[data-vd-type]');
@@ -350,6 +365,11 @@
         var m = Number(s.duration_minutes);
         var dur = m >= 60 ? (Math.round((m / 60) * 10) / 10) + ' hr' + (m >= 120 ? 's' : '') : m + ' min';
         setText('vd-meta-k1', 'Duration'); setText('vd-meta-v1', dur);
+      } else {
+        // The template ships "Lead time / 5–7 days" placeholder text in this
+        // row; with no duration set it showed as real data (same trap as the
+        // old "Food & Catering" mini-card placeholder). Hide the whole row.
+        hideMetaRow('vd-meta-k1');
       }
       var v2 = $('vd-meta-v2'); if (v2 && priceEl) v2.textContent = priceEl.textContent;
       fetchPhotos('services', SERVICE_PHOTOS_PATH, (s.id != null ? s.id : id), imgUrl(s.image_url || s.image)).then(buildGallery);
@@ -379,6 +399,7 @@
       show($('vd-tag-shipping'), !!p.shipping_offered);
       show($('vd-tag-pickup'), !!p.pickup_only || !!p.shipping_offered);
       if (p.turnaround_days != null) setText('vd-meta-v1', p.turnaround_days + ' days');
+      else hideMetaRow('vd-meta-k1'); // hide the "Lead time / 5–7 days" template placeholder
       var fulfil = p.shipping_offered && p.pickup_only ? 'Shipping & local pickup' : (p.shipping_offered ? 'Shipping' : (p.pickup_only ? 'Local pickup' : '—'));
       setText('vd-meta-v2', fulfil);
       setText('vd-meta-v3', p.is_custom ? 'Made to order' : 'Standard');
