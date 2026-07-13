@@ -1,0 +1,232 @@
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@800&display=swap" rel="stylesheet">
+
+<style>
+  .lg-wrap { display: block; width: 100%; font-family: 'Plus Jakarta Sans', sans-serif; color: #0f0f14; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  .lg-wrap *, .lg-wrap *::before, .lg-wrap *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  .lg-hero { display: block; width: 100%; background: #f8f7fc; border-bottom: 1px solid rgba(0,0,0,0.1); padding: 5rem 1.5rem 4rem; text-align: center; }
+  .lg-eyebrow { display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #6002EE; background: #f0e6ff; border-radius: 20px; padding: 4px 14px; margin-bottom: 1.25rem; }
+  .lg-h1 { display: block; font-size: clamp(28px, 5vw, 48px); font-weight: 800; color: #0f0f14; letter-spacing: -1px; line-height: 1.15; margin: 0 0 1rem; }
+  .lg-h1 span { color: #6002EE; }
+  .lg-sub { display: block; font-size: 18px; color: #4a4a5a; line-height: 1.65; }
+
+  .lg-section { display: block; width: 100%; padding: 3.5rem 1.5rem; border-bottom: 1px solid rgba(0,0,0,0.1); }
+  .lg-section:last-of-type { border-bottom: none; }
+  .lg-section-eye { display: block; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #888898; margin-bottom: 0.5rem; }
+  .lg-section-title { display: block; font-size: clamp(20px, 3vw, 26px); font-weight: 800; color: #0f0f14; letter-spacing: -0.4px; margin-bottom: 0.75rem; line-height: 1.25; }
+  .lg-section-body { display: block; font-size: 17px; color: #4a4a5a; line-height: 1.7; margin-bottom: 2rem; }
+
+  /* 2 mode cards: centered + wider (not left-hugging the 1040 column) */
+  .lg-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; width: 100%; max-width: 820px; margin-left: auto; margin-right: auto; }
+  @media (max-width: 600px) { .lg-grid { grid-template-columns: 1fr; max-width: 420px; } }
+  .lg-card { display: block; border-radius: 16px; border: 1px solid rgba(0,0,0,0.1); background: #ffffff; overflow: hidden; }
+  .lg-visual { height: 150px; display: flex; align-items: center; justify-content: center; position: relative; }
+  .lg-card-body { display: block; padding: 12px 14px 16px; }
+  .lg-tag { font-size: 11px; font-weight: 700; border-radius: 20px; padding: 3px 10px; display: inline-block; margin-bottom: 7px; }
+  .lg-good { background: #e6f4ea; color: #1a5c2e; }
+  .lg-amber { background: #fdf3e0; color: #8a6420; }
+  .lg-caption { display: block; font-size: 15px; font-weight: 700; color: #0f0f14; margin-bottom: 4px; }
+  .lg-note { display: block; font-size: 14px; color: #4a4a5a; line-height: 1.5; }
+
+  .lg-tips { display: flex; flex-direction: column; gap: 12px; width: 100%; }
+  .lg-tip { display: flex; align-items: flex-start; gap: 14px; padding: 16px 18px; background: #f0e6ff; border-radius: 14px; }
+  .lg-tip-num { width: 28px; height: 28px; border-radius: 50%; background: #6002EE; color: #fff; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
+  .lg-tip-title { display: block; font-size: 16px; font-weight: 700; color: #0f0f14; margin-bottom: 3px; }
+  .lg-tip-body { display: block; font-size: 15px; color: #4a4a5a; line-height: 1.55; }
+
+  .lg-spec { display: flex; flex-wrap: wrap; gap: 14px; width: 100%; }
+  .lg-spec-card { flex: 1 1 200px; border: 1px solid rgba(0,0,0,0.1); border-radius: 16px; background: #fff; padding: 20px 18px; }
+  .lg-spec-ico { width: 40px; height: 40px; border-radius: 11px; background: #f0e6ff; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; }
+  .lg-spec-k { display: block; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #888898; margin-bottom: 4px; }
+  .lg-spec-v { display: block; font-size: 21px; font-weight: 800; color: #0f0f14; letter-spacing: -0.3px; line-height: 1.2; }
+  .lg-spec-sub { display: block; font-size: 13px; color: #888898; margin-top: 3px; }
+  .lg-callout { display: flex; gap: 12px; align-items: flex-start; background: #f0e6ff; border-radius: 14px; padding: 16px 18px; margin-top: 18px; }
+  .lg-callout svg { flex-shrink: 0; margin-top: 1px; }
+  .lg-callout-t { font-size: 15px; color: #0f0f14; line-height: 1.55; }
+  .lg-callout-t strong { font-weight: 700; }
+
+  /* status chips (matches the live storefront calendar palette) */
+  .lg-status { display: inline-block; font-size: 12px; font-weight: 700; border-radius: 20px; padding: 3px 12px; margin-right: 6px; }
+  .lg-st-open { background: #E7F3EC; color: #3E7C5E; }
+  .lg-st-lim { background: #FBF1DE; color: #96702E; }
+  .lg-st-sold { background: #FAE9E2; color: #9E5F44; }
+</style>
+
+<div class="lg-wrap">
+
+  <div class="lg-hero">
+    <div class="lg-eyebrow">Vendor Resources</div>
+    <div class="lg-h1">Your availability calendar:<br><span>take bookings without the back&#8209;and&#8209;forth</span></div>
+    <div class="lg-sub">Stop hand-drawing a sold-out calendar on Instagram. Show neighbors which dates are open, let them request a date (or a time), and confirm each one yourself &mdash; nothing is booked until you say yes. Included with Pro and Featured plans.</div>
+  </div>
+
+  <div class="lg-section">
+    <div class="lg-section-eye">The big idea</div>
+    <div class="lg-section-title">You stay in control &mdash; confirm to reserve</div>
+    <div class="lg-section-body">Customers see a simple calendar on your storefront with each date marked
+      <span class="lg-status lg-st-open">Open</span><span class="lg-status lg-st-lim">Limited</span><span class="lg-status lg-st-sold">Sold out</span>.
+      They pick a date, tell you what they want, and send a request. It lands in your Availability inbox as a lead &mdash; capacity only moves when <strong>you</strong> tap Confirm. Confirming reserves their spot and emails them automatically. Declining frees you up, no awkward conversation needed.</div>
+    <div class="lg-callout">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#6002EE" stroke-width="2"/><path d="M12 8h.01M11 12h1v4h1" stroke="#6002EE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div class="lg-callout-t"><strong>Your numbers stay private.</strong> Customers never see how many orders you have &mdash; only whether a date is open, running low, or sold out. The exact counts show only to you, in your dashboard.</div>
+    </div>
+  </div>
+
+  <div class="lg-section">
+    <div class="lg-section-eye">First choice</div>
+    <div class="lg-section-title">Pick the mode that matches how you sell</div>
+    <div class="lg-section-body">Open <strong>Dashboard &rarr; Availability &rarr; Settings</strong> and choose one of two modes. You can switch later, but most vendors are clearly one or the other.</div>
+    <div class="lg-grid">
+
+      <div class="lg-card">
+        <div class="lg-visual" style="background:#f5f0ff;">
+          <svg width="74" height="74" viewBox="0 0 80 80" fill="none">
+            <circle cx="28" cy="30" r="12" fill="#6002EE" opacity="0.25"/>
+            <circle cx="52" cy="30" r="12" fill="#6002EE" opacity="0.45"/>
+            <circle cx="28" cy="54" r="12" fill="#6002EE" opacity="0.65"/>
+            <circle cx="52" cy="54" r="12" fill="#6002EE" opacity="0.85"/>
+          </svg>
+        </div>
+        <div class="lg-card-body">
+          <div class="lg-tag lg-good">By quantity</div>
+          <div class="lg-caption">You make a limited number per day</div>
+          <div class="lg-note">Bakers, meal preppers, jam makers, caterers. You set how many orders you can take per day (say, 30), customers pick a date and how many they want. Each confirm counts down that day's total.</div>
+        </div>
+      </div>
+
+      <div class="lg-card">
+        <div class="lg-visual" style="background:#fff5f0;">
+          <svg width="74" height="74" viewBox="0 0 80 80" fill="none">
+            <circle cx="40" cy="40" r="26" stroke="#EE6002" stroke-width="5" opacity="0.5" fill="none"/>
+            <path d="M40 24v16l11 7" stroke="#EE6002" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="lg-card-body">
+          <div class="lg-tag lg-amber">By time slot</div>
+          <div class="lg-caption">You book appointments</div>
+          <div class="lg-note">Photographers, hair stylists, tutors, massage therapists. You set your weekly hours and a booking length &mdash; Lokali generates the time slots automatically, and customers pick a date <em>and</em> a time.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="lg-section">
+    <div class="lg-section-eye">Your schedule</div>
+    <div class="lg-section-title">Hours: set them once, they do double duty</div>
+    <div class="lg-section-body">The <strong>Hours</strong> section is one weekly schedule &mdash; for each day, add the window you're open (like <strong>9:00 to 5:00</strong>). It repeats every week and shows on your storefront as your hours of operation. In time-slot mode it does more: your bookable appointments are generated <em>inside</em> those windows.</div>
+    <div class="lg-tips">
+      <div class="lg-tip">
+        <div class="lg-tip-num">1</div>
+        <div>
+          <div class="lg-tip-title">Closing for lunch? Add two windows</div>
+          <div class="lg-tip-body">Add <strong>9:00&ndash;12:00</strong> and <strong>1:00&ndash;5:00</strong> on the same day. The gap between them is your break &mdash; customers see the split hours, and no appointments are offered over lunch.</div>
+        </div>
+      </div>
+      <div class="lg-tip">
+        <div class="lg-tip-num">2</div>
+        <div>
+          <div class="lg-tip-title">Booking length &amp; buffer shape your slots</div>
+          <div class="lg-tip-body">Set how long one booking runs (60 minutes, 30 minutes&hellip;) and an optional buffer between bookings (10 minutes to reset, travel, clean up). A 12&ndash;4 window with 60-minute bookings and a 10-minute buffer becomes 12:00, 1:10, 2:20 and 3:30 &mdash; done for you.</div>
+        </div>
+      </div>
+      <div class="lg-tip">
+        <div class="lg-tip-num">3</div>
+        <div>
+          <div class="lg-tip-title">One day can march to its own beat</div>
+          <div class="lg-tip-body">Tap any window's timing pill to give just that window a custom length or buffer &mdash; say, quick 30-minute consults on Saturday mornings while the rest of the week runs hour-long sessions.</div>
+        </div>
+      </div>
+      <div class="lg-tip">
+        <div class="lg-tip-num">4</div>
+        <div>
+          <div class="lg-tip-title">Check the preview before you move on</div>
+          <div class="lg-tip-body">Under each window you'll see exactly which times customers will be offered. If a slot's missing, the window is too short for the booking length &mdash; widen the window or shorten the length.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="lg-section">
+    <div class="lg-section-eye">Settings, in plain english</div>
+    <div class="lg-section-title">Four dials, and what they really mean</div>
+    <div class="lg-section-body">Everything else in Settings is one of these. Set them once &mdash; you can always nudge them later.</div>
+    <div class="lg-spec">
+
+      <div class="lg-spec-card">
+        <div class="lg-spec-ico">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 3v18M3 12h18" stroke="#6002EE" stroke-width="2" stroke-linecap="round"/></svg>
+        </div>
+        <div class="lg-spec-k">Orders per day</div>
+        <div class="lg-spec-v">Your daily cap</div>
+        <div class="lg-spec-sub">quantity mode &mdash; how many you can make in one day</div>
+      </div>
+
+      <div class="lg-spec-card">
+        <div class="lg-spec-ico">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 3l9 16H3l9-16z" stroke="#6002EE" stroke-width="2" stroke-linejoin="round"/><path d="M12 10v4m0 3h.01" stroke="#6002EE" stroke-width="2" stroke-linecap="round"/></svg>
+        </div>
+        <div class="lg-spec-k">Show &ldquo;Limited&rdquo; at</div>
+        <div class="lg-spec-v">The urgency line</div>
+        <div class="lg-spec-sub">when this few remain, the date shows &ldquo;Limited&rdquo; &mdash; a nudge to order soon</div>
+      </div>
+
+      <div class="lg-spec-card">
+        <div class="lg-spec-ico">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#6002EE" stroke-width="2"/><path d="M12 7v5l4 2" stroke="#6002EE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="lg-spec-k">Minimum notice</div>
+        <div class="lg-spec-v">Your heads-up time</div>
+        <div class="lg-spec-sub">how far ahead people must request &mdash; 12 hours means no midnight orders for tomorrow morning</div>
+      </div>
+
+      <div class="lg-spec-card">
+        <div class="lg-spec-ico">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="5" y="11" width="14" height="9" rx="2" stroke="#6002EE" stroke-width="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3" stroke="#6002EE" stroke-width="2" stroke-linecap="round"/></svg>
+        </div>
+        <div class="lg-spec-k">When a customer requests</div>
+        <div class="lg-spec-v">Hold, or don&rsquo;t</div>
+        <div class="lg-spec-sub">&ldquo;Hold on inquiry&rdquo; saves their spot while you decide (auto-released if you don&rsquo;t answer); &ldquo;Hold on confirm&rdquo; reserves nothing until you say yes</div>
+      </div>
+
+    </div>
+    <div class="lg-callout">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#6002EE" stroke-width="2"/><path d="M12 8h.01M11 12h1v4h1" stroke="#6002EE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div class="lg-callout-t"><strong>Not sure about holds?</strong> Start with &ldquo;Hold on confirm.&rdquo; It's the simplest: requests are just leads, and nothing is promised until you tap Confirm. Switch to &ldquo;Hold on inquiry&rdquo; if you find two people racing for the same spot.</div>
+    </div>
+  </div>
+
+  <div class="lg-section">
+    <div class="lg-section-eye">Day to day</div>
+    <div class="lg-section-title">Your daily rhythm on the Availability page</div>
+    <div class="lg-section-body">Once it's set up, the page runs on three simple habits.</div>
+    <div class="lg-tips">
+      <div class="lg-tip">
+        <div class="lg-tip-num">1</div>
+        <div>
+          <div class="lg-tip-title">Check Requests &mdash; confirm or decline</div>
+          <div class="lg-tip-body">New date-tagged requests wait at the top, grouped by date with how much of that day is left. <strong>Confirm</strong> reserves the spot and emails the customer automatically. <strong>Decline</strong> frees it. Lokali guards against overselling &mdash; if a confirm would put you past your cap, it stops you.</div>
+        </div>
+      </div>
+      <div class="lg-tip">
+        <div class="lg-tip-num">2</div>
+        <div>
+          <div class="lg-tip-title">Tap dates to block days off</div>
+          <div class="lg-tip-body">Vacation, market day, family weekend &mdash; tap any date on the <strong>Days off &amp; capacity</strong> calendar to block it. Customers see it as unavailable instantly. Tap again to reopen it. The little numbers on each date (like 12/30 orders or 2/4 slots booked) are your private at-a-glance workload.</div>
+        </div>
+      </div>
+      <div class="lg-tip">
+        <div class="lg-tip-num">3</div>
+        <div>
+          <div class="lg-tip-title">Let sold-out days sell for you (Featured)</div>
+          <div class="lg-tip-body">On the Featured plan, a sold-out date shows a <strong>waitlist</strong> &mdash; customers leave their email, and if a spot frees up you tap &ldquo;Offer spot&rdquo; to invite the next person in line. Every cancellation becomes a warm lead instead of a lost sale.</div>
+        </div>
+      </div>
+    </div>
+    <div class="lg-callout">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" stroke="#6002EE" stroke-width="2" stroke-linecap="round"/><path d="M9 11l3 3L22 4" stroke="#6002EE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div class="lg-callout-t"><strong>Ready to turn it on?</strong> Go to <strong>Dashboard &rarr; Availability</strong>, pick your mode, set your hours, and flip &ldquo;Calendar on.&rdquo; Your storefront gets an Availability tab the moment you save &mdash; and every request it brings lands right back in that dashboard for you to confirm.</div>
+    </div>
+  </div>
+
+</div>
