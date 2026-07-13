@@ -342,6 +342,15 @@
       var bTag = document.createElement('b'); bTag.textContent = 'DELETE';
       delHelp.appendChild(bTag);
       delHelp.appendChild(document.createTextNode(' to confirm. Your sign-in, listing and all account data are permanently removed.'));
+      // 58k-D3 — founders only: deleting permanently forfeits the founding spot
+      // (increment-only counter; a forfeited slot never reopens or comes back).
+      if (_vendor && _vendor.is_founding_member) {
+        var foundWarn = document.createElement('div');
+        foundWarn.style.cssText = 'margin:0 0 10px;padding:8px 10px;border-radius:8px;' +
+          "background:#FBEFD6;color:#9A6B00;font-size:13px;font-weight:600;font-family:'Plus Jakarta Sans',sans-serif;";
+        foundWarn.textContent = 'Heads up — you’re a founding member. Deleting permanently retires your founding spot and its lifetime pricing. It can’t be undone or reclaimed.';
+        delCard.appendChild(foundWarn);
+      }
       var delIn = document.createElement('input');
       delIn.type = 'text'; delIn.placeholder = 'Type DELETE';
       delIn.style.cssText = 'max-width:180px;margin-right:8px;padding:9px 12px;border:1px solid #ECE8F8;border-radius:10px;font:inherit;';

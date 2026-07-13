@@ -333,6 +333,10 @@
       var v = r[4] && r[4].data && r[4].data.vendor;
       state.hasStorefront = !!(v && v.id != null);
       state.storefrontName = (v && (v.business_name || v.name)) || '';
+      // 58k-D3 — founding members lose their spot permanently on delete (the
+      // counter is increment-only; a forfeited slot never reopens). Surface it
+      // in the delete-confirm box only to actual founders.
+      state.isFounding = !!(v && v.is_founding_member);
     });
   }
 
@@ -753,6 +757,13 @@
     var confirmBox = el('div', 'lk-del-confirm');
     confirmBox.style.cssText = 'display:none;padding:14px 16px;margin-top:2px;border:1px solid #F3D6D6;border-radius:12px;background:#FDF7F7;';
     confirmBox.innerHTML = '<div class="lk-set-help" style="margin-bottom:8px;">Type <b>DELETE</b> to confirm. Your sign-in, saves and any vendor listing are removed immediately.</div>';
+    // 58k-D3 — founders only: deleting permanently forfeits the founding spot.
+    if (state.isFounding) {
+      var foundWarn = el('div', 'lk-set-help');
+      foundWarn.style.cssText = 'margin:-4px 0 10px;padding:8px 10px;border-radius:8px;background:#FBEFD6;color:#9A6B00;font-weight:600;';
+      foundWarn.textContent = 'Heads up — you’re a founding member. Deleting permanently retires your founding spot and its lifetime pricing. It can’t be undone or reclaimed.';
+      confirmBox.appendChild(foundWarn);
+    }
     var confirmIn = el('input', 'lk-input'); confirmIn.type = 'text'; confirmIn.placeholder = 'Type DELETE';
     confirmIn.style.cssText = 'max-width:200px;margin-right:8px;';
     var confirmBtn = el('button', 'lk-btn danger', 'Permanently delete');
