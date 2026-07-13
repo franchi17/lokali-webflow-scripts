@@ -78,15 +78,44 @@
     s.id = 'lok-dash-pagefix-css';
     s.textContent = [
       '@media (max-width:991px){',
+      // Body is white behind the snow content on these pages — that's the
+      // "white band around the hamburger". Paint it snow so the top bar and
+      // any gap above the content blend into one surface.
+      'body{background-color:#F7F6FC !important;}',
+      // Clear the fixed 56px top bar. findContent()\'s inline padding misses on
+      // some pages (and .div-block-38\'s block display lets the heading margin
+      // collapse up under the bar) — this CSS covers every page\'s outermost
+      // content wrapper; the inline style, when set, targets the same element
+      // so the two never stack.
+      'body > .div-block-38,body > .div-block-39,body > .main-content-area{padding-top:56px !important;}',
       '.div-block-38{display:block !important;}',
-      '.div-block-39{width:100% !important;max-width:100% !important;min-width:0 !important;box-sizing:border-box !important;}',
+      '.div-block-39{width:100% !important;max-width:100% !important;min-width:0 !important;box-sizing:border-box !important;',
+      // One gutter everywhere: Webflow gives this wrapper 10px sides while
+      // services/products get 16px — unify at 16px.
+      'padding-left:16px !important;padding-right:16px !important;}',
+      // KPI stat cards: stack full-width (2-up left one card orphaned wide).
       '.div-block-41{flex-wrap:wrap !important;}',
-      '.div-block-42{flex:1 1 140px !important;min-width:0 !important;}',
+      '.div-block-42{flex:1 1 100% !important;min-width:0 !important;}',
       '.div-block-49{flex-wrap:wrap !important;}',
       // Share-your-listing row: URL + copy/share buttons overflowed to ~616px.
       '.div-block-43{flex-wrap:wrap !important;row-gap:8px;}',
       '.div-block-43 *{min-width:0;}',
       '.text-block-96{overflow-wrap:anywhere;}',
+      // Share Profile button: arrow sat flush against the rounded edge.
+      '.link-block-9{padding:12px 18px !important;gap:10px !important;justify-content:center !important;}',
+      // Quick Actions: 2x2 grid reads cramped on a phone — stack.
+      '.div-block-169{grid-template-columns:1fr !important;}',
+      // Services/products filter bar: the sort select "floated above" the
+      // pills because Webflow's .w-form default margin-bottom:15px lifts it
+      // off the row's center line. Zero the margins and give the sort its
+      // own full-width row under the pills.
+      '.filter-bar .form-block-2{margin:0 !important;flex:1 1 100% !important;}',
+      '.filter-bar{row-gap:10px !important;}',
+      // Profile page photo section: guide card + upload column sat side by
+      // side, scrunching the guide into a 2-word-per-line strip. Stack with
+      // the photo + Upload button FIRST, guide full-width below.
+      '.div-block-127{flex-direction:column-reverse !important;gap:16px !important;}',
+      '.div-block-127 > *{width:100% !important;min-width:0 !important;box-sizing:border-box !important;}',
       '.main-content-area{margin-left:0 !important;margin-right:0 !important;',
       'padding-left:16px !important;padding-right:16px !important;box-sizing:border-box !important;width:100% !important;}',
       '.div-block-39 img,.div-block-39 svg,.main-content-area img,.main-content-area svg{max-width:100%;}',
@@ -99,11 +128,14 @@
 
   // Fill the drawer as a flex column so the account chip (.div-block-29, which
   // gets margin-top:auto in the mobile CSS above) sinks to the bottom.
-  var SB = { 'position':'static','transform':'none','width':'100%','height':'100%','min-height':'100%','top':'auto','left':'auto','display':'flex','flex-direction':'column' };
+  // padding-bottom keeps the account chip / Settings menu clear of iOS
+  // Safari's bottom URL bar and the home indicator.
+  var SB = { 'position':'static','transform':'none','width':'100%','height':'100%','min-height':'100%','top':'auto','left':'auto','display':'flex','flex-direction':'column','padding-bottom':'24px' };
   var DRAWER = {
     'position':'fixed','top':BAR+'px','left':'0','width':'260px','max-width':'85vw',
     'height':'calc(100% - '+BAR+'px)','z-index':'2000','overflow-y':'auto','background':'#fff',
-    'box-sizing':'border-box','transition':'transform .3s ease'
+    'box-sizing':'border-box','transition':'transform .3s ease',
+    'padding-bottom':'env(safe-area-inset-bottom, 0px)'
   };
 
   function findContent() {
@@ -118,6 +150,11 @@
   function drawerBase() {
     Object.keys(SB).forEach(function (k) { sidebar.style.setProperty(k, SB[k], 'important'); });
     Object.keys(DRAWER).forEach(function (k) { panel.style.setProperty(k, DRAWER[k], 'important'); });
+    // iOS Safari: plain 100% ignores the collapsing bottom URL bar, which then
+    // covers the drawer's bottom rows (Settings was unreachable). 100dvh tracks
+    // the real visible viewport; browsers without dvh ignore this line and keep
+    // the calc(100% - BAR) already applied above.
+    panel.style.setProperty('height', 'calc(100dvh - ' + BAR + 'px)', 'important');
   }
   // Guarded on the breakpoint (#67 round 4): these fire from sidebar-link
   // clicks too, and unguarded they stamped the drawer transform onto the

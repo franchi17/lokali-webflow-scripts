@@ -339,13 +339,36 @@
   function unwrap(res) { return res && !res.error ? (res.data != null ? res.data : res) : null; }
   function asArray(x) { if (Array.isArray(x)) return x; if (x && Array.isArray(x.items)) return x.items; return []; }
 
-  function init() {
-    var mount = document.getElementById('lok-analytics-section');
-    if (!mount) return;
-    if (!window.LokaliAPI || !window.LokaliAPI.leads || typeof window.LokaliAPI.leads.analytics !== 'function') {
-      console.warn('[lokali-analytics] LokaliAPI.leads.analytics not available'); return;
+  // The page rendered BLANK on mobile (2026-07-13): init ran at DOMContentLoaded,
+  // and any of (a) LokaliAPI/adapter not installed yet, (b) the Supabase session
+  // still restoring on a slow connection, or (c) a rejected fetch, ended with
+  // nothing on screen — the old code either bailed silently or let Promise.all
+  // reject with no .catch. Now: poll until the API + auth token exist, always
+  // paint SOMETHING, and offer a retry on failure.
+  function showMsg(mount, text, withRetry) {
+    mount.innerHTML = '';
+    var c = el('div', 'an-card');
+    c.appendChild(el('div', 'an-empty', text));
+    if (withRetry) {
+      var b = document.createElement('button');
+      b.textContent = 'Try again';
+      b.style.cssText = 'display:block;margin:10px auto 0;font-family:inherit;font-size:13px;font-weight:600;' +
+        'color:#fff;background:#6002ee;border:none;border-radius:9px;padding:9px 18px;cursor:pointer;';
+      b.addEventListener('click', function () { load(mount, 0); });
+      c.appendChild(b);
     }
-    injectStyles();
+    mount.appendChild(c);
+  }
+
+  function apiReady() {
+    var A = window.LokaliAPI;
+    if (!A || !A.leads || typeof A.leads.analytics !== 'function') return false;
+    // Wait for the restored auth token too — calling before the session is
+    // back gets an anon 401/empty and used to strand the page blank.
+    try { return !!(typeof A.getToken === 'function' ? A.getToken() : true); } catch (e) { return true; }
+  }
+
+  function load(mount, attempt) {
     var API = window.LokaliAPI;
     var calls = [
       API.leads.analytics(),
@@ -358,14 +381,32 @@
     Promise.all(calls).then(function (r) {
       var data = unwrap(r[0]);
       if (!data) {
-        mount.innerHTML = '';
-        var c = el('div', 'an-card'); c.appendChild(el('div', 'an-empty', 'Analytics are taking a moment to load. Refresh in a few seconds.'));
-        mount.appendChild(c); return;
+        if (attempt < 1) { setTimeout(function () { load(mount, attempt + 1); }, 2500); return; }
+        showMsg(mount, 'Analytics are taking a moment to load.', true);
+        return;
       }
       render(mount, data, asArray(unwrap(r[1])), asArray(unwrap(r[2])), unwrap(r[3]), unwrap(r[4]));
+    }).catch(function (err) {
+      console.warn('[lokali-analytics] load failed', err);
+      if (attempt < 1) { setTimeout(function () { load(mount, attempt + 1); }, 2500); return; }
+      showMsg(mount, "We couldn't load your analytics.", true);
     });
   }
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
-  else init();
+  function init(tries) {
+    tries = tries || 0;
+    var mount = document.getElementById('lok-analytics-section');
+    if (!mount) return;
+    injectStyles();
+    if (!apiReady()) {
+      if (tries === 0) showMsg(mount, 'Loading your analytics…', false);
+      if (tries < 40) { setTimeout(function () { init(tries + 1); }, 250); return; }
+      showMsg(mount, "We couldn't load your analytics.", true);
+      return;
+    }
+    load(mount, 0);
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { init(0); });
+  else init(0);
 })();

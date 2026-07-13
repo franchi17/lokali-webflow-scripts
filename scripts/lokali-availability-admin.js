@@ -485,9 +485,9 @@
         (isSlot
           ? 'Tap a date to block it. Numbers show booked of that day’s slots — only you see these.'
           : 'Tap a date to block it. Numbers show confirmed of cap — only you see these.') + '</p>' +
-      '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:5px;font-size:11px;color:#B0ACBC;text-align:center;margin-bottom:5px;">' +
+      '<div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;font-size:11px;color:#B0ACBC;text-align:center;margin-bottom:5px;">' +
       DOW_MON.map(function (d) { return '<div>' + d + '</div>'; }).join('') + '</div>' +
-      '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:5px;">';
+      '<div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;">';
     var i;
     for (i = 0; i < pad; i++) html += '<div class="ava-cell pad"></div>';
     for (i = 1; i <= last.getDate(); i++) {

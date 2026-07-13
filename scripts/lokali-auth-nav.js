@@ -152,7 +152,11 @@
       // white card (border/shadow/padding already cleared); background:none too so
       // it sits flush on the panel's lavender instead of a floating white block.
       "#lok-mnav-panel .lok-acct-menu{display:block;position:static;border:none;box-shadow:none;padding:0;min-width:0;background:none;}",
-      "#lok-mnav-panel .lok-acct-menu a,#lok-mnav-panel .lok-acct-menu button{padding:12px 0;font-size:15px;}"
+      "#lok-mnav-panel .lok-acct-menu a,#lok-mnav-panel .lok-acct-menu button{padding:12px 0;font-size:15px;}",
+      // The panel's own '#lok-mnav-panel a{display:block}' rule (ID specificity)
+      // beat '.lok-acct-menu a.lok-idsw{display:flex}', stacking the icon ABOVE
+      // the name/role text. Re-assert flex at ID specificity.
+      "#lok-mnav-panel .lok-acct-menu a.lok-idsw{display:flex;align-items:center;gap:10px;}"
     ].join('');
     (document.head || document.documentElement).appendChild(s);
   }
