@@ -119,11 +119,12 @@
       left.classList.toggle('lok-fb-hot', remaining <= 10);
     }
 
-    // Animate the fill from 0 → target on the next frame so the transition runs.
+    // Fill to target. Force a reflow at width:0 first so the CSS transition
+    // animates 0 → target, then set the width DIRECTLY (not via rAF, which
+    // never fires in a background/hidden tab and would leave the fill empty).
     var fill = bar.querySelector('.lok-fb-fill');
-    (window.requestAnimationFrame || function (f) { setTimeout(f, 16); })(function () {
-      fill.style.width = pct + '%';
-    });
+    void fill.offsetWidth;
+    fill.style.width = pct + '%';
   }
 
   // ─── data ──────────────────────────────────────────────────────────────────
