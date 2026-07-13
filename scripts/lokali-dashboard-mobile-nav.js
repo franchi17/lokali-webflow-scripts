@@ -55,6 +55,48 @@
     document.head.appendChild(s);
   }
 
+  // ── Mobile page-layout fixes (2026-07-12 audit) ───────────────────────────
+  // Injected ONLY once the .section-11 sidebar is found, so these generic
+  // Webflow auto-classes can't leak onto public pages that might reuse them.
+  //
+  // Audit findings at 375px (measured on the published pages):
+  //  - dashboard/profile/settings: .div-block-39 is a flex child sized by its
+  //    content (width:auto, flex-basis auto) inside .div-block-38 — its
+  //    min-content forced it to 392–397px, dragging every card past the right
+  //    edge (left gutter fine, right edge clipped). Fix: stack the wrapper and
+  //    hard-cap 39 at 100%.
+  //  - dashboard: the 3 KPI stat cards (.div-block-41 > .div-block-42) are
+  //    flex-nowrap → squeezed/clipped. Let them wrap; ~140px basis gives 2-up
+  //    where it fits and stacks otherwise.
+  //  - services/products: .main-content-area has margin-left:8px but NO right
+  //    gutter — "Add product"/filter bar sat flush against the right edge.
+  //    Replace with symmetric 16px padding.
+  //  - belt & braces: media + form controls never exceed their column.
+  function injectPageFixCss() {
+    if (document.getElementById('lok-dash-pagefix-css')) return;
+    var s = document.createElement('style');
+    s.id = 'lok-dash-pagefix-css';
+    s.textContent = [
+      '@media (max-width:991px){',
+      '.div-block-38{display:block !important;}',
+      '.div-block-39{width:100% !important;max-width:100% !important;min-width:0 !important;box-sizing:border-box !important;}',
+      '.div-block-41{flex-wrap:wrap !important;}',
+      '.div-block-42{flex:1 1 140px !important;min-width:0 !important;}',
+      '.div-block-49{flex-wrap:wrap !important;}',
+      // Share-your-listing row: URL + copy/share buttons overflowed to ~616px.
+      '.div-block-43{flex-wrap:wrap !important;row-gap:8px;}',
+      '.div-block-43 *{min-width:0;}',
+      '.text-block-96{overflow-wrap:anywhere;}',
+      '.main-content-area{margin-left:0 !important;margin-right:0 !important;',
+      'padding-left:16px !important;padding-right:16px !important;box-sizing:border-box !important;width:100% !important;}',
+      '.div-block-39 img,.div-block-39 svg,.main-content-area img,.main-content-area svg{max-width:100%;}',
+      '.div-block-39 input,.div-block-39 textarea,.div-block-39 select,',
+      '.main-content-area input,.main-content-area textarea,.main-content-area select{max-width:100%;}',
+      '}'
+    ].join('');
+    document.head.appendChild(s);
+  }
+
   // Fill the drawer as a flex column so the account chip (.div-block-29, which
   // gets margin-top:auto in the mobile CSS above) sinks to the bottom.
   var SB = { 'position':'static','transform':'none','width':'100%','height':'100%','min-height':'100%','top':'auto','left':'auto','display':'flex','flex-direction':'column' };
@@ -101,6 +143,7 @@
     injectCss();
     sidebar = document.querySelector('.section-11');
     if (!sidebar) { if (tries++ < 20) setTimeout(init, 300); return; }
+    injectPageFixCss(); // dashboard pages only — gated on the sidebar existing
     panel = sidebar.parentElement;
     if (document.getElementById('lok-topbar')) return;
     content = findContent();
