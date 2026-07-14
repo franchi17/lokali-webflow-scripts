@@ -83,7 +83,14 @@
       + '.lok-wl-done{text-align:center;padding:8px 0 4px;}.lok-wl-done .em{font-size:40px;line-height:1;display:block;margin:0 0 14px;}'
       + '.lok-wl-done h3{font-size:21px;color:#1f1638;margin:0 0 8px;font-weight:700;}'
       + '.lok-wl-done p{font-size:14.5px;color:#5d5470;line-height:1.5;margin:0 0 22px;}'
-      + ".pac-container{z-index:10001 !important;border-radius:12px;margin-top:4px;box-shadow:0 12px 30px rgba(40,20,90,.22);font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;}";
+      + ".pac-container{z-index:10001 !important;border-radius:12px;margin-top:4px;box-shadow:0 12px 30px rgba(40,20,90,.22);font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;}"
+      // #17 — dropdown for the Places API (New) suggestion path (legacy .pac-container kept above for the fallback)
+      + ".lok-wl-ac{position:absolute;z-index:10001;background:#fff;border:1.5px solid #e4def2;border-radius:12px;"
+      + "box-shadow:0 12px 30px rgba(40,20,90,.22);overflow:hidden;display:none;box-sizing:border-box;"
+      + "font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;}"
+      + '.lok-wl-ac-item{padding:10px 13px;cursor:pointer;font-size:14px;line-height:1.4;color:#1f1638;'
+      + 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:#fff;}'
+      + '.lok-wl-ac-item.on{background:#efe9ff;}';
     var s = document.createElement('style');
     s.id = 'lok-wl-css';
     s.textContent = css;
@@ -184,9 +191,155 @@
     return '';
   }
 
+  // #17 — prefer Places API (New) AutocompleteSuggestion; the legacy widget
+  // stays as a fallback for keys without the new API (same pattern as
+  // google-maps-ai.js). Either path resolves a pick into the same `picked`.
   function initAC() {
     var input = $('wl-city');
     if (!input || ac || !(window.google && google.maps && google.maps.places)) return;
+    var places = google.maps.places;
+    if (places.AutocompleteSuggestion && places.Place) { ac = 'new'; initNewAC(input, places); }
+    else if (places.Autocomplete) initLegacyAC(input);
+  }
+
+  function commitPick(pick) {
+    picked = pick;
+    var p = $('wl-picked');
+    p.textContent = '✓ ' + (picked.label || picked.city);
+    p.classList.add('show');
+    var err = $('wl-error'); err.classList.remove('err');
+  }
+
+  function initNewAC(input, places) {
+    var token = null, dd = null, items = [], active = -1, timer = null;
+    var hadSuccess = false, usingLegacy = false;
+
+    // The new classes being present doesn't guarantee the key's project has
+    // "Places API (New)" enabled — on a permission-shaped first failure, hand
+    // the input over to the legacy widget.
+    function isPermissionError(err) {
+      var m = (err && (err.message || err.toString())) || '';
+      return /denied|not enabled|not authorized|unauthorized|permission|forbidden|api key/i.test(m);
+    }
+    function fallbackToLegacy() {
+      usingLegacy = true;
+      hide();
+      ac = null;
+      if (places.Autocomplete) initLegacyAC(input);
+    }
+    function ensureDD() {
+      if (dd) return dd;
+      dd = document.createElement('div');
+      dd.className = 'lok-wl-ac';
+      dd.setAttribute('role', 'listbox');
+      document.body.appendChild(dd);
+      return dd;
+    }
+    function position() {
+      if (!dd) return;
+      var r = input.getBoundingClientRect();
+      dd.style.left = (r.left + window.scrollX) + 'px';
+      dd.style.top = (r.bottom + window.scrollY + 4) + 'px';
+      dd.style.width = r.width + 'px';
+    }
+    function hide() { if (dd) dd.style.display = 'none'; active = -1; }
+    function setActive(i) {
+      for (var k = 0; k < items.length; k++) items[k].row.classList.toggle('on', k === i);
+      active = i;
+    }
+    function compNew(list, type, useShort) {
+      for (var i = 0; i < (list || []).length; i++) {
+        if (list[i].types && list[i].types.indexOf(type) > -1) {
+          return (useShort ? list[i].shortText : list[i].longText) || '';
+        }
+      }
+      return '';
+    }
+    function select(pred, fallbackText) {
+      hide();
+      token = null; // a session ends once a place is selected
+      var pl;
+      try { pl = pred.toPlace(); } catch (e) { return; }
+      pl.fetchFields({ fields: ['addressComponents', 'formattedAddress', 'displayName', 'id'] })
+        .then(function () {
+          var c = pl.addressComponents || [];
+          var name = pl.displayName || '';
+          var city = compNew(c, 'locality', false) || compNew(c, 'postal_town', false)
+            || compNew(c, 'administrative_area_level_3', false) || compNew(c, 'sublocality', false) || name;
+          input.value = pl.formattedAddress || fallbackText || input.value;
+          commitPick({
+            city: city,
+            state: compNew(c, 'administrative_area_level_1', true),
+            country: compNew(c, 'country', true),
+            place_id: pl.id,
+            label: pl.formattedAddress || name || city
+          });
+        })
+        .catch(function () { /* keep free text */ });
+    }
+    function render(suggestions) {
+      ensureDD();
+      dd.innerHTML = '';
+      items = [];
+      for (var i = 0; suggestions && i < suggestions.length; i++) {
+        var pred = suggestions[i].placePrediction;
+        if (!pred) continue;
+        var text = (pred.text && pred.text.text) ? pred.text.text : '';
+        var row = document.createElement('div');
+        row.className = 'lok-wl-ac-item';
+        row.setAttribute('role', 'option');
+        row.textContent = text;
+        (function (p, t, idx, rowEl) {
+          rowEl.addEventListener('mousedown', function (e) { e.preventDefault(); select(p, t); });
+          rowEl.addEventListener('mouseenter', function () { setActive(idx); });
+        })(pred, text, items.length, row);
+        dd.appendChild(row);
+        items.push({ row: row, pred: pred, text: text });
+      }
+      if (!items.length) { hide(); return; }
+      position();
+      dd.style.display = 'block';
+    }
+    function fetchSuggestions(q) {
+      if (!token) token = new places.AutocompleteSessionToken();
+      places.AutocompleteSuggestion.fetchAutocompleteSuggestions({
+        input: q,
+        sessionToken: token,
+        includedPrimaryTypes: ['(cities)']
+      }).then(function (res) {
+        hadSuccess = true;
+        if (input.value.trim() !== q) return; // stale response
+        render(res && res.suggestions);
+      }).catch(function (err) {
+        if (window.console) console.warn('[lokali-waitlist] autocomplete fetch error', err);
+        hide();
+        if (!hadSuccess && !usingLegacy && isPermissionError(err)) fallbackToLegacy();
+      });
+    }
+
+    input.addEventListener('input', function () {
+      if (usingLegacy) return; // legacy widget now owns this input
+      var q = input.value.trim();
+      if (timer) clearTimeout(timer);
+      if (q.length < 3) { hide(); return; }
+      timer = setTimeout(function () { fetchSuggestions(q); }, 250);
+    });
+    input.addEventListener('keydown', function (e) {
+      if (usingLegacy || !dd || dd.style.display === 'none' || !items.length) return;
+      if (e.key === 'ArrowDown') { e.preventDefault(); setActive((active + 1) % items.length); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); setActive((active - 1 + items.length) % items.length); }
+      else if (e.key === 'Enter') {
+        e.preventDefault(); // pick instead of submitting the form
+        var it = items[active >= 0 ? active : 0];
+        select(it.pred, it.text);
+      } else if (e.key === 'Escape') { hide(); }
+    });
+    input.addEventListener('blur', function () { setTimeout(hide, 150); });
+    window.addEventListener('scroll', position, true);
+    window.addEventListener('resize', position);
+  }
+
+  function initLegacyAC(input) {
     try {
       ac = new google.maps.places.Autocomplete(input, {
         types: ['(cities)'],
@@ -198,17 +351,13 @@
         var c = pl.address_components || [];
         var city = comp(c, 'locality', false) || comp(c, 'postal_town', false)
           || comp(c, 'administrative_area_level_3', false) || comp(c, 'sublocality', false) || (pl.name || '');
-        picked = {
+        commitPick({
           city: city,
           state: comp(c, 'administrative_area_level_1', true),
           country: comp(c, 'country', true),
           place_id: pl.place_id,
           label: pl.formatted_address || (pl.name || city)
-        };
-        var p = $('wl-picked');
-        p.textContent = '✓ ' + (picked.label || city);
-        p.classList.add('show');
-        var err = $('wl-error'); err.classList.remove('err');
+        });
       });
     } catch (e) { /* free-text fallback */ }
   }
