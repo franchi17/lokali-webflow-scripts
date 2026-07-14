@@ -591,6 +591,7 @@
       try {
         window.turnstile.render(holder, {
           sitekey: TURNSTILE_KEY,
+          theme: 'light', // default 'auto' rendered an ink-dark widget on the light card for dark-mode visitors
           callback: function (t) { tok = t; },
           'expired-callback': function () { tok = null; }
         });
