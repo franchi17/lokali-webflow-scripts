@@ -72,6 +72,10 @@
       // Without the media-query scope this !important rule overrode Webflow's desktop
       // display:none and the burger leaked onto desktop beside the full nav.
       '@media screen and (max-width:991px){.hamburger-menu-wrapper{display:flex!important;align-items:center;justify-content:center;}}',
+      // Tablet/mobile: the header row's middle nav links are display:none (.hidden-on-tablet)
+      // and nothing grows into that space, so Login + burger sat beside the logo instead of
+      // at the right edge — auto left margin pushes the whole right-side group flush right.
+      '@media screen and (max-width:991px){.header-right-side{margin-left:auto;}}',
       '.lok-burger{position:relative;width:30px;height:18px;flex:0 0 auto;}',
       '.lok-burger span{position:absolute;left:0;right:0;height:3px;border-radius:20px;',
       'background:#343A40;transition:transform .25s ease,top .25s ease;}',
