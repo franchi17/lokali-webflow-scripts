@@ -59,8 +59,6 @@
       '.lok-fb-meta{display:flex;align-items:center;justify-content:space-between;gap:10px;' +
         'margin-top:7px;font-size:12px;line-height:1.3;color:#6B6880;}' +
       '.lok-fb-count{color:#5A4BB8;font-weight:600;letter-spacing:.01em;}' +
-      '.lok-fb-left{color:#C06A2E;font-weight:600;white-space:nowrap;}' +
-      '.lok-fb-left.lok-fb-hot{color:#B5471E;}' +
       '@keyframes lok-fb-shimmer{0%{transform:translateX(-100%);}60%,100%{transform:translateX(200%);}}' +
       '@media (prefers-reduced-motion:reduce){.lok-fb-fill{transition:none;}.lok-fb-fill::after{animation:none;display:none;}}';
     var el = document.createElement('style');
@@ -98,7 +96,6 @@
         '<div class="lok-fb-track"><div class="lok-fb-fill"></div></div>' +
         '<div class="lok-fb-meta">' +
           '<span class="lok-fb-count"></span>' +
-          '<span class="lok-fb-left"></span>' +
         '</div>';
       countEl.parentNode.insertBefore(bar, countEl);
     }
@@ -107,17 +104,9 @@
     bar.setAttribute('aria-valuemax', String(cap));
     bar.setAttribute('aria-valuenow', String(claimed));
 
-    // Left label stays constant so it doesn't echo the headline count below.
+    // Label stays constant — the headline right below carries the count
+    // ("Only N left" removed 2026-07-14 as redundant with it).
     bar.querySelector('.lok-fb-count').textContent = 'Founding members';
-
-    var left = bar.querySelector('.lok-fb-left');
-    if (full) {
-      left.textContent = 'Cohort full';
-      left.classList.remove('lok-fb-hot');
-    } else {
-      left.textContent = 'Only ' + remaining + ' left';
-      left.classList.toggle('lok-fb-hot', remaining <= 10);
-    }
 
     // Fill to target. Force a reflow at width:0 first so the CSS transition
     // animates 0 → target, then set the width DIRECTLY (not via rAF, which
