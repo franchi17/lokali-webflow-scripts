@@ -148,7 +148,12 @@
           .catch(function (err) {
             setButtonBusy(btn, false);
             console.error('[lokali-billing] checkout failed', err);
-            alert('Sorry — could not start checkout. Please try again.');
+            // Server-sent messages (e.g. the pre-launch "you won't be charged
+            // yet" notice) are user-facing; only network/5xx get the generic.
+            var msg = err && err.message && !/^Request failed/.test(err.message)
+              ? err.message
+              : 'Sorry — could not start checkout. Please try again.';
+            alert(msg);
           });
       });
     });

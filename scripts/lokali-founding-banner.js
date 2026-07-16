@@ -9,13 +9,15 @@
  * Data source: the public `founding_status(location_id)` RPC (anon-callable,
  * security-definer) via window.LokaliSupabaseAPI. It returns
  *   { cap, claimed, remaining, is_open }
- * where `claimed` counts founding_members rows for that community (retired/
- * revoked spots included, per the founding-member business rules — a retired
- * spot still consumes the cap, so the bar should reflect it).
+ * where `claimed` counts ALL founding_members rows (retired/revoked spots
+ * included, per the founding-member business rules — a retired spot still
+ * consumes the cap, so the bar should reflect it).
  *
- * Community: founding is per-community (a vendor's first listed location). The
- * hero is pinned to the flagship community — resolved by NAME so we don't
- * hardcode a brittle location id. Override with:
+ * Community: the cap is GLOBAL since 2026-07-16 — 50 spots TOTAL across all
+ * communities (The Woodlands, Houston, Woodforest), because one vendor can
+ * serve all three. The RPC still takes a location id (echoed back, same
+ * numbers for every community); the hero passes the flagship community —
+ * resolved by NAME so we don't hardcode a brittle location id. Override with:
  *   window.LOKALI_FOUNDING_COMMUNITY = 'The Woodlands'   // default
  *
  * Graceful: if the banner element, the API, or the community can't be resolved,
