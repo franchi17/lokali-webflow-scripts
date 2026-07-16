@@ -229,6 +229,8 @@
   // Featured = the paid TIER (server-synced is_featured), distinct from the
   // time-boxed Spotlight rotation above. (#73)
   function vIsFeatured(v)  { return v.is_featured === true; }
+  // Paid-tier band (server-synced plan_rank: Free 0 / Pro 1 / Featured 2).
+  function vTier(v)        { return typeof v.plan_rank === 'number' ? v.plan_rank : 0; }
   function vCategoryIds(v) { return Array.isArray(v.categories_id) ? v.categories_id : (v.categories_id != null ? [v.categories_id] : []); }
   function vLocationIds(v) { return Array.isArray(v.locations_id) ? v.locations_id : (v.locations_id != null ? [v.locations_id] : []); }
   // The Webflow page uses #location-select and #browse-sort; older markup used #browse-location
@@ -546,7 +548,9 @@
     else if (activeSort === 'newest') list.sort(function (a, b) { return vCreated(b) - vCreated(a); });
     else list.sort(function (a, b) { return rank(b) - rank(a) || (vCreated(b) - vCreated(a)); });
   }
-  function rank(v) { return (vIsSpotlight(v) ? 4 : 0) + (vIsFounding(v) ? 2 : 0) + (vIsVerified(v) ? 1 : 0); }
+  // Paid tier is the dominant band — Featured > Pro > Free outright (×8 clears
+  // the max 4+2+1=7 of the signals below, which break ties within a band).
+  function rank(v) { return vTier(v) * 8 + (vIsSpotlight(v) ? 4 : 0) + (vIsFounding(v) ? 2 : 0) + (vIsVerified(v) ? 1 : 0); }
 
   function renderGrid(list) {
     if (!_grid) return;

@@ -388,7 +388,7 @@
   // client's card list — browse renders description/contact bits).
   var VENDOR_LIST_COLS = 'id,business_name,business_tagline,business_description,website_url,' +
     'locations_id,categories_id,profile_photo,text_messages,whatsapp_messages,' +
-    'contact_email,phone_number,slug,created_at,is_founding_member,is_verified,is_spotlight,is_featured';
+    'contact_email,phone_number,slug,created_at,is_founding_member,is_verified,is_spotlight,is_featured,plan_rank';
 
   // ═══════════════════════════════════════════════════════════════════════════
   // The legacy surface
