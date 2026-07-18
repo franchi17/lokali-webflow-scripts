@@ -30,6 +30,40 @@
   function arr(d) { if (Array.isArray(d)) return d; if (d && Array.isArray(d.items)) return d.items; if (d && Array.isArray(d.data)) return d.data; return []; }
   function initials(name) { var p = String(name || '').trim().split(/\s+/); return ((p[0] || '')[0] || '' ) + ((p[1] || '')[0] || ''); }
 
+  // ── #76 customer avatars ─────────────────────────────────────
+  // Preset id -> soft-palette background + one of the site's existing masked
+  // icons (same CDN assets the cards/badges use — no emojis, on-palette).
+  // app_user.avatar stores the id; an unknown/empty id falls back to initials.
+  var AV_ASSET = 'https://cdn.prod.website-files.com/6989095758ae17edfc424d30/';
+  var AVATAR_PRESETS = {
+    heart:    { bg: '#FBE9F3', tint: '#A5488F', url: AV_ASSET + '6a186b06cfcb6c4d6d1e1cf7_heart-regular.png' },
+    star:     { bg: '#FBF3DF', tint: '#8A6A1F', url: AV_ASSET + '6a1af18050966f1b31aac321_star-regular.png' },
+    bolt:     { bg: '#F1EEFB', tint: '#5F51B8', url: AV_ASSET + '6a1d92f83a64390307583b8e_bolt-solid.png' },
+    balloon:  { bg: '#FBEDE4', tint: '#C97B5D', url: AV_ASSET + '6a18f6d414c76bb968f180db_balloon.svg' },
+    house:    { bg: '#E7F3EC', tint: '#2E7D5B', url: AV_ASSET + '6a186b06a37dcea6514f15f9_house-regular.png' },
+    backpack: { bg: '#E8F0FB', tint: '#3B5BA5', url: AV_ASSET + '6a18f6d4f1bbd4795f5345bc_backpack.svg' },
+    utensils: { bg: '#FDF3D8', tint: '#96702E', url: AV_ASSET + '6a186b067365d964abee8918_utensils-solid.png' },
+    scissors: { bg: '#F3EAE3', tint: '#8A5A00', url: AV_ASSET + '6a186b061a80eb9ba75f0d0a_scissors-solid.png' },
+    globe:    { bg: '#E3F0F7', tint: '#2E6E7D', url: AV_ASSET + '69f8b5e89bc57b40690cbc77_globe-solid.png' },
+    crown:    { bg: '#F7F3E0', tint: '#9A6B00', url: AV_ASSET + '69f4dbb3533f0ee2046ab0fb_crown-solid.png' }
+  };
+  // Circle node for the given account: chosen preset, else initials on violet.
+  function avatarNode(acc, cls) {
+    var node = el('div', cls);
+    var p = AVATAR_PRESETS[acc && acc.avatar];
+    if (p) {
+      node.style.background = p.bg;
+      node.style.boxShadow = 'none';
+      var ic = el('span');
+      ic.style.cssText = 'display:inline-block;width:55%;height:55%;background:' + p.tint + ';' +
+        '-webkit-mask:url("' + p.url + '") center / contain no-repeat;mask:url("' + p.url + '") center / contain no-repeat;';
+      node.appendChild(ic);
+    } else {
+      node.textContent = (initials((acc && acc.first_name || '') + ' ' + (acc && acc.last_name || '')) || 'U').toUpperCase();
+    }
+    return node;
+  }
+
   var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   var FULL = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   function ts(v) { if (v == null) return 0; if (typeof v === 'number') return v; var n = Date.parse(v); return isNaN(n) ? 0 : n; }
@@ -483,7 +517,7 @@
 
     // band
     var band = el('div', 'lk-band');
-    band.appendChild(el('div', 'lk-avatar', esc(initials((acc.first_name || '') + ' ' + (acc.last_name || '')) || (name[0] || 'U'))));
+    band.appendChild(avatarNode(acc, 'lk-avatar')); // #76 preset avatar (falls back to initials)
     var who = el('div');
     who.appendChild(el('div', 'lk-greet', 'Hi, ' + esc(name)));
     who.appendChild(el('div', 'lk-meta', areaBits.join(' · ')));
@@ -813,6 +847,48 @@
     var firstIn = setInput('First name', 'Shown on the reviews you leave.', acc.first_name || '');
     var lastIn = setInput('Last name', 'Only the initial is shown publicly.', acc.last_name || '');
     pc.appendChild(firstIn.row); pc.appendChild(lastIn.row);
+
+    // #76 — avatar picker: the site's own icon set on soft-palette circles.
+    var avatarSel = AVATAR_PRESETS[acc.avatar] ? acc.avatar : '';
+    var avRow = el('div', 'lk-set-row');
+    avRow.style.display = 'block';
+    avRow.appendChild(el('div', 'lk-set-label', 'Avatar'));
+    avRow.appendChild(el('div', 'lk-set-help', 'Pick one for your dashboard — or stay with your initials.'));
+    var avGrid = el('div');
+    avGrid.style.cssText = 'display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;';
+    function avCircle(id) {
+      var isInitials = id === '';
+      var c = el('button');
+      c.type = 'button';
+      c.setAttribute('data-av', id);
+      c.setAttribute('aria-label', isInitials ? 'Use my initials' : 'Avatar: ' + id);
+      c.style.cssText = 'width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;font-family:"Plus Jakarta Sans",sans-serif;border:2px solid transparent;';
+      if (isInitials) {
+        c.style.background = '#6002EE';
+        c.style.color = '#fff';
+        c.style.font = '600 15px "Plus Jakarta Sans",sans-serif';
+        c.textContent = (initials((acc.first_name || '') + ' ' + (acc.last_name || '')) || 'U').toUpperCase();
+      } else {
+        var p = AVATAR_PRESETS[id];
+        c.style.background = p.bg;
+        var ic = el('span');
+        ic.style.cssText = 'display:inline-block;width:24px;height:24px;background:' + p.tint + ';' +
+          '-webkit-mask:url("' + p.url + '") center / contain no-repeat;mask:url("' + p.url + '") center / contain no-repeat;';
+        c.appendChild(ic);
+      }
+      function paint() { c.style.borderColor = (avatarSel === id) ? '#6002EE' : 'transparent'; }
+      paint();
+      c.addEventListener('click', function () {
+        avatarSel = id;
+        var kids = avGrid.querySelectorAll('button');
+        for (var i = 0; i < kids.length; i++) kids[i].style.borderColor = (kids[i].getAttribute('data-av') === avatarSel) ? '#6002EE' : 'transparent';
+      });
+      return c;
+    }
+    avGrid.appendChild(avCircle(''));
+    Object.keys(AVATAR_PRESETS).forEach(function (id) { avGrid.appendChild(avCircle(id)); });
+    avRow.appendChild(avGrid);
+    pc.appendChild(avRow);
     // email
     var emailRow = el('div', 'lk-set-row');
     emailRow.innerHTML = '<div><div class="lk-set-label">Email</div><div class="lk-set-help">' + esc(acc.email || 'Used for sign-in and reply notifications.') + ' Managed through your login.</div></div>';
@@ -846,6 +922,7 @@
         first_name: firstIn.input.value.trim(),
         last_name: lastIn.input.value.trim(),
         region: areaIn.input.value.trim(),
+        avatar: avatarSel,
         notif_letter: tgLetter.get(),
         notif_vendor_replies: tgReplies.get(),
         notif_review_reminders: tgRemind.get()
@@ -854,7 +931,11 @@
         if (res && res.error) { toast(res.error || 'Could not save'); return; }
         state.account.first_name = firstIn.input.value.trim();
         state.account.last_name = lastIn.input.value.trim();
+        state.account.avatar = avatarSel;
         state.account.region = areaIn.input.value.trim();
+        // refresh the header-band avatar in place
+        var bandAv = document.querySelector('.lk-avatar');
+        if (bandAv && bandAv.parentNode) bandAv.parentNode.replaceChild(avatarNode(state.account, 'lk-avatar'), bandAv);
         state.account.notif_letter = tgLetter.get();
         state.account.notif_vendor_replies = tgReplies.get();
         state.account.notif_review_reminders = tgRemind.get();

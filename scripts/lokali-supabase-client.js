@@ -138,7 +138,9 @@
   var VENDOR_EDITABLE = [
     'business_name', 'business_description', 'business_tagline', 'website_url',
     'instagram_url', 'locations_id', 'categories_id', 'profile_photo',
-    'text_messages', 'whatsapp_messages', 'phone_number', 'phone_visible',
+    'owner_name', 'owner_bio', 'owner_photo',            // #76e Meet the Vendor
+    'text_messages', 'whatsapp_messages', 'phone_calls', // phone_calls = #76c call preference
+    'phone_number', 'phone_visible',
     'contact_email', 'address',
     // P2P payment handles (stored bare; URL built at render time).
     'venmo_username', 'cashapp_cashtag', 'paypalme_slug',
@@ -165,7 +167,8 @@
   // Customer account fields the person may edit (mirror rls.sql app_user grant).
   var APP_USER_EDITABLE = [
     'first_name', 'last_name', 'phone_number', 'preferred_language', 'region',
-    'notif_letter', 'notif_vendor_replies', 'notif_review_reminders'
+    'notif_letter', 'notif_vendor_replies', 'notif_review_reminders',
+    'avatar' // #76 customer-dashboard preset avatar id
   ];
   // The public vendor surface — exactly the column grant in
   // patch_vendor_columns.sql (Xano's public |pick). select('*') on vendors
@@ -174,7 +177,8 @@
   var VENDOR_PUBLIC_COLS =
     'id,business_name,business_description,business_tagline,' +
     'website_url,instagram_url,locations_id,categories_id,profile_photo,' +
-    'text_messages,whatsapp_messages,phone_number,phone_visible,contact_email,' +
+    'owner_name,owner_bio,owner_photo,' +
+    'text_messages,whatsapp_messages,phone_calls,phone_number,phone_visible,contact_email,' +
     'created_at,is_active,slug,is_founding_member,' +
     'is_spotlight,spotlight_until,is_verified,is_featured,plan_rank,' +
     'venmo_username,cashapp_cashtag,paypalme_slug,other_pay_url,other_pay_label';
@@ -849,6 +853,13 @@
       remove: function (kind, photoId) {
         var m = PHOTO_TABLES[kind];
         return withClient(function (c) { return c.from(m.table).delete().eq('id', photoId); });
+      },
+      // #76d portfolio manager reorder — RLS owner_all limits to own rows.
+      setSort: function (kind, photoId, sortOrder) {
+        var m = PHOTO_TABLES[kind];
+        return withClient(function (c) {
+          return c.from(m.table).update({ sort_order: sortOrder }).eq('id', photoId);
+        });
       }
     },
     // Vendor's current billing status — newest subscription + its plan (RLS

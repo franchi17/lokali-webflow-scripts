@@ -965,7 +965,9 @@
     }
     var callEl = document.getElementById('vl-ch-call');
     if (callEl) {
-      if (phone) { callEl.href = 'tel:+1' + phone; }
+      // #76c: phone_calls===false means the vendor unticked "Customers can call
+      // me" — missing/null (pre-patch rows) keeps the legacy always-show.
+      if (phone && v.phone_calls !== false) { callEl.href = 'tel:+1' + phone; }
       else { show(callEl, false); }
     }
     // Label helper for the meta links (set by styleHeroChrome); falls back to
@@ -1108,10 +1110,99 @@
 
     renderPayLinks(v);
     initContact(v);
+    if (ONEPAGE) renderMeetVendor(v);
     injectVendorReport(v);
     if (v.id != null) {
       var hero = document.querySelector('[data-lokali-vendor-id]');
       if (hero) hero.setAttribute('data-lokali-vendor-id', String(v.id));
+    }
+  }
+
+  // ---- #76e Meet the Vendor (ONEPAGE only) -------------------------------
+  // Renders ONLY when the vendor filled the optional personal fields
+  // (owner_name / owner_bio / owner_photo — dashboard "Meet the Vendor" card):
+  //   • a compact Airbnb-style host row as the first stacked section
+  //     ("Run by {name}" + photo + Learn more → the About section)
+  //   • a personal intro block (photo + bio) prepended inside About
+  // All text via textContent (owner fields are vendor-typed), photo through
+  // photoUrl() (scheme-sanitized).
+  function renderMeetVendor(v) {
+    var name = (v.owner_name || '').trim();
+    var bio = (v.owner_bio || '').trim();
+    var photo = photoUrl(v.owner_photo);
+    if (!name && !bio && !photo) return;
+    if (document.getElementById('vl-op-sec-meet')) return;
+    var main = document.querySelector('.vl-op-main');
+    if (!main) return;
+
+    function avatarEl(size) {
+      var el;
+      if (photo) {
+        el = ce('img');
+        el.src = photo; el.alt = '';
+        el.style.cssText = 'width:' + size + 'px;height:' + size + 'px;border-radius:50%;object-fit:cover;flex:none;box-shadow:0 3px 10px rgba(26,24,41,.12);';
+      } else {
+        el = ce('div');
+        el.style.cssText = 'width:' + size + 'px;height:' + size + 'px;border-radius:50%;background:#F3EBFF;color:#6002EE;display:flex;align-items:center;justify-content:center;font:600 ' + Math.round(size / 2.8) + 'px "Plus Jakarta Sans",sans-serif;flex:none;';
+        el.textContent = initials(name || v.business_name);
+      }
+      return el;
+    }
+
+    // --- host row section (top) ---
+    var sec = ce('section', 'vl-op-sec');
+    sec.id = 'vl-op-sec-meet';
+    var h = ce('h2', 'vl-op-h'); h.textContent = 'Meet the vendor';
+    sec.appendChild(h);
+    var row = ce('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:16px;font-family:"Plus Jakarta Sans",sans-serif;';
+    row.appendChild(avatarEl(64));
+    var txt = ce('div');
+    var b = ce('div');
+    b.style.cssText = 'font-weight:700;font-size:17px;color:#1A1829;';
+    b.textContent = name ? 'Run by ' + name : ('Meet ' + (v.business_name || 'the vendor'));
+    txt.appendChild(b);
+    var subBits = [];
+    if (v.is_founding_member) subBits.push('Founding vendor');
+    if (v.created_at) { var yr = new Date(v.created_at).getFullYear(); if (yr) subBits.push('On Lokali since ' + yr); }
+    if (subBits.length) {
+      var sub = ce('div');
+      sub.style.cssText = 'color:#6B6880;font-weight:600;font-size:14px;';
+      sub.textContent = subBits.join(' · ');
+      txt.appendChild(sub);
+    }
+    row.appendChild(txt);
+    var learn = ce('a');
+    learn.href = '#vl-op-sec-about';
+    learn.textContent = 'Learn more →';
+    learn.style.cssText = 'margin-left:auto;font-weight:700;font-size:14px;color:#6002EE;text-decoration:none;white-space:nowrap;';
+    learn.addEventListener('click', function (ev) { ev.preventDefault(); onepageScrollTo('about'); });
+    row.appendChild(learn);
+    sec.appendChild(row);
+    main.insertBefore(sec, main.firstChild);
+
+    // --- personal intro inside the About section (bottom) ---
+    var aboutPanel = $('[data-vl-panel="about"]');
+    if (aboutPanel && (bio || photo)) {
+      var block = ce('div');
+      block.id = 'vl-meet-about';
+      block.style.cssText = 'display:flex;gap:16px;align-items:flex-start;background:#fff;border:.5px solid #EEEDF6;border-radius:12px;padding:16px 18px;margin-bottom:12px;font-family:"Plus Jakarta Sans",sans-serif;';
+      block.appendChild(avatarEl(56));
+      var bt = ce('div');
+      if (name) {
+        var bn = ce('div');
+        bn.style.cssText = 'font-weight:700;font-size:15px;color:#1A1829;margin-bottom:4px;';
+        bn.textContent = name + (v.business_name ? ' · ' + v.business_name : '');
+        bt.appendChild(bn);
+      }
+      if (bio) {
+        var bp = ce('div');
+        bp.style.cssText = 'color:#565170;font-size:14px;line-height:1.55;white-space:pre-line;';
+        bp.textContent = bio;
+        bt.appendChild(bp);
+      }
+      block.appendChild(bt);
+      aboutPanel.insertBefore(block, aboutPanel.firstChild);
     }
   }
 

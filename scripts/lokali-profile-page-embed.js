@@ -414,9 +414,256 @@ var LokaliProfilePage = (function () {
     else anchorSection.parentNode.appendChild(section);
   }
 
+  // ---- #76 Meet the Vendor ("About you") + call checkbox + portfolio -------
+  var _uploadedOwnerPhotoUrl = null;
+  // FA circle-user, purple, matching the other card icons.
+  var _MEET_ICON = '<svg class="heading-icon purple" width="25" height="25" viewBox="0 0 640 640" fill="#6002EE" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M320 64C178.6 64 64 178.6 64 320C64 461.4 178.6 576 320 576C461.4 576 576 461.4 576 320C576 178.6 461.4 64 320 64zM320 128C363.1 128 398 162.9 398 206C398 249.1 363.1 284 320 284C276.9 284 242 249.1 242 206C242 162.9 276.9 128 320 128zM320 512C264.3 512 214.3 488.3 179.3 450.5C190.5 400.6 235.1 364 288 364L352 364C404.9 364 449.5 400.6 460.7 450.5C425.7 488.3 375.7 512 320 512z"/></svg>';
+  var _PF_ICON = '<svg class="heading-icon purple" width="25" height="25" viewBox="0 0 640 640" fill="#6002EE" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M96 128C78.3 128 64 142.3 64 160L64 480C64 497.7 78.3 512 96 512L544 512C561.7 512 576 497.7 576 480L576 160C576 142.3 561.7 128 544 128L96 128zM128 192L512 192L512 380L420 288C407.5 275.5 387.2 275.5 374.7 288L272 390.6L233.4 352C220.9 339.5 200.6 339.5 188.1 352L128 412.1L128 192zM208 224A40 40 0 1 1 208 304A40 40 0 1 1 208 224z"/></svg>';
+
+  function _mkCard(id, iconHtml, title, subText) {
+    var section = document.createElement('section');
+    section.className = 'section-12';
+    section.id = id;
+    var head = document.createElement('div');
+    head.className = 'form-heading-div';
+    head.innerHTML = iconHtml + '<div class="section-heading">' + title + '</div>';
+    section.appendChild(head);
+    var grid = document.createElement('div');
+    grid.className = 'w-layout-grid grid';
+    var col = document.createElement('div');
+    col.className = 'div-block-47';
+    if (subText) {
+      var sub = document.createElement('div');
+      sub.className = 'input-heading';
+      sub.textContent = subText;
+      sub.style.fontWeight = '400';
+      sub.style.opacity = '.7';
+      sub.style.marginBottom = '6px';
+      col.appendChild(sub);
+    }
+    grid.appendChild(col);
+    section.appendChild(grid);
+    return { section: section, col: col };
+  }
+  function _mkLabeledInput(col, id, label, ph, textarea) {
+    var h = document.createElement('div');
+    h.className = 'input-heading';
+    h.textContent = label;
+    var inp = document.createElement(textarea ? 'textarea' : 'input');
+    inp.className = textarea ? 'input-field text-area w-input' : 'input-field w-input';
+    if (!textarea) { inp.type = 'text'; inp.setAttribute('maxlength', '256'); }
+    else { inp.setAttribute('maxlength', '1200'); inp.rows = 4; }
+    inp.id = id;
+    inp.placeholder = ph;
+    inp.autocomplete = 'off';
+    col.appendChild(h);
+    col.appendChild(inp);
+    return inp;
+  }
+
+  function _injectAboutYouCard() {
+    if (document.getElementById('lok-about-you')) return;
+    var anchorSection = document.getElementById('lok-pay-card');
+    if (!anchorSection || !anchorSection.parentNode) return;
+    var card = _mkCard('lok-about-you', _MEET_ICON, 'Meet the Vendor',
+      'Optional, but personal sells: fill this in and your public page shows a "Meet the vendor" section with your photo and story. Leave it empty and the section simply doesn’t appear.');
+    // personal photo (separate from the business logo)
+    var ph = document.createElement('div');
+    ph.style.cssText = 'display:flex;align-items:center;gap:14px;margin:8px 0 12px;';
+    var prev = document.createElement('img');
+    prev.id = 'lok-owner-photo-preview';
+    prev.alt = '';
+    prev.style.cssText = 'width:64px;height:64px;border-radius:50%;object-fit:cover;border:1px solid #EEEDF6;display:none;';
+    var pick = document.createElement('a');
+    pick.className = 'button-secondary w-button';
+    pick.textContent = 'Upload your photo';
+    pick.href = '#';
+    pick.style.cssText = 'font-family:"Plus Jakarta Sans",sans-serif;';
+    var file = document.createElement('input');
+    file.type = 'file'; file.accept = 'image/*'; file.id = 'lok-owner-photo-file';
+    file.style.display = 'none';
+    pick.addEventListener('click', function (e) { e.preventDefault(); file.click(); });
+    ph.appendChild(prev); ph.appendChild(pick); ph.appendChild(file);
+    card.col.appendChild(ph);
+    _mkLabeledInput(card.col, 'input-owner-name', 'Your first name', 'eg. Francesca');
+    _mkLabeledInput(card.col, 'input-owner-bio', 'About you — a short personal intro', 'eg. Hi, I’m Francesca! I started this because…', true);
+    anchorSection.parentNode.insertBefore(card.section, anchorSection.nextSibling);
+
+    file.addEventListener('change', function () {
+      var f = file.files && file.files[0];
+      if (!f || f.type.indexOf('image/') !== 0 || !_vendor || _vendor.id == null) { file.value = ''; return; }
+      var S = window.LokaliSupabaseAPI;
+      if (!S || !S.storage || !S.storage.uploadImage) return;
+      var objectUrl = URL.createObjectURL(f);
+      prev.src = objectUrl; prev.style.display = '';
+      S.storage.uploadImage(_vendor.id, 'owner', f).then(function (res) {
+        URL.revokeObjectURL(objectUrl);
+        if (res.error || !res.data || !res.data.url) {
+          console.error('[ProfilePage] owner photo upload error:', res.error);
+          prev.style.display = _vendor.owner_photo ? '' : 'none';
+          if (_vendor.owner_photo) prev.src = _vendor.owner_photo;
+          return;
+        }
+        _uploadedOwnerPhotoUrl = res.data.url;
+        prev.src = res.data.url; prev.style.display = '';
+      });
+    });
+  }
+
+  // "Can customers call you?" — cloned from the WhatsApp checkbox row so the
+  // markup/styling matches the Webflow originals exactly.
+  function _injectPhoneCallsCheckbox() {
+    if (document.getElementById('checkbox-phone-calls')) return;
+    var wa = document.getElementById('checkbox-whatsapp');
+    if (!wa) return;
+    var row = (wa.closest && (wa.closest('label') || wa.closest('.w-checkbox'))) || wa.parentNode;
+    if (!row || !row.parentNode) return;
+    var clone = row.cloneNode(true);
+    var inp = clone.querySelector('input[type="checkbox"]');
+    if (!inp) return;
+    inp.id = 'checkbox-phone-calls';
+    inp.name = 'checkbox-phone-calls';
+    inp.checked = true; // default matches the DB default (existing behavior)
+    var vis = clone.querySelector('.w-checkbox-input');
+    if (vis) vis.classList.remove('w--redirected-checked');
+    // relabel: last text-bearing span/label in the row
+    var labels = clone.querySelectorAll('span, .w-form-label');
+    var lbl = labels.length ? labels[labels.length - 1] : null;
+    if (lbl) lbl.textContent = 'Customers can call me';
+    if (clone.tagName === 'LABEL' && clone.htmlFor) clone.htmlFor = 'checkbox-phone-calls';
+    row.parentNode.insertBefore(clone, row.nextSibling);
+  }
+
+  // #76b — Instagram funnels audience OFF Lokali: remove the input (the saved
+  // value is preserved untouched; the public page no longer renders it).
+  function _hideInstagramField() {
+    var ig = document.getElementById('input-instagram') || document.getElementById('instagram');
+    if (!ig) return;
+    ig.style.display = 'none';
+    var h = ig.previousElementSibling;
+    if (h && /instagram/i.test(h.textContent || '')) h.style.display = 'none';
+  }
+
+  // ---- #76d portfolio manager ---------------------------------------------
+  var _PF_MAX = 5;
+  var _pfPhotos = [];
+  function _injectPortfolioCard() {
+    if (document.getElementById('lok-portfolio-card')) return;
+    var anchorSection = document.getElementById('lok-about-you') || document.getElementById('lok-pay-card');
+    if (!anchorSection || !anchorSection.parentNode) return;
+    var card = _mkCard('lok-portfolio-card', _PF_ICON, 'Portfolio Photos',
+      'Up to 5 photos — they become the big photo gallery at the top of your public page (shown on Pro & Featured plans). First photo = the lead image.');
+    var strip = document.createElement('div');
+    strip.id = 'lok-pf-strip';
+    strip.style.cssText = 'display:flex;flex-wrap:wrap;gap:10px;margin:10px 0;';
+    card.col.appendChild(strip);
+    var pick = document.createElement('a');
+    pick.className = 'button-secondary w-button';
+    pick.id = 'lok-pf-add';
+    pick.textContent = 'Add photo';
+    pick.href = '#';
+    pick.style.cssText = 'font-family:"Plus Jakarta Sans",sans-serif;';
+    var file = document.createElement('input');
+    file.type = 'file'; file.accept = 'image/*'; file.id = 'lok-pf-file';
+    file.style.display = 'none';
+    pick.addEventListener('click', function (e) { e.preventDefault(); file.click(); });
+    card.col.appendChild(pick);
+    card.col.appendChild(file);
+    anchorSection.parentNode.insertBefore(card.section, anchorSection.nextSibling);
+
+    file.addEventListener('change', function () {
+      var f = file.files && file.files[0];
+      file.value = '';
+      if (!f || f.type.indexOf('image/') !== 0 || !_vendor || _vendor.id == null) return;
+      if (_pfPhotos.length >= _PF_MAX) return;
+      var S = window.LokaliSupabaseAPI;
+      if (!S || !S.storage || !S.photos) return;
+      pick.textContent = 'Uploading…';
+      S.storage.uploadImage(_vendor.id, 'portfolio', f).then(function (res) {
+        if (res.error || !res.data || !res.data.url) {
+          console.error('[ProfilePage] portfolio upload error:', res.error);
+          pick.textContent = 'Add photo';
+          return;
+        }
+        var nextSort = _pfPhotos.length ? (Number(_pfPhotos[_pfPhotos.length - 1].sort_order) || _pfPhotos.length) + 1 : 1;
+        S.photos.add('vendor', _vendor.id, res.data.url, nextSort).then(function () {
+          pick.textContent = 'Add photo';
+          _renderPortfolio();
+        });
+      });
+    });
+  }
+  function _renderPortfolio() {
+    var strip = document.getElementById('lok-pf-strip');
+    var S = window.LokaliSupabaseAPI;
+    if (!strip || !S || !S.photos || !_vendor || _vendor.id == null) return;
+    S.photos.list('vendor', _vendor.id).then(function (res) {
+      var rows = (res && res.data) || [];
+      _pfPhotos = rows.filter(function (r) { return r && r.is_active !== false; });
+      strip.innerHTML = '';
+      _pfPhotos.forEach(function (p, i) {
+        var cell = document.createElement('div');
+        cell.style.cssText = 'position:relative;width:104px;';
+        var img = document.createElement('img');
+        img.src = p.image_url; img.alt = '';
+        img.style.cssText = 'width:104px;height:78px;object-fit:cover;border-radius:8px;border:1px solid #EEEDF6;display:block;';
+        cell.appendChild(img);
+        if (i === 0) {
+          var lead = document.createElement('div');
+          lead.textContent = 'Lead';
+          lead.style.cssText = 'position:absolute;top:4px;left:4px;background:#6002EE;color:#fff;font:600 9px/1 "Plus Jakarta Sans",sans-serif;border-radius:5px;padding:3px 6px;';
+          cell.appendChild(lead);
+        }
+        var bar = document.createElement('div');
+        bar.style.cssText = 'display:flex;justify-content:space-between;margin-top:4px;';
+        function mkBtn(txt, title, fn, disabled) {
+          var b = document.createElement('button');
+          b.type = 'button'; b.textContent = txt; b.title = title;
+          b.style.cssText = 'border:1px solid #EEEDF6;background:#fff;border-radius:6px;font:600 11px/1 "Plus Jakarta Sans",sans-serif;color:#1A1829;padding:4px 7px;cursor:pointer;' + (disabled ? 'opacity:.3;pointer-events:none;' : '');
+          b.addEventListener('click', fn);
+          return b;
+        }
+        bar.appendChild(mkBtn('‹', 'Move left', function () { _pfSwap(i, i - 1); }, i === 0));
+        bar.appendChild(mkBtn('✕', 'Remove photo', function () {
+          window.LokaliSupabaseAPI.photos.remove('vendor', p.id).then(_renderPortfolio);
+        }, false));
+        bar.appendChild(mkBtn('›', 'Move right', function () { _pfSwap(i, i + 1); }, i === _pfPhotos.length - 1));
+        cell.appendChild(bar);
+        strip.appendChild(cell);
+      });
+      var add = document.getElementById('lok-pf-add');
+      if (add) add.style.display = _pfPhotos.length >= _PF_MAX ? 'none' : '';
+    });
+  }
+  function _pfSwap(i, j) {
+    if (j < 0 || j >= _pfPhotos.length) return;
+    var a = _pfPhotos[i], b = _pfPhotos[j];
+    var S = window.LokaliSupabaseAPI;
+    // Normalize to index-based sort so swaps are always meaningful even when
+    // legacy rows share the same sort_order.
+    Promise.all([
+      S.photos.setSort('vendor', a.id, j + 1),
+      S.photos.setSort('vendor', b.id, i + 1)
+    ]).then(_renderPortfolio);
+  }
+
   function populateUI() {
     if (!_vendor) return;
     _injectPaymentFields();
+    _injectAboutYouCard();
+    _injectPortfolioCard();
+    _injectPhoneCallsCheckbox();
+    _hideInstagramField();
+    _setTextValueAnyId(['input-owner-name'], _v('owner_name'));
+    _setTextValueAnyId(['input-owner-bio'], _v('owner_bio'));
+    _uploadedOwnerPhotoUrl = null;
+    var ownerPrev = document.getElementById('lok-owner-photo-preview');
+    if (ownerPrev) {
+      if (_vendor.owner_photo) { ownerPrev.src = _vendor.owner_photo; ownerPrev.style.display = ''; }
+      else { ownerPrev.style.display = 'none'; }
+    }
+    window.LokaliDashboard.setCheckboxValue('checkbox-phone-calls', _vendor.phone_calls !== false);
+    _renderPortfolio();
     _dbg('[LokaliProfile] tagline value from API:', JSON.stringify(_vendor.tagline), '| business_tagline:', JSON.stringify(_vendor.business_tagline));
 
     _setTextValueAnyId(['input-business-name', 'business-name', 'business_name'], _v('business_name', 'businessName'));
@@ -810,8 +1057,15 @@ var LokaliProfilePage = (function () {
       phone_number:         phoneNumber,
       address:              addressValue,
       profile_photo:        profilePhoto,
+      // #76e Meet the Vendor (owner photo: freshly uploaded URL wins, else keep saved)
+      owner_name:           _getValueByAnyId(['input-owner-name']),
+      owner_bio:            _getValueByAnyId(['input-owner-bio']),
+      owner_photo:          _uploadedOwnerPhotoUrl != null ? _uploadedOwnerPhotoUrl : (_vendor && _vendor.owner_photo != null ? _vendor.owner_photo : ''),
       text_messages:        bool('checkbox-text-messages'),
       whatsapp_messages:    bool('checkbox-whatsapp'),
+      // #76c — only send when the injected checkbox actually exists (a stale
+      // cached embed without it must not silently flip the column to false).
+      phone_calls:          document.getElementById('checkbox-phone-calls') ? bool('checkbox-phone-calls') : undefined,
       category_id:          categoryId,
       categories_id:        categoriesId,
       locations_id: (locationIds && locationIds.length)
@@ -866,8 +1120,12 @@ var LokaliProfilePage = (function () {
       phone_number:         payload.phone_number != null ? String(payload.phone_number) : '',
       address:              payload.address != null ? String(payload.address) : '',
       profile_photo:        (payload.profile_photo != null ? String(payload.profile_photo) : (payload.profilePhoto != null ? String(payload.profilePhoto) : '')),
+      owner_name:           payload.owner_name != null ? String(payload.owner_name) : '',
+      owner_bio:            payload.owner_bio != null ? String(payload.owner_bio) : '',
+      owner_photo:          payload.owner_photo != null ? String(payload.owner_photo) : '',
       text_messages:        !!payload.text_messages,
       whatsapp_messages:    !!payload.whatsapp_messages,
+      phone_calls:          payload.phone_calls === undefined ? undefined : !!payload.phone_calls,
       category_id:          payload.category_id != null ? payload.category_id : null,
       categories_id:        payload.categories_id,
       locations_id:         payload.locations_id

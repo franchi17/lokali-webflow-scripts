@@ -641,7 +641,9 @@
     var phone = v.phone_number;
     var actions = ce('div', 'vcard-actions');
     addContact(actions, v.contact_email ? 'mailto:' + v.contact_email : null, 'Email', ICON_EMAIL, 'cb-email');
-    addContact(actions, phone ? 'tel:' + phone : null, 'Call', ICON_CALL, 'cb-call');
+    // #76c: hide Call when the vendor unticked "Customers can call me"
+    // (missing/null = legacy rows -> keep showing).
+    addContact(actions, (phone && v.phone_calls !== false) ? 'tel:' + phone : null, 'Call', ICON_CALL, 'cb-call');
     addContact(actions, (v.text_messages && phone) ? 'sms:' + phone : null, 'Text', ICON_TEXT, 'cb-text');
     addContact(actions, (v.whatsapp_messages && phone) ? 'https://wa.me/' + digits(phone) : null, 'WhatsApp', ICON_WHATSAPP, 'cb-whatsapp');
     card.appendChild(actions);
