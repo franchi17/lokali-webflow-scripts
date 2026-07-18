@@ -35,20 +35,10 @@
   // icons (same CDN assets the cards/badges use — no emojis, on-palette).
   // app_user.avatar stores the id; an unknown/empty id falls back to initials.
   var AV_ASSET = 'https://cdn.prod.website-files.com/6989095758ae17edfc424d30/';
-  // Butterfly: FA-free has no butterfly glyph, so this is an inline silhouette
-  // (data-URI mask, no hosted asset needed) drawn to match the icon family.
-  var AV_BUTTERFLY = 'data:image/svg+xml,' + encodeURIComponent(
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">' +
-    '<ellipse cx="6.4" cy="8" rx="5.2" ry="3.4" transform="rotate(-35 6.4 8)"/>' +
-    '<ellipse cx="17.6" cy="8" rx="5.2" ry="3.4" transform="rotate(35 17.6 8)"/>' +
-    '<ellipse cx="7.6" cy="15.8" rx="3" ry="2.6" transform="rotate(28 7.6 15.8)"/>' +
-    '<ellipse cx="16.4" cy="15.8" rx="3" ry="2.6" transform="rotate(-28 16.4 15.8)"/>' +
-    '<ellipse cx="12" cy="12.6" rx="1.1" ry="5.6"/>' +
-    '<path d="M11.6 7 Q10 4.4 8.6 3.4" stroke="black" stroke-width="1.4" fill="none" stroke-linecap="round"/>' +
-    '<path d="M12.4 7 Q14 4.4 15.4 3.4" stroke="black" stroke-width="1.4" fill="none" stroke-linecap="round"/>' +
-    '</svg>');
+  // (A hand-drawn butterfly preset shipped briefly in v1.4.169/170 and was
+  // removed by decision 2026-07-18 — didn't look right. FA-free has no
+  // butterfly glyph; revisit only with a properly designed asset.)
   var AVATAR_PRESETS = {
-    butterfly:{ bg: '#EFEAF9', tint: '#7A5FA8', url: AV_BUTTERFLY },
     heart:    { bg: '#FBE9F3', tint: '#A5488F', url: AV_ASSET + '6a186b06cfcb6c4d6d1e1cf7_heart-regular.png' },
     star:     { bg: '#FBF3DF', tint: '#8A6A1F', url: AV_ASSET + '6a1af18050966f1b31aac321_star-regular.png' },
     bolt:     { bg: '#F1EEFB', tint: '#5F51B8', url: AV_ASSET + '6a1d92f83a64390307583b8e_bolt-solid.png' },
