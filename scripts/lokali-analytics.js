@@ -272,7 +272,25 @@
 
     // Payment clicks — taps on the vendor's Venmo/Cash App/PayPal/other pay links.
     // A distinct, high-intent signal; deliberately NOT folded into Leads.
-    grid.appendChild(kpiCard('Payment clicks', String(pay30), deltaChip(pay30, payPrev), 'taps to pay you directly'));
+    // 76a: the detail line breaks the 30-day count down per method.
+    var PAY_LABELS = { venmo: 'Venmo', cashapp: 'Cash App', paypal: 'PayPal', other_pay: 'Other link' };
+    var payDetail = 'taps to pay you directly';
+    if (pay30 > 0) {
+      var payNow = Date.now(), payCounts = {};
+      pay.forEach(function (e) {
+        var d = payNow - ts(e.created_at);
+        if (d >= 0 && d < DAY30) {
+          var k = PAY_LABELS[String(e.event_type)] ? String(e.event_type) : 'other_pay';
+          payCounts[k] = (payCounts[k] || 0) + 1;
+        }
+      });
+      var payBits = [];
+      ['venmo', 'cashapp', 'paypal', 'other_pay'].forEach(function (k) {
+        if (payCounts[k]) payBits.push(PAY_LABELS[k] + ' ' + payCounts[k]);
+      });
+      if (payBits.length) payDetail = payBits.join(' · ');
+    }
+    grid.appendChild(kpiCard('Payment clicks', String(pay30), deltaChip(pay30, payPrev), payDetail));
 
     // Shares KPI — word-of-mouth. Fetched separately from the Shares endpoint
     // (unique customer sharers; the vendor's own Share & Grow links don't count).
