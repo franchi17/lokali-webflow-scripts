@@ -21,12 +21,13 @@
   var currentVendorSlug = null; // set during hydrate(); used to build clean item/about URLs
   var openAboutOnLoad = false; // true when the URL is /{slug}/about — open the About tab once loaded
 
-  // #76 one-page remodel (Airbnb-style single scroll). While we verify the new
-  // layout on the live page it is OPT-IN via ?onepage=1 (or a window flag set in
-  // Webflow); the flip to default-on is a one-line change here. In this mode the
-  // tab handlers below become scroll-to-section, panels all render stacked, and
-  // the contact column becomes a sticky card (see onepageLayout()).
-  var ONEPAGE = /[?&]onepage=1/.test(window.location.search) || window.LOKALI_VL_ONEPAGE === true;
+  // #76 one-page remodel (Airbnb-style single scroll) — DEFAULT ON since
+  // v1.4.166 (flipped by Francesca 2026-07-18 after live review). ?onepage=0
+  // (or window.LOKALI_VL_ONEPAGE=false) forces the legacy tab layout for
+  // debugging/rollback. In this mode the tab handlers below become
+  // scroll-to-section, panels all render stacked, and the contact column
+  // becomes a sticky card (see onepageLayout()).
+  var ONEPAGE = !/[?&]onepage=0/.test(window.location.search) && window.LOKALI_VL_ONEPAGE !== false;
 
   // Website/Instagram link-row layout now lives in PILL_CSS (.vl-link-chip);
   // the chips flex so a lone survivor (vendor has only one of the two) goes
