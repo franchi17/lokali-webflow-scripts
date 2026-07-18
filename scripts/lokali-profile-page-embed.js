@@ -625,6 +625,95 @@ var LokaliProfilePage = (function () {
     if (h && /instagram/i.test(h.textContent || '')) h.style.display = 'none';
   }
 
+  // ---- #76 page flow: storefront header + sticky jump-nav + reorder --------
+  // The profile page had grown into one long mixed list. Reorder the sections
+  // to mirror the PUBLIC page top-to-bottom (photos -> logo -> business info ->
+  // meet the vendor -> payments), topped with a "Your storefront page" header,
+  // a View-my-storefront button, and a sticky jump-nav. Sections are moved
+  // whole within their existing container (same form), so nothing re-mounts.
+  function _reorderProfileSections() {
+    if (document.getElementById('lok-profile-nav')) return;
+    var nameInput = document.getElementById('input-business-name') || document.getElementById('business-name');
+    var biz = nameInput && nameInput.closest ? nameInput.closest('section') : null;
+    if (!biz || !biz.parentNode) return;
+    var container = biz.parentNode;
+    function sectionByHeading(re) {
+      var heads = document.querySelectorAll('.section-heading');
+      for (var i = 0; i < heads.length; i++) {
+        if (re.test(heads[i].textContent || '')) {
+          return heads[i].closest ? heads[i].closest('section') : null;
+        }
+      }
+      return null;
+    }
+    var logo = sectionByHeading(/upload your logo|profile photo/i);
+    var aboutBiz = sectionByHeading(/about your business/i);
+    var catsLocs = sectionByHeading(/categories\s*&\s*locations/i);
+    var portfolio = document.getElementById('lok-portfolio-card');
+    var aboutYou = document.getElementById('lok-about-you');
+    var pay = document.getElementById('lok-pay-card');
+
+    var head = document.createElement('div');
+    head.id = 'lok-profile-head';
+    head.style.cssText = 'font-family:"Plus Jakarta Sans",sans-serif;margin:0 0 4px;';
+    var row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:8px;';
+    var t = document.createElement('div');
+    t.style.cssText = 'font-weight:700;font-size:18px;color:#1A1829;';
+    t.textContent = 'Your storefront page';
+    row.appendChild(t);
+    if (_vendor && _vendor.slug) {
+      var view = document.createElement('a');
+      view.href = '/' + _vendor.slug;
+      view.target = '_blank';
+      view.rel = 'noopener';
+      view.textContent = 'View my storefront →';
+      view.style.cssText = 'display:inline-block;background:#6002EE;color:#fff;border-radius:10px;padding:10px 16px;font:600 14px "Plus Jakarta Sans",sans-serif;text-decoration:none;';
+      row.appendChild(view);
+    }
+    head.appendChild(row);
+    var sub = document.createElement('div');
+    sub.style.cssText = 'font-size:13px;color:#6B6880;margin-bottom:6px;';
+    sub.textContent = 'Everything below builds your public page — in the same order customers see it.';
+    head.appendChild(sub);
+
+    var nav = document.createElement('div');
+    nav.id = 'lok-profile-nav';
+    nav.style.cssText = 'position:sticky;top:0;z-index:40;background:#fff;display:flex;gap:22px;overflow-x:auto;border-bottom:1px solid #EEEDF6;margin-bottom:8px;font-family:"Plus Jakarta Sans",sans-serif;';
+    [
+      ['lok-portfolio-card', 'Photos', portfolio],
+      ['lok-sec-logo', 'Logo', logo],
+      ['lok-sec-business', 'Business info', biz],
+      ['lok-about-you', 'Meet the vendor', aboutYou],
+      ['lok-pay-card', 'Payments', pay]
+    ].forEach(function (it) {
+      var sec = it[2];
+      if (!sec) return;
+      if (!sec.id) sec.id = it[0];
+      sec.style.scrollMarginTop = '64px';
+      var a = document.createElement('a');
+      a.href = '#' + sec.id;
+      a.textContent = it[1];
+      a.style.cssText = 'padding:13px 2px;font-weight:600;font-size:14px;color:#6B6880;text-decoration:none;border-bottom:2px solid transparent;white-space:nowrap;';
+      a.addEventListener('click', function (e) { e.preventDefault(); sec.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+      a.addEventListener('mouseenter', function () { a.style.color = '#1A1829'; a.style.borderBottomColor = '#6002EE'; });
+      a.addEventListener('mouseleave', function () { a.style.color = '#6B6880'; a.style.borderBottomColor = 'transparent'; });
+      nav.appendChild(a);
+    });
+
+    container.insertBefore(head, biz);
+    container.insertBefore(nav, biz);
+    var cursor = nav;
+    // Mirror the public page: photos -> logo -> the business (info, story,
+    // where) -> the person -> payments. About-Your-Business and
+    // Categories & Locations ride under the "Business info" nav stop.
+    [portfolio, logo, biz, aboutBiz, catsLocs, aboutYou, pay].forEach(function (sec) {
+      if (!sec) return;
+      container.insertBefore(sec, cursor.nextSibling);
+      cursor = sec;
+    });
+  }
+
   // ---- #76d portfolio manager ---------------------------------------------
   var _PF_MAX = 5;
   var _pfPhotos = [];
@@ -733,6 +822,7 @@ var LokaliProfilePage = (function () {
     _hideInstagramField();
     _polishLogoSection();
     _polishEmailField();
+    _reorderProfileSections();
     _setTextValueAnyId(['input-owner-name'], _v('owner_name'));
     _setTextValueAnyId(['input-owner-bio'], _v('owner_bio'));
     _uploadedOwnerPhotoUrl = null;
