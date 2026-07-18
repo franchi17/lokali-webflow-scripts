@@ -307,8 +307,12 @@
     'html.vl-op .vl-tabs{display:none !important;}',
     'html.vl-op #vl-ig{display:none !important;}',        // vendors funnel via Lokali, not IG
     'html.vl-op #vl-ch-email{display:none !important;}',  // "Send a message" replaces mailto
-    // sticky section nav
+    // sticky section nav — hidden while the top of the page (hero/header) is
+    // in view, fades in once you scroll past it (Airbnb behavior; sentinel
+    // observer in onepageLayout toggles .vl-op-nav-on).
     '#vl-op-nav{position:sticky;top:0;z-index:40;background:#FFFFFF;display:flex;gap:26px;overflow-x:auto;border-bottom:1px solid #EEEDF6;margin-top:6px;}',
+    '#vl-op-nav.vl-op-nav-auto{visibility:hidden;opacity:0;transition:opacity .18s;}',
+    '#vl-op-nav.vl-op-nav-auto.vl-op-nav-on{visibility:visible;opacity:1;}',
     '#vl-op-nav a{padding:14px 2px;font:600 14px/1.2 "Plus Jakarta Sans",sans-serif;color:#6B6880;text-decoration:none;border-bottom:2px solid transparent;white-space:nowrap;}',
     '#vl-op-nav a:hover,#vl-op-nav a.vl-op-active{color:#1A1829;border-bottom-color:#6002EE;}',
     // two-column body
@@ -381,7 +385,18 @@
     var grid = ce('div', 'vl-op-grid');
     var main = ce('div', 'vl-op-main');
     var rail = ce('div', 'vl-op-rail');
+    // Sentinel right above the nav: while it's on screen (= the page top /
+    // main header area is visible) the nav hides; scroll past it → nav shows.
+    var navSentinel = ce('div');
+    navSentinel.style.cssText = 'height:1px;margin:0;padding:0;';
+    sections.appendChild(navSentinel);
     sections.appendChild(nav);
+    if ('IntersectionObserver' in window) {
+      nav.classList.add('vl-op-nav-auto');
+      new IntersectionObserver(function (es) {
+        nav.classList.toggle('vl-op-nav-on', !es[0].isIntersecting);
+      }).observe(navSentinel);
+    }
     sections.appendChild(grid);
     grid.appendChild(main); grid.appendChild(rail);
 
