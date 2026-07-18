@@ -39,13 +39,13 @@
   // (data-URI mask, no hosted asset needed) drawn to match the icon family.
   var AV_BUTTERFLY = 'data:image/svg+xml,' + encodeURIComponent(
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">' +
-    '<ellipse cx="7" cy="8.4" rx="4.8" ry="3.7" transform="rotate(-28 7 8.4)"/>' +
-    '<ellipse cx="17" cy="8.4" rx="4.8" ry="3.7" transform="rotate(28 17 8.4)"/>' +
-    '<ellipse cx="7.8" cy="15.6" rx="3.5" ry="2.9" transform="rotate(24 7.8 15.6)"/>' +
-    '<ellipse cx="16.2" cy="15.6" rx="3.5" ry="2.9" transform="rotate(-24 16.2 15.6)"/>' +
-    '<ellipse cx="12" cy="12.4" rx="1.25" ry="5.4"/>' +
-    '<path d="M11.6 6.8 Q10.2 4.4 8.9 3.6" stroke="black" stroke-width="1.2" fill="none" stroke-linecap="round"/>' +
-    '<path d="M12.4 6.8 Q13.8 4.4 15.1 3.6" stroke="black" stroke-width="1.2" fill="none" stroke-linecap="round"/>' +
+    '<ellipse cx="6.4" cy="8" rx="5.2" ry="3.4" transform="rotate(-35 6.4 8)"/>' +
+    '<ellipse cx="17.6" cy="8" rx="5.2" ry="3.4" transform="rotate(35 17.6 8)"/>' +
+    '<ellipse cx="7.6" cy="15.8" rx="3" ry="2.6" transform="rotate(28 7.6 15.8)"/>' +
+    '<ellipse cx="16.4" cy="15.8" rx="3" ry="2.6" transform="rotate(-28 16.4 15.8)"/>' +
+    '<ellipse cx="12" cy="12.6" rx="1.1" ry="5.6"/>' +
+    '<path d="M11.6 7 Q10 4.4 8.6 3.4" stroke="black" stroke-width="1.4" fill="none" stroke-linecap="round"/>' +
+    '<path d="M12.4 7 Q14 4.4 15.4 3.4" stroke="black" stroke-width="1.4" fill="none" stroke-linecap="round"/>' +
     '</svg>');
   var AVATAR_PRESETS = {
     butterfly:{ bg: '#EFEAF9', tint: '#7A5FA8', url: AV_BUTTERFLY },
