@@ -24,7 +24,7 @@
 */
 (function () {
   var DISMISS_KEY = 'lokali_ls_dismissed';
-  var MAX_SCORE = 85;
+  var MAX_SCORE = 105; // 76f: +10 owner_photo +10 meet_vendor (was 85)
 
   function toArr(d) {
     if (Array.isArray(d)) return d;
@@ -176,9 +176,11 @@
       '<div class="ls-checklist" data-ls-checklist>' +
         lsItem('business_name', 'Business name added', '', 10) +
         lsItem('category', 'Category selected', '', 10) +
-        lsItem('profile_photo', 'Add a profile photo', 'Vendors with photos get 3× more contacts', 15) +
+        lsItem('profile_photo', 'Add your logo', 'Vendors with photos get 3× more contacts', 15) +
         lsItem('bio', 'Write a bio <span style="color:#9A9AB0;font-weight:500;">(80+ characters)</span>', 'Your story is what makes a customer choose you over a directory', 20) +
         lsItem('tagline', 'Add a tagline', 'One sentence. What you do and who you do it for.', 10) +
+        lsItem('owner_photo', 'Add your photo', 'A real face builds trust — it tops the "Meet the vendor" section', 10) +
+        lsItem('meet_vendor', 'Fill out Meet the Vendor', 'Your first name + a short personal intro on your public page', 10) +
         lsItem('has_listing', 'Add a service or product', "Customers can't book or buy without at least one listing", 20) +
       '</div>' +
       '<div class="ls-complete-state"><div class="ls-complete-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#1E8E3E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div><div class="ls-complete-body"><p class="ls-complete-title">Your listing is complete</p><p class="ls-complete-desc">Your profile is set up to get the most visibility on Lokali.</p></div></div>';
@@ -192,6 +194,9 @@
       { id: 'profile_photo', pts: 15, done: !!v.profile_photo },
       { id: 'bio',           pts: 20, done: (v.business_description || '').trim().length >= 80 },
       { id: 'tagline',       pts: 10, done: !!(v.business_tagline && String(v.business_tagline).trim()) },
+      // 76f — the Meet-the-Vendor personal fields (76e columns)
+      { id: 'owner_photo',   pts: 10, done: !!v.owner_photo },
+      { id: 'meet_vendor',   pts: 10, done: !!(v.owner_name && String(v.owner_name).trim()) && (v.owner_bio || '').trim().length >= 40 },
       { id: 'has_listing',   pts: 20, done: !!hasListing }
     ];
     var score = 0, missing = 0;
