@@ -461,6 +461,65 @@ var LokaliProfilePage = (function () {
     return inp;
   }
 
+  // On-brand pill button for injected upload actions (the Webflow w-button
+  // renders as the default blue box — never use it for injected UI).
+  var _BRAND_BTN_CSS = 'display:inline-block;background:#fff;border:1px solid #D4AAFD;color:#6002EE;border-radius:10px;padding:10px 16px;font:600 14px "Plus Jakarta Sans",sans-serif;cursor:pointer;text-decoration:none;transition:background .12s,border-color .12s;';
+  function _brandBtn(label) {
+    var a = document.createElement('a');
+    a.href = '#';
+    a.textContent = label;
+    a.style.cssText = _BRAND_BTN_CSS;
+    a.addEventListener('mouseenter', function () { a.style.background = '#F3EBFF'; a.style.borderColor = '#6002EE'; });
+    a.addEventListener('mouseleave', function () { a.style.background = '#fff'; a.style.borderColor = '#D4AAFD'; });
+    return a;
+  }
+
+  // Circled "i" in brand violet — hover or click opens the photo guidelines
+  // popover with a link to the full guide. Used beside the logo heading and
+  // the Meet-the-Vendor photo.
+  function _photoInfoIcon() {
+    var wrap = document.createElement('span');
+    wrap.className = 'lok-info-wrap';
+    wrap.style.cssText = 'position:relative;display:inline-flex;align-items:center;margin-left:8px;vertical-align:middle;';
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.setAttribute('aria-label', 'Photo guidelines');
+    btn.style.cssText = 'width:22px;height:22px;border-radius:50%;border:1.5px solid #6002EE;background:#fff;color:#6002EE;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0;font:700 12px/1 "Plus Jakarta Sans",serif;font-family:"Plus Jakarta Sans",sans-serif;';
+    btn.textContent = 'i';
+    var pop = document.createElement('div');
+    pop.style.cssText = 'position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);z-index:60;width:250px;background:#fff;border:1px solid #EEEDF6;border-radius:12px;box-shadow:0 10px 30px rgba(26,24,41,.15);padding:14px;display:none;font-family:"Plus Jakarta Sans",sans-serif;text-align:left;';
+    pop.innerHTML =
+      '<div style="font-weight:700;font-size:13px;color:#1A1829;margin-bottom:6px;">Photo guidelines</div>' +
+      '<div style="font-size:12.5px;color:#565170;line-height:1.6;">JPG, PNG or WEBP &middot; under 5&nbsp;MB<br>Square, at least 500&nbsp;px (1000&times;1000 ideal)<br>Bright and clear, no text overlays</div>' +
+      '<a href="/vendor-resources/profile-photo-guide" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;font-weight:700;font-size:12.5px;color:#6002EE;text-decoration:none;">Read the full guide &rarr;</a>';
+    wrap.appendChild(btn);
+    wrap.appendChild(pop);
+    var over = false;
+    function showPop(on) { pop.style.display = on ? 'block' : 'none'; }
+    wrap.addEventListener('mouseenter', function () { over = true; showPop(true); });
+    wrap.addEventListener('mouseleave', function () { over = false; setTimeout(function () { if (!over) showPop(false); }, 150); });
+    btn.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); showPop(pop.style.display === 'none'); });
+    document.addEventListener('click', function (e) { if (!wrap.contains(e.target)) showPop(false); });
+    return wrap;
+  }
+
+  // Rename the Webflow "Profile photo" section to "Upload your logo" and give
+  // it the guidelines info icon (Francesca 2026-07-18: the round image on the
+  // public page is the business logo; the personal photo lives in Meet the
+  // Vendor below).
+  function _polishLogoSection() {
+    var heads = document.querySelectorAll('.section-heading');
+    for (var i = 0; i < heads.length; i++) {
+      if (/^\s*Profile photo\s*$/i.test(heads[i].textContent || '')) {
+        heads[i].textContent = 'Upload your logo';
+        if (heads[i].parentNode && !heads[i].parentNode.querySelector('.lok-info-wrap')) {
+          heads[i].parentNode.appendChild(_photoInfoIcon());
+        }
+        break;
+      }
+    }
+  }
+
   function _injectAboutYouCard() {
     if (document.getElementById('lok-about-you')) return;
     var anchorSection = document.getElementById('lok-pay-card');
@@ -468,17 +527,19 @@ var LokaliProfilePage = (function () {
     var card = _mkCard('lok-about-you', _MEET_ICON, 'Meet the Vendor',
       'Optional, but personal sells: fill this in and your public page shows a "Meet the vendor" section with your photo and story. Leave it empty and the section simply doesn’t appear.');
     // personal photo (separate from the business logo)
+    var phHead = document.createElement('div');
+    phHead.className = 'input-heading';
+    phHead.style.cssText = 'display:flex;align-items:center;';
+    phHead.appendChild(document.createTextNode('Your photo'));
+    phHead.appendChild(_photoInfoIcon());
+    card.col.appendChild(phHead);
     var ph = document.createElement('div');
     ph.style.cssText = 'display:flex;align-items:center;gap:14px;margin:8px 0 12px;';
     var prev = document.createElement('img');
     prev.id = 'lok-owner-photo-preview';
     prev.alt = '';
     prev.style.cssText = 'width:64px;height:64px;border-radius:50%;object-fit:cover;border:1px solid #EEEDF6;display:none;';
-    var pick = document.createElement('a');
-    pick.className = 'button-secondary w-button';
-    pick.textContent = 'Upload your photo';
-    pick.href = '#';
-    pick.style.cssText = 'font-family:"Plus Jakarta Sans",sans-serif;';
+    var pick = _brandBtn('Upload your photo');
     var file = document.createElement('input');
     file.type = 'file'; file.accept = 'image/*'; file.id = 'lok-owner-photo-file';
     file.style.display = 'none';
@@ -557,12 +618,8 @@ var LokaliProfilePage = (function () {
     strip.id = 'lok-pf-strip';
     strip.style.cssText = 'display:flex;flex-wrap:wrap;gap:10px;margin:10px 0;';
     card.col.appendChild(strip);
-    var pick = document.createElement('a');
-    pick.className = 'button-secondary w-button';
+    var pick = _brandBtn('Add photo');
     pick.id = 'lok-pf-add';
-    pick.textContent = 'Add photo';
-    pick.href = '#';
-    pick.style.cssText = 'font-family:"Plus Jakarta Sans",sans-serif;';
     var file = document.createElement('input');
     file.type = 'file'; file.accept = 'image/*'; file.id = 'lok-pf-file';
     file.style.display = 'none';
@@ -654,6 +711,7 @@ var LokaliProfilePage = (function () {
     _injectPortfolioCard();
     _injectPhoneCallsCheckbox();
     _hideInstagramField();
+    _polishLogoSection();
     _setTextValueAnyId(['input-owner-name'], _v('owner_name'));
     _setTextValueAnyId(['input-owner-bio'], _v('owner_bio'));
     _uploadedOwnerPhotoUrl = null;
