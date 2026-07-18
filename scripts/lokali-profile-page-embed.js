@@ -474,24 +474,20 @@ var LokaliProfilePage = (function () {
     return a;
   }
 
-  // Circled "i" in brand violet — hover or click opens the photo guidelines
-  // popover with a link to the full guide. Used beside the logo heading and
-  // the Meet-the-Vendor photo.
-  function _photoInfoIcon() {
+  // Circled glyph ("i" / "?") in brand violet — hover or click opens a small
+  // popover. popHtml is STATIC markup only (never user data).
+  function _infoPopover(glyph, ariaLabel, popHtml) {
     var wrap = document.createElement('span');
     wrap.className = 'lok-info-wrap';
     wrap.style.cssText = 'position:relative;display:inline-flex;align-items:center;margin-left:8px;vertical-align:middle;';
     var btn = document.createElement('button');
     btn.type = 'button';
-    btn.setAttribute('aria-label', 'Photo guidelines');
-    btn.style.cssText = 'width:22px;height:22px;border-radius:50%;border:1.5px solid #6002EE;background:#fff;color:#6002EE;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0;font:700 12px/1 "Plus Jakarta Sans",serif;font-family:"Plus Jakarta Sans",sans-serif;';
-    btn.textContent = 'i';
+    btn.setAttribute('aria-label', ariaLabel);
+    btn.style.cssText = 'width:22px;height:22px;border-radius:50%;border:1.5px solid #6002EE;background:#fff;color:#6002EE;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0;font-family:"Plus Jakarta Sans",sans-serif;font-weight:700;font-size:12px;line-height:1;';
+    btn.textContent = glyph;
     var pop = document.createElement('div');
-    pop.style.cssText = 'position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);z-index:60;width:250px;background:#fff;border:1px solid #EEEDF6;border-radius:12px;box-shadow:0 10px 30px rgba(26,24,41,.15);padding:14px;display:none;font-family:"Plus Jakarta Sans",sans-serif;text-align:left;';
-    pop.innerHTML =
-      '<div style="font-weight:700;font-size:13px;color:#1A1829;margin-bottom:6px;">Photo guidelines</div>' +
-      '<div style="font-size:12.5px;color:#565170;line-height:1.6;">JPG, PNG or WEBP &middot; under 5&nbsp;MB<br>Square, at least 500&nbsp;px (1000&times;1000 ideal)<br>Bright and clear, no text overlays</div>' +
-      '<a href="/vendor-resources/profile-photo-guide" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;font-weight:700;font-size:12.5px;color:#6002EE;text-decoration:none;">Read the full guide &rarr;</a>';
+    pop.style.cssText = 'position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);z-index:60;width:250px;background:#fff;border:1px solid #EEEDF6;border-radius:12px;box-shadow:0 10px 30px rgba(26,24,41,.15);padding:14px;display:none;font-family:"Plus Jakarta Sans",sans-serif;text-align:left;text-transform:none;';
+    pop.innerHTML = popHtml;
     wrap.appendChild(btn);
     wrap.appendChild(pop);
     var over = false;
@@ -501,6 +497,30 @@ var LokaliProfilePage = (function () {
     btn.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); showPop(pop.style.display === 'none'); });
     document.addEventListener('click', function (e) { if (!wrap.contains(e.target)) showPop(false); });
     return wrap;
+  }
+  function _photoInfoIcon() {
+    return _infoPopover('i', 'Photo guidelines',
+      '<div style="font-weight:700;font-size:13px;color:#1A1829;margin-bottom:6px;">Photo guidelines</div>' +
+      '<div style="font-size:12.5px;color:#565170;line-height:1.6;">JPG, PNG or WEBP &middot; under 5&nbsp;MB<br>Square, at least 500&nbsp;px (1000&times;1000 ideal)<br>Bright and clear, no text overlays</div>' +
+      '<a href="/vendor-resources/profile-photo-guide" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;font-weight:700;font-size:12.5px;color:#6002EE;text-decoration:none;">Read the full guide &rarr;</a>');
+  }
+
+  // "Public Email" -> "Business Email" + circled-? explaining where messages
+  // land (backed by patch_notify_business_email.sql: inquiry/review emails go
+  // here when filled, login email otherwise).
+  function _polishEmailField() {
+    var input = document.getElementById('input-contact-email') || document.getElementById('contact-email') ||
+                document.getElementById('contact_email') || document.getElementById('public_email');
+    if (!input) return;
+    var h = input.previousElementSibling;
+    if (h && /public\s*email|business\s*email/i.test(h.textContent || '') && !h.querySelector('.lok-info-wrap')) {
+      h.textContent = 'Business Email';
+      h.style.display = 'flex';
+      h.style.alignItems = 'center';
+      h.appendChild(_infoPopover('?', 'About Business Email',
+        '<div style="font-weight:700;font-size:13px;color:#1A1829;margin-bottom:6px;">Business Email</div>' +
+        '<div style="font-size:12.5px;color:#565170;line-height:1.6;">Every message a customer sends from the <b>&ldquo;Send a message&rdquo;</b> button on your page is emailed here (and it’s also saved in your Leads). Leave it empty and messages go to your login email instead.</div>'));
+    }
   }
 
   // Rename the Webflow "Profile photo" section to "Upload your logo" and give
@@ -712,6 +732,7 @@ var LokaliProfilePage = (function () {
     _injectPhoneCallsCheckbox();
     _hideInstagramField();
     _polishLogoSection();
+    _polishEmailField();
     _setTextValueAnyId(['input-owner-name'], _v('owner_name'));
     _setTextValueAnyId(['input-owner-bio'], _v('owner_bio'));
     _uploadedOwnerPhotoUrl = null;
