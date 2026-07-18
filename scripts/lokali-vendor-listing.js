@@ -21,6 +21,13 @@
   var currentVendorSlug = null; // set during hydrate(); used to build clean item/about URLs
   var openAboutOnLoad = false; // true when the URL is /{slug}/about — open the About tab once loaded
 
+  // #76 one-page remodel (Airbnb-style single scroll). While we verify the new
+  // layout on the live page it is OPT-IN via ?onepage=1 (or a window flag set in
+  // Webflow); the flip to default-on is a one-line change here. In this mode the
+  // tab handlers below become scroll-to-section, panels all render stacked, and
+  // the contact column becomes a sticky card (see onepageLayout()).
+  var ONEPAGE = /[?&]onepage=1/.test(window.location.search) || window.LOKALI_VL_ONEPAGE === true;
+
   // Website/Instagram link-row layout now lives in PILL_CSS (.vl-link-chip);
   // the chips flex so a lone survivor (vendor has only one of the two) goes
   // full width instead of sitting in half a grid cell.
@@ -242,7 +249,10 @@
   }
 
   // ---- 1. interactivity -------------------------------------------------
+  // In ONEPAGE mode "activating a tab" means scrolling to its stacked section —
+  // this keeps the /{slug}/about and #reviews deep links working unchanged.
   function activateTab(name) {
+    if (ONEPAGE) { onepageScrollTo(name); return; }
     $all('[data-vl-tab]').forEach(function (t) { t.classList.toggle('vl-stab-active', t.getAttribute('data-vl-tab') === name); });
     // Inactive panels carry a Webflow combo class (inline-div-5/6/7) that sets display:none.
     // Setting display:'' would just revert to that rule, so force the active panel to 'block'.
@@ -252,18 +262,260 @@
   }
   // Show/hide a whole tab (+ its panel). Used to hide Services/Products when a vendor has none.
   function setTabVisible(name, vis) {
+    if (ONEPAGE) { onepageSectionVisible(name, vis); return; }
     $all('[data-vl-tab="' + name + '"]').forEach(function (t) { show(t, vis); });
     if (!vis) $all('[data-vl-panel="' + name + '"]').forEach(function (p) { show(p, false); });
   }
   // If the active tab got hidden (or none is active), activate the first still-visible tab.
   function ensureActiveTab() {
+    if (ONEPAGE) return; // stacked sections — nothing to activate
     var visible = $all('[data-vl-tab]').filter(function (t) { return t.style.display !== 'none'; });
     if (visible.filter(function (t) { return t.classList.contains('vl-stab-active'); })[0]) return;
     if (visible[0]) activateTab(visible[0].getAttribute('data-vl-tab'));
   }
   function initTabs() {
+    if (ONEPAGE) return; // nav links are anchors built in onepageLayout()
     $all('[data-vl-tab]').forEach(function (tab) {
       tab.addEventListener('click', function () { activateTab(tab.getAttribute('data-vl-tab')); });
+    });
+  }
+
+  // ---- #76 one-page layout (Airbnb-style single scroll) ------------------
+  // Runs once at init in ONEPAGE mode, before hydrate(): restructures the
+  // existing Webflow DOM (no markup changes in Webflow needed) —
+  //   • #vl-portfolio moves above the hero and becomes the photo-grid hero
+  //     (desktop grid; on mobile it keeps the existing swipe strip + pips)
+  //   • the tab row hides; a sticky anchor nav takes its place
+  //   • every panel renders stacked inside a section wrapper with a heading
+  //   • .vl-hero-right (message/contact/share/save) moves into a sticky card;
+  //     payment links mount into the card instead of the About section
+  //   • the mailto Email button + Instagram link are dropped (decisions 07-17)
+  //   • mobile: the card relocates inline after Services + a fixed bottom bar
+  //     ("Send a message" / "Call") proxies the real controls
+  var OP_SECTIONS = [
+    { name: 'services', label: 'Services' },
+    { name: 'products', label: 'Products' },
+    { name: 'reviews',  label: 'Reviews' },
+    { name: 'about',    label: 'About the vendor' }
+  ];
+  var OP_CSS = [
+    // stacked panels: beat the Webflow combo classes (inline-div-5/6/7) that
+    // display:none the non-default panels; section-level hiding uses the
+    // wrapper's inline style, which this rule doesn't touch.
+    'html.vl-op .vl-panel{display:block !important;}',
+    'html.vl-op .vl-tabs{display:none !important;}',
+    'html.vl-op #vl-ig{display:none !important;}',        // vendors funnel via Lokali, not IG
+    'html.vl-op #vl-ch-email{display:none !important;}',  // "Send a message" replaces mailto
+    // sticky section nav
+    '#vl-op-nav{position:sticky;top:0;z-index:40;background:#FFFFFF;display:flex;gap:26px;overflow-x:auto;border-bottom:1px solid #EEEDF6;margin-top:6px;}',
+    '#vl-op-nav a{padding:14px 2px;font:600 14px/1.2 "Plus Jakarta Sans",sans-serif;color:#6B6880;text-decoration:none;border-bottom:2px solid transparent;white-space:nowrap;}',
+    '#vl-op-nav a:hover,#vl-op-nav a.vl-op-active{color:#1A1829;border-bottom-color:#6002EE;}',
+    // two-column body
+    '.vl-op-grid{display:grid;grid-template-columns:minmax(0,1fr) 332px;gap:44px;align-items:start;}',
+    '.vl-op-main{min-width:0;}',
+    '.vl-op-sec{padding:28px 0;border-bottom:1px solid #EEEDF6;scroll-margin-top:64px;}',
+    '.vl-op-sec:last-child{border-bottom:none;}',
+    '.vl-op-h{font:700 20px/1.3 "Plus Jakarta Sans",sans-serif;color:#1A1829;margin:0 0 16px;}',
+    '.vl-op-count{color:#6B6880;font-weight:600;font-size:14px;margin-left:7px;}',
+    // sticky contact card
+    '.vl-op-rail{position:sticky;top:64px;min-width:0;}',
+    '.vl-op-card{background:#fff;border:.5px solid #EEEDF6;border-radius:18px;box-shadow:0 8px 28px rgba(26,24,41,.07);padding:20px;}',
+    '.vl-op-card-lead{font:700 16px/1.3 "Plus Jakarta Sans",sans-serif;color:#1A1829;margin-bottom:12px;}',
+    'html.vl-op .vl-op-card .vl-hero-right{width:100% !important;align-items:stretch;display:flex;flex-direction:column;gap:10px;}',
+    // instant channels: primary message button (injected by lokali-inquiry.js)
+    // full-width on top, Text/WhatsApp/Call sharing one compact row below.
+    'html.vl-op .vl-op-card .vl-channels{display:flex !important;flex-direction:row !important;flex-wrap:wrap;gap:8px;width:100%;min-width:0;}',
+    'html.vl-op .vl-op-card .vl-channels #lok-inq-btn{flex:1 1 100%;margin:0 0 2px;}',
+    'html.vl-op .vl-op-card .vl-ch{flex:1 1 0;min-width:0;justify-content:center;}',
+    'html.vl-op .vl-op-card #vl-op-pay:empty{display:none;}',
+    'html.vl-op .vl-op-card #vl-op-pay{border-top:1px solid #EEEDF6;margin-top:12px;padding-top:2px;}',
+    // photo-grid hero (desktop only — mobile keeps the swipe strip)
+    '@media (min-width:768px){',
+    'html.vl-op #vl-portfolio{margin:16px 0 4px;}',
+    'html.vl-op #vl-portfolio .vd-gallery{display:grid !important;grid-template-columns:2fr 1fr 1fr;grid-auto-rows:178px;gap:8px;border-radius:18px;overflow:hidden;width:100%;}',
+    'html.vl-op #vl-portfolio .vd-frame{width:auto !important;height:100% !important;min-width:0 !important;margin:0 !important;border-radius:0 !important;}',
+    'html.vl-op #vl-portfolio .vd-frame img{width:100% !important;height:100% !important;object-fit:cover;display:block;}',
+    'html.vl-op #vl-portfolio[data-op-count="5"] .vd-frame:first-child,html.vl-op #vl-portfolio[data-op-count="3"] .vd-frame:first-child{grid-row:1/3;}',
+    'html.vl-op #vl-portfolio[data-op-count="3"] .vd-gallery{grid-template-columns:2fr 1fr;}',
+    'html.vl-op #vl-portfolio[data-op-count="4"] .vd-gallery{grid-template-columns:1fr 1fr;grid-auto-rows:158px;}',
+    'html.vl-op #vl-portfolio[data-op-count="2"] .vd-gallery{grid-template-columns:1fr 1fr;grid-auto-rows:230px;}',
+    'html.vl-op #vl-portfolio[data-op-count="1"] .vd-gallery{grid-template-columns:1fr;grid-auto-rows:300px;}',
+    'html.vl-op #vl-portfolio .vd-pips{display:none !important;}',
+    '#vl-op-bar{display:none;}',
+    '}',
+    // mobile
+    '@media (max-width:767px){',
+    '.vl-op-grid{grid-template-columns:1fr;gap:0;}',
+    '.vl-op-rail{position:static;}',
+    '.vl-op-card{margin:6px 0 22px;}',
+    'html.vl-op body{padding-bottom:76px;}',
+    '#vl-op-bar{position:fixed;left:0;right:0;bottom:0;z-index:60;display:flex;gap:10px;background:#fff;border-top:1px solid #EEEDF6;padding:10px 14px calc(10px + env(safe-area-inset-bottom));box-shadow:0 -6px 20px rgba(26,24,41,.08);}',
+    '#vl-op-bar button,#vl-op-bar a{font-family:"Plus Jakarta Sans",sans-serif;font-weight:600;font-size:15px;border-radius:10px;min-height:46px;display:flex;align-items:center;justify-content:center;cursor:pointer;text-decoration:none;}',
+    '#vl-op-bar .vl-op-bar-msg{flex:1;background:#6002EE;color:#fff;border:0;}',
+    '#vl-op-bar .vl-op-bar-call{flex:0 0 108px;background:#fff;color:#1A1829;border:1px solid #EEEDF6;}',
+    '}'
+  ].join('');
+
+  function onepageLayout() {
+    document.documentElement.classList.add('vl-op');
+    if (!document.getElementById('vl-op-styles')) {
+      var st = document.createElement('style'); st.id = 'vl-op-styles'; st.textContent = OP_CSS;
+      document.head.appendChild(st);
+    }
+    var page = document.querySelector('.vl-page');
+    var sections = document.querySelector('.vl-sections');
+    if (!page || !sections) return;
+
+    // photo hero: portfolio section moves above the title hero (it stays
+    // display:none until loadPortfolio() confirms photos — a vendor without
+    // photos simply starts at the name, per the free-vendor design).
+    var port = document.getElementById('vl-portfolio');
+    var hero = document.querySelector('.vl-hero');
+    if (port && hero && hero.parentNode) hero.parentNode.insertBefore(port, hero);
+    var plabel = port && port.querySelector('.vl-portfolio-label');
+    if (plabel) plabel.style.display = 'none';
+
+    // sticky nav + two-column grid
+    var nav = ce('div'); nav.id = 'vl-op-nav';
+    var grid = ce('div', 'vl-op-grid');
+    var main = ce('div', 'vl-op-main');
+    var rail = ce('div', 'vl-op-rail');
+    sections.appendChild(nav);
+    sections.appendChild(grid);
+    grid.appendChild(main); grid.appendChild(rail);
+
+    OP_SECTIONS.forEach(function (s) {
+      var panel = $('[data-vl-panel="' + s.name + '"]');
+      if (!panel) return;
+      var sec = ce('section', 'vl-op-sec');
+      sec.id = 'vl-op-sec-' + s.name;
+      var h = ce('h2', 'vl-op-h');
+      h.textContent = s.label;
+      var cnt = document.getElementById('vl-count-' + s.name);
+      if (cnt) { // keep the live count element — renderers keep updating it by id
+        var cs = ce('span', 'vl-op-count');
+        cs.appendChild(cnt);
+        h.appendChild(cs);
+      }
+      sec.appendChild(h);
+      sec.appendChild(panel);
+      main.appendChild(sec);
+      var a = ce('a');
+      a.id = 'vl-op-nav-' + s.name;
+      a.href = '#vl-op-sec-' + s.name;
+      a.textContent = s.label;
+      a.addEventListener('click', function (ev) { ev.preventDefault(); onepageScrollTo(s.name); });
+      nav.appendChild(a);
+    });
+
+    // sticky contact card = the hero's action column + a heading + a pay slot
+    var right = document.querySelector('.vl-hero-right');
+    var card = ce('div', 'vl-op-card');
+    var lead = ce('div', 'vl-op-card-lead'); lead.textContent = 'Get in touch';
+    card.appendChild(lead);
+    if (right) card.appendChild(right);
+    var pay = ce('div'); pay.id = 'vl-op-pay';
+    card.appendChild(pay);
+    rail.appendChild(card);
+
+    buildOpBar();
+    placeOpCard();
+    var t = null;
+    window.addEventListener('resize', function () { clearTimeout(t); t = setTimeout(placeOpCard, 150); });
+    initOpNavHighlight();
+    loadInquiryScript();
+  }
+
+  // "Send a message" = lokali-inquiry.js (button + modal → dashboard Leads +
+  // vendor email). That script was never added to the Webflow footer, so the
+  // one-page layout loads it itself from wherever THIS script was served
+  // (jsDelivr @v1.4 in prod) — no manual Webflow paste needed.
+  function loadInquiryScript() {
+    if (document.getElementById('lok-inq-loader')) return;
+    var mine = $all('script').filter(function (s) { return /lokali-vendor-listing\.js/.test(s.src || ''); })[0];
+    if (!mine || !mine.src) return;
+    var s = document.createElement('script');
+    s.id = 'lok-inq-loader';
+    s.src = mine.src.replace(/lokali-vendor-listing\.js.*$/, 'lokali-inquiry.js');
+    s.defer = true;
+    document.body.appendChild(s);
+  }
+
+  function onepageScrollTo(name) {
+    var sec = document.getElementById('vl-op-sec-' + name);
+    if (sec && sec.style.display !== 'none') sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  function onepageSectionVisible(name, vis) {
+    show(document.getElementById('vl-op-sec-' + name), vis);
+    show(document.getElementById('vl-op-nav-' + name), vis);
+  }
+
+  // Mobile: the contact card sits inline right after Services (Airbnb-style
+  // "seen the offer → get in touch"); desktop puts it back in the sticky rail.
+  function placeOpCard() {
+    var card = document.querySelector('.vl-op-card');
+    var rail = document.querySelector('.vl-op-rail');
+    var main = document.querySelector('.vl-op-main');
+    if (!card || !rail || !main) return;
+    if (window.matchMedia('(max-width:767px)').matches) {
+      var svc = document.getElementById('vl-op-sec-services');
+      if (svc && svc.parentNode === main && card.previousElementSibling !== svc) main.insertBefore(card, svc.nextSibling);
+    } else if (card.parentNode !== rail) {
+      rail.appendChild(card);
+    }
+  }
+
+  // Fixed bottom bar (mobile): proxies the REAL controls so lead tracking and
+  // the inquiry modal behave identically. Call hides when the vendor has no
+  // phone (synced from initContact via syncOpBar()).
+  function buildOpBar() {
+    var bar = ce('div'); bar.id = 'vl-op-bar';
+    var msg = ce('button', 'vl-op-bar-msg');
+    msg.type = 'button';
+    msg.textContent = 'Send a message';
+    msg.addEventListener('click', function () {
+      var b = document.getElementById('lok-inq-btn');
+      if (b) b.click();
+    });
+    var call = ce('a', 'vl-op-bar-call');
+    call.textContent = 'Call';
+    call.addEventListener('click', function (ev) {
+      ev.preventDefault();
+      var c = document.getElementById('vl-ch-call');
+      if (c && c.href) c.click(); // real anchor → tel: nav + lead event
+    });
+    bar.appendChild(msg); bar.appendChild(call);
+    document.body.appendChild(bar);
+  }
+  function syncOpBar() {
+    if (!ONEPAGE) return;
+    var c = document.getElementById('vl-ch-call');
+    show(document.querySelector('.vl-op-bar-call'), !!(c && c.style.display !== 'none' && c.getAttribute('href')));
+    // no inquiry mount (script missing) → no message button either
+    var msgBtn = document.querySelector('.vl-op-bar-msg');
+    if (msgBtn && !document.getElementById('lok-inq-btn')) {
+      // check again shortly — lokali-inquiry.js mounts off the vendor-loaded event
+      setTimeout(function () { show(msgBtn, !!document.getElementById('lok-inq-btn')); }, 1200);
+    }
+  }
+
+  // Highlight the nav link for the section in view.
+  function initOpNavHighlight() {
+    if (!('IntersectionObserver' in window)) return;
+    var links = {};
+    OP_SECTIONS.forEach(function (s) { links[s.name] = document.getElementById('vl-op-nav-' + s.name); });
+    var obs = new IntersectionObserver(function (es) {
+      es.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        var name = (e.target.id || '').replace('vl-op-sec-', '');
+        OP_SECTIONS.forEach(function (s) {
+          if (links[s.name]) links[s.name].classList.toggle('vl-op-active', s.name === name);
+        });
+      });
+    }, { rootMargin: '-25% 0px -65% 0px' });
+    OP_SECTIONS.forEach(function (s) {
+      var sec = document.getElementById('vl-op-sec-' + s.name);
+      if (sec) obs.observe(sec);
     });
   }
 
@@ -652,6 +904,9 @@
       });
       if (photos.length < 2 && pips) pips.style.display = 'none';
       wireStrip(strip, pips);
+      // ONEPAGE photo-grid hero: the desktop grid template is keyed off how
+      // many photos there are (5 = Airbnb big+4, 3 = big+2, etc. — see OP_CSS).
+      section.setAttribute('data-op-count', String(photos.length));
       section.style.display = '';
     });
   }
@@ -737,6 +992,7 @@
     trackChannel(igEl, 'instagram');
     trackChannel(webBtn, 'website');
     trackChannel(document.getElementById('vl-about-website'), 'website');
+    syncOpBar(); // ONEPAGE mobile bar mirrors the real Call/message controls
   }
 
   // ---- hero + about population ------------------------------------------
@@ -886,6 +1142,20 @@
     }
     if (!methods.length) return;
 
+    // ONEPAGE: payment buttons live in the sticky contact card ("readily
+    // available to pay", decision 2026-07-17) instead of buried in About.
+    if (ONEPAGE) {
+      var slot = document.getElementById('vl-op-pay');
+      if (slot) {
+        var wrapOp = ce('div'); wrapOp.id = 'lok-pay-links';
+        wrapOp.style.cssText = 'margin-top:12px;font-family:"Plus Jakarta Sans",sans-serif;';
+        buildPayRow(wrapOp, v, methods);
+        slot.innerHTML = '';
+        slot.appendChild(wrapOp);
+        return;
+      }
+    }
+
     // Its OWN row directly BELOW the Website detail. NB: .vl-about-website carries
     // class vl-detail-v, so closest('[class*="vl-detail"]') matched the link itself
     // and crammed this into the flex Website row — target .vl-detail-row instead.
@@ -896,12 +1166,21 @@
 
     var wrap = ce('div'); wrap.id = 'lok-pay-links';
     wrap.style.cssText = 'margin-top:14px;font-family:"Plus Jakarta Sans",sans-serif;';
+    buildPayRow(wrap, v, methods);
 
+    if (row.nextSibling) row.parentNode.insertBefore(wrap, row.nextSibling);
+    else row.parentNode.appendChild(wrap);
+  }
+
+  // Shared builder for the pay row (label + brand icon buttons + disclaimer);
+  // used by both mounts — the About section (tabbed) and the contact card (ONEPAGE).
+  function buildPayRow(wrap, v, methods) {
     // Label on the left, icon buttons right-aligned — mirrors the detail rows.
     var line = ce('div');
     line.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:12px;';
     var k = ce('span', 'vl-detail-k');
     k.textContent = 'Pay ' + (v.business_name || 'this vendor');
+    if (ONEPAGE) k.style.cssText = 'font-family:"Plus Jakarta Sans",sans-serif;font-size:13px;font-weight:600;color:#1A1829;';
 
     var btnRow = ce('div');
     btnRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;';
@@ -938,9 +1217,6 @@
     disc.textContent = "Payments go directly to the vendor. Lokali doesn't process or guarantee them.";
     disc.style.cssText = 'text-align:right;font-size:11px;color:#8E8BA6;line-height:1.4;margin-top:6px;';
     wrap.appendChild(disc);
-
-    if (row.nextSibling) row.parentNode.insertBefore(wrap, row.nextSibling);
-    else row.parentNode.appendChild(wrap);
   }
 
   // ---- labels (categories + locations) ----------------------------------
@@ -1387,7 +1663,7 @@
     });
   }
 
-  function init() { injectStyles(); styleHeroChrome(); initTabs(); initSave(); hydrate(); }
+  function init() { injectStyles(); styleHeroChrome(); if (ONEPAGE) onepageLayout(); initTabs(); initSave(); hydrate(); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
 })();

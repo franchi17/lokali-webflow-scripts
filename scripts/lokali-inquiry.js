@@ -54,7 +54,7 @@
     var overlay = document.createElement('div');
     overlay.id = 'lok-inq-overlay';
     overlay.innerHTML =
-      '<div id="lok-inq-card" role="dialog" aria-modal="true" aria-label="Send an inquiry">' +
+      '<div id="lok-inq-card" role="dialog" aria-modal="true" aria-label="Send a message">' +
         '<form id="lok-inq-form" novalidate>' +
           '<h3>Contact <span id="lok-inq-vname"></span></h3>' +
           '<p class="lok-inq-sub">Send your question or request — they’ll reply to you directly.</p>' +
@@ -68,12 +68,12 @@
           '<div class="lok-inq-field"><label for="lok-inq-msg">Message</label>' +
             '<textarea id="lok-inq-msg" maxlength="2000" placeholder="Hi! I’m interested in..."></textarea></div>' +
           '<div class="lok-inq-hp" aria-hidden="true"><label>Website<input id="lok-inq-website" type="text" tabindex="-1" autocomplete="off"/></label></div>' +
-          '<button id="lok-inq-send" type="submit">Send inquiry</button>' +
+          '<button id="lok-inq-send" type="submit">Send message</button>' +
           '<button id="lok-inq-cancel" type="button">Cancel</button>' +
         '</form>' +
         '<div id="lok-inq-done" style="display:none;">' +
           '<div class="lok-inq-check">✓</div>' +
-          '<h4>Inquiry sent!</h4>' +
+          '<h4>Message sent!</h4>' +
           '<p id="lok-inq-done-sub"></p>' +
           '<button id="lok-inq-close" type="button" style="margin-top:16px;padding:11px 28px;border:0;border-radius:10px;background:#6002EE;color:#fff;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;">Done</button>' +
         '</div>' +
@@ -138,7 +138,7 @@
       website: modal.querySelector('#lok-inq-website').value
     }).then(function (res) {
       btn.disabled = false;
-      btn.textContent = 'Send inquiry';
+      btn.textContent = 'Send message';
       if (res && res.error) {
         showError(res.error === 'Request failed' ? 'Something went wrong — please try again.' : res.error);
         return;
@@ -156,7 +156,7 @@
     var btn = document.createElement('button');
     btn.id = 'lok-inq-btn';
     btn.type = 'button';
-    btn.textContent = 'Send an inquiry';
+    btn.textContent = 'Send a message';
     btn.addEventListener('click', function () { open(''); });
     injectStyles();
     if (target) {
