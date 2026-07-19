@@ -293,10 +293,12 @@
   //   • the mailto Email button + Instagram link are dropped (decisions 07-17)
   //   • mobile: the card relocates inline after Services + a fixed bottom bar
   //     ("Send a message" / "Call") proxies the real controls
+  // label = nav text; heading (optional) = the in-section h2 when it differs.
+  var OP_HEART = '<svg width="18" height="18" viewBox="0 0 24 24" fill="#6002EE" aria-hidden="true" style="vertical-align:-3px;margin-right:8px;"><path d="M12 20.5l-1.4-1.27C5.6 14.86 2.5 12.07 2.5 8.6 2.5 6.1 4.5 4.1 7 4.1c1.5 0 2.95.7 3.9 1.81C11.85 4.8 13.3 4.1 14.8 4.1c2.5 0 4.5 2 4.5 4.5 0 3.47-3.1 6.26-8.1 10.63L12 20.5z"/></svg>';
   var OP_SECTIONS = [
     { name: 'services', label: 'Services' },
     { name: 'products', label: 'Products' },
-    { name: 'reviews',  label: 'Reviews' },
+    { name: 'reviews',  label: 'Reviews', headingHtml: OP_HEART + 'Recommended by neighbors' },
     { name: 'about',    label: 'About the vendor' }
   ];
   var OP_CSS = [
@@ -348,11 +350,53 @@
     'html.vl-op #vl-portfolio .vd-pips{display:none !important;}',
     '#vl-op-bar{display:none;}',
     '}',
+    // ── mockup-fidelity pass (2026-07-19 gap closure) ──────────────────────
+    // Title block: smaller inline logo, category/areas as icon+text lines
+    // (mockup shows plain lines, not pills).
+    'html.vl-op .vl-avatar{width:64px !important;height:64px !important;min-width:64px !important;}',
+    'html.vl-op .vl-avatar-txt{font-size:22px !important;}',
+    'html.vl-op #vl-category.vl-cat-pill{background:transparent !important;border:none !important;padding:0 !important;font-size:14.5px;font-weight:700;}',
+    'html.vl-op .vl-area-pill{background:transparent !important;border:none !important;padding:0 !important;margin:0 !important;font-size:14.5px;font-weight:600;color:#6B6880;}',
+    'html.vl-op .vl-area-pill:not(:last-child):after{content:"\\00a0\\00b7\\00a0";color:#B9B6C9;}',
+    'html.vl-op #vl-areas{gap:0 !important;display:inline-flex;flex-wrap:wrap;}',
+    // Services: full-width horizontal cards (image left), per the mockup.
+    'html.vl-op [data-vl-panel="services"] .vl-grid{display:flex !important;flex-direction:column;gap:16px;width:100%;}',
+    'html.vl-op [data-vl-panel="services"] .vl-card{display:grid !important;grid-template-columns:190px 1fr;width:100% !important;max-width:none !important;border-radius:16px;overflow:hidden;align-items:stretch;}',
+    'html.vl-op [data-vl-panel="services"] .vl-card-img{width:100% !important;height:100% !important;min-height:150px;border-radius:0 !important;}',
+    'html.vl-op [data-vl-panel="services"] .vl-card-img img{width:100%;height:100%;object-fit:cover;display:block;}',
+    'html.vl-op [data-vl-panel="services"] .vl-card-body{padding:16px 18px;display:flex;flex-direction:column;}',
+    // Products: keep vertical cards but let them breathe in a 2-up grid.
+    'html.vl-op [data-vl-panel="products"] .vl-grid{display:grid !important;grid-template-columns:1fr 1fr;gap:16px;width:100%;}',
+    'html.vl-op [data-vl-panel="products"] .vl-card{width:100% !important;max-width:none !important;}',
+    // Highlights (icon rows above Meet the vendor)
+    '.vl-op-hl{display:flex;gap:14px;align-items:flex-start;padding:9px 0;font-family:"Plus Jakarta Sans",sans-serif;}',
+    '.vl-op-hl-ico{width:38px;height:38px;border-radius:11px;background:#F1EEFB;display:flex;align-items:center;justify-content:center;flex:none;}',
+    '.vl-op-hl b{display:block;font-size:15px;color:#1A1829;}',
+    '.vl-op-hl span{color:#6B6880;font-size:13.5px;}',
+    // Reviews: violet-tinted empty state per the mockup
+    'html.vl-op .vl-rev-empty{background:#F1EEFB !important;border:none !important;}',
+    // "More about" host card + bio grid (renders when Meet-the-Vendor is filled)
+    '.vl-meet-grid{display:grid;grid-template-columns:280px minmax(0,1fr);gap:28px;align-items:start;font-family:"Plus Jakarta Sans",sans-serif;margin-bottom:14px;}',
+    '.vl-host-card{background:#fff;border:.5px solid #EEEDF6;border-radius:20px;box-shadow:0 10px 30px rgba(26,24,41,.08);padding:26px;text-align:center;}',
+    '.vl-host-card .vl-host-nm{font-weight:700;font-size:18px;color:#1A1829;}',
+    '.vl-host-card .vl-host-rl{color:#6B6880;font-size:13px;margin-bottom:14px;}',
+    '.vl-host-stats{border-top:1px solid #EEEDF6;text-align:left;padding-top:12px;}',
+    '.vl-host-st{display:flex;justify-content:space-between;gap:10px;padding:6px 0;font-size:13.5px;color:#6B6880;font-weight:600;}',
+    '.vl-host-st b{color:#1A1829;font-weight:700;text-align:right;}',
+    '.vl-meet-bio{color:#565170;font-size:15px;line-height:1.6;white-space:pre-line;}',
+    // "Ways to pay" chips in the card (labeled pills, not bare icon circles)
+    '.vl-op-pay-chip{display:inline-flex;align-items:center;gap:8px;border:1px solid #E4DFF6;background:#fff;border-radius:12px;padding:9px 14px;font:600 13.5px "Plus Jakarta Sans",sans-serif;color:#5F51B8;text-decoration:none;cursor:pointer;position:relative;transition:background .12s;}',
+    '.vl-op-pay-chip:hover{background:#F3EBFF;}',
+    '.vl-op-pay-chip svg{display:block;width:15px;height:15px;}',
     // mobile
     '@media (max-width:767px){',
     '.vl-op-grid{grid-template-columns:1fr;gap:0;}',
     '.vl-op-rail{position:static;}',
     '.vl-op-card{margin:6px 0 22px;}',
+    'html.vl-op [data-vl-panel="services"] .vl-card{grid-template-columns:1fr;}',
+    'html.vl-op [data-vl-panel="services"] .vl-card-img{min-height:170px;}',
+    'html.vl-op [data-vl-panel="products"] .vl-grid{grid-template-columns:1fr;}',
+    '.vl-meet-grid{grid-template-columns:1fr;}',
     'html.vl-op body{padding-bottom:76px;}',
     '#vl-op-bar{position:fixed;left:0;right:0;bottom:0;z-index:60;display:flex;gap:10px;background:#fff;border-top:1px solid #EEEDF6;padding:10px 14px calc(10px + env(safe-area-inset-bottom));box-shadow:0 -6px 20px rgba(26,24,41,.08);}',
     '#vl-op-bar button,#vl-op-bar a{font-family:"Plus Jakarta Sans",sans-serif;font-weight:600;font-size:15px;border-radius:10px;min-height:46px;display:flex;align-items:center;justify-content:center;cursor:pointer;text-decoration:none;}',
@@ -387,16 +431,13 @@
     var rail = ce('div', 'vl-op-rail');
     // Sentinel right above the nav: while it's on screen (= the page top /
     // main header area is visible) the nav hides; scroll past it → nav shows.
+    // Driven by a plain scroll listener — the earlier IntersectionObserver
+    // version silently never fired on the live page (2026-07-19 fix).
     var navSentinel = ce('div');
     navSentinel.style.cssText = 'height:1px;margin:0;padding:0;';
     sections.appendChild(navSentinel);
     sections.appendChild(nav);
-    if ('IntersectionObserver' in window) {
-      nav.classList.add('vl-op-nav-auto');
-      new IntersectionObserver(function (es) {
-        nav.classList.toggle('vl-op-nav-on', !es[0].isIntersecting);
-      }).observe(navSentinel);
-    }
+    nav.classList.add('vl-op-nav-auto');
     sections.appendChild(grid);
     grid.appendChild(main); grid.appendChild(rail);
 
@@ -406,7 +447,8 @@
       var sec = ce('section', 'vl-op-sec');
       sec.id = 'vl-op-sec-' + s.name;
       var h = ce('h2', 'vl-op-h');
-      h.textContent = s.label;
+      if (s.headingHtml) h.innerHTML = s.headingHtml; // static markup only (OP_HEART)
+      else h.textContent = s.label;
       var cnt = document.getElementById('vl-count-' + s.name);
       if (cnt) { // keep the live count element — renderers keep updating it by id
         var cs = ce('span', 'vl-op-count');
@@ -438,7 +480,8 @@
     placeOpCard();
     var t = null;
     window.addEventListener('resize', function () { clearTimeout(t); t = setTimeout(placeOpCard, 150); });
-    initOpNavHighlight();
+    initOpNavScroll(navSentinel, nav);
+    watchAvailability(main, nav);
     loadInquiryScript();
   }
 
@@ -515,24 +558,111 @@
     }
   }
 
-  // Highlight the nav link for the section in view.
-  function initOpNavHighlight() {
-    if (!('IntersectionObserver' in window)) return;
-    var links = {};
-    OP_SECTIONS.forEach(function (s) { links[s.name] = document.getElementById('vl-op-nav-' + s.name); });
-    var obs = new IntersectionObserver(function (es) {
-      es.forEach(function (e) {
-        if (!e.isIntersecting) return;
-        var name = (e.target.id || '').replace('vl-op-sec-', '');
-        OP_SECTIONS.forEach(function (s) {
-          if (links[s.name]) links[s.name].classList.toggle('vl-op-active', s.name === name);
-        });
-      });
-    }, { rootMargin: '-25% 0px -65% 0px' });
-    OP_SECTIONS.forEach(function (s) {
-      var sec = document.getElementById('vl-op-sec-' + s.name);
-      if (sec) obs.observe(sec);
-    });
+  // Nav show/hide + active-link highlight, driven by ONE passive scroll
+  // listener (deterministic everywhere — IO delivery proved unreliable live).
+  // Reads the nav's own links each pass, so dynamically added sections
+  // (Availability) join automatically.
+  function initOpNavScroll(sentinel, nav) {
+    var queued = false;
+    function update() {
+      queued = false;
+      nav.classList.toggle('vl-op-nav-on', sentinel.getBoundingClientRect().top < 0);
+      var mark = window.innerHeight * 0.35;
+      var as = nav.querySelectorAll('a[id^="vl-op-nav-"]');
+      var activeId = null;
+      for (var i = 0; i < as.length; i++) {
+        if (as[i].style.display === 'none') continue;
+        var sec = document.getElementById(as[i].id.replace('vl-op-nav-', 'vl-op-sec-'));
+        if (!sec || sec.style.display === 'none') continue;
+        if (sec.getBoundingClientRect().top <= mark) activeId = as[i].id;
+      }
+      for (var j = 0; j < as.length; j++) as[j].classList.toggle('vl-op-active', as[j].id === activeId);
+    }
+    function onScroll() {
+      if (queued) return;
+      queued = true;
+      setTimeout(update, 60);
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    update();
+  }
+
+  // ---- highlights (icon rows above Meet the vendor / Services) -----------
+  // Rows come from real, verifiable flags only. The ★ Featured row from the
+  // early mockup is intentionally absent (#86 removed the Featured badge).
+  var OP_CHECK_SVG = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2E7D5B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+  var ICON_BOLT = ASSET + '6a1d92f83a64390307583b8e_bolt-solid.png';
+  function opAddHighlight(row) {
+    var main = document.querySelector('.vl-op-main');
+    if (!main) return;
+    var sec = document.getElementById('vl-op-sec-highlights');
+    if (!sec) {
+      sec = ce('section', 'vl-op-sec');
+      sec.id = 'vl-op-sec-highlights';
+      main.insertBefore(sec, main.firstChild);
+    }
+    if (sec.querySelector('[data-hl="' + row.key + '"]')) return;
+    var el = ce('div', 'vl-op-hl');
+    el.setAttribute('data-hl', row.key);
+    var ico = ce('div', 'vl-op-hl-ico');
+    if (row.svg) ico.innerHTML = row.svg;            // static markup only
+    else if (row.url) ico.appendChild(maskIcon(row.url, row.tint, 18));
+    var txt = ce('div');
+    var b = ce('b'); b.textContent = row.t; txt.appendChild(b);
+    var s = ce('span'); s.textContent = row.s; txt.appendChild(s);
+    el.appendChild(ico); el.appendChild(txt);
+    sec.appendChild(el);
+  }
+  function renderHighlights(v) {
+    if (v.is_founding_member) {
+      var yr = v.created_at ? new Date(v.created_at).getFullYear() : null;
+      opAddHighlight({ key: 'founding', url: ICON_CROWN, tint: '#9A6B00', t: 'Founding vendor', s: 'Part of the Lokali community' + (yr ? ' since ' + yr : '') });
+    }
+    if (v.is_verified || v.identity_status === 'verified') {
+      opAddHighlight({ key: 'verified', svg: OP_CHECK_SVG, t: 'Identity verified', s: 'Business identity confirmed by Lokali' });
+    }
+    // 'Books online' joins via watchAvailability() when the calendar mounts.
+  }
+
+  // ---- availability section adoption -------------------------------------
+  // lokali-availability.js self-mounts (only for enabled Pro/Featured vendors)
+  // into #lokali-availability or a self-made tab panel. In one-page mode,
+  // adopt whatever it rendered into a proper stacked section with a heading +
+  // nav link (before Reviews) + a "Books online" highlight row.
+  function watchAvailability(main, nav) {
+    var tries = 0;
+    var iv = setInterval(function () {
+      tries++;
+      var el = document.getElementById('lokali-availability');
+      if (el && el.children.length) {
+        clearInterval(iv);
+        if (document.getElementById('vl-op-sec-availability')) return;
+        var sec = ce('section', 'vl-op-sec');
+        sec.id = 'vl-op-sec-availability';
+        var h = ce('h2', 'vl-op-h');
+        h.textContent = 'Availability & hours';
+        sec.appendChild(h);
+        // adopt the widget (and drop any stray self-made tab panel wrapper)
+        var strayPanel = el.closest ? el.closest('[data-vl-panel="availability"]') : null;
+        sec.appendChild(el);
+        if (strayPanel && strayPanel.parentNode && !strayPanel.children.length) strayPanel.parentNode.removeChild(strayPanel);
+        var reviews = document.getElementById('vl-op-sec-reviews');
+        if (reviews && reviews.parentNode === main) main.insertBefore(sec, reviews);
+        else main.appendChild(sec);
+        var a = ce('a');
+        a.id = 'vl-op-nav-availability';
+        a.href = '#vl-op-sec-availability';
+        a.textContent = 'Availability';
+        a.addEventListener('click', function (ev) { ev.preventDefault(); sec.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+        var revLink = document.getElementById('vl-op-nav-reviews');
+        if (revLink && revLink.parentNode === nav) nav.insertBefore(a, revLink);
+        else nav.appendChild(a);
+        opAddHighlight({ key: 'books', url: ICON_BOLT, tint: '#5F51B8', t: 'Books online', s: 'Check live availability and request a date' });
+      } else if (tries > 40) {
+        clearInterval(iv); // ~20s — vendor isn't on the availability feature
+      }
+    }, 500);
   }
 
   // ---- save / favorites: wire the designed #vl-save button to the Favorites API.
@@ -1014,6 +1144,25 @@
   }
 
   // ---- hero + about population ------------------------------------------
+  // #80 — slim "you're viewing your own storefront" bar at the top of the
+  // page, only for the listing's owner. Idempotent; soft violet, PJS.
+  function injectOwnerStorefrontBar() {
+    if (document.querySelector('[data-vl-ownerbar]')) return;
+    var bar = ce('div');
+    bar.setAttribute('data-vl-ownerbar', '');
+    bar.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;' +
+      'background:#F3EEFF;border-bottom:1px solid #E4DCF7;padding:10px 16px;' +
+      "font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;color:#3b3654;text-align:center;";
+    bar.innerHTML =
+      '<span>🏪 You’re viewing your own storefront — this is what customers see.</span>' +
+      '<a href="/vendor-dashboard/dashboard" style="background:#6E3CFF;color:#fff;font-weight:700;' +
+      'font-size:13px;padding:7px 16px;border-radius:999px;text-decoration:none;font-family:inherit;' +
+      'white-space:nowrap;">Back to my dashboard</a>';
+    var page = document.querySelector('.vl-page');
+    if (page && page.parentNode) page.parentNode.insertBefore(bar, page);
+    else document.body.insertBefore(bar, document.body.firstChild);
+  }
+
   // #90 publish gate — friendly "not public yet" page for direct slug hits on
   // a storefront that hasn't met the minimum bar. Never a 404: the row is
   // readable, only discovery is gated. Visitors get a soft check-back note;
@@ -1177,7 +1326,7 @@
 
     renderPayLinks(v);
     initContact(v);
-    if (ONEPAGE) renderMeetVendor(v);
+    if (ONEPAGE) { renderHighlights(v); renderMeetVendor(v, labels); }
     injectVendorReport(v);
     if (v.id != null) {
       var hero = document.querySelector('[data-lokali-vendor-id]');
@@ -1193,7 +1342,7 @@
   //   • a personal intro block (photo + bio) prepended inside About
   // All text via textContent (owner fields are vendor-typed), photo through
   // photoUrl() (scheme-sanitized).
-  function renderMeetVendor(v) {
+  function renderMeetVendor(v, labels) {
     var name = (v.owner_name || '').trim();
     var bio = (v.owner_bio || '').trim();
     var langs = (v.owner_languages || '').trim();
@@ -1202,6 +1351,13 @@
     if (document.getElementById('vl-op-sec-meet')) return;
     var main = document.querySelector('.vl-op-main');
     if (!main) return;
+
+    // About section heading goes personal once we know who runs the place.
+    if (name) {
+      var aboutSec = document.getElementById('vl-op-sec-about');
+      var aboutH = aboutSec && aboutSec.querySelector('.vl-op-h');
+      if (aboutH) aboutH.textContent = 'More about ' + name + ' & the business';
+    }
 
     function avatarEl(size) {
       var el;
@@ -1250,23 +1406,41 @@
     sec.appendChild(row);
     main.insertBefore(sec, main.firstChild);
 
-    // --- personal intro inside the About section (bottom) ---
+    // --- host card + bio inside the About section (mockup layout) ---
     var aboutPanel = $('[data-vl-panel="about"]');
-    if (aboutPanel && (bio || photo)) {
-      var block = ce('div');
+    if (aboutPanel && (bio || photo || name)) {
+      var block = ce('div', 'vl-meet-grid');
       block.id = 'vl-meet-about';
-      block.style.cssText = 'display:flex;gap:16px;align-items:flex-start;background:#fff;border:.5px solid #EEEDF6;border-radius:12px;padding:16px 18px;margin-bottom:12px;font-family:"Plus Jakarta Sans",sans-serif;';
-      block.appendChild(avatarEl(56));
-      var bt = ce('div');
-      if (name) {
-        var bn = ce('div');
-        bn.style.cssText = 'font-weight:700;font-size:15px;color:#1A1829;margin-bottom:4px;';
-        bn.textContent = name + (v.business_name ? ' · ' + v.business_name : '');
-        bt.appendChild(bn);
+      var card = ce('div', 'vl-host-card');
+      var av = avatarEl(88);
+      av.style.margin = '0 auto 10px';
+      card.appendChild(av);
+      if (name) { var nm = ce('div', 'vl-host-nm'); nm.textContent = name; card.appendChild(nm); }
+      var rl = ce('div', 'vl-host-rl');
+      rl.textContent = v.business_name ? 'Founder, ' + v.business_name : 'The person behind the business';
+      card.appendChild(rl);
+      var stats = ce('div', 'vl-host-stats');
+      function stat(k, val) {
+        if (!val) return;
+        var row = ce('div', 'vl-host-st');
+        var sk = ce('span'); sk.textContent = k;
+        var sv = ce('b'); sv.textContent = val;
+        row.appendChild(sk); row.appendChild(sv); stats.appendChild(row);
       }
+      stat('On Lokali since', v.created_at ? String(new Date(v.created_at).getFullYear()) : '');
+      if (v.is_verified || v.identity_status === 'verified') stat('Identity', 'Verified');
+      // Based in = the vendor's first service area (labels already resolved)
+      var basedIn = '';
+      if (Array.isArray(v.locations_id) && v.locations_id.length && labels && labels.locations) {
+        basedIn = labels.locations[v.locations_id[0]] || '';
+      }
+      stat('Based in', basedIn);
+      stat('Speaks', langs);
+      card.appendChild(stats);
+      block.appendChild(card);
+      var bt = ce('div');
       if (bio) {
-        var bp = ce('div');
-        bp.style.cssText = 'color:#565170;font-size:14px;line-height:1.55;white-space:pre-line;';
+        var bp = ce('div', 'vl-meet-bio');
         bp.textContent = bio;
         bt.appendChild(bp);
       }
@@ -1358,15 +1532,20 @@
   // Shared builder for the pay row (label + brand icon buttons + disclaimer);
   // used by both mounts — the About section (tabbed) and the contact card (ONEPAGE).
   function buildPayRow(wrap, v, methods) {
-    // Label on the left, icon buttons right-aligned — mirrors the detail rows.
+    // ONEPAGE (mockup style): "Ways to pay" label above a row of labeled brand
+    // chips. Tab mode keeps the original right-aligned icon circles.
     var line = ce('div');
-    line.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:12px;';
+    line.style.cssText = ONEPAGE
+      ? 'display:block;'
+      : 'display:flex;justify-content:space-between;align-items:center;gap:12px;';
     var k = ce('span', 'vl-detail-k');
-    k.textContent = 'Pay ' + (v.business_name || 'this vendor');
-    if (ONEPAGE) k.style.cssText = 'font-family:"Plus Jakarta Sans",sans-serif;font-size:13px;font-weight:600;color:#1A1829;';
+    k.textContent = ONEPAGE ? 'Ways to pay' : ('Pay ' + (v.business_name || 'this vendor'));
+    if (ONEPAGE) k.style.cssText = 'display:block;font-family:"Plus Jakarta Sans",sans-serif;font-size:14px;font-weight:700;color:#1A1829;margin-bottom:8px;';
 
     var btnRow = ce('div');
-    btnRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;';
+    btnRow.style.cssText = ONEPAGE
+      ? 'display:flex;flex-wrap:wrap;gap:8px;'
+      : 'display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;';
     methods.forEach(function (m) {
       var a = ce('a');
       if (m.copy) {
@@ -1545,6 +1724,23 @@
               emitView();
             }, function () { emitView(); }); // not a vendor / lookup failed — count it
           }
+        }
+      } catch (e) {}
+      // #80 — storefront-mode banner. When a vendor lands on their OWN public
+      // listing (View-my-storefront / View-my-listing buttons), the header
+      // identity switcher shows "shopping", which read as being lost in the
+      // wrong account. Decision 2026-07-19: say it plainly on the page — a
+      // slim bar naming this as their storefront + a one-click way back.
+      // vendors.me() is memoized (one cheap call); anonymous visitors skip.
+      try {
+        var tok80 = window.LokaliAPI.getToken && window.LokaliAPI.getToken();
+        if (tok80 && window.LokaliAPI.vendors && window.LokaliAPI.vendors.me) {
+          window.LokaliAPI.vendors.me().then(function (res80) {
+            var mine80 = res80 && res80.data;
+            if (mine80 && mine80.vendor) mine80 = mine80.vendor;
+            if (!mine80 || mine80.id == null || Number(mine80.id) !== Number(vid)) return;
+            injectOwnerStorefrontBar();
+          }, function () {});
         }
       } catch (e) {}
       loadPortfolio(vid, v);
