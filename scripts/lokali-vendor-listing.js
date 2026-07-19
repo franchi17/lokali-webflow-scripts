@@ -312,7 +312,9 @@
     // sticky section nav — hidden while the top of the page (hero/header) is
     // in view, fades in once you scroll past it (Airbnb behavior; sentinel
     // observer in onepageLayout toggles .vl-op-nav-on).
-    '#vl-op-nav{position:sticky;top:0;z-index:40;background:#FFFFFF;display:flex;gap:26px;overflow-x:auto;border-bottom:1px solid #EEEDF6;margin-top:6px;}',
+    // --vl-op-top = the fixed Webflow header's height (measured at init; the
+    // nav/rail/anchors must clear it or they slide underneath — 2026-07-19 fix).
+    '#vl-op-nav{position:sticky;top:var(--vl-op-top,0px);z-index:40;background:#FFFFFF;display:flex;gap:26px;overflow-x:auto;border-bottom:1px solid #EEEDF6;margin-top:6px;}',
     '#vl-op-nav.vl-op-nav-auto{visibility:hidden;opacity:0;transition:opacity .18s;}',
     '#vl-op-nav.vl-op-nav-auto.vl-op-nav-on{visibility:visible;opacity:1;}',
     '#vl-op-nav a{padding:14px 2px;font:600 14px/1.2 "Plus Jakarta Sans",sans-serif;color:#6B6880;text-decoration:none;border-bottom:2px solid transparent;white-space:nowrap;}',
@@ -320,12 +322,12 @@
     // two-column body
     '.vl-op-grid{display:grid;grid-template-columns:minmax(0,1fr) 332px;gap:44px;align-items:start;}',
     '.vl-op-main{min-width:0;}',
-    '.vl-op-sec{padding:28px 0;border-bottom:1px solid #EEEDF6;scroll-margin-top:64px;}',
+    '.vl-op-sec{padding:28px 0;border-bottom:1px solid #EEEDF6;scroll-margin-top:calc(var(--vl-op-top,0px) + 62px);}',
     '.vl-op-sec:last-child{border-bottom:none;}',
     '.vl-op-h{font:700 20px/1.3 "Plus Jakarta Sans",sans-serif;color:#1A1829;margin:0 0 16px;}',
     '.vl-op-count{color:#6B6880;font-weight:600;font-size:14px;margin-left:7px;}',
     // sticky contact card
-    '.vl-op-rail{position:sticky;top:64px;min-width:0;}',
+    '.vl-op-rail{position:sticky;top:calc(var(--vl-op-top,0px) + 12px);min-width:0;}',
     '.vl-op-card{background:#fff;border:.5px solid #EEEDF6;border-radius:18px;box-shadow:0 8px 28px rgba(26,24,41,.07);padding:20px;}',
     '.vl-op-card-lead{font:700 16px/1.3 "Plus Jakarta Sans",sans-serif;color:#1A1829;margin-bottom:12px;}',
     'html.vl-op .vl-op-card .vl-hero-right{width:100% !important;align-items:stretch;display:flex;flex-direction:column;gap:10px;}',
@@ -351,6 +353,10 @@
     '#vl-op-bar{display:none;}',
     '}',
     // ── mockup-fidelity pass (2026-07-19 gap closure) ──────────────────────
+    // The Webflow .vl-page container is ~820px; the approved mockup is a
+    // 1120px canvas — the single biggest "feels cramped" gap. Widen in
+    // one-page mode only (tab mode untouched).
+    'html.vl-op .vl-page{max-width:1120px !important;width:100% !important;padding-left:24px;padding-right:24px;box-sizing:border-box;margin-left:auto;margin-right:auto;}',
     // Title block: smaller inline logo, category/areas as icon+text lines
     // (mockup shows plain lines, not pills).
     'html.vl-op .vl-avatar{width:64px !important;height:64px !important;min-width:64px !important;}',
@@ -478,8 +484,11 @@
 
     buildOpBar();
     placeOpCard();
+    // The Webflow header is position:fixed — expose its height as a CSS var so
+    // the sticky nav/rail/anchor offsets clear it (0 if the header ever changes).
+    opSetTop();
     var t = null;
-    window.addEventListener('resize', function () { clearTimeout(t); t = setTimeout(placeOpCard, 150); });
+    window.addEventListener('resize', function () { clearTimeout(t); t = setTimeout(function () { placeOpCard(); setOpTop(); }, 150); });
     initOpNavScroll(navSentinel, nav);
     watchAvailability(main, nav);
     loadInquiryScript();
@@ -562,10 +571,20 @@
   // listener (deterministic everywhere — IO delivery proved unreliable live).
   // Reads the nav's own links each pass, so dynamically added sections
   // (Availability) join automatically.
+  // The Webflow header flips to position:fixed only after scrolling (scroll
+  // interaction), so its height is re-measured on every throttled scroll pass —
+  // the sticky nav/rail/anchors read it via the --vl-op-top CSS var.
+  function opSetTop() {
+    var hdr = document.querySelector('.header-wrapper');
+    var fixed = hdr && getComputedStyle(hdr).position === 'fixed';
+    document.documentElement.style.setProperty('--vl-op-top', (fixed ? hdr.offsetHeight : 0) + 'px');
+  }
+
   function initOpNavScroll(sentinel, nav) {
     var queued = false;
     function update() {
       queued = false;
+      opSetTop();
       nav.classList.toggle('vl-op-nav-on', sentinel.getBoundingClientRect().top < 0);
       var mark = window.innerHeight * 0.35;
       var as = nav.querySelectorAll('a[id^="vl-op-nav-"]');
@@ -1557,21 +1576,36 @@
       }
       a.setAttribute('aria-label', 'Pay via ' + m.label);
       a.innerHTML = m.icon; // set BEFORE appending the tooltip (innerHTML replaces children)
-      a.style.cssText = 'position:relative;display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;flex:0 0 auto;color:#6002EE;background:#fff;border:1px solid #6002EE;border-radius:50%;text-decoration:none;transition:background .12s,color .12s;';
-      // Hover tooltip with the app name for the recognizable brands only.
-      // The generic "other" link gets NO label — its custom label is long enough
-      // to cover the Website line, and the icon alone is the point (a vendor just
-      // points customers to their Lokali page for the payment options).
       var tip = null;
-      if (m.type !== 'other_pay') {
-        tip = ce('span');
-        tip.textContent = m.label;
-        // Right-anchored so the rightmost icon's tooltip doesn't overflow the card.
-        tip.style.cssText = 'position:absolute;bottom:calc(100% + 8px);right:0;background:#6002EE;color:#fff;font-family:"Plus Jakarta Sans",sans-serif;font-size:11px;font-weight:600;padding:4px 8px;border-radius:6px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .12s;box-shadow:0 4px 12px rgba(38,10,80,.22);z-index:2;';
-        a.appendChild(tip);
+      if (ONEPAGE) {
+        // Mockup style: labeled brand chip (icon + name). No hover tooltip —
+        // the name is visible; a tip is created only for tap-to-copy feedback.
+        a.className = 'vl-op-pay-chip';
+        var lb = ce('span');
+        lb.textContent = m.label;
+        a.appendChild(lb);
+        if (m.copy) {
+          tip = ce('span');
+          tip.textContent = m.label;
+          tip.style.cssText = 'position:absolute;bottom:calc(100% + 8px);left:0;background:#6002EE;color:#fff;font-family:"Plus Jakarta Sans",sans-serif;font-size:11px;font-weight:600;padding:4px 8px;border-radius:6px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .12s;box-shadow:0 4px 12px rgba(38,10,80,.22);z-index:2;';
+          a.appendChild(tip);
+        }
+      } else {
+        a.style.cssText = 'position:relative;display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;flex:0 0 auto;color:#6002EE;background:#fff;border:1px solid #6002EE;border-radius:50%;text-decoration:none;transition:background .12s,color .12s;';
+        // Hover tooltip with the app name for the recognizable brands only.
+        // The generic "other" link gets NO label — its custom label is long enough
+        // to cover the Website line, and the icon alone is the point (a vendor just
+        // points customers to their Lokali page for the payment options).
+        if (m.type !== 'other_pay') {
+          tip = ce('span');
+          tip.textContent = m.label;
+          // Right-anchored so the rightmost icon's tooltip doesn't overflow the card.
+          tip.style.cssText = 'position:absolute;bottom:calc(100% + 8px);right:0;background:#6002EE;color:#fff;font-family:"Plus Jakarta Sans",sans-serif;font-size:11px;font-weight:600;padding:4px 8px;border-radius:6px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .12s;box-shadow:0 4px 12px rgba(38,10,80,.22);z-index:2;';
+          a.appendChild(tip);
+        }
+        a.addEventListener('mouseenter', function () { a.style.background = '#6002EE'; a.style.color = '#fff'; if (tip) tip.style.opacity = '1'; });
+        a.addEventListener('mouseleave', function () { a.style.background = '#fff'; a.style.color = '#6002EE'; if (tip) tip.style.opacity = '0'; });
       }
-      a.addEventListener('mouseenter', function () { a.style.background = '#6002EE'; a.style.color = '#fff'; if (tip) tip.style.opacity = '1'; });
-      a.addEventListener('mouseleave', function () { a.style.background = '#fff'; a.style.color = '#6002EE'; if (tip) tip.style.opacity = '0'; });
       if (m.copy) {
         a.addEventListener('click', function (ev) {
           ev.preventDefault();
