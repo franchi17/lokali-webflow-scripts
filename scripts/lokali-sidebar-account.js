@@ -327,7 +327,18 @@
     });
   }
 
+  // #76: person-first naming — the sidebar's native "My Listing" item reads
+  // "My Storefront" (Francesca 2026-07-19). Static Webflow markup on every
+  // dashboard page, so the rename lives here (this script loads on them all).
+  function renameMyListing() {
+    var items = document.querySelectorAll('strong.dashboard-menu');
+    for (var i = 0; i < items.length; i++) {
+      if ((items[i].textContent || '').trim() === 'My Listing') items[i].textContent = 'My Storefront';
+    }
+  }
+
   function init() {
+    renameMyListing(); // runs page-wide even when the chip below is absent
     // Target ONLY the native dashboard-sidebar chip. The header account menu
     // (lokali-auth-nav.js) reuses the same .lok-acct/.lok-acct-name classes but
     // marks its wrapper with data-lok-acct="1" — exclude it, or this would

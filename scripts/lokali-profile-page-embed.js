@@ -695,7 +695,10 @@ var LokaliProfilePage = (function () {
       view.target = '_blank';
       view.rel = 'noopener';
       view.textContent = 'View my storefront →';
-      view.style.cssText = 'display:inline-block;background:#6002EE;color:#fff;border-radius:10px;padding:10px 16px;font:600 14px "Plus Jakarta Sans",sans-serif;text-decoration:none;';
+      // soft violet, NOT solid brand — the solid one clashed with SAVE (Francesca 2026-07-19)
+      view.style.cssText = 'display:inline-block;background:#F3EBFF;color:#6002EE;border-radius:10px;padding:10px 16px;font:600 14px "Plus Jakarta Sans",sans-serif;text-decoration:none;transition:background .12s;';
+      view.addEventListener('mouseenter', function () { view.style.background = '#E9DCFF'; });
+      view.addEventListener('mouseleave', function () { view.style.background = '#F3EBFF'; });
       row.appendChild(view);
     }
     head.appendChild(row);
