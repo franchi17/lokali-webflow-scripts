@@ -1075,7 +1075,10 @@
       // ONEPAGE photo-grid hero: the desktop grid template is keyed off how
       // many photos there are (5 = Airbnb big+4, 3 = big+2, etc. — see OP_CSS).
       section.setAttribute('data-op-count', String(photos.length));
-      section.style.display = '';
+      // 'block', NOT '' — the Webflow element carries a combo class whose
+      // stylesheet rule is display:none, so clearing the inline style just
+      // fell back to hidden (live photos were loading invisibly, 2026-07-19).
+      section.style.display = 'block';
     });
   }
 

@@ -414,6 +414,32 @@ var LokaliProfilePage = (function () {
     else anchorSection.parentNode.appendChild(section);
   }
 
+  // ---- unsaved-changes guard ----------------------------------------------
+  // Portfolio photos and photo uploads persist INSTANTLY, but every text
+  // field/checkbox needs the SAVE button — an easy trap (typed a bio, uploaded
+  // photos, left the page: photos kept, bio silently lost — hit 2026-07-19).
+  // Warn before leaving with unsaved edits.
+  var _dirty = false;
+  var _populating = false;
+  function _bindDirtyGuard() {
+    if (window.__lokDirtyGuard) return;
+    window.__lokDirtyGuard = true;
+    function mark(e) {
+      if (_populating) return;
+      var t = e.target;
+      if (!t || t.type === 'file') return; // file pickers auto-save (photos)
+      var tag = t.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') _dirty = true;
+    }
+    document.addEventListener('input', mark, true);
+    document.addEventListener('change', mark, true);
+    window.addEventListener('beforeunload', function (e) {
+      if (!_dirty) return;
+      e.preventDefault();
+      e.returnValue = ''; // any truthy value triggers the browser's leave prompt
+    });
+  }
+
   // ---- #76 Meet the Vendor ("About you") + call checkbox + portfolio -------
   var _uploadedOwnerPhotoUrl = null;
   // FA circle-user, purple, matching the other card icons.
@@ -845,6 +871,11 @@ var LokaliProfilePage = (function () {
 
   function populateUI() {
     if (!_vendor) return;
+    // _setTextValueAnyId dispatches input events while populating — don't let
+    // those mark the form dirty (the timeout clears after this sync pass).
+    _populating = true;
+    setTimeout(function () { _populating = false; }, 0);
+    _bindDirtyGuard();
     _injectPaymentFields();
     _injectAboutYouCard();
     _injectPortfolioCard();
@@ -1405,6 +1436,7 @@ var LokaliProfilePage = (function () {
         } else {
           _vendor = res.data;
           if (_vendor && _vendor.profile_photo) _uploadedProfilePhotoUrl = null;
+          _dirty = false; // saved — clear the leave-page warning
           _showSuccessPopup();
         }
       })
