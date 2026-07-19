@@ -485,6 +485,7 @@
         owner_name: payload.owner_name != null ? String(payload.owner_name).trim().slice(0, 60) : undefined,
         owner_bio: payload.owner_bio != null ? String(payload.owner_bio).trim().slice(0, 1200) : undefined,
         owner_photo: payload.owner_photo != null ? String(payload.owner_photo) : undefined,
+        owner_languages: payload.owner_languages != null ? String(payload.owner_languages).trim().slice(0, 120) : undefined,
         instagram_url: payload.instagram_url != null ? String(payload.instagram_url)
           : (payload.instagram_handle != null ? String(payload.instagram_handle) : ''),
         // P2P payment handles — normalized to bare identifiers (the render side

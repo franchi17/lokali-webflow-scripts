@@ -526,14 +526,40 @@ var LokaliProfilePage = (function () {
   // Rename the Webflow "Profile photo" section to "Upload your logo" and give
   // it the guidelines info icon (Francesca 2026-07-18: the round image on the
   // public page is the business logo; the personal photo lives in Meet the
-  // Vendor below).
+  // Vendor below). 2026-07-18 follow-up: the page's big inline guide card
+  // (.photo-tip-card) MOVES INTO the popover — same look, no page space; a
+  // "Read the full guide" link is appended under it. Click works on mobile.
   function _polishLogoSection() {
     var heads = document.querySelectorAll('.section-heading');
     for (var i = 0; i < heads.length; i++) {
       if (/^\s*Profile photo\s*$/i.test(heads[i].textContent || '')) {
         heads[i].textContent = 'Upload your logo';
         if (heads[i].parentNode && !heads[i].parentNode.querySelector('.lok-info-wrap')) {
-          heads[i].parentNode.appendChild(_photoInfoIcon());
+          var icon = _photoInfoIcon();
+          var sec = heads[i].closest ? heads[i].closest('section') : null;
+          var tip = sec && sec.querySelector('.photo-tip-card');
+          if (tip) {
+            var pop = icon.querySelector('div'); // the popover panel
+            pop.innerHTML = '';
+            pop.style.width = 'min(440px, 88vw)';
+            // anchor to the icon's left edge so it never clips off-screen on phones
+            pop.style.left = '0';
+            pop.style.transform = 'none';
+            tip.style.margin = '0';
+            tip.style.maxWidth = '100%';
+            tip.style.border = 'none';
+            tip.style.boxShadow = 'none';
+            tip.style.padding = '0';
+            pop.appendChild(tip);
+            var full = document.createElement('a');
+            full.href = '/vendor-resources/profile-photo-guide';
+            full.target = '_blank';
+            full.rel = 'noopener';
+            full.textContent = 'Read the full guide →';
+            full.style.cssText = 'display:inline-block;margin-top:10px;font-weight:700;font-size:12.5px;color:#6002EE;text-decoration:none;font-family:"Plus Jakarta Sans",sans-serif;';
+            pop.appendChild(full);
+          }
+          heads[i].parentNode.appendChild(icon);
         }
         break;
       }
@@ -568,6 +594,7 @@ var LokaliProfilePage = (function () {
     card.col.appendChild(ph);
     _mkLabeledInput(card.col, 'input-owner-name', 'Your first name', 'eg. Francesca');
     _mkLabeledInput(card.col, 'input-owner-bio', 'About you — a short personal intro', 'eg. Hi, I’m Francesca! I started this because…', true);
+    _mkLabeledInput(card.col, 'input-owner-languages', 'Languages you speak', 'eg. English, Spanish');
     anchorSection.parentNode.insertBefore(card.section, anchorSection.nextSibling);
 
     file.addEventListener('change', function () {
@@ -825,6 +852,7 @@ var LokaliProfilePage = (function () {
     _reorderProfileSections();
     _setTextValueAnyId(['input-owner-name'], _v('owner_name'));
     _setTextValueAnyId(['input-owner-bio'], _v('owner_bio'));
+    _setTextValueAnyId(['input-owner-languages'], _v('owner_languages'));
     _uploadedOwnerPhotoUrl = null;
     var ownerPrev = document.getElementById('lok-owner-photo-preview');
     if (ownerPrev) {
@@ -1229,6 +1257,7 @@ var LokaliProfilePage = (function () {
       // #76e Meet the Vendor (owner photo: freshly uploaded URL wins, else keep saved)
       owner_name:           _getValueByAnyId(['input-owner-name']),
       owner_bio:            _getValueByAnyId(['input-owner-bio']),
+      owner_languages:      _getValueByAnyId(['input-owner-languages']),
       owner_photo:          _uploadedOwnerPhotoUrl != null ? _uploadedOwnerPhotoUrl : (_vendor && _vendor.owner_photo != null ? _vendor.owner_photo : ''),
       text_messages:        bool('checkbox-text-messages'),
       whatsapp_messages:    bool('checkbox-whatsapp'),
@@ -1291,6 +1320,7 @@ var LokaliProfilePage = (function () {
       profile_photo:        (payload.profile_photo != null ? String(payload.profile_photo) : (payload.profilePhoto != null ? String(payload.profilePhoto) : '')),
       owner_name:           payload.owner_name != null ? String(payload.owner_name) : '',
       owner_bio:            payload.owner_bio != null ? String(payload.owner_bio) : '',
+      owner_languages:      payload.owner_languages != null ? String(payload.owner_languages) : '',
       owner_photo:          payload.owner_photo != null ? String(payload.owner_photo) : '',
       text_messages:        !!payload.text_messages,
       whatsapp_messages:    !!payload.whatsapp_messages,

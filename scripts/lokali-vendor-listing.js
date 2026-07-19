@@ -1129,8 +1129,9 @@
   function renderMeetVendor(v) {
     var name = (v.owner_name || '').trim();
     var bio = (v.owner_bio || '').trim();
+    var langs = (v.owner_languages || '').trim();
     var photo = photoUrl(v.owner_photo);
-    if (!name && !bio && !photo) return;
+    if (!name && !bio && !photo && !langs) return;
     if (document.getElementById('vl-op-sec-meet')) return;
     var main = document.querySelector('.vl-op-main');
     if (!main) return;
@@ -1165,6 +1166,7 @@
     var subBits = [];
     if (v.is_founding_member) subBits.push('Founding vendor');
     if (v.created_at) { var yr = new Date(v.created_at).getFullYear(); if (yr) subBits.push('On Lokali since ' + yr); }
+    if (langs) subBits.push('Speaks ' + langs);
     if (subBits.length) {
       var sub = ce('div');
       sub.style.cssText = 'color:#6B6880;font-weight:600;font-size:14px;';

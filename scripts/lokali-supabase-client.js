@@ -138,7 +138,7 @@
   var VENDOR_EDITABLE = [
     'business_name', 'business_description', 'business_tagline', 'website_url',
     'instagram_url', 'locations_id', 'categories_id', 'profile_photo',
-    'owner_name', 'owner_bio', 'owner_photo',            // #76e Meet the Vendor
+    'owner_name', 'owner_bio', 'owner_photo', 'owner_languages', // #76e Meet the Vendor
     'text_messages', 'whatsapp_messages', 'phone_calls', // phone_calls = #76c call preference
     'phone_number', 'phone_visible',
     'contact_email', 'address',
@@ -177,7 +177,7 @@
   var VENDOR_PUBLIC_COLS =
     'id,business_name,business_description,business_tagline,' +
     'website_url,instagram_url,locations_id,categories_id,profile_photo,' +
-    'owner_name,owner_bio,owner_photo,' +
+    'owner_name,owner_bio,owner_photo,owner_languages,' +
     'text_messages,whatsapp_messages,phone_calls,phone_number,phone_visible,contact_email,' +
     'created_at,is_active,slug,is_founding_member,' +
     'is_spotlight,spotlight_until,is_verified,is_featured,plan_rank,' +
