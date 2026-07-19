@@ -570,7 +570,12 @@
     list: function (params) {
       var q = params || {};
       return rawClient().then(function (c) {
-        var query = c.from('vendors').select(VENDOR_LIST_COLS);
+        var query = c.from('vendors').select(VENDOR_LIST_COLS)
+          // #90 publish gate: The Market only lists storefronts that meet the
+          // minimum bar (name + category + location + >=1 live listing). The
+          // row itself stays publicly readable so /{slug} can render its
+          // friendly "not public yet" state — discovery is what's gated.
+          .eq('is_publish_ready', true);
         if (q.category_id != null) query = query.contains('categories_id', [Number(q.category_id)]);
         if (q.location_id != null) query = query.contains('locations_id', [Number(q.location_id)]);
         if (q.search_term) {

@@ -641,6 +641,9 @@
           c.role = 'vendor'; localStorage.setItem('LOKALI_ACCT_CACHE', JSON.stringify(c));
         } catch (e) {}
         toast('Storefront created — taking you to your dashboard…');
+        // #90 — arm the one-shot first-run setup wizard on the dashboard
+        // (lokali-dashboard-page.js consumes + clears this flag).
+        try { sessionStorage.setItem('lokali_sf_wizard', '1'); } catch (e) {}
         setTimeout(function () { window.location.href = '/vendor-dashboard/dashboard'; }, 700);
       });
     }

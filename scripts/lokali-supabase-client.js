@@ -181,7 +181,8 @@
     'text_messages,whatsapp_messages,phone_calls,phone_number,phone_visible,contact_email,' +
     'created_at,is_active,slug,is_founding_member,' +
     'is_spotlight,spotlight_until,is_verified,is_featured,plan_rank,' +
-    'venmo_username,cashapp_cashtag,paypalme_slug,other_pay_url,other_pay_label,zelle_contact';
+    'venmo_username,cashapp_cashtag,paypalme_slug,other_pay_url,other_pay_label,zelle_contact,' +
+    'is_publish_ready';  // #90 publish gate — listing page renders a "not public yet" state on false
   // Photo-gallery kind -> its table + parent-id column.
   var PHOTO_TABLES = {
     service: { table: 'service_photos', parent: 'services_id' },
@@ -212,7 +213,7 @@
           var q = c.from('vendors').select(
             'id,business_name,business_tagline,slug,profile_photo,' +
             'locations_id,categories_id,is_verified,is_featured,is_founding_member,plan_rank'
-          );
+          ).eq('is_publish_ready', true);  // #90 publish gate (see adapter list())
           if (opts.categoryId != null) q = q.contains('categories_id', [opts.categoryId]);
           if (opts.locationId != null) q = q.contains('locations_id', [opts.locationId]);
           if (opts.search) q = q.ilike('business_name', '%' + opts.search + '%');

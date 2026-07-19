@@ -1014,6 +1014,84 @@
   }
 
   // ---- hero + about population ------------------------------------------
+  // #90 publish gate — friendly "not public yet" page for direct slug hits on
+  // a storefront that hasn't met the minimum bar. Never a 404: the row is
+  // readable, only discovery is gated. Visitors get a soft check-back note;
+  // the OWNER gets a requirements checklist + a dashboard link.
+  function renderNotPublicState(v) {
+    var API = window.LokaliAPI;
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+      });
+    }
+    var page = document.querySelector('.vl-page') || document.querySelector('main') || document.body;
+    // Hide the Webflow template content so placeholder data never shows.
+    for (var i = 0; i < page.children.length; i++) page.children[i].style.display = 'none';
+
+    var st = ce('style');
+    st.textContent = [
+      '.vl-np{font-family:"Plus Jakarta Sans",sans-serif;max-width:560px;margin:64px auto 96px;padding:40px 32px;',
+      'background:linear-gradient(180deg,#faf7ff 0%,#fff 70%);border:1px solid #eee9fb;border-radius:20px;',
+      'text-align:center;color:#3b3654;}',
+      '.vl-np-emoji{font-size:40px;line-height:1;margin-bottom:14px;}',
+      '.vl-np h1{font-size:26px;font-weight:800;color:#231d3f;margin:0 0 10px;font-family:inherit;}',
+      '.vl-np p{font-size:16px;line-height:1.6;margin:0 0 20px;}',
+      '.vl-np-list{text-align:left;margin:0 auto 22px;max-width:360px;padding:0;list-style:none;}',
+      '.vl-np-list li{display:flex;align-items:center;gap:10px;padding:8px 0;font-size:15px;}',
+      '.vl-np-dot{width:22px;height:22px;border-radius:50%;flex:0 0 22px;display:flex;align-items:center;',
+      'justify-content:center;font-size:13px;font-weight:700;}',
+      '.vl-np-done{background:#e9f8ef;color:#1e7e46;}',
+      '.vl-np-todo{background:#fdeee2;color:#c05621;}',
+      '.vl-np-btn{display:inline-block;background:#6E3CFF;color:#fff;font-weight:700;font-size:15px;',
+      'padding:12px 26px;border-radius:999px;text-decoration:none;font-family:inherit;}',
+      '.vl-np-sub{display:block;margin-top:14px;font-size:14px;}',
+      '.vl-np-sub a{color:#6E3CFF;text-decoration:underline;}'
+    ].join('');
+    document.head.appendChild(st);
+
+    var card = ce('div', 'vl-np');
+    function frag(html) { var d = ce('div'); d.innerHTML = html; return d; }
+    // Visitor variant first — upgraded in place if the viewer owns this storefront.
+    card.appendChild(frag(
+      '<div class="vl-np-emoji">🌱</div>' +
+      '<h1>This storefront isn’t public yet</h1>' +
+      '<p>' + (v.business_name ? escapeHtml(v.business_name) : 'This vendor') +
+      ' is still setting things up. Check back soon!</p>' +
+      '<a class="vl-np-btn" href="/the-market">Browse local vendors</a>'
+    ));
+    page.appendChild(card);
+    document.title = 'Coming soon — Lokali';
+
+    // Owner variant: checklist of what's missing + dashboard link.
+    if (API && API.vendors && API.vendors.me) {
+      API.vendors.me().then(function (vm) {
+        var mine = (vm && vm.data) || null;
+        if (mine && mine.vendor) mine = mine.vendor;
+        if (!mine || String(mine.id) !== String(v.id)) return;
+        var catsOk = !!(v.categories_id && v.categories_id.length);
+        var locsOk = !!(v.locations_id && v.locations_id.length);
+        // name is always set at creation; if both fields are ok the only
+        // remaining gap must be the live-listing requirement.
+        function row(ok, label) {
+          return '<li><span class="vl-np-dot ' + (ok ? 'vl-np-done">✓' : 'vl-np-todo">•') +
+                 '</span>' + label + '</li>';
+        }
+        card.innerHTML =
+          '<div class="vl-np-emoji">🚧</div>' +
+          '<h1>Your storefront isn’t live yet</h1>' +
+          '<p>Customers can’t find it on The Market until these are done:</p>' +
+          '<ul class="vl-np-list">' +
+          row(catsOk, 'Pick your category') +
+          row(locsOk, 'Set your service area') +
+          row(false, 'Add at least one service or product') +
+          '</ul>' +
+          '<a class="vl-np-btn" href="/vendor-dashboard/dashboard">Finish setting up</a>' +
+          '<span class="vl-np-sub">It goes live automatically the moment everything’s in.</span>';
+      }).catch(function () {});
+    }
+  }
+
   function populateVendor(v, labels) {
     setText('vl-name', v.business_name);
     setText('vl-tagline', v.business_tagline || '');
@@ -1413,6 +1491,11 @@
       var v = unwrap(res[0]);
       if (v && v.vendor) v = v.vendor; // GET vendor/id/{id} returns { vendor: {...} }
       if (!v || (res[0] && res[0].error)) { console.warn('[lokali-vendor-listing] vendor fetch failed', res[0] && res[0].error); return; }
+      // #90 publish gate — storefront exists but hasn't met the minimum bar
+      // (category + service area + >=1 live listing). Render the friendly
+      // "not public yet" state instead of the template page; the owner gets a
+      // finish-setup checklist + dashboard link.
+      if (v.is_publish_ready === false) { renderNotPublicState(v); return; }
       var labels = {
         categories: buildLabelMap(unwrap(res[1]), ['id', 'categories_id'], ['name', 'category_name', 'title']),
         locations: buildLabelMap(unwrap(res[2]), ['id', 'locations_id'], ['name', 'location_name', 'title'])

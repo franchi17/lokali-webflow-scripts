@@ -186,6 +186,36 @@
       '<div class="ls-complete-state"><div class="ls-complete-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#1E8E3E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div><div class="ls-complete-body"><p class="ls-complete-title">Your listing is complete</p><p class="ls-complete-desc">Your profile is set up to get the most visibility on Lokali.</p></div></div>';
   }
 
+  // #90 publish gate — persistent "not public yet" banner INTEGRATED into the
+  // Listing Strength card (decision: one place tied to the real gate, not a
+  // second nag). Shows only while the storefront misses the minimum bar
+  // (category + service area + >=1 live listing); disappears on its own once
+  // everything's in. While not ready, the card ignores a saved dismiss.
+  function renderGateBanner(root, gateReady, bits) {
+    if (!root) return;
+    var el = root.querySelector('[data-ls-gate]');
+    if (gateReady) { if (el) el.parentNode.removeChild(el); return; }
+    var missing = [];
+    if (!bits.cats) missing.push('pick your category');
+    if (!bits.locs) missing.push('set your service area');
+    if (!bits.listing) missing.push('add a service or product');
+    var msg = 'Your storefront isn’t public yet — customers can’t find it on The Market until you ' +
+      (missing.length ? missing.join(' · ') : 'finish setup') + '.';
+    if (!el) {
+      el = document.createElement('div');
+      el.setAttribute('data-ls-gate', '');
+      el.style.cssText = 'display:flex;align-items:flex-start;gap:10px;background:#FDF1E7;' +
+        'border:1px solid #F6D9BE;border-radius:12px;padding:12px 14px;margin:0 0 14px;' +
+        "font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;line-height:1.5;color:#8A4B14;";
+      el.innerHTML = '<span style="font-size:16px;line-height:1.4;">🚦</span><span data-ls-gate-msg></span>';
+      root.insertBefore(el, root.firstChild);
+    }
+    var m = el.querySelector('[data-ls-gate-msg]');
+    if (m) m.textContent = msg;
+    // The gate outranks a saved dismiss — a hidden card can't warn anyone.
+    root.style.display = '';
+  }
+
   function listingStrength(v, hasListing) {
     ensureCardMarkup();
     var tasks = [
@@ -209,6 +239,14 @@
       if (t.done) score += t.pts; else missing++;
     });
     var pct = Math.round((score / MAX_SCORE) * 100);
+    // #90 — the publish-gate banner rides the same data pass. Prefer the
+    // server-computed flag when the column exists; fall back to the same
+    // client-side math (matches the trigger's rule) pre-patch.
+    var gCats = !!(v.categories_id && v.categories_id.length);
+    var gLocs = !!(v.locations_id && v.locations_id.length);
+    var gateReady = (v.is_publish_ready != null) ? !!v.is_publish_ready
+                    : (!!v.business_name && gCats && gLocs && !!hasListing);
+    renderGateBanner(root, gateReady, { cats: gCats, locs: gLocs, listing: !!hasListing });
     if (root) {
       if (score >= MAX_SCORE) { root.classList.add('is-complete'); }
       var s = root.querySelector('[data-ls-score]');    if (s) s.textContent = pct + '%';
@@ -287,6 +325,164 @@
     wireQuickActions(v, services, products);
   }
 
+  // ── #90 first-run setup wizard ─────────────────────────────────────────────
+  // Fires ONCE, right after admin_open_storefront lands the vendor here
+  // (lokali-account.js sets the sessionStorage flag before navigating). Never
+  // re-appears on later logins — the persistent nudge is the Listing-Strength
+  // gate banner, not this modal. Steps: category → service area → first
+  // listing CTA. Every step is skippable (with the won't-go-live warning
+  // shown at the step), and the whole wizard closes on ✕.
+  var WZ_FLAG = 'lokali_sf_wizard';
+
+  function maybeRunWizard(v) {
+    var flagged = false;
+    try {
+      flagged = sessionStorage.getItem(WZ_FLAG) === '1';
+      if (flagged) sessionStorage.removeItem(WZ_FLAG);
+    } catch (e) {}
+    if (!flagged || !v) return;
+    if (v.is_publish_ready === true) return; // already live somehow — nothing to set up
+    runSetupWizard(v);
+  }
+
+  function runSetupWizard(v) {
+    var A = window.LokaliAPI;
+    var SB = window.LokaliSupabaseAPI; // partial updates (updateMe would blank unset fields)
+    if (!A || !SB || !SB.vendors || !SB.vendors.updateProfile) return;
+
+    var wrap = document.createElement('div');
+    wrap.setAttribute('data-sf-wizard', '');
+    wrap.style.cssText = 'position:fixed;inset:0;z-index:99990;display:flex;align-items:center;' +
+      'justify-content:center;background:rgba(35,29,63,.45);padding:20px;';
+    var card = document.createElement('div');
+    card.style.cssText = "font-family:'Plus Jakarta Sans',sans-serif;background:#fff;max-width:480px;" +
+      'width:100%;border-radius:20px;padding:28px 26px 24px;position:relative;color:#3b3654;' +
+      'box-shadow:0 18px 60px rgba(35,29,63,.25);max-height:86vh;overflow:auto;';
+    wrap.appendChild(card);
+
+    var steps = [];
+    var stepIdx = 0;
+
+    function esc(s) {
+      return String(s).replace(/[&<>"']/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+      });
+    }
+    function close() { if (wrap.parentNode) wrap.parentNode.removeChild(wrap); }
+    function next() { stepIdx++; if (stepIdx >= steps.length) close(); else steps[stepIdx](); }
+
+    function shell(title, sub, bodyHtml, opts) {
+      opts = opts || {};
+      card.innerHTML =
+        '<button data-wz-x aria-label="Close" style="position:absolute;top:14px;right:14px;background:none;' +
+          'border:none;cursor:pointer;font-size:18px;color:#9A9AB0;line-height:1;">✕</button>' +
+        '<div style="font-size:12px;font-weight:700;letter-spacing:.06em;color:#6E3CFF;margin-bottom:6px;">' +
+          'STEP ' + (stepIdx + 1) + ' OF ' + steps.length + '</div>' +
+        '<h3 style="font-size:21px;font-weight:800;color:#231d3f;margin:0 0 6px;font-family:inherit;">' + title + '</h3>' +
+        '<p style="font-size:14px;line-height:1.55;margin:0 0 16px;">' + sub + '</p>' +
+        '<div data-wz-body>' + bodyHtml + '</div>' +
+        '<div data-wz-err style="display:none;color:#C05621;font-size:13px;margin-top:10px;"></div>' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:18px;gap:12px;">' +
+          '<div style="font-size:12.5px;line-height:1.45;color:#9A9AB0;max-width:55%;">' +
+            'You can skip — but your storefront <strong style="color:#8A4B14;">won’t go live</strong> until this is set.</div>' +
+          '<div style="display:flex;align-items:center;gap:14px;white-space:nowrap;">' +
+            '<a data-wz-skip style="cursor:pointer;font-size:14px;color:#9A9AB0;text-decoration:underline;">Skip for now</a>' +
+            (opts.noContinue ? '' :
+              '<button data-wz-next style="background:#6E3CFF;color:#fff;border:none;cursor:pointer;font-family:inherit;' +
+              'font-weight:700;font-size:14px;padding:10px 22px;border-radius:999px;">Continue</button>') +
+          '</div>' +
+        '</div>';
+      card.querySelector('[data-wz-x]').addEventListener('click', close);
+      card.querySelector('[data-wz-skip]').addEventListener('click', next);
+      return card.querySelector('[data-wz-body]');
+    }
+    function showErr(msg) {
+      var e = card.querySelector('[data-wz-err]');
+      if (e) { e.textContent = msg; e.style.display = ''; }
+    }
+    function pillList(body, items, idKey, nameKey, multi) {
+      var sel = {};
+      var box = document.createElement('div');
+      box.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;';
+      items.forEach(function (it) {
+        var id = it[idKey], name = it[nameKey] || ('#' + id);
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = name;
+        b.style.cssText = 'font-family:inherit;font-size:14px;padding:8px 16px;border-radius:999px;cursor:pointer;' +
+          'border:1.5px solid #E4DCF7;background:#FAF7FF;color:#3b3654;';
+        b.addEventListener('click', function () {
+          if (!multi) { sel = {}; box.querySelectorAll('button').forEach(function (o) {
+            o.style.background = '#FAF7FF'; o.style.borderColor = '#E4DCF7'; o.style.color = '#3b3654'; }); }
+          var on = !sel[id];
+          sel[id] = on;
+          if (!on) delete sel[id];
+          b.style.background = on ? '#6E3CFF' : '#FAF7FF';
+          b.style.borderColor = on ? '#6E3CFF' : '#E4DCF7';
+          b.style.color = on ? '#fff' : '#3b3654';
+        });
+        box.appendChild(b);
+      });
+      body.appendChild(box);
+      return function () { return Object.keys(sel).map(Number); };
+    }
+
+    // Step: category (single pick — more can be added on the profile page later)
+    if (!(v.categories_id && v.categories_id.length)) steps.push(function () {
+      var body = shell('What do you do?', 'Pick the category that fits your business best.', '<div data-wz-load>Loading categories…</div>');
+      (A.data && A.data.categories ? A.data.categories() : Promise.resolve({ data: [] })).then(function (r) {
+        var items = (r && r.data) || [];
+        if (items.items) items = items.items;
+        body.innerHTML = '';
+        var getSel = pillList(body, items, 'id', 'category_name', false);
+        card.querySelector('[data-wz-next]').addEventListener('click', function () {
+          var ids = getSel();
+          if (!ids.length) { showErr('Pick a category (or use Skip for now).'); return; }
+          SB.vendors.updateProfile(v.id, { categories_id: ids }).then(function (res) {
+            if (res && res.error) { showErr('Could not save — try again.'); return; }
+            next();
+          });
+        });
+      });
+    });
+
+    // Step: service area (multi pick — a vendor can serve several communities)
+    if (!(v.locations_id && v.locations_id.length)) steps.push(function () {
+      var body = shell('Where do you serve?', 'Choose your community — pick every area you serve.', '<div>Loading areas…</div>');
+      (A.data && A.data.locations ? A.data.locations() : Promise.resolve({ data: [] })).then(function (r) {
+        var items = (r && r.data) || [];
+        if (items.items) items = items.items;
+        body.innerHTML = '';
+        var getSel = pillList(body, items, 'id', 'location_name', true);
+        card.querySelector('[data-wz-next]').addEventListener('click', function () {
+          var ids = getSel();
+          if (!ids.length) { showErr('Pick at least one area (or use Skip for now).'); return; }
+          SB.vendors.updateProfile(v.id, { locations_id: ids }).then(function (res) {
+            if (res && res.error) { showErr('Could not save — try again.'); return; }
+            next();
+          });
+        });
+      });
+    });
+
+    // Step: first listing — out-and-back CTA into the real add-service/product
+    // forms (decision: reuse them rather than duplicate a mini-form here).
+    steps.push(function () {
+      shell('Add your first service or product',
+        'This is what customers can actually book or buy — your storefront goes live the moment one is up.',
+        '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
+          '<a href="/vendor-dashboard/services" style="flex:1;min-width:150px;text-align:center;background:#6E3CFF;color:#fff;' +
+            'font-weight:700;font-size:14px;padding:12px 18px;border-radius:12px;text-decoration:none;font-family:inherit;">Add a service</a>' +
+          '<a href="/vendor-dashboard/products" style="flex:1;min-width:150px;text-align:center;background:#FDF1E7;color:#8A4B14;' +
+            'border:1.5px solid #F6D9BE;font-weight:700;font-size:14px;padding:12px 18px;border-radius:12px;text-decoration:none;font-family:inherit;">Add a product</a>' +
+        '</div>', { noContinue: true });
+    });
+
+    if (!steps.length) return;
+    document.body.appendChild(wrap);
+    steps[0]();
+  }
+
   function init() {
     if (!window.LokaliDashboard || !window.LokaliDashboard.requireAuth()) return;
 
@@ -336,6 +532,7 @@
       var leadsRes = r[3];
       var leadsData = leadsRes && !leadsRes.error ? (leadsRes.data != null ? leadsRes.data : leadsRes) : null;
       render(v, toArr(r[1].data), toArr(r[2].data), leadsData);
+      maybeRunWizard(v); // #90 first-run setup wizard (one-shot, flag-gated)
     });
   }
 
