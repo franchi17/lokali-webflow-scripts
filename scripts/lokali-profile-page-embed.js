@@ -4,7 +4,7 @@
   Ships via jsDelivr from lokali-webflow-scripts; load with ONE tag on the
   profile page AFTER the sitewide bundle:
     lokali-api-client.js → lokali-clerk-auth.js → lokali-dashboard.js
-  Contains (in order): injected page styles (field colors + locations chips UI),
+  Contains (in order): injected page styles (field colors + service-area toggle pills),
   LokaliPhoneInput, LokaliProfilePage. No markup needed in the page beyond the
   existing form elements/IDs.
 */
@@ -17,7 +17,7 @@
     document.head.appendChild(s);
   }
   injectStyle("lokali-profile-field-colors", "  .w-input, .w-select, .lokali-phone-number, #textarea-description {\n    color: #1A1829;\n  }\n  .w-input::placeholder, .w-select::placeholder,\n  .lokali-phone-number::placeholder, #textarea-description::placeholder {\n    color: #8E8BA6;\n  }");
-  injectStyle("lokali-locations-ui-style", "  .location-multi {\n    font-family: \"Plus Jakarta Sans\", system-ui, -apple-system, sans-serif;\n    background: #eee6ff;\n    padding: 12px 14px;\n    border-radius: 8px;\n    box-sizing: border-box;\n  }\n  .location-chips {\n    display: flex;\n    flex-wrap: wrap;\n    gap: 8px;\n    margin-bottom: 8px;\n  }\n  .location-chip {\n    display: inline-flex;\n    align-items: center;\n    gap: 6px;\n    background: #fff;\n    color: #6002ee;\n    border: 1px solid #6002ee;\n    border-radius: 999px;\n    padding: 6px 10px 6px 12px;\n    font-size: 14px;\n    line-height: 1.3;\n  }\n  .location-chip-remove {\n    font-family: inherit;\n    background: none;\n    border: none;\n    color: #6002ee;\n    cursor: pointer;\n    font-size: 18px;\n    line-height: 1;\n    padding: 0 2px;\n    opacity: 0.85;\n  }\n  .location-chip-remove:hover {\n    opacity: 1;\n    color: #4a01c7;\n  }\n  .location-input {\n    font-family: inherit;\n    width: 100%;\n    max-width: 100%;\n    box-sizing: border-box;\n    border: 1px solid #6002ee;\n    border-radius: 6px;\n    padding: 10px 12px;\n    color: #6002ee;\n    background: #fff;\n    font-size: 14px;\n  }\n  .location-input::placeholder {\n    color: rgba(96, 2, 238, 0.45);\n  }\n  .location-dropdown {\n    background: #fff;\n    border: 1px solid #6002ee;\n    border-radius: 6px;\n    margin-top: 4px;\n    max-height: 200px;\n    overflow-y: auto;\n    box-shadow: 0 4px 12px rgba(96, 2, 238, 0.12);\n  }\n  .location-option {\n    padding: 10px 12px;\n    color: #6002ee;\n    cursor: pointer;\n    font-size: 14px;\n  }\n  .location-option:hover {\n    background: #eee6ff;\n  }");
+  injectStyle("lokali-locations-ui-style", "  .location-multi {\n    font-family: \"Plus Jakarta Sans\", system-ui, -apple-system, sans-serif;\n    background: #eee6ff;\n    padding: 12px 14px;\n    border-radius: 8px;\n    box-sizing: border-box;\n  }\n  .location-hint {\n    font-size: 13px;\n    color: #5A5570;\n    margin: 0 0 10px;\n    line-height: 1.4;\n  }\n  .location-pills {\n    display: flex;\n    flex-wrap: wrap;\n    gap: 8px;\n  }\n  .location-pill {\n    font-family: inherit;\n    -webkit-appearance: none;\n    appearance: none;\n    display: inline-flex;\n    align-items: center;\n    gap: 7px;\n    background: #fff;\n    color: #5A5570;\n    border: 1px solid #C9BDE8;\n    border-radius: 999px;\n    padding: 8px 14px;\n    font-size: 14px;\n    line-height: 1.3;\n    cursor: pointer;\n    user-select: none;\n    transition: background .12s, border-color .12s, color .12s;\n  }\n  .location-pill:hover {\n    border-color: #6002ee;\n    color: #6002ee;\n  }\n  .location-pill.is-on {\n    background: #6002EE;\n    border-color: #6002EE;\n    color: #fff;\n    font-weight: 600;\n  }\n  .location-pill.is-on:hover {\n    background: #4a01c7;\n    border-color: #4a01c7;\n    color: #fff;\n  }\n  .location-pill .lp-g {\n    font-weight: 700;\n    font-size: 13px;\n    line-height: 1;\n  }\n  .location-count {\n    font-size: 12.5px;\n    color: #6B6787;\n    margin: 10px 0 0;\n  }");
 })();
 
 
@@ -122,9 +122,8 @@ var LokaliProfilePage = (function () {
   var _categories = null;
   var _locations = null;
   var _selectedLocationIds = [];
-  var _locationChipsEl = null;
-  var _locationInputEl = null;
-  var _locationDropdownEl = null;
+  var _locationPillsEl = null;
+  var _locationCountEl = null;
   var _phone  = null;
   var _uploadedProfilePhotoUrl = null;
 
@@ -998,138 +997,94 @@ var LokaliProfilePage = (function () {
     var wrapper = document.createElement('div');
     wrapper.className = 'location-multi';
 
-    var chips = document.createElement('div');
-    chips.className = 'location-chips';
+    var hint = document.createElement('p');
+    hint.className = 'location-hint';
+    hint.textContent = 'Tap every area you serve — pick as many as you like.';
 
-    var input = document.createElement('input');
-    input.type = 'text';
-    input.className = 'location-input';
-    input.setAttribute('placeholder', 'Add locations…');
-    input.setAttribute('autocomplete', 'off');
+    var pills = document.createElement('div');
+    pills.className = 'location-pills';
 
-    var dropdown = document.createElement('div');
-    dropdown.className = 'location-dropdown';
-    dropdown.style.display = 'none';
+    var count = document.createElement('p');
+    count.className = 'location-count';
 
-    wrapper.appendChild(chips);
-    wrapper.appendChild(input);
-    wrapper.appendChild(dropdown);
+    wrapper.appendChild(hint);
+    wrapper.appendChild(pills);
+    wrapper.appendChild(count);
     container.appendChild(wrapper);
 
-    _locationChipsEl = chips;
-    _locationInputEl = input;
-    _locationDropdownEl = dropdown;
+    _locationPillsEl = pills;
+    _locationCountEl = count;
 
-    _renderLocationChips();
-
-    input.addEventListener('input', function () {
-      _updateLocationSuggestions(input.value || '');
-    });
-
-    input.addEventListener('focus', function () {
-      _updateLocationSuggestions(input.value || '');
-    });
-
-    document.addEventListener('click', function (e) {
-      if (!wrapper.contains(e.target)) {
-        dropdown.style.display = 'none';
-      }
-    });
+    _renderLocationPills();
   }
 
-  function _renderLocationChips() {
-    if (!_locationChipsEl) return;
-    _locationChipsEl.innerHTML = '';
+  function _isLocationSelected(id) {
+    return _selectedLocationIds.some(function (x) { return String(x) === String(id); });
+  }
 
-    if (!_selectedLocationIds || !_selectedLocationIds.length) return;
-
-    _selectedLocationIds.forEach(function (id) {
-      var loc = null;
-      if (_locations && _locations.length) {
-        for (var i = 0; i < _locations.length; i++) {
-          var candidate = _locations[i];
-          var candId = candidate.id != null ? candidate.id : candidate.location_id;
-          if (String(candId) === String(id)) {
-            loc = candidate;
-            break;
-          }
-        }
-      }
-
-      var label = loc ? _getLocationLabel(loc) : String(id);
-
-      var chip = document.createElement('span');
-      chip.className = 'location-chip';
-      chip.textContent = label;
-
-      var remove = document.createElement('button');
-      remove.type = 'button';
-      remove.className = 'location-chip-remove';
-      remove.textContent = '×';
-      remove.addEventListener('click', function () {
-        _selectedLocationIds = _selectedLocationIds.filter(function (x) {
-          return String(x) !== String(id);
-        });
-        _renderLocationChips();
+  function _toggleLocation(id) {
+    var n = parseInt(id, 10);
+    if (isNaN(n)) return;
+    if (_isLocationSelected(n)) {
+      _selectedLocationIds = _selectedLocationIds.filter(function (x) {
+        return String(x) !== String(n);
       });
-
-      chip.appendChild(remove);
-      _locationChipsEl.appendChild(chip);
-    });
+    } else {
+      _selectedLocationIds.push(n);
+    }
+    _renderLocationPills();
   }
 
-  function _updateLocationSuggestions(query) {
-    if (!_locationDropdownEl) return;
+  function _renderLocationPills() {
+    if (!_locationPillsEl) return;
+    _locationPillsEl.innerHTML = '';
 
-    var q = (query || '').toLowerCase();
-    var suggestions = [];
-
+    // All active locations as toggle pills, plus any already-selected id the
+    // active list no longer carries (deactivated community) so a saved pick is
+    // never silently dropped — it stays visible and de-selectable.
+    var entries = [];
+    var seen = {};
     if (_locations && _locations.length) {
       for (var i = 0; i < _locations.length; i++) {
         var loc = _locations[i];
         var id = loc.id != null ? loc.id : loc.location_id;
-        var label = _getLocationLabel(loc);
         if (id == null) continue;
-
-        if (_selectedLocationIds.some(function (x) { return String(x) === String(id); })) {
-          continue;
-        }
-
-        if (!q || (label && label.toLowerCase().indexOf(q) !== -1)) {
-          suggestions.push({ id: id, label: label || ('Location ' + id) });
-        }
-
-        if (suggestions.length >= 10) break;
+        entries.push({ id: id, label: _getLocationLabel(loc) || ('Location ' + id) });
+        seen[String(id)] = true;
       }
     }
-
-    _locationDropdownEl.innerHTML = '';
-
-    if (!suggestions.length) {
-      _locationDropdownEl.style.display = 'none';
-      return;
-    }
-
-    suggestions.forEach(function (sugg) {
-      var item = document.createElement('div');
-      item.className = 'location-option';
-      item.textContent = sugg.label;
-      item.addEventListener('click', function () {
-        var n = parseInt(sugg.id, 10);
-        if (!isNaN(n) && !_selectedLocationIds.some(function (x) { return String(x) === String(n); })) {
-          _selectedLocationIds.push(n);
-          _renderLocationChips();
-        }
-        if (_locationInputEl) {
-          _locationInputEl.value = '';
-          _locationInputEl.focus();
-        }
-        _locationDropdownEl.style.display = 'none';
-      });
-      _locationDropdownEl.appendChild(item);
+    _selectedLocationIds.forEach(function (id) {
+      if (!seen[String(id)]) entries.push({ id: id, label: 'Location ' + id });
     });
 
-    _locationDropdownEl.style.display = 'block';
+    entries.forEach(function (entry) {
+      var on = _isLocationSelected(entry.id);
+
+      var pill = document.createElement('button');
+      pill.type = 'button';
+      pill.className = 'location-pill' + (on ? ' is-on' : '');
+      pill.setAttribute('aria-pressed', on ? 'true' : 'false');
+
+      var glyph = document.createElement('span');
+      glyph.className = 'lp-g';
+      glyph.textContent = on ? '✓' : '+';
+
+      var label = document.createElement('span');
+      label.textContent = entry.label;
+
+      pill.appendChild(glyph);
+      pill.appendChild(label);
+      pill.addEventListener('click', function () { _toggleLocation(entry.id); });
+      _locationPillsEl.appendChild(pill);
+    });
+
+    if (_locationCountEl) {
+      var total = entries.length;
+      var chosen = _selectedLocationIds.length;
+      _locationCountEl.textContent = chosen === 0
+        ? 'Select at least one area so customers can find you on The Market.'
+        : 'Serving ' + chosen + ' of ' + total + (total === 1 ? ' area' : ' areas');
+    }
   }
 
   function _getUploadedPhotoUrlFromResponse(data) {
