@@ -273,7 +273,7 @@
     // Payment clicks — taps on the vendor's Venmo/Cash App/PayPal/other pay links.
     // A distinct, high-intent signal; deliberately NOT folded into Leads.
     // 76a: the detail line breaks the 30-day count down per method.
-    var PAY_LABELS = { venmo: 'Venmo', cashapp: 'Cash App', paypal: 'PayPal', other_pay: 'Other link' };
+    var PAY_LABELS = { venmo: 'Venmo', cashapp: 'Cash App', paypal: 'PayPal', zelle: 'Zelle', other_pay: 'Other link' };
     var payDetail = 'taps to pay you directly';
     if (pay30 > 0) {
       var payNow = Date.now(), payCounts = {};
@@ -285,7 +285,7 @@
         }
       });
       var payBits = [];
-      ['venmo', 'cashapp', 'paypal', 'other_pay'].forEach(function (k) {
+      ['venmo', 'cashapp', 'paypal', 'zelle', 'other_pay'].forEach(function (k) {
         if (payCounts[k]) payBits.push(PAY_LABELS[k] + ' ' + payCounts[k]);
       });
       if (payBits.length) payDetail = payBits.join(' · ');

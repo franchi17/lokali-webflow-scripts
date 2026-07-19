@@ -50,6 +50,20 @@
     globe:    { bg: '#E3F0F7', tint: '#2E6E7D', url: AV_ASSET + '69f8b5e89bc57b40690cbc77_globe-solid.png' },
     crown:    { bg: '#F7F3E0', tint: '#9A6B00', url: AV_ASSET + '69f4dbb3533f0ee2046ab0fb_crown-solid.png' }
   };
+  // Published for lokali-auth-nav.js so the header chip can paint the same
+  // preset art (#79) without duplicating the map.
+  window.LOKALI_AVATAR_PRESETS = AVATAR_PRESETS;
+
+  // Keep the header's acct cache in step so the chip shows the avatar on every
+  // page, not just after visiting the hub.
+  function syncAcctCacheAvatar(av) {
+    try {
+      var raw = localStorage.getItem('LOKALI_ACCT_CACHE');
+      var o = raw ? JSON.parse(raw) : null;
+      if (o && typeof o === 'object') { o.avatar = av || ''; localStorage.setItem('LOKALI_ACCT_CACHE', JSON.stringify(o)); }
+    } catch (e) {}
+  }
+
   // Circle node for the given account: chosen preset, else initials on violet.
   function avatarNode(acc, cls) {
     var node = el('div', cls);
@@ -490,6 +504,7 @@
       meP
     ]).then(function (r) {
       state.account = (r[0] && r[0].data) || {};
+      syncAcctCacheAvatar(state.account.avatar); // #79 — header chip stays in step
       state.saved = arr(r[1] && r[1].data);
       state.mine = arr(r[2] && r[2].data);
       state.awaiting = arr(r[3] && r[3].data);
@@ -935,6 +950,7 @@
         state.account.first_name = firstIn.input.value.trim();
         state.account.last_name = lastIn.input.value.trim();
         state.account.avatar = avatarSel;
+        syncAcctCacheAvatar(avatarSel); // #79 — header chip on every page
         state.account.region = areaIn.input.value.trim();
         // refresh the header-band avatar in place
         var bandAv = document.querySelector('.lk-avatar');

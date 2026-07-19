@@ -173,11 +173,13 @@
     // No internal header — the Webflow page heading ("Availability" + subtitle)
     // is the single source of truth, so the widget starts straight at the inbox.
     this.mount.className = 'lok-ava';
+    // #85 (Francesca 2026-07-18): calendar right after the pending requests —
+    // requests → calendar (days off) → settings → hours → waitlist.
     this.mount.innerHTML =
       '<div class="ava-inbox"></div>' +
+      '<div class="ava-daysoff"></div>' +
       '<div class="ava-settings"></div>' +
       '<div class="ava-hours"></div>' +
-      '<div class="ava-daysoff"></div>' +
       '<div class="ava-waitlist"></div>';
     this.$inbox = this.mount.querySelector('.ava-inbox');
     this.$settings = this.mount.querySelector('.ava-settings');

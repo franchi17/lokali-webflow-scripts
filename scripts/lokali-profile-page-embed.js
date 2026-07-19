@@ -356,6 +356,7 @@ var LokaliProfilePage = (function () {
     { id: 'input-venmo',         label: 'Venmo username',      ph: 'eg. your-venmo-name (no @)' },
     { id: 'input-cashapp',       label: 'Cash App $Cashtag',   ph: 'eg. yourcashtag (no $)' },
     { id: 'input-paypal',        label: 'PayPal.Me',           ph: 'eg. yourpaypalname' },
+    { id: 'input-zelle',         label: 'Zelle (email or U.S. mobile)', ph: 'eg. you@business.com' },
     { id: 'input-otherpay-url',  label: 'Other payment link',  ph: 'https://…' },
     { id: 'input-otherpay-label', label: 'Label for the link (optional)', ph: 'eg. Buy Me a Coffee' }
   ];
@@ -874,6 +875,7 @@ var LokaliProfilePage = (function () {
     _setTextValueAnyId(['input-venmo'], _v('venmo_username'));
     _setTextValueAnyId(['input-cashapp'], _v('cashapp_cashtag'));
     _setTextValueAnyId(['input-paypal'], _v('paypalme_slug'));
+    _setTextValueAnyId(['input-zelle'], _v('zelle_contact'));
     _setTextValueAnyId(['input-otherpay-url'], _v('other_pay_url'));
     _setTextValueAnyId(['input-otherpay-label'], _v('other_pay_label'));
     _setTextValueAnyId(['input-contact-email', 'contact-email', 'contact_email', 'public_email'], _v('contact_email', 'contactEmail'));
@@ -1251,6 +1253,7 @@ var LokaliProfilePage = (function () {
       venmo_username:       _getValueByAnyId(['input-venmo']),
       cashapp_cashtag:      _getValueByAnyId(['input-cashapp']),
       paypalme_slug:        _getValueByAnyId(['input-paypal']),
+      zelle_contact:        _getValueByAnyId(['input-zelle']),
       other_pay_url:        _getValueByAnyId(['input-otherpay-url']),
       other_pay_label:      _getValueByAnyId(['input-otherpay-label']),
       contact_email:        _getValueByAnyId(['input-contact-email', 'contact-email', 'contact_email', 'public_email']),
@@ -1315,6 +1318,7 @@ var LokaliProfilePage = (function () {
       venmo_username:       payload.venmo_username != null ? String(payload.venmo_username) : '',
       cashapp_cashtag:      payload.cashapp_cashtag != null ? String(payload.cashapp_cashtag) : '',
       paypalme_slug:        payload.paypalme_slug != null ? String(payload.paypalme_slug) : '',
+      zelle_contact:        payload.zelle_contact != null ? String(payload.zelle_contact) : '',
       other_pay_url:        payload.other_pay_url != null ? String(payload.other_pay_url) : '',
       other_pay_label:      payload.other_pay_label != null ? String(payload.other_pay_label) : '',
       contact_email:        payload.contact_email != null ? String(payload.contact_email) : '',

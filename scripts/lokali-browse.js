@@ -618,7 +618,9 @@
     // Trust/status badges sit on their own row under the location — clear of the top-right
     // heart — as bright filled pills (icon + label) instead of dull pale dots.
     var badges = ce('div', 'vcard-badges');
-    if (vIsFeatured(v))  badges.appendChild(badge('badge-featured',  { glyph: '★', title: 'Featured' }));
+    // #86 (2026-07-18): ★ Featured badge REMOVED by decision — it mostly
+    // signaled "pays more" and clashed with the founding badge. Placement
+    // ranking (#75 plan_rank) is untouched; is_featured stays server-synced.
     if (vIsFounding(v))  badges.appendChild(badge('badge-founding',  { url: ICON_CROWN,    color: '#9A6B00', title: 'Founding vendor' }));
     if (vIsNew(v))       badges.appendChild(badge('badge-new',       { url: ICON_BULLHORN, color: '#11744A', title: 'New this week' }));
     if (vIsVerified(v))  badges.appendChild(badge('badge-verified',  { glyph: '✓', title: 'Verified' }));

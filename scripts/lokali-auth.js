@@ -610,7 +610,12 @@
       if (!_client) return;
       _client.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: window.location.origin + SIGN_IN_PATH }
+        options: {
+          redirectTo: window.location.origin + SIGN_IN_PATH,
+          // #81: always show Google's account chooser — without this a re-login
+          // silently reuses the last Google account, stranding multi-account users.
+          queryParams: { prompt: 'select_account' }
+        }
       }).then(function (res) {
         if (res && res.error && errBox) showMsg(errBox, friendlyAuthError(res.error));
       });

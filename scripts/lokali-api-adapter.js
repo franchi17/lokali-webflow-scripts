@@ -113,7 +113,7 @@
 
   // Payment-link clicks are a DISTINCT signal from contact leads: they don't
   // enter the "Leads" KPI or the follow-up inbox — they get their own count.
-  var PAYMENT_EVENT_TYPES = { venmo: 1, cashapp: 1, paypal: 1, other_pay: 1 };
+  var PAYMENT_EVENT_TYPES = { venmo: 1, cashapp: 1, paypal: 1, other_pay: 1, zelle: 1 };
   function isPaymentEvent(e) { return !!(e && PAYMENT_EVENT_TYPES[e.event_type]); }
 
   // ── payment-handle normalization ──────────────────────────────────────────
@@ -495,7 +495,12 @@
         cashapp_cashtag: normalizePayHandle(payload.cashapp_cashtag),
         paypalme_slug:   normalizePayHandle(payload.paypalme_slug),
         other_pay_url:   normalizePayUrl(payload.other_pay_url),
-        other_pay_label: payload.other_pay_label != null ? String(payload.other_pay_label).trim().slice(0, 40) : ''
+        other_pay_label: payload.other_pay_label != null ? String(payload.other_pay_label).trim().slice(0, 40) : '',
+        // #77 Zelle — email or US phone stored verbatim (whitelisted charset;
+        // no link is ever built from it — the listing renders tap-to-copy).
+        // undefined = field absent (stale cached embed): leave the column alone.
+        zelle_contact: payload.zelle_contact === undefined ? undefined
+          : (function (s) { s = String(s || '').trim(); return /^[A-Za-z0-9._@+\-() ]{3,80}$/.test(s) ? s : ''; })(payload.zelle_contact)
       };
       // A generic link with no valid URL clears its label too (no orphan label).
       if (!fields.other_pay_url) fields.other_pay_label = '';

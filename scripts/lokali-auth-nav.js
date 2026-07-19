@@ -257,11 +257,35 @@
     return wrap;
   }
 
+  // #79: paint the chosen preset avatar (picked in the account hub; id rides
+  // the acct cache, art map published by lokali-account.js as
+  // window.LOKALI_AVATAR_PRESETS). Falls back to initials when unset/unknown;
+  // one late retry covers account.js parsing after this script's first render.
+  function paintAvatar(av, a) {
+    var map = window.LOKALI_AVATAR_PRESETS;
+    var p = a && a.avatar && map && map[a.avatar];
+    if (!p) {
+      av.textContent = initialsOf(a);
+      av.style.background = '';
+      if (a && a.avatar && !map && !av.__lokAvRetry) {
+        av.__lokAvRetry = true;
+        setTimeout(function () { paintAvatar(av, a); }, 800);
+      }
+      return;
+    }
+    av.textContent = '';
+    av.style.background = p.bg;
+    var ic = document.createElement('span');
+    ic.style.cssText = 'display:inline-block;width:16px;height:16px;background:' + p.tint + ';' +
+      '-webkit-mask:url("' + p.url + '") center / contain no-repeat;mask:url("' + p.url + '") center / contain no-repeat;';
+    av.appendChild(ic);
+  }
+
   function fillAcctEl(wrap, a) {
     var av = wrap.querySelector('.lok-acct-av');
     var nm = wrap.querySelector('.lok-acct-name');
     var menu = wrap.querySelector('.lok-acct-menu');
-    if (av) av.textContent = initialsOf(a);
+    if (av) paintAvatar(av, a);
     if (nm) {
       var first = (a && a.first_name || '').trim();
       nm.textContent = first;
