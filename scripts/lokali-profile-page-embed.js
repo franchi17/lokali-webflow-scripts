@@ -17,7 +17,7 @@
     document.head.appendChild(s);
   }
   injectStyle("lokali-profile-field-colors", "  .w-input, .w-select, .lokali-phone-number, #textarea-description {\n    color: #1A1829;\n  }\n  .w-input::placeholder, .w-select::placeholder,\n  .lokali-phone-number::placeholder, #textarea-description::placeholder {\n    color: #8E8BA6;\n  }");
-  injectStyle("lokali-locations-ui-style", "  .location-multi {\n    font-family: \"Plus Jakarta Sans\", system-ui, -apple-system, sans-serif;\n    background: #eee6ff;\n    padding: 12px 14px;\n    border-radius: 8px;\n    box-sizing: border-box;\n  }\n  .location-hint {\n    font-size: 13px;\n    color: #5A5570;\n    margin: 0 0 10px;\n    line-height: 1.4;\n  }\n  .location-pills {\n    display: flex;\n    flex-wrap: wrap;\n    gap: 8px;\n  }\n  .location-pill {\n    font-family: inherit;\n    -webkit-appearance: none;\n    appearance: none;\n    display: inline-flex;\n    align-items: center;\n    gap: 7px;\n    background: #fff;\n    color: #5A5570;\n    border: 1px solid #C9BDE8;\n    border-radius: 999px;\n    padding: 8px 14px;\n    font-size: 14px;\n    line-height: 1.3;\n    cursor: pointer;\n    user-select: none;\n    transition: background .12s, border-color .12s, color .12s;\n  }\n  .location-pill:hover {\n    border-color: #6002ee;\n    color: #6002ee;\n  }\n  .location-pill.is-on {\n    background: #6002EE;\n    border-color: #6002EE;\n    color: #fff;\n    font-weight: 600;\n  }\n  .location-pill.is-on:hover {\n    background: #4a01c7;\n    border-color: #4a01c7;\n    color: #fff;\n  }\n  .location-pill .lp-g {\n    font-weight: 700;\n    font-size: 13px;\n    line-height: 1;\n  }\n  .location-count {\n    font-size: 12.5px;\n    color: #6B6787;\n    margin: 10px 0 0;\n  }");
+  injectStyle("lokali-locations-ui-style", "  .location-multi {\n    font-family: \"Plus Jakarta Sans\", system-ui, -apple-system, sans-serif;\n    background: #eee6ff;\n    padding: 12px 14px;\n    border-radius: 8px;\n    box-sizing: border-box;\n  }\n  .location-hint {\n    font-size: 13px;\n    color: #5A5570;\n    margin: 0 0 10px;\n    line-height: 1.4;\n  }\n  .location-pills {\n    display: flex;\n    flex-wrap: wrap;\n    gap: 8px;\n  }\n  .location-pill {\n    font-family: inherit;\n    -webkit-appearance: none;\n    appearance: none;\n    display: inline-flex;\n    align-items: center;\n    gap: 7px;\n    background: #fff;\n    color: #5A5570;\n    border: 1px solid #C9BDE8;\n    border-radius: 999px;\n    padding: 8px 14px;\n    font-size: 14px;\n    line-height: 1.3;\n    cursor: pointer;\n    user-select: none;\n    transition: background .12s, border-color .12s, color .12s;\n  }\n  .location-pill:hover {\n    border-color: #6002ee;\n    color: #6002ee;\n  }\n  .location-pill.is-on {\n    background: #6002EE;\n    border-color: #6002EE;\n    color: #fff;\n    font-weight: 600;\n  }\n  .location-pill.is-on:hover {\n    background: #4a01c7;\n    border-color: #4a01c7;\n    color: #fff;\n  }\n  .location-pill .lp-g {\n    font-weight: 700;\n    font-size: 13px;\n    line-height: 1;\n  }\n  .location-count {\n    font-size: 12.5px;\n    color: #6B6787;\n    margin: 10px 0 0;\n  }\n  .category-pills {\n    font-family: \"Plus Jakarta Sans\", system-ui, -apple-system, sans-serif;\n    background: #eee6ff;\n    padding: 12px 14px;\n    border-radius: 8px;\n    box-sizing: border-box;\n  }\n  .category-hint {\n    font-size: 13px;\n    color: #5A5570;\n    margin: 0 0 10px;\n    line-height: 1.4;\n  }\n  .category-pill-row {\n    display: flex;\n    flex-wrap: wrap;\n    gap: 8px;\n  }\n  .category-pill {\n    font-family: inherit;\n    -webkit-appearance: none;\n    appearance: none;\n    display: inline-flex;\n    align-items: center;\n    gap: 8px;\n    background: #fff;\n    color: #5A5570;\n    border: 1px solid #C9BDE8;\n    border-radius: 999px;\n    padding: 8px 14px;\n    font-size: 14px;\n    line-height: 1.3;\n    cursor: pointer;\n    user-select: none;\n    transition: background .12s, border-color .12s, color .12s;\n  }\n  .category-pill:hover {\n    border-color: #6002ee;\n    color: #6002ee;\n  }\n  .category-pill.is-on {\n    background: #6002EE;\n    border-color: #6002EE;\n    color: #fff;\n    font-weight: 600;\n  }\n  .category-pill .cp-ic {\n    width: 16px;\n    height: 16px;\n    flex-shrink: 0;\n    background-color: currentColor;\n    -webkit-mask-position: center;\n    -webkit-mask-repeat: no-repeat;\n    -webkit-mask-size: contain;\n    mask-position: center;\n    mask-repeat: no-repeat;\n    mask-size: contain;\n  }");
 })();
 
 
@@ -907,6 +907,7 @@ var LokaliProfilePage = (function () {
       var categorySelect = _getCategorySelect();
       if (categorySelect) categorySelect.value = String(primaryCategory);
     }
+    _initCategoryPills();
   }
 
   function _parseLocationsArray(data) {
@@ -986,6 +987,91 @@ var LokaliProfilePage = (function () {
         sel.appendChild(opt);
       });
     }
+  }
+
+  // Category icons — same Webflow assets The Market sidebar uses (lokali-browse.js
+  // CATEGORY_LIST), keyed by category.slug, so the picker matches the guide the
+  // customer-facing filter shows. Rendered as CSS-mask icons following text color.
+  var _CAT_ICON_ASSET = 'https://cdn.prod.website-files.com/6989095758ae17edfc424d30/';
+  var _CAT_ICON_BY_SLUG = {
+    beauty:      _CAT_ICON_ASSET + '6a18f2524e31974a75003735_hair%20dryer.svg',
+    business:    _CAT_ICON_ASSET + '6a18f6d4b01673d30ca9bcb8_briefcase.svg',
+    children:    _CAT_ICON_ASSET + '6a18f6d4f1bbd4795f5345bc_backpack.svg',
+    events:      _CAT_ICON_ASSET + '6a18f6d414c76bb968f180db_balloon.svg',
+    food:        _CAT_ICON_ASSET + '6a186b067365d964abee8918_utensils-solid.png',
+    handcrafted: _CAT_ICON_ASSET + '6a186b061a80eb9ba75f0d0a_scissors-solid.png',
+    home:        _CAT_ICON_ASSET + '6a186b06a37dcea6514f15f9_house-regular.png',
+    wellness:    _CAT_ICON_ASSET + '6a186b06cfcb6c4d6d1e1cf7_heart-regular.png'
+  };
+  var _categoryPillRowEl = null;
+
+  // Icon-pill radio UI over the (hidden) native select — the select stays the
+  // source of truth, so hydrate (select.value = saved id) and save
+  // (_getFormValues reads select.value) need no changes.
+  function _initCategoryPills() {
+    var sel = _getCategorySelect();
+    if (!sel) return;
+
+    if (!_categoryPillRowEl || !document.body.contains(_categoryPillRowEl)) {
+      sel.style.display = 'none';
+
+      var wrapper = document.createElement('div');
+      wrapper.className = 'category-pills';
+
+      var hint = document.createElement('p');
+      hint.className = 'category-hint';
+      hint.textContent = 'Pick the category that fits your business best.';
+
+      var row = document.createElement('div');
+      row.className = 'category-pill-row';
+
+      wrapper.appendChild(hint);
+      wrapper.appendChild(row);
+      sel.parentNode.insertBefore(wrapper, sel.nextSibling);
+      _categoryPillRowEl = row;
+    }
+
+    _renderCategoryPills();
+  }
+
+  function _renderCategoryPills() {
+    if (!_categoryPillRowEl) return;
+    var sel = _getCategorySelect();
+    if (!sel) return;
+
+    _categoryPillRowEl.innerHTML = '';
+
+    (_categories || []).forEach(function (cat) {
+      var id = cat.id != null ? cat.id : cat.category_id;
+      if (id == null) return;
+      var label = cat.name || cat.category_name || ('Category ' + id);
+      var slug = cat.slug || '';
+      var on = String(sel.value) === String(id);
+
+      var pill = document.createElement('button');
+      pill.type = 'button';
+      pill.className = 'category-pill' + (on ? ' is-on' : '');
+      pill.setAttribute('aria-pressed', on ? 'true' : 'false');
+
+      var iconUrl = _CAT_ICON_BY_SLUG[slug];
+      if (iconUrl) {
+        var ic = document.createElement('span');
+        ic.className = 'cp-ic';
+        ic.style.webkitMaskImage = 'url(' + iconUrl + ')';
+        ic.style.maskImage = 'url(' + iconUrl + ')';
+        pill.appendChild(ic);
+      }
+
+      var text = document.createElement('span');
+      text.textContent = label;
+      pill.appendChild(text);
+
+      pill.addEventListener('click', function () {
+        sel.value = String(id);
+        _renderCategoryPills();
+      });
+      _categoryPillRowEl.appendChild(pill);
+    });
   }
 
   function _initLocationTokenMultiSelect() {
