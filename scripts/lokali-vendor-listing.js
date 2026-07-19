@@ -381,6 +381,9 @@
     '.vl-op-hl span{color:#6B6880;font-size:13.5px;}',
     // Reviews: violet-tinted empty state per the mockup
     'html.vl-op .vl-rev-empty{background:#F1EEFB !important;border:none !important;}',
+    // About: the description is typed as real paragraphs in the dashboard
+    // textarea — keep the line breaks instead of collapsing to one blob.
+    'html.vl-op #vl-about-bio{white-space:pre-line;line-height:1.6;}',
     // "More about" host card + bio grid (renders when Meet-the-Vendor is filled)
     '.vl-meet-grid{display:grid;grid-template-columns:280px minmax(0,1fr);gap:28px;align-items:start;font-family:"Plus Jakarta Sans",sans-serif;margin-bottom:14px;}',
     '.vl-host-card{background:#fff;border:.5px solid #EEEDF6;border-radius:20px;box-shadow:0 10px 30px rgba(26,24,41,.08);padding:26px;text-align:center;}',
