@@ -1490,7 +1490,13 @@ const LokaliProductsPage = (() => {
           .map(r => ({ slug: r.slug, label: r.label }));
       }
       if (suggRes && !suggRes.error && Array.isArray(suggRes.data)) {
-        _subcatPendingSuggs = suggRes.data.filter(r => r?.status === 'pending' && Number(r.category_id) === _subcatCategoryId);
+        // Pending chips + a green "approved ✓" for anything approved in the
+        // last 7 days — the vendor's answer without leaving the form.
+        const RECENT = Date.now() - 7 * 24 * 60 * 60 * 1000;
+        _subcatPendingSuggs = suggRes.data.filter(r =>
+          r && Number(r.category_id) === _subcatCategoryId &&
+          (r.status === 'pending' ||
+           (r.status === 'approved' && r.reviewed_at && Date.parse(r.reviewed_at) > RECENT)));
       }
       ensureSubcatUI();
       renderSubcatPills();
@@ -1569,8 +1575,13 @@ const LokaliProductsPage = (() => {
     box.innerHTML = '';
     _subcatPendingSuggs.forEach(p => {
       const chip = document.createElement('span');
-      chip.textContent = p.suggested_label + ' — under review';
-      chip.style.cssText = 'font-size:12px;padding:4px 12px;border-radius:999px;background:#FBF3D9;color:#8A6A00;border:1px solid #E8D48A;';
+      const approved = p.status === 'approved';
+      chip.textContent = approved
+        ? ((p.final_label || p.suggested_label) + ' — approved ✓')
+        : (p.suggested_label + ' — under review');
+      chip.style.cssText = approved
+        ? 'font-size:12px;padding:4px 12px;border-radius:999px;background:#EDFAF3;color:#1A6640;border:1px solid #A8DFC4;'
+        : 'font-size:12px;padding:4px 12px;border-radius:999px;background:#FBF3D9;color:#8A6A00;border:1px solid #E8D48A;';
       box.appendChild(chip);
     });
   };
@@ -1621,14 +1632,18 @@ const LokaliProductsPage = (() => {
     if (!sapi?.subcategories?.suggest) return;
     setSubcatHint('Sending…');
     try {
-      const out = await sapi.subcategories.suggest(_subcatCategoryId, label);
+      // Attach the listing being edited (if any) — approval then auto-tags it.
+      const out = await sapi.subcategories.suggest(_subcatCategoryId, label,
+        editingId ? { products_id: editingId } : null);
       const d = out?.data;
       if (!d || out.error) { setSubcatHint('Hit a snag — try again in a moment.', 'error'); return; }
       if (d.ok) {
         _subcatPendingSuggs.unshift({ category_id: _subcatCategoryId, suggested_label: label, status: 'pending' });
         renderSubcatPending();
         inp.value = '';
-        setSubcatHint('Thanks! We review suggestions so filters stay consistent — once approved it appears right here.', 'ok');
+        setSubcatHint(editingId
+          ? 'Thanks! Once approved, this product gets the specialty automatically.'
+          : 'Thanks! We review suggestions so filters stay consistent — once approved it appears right here.', 'ok');
       } else if (d.reason === 'exists' && d.slug) {
         // Select the returned slug directly — even if this page's taxonomy is
         // stale, the unknown-slug pill renders it (never "reload" advice that

@@ -152,13 +152,15 @@
     'service_name', 'service_description', 'duration_minutes', 'is_active',
     'remote', 'sort_order', 'price_type', 'price_cents', 'price_min_cents',
     'price_max_cents', 'price_note', 'image_url', 'video_url', 'slug',
-    'subcategory' // #96-LISTING: one optional taxonomy slug per listing
+    'subcategory', // #96-LISTING: one optional taxonomy slug per listing
+    'lead_time'    // #78: free-text per-item lead time (display only)
   ];
   var PRODUCT_EDITABLE = [
     'product_name', 'product_description', 'price', 'stock_quantity', 'image_url',
     'video_url', 'is_custom', 'turnaround_days', 'is_quote_based', 'is_active',
     'shipping_offered', 'pickup_only', 'sort_order', 'slug',
-    'subcategory' // #96-LISTING
+    'subcategory', // #96-LISTING
+    'lead_time'    // #78: free-text per-item lead time (supersedes turnaround_days for display)
   ];
   // Author may edit only these (vendor_reply is stamped by the guard trigger).
   var REVIEW_EDITABLE = ['comment', 'is_recommended', 'rating'];
@@ -964,15 +966,21 @@
             .order('id', { ascending: true });
         });
       },
-      suggest: function (categoryId, label) {
+      // #96-AUTOAPPLY: listing = optional { services_id } or { products_id } —
+      // the originating listing; approval then auto-tags it. Params are only
+      // sent when provided, so calls still work against the older 2-arg RPC.
+      suggest: function (categoryId, label, listing) {
         return withClient(function (c) {
-          return c.rpc('submit_subcategory_suggestion', { p_category_id: categoryId, p_label: label });
+          var params = { p_category_id: categoryId, p_label: label };
+          if (listing && listing.services_id != null) params.p_services_id = listing.services_id;
+          if (listing && listing.products_id != null) params.p_products_id = listing.products_id;
+          return c.rpc('submit_subcategory_suggestion', params);
         });
       },
       mySuggestions: function () {
         return withClient(function (c) {
           return c.from('subcategory_suggestions')
-            .select('id,category_id,suggested_label,status,final_label,created_at')
+            .select('id,category_id,suggested_label,status,final_label,created_at,reviewed_at')
             .order('created_at', { ascending: false });
         });
       },

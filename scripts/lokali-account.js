@@ -648,12 +648,15 @@
     wrap.appendChild(el('p', 'lk-admin-sub', 'Only you can see this panel.'));
 
     var stats = el('div', 'lk-admin-stats');
+    var _pendingStatNum = null;
     [[ov.vendors_active, 'Active vendors'], [ov.vendors_public, 'On The Market'],
      [ov.users_total, 'Accounts'], [ov.subcategories_live, 'Specialties live'],
      [ov.pending_suggestions, 'Suggestions pending']].forEach(function (t) {
       var tile = el('div', 'lk-admin-stat');
-      tile.appendChild(el('div', 'lk-admin-stat-num', esc(String(t[0] != null ? t[0] : '—'))));
+      var num = el('div', 'lk-admin-stat-num', esc(String(t[0] != null ? t[0] : '—')));
+      tile.appendChild(num);
       tile.appendChild(el('div', 'lk-admin-stat-lbl', esc(t[1])));
+      if (t[1] === 'Suggestions pending') _pendingStatNum = num;
       stats.appendChild(tile);
     });
     wrap.appendChild(stats);
@@ -679,7 +682,8 @@
       l1cat.textContent = ' — ' + (item.category_name || '');
       l1.appendChild(l1cat);
       var l2 = el('div', 'lk-admin-row-l2');
-      l2.textContent = 'from ' + (item.vendor_name || 'a vendor');
+      l2.textContent = 'from ' + (item.vendor_name || 'a vendor') +
+        (item.listing_name ? (' · for “' + item.listing_name + '”') : '');
       meta.appendChild(l1); meta.appendChild(l2);
       var input = document.createElement('input');
       input.type = 'text'; input.maxLength = 40; input.className = 'lk-admin-input';
@@ -702,10 +706,23 @@
           if (rd && rd.ok) {
             row.style.opacity = '.45';
             row.style.pointerEvents = 'none';
-            l2.textContent = approve ? ('Live as “' + (rd.label || wording) + '”') : 'Declined';
+            l2.textContent = approve
+              ? ('Live as “' + (rd.label || wording) + '”' + (rd.applied_to_listing ? ' · applied to their listing' : ''))
+              : 'Declined';
             l2.style.color = approve ? '#1A6640' : '#8E8BA6';
             var left = Math.max(0, parseInt(qc.textContent, 10) - 1);
             qc.textContent = String(left);
+            if (_pendingStatNum) _pendingStatNum.textContent = String(left);
+            // Reviewed rows leave the queue after the result has been read —
+            // they don't linger dimmed for the rest of the session.
+            setTimeout(function () {
+              row.style.transition = 'opacity .4s';
+              row.style.opacity = '0';
+              setTimeout(function () {
+                if (row.parentNode) row.parentNode.removeChild(row);
+                if (left === 0) wrap.appendChild(el('div', 'lk-admin-empty', 'All caught up — new suggestions from vendors land here.'));
+              }, 420);
+            }, 1800);
           } else {
             ok.disabled = false; no.disabled = false;
             l2.textContent = 'Couldn’t save — try again.';
