@@ -950,7 +950,7 @@
   // 2026-07-20). The first OP_LIST_CAP cards show; the rest sit behind an
   // Airbnb-style "Show all N products" pill that expands in place. "Show
   // fewer" collapses back and scrolls you to the top of the section.
-  var OP_LIST_CAP = { services: 4, products: 6 };
+  var OP_LIST_CAP = { services: 5, products: 6 }; // services collapse only past 5 (Francesca 2026-07-20)
   function opCapList(grid, total, kind) {
     if (!ONEPAGE || !grid || !grid.parentNode) return;
     var old = grid.parentNode.querySelector('.vl-op-showall');
