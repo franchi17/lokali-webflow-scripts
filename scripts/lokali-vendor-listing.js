@@ -421,6 +421,18 @@
     '.vl-op-pay-chip svg{display:block;width:15px;height:15px;}',
     // mobile
     '@media (max-width:767px){',
+    // Mobile photo hero: the desktop grid is min-width-768 gated, but the
+    // fallback strip rendered Webflow-era thumbnails (letterboxed, off-width).
+    // Proper treatment = full-width snap carousel; the strip's pips stay on.
+    'html.vl-op #vl-portfolio .vd-gallery{display:flex !important;overflow-x:auto;scroll-snap-type:x mandatory;gap:6px;border-radius:16px;-webkit-overflow-scrolling:touch;scrollbar-width:none;}',
+    'html.vl-op #vl-portfolio .vd-gallery::-webkit-scrollbar{display:none;}',
+    'html.vl-op #vl-portfolio .vd-frame{flex:0 0 100%;width:100% !important;min-width:0;height:230px !important;scroll-snap-align:start;margin:0 !important;border-radius:0 !important;}',
+    'html.vl-op #vl-portfolio .vd-frame img{width:100% !important;height:100% !important;object-fit:cover;display:block;}',
+    // Mobile: the hidden sticky nav was reserving a 54px in-flow slot between
+    // the photos and the name block — fixed-position it instead (appears on
+    // scroll exactly as before, just overlaid with side insets).
+    '#vl-op-nav{position:fixed;top:calc(var(--vl-op-top,0px) + 8px);left:12px;right:12px;width:auto;max-width:none;margin:0;display:none;}',
+    '#vl-op-nav.vl-op-nav-on{display:flex;}',
     '.vl-op-grid{grid-template-columns:1fr;gap:0;}',
     '.vl-op-rail{position:static;}',
     '.vl-op-card{margin:6px 0 22px;}',
