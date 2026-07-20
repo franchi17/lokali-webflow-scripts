@@ -309,7 +309,22 @@
         if (catName) { miniCat.textContent = catName; show(miniCat, true); }
         else show(miniCat, false);
       }
-      var av = $('vd-mini-avatar-img'); var photo = imgUrl(v.profile_photo); if (av && photo) av.src = photo;
+      // The Webflow build left a literal <imgraw> placeholder here — browsers
+      // render nothing for it, so the vendor logo showed as an empty lilac
+      // circle. Swap for a real <img> first (same fix vl-avatar needed).
+      var av = $('vd-mini-avatar-img');
+      if (av && av.tagName !== 'IMG') {
+        var realAv = document.createElement('img');
+        realAv.id = av.id;
+        realAv.className = av.className || '';
+        realAv.alt = av.getAttribute('alt') || '';
+        realAv.style.cssText = 'width:100%;height:100%;border-radius:50%;object-fit:cover;display:block;';
+        av.parentNode.replaceChild(realAv, av);
+        av = realAv;
+      }
+      var photo = imgUrl(v.profile_photo);
+      if (av && photo) av.src = photo;
+      else if (av) av.style.display = 'none';
       // CTA -> mailto
       var cta = $('vd-cta-btn');
       if (cta && v.contact_email) {
