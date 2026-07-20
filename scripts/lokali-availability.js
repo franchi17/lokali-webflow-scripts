@@ -126,10 +126,16 @@
       // the min-content floor, and paddings/cells slim down so the widget stays
       // the same width as every other card (Francesca 2026-07-20).
       '.lok-av .av-cell{min-width:0;overflow:hidden;}' +
+      // A date-less panel is an empty white bar — hide until a date is picked.
+      '.lok-av .av-panel:empty{display:none;}' +
       '@media (max-width:767px){' +
-        '.lok-av{padding:12px;}' +
-        '.lok-av .av-card{padding:12px;}' +
-        '.lok-av .av-cell{border-radius:8px;font-size:11px;}' +
+        // The lilac wrapper made the cards narrower than everything else on
+        // the page — strip it so calendar + hours span the full column.
+        '.lok-av{padding:0;background:transparent;margin:14px 0;}' +
+        '.lok-av .av-card{padding:14px;}' +
+        // Square cells clipped the day number + status at phone width — let
+        // them be shallow rectangles with room for both lines.
+        '.lok-av .av-cell{aspect-ratio:auto;min-height:42px;border-radius:8px;font-size:12px;padding:3px 0;}' +
       '}';
     var s = document.createElement('style');
     s.id = 'lok-av-styles';

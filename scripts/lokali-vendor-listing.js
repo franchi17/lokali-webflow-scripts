@@ -456,7 +456,7 @@
     'html.vl-op #vl-portfolio .vd-pip.vd-pip-active{background:#6002EE;}',
     // Meet-the-vendor: Learn more drops under the blurb on phones.
     '.vl-meet-row{flex-wrap:wrap !important;}',
-    '.vl-meet-learn{margin-left:80px !important;flex-basis:100%;}',
+    '.vl-meet-learn{margin-left:0 !important;flex-basis:100%;}',
     'html.vl-op [data-vl-panel="products"] .vl-grid{grid-template-columns:1fr;}',
     '.vl-meet-grid{grid-template-columns:1fr;}',
     'html.vl-op body{padding-bottom:76px;}',
