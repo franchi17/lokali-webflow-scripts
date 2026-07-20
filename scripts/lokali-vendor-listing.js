@@ -399,11 +399,12 @@
     // CTA reads as a real pill button (was a 12px 8px-radius tag) — same
     // outline language as the Show-all pill / pay chips; Order gets the soft
     // peach variant. Whole card is the link, so hover lights the button.
-    'html.vl-op .vl-card-cta{display:inline-flex;align-items:center;background:#fff;border:1.5px solid #D9D2F2;color:#5F51B8;border-radius:999px;padding:8px 16px;font-size:13px;font-weight:700;line-height:1;transition:background .12s;}',
-    'html.vl-op .vl-card:hover .vl-card-cta{background:#F3EBFF;}',
-    'html.vl-op .vl-card-cta-orange{border-color:#F6D9C4;color:#C05621;}',
-    'html.vl-op .vl-card:hover .vl-card-cta-orange{background:#FDF3EA;}',
-    'html.vl-op .vl-card-foot{display:flex;justify-content:flex-end;align-items:flex-end;}',
+    'html.vl-op .vl-card-cta{display:inline-flex;align-items:center;background:#F3EBFF;color:#6002EE;border:none;border-radius:999px;padding:8px 16px;font-size:13px;font-weight:700;line-height:1;transition:background .12s;}',
+    'html.vl-op .vl-card:hover .vl-card-cta{background:#E9DCFF;}',
+    'html.vl-op .vl-card-cta-orange{background:#FDEEE2;color:#C05621;}',
+    'html.vl-op .vl-card:hover .vl-card-cta-orange{background:#FBE2CE;}',
+    'html.vl-op .vl-card-foot{display:flex;justify-content:flex-end;align-items:center;gap:10px;}',
+    'html.vl-op .vl-card-foot .vl-card-lead{margin:0 auto 0 0;}',
     'html.vl-op .vl-card-body{display:flex;flex-direction:column;}',
     'html.vl-op .vl-card-foot{margin-top:auto;}',
     'html.vl-op [data-vl-panel="products"] .vl-card-img{height:170px !important;}',
@@ -1031,7 +1032,8 @@
       leadEl.className = 'vl-card-lead';
       leadEl.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
       leadEl.appendChild(document.createTextNode(opts.lead));
-      a.querySelector('.vl-card-desc').insertAdjacentElement('afterend', leadEl);
+      var foot = a.querySelector('.vl-card-foot');
+      foot.insertBefore(leadEl, foot.firstChild); // same row: chip left, button right
     }
     return a;
   }
