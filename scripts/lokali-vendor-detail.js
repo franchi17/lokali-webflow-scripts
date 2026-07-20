@@ -361,13 +361,21 @@
       // remote tag
       show($('vd-tag-remote'), !!s.remote);
       // meta: duration / price
+      var sLead = leadText(s);
       if (s.duration_minutes != null) {
         var m = Number(s.duration_minutes);
         var dur = m >= 60 ? (Math.round((m / 60) * 10) / 10) + ' hr' + (m >= 120 ? 's' : '') : m + ' min';
         setText('vd-meta-k1', 'Duration'); setText('vd-meta-v1', dur);
+        // #78: duration owns the row, so the lead time rides under the
+        // description as a quiet pill (same look as the listing cards).
+        if (sLead) leadChipUnderDesc(sLead);
+      } else if (sLead) {
+        // #78: no duration — the template's "Lead time / 5–7 days" placeholder
+        // row finally gets real data instead of being hidden.
+        setText('vd-meta-k1', 'Lead time'); setText('vd-meta-v1', sLead);
       } else {
         // The template ships "Lead time / 5–7 days" placeholder text in this
-        // row; with no duration set it showed as real data (same trap as the
+        // row; with neither value set it showed as real data (same trap as the
         // old "Food & Catering" mini-card placeholder). Hide the whole row.
         hideMetaRow('vd-meta-k1');
       }
@@ -378,6 +386,32 @@
       emitItemView(vid, 'service', s.id != null ? s.id : id);
       fillVendor(vid, name, false);
     });
+  }
+
+  // #78: lead-time pill under the description (services with a duration —
+  // the meta row is taken). textContent only: vendor free text, never markup.
+  function leadChipUnderDesc(text) {
+    var desc = $('vd-desc');
+    if (!desc || !desc.parentNode || document.getElementById('vd-lead-chip')) return;
+    var chip = document.createElement('div');
+    chip.id = 'vd-lead-chip';
+    chip.textContent = text;
+    chip.style.cssText = 'display:inline-flex;align-items:center;margin-top:10px;font-size:13px;line-height:1.3;color:#5A4A7A;background:#F1ECFC;border-radius:999px;padding:5px 12px;font-family:"Plus Jakarta Sans",system-ui,sans-serif;';
+    desc.insertAdjacentElement('afterend', chip);
+  }
+
+  // #78: free-text lead_time wins; a legacy numeric products.turnaround_days
+  // still renders as "N days" so nothing a vendor typed before disappears.
+  function leadText(item) {
+    if (!item) return '';
+    var lt = item.lead_time;
+    if (lt != null && String(lt).trim()) return String(lt).trim();
+    var td = item.turnaround_days;
+    if (td != null && td !== '' && !isNaN(Number(td))) {
+      var n = Number(td);
+      return n + (n === 1 ? ' day' : ' days');
+    }
+    return '';
   }
 
   // ---- product ----------------------------------------------------------
@@ -398,8 +432,12 @@
       show($('vd-tag-custom'), !!p.is_custom);
       show($('vd-tag-shipping'), !!p.shipping_offered);
       show($('vd-tag-pickup'), !!p.pickup_only || !!p.shipping_offered);
-      if (p.turnaround_days != null) setText('vd-meta-v1', p.turnaround_days + ' days');
-      else hideMetaRow('vd-meta-k1'); // hide the "Lead time / 5–7 days" template placeholder
+      // #78: the template ships a "Lead time / 5–7 days" placeholder in this row.
+      // Fill it from the vendor's own words (falling back to the legacy numeric
+      // turnaround), or hide the row entirely so the placeholder never reads as data.
+      var pLead = leadText(p);
+      if (pLead) { setText('vd-meta-k1', 'Lead time'); setText('vd-meta-v1', pLead); }
+      else hideMetaRow('vd-meta-k1');
       var fulfil = p.shipping_offered && p.pickup_only ? 'Shipping & local pickup' : (p.shipping_offered ? 'Shipping' : (p.pickup_only ? 'Local pickup' : '—'));
       setText('vd-meta-v2', fulfil);
       setText('vd-meta-v3', p.is_custom ? 'Made to order' : 'Standard');

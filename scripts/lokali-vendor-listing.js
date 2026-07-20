@@ -393,6 +393,9 @@
     'html.vl-op [data-vl-panel="services"] .vl-grid{display:flex !important;flex-direction:column;gap:16px;width:100%;}',
     'html.vl-op [data-vl-panel="services"] .vl-card{display:grid !important;grid-template-columns:190px 1fr;width:100% !important;max-width:none !important;border-radius:16px;overflow:hidden;align-items:stretch;height:188px;}',
     'html.vl-op .vl-card-desc{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-line;}',
+    // #78 lead time — a quiet clock line under the description, never louder
+    // than the price. Violet-tinted to sit in the palette, no ink.
+    '.vl-card-lead{display:inline-flex;align-items:center;margin-top:7px;font-size:12.5px;line-height:1.3;color:#5A4A7A;background:#F1ECFC;border-radius:999px;padding:4px 10px;align-self:flex-start;}',
     'html.vl-op .vl-card-body{display:flex;flex-direction:column;}',
     'html.vl-op .vl-card-foot{margin-top:auto;}',
     'html.vl-op [data-vl-panel="products"] .vl-card-img{height:170px !important;}',
@@ -975,6 +978,20 @@
   }
 
   var IMG_TINTS = ['#FFF1E6', '#F3EBFF', '#EAFAF2', '#FEF9E6'];
+  // #78: free-text lead_time wins; a legacy numeric products.turnaround_days
+  // still renders as "N days" so nothing a vendor typed before disappears.
+  function leadText(item) {
+    if (!item) return '';
+    var lt = item.lead_time;
+    if (lt != null && String(lt).trim()) return String(lt).trim();
+    var td = item.turnaround_days;
+    if (td != null && td !== '' && !isNaN(Number(td))) {
+      var n = Number(td);
+      return n + (n === 1 ? ' day' : ' days');
+    }
+    return '';
+  }
+
   function cardEl(opts) {
     var a = document.createElement('a');
     a.className = 'vl-card';
@@ -998,6 +1015,13 @@
     a.querySelector('.vl-card-name').textContent = opts.name || 'Untitled';
     a.querySelector('.vl-card-price').textContent = opts.price || '';
     a.querySelector('.vl-card-desc').textContent = opts.desc || '';
+    // #78: informational only — a heads-up, not a booking constraint.
+    if (opts.lead) {
+      var leadEl = document.createElement('div');
+      leadEl.className = 'vl-card-lead';
+      leadEl.textContent = opts.lead;
+      a.querySelector('.vl-card-desc').insertAdjacentElement('afterend', leadEl);
+    }
     return a;
   }
 
@@ -1053,6 +1077,7 @@
         image: imgUrl(s.image_url || s.image),
         tint: IMG_TINTS[i % IMG_TINTS.length],
         cta: p.quote ? 'Request quote' : 'Inquire',
+        lead: leadText(s),
         href: itemHref('services', s)
       }));
     });
@@ -1079,6 +1104,7 @@
         image: imgUrl(p.image_url || p.image),
         tint: IMG_TINTS[(i + 1) % IMG_TINTS.length],
         cta: 'Order', orange: true,
+        lead: leadText(p),
         href: itemHref('products', p)
       }));
     });

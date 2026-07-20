@@ -943,7 +943,7 @@
     // selector when the LOADED client actually whitelists the column —
     // otherwise pick() would strip it and the save would silently drop the
     // vendor's choice under a success toast.
-    capabilities: { listingSubcategory: true },
+    capabilities: { listingSubcategory: true, itemLeadTime: true }, // itemLeadTime = #78 (lead_time in both EDITABLE lists)
     // #96-SUGGEST — admin surface (is_admin()-gated server-side; non-admins
     // get { ok:false } — safe to call from any session).
     admin: {

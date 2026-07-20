@@ -702,6 +702,9 @@ const LokaliServicesPage = (() => {
     alignGalleryHost();
     ensureSubcatUI();      // #96-LISTING
     renderSubcatPills();
+    ensureLeadTimeUI();    // #78
+    syncLeadInput();
+    renderLeadPresets();
   };
 
   const openForm = (serviceId = null) => {
@@ -733,6 +736,7 @@ const LokaliServicesPage = (() => {
 
   const populateForm = (service) => {
     _selectedSubcat = service.subcategory || null; // #96-LISTING (pills re-render in showFormView)
+    _leadTime = service.lead_time || null;         // #78 (input + chips re-render in showFormView)
     if (el.fieldName())        el.fieldName().value        = service.service_name || '';
     if (el.fieldDescription()) el.fieldDescription().value = service.service_description || '';
     if (el.fieldCategory())    el.fieldCategory().value    = service.category_id || '';
@@ -788,6 +792,8 @@ const LokaliServicesPage = (() => {
     if (el.fieldIsActive())  el.fieldIsActive().checked = true;
     if (el.fieldCategory())  el.fieldCategory().value   = '';
     _selectedSubcat = null; // #96-LISTING
+    _leadTime = null;       // #78
+    syncLeadInput();
 
     syncPriceWrapsFromSelect();
     resetImagePreview();
@@ -1169,6 +1175,7 @@ const LokaliServicesPage = (() => {
     // is still deciding on (or revert one from a stale local row) — only the
     // explicit Save persists the tag.
     delete payload.subcategory;
+    delete payload.lead_time;   // #78: same reason — only explicit Save persists it
     const res = await window.LokaliAPI.services.update(editingId, payload);
     if (res && !res.error && svc) svc.image_url = desired;
   };
@@ -1227,6 +1234,9 @@ const LokaliServicesPage = (() => {
     // is omitted entirely and the saved value is left alone (a taxonomy-fetch
     // failure must never silently clear a tag).
     if (_subcatUiMounted) payload.subcategory = _selectedSubcat;
+    // #78: only send the key once the box is really on the page, so a form that
+    // never mounted it can't null out a saved lead time.
+    if (_leadUiMounted) payload.lead_time = _leadTime;
 
     return payload;
   };
@@ -1579,6 +1589,76 @@ const LokaliServicesPage = (() => {
     if (window.LokaliDashboard && typeof window.LokaliDashboard.preventFormSubmit === 'function') {
       window.LokaliDashboard.preventFormSubmit('#services-form');
     }
+  };
+
+  // ── #78: per-service LEAD TIME (free-text, display only) ──────────────────
+  // "How long until this is ready?" — informational copy that renders on the
+  // public listing card + item page. Deliberately NOT the availability
+  // "Minimum notice" (vendors.lead_time_hours), which is vendor-wide and
+  // actually blocks bookings; this changes no booking logic at all.
+  // Mounted INSIDE the description field's wrapper cell for the same Webflow
+  // grid reason as the Specialty box below (a new direct grid child gets
+  // auto-placed into a leftover cell and renders clipped, top-right).
+  let _leadUiMounted = false;
+  let _leadTime = null;
+  const LEAD_PRESETS = ['Same day', '1–2 days', '3–5 days', 'About a week', '2–3 weeks'];
+  const LEAD_MAXLEN = 60; // mirrors services_lead_time_shape in patch_lead_time.sql
+
+  const ensureLeadTimeUI = () => {
+    if (_leadUiMounted) return;
+    // Same trap as the Specialty box: a stale cached client (7-day @v1.4
+    // window) without lead_time in SERVICE_EDITABLE would strip the field in
+    // pick() and silently drop the vendor's text under a success toast.
+    // No capability flag -> no box.
+    if (!window.LokaliSupabaseAPI?.capabilities?.itemLeadTime) return;
+    const anchor = el.fieldDescription();
+    const host = anchor ? anchor.parentElement : null;
+    if (!host) return;
+    const wrap = document.createElement('div');
+    wrap.id = 'lok-service-leadtime';
+    wrap.style.cssText = "margin:14px 0 0;width:100%;box-sizing:border-box;background:#eee6ff;border-radius:8px;padding:12px 14px;font-family:'Plus Jakarta Sans',system-ui,sans-serif;";
+    wrap.innerHTML =
+      '<div style="font-size:13px;font-weight:600;color:#33254E;margin-bottom:2px;">Lead time</div>' +
+      '<p style="font-size:12.5px;color:#5A5570;margin:0 0 10px;">How long until this is ready for the customer? Shown on your listing so people know what to expect. Optional.</p>' +
+      '<div data-lead-presets style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:9px;"></div>' +
+      '<input data-lead-input maxlength="' + LEAD_MAXLEN + '" placeholder="e.g. Ready in ~2 weeks" style="width:100%;box-sizing:border-box;font-family:inherit;font-size:16px;padding:8px 12px;border:1px solid #C9BDE8;border-radius:8px;background:#fff;color:#1A1829;">' +
+      '<p style="font-size:12px;color:#8E8BA6;margin:8px 0 0;line-height:1.45;">Tap a suggestion or write your own. This is a heads-up for customers — it doesn’t block anyone from booking or ordering.</p>';
+    host.appendChild(wrap);
+    const inp = wrap.querySelector('[data-lead-input]');
+    inp.addEventListener('input', () => {
+      _leadTime = inp.value.trim() || null;
+      renderLeadPresets();   // keep chip highlighting in sync with typing
+    });
+    _leadUiMounted = true;
+    renderLeadPresets();
+  };
+
+  const renderLeadPresets = () => {
+    const row = document.querySelector('#lok-service-leadtime [data-lead-presets]');
+    if (!row) return;
+    row.innerHTML = '';
+    LEAD_PRESETS.forEach(label => {
+      const on = _leadTime === label;
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = label;
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      b.style.cssText = 'font-family:inherit;font-size:13.5px;padding:7px 13px;border-radius:999px;cursor:pointer;line-height:1.3;transition:all .12s;' +
+        (on ? 'background:#6002EE;border:1px solid #6002EE;color:#fff;font-weight:600;'
+            : 'background:#fff;border:1px solid #C9BDE8;color:#5A5570;');
+      b.addEventListener('click', () => {
+        // Tapping the active chip clears it — the field stays optional.
+        _leadTime = on ? null : label;
+        syncLeadInput();
+        renderLeadPresets();
+      });
+      row.appendChild(b);
+    });
+  };
+
+  const syncLeadInput = () => {
+    const inp = document.querySelector('#lok-service-leadtime [data-lead-input]');
+    if (inp) inp.value = _leadTime || '';
   };
 
   // ── #96-LISTING: per-service specialty (one optional subcategory slug) ─────

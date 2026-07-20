@@ -620,6 +620,9 @@ const LokaliProductsPage = (() => {
     alignGalleryHost();
     ensureSubcatUI();      // #96-LISTING
     renderSubcatPills();
+    ensureLeadTimeUI();    // #78
+    syncLeadInput(_legacyTurnaroundDays);
+    renderLeadPresets();
   };
 
   const openForm = (productId = null) => {
@@ -651,6 +654,8 @@ const LokaliProductsPage = (() => {
 
   const populateForm = (product) => {
     _selectedSubcat = product.subcategory || null; // #96-LISTING (pills re-render in showFormView)
+    _leadTime = product.lead_time || null;         // #78 (input + chips re-render in showFormView)
+    _legacyTurnaroundDays = product.turnaround_days != null ? product.turnaround_days : null;
     if (el.fieldName())        el.fieldName().value        = product.product_name || '';
     if (el.fieldDescription()) el.fieldDescription().value = product.product_description || '';
     if (el.fieldCategory())    el.fieldCategory().value    = product.category_id || '';
@@ -692,6 +697,9 @@ const LokaliProductsPage = (() => {
     if (el.fieldIsActive())    el.fieldIsActive().checked   = true;
     if (el.fieldCategory())    el.fieldCategory().value    = '';
     _selectedSubcat = null; // #96-LISTING
+    _leadTime = null;       // #78
+    _legacyTurnaroundDays = null;
+    syncLeadInput(null);
 
     updatePriceVisibility();
     resetImagePreview();
@@ -1075,6 +1083,7 @@ const LokaliProductsPage = (() => {
     // is still deciding on (or revert one from a stale local row) — only the
     // explicit Save persists the tag.
     delete payload.subcategory;
+    delete payload.lead_time;   // #78: same reason — only explicit Save persists it
     const res = await window.LokaliAPI.products.update(editingId, payload);
     if (res && !res.error && prod) prod.image_url = desired;
   };
@@ -1116,6 +1125,9 @@ const LokaliProductsPage = (() => {
     // #96-LISTING — only when the selector actually mounted; otherwise the key
     // is omitted and the saved value is left alone.
     if (_subcatUiMounted) payload.subcategory = _selectedSubcat;
+    // #78: only send the key once the box is really on the page, so a form that
+    // never mounted it can't null out a saved lead time.
+    if (_leadUiMounted) payload.lead_time = _leadTime;
 
     return payload;
   };
@@ -1451,6 +1463,91 @@ const LokaliProductsPage = (() => {
     if (window.LokaliDashboard && typeof window.LokaliDashboard.preventFormSubmit === 'function') {
       window.LokaliDashboard.preventFormSubmit('#products-form');
     }
+  };
+
+  // ── #78: per-product LEAD TIME (free-text, display only) ──────────────────
+  // "How long until this is ready?" — informational copy on the public listing
+  // card + item page. SUPERSEDES the legacy numeric turnaround_days for
+  // display: if the Webflow form still carries the old "Turnaround (days)"
+  // number input, its wrapper is hidden here so vendors aren't asked the same
+  // question twice — the stored value is left untouched (the public page falls
+  // back to it when lead_time is empty), and any existing number seeds this
+  // field's placeholder so the vendor can see what it used to say.
+  let _leadUiMounted = false;
+  let _leadTime = null;
+  let _legacyTurnaroundDays = null;  // old numeric value, shown as a placeholder hint only
+  const LEAD_PRESETS = ['Same day', '1–2 days', '3–5 days', 'About a week', '2–3 weeks'];
+  const LEAD_MAXLEN = 60; // mirrors products_lead_time_shape in patch_lead_time.sql
+
+  const hideLegacyTurnaroundField = () => {
+    const t = el.fieldTurnaround();
+    if (!t) return;
+    // Hide the labelled cell, not just the input, so no orphan label remains.
+    const cell = t.closest('.w-node, .form-field, .field-wrap, div') || t;
+    if (cell && cell !== document.body) cell.style.display = 'none';
+  };
+
+  const ensureLeadTimeUI = () => {
+    if (_leadUiMounted) return;
+    // Same trap as the Specialty box: a stale cached client without lead_time
+    // in PRODUCT_EDITABLE would strip the field in pick() and silently drop
+    // the vendor's text under a success toast. No capability flag -> no box
+    // (and the legacy Turnaround input stays visible as the fallback editor).
+    if (!window.LokaliSupabaseAPI?.capabilities?.itemLeadTime) return;
+    const anchor = el.fieldDescription();
+    const host = anchor ? anchor.parentElement : null;
+    if (!host) return;
+    hideLegacyTurnaroundField();
+    const wrap = document.createElement('div');
+    wrap.id = 'lok-product-leadtime';
+    wrap.style.cssText = "margin:14px 0 0;width:100%;box-sizing:border-box;background:#eee6ff;border-radius:8px;padding:12px 14px;font-family:'Plus Jakarta Sans',system-ui,sans-serif;";
+    wrap.innerHTML =
+      '<div style="font-size:13px;font-weight:600;color:#33254E;margin-bottom:2px;">Lead time</div>' +
+      '<p style="font-size:12.5px;color:#5A5570;margin:0 0 10px;">How long until this is ready for the customer? Shown on your listing so people know what to expect. Optional.</p>' +
+      '<div data-lead-presets style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:9px;"></div>' +
+      '<input data-lead-input maxlength="' + LEAD_MAXLEN + '" placeholder="e.g. Ready in ~2 weeks" style="width:100%;box-sizing:border-box;font-family:inherit;font-size:16px;padding:8px 12px;border:1px solid #C9BDE8;border-radius:8px;background:#fff;color:#1A1829;">' +
+      '<p style="font-size:12px;color:#8E8BA6;margin:8px 0 0;line-height:1.45;">Tap a suggestion or write your own. This is a heads-up for customers — it doesn’t block anyone from ordering.</p>';
+    host.appendChild(wrap);
+    const inp = wrap.querySelector('[data-lead-input]');
+    inp.addEventListener('input', () => {
+      _leadTime = inp.value.trim() || null;
+      renderLeadPresets();
+    });
+    _leadUiMounted = true;
+    renderLeadPresets();
+  };
+
+  const renderLeadPresets = () => {
+    const row = document.querySelector('#lok-product-leadtime [data-lead-presets]');
+    if (!row) return;
+    row.innerHTML = '';
+    LEAD_PRESETS.forEach(label => {
+      const on = _leadTime === label;
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = label;
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      b.style.cssText = 'font-family:inherit;font-size:13.5px;padding:7px 13px;border-radius:999px;cursor:pointer;line-height:1.3;transition:all .12s;' +
+        (on ? 'background:#6002EE;border:1px solid #6002EE;color:#fff;font-weight:600;'
+            : 'background:#fff;border:1px solid #C9BDE8;color:#5A5570;');
+      b.addEventListener('click', () => {
+        _leadTime = on ? null : label;
+        syncLeadInput();
+        renderLeadPresets();
+      });
+      row.appendChild(b);
+    });
+  };
+
+  const syncLeadInput = (legacyDays) => {
+    const inp = document.querySelector('#lok-product-leadtime [data-lead-input]');
+    if (!inp) return;
+    inp.value = _leadTime || '';
+    // Surface an old numeric turnaround as a hint so the vendor can see (and
+    // re-type in their own words) what the listing is currently showing.
+    inp.placeholder = (!_leadTime && legacyDays != null && legacyDays !== '')
+      ? 'Currently showing: ' + legacyDays + ' days'
+      : 'e.g. Ready in ~2 weeks';
   };
 
   // ── #96-LISTING: per-product specialty (one optional subcategory slug) ─────
