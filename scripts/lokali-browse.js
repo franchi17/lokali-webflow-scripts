@@ -720,6 +720,21 @@
     var catId = SLUG_TO_ID[activeCategory];
     var subs = catId != null && SUBCATS_BY_CAT[catId];
     if (!subs || !subs.length) return;
+    // Alphabetical, and only specialties an actual vendor in this category
+    // carries (Francesca 2026-07-20) — a pill with zero matches is a dead-end
+    // filter. A currently-selected pill stays visible so it can be un-toggled.
+    if (_allVendors.length) {
+      var have = {};
+      _allVendors.forEach(function (v) {
+        if (!v || !Array.isArray(v.subcategories)) return;
+        var cids = Array.isArray(v.categories_id) ? v.categories_id : [v.categories_id];
+        if (cids.indexOf(catId) === -1) return;
+        v.subcategories.forEach(function (sl) { have[sl] = true; });
+      });
+      subs = subs.filter(function (s) { return have[s.slug] || activeSubcats.indexOf(s.slug) !== -1; });
+    }
+    subs = subs.slice().sort(function (a, b) { return String(a.label).localeCompare(String(b.label)); });
+    if (!subs.length) return;
     var item = document.querySelector('#browse-filter-panel .filter-item[data-category-slug="' + activeCategory + '"]');
     if (!item) return;
     var row = ce('div', 'lk-subcat-row');
