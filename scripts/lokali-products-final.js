@@ -1500,12 +1500,12 @@ const LokaliProductsPage = (() => {
     hideLegacyTurnaroundField();
     const wrap = document.createElement('div');
     wrap.id = 'lok-product-leadtime';
-    wrap.style.cssText = "margin:14px 0 0;width:100%;box-sizing:border-box;background:#eee6ff;border-radius:8px;padding:12px 14px;font-family:'Plus Jakarta Sans',system-ui,sans-serif;";
+    wrap.style.cssText = "margin:14px 0 0;width:100%;box-sizing:border-box;font-family:'Plus Jakarta Sans',system-ui,sans-serif;";
     wrap.innerHTML =
-      '<div style="font-size:13px;font-weight:600;color:#33254E;margin-bottom:2px;">Lead time</div>' +
-      '<p style="font-size:12.5px;color:#5A5570;margin:0 0 10px;">How long until this is ready for the customer? Shown on your listing so people know what to expect. Optional.</p>' +
+      '<div style="font-size:13px;font-weight:600;color:#1A1829;margin-bottom:2px;">Lead time <span style="font-weight:400;color:#8E8BA6;">(optional)</span></div>' +
+      '<p style="font-size:12.5px;color:#8E8BA6;margin:0 0 8px;">How long until this is ready for the customer? Shown on your listing so people know what to expect.</p>' +
       '<div data-lead-presets style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:9px;"></div>' +
-      '<input data-lead-input maxlength="' + LEAD_MAXLEN + '" placeholder="e.g. Ready in ~2 weeks" style="width:100%;box-sizing:border-box;font-family:inherit;font-size:16px;padding:8px 12px;border:1px solid #C9BDE8;border-radius:8px;background:#fff;color:#1A1829;">' +
+      '<input data-lead-input class="w-input" maxlength="' + LEAD_MAXLEN + '" placeholder="e.g. Ready in ~2 weeks" style="width:100%;box-sizing:border-box;font-family:inherit;">' +
       '<p style="font-size:12px;color:#8E8BA6;margin:8px 0 0;line-height:1.45;">Tap a suggestion or write your own. This is a heads-up for customers — it doesn’t block anyone from ordering.</p>';
     host.appendChild(wrap);
     const inp = wrap.querySelector('[data-lead-input]');
@@ -1528,8 +1528,8 @@ const LokaliProductsPage = (() => {
       b.textContent = label;
       b.setAttribute('aria-pressed', on ? 'true' : 'false');
       b.style.cssText = 'font-family:inherit;font-size:13.5px;padding:7px 13px;border-radius:999px;cursor:pointer;line-height:1.3;transition:all .12s;' +
-        (on ? 'background:#6002EE;border:1px solid #6002EE;color:#fff;font-weight:600;'
-            : 'background:#fff;border:1px solid #C9BDE8;color:#5A5570;');
+        (on ? 'background:#F1F0F5;border:1px solid #4A4761;color:#1A1829;font-weight:600;'
+            : 'background:#fff;border:1px solid #CCCCCC;color:#5A5570;');
       b.addEventListener('click', () => {
         _leadTime = on ? null : label;
         syncLeadInput();
