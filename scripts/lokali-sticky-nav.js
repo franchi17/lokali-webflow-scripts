@@ -28,11 +28,16 @@
     s.textContent =
       '.lok-stick-fixed{position:fixed!important;top:0;left:0;right:0;z-index:950;' +
         'background:#fff;box-shadow:0 6px 22px rgba(26,24,41,.08);}' +
+      // White circle + violet arrow: the old brand-violet fill vanished against
+      // the vendor page's violet Send-a-message bar (Francesca 2026-07-20).
       '#lok-totop{position:fixed;right:16px;bottom:18px;z-index:990;width:44px;height:44px;border-radius:50%;' +
-        'background:' + BRAND + ';color:#fff;border:none;cursor:pointer;display:flex;align-items:center;' +
-        'justify-content:center;box-shadow:0 8px 22px rgba(96,2,238,.35);opacity:0;visibility:hidden;' +
+        'background:#fff;color:' + BRAND + ';border:1.5px solid #E4DFF6;cursor:pointer;display:flex;align-items:center;' +
+        'justify-content:center;box-shadow:0 8px 22px rgba(38,10,80,.22);opacity:0;visibility:hidden;' +
         'transform:translateY(8px);transition:opacity .2s ease,transform .2s ease,visibility .2s ease;}' +
       '#lok-totop.show{opacity:1;visibility:visible;transform:translateY(0);}' +
+      // Vendor one-page (<768px) pins a fixed contact bar to the bottom — ride
+      // above it (bar = 10+46+10 padding/button + the device safe-area inset).
+      '@media (max-width:767px){html.vl-op #lok-totop{bottom:calc(84px + env(safe-area-inset-bottom));}}' +
       '@media (min-width:992px){#lok-totop{display:none;}}';
     document.head.appendChild(s);
   }
