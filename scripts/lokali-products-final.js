@@ -1498,10 +1498,15 @@ const LokaliProductsPage = (() => {
     if (_subcatUiMounted || !_subcatList || !_subcatList.length) return;
     const anchor = el.fieldDescription();
     const host = anchor ? anchor.parentElement : null;
-    if (!host || !host.parentElement) return;
+    if (!host) return;
     const wrap = document.createElement('div');
     wrap.id = 'lok-product-subcat';
-    wrap.style.cssText = "margin:14px 0;background:#eee6ff;border-radius:8px;padding:12px 14px;font-family:'Plus Jakarta Sans',system-ui,sans-serif;";
+    // Mounted INSIDE the description field's wrapper cell (below the textarea),
+    // NOT as a sibling: the form is a Webflow grid (`_2-columns`) with
+    // explicitly placed w-node cells — a new direct grid child gets
+    // auto-placed into a leftover cell (it rendered top-right, clipped, on
+    // first ship). Inside the cell = normal flow in SERVICE DETAILS.
+    wrap.style.cssText = "margin:14px 0 0;width:100%;box-sizing:border-box;background:#eee6ff;border-radius:8px;padding:12px 14px;font-family:'Plus Jakarta Sans',system-ui,sans-serif;";
     wrap.innerHTML =
       '<div style="font-size:13px;font-weight:600;color:#33254E;margin-bottom:2px;">Specialty</div>' +
       '<p style="font-size:12.5px;color:#5A5570;margin:0 0 10px;">Pick the one that fits this product best — customers filter The Market by these. Optional.</p>' +
@@ -1515,7 +1520,7 @@ const LokaliProductsPage = (() => {
         '<p data-subcat-hint style="font-size:12px;color:#6B6787;margin:8px 0 0;line-height:1.45;"></p>' +
         '<div data-subcat-pending style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>' +
       '</div>';
-    host.parentElement.insertBefore(wrap, host.nextSibling);
+    host.appendChild(wrap);
     wrap.querySelector('[data-subcat-suggest-btn]').addEventListener('click', submitSubcatSuggestion);
     const inp = wrap.querySelector('[data-subcat-suggest]');
     inp.addEventListener('input', subcatTypeahead);
