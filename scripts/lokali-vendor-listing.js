@@ -395,7 +395,15 @@
     'html.vl-op .vl-card-desc{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-line;}',
     // #78 lead time — a quiet clock line under the description, never louder
     // than the price. Violet-tinted to sit in the palette, no ink.
-    '.vl-card-lead{display:inline-flex;align-items:center;margin-top:7px;font-size:12.5px;line-height:1.3;color:#5A4A7A;background:#F1ECFC;border-radius:999px;padding:4px 10px;align-self:flex-start;}',
+    '.vl-card-lead{display:inline-flex;align-items:center;gap:6px;margin-top:8px;font-size:12.5px;font-weight:600;line-height:1;color:#5A4A7A;background:#F1ECFC;border-radius:999px;padding:6px 12px;align-self:flex-start;}',
+    // CTA reads as a real pill button (was a 12px 8px-radius tag) — same
+    // outline language as the Show-all pill / pay chips; Order gets the soft
+    // peach variant. Whole card is the link, so hover lights the button.
+    'html.vl-op .vl-card-cta{display:inline-flex;align-items:center;background:#fff;border:1.5px solid #D9D2F2;color:#5F51B8;border-radius:999px;padding:8px 16px;font-size:13px;font-weight:700;line-height:1;transition:background .12s;}',
+    'html.vl-op .vl-card:hover .vl-card-cta{background:#F3EBFF;}',
+    'html.vl-op .vl-card-cta-orange{border-color:#F6D9C4;color:#C05621;}',
+    'html.vl-op .vl-card:hover .vl-card-cta-orange{background:#FDF3EA;}',
+    'html.vl-op .vl-card-foot{display:flex;justify-content:flex-end;align-items:flex-end;}',
     'html.vl-op .vl-card-body{display:flex;flex-direction:column;}',
     'html.vl-op .vl-card-foot{margin-top:auto;}',
     'html.vl-op [data-vl-panel="products"] .vl-card-img{height:170px !important;}',
@@ -1014,12 +1022,15 @@
     }
     a.querySelector('.vl-card-name').textContent = opts.name || 'Untitled';
     a.querySelector('.vl-card-price').textContent = opts.price || '';
-    a.querySelector('.vl-card-desc').textContent = opts.desc || '';
+    // Preview: paragraph BREAKS stay (pre-line), blank lines collapse — an
+    // empty line inside the 3-line clamp rendered as a lone ellipsis row.
+    a.querySelector('.vl-card-desc').textContent = String(opts.desc || '').replace(/\n{2,}/g, '\n');
     // #78: informational only — a heads-up, not a booking constraint.
     if (opts.lead) {
       var leadEl = document.createElement('div');
       leadEl.className = 'vl-card-lead';
-      leadEl.textContent = opts.lead;
+      leadEl.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
+      leadEl.appendChild(document.createTextNode(opts.lead));
       a.querySelector('.vl-card-desc').insertAdjacentElement('afterend', leadEl);
     }
     return a;
