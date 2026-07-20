@@ -34,7 +34,10 @@ const LokaliServicesPage = (() => {
       // start (aligned with the inputs above) with an 8px gap to its label.
       '#services-form-view .w-checkbox{padding-left:0!important;gap:0!important;align-items:center;}' +
       '#services-form-view .w-checkbox-input{margin:0 8px 0 0!important;}' +
-      '#services-form-view .form-text-header .lok-req{color:#E0245E;font-weight:700;}';
+      '#services-form-view .form-text-header .lok-req{color:#E0245E;font-weight:700;}' +
+      // Description box was cramped (~2 visible lines for a 5000-char field) —
+      // give it real room and let vendors drag it taller (Francesca 2026-07-20).
+      '#services-form-view #service-description{min-height:180px!important;resize:vertical;}';
     (document.head || document.documentElement).appendChild(s);
   })();
 
@@ -1645,6 +1648,7 @@ const LokaliServicesPage = (() => {
           '<input data-subcat-suggest maxlength="40" placeholder="e.g. Power washing" style="flex:1;min-width:0;font-family:inherit;font-size:16px;padding:8px 12px;border:1px solid #C9BDE8;border-radius:8px;background:#fff;color:#1A1829;">' +
           '<button type="button" data-subcat-suggest-btn style="font-family:inherit;font-size:13px;font-weight:600;padding:8px 16px;border-radius:8px;border:1px solid #6002EE;background:#6002EE;color:#fff;cursor:pointer;">Suggest</button>' +
         '</div>' +
+        '<p style="font-size:12px;color:#8E8BA6;margin:8px 0 0;line-height:1.45;">New specialties are reviewed first, so filters stay consistent — once approved, yours appears here for everyone.</p>' +
         '<p data-subcat-hint style="font-size:12px;color:#6B6787;margin:8px 0 0;line-height:1.45;"></p>' +
         '<div data-subcat-pending style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>' +
       '</div>';
