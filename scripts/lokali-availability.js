@@ -121,7 +121,16 @@
       '.lok-av .av-step span{cursor:pointer;font-size:18px;line-height:1;color:' + BRAND + ';user-select:none;padding:0 4px;}' +
       '.lok-av .av-slot{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;' +
         'border-radius:10px;margin-bottom:6px;font-size:14px;font-weight:500;}' +
-      '.lok-av .av-slot.pick{cursor:pointer;}.lok-av .av-slot.on{outline:2px solid ' + BRAND + ';outline-offset:-2px;}';
+      '.lok-av .av-slot.pick{cursor:pointer;}.lok-av .av-slot.on{outline:2px solid ' + BRAND + ';outline-offset:-2px;}' +
+      // Mobile: the 7-col calendar must fit a phone — minmax(0,1fr) columns kill
+      // the min-content floor, and paddings/cells slim down so the widget stays
+      // the same width as every other card (Francesca 2026-07-20).
+      '.lok-av .av-cell{min-width:0;overflow:hidden;}' +
+      '@media (max-width:767px){' +
+        '.lok-av{padding:12px;}' +
+        '.lok-av .av-card{padding:12px;}' +
+        '.lok-av .av-cell{border-radius:8px;font-size:11px;}' +
+      '}';
     var s = document.createElement('style');
     s.id = 'lok-av-styles';
     s.textContent = css;
@@ -235,10 +244,10 @@
             '<span class="av-nav" data-d="1" style="cursor:pointer;color:' + BRAND + ';font-size:18px;user-select:none;">&#8250;</span>' +
           '</div>' +
         '</div>' +
-        '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:5px;font-size:11px;color:#B0ACBC;text-align:center;margin-bottom:6px;">' +
+        '<div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;font-size:11px;color:#B0ACBC;text-align:center;margin-bottom:6px;">' +
           DOW.map(function (d) { return '<div>' + d + '</div>'; }).join('') +
         '</div>' +
-        '<div class="av-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:5px;"></div>' +
+        '<div class="av-grid" style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;"></div>' +
         '<div style="display:flex;gap:16px;margin-top:13px;font-size:11px;color:#8B8798;">' +
           '<span><span style="display:inline-block;width:9px;height:9px;border-radius:3px;background:' + STATUS.open.dot + ';"></span> Open</span>' +
           '<span><span style="display:inline-block;width:9px;height:9px;border-radius:3px;background:' + STATUS.limited.dot + ';"></span> Limited</span>' +

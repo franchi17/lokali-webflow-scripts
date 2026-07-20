@@ -322,6 +322,14 @@
     '#vl-op-nav a{padding:9px 16px;border-radius:999px;font:600 14px/1.2 "Plus Jakarta Sans",sans-serif;color:#6B6880;text-decoration:none;white-space:nowrap;transition:background .12s,color .12s;}',
     '#vl-op-nav a:hover{background:#F6F2FE;color:#3B3654;}',
     '#vl-op-nav a.vl-op-active{background:#F0E8FF;color:#5F51B8;}',
+    // Edge fades tell you the capsule scrolls sideways (classes synced by
+    // opNavFadeSync on scroll/resize/link-add).
+    '#vl-op-nav.vl-nav-ovf-r{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 36px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 36px),transparent);}',
+    '#vl-op-nav.vl-nav-ovf-l{-webkit-mask-image:linear-gradient(90deg,transparent,#000 36px);mask-image:linear-gradient(90deg,transparent,#000 36px);}',
+    '#vl-op-nav.vl-nav-ovf-l.vl-nav-ovf-r{-webkit-mask-image:linear-gradient(90deg,transparent,#000 36px,#000 calc(100% - 36px),transparent);mask-image:linear-gradient(90deg,transparent,#000 36px,#000 calc(100% - 36px),transparent);}',
+    // "Get in touch" nav jump exists for mobile only — on desktop the card is
+    // always in view in the sticky rail.
+    '@media (min-width:768px){#vl-op-nav-contact{display:none;}}',
     // two-column body
     '.vl-op-grid{display:grid;grid-template-columns:minmax(0,1fr) 332px;gap:44px;align-items:start;}',
     '.vl-op-main{min-width:0;}',
@@ -436,8 +444,19 @@
     '.vl-op-grid{grid-template-columns:1fr;gap:0;}',
     '.vl-op-rail{position:static;}',
     '.vl-op-card{margin:6px 0 22px;}',
-    'html.vl-op [data-vl-panel="services"] .vl-card{grid-template-columns:1fr;height:auto;}',
-    'html.vl-op [data-vl-panel="services"] .vl-card-img{min-height:170px;}',
+    // Uniform mobile cards: photo band + capped body, identical for services
+    // AND products (Francesca 2026-07-20 — no more ragged heights).
+    'html.vl-op [data-vl-panel="services"] .vl-card,html.vl-op [data-vl-panel="products"] .vl-card{display:grid;grid-template-columns:1fr;grid-template-rows:180px minmax(0,1fr);height:372px;border-radius:16px;overflow:hidden;}',
+    'html.vl-op [data-vl-panel="services"] .vl-card-img,html.vl-op [data-vl-panel="products"] .vl-card-img{height:100% !important;min-height:0 !important;width:100% !important;border-radius:0 !important;}',
+    'html.vl-op .vl-card-name{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}',
+    // Carousel dots: the strip pips were unstyled (invisible) — visible violet
+    // dots under the photos, active one follows the swipe (wireStrip).
+    'html.vl-op #vl-portfolio .vd-pips{display:flex;justify-content:center;gap:6px;margin-top:10px;}',
+    'html.vl-op #vl-portfolio .vd-pip{width:7px;height:7px;border-radius:50%;background:#DCD5F0;transition:background .15s;}',
+    'html.vl-op #vl-portfolio .vd-pip.vd-pip-active{background:#6002EE;}',
+    // Meet-the-vendor: Learn more drops under the blurb on phones.
+    '.vl-meet-row{flex-wrap:wrap !important;}',
+    '.vl-meet-learn{margin-left:80px !important;flex-basis:100%;}',
     'html.vl-op [data-vl-panel="products"] .vl-grid{grid-template-columns:1fr;}',
     '.vl-meet-grid{grid-template-columns:1fr;}',
     'html.vl-op body{padding-bottom:76px;}',
@@ -447,6 +466,13 @@
     '#vl-op-bar .vl-op-bar-call{flex:0 0 108px;background:#fff;color:#1A1829;border:1px solid #EEEDF6;}',
     '}'
   ].join('');
+
+  function opNavFadeSync(nav) {
+    if (!nav) return;
+    var max = nav.scrollWidth - nav.clientWidth - 1;
+    nav.classList.toggle('vl-nav-ovf-r', nav.scrollLeft < max);
+    nav.classList.toggle('vl-nav-ovf-l', nav.scrollLeft > 1);
+  }
 
   function onepageLayout() {
     document.documentElement.classList.add('vl-op');
@@ -509,6 +535,20 @@
       nav.appendChild(a);
     });
 
+    // Mobile nav tail: jump to the inline contact card.
+    var gt = ce('a');
+    gt.id = 'vl-op-nav-contact';
+    gt.href = '#';
+    gt.textContent = 'Get in touch';
+    gt.addEventListener('click', function (ev) {
+      ev.preventDefault();
+      var c = document.querySelector('.vl-op-card');
+      if (c && c.scrollIntoView) c.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+    nav.appendChild(gt);
+    nav.addEventListener('scroll', function () { opNavFadeSync(nav); }, { passive: true });
+    opNavFadeSync(nav);
+
     // #76 design pass: the identity block (name/logo/badges/tagline) becomes
     // the first item of the left column so the sticky contact card sits beside
     // it — desktop was leaving the hero band's right half empty.
@@ -540,7 +580,7 @@
     // the sticky nav/rail/anchor offsets clear it (0 if the header ever changes).
     opSetTop();
     var t = null;
-    window.addEventListener('resize', function () { clearTimeout(t); t = setTimeout(function () { placeOpCard(); setOpTop(); }, 150); });
+    window.addEventListener('resize', function () { clearTimeout(t); t = setTimeout(function () { placeOpCard(); setOpTop(); opNavFadeSync(nav); }, 150); });
     initOpNavScroll(navSentinel, nav);
     watchAvailability(main, nav);
     loadInquiryScript();
@@ -637,7 +677,10 @@
     function update() {
       queued = false;
       opSetTop();
-      nav.classList.toggle('vl-op-nav-on', sentinel.getBoundingClientRect().top < 0);
+      var navOn = sentinel.getBoundingClientRect().top < 0;
+      var wasOn = nav.classList.contains('vl-op-nav-on');
+      nav.classList.toggle('vl-op-nav-on', navOn);
+      if (navOn && !wasOn) opNavFadeSync(nav); // fades computed 0 while hidden
       var mark = window.innerHeight * 0.35;
       var as = nav.querySelectorAll('a[id^="vl-op-nav-"]');
       var activeId = null;
@@ -738,6 +781,7 @@
         var revLink = document.getElementById('vl-op-nav-reviews');
         if (revLink && revLink.parentNode === nav) nav.insertBefore(a, revLink);
         else nav.appendChild(a);
+        opNavFadeSync(nav);
         opAddHighlight({ key: 'books', url: ICON_BOLT, tint: '#5F51B8', t: 'Books online', s: 'Check live availability and request a date' });
       } else if (tries > 40) {
         clearInterval(iv); // ~20s — vendor isn't on the availability feature
@@ -1504,7 +1548,7 @@
     sec.id = 'vl-op-sec-meet';
     var h = ce('h2', 'vl-op-h'); h.textContent = 'Meet the vendor';
     sec.appendChild(h);
-    var row = ce('div');
+    var row = ce('div', 'vl-meet-row');
     row.style.cssText = 'display:flex;align-items:center;gap:16px;font-family:"Plus Jakarta Sans",sans-serif;';
     row.appendChild(avatarEl(64));
     var txt = ce('div');
@@ -1523,7 +1567,7 @@
       txt.appendChild(sub);
     }
     row.appendChild(txt);
-    var learn = ce('a');
+    var learn = ce('a', 'vl-meet-learn');
     learn.href = '#vl-op-sec-about';
     learn.textContent = 'Learn more →';
     learn.style.cssText = 'margin-left:auto;font-weight:700;font-size:14px;color:#6002EE;text-decoration:none;white-space:nowrap;';
