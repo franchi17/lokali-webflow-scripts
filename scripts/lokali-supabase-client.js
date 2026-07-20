@@ -151,12 +151,14 @@
   var SERVICE_EDITABLE = [
     'service_name', 'service_description', 'duration_minutes', 'is_active',
     'remote', 'sort_order', 'price_type', 'price_cents', 'price_min_cents',
-    'price_max_cents', 'price_note', 'image_url', 'video_url', 'slug'
+    'price_max_cents', 'price_note', 'image_url', 'video_url', 'slug',
+    'subcategory' // #96-LISTING: one optional taxonomy slug per listing
   ];
   var PRODUCT_EDITABLE = [
     'product_name', 'product_description', 'price', 'stock_quantity', 'image_url',
     'video_url', 'is_custom', 'turnaround_days', 'is_quote_based', 'is_active',
-    'shipping_offered', 'pickup_only', 'sort_order', 'slug'
+    'shipping_offered', 'pickup_only', 'sort_order', 'slug',
+    'subcategory' // #96-LISTING
   ];
   // Author may edit only these (vendor_reply is stamped by the guard trigger).
   var REVIEW_EDITABLE = ['comment', 'is_recommended', 'rating'];
@@ -933,6 +935,13 @@
       waitlist: function (payload) { return postRoute('/waitlist', payload || {}, false); },
       interest: function (payload) { return postRoute('/interest', payload || {}, false); }
     },
+    // #96-LISTING — capability flags for skew detection: the pinned form
+    // scripts flip instantly on re-registration, but THIS file rides the
+    // 7-day @v1.4 browser cache. A form must only mount its Specialty
+    // selector when the LOADED client actually whitelists the column —
+    // otherwise pick() would strip it and the save would silently drop the
+    // vendor's choice under a success toast.
+    capabilities: { listingSubcategory: true },
     // #96-SUGGEST — admin surface (is_admin()-gated server-side; non-admins
     // get { ok:false } — safe to call from any session).
     admin: {

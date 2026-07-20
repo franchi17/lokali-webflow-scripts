@@ -16,8 +16,7 @@
     s.textContent = css;
     document.head.appendChild(s);
   }
-  injectStyle("lokali-subcat-ui-style", "  .subcat-block {\n    border-top: 1px solid #DCD2F2;\n    margin-top: 12px;\n    padding-top: 12px;\n  }\n  .subcat-hint {\n    margin-bottom: 10px;\n  }\n  .category-pill.subcat-pick {\n    padding: 6px 12px;\n    font-size: 13px;\n  }\n  .subcat-count {\n    font-size: 12.5px;\n    color: #6B6787;\n    margin: 10px 0 0;\n  }\n  .subcat-suggest {\n    border-top: 1px dashed #DCD2F2;\n    margin-top: 12px;\n    padding-top: 12px;\n  }\n  .subcat-suggest-label {\n    font-size: 13px;\n    color: #5A5570;\n    margin: 0 0 8px;\n  }\n  .subcat-suggest-row {\n    display: flex;\n    gap: 6px;\n  }\n  .subcat-suggest-input {\n    flex: 1;\n    font-family: inherit;\n    font-size: 13px;\n    padding: 8px 12px;\n    border: 1px solid #C9BDE8;\n    border-radius: 8px;\n    background: #fff;\n    color: #1A1829;\n    min-width: 0;\n  }\n  .subcat-suggest-input::placeholder {\n    color: #8E8BA6;\n  }\n  .subcat-suggest-btn {\n    font-family: inherit;\n    -webkit-appearance: none;\n    appearance: none;\n    font-size: 13px;\n    font-weight: 600;\n    padding: 8px 16px;\n    border-radius: 8px;\n    border: 1px solid #6002EE;\n    background: #6002EE;\n    color: #fff;\n    cursor: pointer;\n  }\n  .subcat-suggest-btn:hover {\n    background: #4a01c7;\n    border-color: #4a01c7;\n  }\n  .subcat-suggest-hint {\n    font-size: 12.5px;\n    color: #6B6787;\n    margin: 8px 0 0;\n    line-height: 1.45;\n  }\n  .subcat-suggest-link {\n    color: #6002EE;\n    font-weight: 600;\n    cursor: pointer;\n    text-decoration: underline;\n  }\n  .subcat-suggest-pending {\n    display: flex;\n    flex-wrap: wrap;\n    gap: 6px;\n    margin-top: 8px;\n  }\n  .subcat-pending-chip {\n    font-size: 12px;\n    padding: 4px 12px;\n    border-radius: 999px;\n    background: #FBF3D9;\n    color: #8A6A00;\n    border: 1px solid #E8D48A;\n  }");
-  injectStyle("lokali-profile-field-colors","  .w-input, .w-select, .lokali-phone-number, #textarea-description {\n    color: #1A1829;\n  }\n  .w-input::placeholder, .w-select::placeholder,\n  .lokali-phone-number::placeholder, #textarea-description::placeholder {\n    color: #8E8BA6;\n  }");
+  injectStyle("lokali-profile-field-colors", "  .w-input, .w-select, .lokali-phone-number, #textarea-description {\n    color: #1A1829;\n  }\n  .w-input::placeholder, .w-select::placeholder,\n  .lokali-phone-number::placeholder, #textarea-description::placeholder {\n    color: #8E8BA6;\n  }");
   injectStyle("lokali-locations-ui-style", "  .location-multi {\n    font-family: \"Plus Jakarta Sans\", system-ui, -apple-system, sans-serif;\n    background: #eee6ff;\n    padding: 12px 14px;\n    border-radius: 8px;\n    box-sizing: border-box;\n  }\n  .location-hint {\n    font-size: 13px;\n    color: #5A5570;\n    margin: 0 0 10px;\n    line-height: 1.4;\n  }\n  .location-pills {\n    display: flex;\n    flex-wrap: wrap;\n    gap: 8px;\n  }\n  .location-pill {\n    font-family: inherit;\n    -webkit-appearance: none;\n    appearance: none;\n    display: inline-flex;\n    align-items: center;\n    gap: 7px;\n    background: #fff;\n    color: #5A5570;\n    border: 1px solid #C9BDE8;\n    border-radius: 999px;\n    padding: 8px 14px;\n    font-size: 14px;\n    line-height: 1.3;\n    cursor: pointer;\n    user-select: none;\n    transition: background .12s, border-color .12s, color .12s;\n  }\n  .location-pill:hover {\n    border-color: #6002ee;\n    color: #6002ee;\n  }\n  .location-pill.is-on {\n    background: #6002EE;\n    border-color: #6002EE;\n    color: #fff;\n    font-weight: 600;\n  }\n  .location-pill.is-on:hover {\n    background: #4a01c7;\n    border-color: #4a01c7;\n    color: #fff;\n  }\n  .location-pill .lp-g {\n    font-weight: 700;\n    font-size: 13px;\n    line-height: 1;\n  }\n  .location-count {\n    font-size: 12.5px;\n    color: #6B6787;\n    margin: 10px 0 0;\n  }\n  .category-pills {\n    font-family: \"Plus Jakarta Sans\", system-ui, -apple-system, sans-serif;\n    background: #eee6ff;\n    padding: 12px 14px;\n    border-radius: 8px;\n    box-sizing: border-box;\n  }\n  .category-hint {\n    font-size: 13px;\n    color: #5A5570;\n    margin: 0 0 10px;\n    line-height: 1.4;\n  }\n  .category-pill-row {\n    display: flex;\n    flex-wrap: wrap;\n    gap: 8px;\n  }\n  .category-pill {\n    font-family: inherit;\n    -webkit-appearance: none;\n    appearance: none;\n    display: inline-flex;\n    align-items: center;\n    gap: 8px;\n    background: #fff;\n    color: #5A5570;\n    border: 1px solid #C9BDE8;\n    border-radius: 999px;\n    padding: 8px 14px;\n    font-size: 14px;\n    line-height: 1.3;\n    cursor: pointer;\n    user-select: none;\n    transition: background .12s, border-color .12s, color .12s;\n  }\n  .category-pill:hover {\n    border-color: #6002ee;\n    color: #6002ee;\n  }\n  .category-pill.is-on {\n    background: #6002EE;\n    border-color: #6002EE;\n    color: #fff;\n    font-weight: 600;\n  }\n  .category-pill .cp-ic {\n    width: 16px;\n    height: 16px;\n    flex-shrink: 0;\n    background-color: currentColor;\n    -webkit-mask-position: center;\n    -webkit-mask-repeat: no-repeat;\n    -webkit-mask-size: contain;\n    mask-position: center;\n    mask-repeat: no-repeat;\n    mask-size: contain;\n  }");
 })();
 
@@ -217,8 +216,6 @@ var LokaliProfilePage = (function () {
     _removeHtml5RequiredFromForm();
     window.LokaliDashboard.disableButton(SAVE_BTN, true);
     _initPhoneField();
-    _fetchSubcatTaxonomy();        // #96-SUGGEST — live taxonomy (baked list = fallback)
-    _loadMySubcatSuggestions();    // #96-SUGGEST — "under review" chips
     loadData()
       .then(function () {
         _dbg('[ProfilePage] loadData succeeded, _vendor:', JSON.stringify(_vendor).substring(0, 200));
@@ -941,10 +938,6 @@ var LokaliProfilePage = (function () {
       var categorySelect = _getCategorySelect();
       if (categorySelect) categorySelect.value = String(primaryCategory);
     }
-    // #96 — hydrate saved specialty picks (see _rehydrateSubcats: pruned to
-    // the current category's taxonomy, skipped once the vendor has touched
-    // the pills so the delayed second populateUI pass can't revert them).
-    _rehydrateSubcats();
     _initCategoryPills();
   }
 
@@ -1043,169 +1036,6 @@ var LokaliProfilePage = (function () {
   };
   var _categoryPillRowEl = null;
 
-  // #96 — curated subcategory taxonomy, keyed by category id. MIRRORED from
-  // lokali-browse.js SUBCATS_BY_CAT (labels = the categories-guide "Examples"
-  // pills) — keep the two lists identical. Vendors pick up to 3; The Market
-  // filters + renders card pills from the saved slugs.
-  var _SUBCAT_CAP = 3;
-  var _SUBCATS_BY_CAT = {
-    1: [
-      { slug: 'handmade-jewelry',     label: 'Handmade jewelry' },
-      { slug: 'candles-soap',         label: 'Candles & soap' },
-      { slug: 'art-prints',           label: 'Art prints & paintings' },
-      { slug: 'pottery-ceramics',     label: 'Pottery & ceramics' },
-      { slug: 'woodworking',          label: 'Woodworking' },
-      { slug: 'custom-embroidery',    label: 'Custom embroidery' },
-      { slug: 'floral-arrangements',  label: 'Floral arrangements' },
-      { slug: 'sewn-goods',           label: 'Sewn & stitched goods' }
-    ],
-    2: [
-      { slug: 'bookkeeping',          label: 'Bookkeeping & accounting' },
-      { slug: 'marketing',            label: 'Marketing & social media' },
-      { slug: 'graphic-design',       label: 'Graphic design' },
-      { slug: 'virtual-assistance',   label: 'Virtual assistance' },
-      { slug: 'notary',               label: 'Notary services' },
-      { slug: 'consulting',           label: 'Consulting' },
-      { slug: 'it-support',           label: 'IT & tech support' },
-      { slug: 'copywriting',          label: 'Copywriting' }
-    ],
-    3: [
-      { slug: 'hair-styling',         label: 'Hair styling & coloring' },
-      { slug: 'lash-extensions',      label: 'Lash extensions' },
-      { slug: 'nails',                label: 'Nails & manicures' },
-      { slug: 'esthetics',            label: 'Esthetics & facials' },
-      { slug: 'makeup',               label: 'Makeup artistry' },
-      { slug: 'brow-shaping',         label: 'Brow shaping' },
-      { slug: 'spray-tanning',        label: 'Spray tanning' },
-      { slug: 'mobile-beauty',        label: 'Mobile beauty services' }
-    ],
-    4: [
-      { slug: 'tutoring',             label: 'Tutoring' },
-      { slug: 'music-lessons',        label: 'Music lessons' },
-      { slug: 'after-school',         label: 'After-school programs' },
-      { slug: 'childcare',            label: 'Childcare & nannying' },
-      { slug: 'kids-art-classes',     label: 'Art classes for kids' },
-      { slug: 'sports-coaching',      label: 'Sports coaching' },
-      { slug: 'language-instruction', label: 'Language instruction' },
-      { slug: 'learning-support',     label: 'Learning support' }
-    ],
-    5: [
-      { slug: 'wedding-photography',  label: 'Wedding photography' },
-      { slug: 'event-planning',       label: 'Event planning' },
-      { slug: 'family-portraits',     label: 'Family portraits' },
-      { slug: 'party-rentals',        label: 'Party rentals' },
-      { slug: 'djs-entertainers',     label: 'DJs & entertainers' },
-      { slug: 'photo-booths',         label: 'Photo booths' },
-      { slug: 'videography',          label: 'Videography' },
-      { slug: 'balloon-decor',        label: 'Balloon & décor styling' }
-    ],
-    6: [
-      { slug: 'catering-meal-prep',   label: 'Catering & meal prep' },
-      { slug: 'home-baker',           label: 'Home-based baker' },
-      { slug: 'personal-chefs',       label: 'Personal chefs' },
-      { slug: 'food-trucks',          label: 'Food trucks' },
-      { slug: 'specialty-food',       label: 'Specialty & dietary food' },
-      { slug: 'meal-delivery',        label: 'Meal delivery' },
-      { slug: 'charcuterie',          label: 'Charcuterie & grazing boards' },
-      { slug: 'cultural-cuisine',     label: 'Cultural cuisine' }
-    ],
-    7: [
-      { slug: 'personal-training',    label: 'Personal training' },
-      { slug: 'yoga-pilates',         label: 'Yoga & pilates' },
-      { slug: 'massage-therapy',      label: 'Massage therapy' },
-      { slug: 'nutrition-coaching',   label: 'Nutrition coaching' },
-      { slug: 'life-coaching',        label: 'Life coaching' },
-      { slug: 'reiki-energy',         label: 'Reiki & energy work' },
-      { slug: 'acupuncture',          label: 'Acupuncture' },
-      { slug: 'mental-wellness',      label: 'Mental wellness support' }
-    ],
-    8: [
-      { slug: 'cleaning',             label: 'Cleaning services' },
-      { slug: 'landscaping',          label: 'Landscaping & lawn care' },
-      { slug: 'handyman',             label: 'Handyman & repairs' },
-      { slug: 'painting',             label: 'Painting' },
-      { slug: 'pool-maintenance',     label: 'Pool maintenance' },
-      { slug: 'interior-decorating',  label: 'Interior decorating' },
-      { slug: 'home-organization',    label: 'Home organization' },
-      { slug: 'pest-control',         label: 'Pest control' }
-    ]
-  };
-  var _selectedSubcats = [];
-  var _preservedSubcats = []; // saved slugs UNKNOWN to the loaded taxonomy — kept invisibly, never silently dropped (see _rehydrateSubcats)
-  var _subcatsTouched = false; // user interacted — hydration must never revert their picks
-  var _subcatWrapEl = null, _subcatRowEl = null, _subcatCountEl = null;
-  var _suggestInputEl = null, _suggestHintEl = null, _suggestPendingEl = null;
-  var _pendingSuggestions = []; // this vendor's pending suggestions (all categories)
-
-  function _currentCategoryId() {
-    var sel = _getCategorySelect();
-    if (sel && sel.value !== '') return parseInt(sel.value, 10);
-    var raw = _vendor && (_vendor.categories_id || _vendor.category_id);
-    var v = Array.isArray(raw) ? raw[0] : raw;
-    return v != null ? Number(v) : null;
-  }
-
-  // #96 — hydrate from the vendor row, split THREE ways against the loaded
-  // taxonomy (re-run when the LIVE taxonomy lands; no-op after any user
-  // interaction):
-  //   • in the CURRENT category's list  → selected (a normal pill)
-  //   • known under ANOTHER category    → dropped — stale cross-category picks
-  //     would count invisibly against the cap (bricking the picker at 3)
-  //   • unknown ANYWHERE                → preserved — likely a DB-approved slug
-  //     this page's taxonomy fetch missed; it stays saved (re-appended on
-  //     save), is counted VISIBLY in the count line, and never silently
-  //     vanishes from the vendor's Market card. Same never-drop principle as
-  //     the locations picker's fallback pills.
-  function _rehydrateSubcats() {
-    if (_subcatsTouched || !_vendor) return;
-    var catId = _currentCategoryId();
-    var inCat = {};
-    ((catId != null && _SUBCATS_BY_CAT[catId]) || []).forEach(function (s) { inCat[s.slug] = true; });
-    var knownAnywhere = {};
-    for (var cid in _SUBCATS_BY_CAT) if (_SUBCATS_BY_CAT.hasOwnProperty(cid)) {
-      _SUBCATS_BY_CAT[cid].forEach(function (s) { knownAnywhere[s.slug] = true; });
-    }
-    _selectedSubcats = [];
-    _preservedSubcats = [];
-    (Array.isArray(_vendor.subcategories) ? _vendor.subcategories : []).forEach(function (s) {
-      if (typeof s !== 'string' || !s) return;
-      if (_selectedSubcats.length + _preservedSubcats.length >= _SUBCAT_CAP) return;
-      if (inCat[s]) _selectedSubcats.push(s);
-      else if (!knownAnywhere[s]) _preservedSubcats.push(s);
-      // known-under-another-category: dropped on purpose
-    });
-  }
-
-  // #96-SUGGEST — swap the baked taxonomy for the live `subcategory` table
-  // (an approved suggestion becomes a pill with no script ship). Guarded:
-  // stale client / Xano rollback keeps the baked list.
-  function _fetchSubcatTaxonomy() {
-    var sapi = window.LokaliSupabaseAPI;
-    if (!sapi || !sapi.subcategories || typeof sapi.subcategories.list !== 'function') return;
-    sapi.subcategories.list().then(function (out) {
-      if (!out || out.error || !Array.isArray(out.data)) return;
-      var byCat = {};
-      out.data.forEach(function (r) {
-        if (!r || r.category_id == null || !r.slug || !r.label) return;
-        (byCat[r.category_id] = byCat[r.category_id] || []).push({ slug: r.slug, label: r.label });
-      });
-      if (!Object.keys(byCat).length) return;
-      _SUBCATS_BY_CAT = byCat;
-      _rehydrateSubcats();
-      _renderSubcatPills();
-    }).catch(function () {});
-  }
-
-  function _loadMySubcatSuggestions() {
-    var sapi = window.LokaliSupabaseAPI;
-    if (!sapi || !sapi.subcategories || typeof sapi.subcategories.mySuggestions !== 'function') return;
-    sapi.subcategories.mySuggestions().then(function (out) {
-      if (!out || out.error || !Array.isArray(out.data)) return;
-      _pendingSuggestions = out.data.filter(function (r) { return r && r.status === 'pending'; });
-      _renderSubcatPending();
-    }).catch(function () {});
-  }
-
   // Icon-pill radio UI over the (hidden) native select — the select stays the
   // source of truth, so hydrate (select.value = saved id) and save
   // (_getFormValues reads select.value) need no changes.
@@ -1228,65 +1058,8 @@ var LokaliProfilePage = (function () {
 
       wrapper.appendChild(hint);
       wrapper.appendChild(row);
-
-      // #96 — subcategory block lives inside the same wrapper, under the
-      // category row; shown only once a category is picked.
-      var scWrap = document.createElement('div');
-      scWrap.className = 'subcat-block';
-      var scHint = document.createElement('p');
-      scHint.className = 'category-hint subcat-hint';
-      scHint.textContent = 'Now pick up to 3 specialties — customers filter The Market by these.';
-      var scRow = document.createElement('div');
-      scRow.className = 'category-pill-row';
-      var scCount = document.createElement('p');
-      scCount.className = 'subcat-count';
-      scWrap.appendChild(scHint);
-      scWrap.appendChild(scRow);
-      scWrap.appendChild(scCount);
-
-      // #96-SUGGEST — "Don't see your specialty?" (only when the client
-      // carries the suggestion surface; stale cache / rollback = no box).
-      if (window.LokaliSupabaseAPI && window.LokaliSupabaseAPI.subcategories) {
-        var sgWrap = document.createElement('div');
-        sgWrap.className = 'subcat-suggest';
-        var sgLabel = document.createElement('p');
-        sgLabel.className = 'subcat-suggest-label';
-        sgLabel.textContent = 'Don’t see your specialty?';
-        var sgRow = document.createElement('div');
-        sgRow.className = 'subcat-suggest-row';
-        var sgInput = document.createElement('input');
-        sgInput.type = 'text';
-        sgInput.maxLength = 40;
-        sgInput.placeholder = 'e.g. Power washing';
-        sgInput.className = 'subcat-suggest-input';
-        var sgBtn = document.createElement('button');
-        sgBtn.type = 'button';
-        sgBtn.className = 'subcat-suggest-btn';
-        sgBtn.textContent = 'Suggest';
-        sgRow.appendChild(sgInput);
-        sgRow.appendChild(sgBtn);
-        var sgHint = document.createElement('p');
-        sgHint.className = 'subcat-suggest-hint';
-        var sgPending = document.createElement('div');
-        sgPending.className = 'subcat-suggest-pending';
-        sgWrap.appendChild(sgLabel);
-        sgWrap.appendChild(sgRow);
-        sgWrap.appendChild(sgHint);
-        sgWrap.appendChild(sgPending);
-        scWrap.appendChild(sgWrap);
-        _suggestInputEl = sgInput; _suggestHintEl = sgHint; _suggestPendingEl = sgPending;
-        sgInput.addEventListener('input', _subcatTypeahead);
-        sgBtn.addEventListener('click', _submitSubcatSuggestion);
-        sgInput.addEventListener('keydown', function (ev) {
-          if (ev.key === 'Enter') { ev.preventDefault(); _submitSubcatSuggestion(); }
-        });
-      }
-
-      wrapper.appendChild(scWrap);
-
       sel.parentNode.insertBefore(wrapper, sel.nextSibling);
       _categoryPillRowEl = row;
-      _subcatWrapEl = scWrap; _subcatRowEl = scRow; _subcatCountEl = scCount;
     }
 
     _renderCategoryPills();
@@ -1325,195 +1098,11 @@ var LokaliProfilePage = (function () {
       pill.appendChild(text);
 
       pill.addEventListener('click', function () {
-        var changed = String(sel.value) !== String(id);
+        if (String(sel.value) !== String(id)) _dirty = true; // programmatic select.value fires no change event — the guard would miss category picks
         sel.value = String(id);
-        if (changed) _dirty = true; // programmatic select.value fires no change event, so the guard misses category pill picks too
-        // #96 — picks belong to one category: drop any that aren't in the
-        // newly selected category's list (across-category slugs never overlap,
-        // so a real switch clears them).
-        if (changed) {
-          var allowed = {};
-          (_SUBCATS_BY_CAT[id] || []).forEach(function (s) { allowed[s.slug] = true; });
-          _selectedSubcats = _selectedSubcats.filter(function (sl) { return allowed[sl]; });
-        }
         _renderCategoryPills();
       });
       _categoryPillRowEl.appendChild(pill);
-    });
-
-    _renderSubcatPills(); // #96 — keep the specialty pills in step with the category
-  }
-
-  // #96 — the specialty pills (multi-select, capped). Same pill visuals as the
-  // category picker; selected state = solid violet like .is-on.
-  function _renderSubcatPills() {
-    if (!_subcatWrapEl || !_subcatRowEl) return;
-    var sel = _getCategorySelect();
-    var catId = sel && sel.value !== '' ? parseInt(sel.value, 10) : null;
-    var subs = catId != null ? _SUBCATS_BY_CAT[catId] : null;
-    if (!subs || !subs.length) {
-      _subcatWrapEl.style.display = 'none';
-      return;
-    }
-    _subcatWrapEl.style.display = '';
-    _subcatRowEl.innerHTML = '';
-    subs.forEach(function (s) {
-      var on = _selectedSubcats.indexOf(s.slug) !== -1;
-      var pill = document.createElement('button');
-      pill.type = 'button';
-      pill.className = 'category-pill subcat-pick' + (on ? ' is-on' : '');
-      pill.setAttribute('aria-pressed', on ? 'true' : 'false');
-      var text = document.createElement('span');
-      text.textContent = s.label;
-      pill.appendChild(text);
-      pill.addEventListener('click', function () {
-        var i = _selectedSubcats.indexOf(s.slug);
-        if (i !== -1) _selectedSubcats.splice(i, 1);
-        else if (_preservedSubcats.length + _selectedSubcats.length < _SUBCAT_CAP) _selectedSubcats.push(s.slug);
-        else { _flashSubcatCap(); return; }
-        _subcatsTouched = true;
-        _dirty = true; // pill clicks are BUTTONs — the input/change dirty guard never sees them
-        _renderSubcatPills();
-      });
-      _subcatRowEl.appendChild(pill);
-    });
-    _updateSubcatCount(false);
-    _renderSubcatPending(); // pending chips follow the visible category
-  }
-
-  function _updateSubcatCount(capped) {
-    if (!_subcatCountEl) return;
-    var n = _selectedSubcats.length + _preservedSubcats.length;
-    var note = '';
-    if (_preservedSubcats.length) {
-      note = ' (includes ' + _preservedSubcats.length + ' earlier pick' +
-        (_preservedSubcats.length > 1 ? 's' : '') + ' not in the current list — still live on your card).';
-    } else if (n === 0) {
-      note = ' — optional, but it helps customers find you.';
-    } else {
-      note = '.';
-    }
-    _subcatCountEl.textContent = capped
-      ? 'That’s the limit — deselect one to switch.'
-      : (n + ' of ' + _SUBCAT_CAP + ' selected' + note);
-    _subcatCountEl.style.color = capped ? '#B3400F' : '#6B6787';
-  }
-
-  var _subcatCapTimer = null;
-  function _flashSubcatCap() {
-    _updateSubcatCount(true);
-    if (_subcatCapTimer) clearTimeout(_subcatCapTimer);
-    _subcatCapTimer = setTimeout(function () { _updateSubcatCount(false); }, 2200);
-  }
-
-  // ── #96-SUGGEST: suggest-a-specialty UI ────────────────────────────────────
-  function _setSuggestHint(text, tone) {
-    if (!_suggestHintEl) return;
-    _suggestHintEl.textContent = text || '';
-    _suggestHintEl.style.color = tone === 'error' ? '#B3400F' : (tone === 'ok' ? '#1A6640' : '#6B6787');
-  }
-
-  // Most "missing" specialties are wording mismatches — resolve them to the
-  // standard pill before a suggestion is ever filed.
-  function _subcatTypeahead() {
-    if (!_suggestInputEl || !_suggestHintEl) return;
-    var q = String(_suggestInputEl.value || '').trim().toLowerCase();
-    _suggestHintEl.innerHTML = '';
-    if (q.length < 2) return;
-    var catId = _currentCategoryId();
-    var subs = (catId != null && _SUBCATS_BY_CAT[catId]) || [];
-    var match = null;
-    for (var i = 0; i < subs.length; i++) {
-      if (subs[i].label.toLowerCase().indexOf(q) !== -1) { match = subs[i]; break; }
-    }
-    if (!match) return;
-    var already = _selectedSubcats.indexOf(match.slug) !== -1;
-    _suggestHintEl.appendChild(document.createTextNode('Did you mean '));
-    var link = document.createElement('span');
-    link.className = 'subcat-suggest-link';
-    link.textContent = match.label;
-    (function (m) {
-      link.addEventListener('click', function () { _selectSuggestedSlug(m.slug); });
-    })(match);
-    _suggestHintEl.appendChild(link);
-    _suggestHintEl.appendChild(document.createTextNode(already ? '? It’s already selected above.' : '? Tap it to select.'));
-    _suggestHintEl.style.color = '#6B6787';
-  }
-
-  // Select a slug from a typeahead/exists hint — ALL checks re-run at click
-  // time (the hint can be stale after a category switch or pill toggles):
-  // slug must exist in the CURRENT category's taxonomy, not be selected yet,
-  // and fit the cap.
-  function _selectSuggestedSlug(slug) {
-    var catId = _currentCategoryId();
-    var subs = (catId != null && _SUBCATS_BY_CAT[catId]) || [];
-    var valid = false;
-    for (var i = 0; i < subs.length; i++) if (subs[i].slug === slug) { valid = true; break; }
-    if (!valid) { _setSuggestHint('That one isn’t in this category’s list anymore.', 'error'); return; }
-    if (_selectedSubcats.indexOf(slug) !== -1) {
-      if (_suggestInputEl) _suggestInputEl.value = '';
-      _setSuggestHint('Already selected above.', 'ok');
-      return;
-    }
-    if (_preservedSubcats.length + _selectedSubcats.length >= _SUBCAT_CAP) { _flashSubcatCap(); return; }
-    _selectedSubcats.push(slug);
-    _subcatsTouched = true;
-    _dirty = true;
-    _renderSubcatPills();
-    if (_suggestInputEl) _suggestInputEl.value = '';
-    _setSuggestHint('Selected — hit SAVE to keep it.', 'ok');
-  }
-
-  function _submitSubcatSuggestion() {
-    if (!_suggestInputEl) return;
-    var label = String(_suggestInputEl.value || '').replace(/\s+/g, ' ').trim();
-    var catId = _currentCategoryId();
-    if (catId == null) { _setSuggestHint('Pick your category first.', 'error'); return; }
-    if (label.length < 3 || label.length > 40 || !/^[A-Za-z0-9&'’\-+/() ]+$/.test(label)) {
-      _setSuggestHint('3–40 characters — letters, numbers and simple punctuation.', 'error');
-      return;
-    }
-    var sapi = window.LokaliSupabaseAPI;
-    if (!sapi || !sapi.subcategories) return;
-    _setSuggestHint('Sending…');
-    sapi.subcategories.suggest(catId, label).then(function (out) {
-      var d = out && out.data;
-      if (!d || out.error) { _setSuggestHint('Hit a snag — try again in a moment.', 'error'); return; }
-      if (d.ok) {
-        _pendingSuggestions.unshift({ category_id: catId, suggested_label: label, status: 'pending' });
-        _renderSubcatPending();
-        if (_suggestInputEl) _suggestInputEl.value = '';
-        _setSuggestHint('Thanks! We review suggestions so filters stay consistent — you’ll see it here once it’s live.', 'ok');
-        return;
-      }
-      if (d.reason === 'exists') {
-        // The RPC hands back the existing slug — select it directly when the
-        // local taxonomy knows it; on a stale (baked-fallback) taxonomy the
-        // pill isn't renderable yet, so say so instead of a dead-end.
-        var catId2 = _currentCategoryId();
-        var known = false, list2 = (catId2 != null && _SUBCATS_BY_CAT[catId2]) || [];
-        for (var ki = 0; ki < list2.length; ki++) if (list2[ki].slug === d.slug) { known = true; break; }
-        if (known && d.slug) { _selectSuggestedSlug(d.slug); }
-        else { _setSuggestHint('Good news — that specialty already exists. Reload this page to see the newest list and pick it.', 'ok'); }
-        return;
-      }
-      if (d.reason === 'already_suggested') { _setSuggestHint('You already suggested this one — it’s under review.', 'error'); return; }
-      if (d.reason === 'pending_limit') { _setSuggestHint('You have 3 suggestions under review — hang tight.', 'error'); return; }
-      if (d.reason === 'invalid_label') { _setSuggestHint('3–40 characters — letters, numbers and simple punctuation.', 'error'); return; }
-      _setSuggestHint('Couldn’t submit that — try different wording.', 'error');
-    }).catch(function () { _setSuggestHint('Hit a snag — try again in a moment.', 'error'); });
-  }
-
-  function _renderSubcatPending() {
-    if (!_suggestPendingEl) return;
-    _suggestPendingEl.innerHTML = '';
-    var catId = _currentCategoryId();
-    _pendingSuggestions.forEach(function (p) {
-      if (catId != null && Number(p.category_id) !== catId) return;
-      var chip = document.createElement('span');
-      chip.className = 'subcat-pending-chip';
-      chip.textContent = p.suggested_label + ' — under review';
-      _suggestPendingEl.appendChild(chip);
     });
   }
 
@@ -1756,9 +1345,6 @@ var LokaliProfilePage = (function () {
       phone_calls:          document.getElementById('checkbox-phone-calls') ? bool('checkbox-phone-calls') : undefined,
       category_id:          categoryId,
       categories_id:        categoriesId,
-      // #96 — preserved (taxonomy-unknown) slugs ride along so a save can
-      // never silently delete a DB-approved pick; [] clears on purpose.
-      subcategories:        _preservedSubcats.concat(_selectedSubcats).slice(0, _SUBCAT_CAP),
       locations_id: (locationIds && locationIds.length)
         ? locationIds
         : (_vendor ? _vendor.locations_id : [])
@@ -1821,7 +1407,6 @@ var LokaliProfilePage = (function () {
       phone_calls:          payload.phone_calls === undefined ? undefined : !!payload.phone_calls,
       category_id:          payload.category_id != null ? payload.category_id : null,
       categories_id:        payload.categories_id,
-      subcategories:        Array.isArray(payload.subcategories) ? payload.subcategories : undefined, // #96
       locations_id:         payload.locations_id
     };
   }

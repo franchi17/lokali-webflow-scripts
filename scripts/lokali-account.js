@@ -663,7 +663,7 @@
     var qc = el('span', 'lk-admin-qcount', String(a.queue.length));
     qt.appendChild(qc);
     wrap.appendChild(qt);
-    wrap.appendChild(el('p', 'lk-admin-sub', 'Approve with the wording customers should see — it goes live for everyone instantly, and the vendor gets the pill if they have a free slot.'));
+    wrap.appendChild(el('p', 'lk-admin-sub', 'Approve with the wording customers should see — it goes live for everyone instantly; the vendor then tags the matching service or product with it.'));
 
     if (!a.queue.length) {
       wrap.appendChild(el('div', 'lk-admin-empty', 'No suggestions waiting. New ones from vendors land here.'));
@@ -702,9 +702,7 @@
           if (rd && rd.ok) {
             row.style.opacity = '.45';
             row.style.pointerEvents = 'none';
-            l2.textContent = approve
-              ? ('Live as “' + (rd.label || wording) + '”' + (rd.added_to_vendor ? ' · added to the vendor’s picks' : ''))
-              : 'Declined';
+            l2.textContent = approve ? ('Live as “' + (rd.label || wording) + '”') : 'Declined';
             l2.style.color = approve ? '#1A6640' : '#8E8BA6';
             var left = Math.max(0, parseInt(qc.textContent, 10) - 1);
             qc.textContent = String(left);

@@ -615,6 +615,8 @@ const LokaliProductsPage = (() => {
     fixFormActionButtons();
     applyPhotoUI();
     alignGalleryHost();
+    ensureSubcatUI();      // #96-LISTING
+    renderSubcatPills();
   };
 
   const openForm = (productId = null) => {
@@ -645,6 +647,7 @@ const LokaliProductsPage = (() => {
   };
 
   const populateForm = (product) => {
+    _selectedSubcat = product.subcategory || null; // #96-LISTING (pills re-render in showFormView)
     if (el.fieldName())        el.fieldName().value        = product.product_name || '';
     if (el.fieldDescription()) el.fieldDescription().value = product.product_description || '';
     if (el.fieldCategory())    el.fieldCategory().value    = product.category_id || '';
@@ -685,6 +688,7 @@ const LokaliProductsPage = (() => {
     if (el.fieldPickupOnly())  el.fieldPickupOnly().checked = false;
     if (el.fieldIsActive())    el.fieldIsActive().checked   = true;
     if (el.fieldCategory())    el.fieldCategory().value    = '';
+    _selectedSubcat = null; // #96-LISTING
 
     updatePriceVisibility();
     resetImagePreview();
@@ -1064,6 +1068,10 @@ const LokaliProductsPage = (() => {
     if (prod && prod.image_url === desired) return;
     const payload = buildPayload(desired);
     if (!payload.product_name || !payload.product_description) return; // form mid-edit/invalid — Save will handle it
+    // #96-LISTING: the cover autosave must never commit a Specialty the vendor
+    // is still deciding on (or revert one from a stale local row) — only the
+    // explicit Save persists the tag.
+    delete payload.subcategory;
     const res = await window.LokaliAPI.products.update(editingId, payload);
     if (res && !res.error && prod) prod.image_url = desired;
   };
@@ -1101,6 +1109,10 @@ const LokaliProductsPage = (() => {
     // value so background autosaves don't fail — the explicit Save blocks it via validate().
     const vurl = readVideoUrl();
     if (vurl === '' || isValidVideoUrl(vurl)) payload.video_url = vurl;
+
+    // #96-LISTING — only when the selector actually mounted; otherwise the key
+    // is omitted and the saved value is left alone.
+    if (_subcatUiMounted) payload.subcategory = _selectedSubcat;
 
     return payload;
   };
@@ -1438,6 +1450,191 @@ const LokaliProductsPage = (() => {
     }
   };
 
+  // ── #96-LISTING: per-product specialty (one optional subcategory slug) ─────
+  // Taxonomy comes from the live `subcategory` table (an approved suggestion
+  // appears on next page load, no script change); the selector only mounts
+  // when the taxonomy AND the vendor's category are known — otherwise the
+  // form behaves exactly as before and buildPayload omits the key entirely,
+  // leaving the column untouched. vendors.subcategories is trigger-derived
+  // from these tags server-side; The Market reads it unchanged.
+  let _subcatList = null;        // [{slug,label}] for the vendor's category
+  let _subcatCategoryId = null;
+  let _selectedSubcat = null;    // slug | null ("None")
+  let _subcatUiMounted = false;
+  let _subcatPendingSuggs = [];
+  const SUBCAT_LABEL_RE = /^[A-Za-z0-9&'’\-+/() ]+$/;
+
+  const loadSubcatTaxonomy = async () => {
+    try {
+      const sapi = window.LokaliSupabaseAPI;
+      // capabilities.listingSubcategory: only mount when the LOADED client
+      // whitelists products.subcategory — a stale cached client (7-day @v1.4
+      // window) would strip the field in pick() and silently drop the
+      // vendor's choice under a success toast. No flag -> no selector.
+      if (!sapi?.capabilities?.listingSubcategory) return;
+      if (!sapi?.subcategories?.list || !window.LokaliAPI?.vendors?.me) return;
+      const [meRes, taxRes, suggRes] = await Promise.all([
+        window.LokaliAPI.vendors.me().catch(() => null),
+        sapi.subcategories.list().catch(() => null),
+        sapi.subcategories.mySuggestions ? sapi.subcategories.mySuggestions().catch(() => null) : Promise.resolve(null),
+      ]);
+      const vendor = meRes?.data?.vendor || meRes?.data;
+      const catRaw = vendor?.categories_id;
+      _subcatCategoryId = Array.isArray(catRaw) ? Number(catRaw[0]) : (catRaw != null ? Number(catRaw) : null);
+      if (taxRes && !taxRes.error && Array.isArray(taxRes.data) && _subcatCategoryId != null) {
+        _subcatList = taxRes.data
+          .filter(r => r && Number(r.category_id) === _subcatCategoryId && r.slug && r.label)
+          .map(r => ({ slug: r.slug, label: r.label }));
+      }
+      if (suggRes && !suggRes.error && Array.isArray(suggRes.data)) {
+        _subcatPendingSuggs = suggRes.data.filter(r => r?.status === 'pending' && Number(r.category_id) === _subcatCategoryId);
+      }
+      ensureSubcatUI();
+      renderSubcatPills();
+    } catch (e) {}
+  };
+
+  const ensureSubcatUI = () => {
+    if (_subcatUiMounted || !_subcatList || !_subcatList.length) return;
+    const anchor = el.fieldDescription();
+    const host = anchor ? anchor.parentElement : null;
+    if (!host || !host.parentElement) return;
+    const wrap = document.createElement('div');
+    wrap.id = 'lok-product-subcat';
+    wrap.style.cssText = "margin:14px 0;background:#eee6ff;border-radius:8px;padding:12px 14px;font-family:'Plus Jakarta Sans',system-ui,sans-serif;";
+    wrap.innerHTML =
+      '<div style="font-size:13px;font-weight:600;color:#33254E;margin-bottom:2px;">Specialty</div>' +
+      '<p style="font-size:12.5px;color:#5A5570;margin:0 0 10px;">Pick the one that fits this product best — customers filter The Market by these. Optional.</p>' +
+      '<div data-subcat-pills role="radiogroup" aria-label="Specialty" style="display:flex;flex-wrap:wrap;gap:7px;"></div>' +
+      '<div style="border-top:1px dashed #DCD2F2;margin-top:12px;padding-top:10px;">' +
+        '<p style="font-size:12.5px;color:#5A5570;margin:0 0 8px;">Don’t see the right specialty?</p>' +
+        '<div style="display:flex;gap:6px;">' +
+          '<input data-subcat-suggest maxlength="40" placeholder="e.g. Power washing" style="flex:1;min-width:0;font-family:inherit;font-size:16px;padding:8px 12px;border:1px solid #C9BDE8;border-radius:8px;background:#fff;color:#1A1829;">' +
+          '<button type="button" data-subcat-suggest-btn style="font-family:inherit;font-size:13px;font-weight:600;padding:8px 16px;border-radius:8px;border:1px solid #6002EE;background:#6002EE;color:#fff;cursor:pointer;">Suggest</button>' +
+        '</div>' +
+        '<p data-subcat-hint style="font-size:12px;color:#6B6787;margin:8px 0 0;line-height:1.45;"></p>' +
+        '<div data-subcat-pending style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>' +
+      '</div>';
+    host.parentElement.insertBefore(wrap, host.nextSibling);
+    wrap.querySelector('[data-subcat-suggest-btn]').addEventListener('click', submitSubcatSuggestion);
+    const inp = wrap.querySelector('[data-subcat-suggest]');
+    inp.addEventListener('input', subcatTypeahead);
+    inp.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); submitSubcatSuggestion(); } });
+    _subcatUiMounted = true;
+  };
+
+  const renderSubcatPills = () => {
+    const row = document.querySelector('#lok-product-subcat [data-subcat-pills]');
+    if (!row || !_subcatList) return;
+    row.innerHTML = '';
+    const mk = (label, slug) => {
+      const on = slug === _selectedSubcat;
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = label;
+      b.setAttribute('role', 'radio');
+      b.setAttribute('aria-checked', on ? 'true' : 'false');
+      b.setAttribute('data-subcat-slug', slug == null ? '' : slug);
+      b.style.cssText = 'font-family:inherit;font-size:14px;padding:8px 14px;border-radius:999px;cursor:pointer;line-height:1.3;transition:all .12s;' +
+        (on ? 'background:#6002EE;border:1px solid #6002EE;color:#fff;font-weight:600;'
+            : 'background:#fff;border:1px solid #C9BDE8;color:#5A5570;');
+      b.addEventListener('click', () => {
+        _selectedSubcat = slug;
+        renderSubcatPills();
+        const nb = row.querySelector('[data-subcat-slug="' + (slug == null ? '' : slug) + '"]');
+        if (nb) nb.focus(); // re-render replaced the node — keep keyboard focus alive
+      });
+      row.appendChild(b);
+    };
+    mk('None', null);
+    // A saved tag missing from the category's current list still renders —
+    // visible + deselectable, never a silently-invisible current value.
+    if (_selectedSubcat && !_subcatList.some(s => s.slug === _selectedSubcat)) mk(_selectedSubcat, _selectedSubcat);
+    _subcatList.forEach(s => mk(s.label, s.slug));
+    renderSubcatPending();
+  };
+
+  const renderSubcatPending = () => {
+    const box = document.querySelector('#lok-product-subcat [data-subcat-pending]');
+    if (!box) return;
+    box.innerHTML = '';
+    _subcatPendingSuggs.forEach(p => {
+      const chip = document.createElement('span');
+      chip.textContent = p.suggested_label + ' — under review';
+      chip.style.cssText = 'font-size:12px;padding:4px 12px;border-radius:999px;background:#FBF3D9;color:#8A6A00;border:1px solid #E8D48A;';
+      box.appendChild(chip);
+    });
+  };
+
+  const setSubcatHint = (text, tone) => {
+    const hint = document.querySelector('#lok-product-subcat [data-subcat-hint]');
+    if (!hint) return;
+    hint.textContent = text || '';
+    hint.style.color = tone === 'error' ? '#B3400F' : (tone === 'ok' ? '#1A6640' : '#6B6787');
+  };
+
+  const subcatTypeahead = () => {
+    const inp = document.querySelector('#lok-product-subcat [data-subcat-suggest]');
+    const hint = document.querySelector('#lok-product-subcat [data-subcat-hint]');
+    if (!inp || !hint || !_subcatList) return;
+    const q = String(inp.value || '').trim().toLowerCase();
+    hint.innerHTML = '';
+    if (q.length < 2) return;
+    const match = _subcatList.find(s => s.label.toLowerCase().includes(q));
+    if (!match) return;
+    hint.appendChild(document.createTextNode('Did you mean '));
+    const link = document.createElement('span');
+    link.textContent = match.label;
+    link.style.cssText = 'color:#6002EE;font-weight:600;cursor:pointer;text-decoration:underline;';
+    link.addEventListener('click', () => {
+      if (_subcatList.some(s => s.slug === match.slug)) {
+        _selectedSubcat = match.slug;
+        renderSubcatPills();
+        inp.value = '';
+        setSubcatHint('Selected — it saves with this product.', 'ok');
+      }
+    });
+    hint.appendChild(link);
+    hint.appendChild(document.createTextNode('? Tap it to select.'));
+    hint.style.color = '#6B6787';
+  };
+
+  const submitSubcatSuggestion = async () => {
+    const inp = document.querySelector('#lok-product-subcat [data-subcat-suggest]');
+    if (!inp) return;
+    const label = String(inp.value || '').replace(/\s+/g, ' ').trim();
+    if (_subcatCategoryId == null) { setSubcatHint('Pick your business category on the profile page first.', 'error'); return; }
+    if (label.length < 3 || label.length > 40 || !SUBCAT_LABEL_RE.test(label) || !/[A-Za-z0-9]/.test(label)) {
+      setSubcatHint('3–40 characters — letters, numbers and simple punctuation.', 'error');
+      return;
+    }
+    const sapi = window.LokaliSupabaseAPI;
+    if (!sapi?.subcategories?.suggest) return;
+    setSubcatHint('Sending…');
+    try {
+      const out = await sapi.subcategories.suggest(_subcatCategoryId, label);
+      const d = out?.data;
+      if (!d || out.error) { setSubcatHint('Hit a snag — try again in a moment.', 'error'); return; }
+      if (d.ok) {
+        _subcatPendingSuggs.unshift({ category_id: _subcatCategoryId, suggested_label: label, status: 'pending' });
+        renderSubcatPending();
+        inp.value = '';
+        setSubcatHint('Thanks! We review suggestions so filters stay consistent — once approved it appears right here.', 'ok');
+      } else if (d.reason === 'exists' && d.slug) {
+        // Select the returned slug directly — even if this page's taxonomy is
+        // stale, the unknown-slug pill renders it (never "reload" advice that
+        // would destroy an unsaved draft).
+        _selectedSubcat = d.slug;
+        renderSubcatPills();
+        inp.value = '';
+        setSubcatHint('That one already exists — selected it for you.', 'ok');
+      } else if (d.reason === 'already_suggested') setSubcatHint('You already suggested this one — it’s under review.', 'error');
+      else if (d.reason === 'pending_limit') setSubcatHint('You have 3 suggestions under review — hang tight.', 'error');
+      else if (d.reason === 'invalid_label') setSubcatHint('3–40 characters — letters, numbers and simple punctuation.', 'error');
+      else setSubcatHint('Couldn’t submit that — try different wording.', 'error');
+    } catch (e) { setSubcatHint('Hit a snag — try again in a moment.', 'error'); }
+  };
+
   const init = async () => {
     try {
       if (!window.LokaliDashboard || typeof window.LokaliDashboard.requireAuth !== 'function') {
@@ -1452,6 +1649,7 @@ const LokaliProductsPage = (() => {
       }
       if (typeof window !== 'undefined') window.__lokaliProductsFinalInitDone = true;
       bindEvents();
+      loadSubcatTaxonomy(); // #96-LISTING — fire-and-forget; selector mounts when it lands
       await loadData();
     } catch (err) {
       console.error('[ProductsPage] init error:', err);
