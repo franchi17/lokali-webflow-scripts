@@ -250,7 +250,8 @@
 
   Widget.prototype.render = function () {
     this.mount.className = 'lok-av';
-    this.mount.innerHTML = this.hoursHTML() + (this.hasCalendar ? this.calendarHTML() : '');
+    // Calendar leads, hours follow (Francesca 2026-07-20 — was hours-first).
+    this.mount.innerHTML = (this.hasCalendar ? this.calendarHTML() : '') + this.hoursHTML();
     if (!this.hasCalendar) return;    // hours-only: nothing else to wire
 
     var self = this;

@@ -170,7 +170,7 @@
     var fb = document.getElementById('vl-badge-founding');
     if (fb) {
       var star = fb.querySelector('svg');
-      if (star) fb.replaceChild(maskIcon(ICON_CROWN, '#9A6B00', 11), star);
+      if (star) fb.replaceChild(maskIcon(ICON_CROWN, '#9A6B00', 12), star);
     }
     // Badges: out of the name row (where >1 badge wraps messily around the
     // name) onto their own single row directly under it.
@@ -246,7 +246,7 @@
     el.style.color = style.text;
     var row = el.parentNode; // hide the generic meta-row icon; the pill carries its own
     if (row) { var ic = row.querySelector('svg.vl-ic'); if (ic) ic.style.display = 'none'; }
-    el.insertBefore(maskIcon(style.url, style.text, 13), el.firstChild);
+    el.insertBefore(maskIcon(style.url, style.text, 12), el.firstChild);
   }
 
   // ---- 1. interactivity -------------------------------------------------
@@ -314,11 +314,14 @@
     // observer in onepageLayout toggles .vl-op-nav-on).
     // --vl-op-top = the fixed Webflow header's height (measured at init; the
     // nav/rail/anchors must clear it or they slide underneath — 2026-07-19 fix).
-    '#vl-op-nav{position:sticky;top:var(--vl-op-top,0px);z-index:40;background:#FFFFFF;display:flex;gap:26px;overflow-x:auto;border-bottom:1px solid #EEEDF6;margin-top:6px;}',
+    // #91: floating frosted capsule (was an edge-to-edge white bar with a
+    // hairline underline — read as a stray page band; Francesca 2026-07-20).
+    '#vl-op-nav{position:sticky;top:calc(var(--vl-op-top,0px) + 10px);z-index:40;display:flex;width:fit-content;max-width:100%;gap:4px;overflow-x:auto;margin-top:6px;padding:6px 8px;background:rgba(255,255,255,.9);-webkit-backdrop-filter:saturate(1.4) blur(10px);backdrop-filter:saturate(1.4) blur(10px);border:1px solid #E9E3F8;border-radius:999px;box-shadow:0 10px 30px rgba(38,10,80,.12);}',
     '#vl-op-nav.vl-op-nav-auto{visibility:hidden;opacity:0;transition:opacity .18s;}',
     '#vl-op-nav.vl-op-nav-auto.vl-op-nav-on{visibility:visible;opacity:1;}',
-    '#vl-op-nav a{padding:14px 2px;font:600 14px/1.2 "Plus Jakarta Sans",sans-serif;color:#6B6880;text-decoration:none;border-bottom:2px solid transparent;white-space:nowrap;}',
-    '#vl-op-nav a:hover,#vl-op-nav a.vl-op-active{color:#1A1829;border-bottom-color:#6002EE;}',
+    '#vl-op-nav a{padding:9px 16px;border-radius:999px;font:600 14px/1.2 "Plus Jakarta Sans",sans-serif;color:#6B6880;text-decoration:none;white-space:nowrap;transition:background .12s,color .12s;}',
+    '#vl-op-nav a:hover{background:#F6F2FE;color:#3B3654;}',
+    '#vl-op-nav a.vl-op-active{background:#F0E8FF;color:#5F51B8;}',
     // two-column body
     '.vl-op-grid{display:grid;grid-template-columns:minmax(0,1fr) 332px;gap:44px;align-items:start;}',
     '.vl-op-main{min-width:0;}',
@@ -331,6 +334,19 @@
     '.vl-op-card{background:#fff;border:.5px solid #EEEDF6;border-radius:18px;box-shadow:0 8px 28px rgba(26,24,41,.07);padding:20px;}',
     '.vl-op-card-lead{font:700 16px/1.3 "Plus Jakarta Sans",sans-serif;color:#1A1829;margin-bottom:12px;}',
     'html.vl-op .vl-op-card .vl-hero-right{width:100% !important;align-items:stretch;display:flex;flex-direction:column;gap:10px;}',
+    // #76 design pass 2026-07-20: identity block lives in the left grid column
+    // (the contact card fills the old dead space beside it) — neutralize any
+    // band styling it carried and hide the hero website row (About covers it).
+    'html.vl-op .vl-op-main .vl-hero{margin:0 0 6px;padding:0;background:transparent;border:none;box-shadow:none;width:100%;max-width:none;}',
+    'html.vl-op #vl-links-row{display:none !important;}',
+    'html.vl-op #vl-tagline{font-size:17px;font-weight:500;color:#6B6880;margin:2px 0 10px;}',
+    'html.vl-op .vl-badge-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}',
+    // One size for every chip in the badge row — the Webflow badge (11px/3x9)
+    // and the category pill (13px/5x13) visibly mismatched (Francesca 2026-07-20).
+    'html.vl-op .vl-badge-row .vl-badge,html.vl-op .vl-cat-pill{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;line-height:1;padding:0 13px;height:29px;box-sizing:border-box;border-radius:999px;margin:0;}',
+    'html.vl-op .vl-cat-pill{background:#F3EBFF;color:#5F51B8;}',
+    '.vl-op-showall{display:inline-block;margin-top:14px;border:1.5px solid #D9D2F2;background:#fff;color:#5F51B8;border-radius:12px;padding:12px 20px;font:700 14.5px "Plus Jakarta Sans",sans-serif;cursor:pointer;transition:background .12s;}',
+    '.vl-op-showall:hover{background:#F3EBFF;}',
     // instant channels: primary message button (injected by lokali-inquiry.js)
     // full-width on top, Text/WhatsApp/Call sharing one compact row below.
     'html.vl-op .vl-op-card .vl-channels{display:flex !important;flex-direction:row !important;flex-wrap:wrap;gap:8px;width:100%;min-width:0;}',
@@ -340,7 +356,7 @@
     'html.vl-op .vl-op-card #vl-op-pay{border-top:1px solid #EEEDF6;margin-top:12px;padding-top:2px;}',
     // photo-grid hero (desktop only — mobile keeps the swipe strip)
     '@media (min-width:768px){',
-    'html.vl-op #vl-portfolio{margin:16px 0 4px;}',
+    'html.vl-op #vl-portfolio{margin:16px 0 28px;}',
     'html.vl-op #vl-portfolio .vd-gallery{display:grid !important;grid-template-columns:2fr 1fr 1fr;grid-auto-rows:178px;gap:8px;border-radius:18px;overflow:hidden;width:100%;}',
     'html.vl-op #vl-portfolio .vd-frame{width:auto !important;height:100% !important;min-width:0 !important;margin:0 !important;border-radius:0 !important;}',
     'html.vl-op #vl-portfolio .vd-frame img{width:100% !important;height:100% !important;object-fit:cover;display:block;}',
@@ -361,13 +377,17 @@
     // (mockup shows plain lines, not pills).
     'html.vl-op .vl-avatar{width:64px !important;height:64px !important;min-width:64px !important;}',
     'html.vl-op .vl-avatar-txt{font-size:22px !important;}',
-    'html.vl-op #vl-category.vl-cat-pill{background:transparent !important;border:none !important;padding:0 !important;font-size:14.5px;font-weight:700;}',
+    'html.vl-op #vl-category.vl-cat-pill{background:transparent !important;border:none !important;padding:0 !important;font-size:inherit;font-weight:inherit;gap:6px;}',
     'html.vl-op .vl-area-pill{background:transparent !important;border:none !important;padding:0 !important;margin:0 !important;font-size:14.5px;font-weight:600;color:#6B6880;}',
     'html.vl-op .vl-area-pill:not(:last-child):after{content:"\\00a0\\00b7\\00a0";color:#B9B6C9;}',
     'html.vl-op #vl-areas{gap:0 !important;display:inline-flex;flex-wrap:wrap;}',
     // Services: full-width horizontal cards (image left), per the mockup.
     'html.vl-op [data-vl-panel="services"] .vl-grid{display:flex !important;flex-direction:column;gap:16px;width:100%;}',
-    'html.vl-op [data-vl-panel="services"] .vl-card{display:grid !important;grid-template-columns:190px 1fr;width:100% !important;max-width:none !important;border-radius:16px;overflow:hidden;align-items:stretch;}',
+    'html.vl-op [data-vl-panel="services"] .vl-card{display:grid !important;grid-template-columns:190px 1fr;width:100% !important;max-width:none !important;border-radius:16px;overflow:hidden;align-items:stretch;height:188px;}',
+    'html.vl-op .vl-card-desc{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-line;}',
+    'html.vl-op .vl-card-body{display:flex;flex-direction:column;}',
+    'html.vl-op .vl-card-foot{margin-top:auto;}',
+    'html.vl-op [data-vl-panel="products"] .vl-card-img{height:170px !important;}',
     'html.vl-op [data-vl-panel="services"] .vl-card-img{width:100% !important;height:100% !important;min-height:150px;border-radius:0 !important;}',
     'html.vl-op [data-vl-panel="services"] .vl-card-img img{width:100%;height:100%;object-fit:cover;display:block;}',
     'html.vl-op [data-vl-panel="services"] .vl-card-body{padding:16px 18px;display:flex;flex-direction:column;}',
@@ -385,7 +405,7 @@
     // textarea — keep the line breaks instead of collapsing to one blob.
     'html.vl-op #vl-about-bio{white-space:pre-line;line-height:1.6;}',
     // "More about" host card + bio grid (renders when Meet-the-Vendor is filled)
-    '.vl-meet-grid{display:grid;grid-template-columns:280px minmax(0,1fr);gap:28px;align-items:start;font-family:"Plus Jakarta Sans",sans-serif;margin-bottom:14px;}',
+    '.vl-meet-grid{display:grid;grid-template-columns:280px minmax(0,1fr);gap:28px;align-items:start;font-family:"Plus Jakarta Sans",sans-serif;margin-bottom:30px;}',
     '.vl-host-card{background:#fff;border:.5px solid #EEEDF6;border-radius:20px;box-shadow:0 10px 30px rgba(26,24,41,.08);padding:26px;text-align:center;}',
     '.vl-host-card .vl-host-nm{font-weight:700;font-size:18px;color:#1A1829;}',
     '.vl-host-card .vl-host-rl{color:#6B6880;font-size:13px;margin-bottom:14px;}',
@@ -393,6 +413,8 @@
     '.vl-host-st{display:flex;justify-content:space-between;gap:10px;padding:6px 0;font-size:13.5px;color:#6B6880;font-weight:600;}',
     '.vl-host-st b{color:#1A1829;font-weight:700;text-align:right;}',
     '.vl-meet-bio{color:#565170;font-size:15px;line-height:1.6;white-space:pre-line;}',
+    '.vl-meet-txt #vl-about-bio{color:#565170;font-size:15px;}',
+    '.vl-meet-h3{font-size:15.5px;font-weight:800;color:#1A1829;margin:18px 0 8px;font-family:"Plus Jakarta Sans",sans-serif;}',
     // "Ways to pay" chips in the card (labeled pills, not bare icon circles)
     '.vl-op-pay-chip{display:inline-flex;align-items:center;gap:8px;border:1px solid #E4DFF6;background:#fff;border-radius:12px;padding:9px 14px;font:600 13.5px "Plus Jakarta Sans",sans-serif;color:#5F51B8;text-decoration:none;cursor:pointer;position:relative;transition:background .12s;}',
     '.vl-op-pay-chip:hover{background:#F3EBFF;}',
@@ -402,7 +424,7 @@
     '.vl-op-grid{grid-template-columns:1fr;gap:0;}',
     '.vl-op-rail{position:static;}',
     '.vl-op-card{margin:6px 0 22px;}',
-    'html.vl-op [data-vl-panel="services"] .vl-card{grid-template-columns:1fr;}',
+    'html.vl-op [data-vl-panel="services"] .vl-card{grid-template-columns:1fr;height:auto;}',
     'html.vl-op [data-vl-panel="services"] .vl-card-img{min-height:170px;}',
     'html.vl-op [data-vl-panel="products"] .vl-grid{grid-template-columns:1fr;}',
     '.vl-meet-grid{grid-template-columns:1fr;}',
@@ -474,6 +496,21 @@
       a.addEventListener('click', function (ev) { ev.preventDefault(); onepageScrollTo(s.name); });
       nav.appendChild(a);
     });
+
+    // #76 design pass: the identity block (name/logo/badges/tagline) becomes
+    // the first item of the left column so the sticky contact card sits beside
+    // it — desktop was leaving the hero band's right half empty.
+    if (hero) main.insertBefore(hero, main.firstChild);
+    // Tagline reads as the name's subtitle, not a stray line between the
+    // badges and the category rows (Francesca 2026-07-20).
+    var tagEl = document.getElementById('vl-tagline');
+    var badgeRow = hero && hero.querySelector('.vl-badge-row');
+    if (tagEl && badgeRow && badgeRow.parentNode) badgeRow.parentNode.insertBefore(tagEl, badgeRow);
+    // Category joins the badge row as a soft-violet pill — as plain meta text
+    // it competed with the location line right under it (Francesca 2026-07-20).
+    var catSpan = document.getElementById('vl-category');
+    var catRow = catSpan && catSpan.closest ? catSpan.closest('.vl-meta-row') : null;
+    if (catRow && badgeRow) { catRow.classList.add('vl-cat-pill'); badgeRow.appendChild(catRow); }
 
     // sticky contact card = the hero's action column + a heading + a pay slot
     var right = document.querySelector('.vl-hero-right');
@@ -615,6 +652,7 @@
   // early mockup is intentionally absent (#86 removed the Featured badge).
   var OP_CHECK_SVG = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2E7D5B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
   var ICON_BOLT = ASSET + '6a1d92f83a64390307583b8e_bolt-solid.png';
+  var ICON_BULLHORN = ASSET + '6a1af53c6b8fa6046c223ce9_bullhorn-solid.png'; // = market "New this week" badge
   function opAddHighlight(row) {
     var main = document.querySelector('.vl-op-main');
     if (!main) return;
@@ -622,7 +660,9 @@
     if (!sec) {
       sec = ce('section', 'vl-op-sec');
       sec.id = 'vl-op-sec-highlights';
-      main.insertBefore(sec, main.firstChild);
+      var hb = main.querySelector('.vl-hero');
+      if (hb) main.insertBefore(sec, hb.nextSibling);
+      else main.insertBefore(sec, main.firstChild);
     }
     if (sec.querySelector('[data-hl="' + row.key + '"]')) return;
     var el = ce('div', 'vl-op-hl');
@@ -643,6 +683,12 @@
     }
     if (v.is_verified || v.identity_status === 'verified') {
       opAddHighlight({ key: 'verified', svg: OP_CHECK_SVG, t: 'Identity verified', s: 'Business identity confirmed by Lokali' });
+    }
+    // "New this week" — same bullhorn + green + 7-day window as The Market's
+    // card badge / sidebar toggle (lokali-browse.js NEW_WINDOW_MS).
+    var newT = v.created_at ? new Date(v.created_at).getTime() : 0;
+    if (newT > 0 && (Date.now() - newT) < 7 * 24 * 60 * 60 * 1000) {
+      opAddHighlight({ key: 'new', url: ICON_BULLHORN, tint: '#11744A', t: 'New this week', s: 'Just opened their storefront on The Market' });
     }
     // 'Books online' joins via watchAvailability() when the calendar mounts.
   }
@@ -899,6 +945,38 @@
     return a;
   }
 
+  // ---- one-page: long lists collapse behind a "Show all" toggle ----------
+  // A vendor with 50 products must not become a 50-card scroll (Francesca
+  // 2026-07-20). The first OP_LIST_CAP cards show; the rest sit behind an
+  // Airbnb-style "Show all N products" pill that expands in place. "Show
+  // fewer" collapses back and scrolls you to the top of the section.
+  var OP_LIST_CAP = { services: 4, products: 6 };
+  function opCapList(grid, total, kind) {
+    if (!ONEPAGE || !grid || !grid.parentNode) return;
+    var old = grid.parentNode.querySelector('.vl-op-showall');
+    if (old) old.parentNode.removeChild(old);
+    var cap = OP_LIST_CAP[kind] || 6;
+    if (total <= cap) return;
+    var cards = Array.prototype.slice.call(grid.children);
+    var btn = ce('button', 'vl-op-showall');
+    btn.type = 'button';
+    var collapsed = true;
+    function apply() {
+      cards.forEach(function (c, i) { if (i >= cap) c.style.display = collapsed ? 'none' : ''; });
+      btn.textContent = collapsed ? ('Show all ' + total + ' ' + kind) : 'Show fewer';
+    }
+    btn.addEventListener('click', function () {
+      collapsed = !collapsed;
+      apply();
+      if (collapsed) {
+        var sec = document.getElementById('vl-op-sec-' + kind);
+        if (sec && sec.scrollIntoView) sec.scrollIntoView({ block: 'start' });
+      }
+    });
+    grid.parentNode.insertBefore(btn, grid.nextSibling);
+    apply();
+  }
+
   function renderServices(list, ok) {
     // ok===false means the fetch failed — never hide the tab on a failure, only on a confirmed-empty success.
     if (ok === false) { console.warn('[lokali-vendor-listing] services fetch failed — keeping Services tab'); ensureActiveTab(); return; }
@@ -922,6 +1000,7 @@
         href: itemHref('services', s)
       }));
     });
+    opCapList(grid, list.length, 'services');
     ensureActiveTab();
   }
 
@@ -947,6 +1026,7 @@
         href: itemHref('products', p)
       }));
     });
+    opCapList(grid, list.length, 'products');
     ensureActiveTab();
   }
 
@@ -1179,7 +1259,9 @@
       'background:#F3EEFF;border-bottom:1px solid #E4DCF7;padding:10px 16px;' +
       "font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;color:#3b3654;text-align:center;";
     bar.innerHTML =
-      '<span>🏪 You’re viewing your own storefront — this is what customers see.</span>' +
+      '<span style="display:inline-flex;align-items:center;gap:8px;">' +
+      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E3CFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;"><path d="M3 9l1.5-5h15L21 9"/><path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"/><path d="M5 11.5V20h14v-8.5"/><path d="M9 20v-5h6v5"/></svg>' +
+      'You’re viewing your own storefront — this is what customers see.</span>' +
       '<a href="/vendor-dashboard/dashboard" style="background:#6E3CFF;color:#fff;font-weight:700;' +
       'font-size:13px;padding:7px 16px;border-radius:999px;text-decoration:none;font-family:inherit;' +
       'white-space:nowrap;">Back to my dashboard</a>';
@@ -1228,7 +1310,7 @@
     function frag(html) { var d = ce('div'); d.innerHTML = html; return d; }
     // Visitor variant first — upgraded in place if the viewer owns this storefront.
     card.appendChild(frag(
-      '<div class="vl-np-emoji">🌱</div>' +
+      '<div class="vl-np-emoji"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#4E9B7A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21v-8"/><path d="M12 13c0-4 2.5-7 7-7 0 4-2.5 7-7 7z"/><path d="M12 11c0-3.2-2-5.5-5.5-5.5 0 3.2 2 5.5 5.5 5.5z"/></svg></div>' +
       '<h1>This storefront isn’t public yet</h1>' +
       '<p>' + (v.business_name ? escapeHtml(v.business_name) : 'This vendor') +
       ' is still setting things up. Check back soon!</p>' +
@@ -1346,12 +1428,19 @@
         var u = v.website_url; var href = /^https?:\/\//i.test(u) ? u : 'https://' + u;
         web.href = href; web.textContent = u.replace(/^https?:\/\//i, '').replace(/\/$/, '');
         web.target = '_blank';
+        web.rel = 'noopener';
       } else { web.textContent = '—'; web.removeAttribute('href'); }
     }
 
     renderPayLinks(v);
     initContact(v);
-    if (ONEPAGE) { renderHighlights(v); renderMeetVendor(v, labels); }
+    if (ONEPAGE) {
+      // #76: the About card is about the BUSINESS — say so (the personal side
+      // lives in the meet grid when owner info exists).
+      var abl = document.querySelector('[data-vl-panel="about"] .vl-about-label');
+      if (abl && /^about$/i.test((abl.textContent || '').trim())) abl.textContent = 'About the business';
+      renderHighlights(v); renderMeetVendor(v, labels);
+    }
     injectVendorReport(v);
     if (v.id != null) {
       var hero = document.querySelector('[data-lokali-vendor-id]');
@@ -1429,7 +1518,12 @@
     learn.addEventListener('click', function (ev) { ev.preventDefault(); onepageScrollTo('about'); });
     row.appendChild(learn);
     sec.appendChild(row);
-    main.insertBefore(sec, main.firstChild);
+    // Mockup v3 order: identity -> highlights -> Meet the vendor -> Services.
+    var hlSec = document.getElementById('vl-op-sec-highlights');
+    var heroInMain = main.querySelector('.vl-hero');
+    if (hlSec) main.insertBefore(sec, hlSec.nextSibling);
+    else if (heroInMain) main.insertBefore(sec, heroInMain.nextSibling);
+    else main.insertBefore(sec, main.firstChild);
 
     // --- host card + bio inside the About section (mockup layout) ---
     var aboutPanel = $('[data-vl-panel="about"]');
@@ -1463,11 +1557,22 @@
       stat('Speaks', langs);
       card.appendChild(stats);
       block.appendChild(card);
-      var bt = ce('div');
+      var bt = ce('div', 'vl-meet-txt');
       if (bio) {
         var bp = ce('div', 'vl-meet-bio');
         bp.textContent = bio;
         bt.appendChild(bp);
+      }
+      // The business description moves in under its own heading — it used to
+      // float in a separate "About" card to the right, unanchored (#76 pass).
+      var bizBio = document.getElementById('vl-about-bio');
+      if (bizBio) {
+        var bioCard = bizBio.closest ? bizBio.closest('.vl-about-card') : null;
+        var bh = ce('h3', 'vl-meet-h3');
+        bh.textContent = 'About the business';
+        bt.appendChild(bh);
+        bt.appendChild(bizBio);
+        if (bioCard) bioCard.style.display = 'none';
       }
       block.appendChild(bt);
       aboutPanel.insertBefore(block, aboutPanel.firstChild);
