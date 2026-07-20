@@ -485,7 +485,25 @@
   }
 
   // ── state ──────────────────────────────────────────────────
-  var state = { account: null, saved: [], mine: [], awaiting: [], hasStorefront: false, storefrontName: '' };
+  var state = { account: null, saved: [], mine: [], awaiting: [], hasStorefront: false, storefrontName: '', admin: null };
+
+  // ── #96-SUGGEST: admin data (Francesca's admin home lives on /account — no
+  // vendor account needed). Server-enforced: admin_overview() and
+  // list_subcategory_suggestions() are is_admin()-gated, so for every
+  // non-admin session (and on stale clients / Xano rollback) this resolves
+  // null and the panel simply never exists.
+  function fetchAdminData() {
+    var sapi = window.LokaliSupabaseAPI;
+    if (!sapi || !sapi.admin || !sapi.subcategories ||
+        typeof sapi.admin.overview !== 'function' ||
+        typeof sapi.subcategories.adminList !== 'function') return Promise.resolve(null);
+    return Promise.all([sapi.admin.overview(), sapi.subcategories.adminList()]).then(function (rs) {
+      var ov = rs[0] && rs[0].data;
+      var ql = rs[1] && rs[1].data;
+      if (!ov || ov.ok !== true) return null; // not an admin
+      return { overview: ov, queue: (ql && ql.ok === true && Array.isArray(ql.items)) ? ql.items : [] };
+    }).catch(function () { return null; });
+  }
 
   // ── data load ──────────────────────────────────────────────
   function loadAll() {
@@ -501,8 +519,10 @@
       A.request('favorites', 'GET', '/favorites', null, true).catch(function () { return { data: [] }; }),
       A.reviews.mine().catch(function () { return { data: [] }; }),
       A.reviews.awaiting().catch(function () { return { data: [] }; }),
-      meP
+      meP,
+      fetchAdminData() // #96-SUGGEST — null for everyone but the admin
     ]).then(function (r) {
+      state.admin = r[5] || null;
       state.account = (r[0] && r[0].data) || {};
       syncAcctCacheAvatar(state.account.avatar); // #79 — header chip stays in step
       state.saved = arr(r[1] && r[1].data);
@@ -546,6 +566,10 @@
     band.appendChild(stats);
     mount.appendChild(band);
 
+    // #96-SUGGEST — the Lokali admin panel (overview + specialty-suggestion
+    // queue). Renders only when the is_admin-gated data actually loaded.
+    if (state.admin) mount.appendChild(renderAdminPanel());
+
     // #66 — this is the person's home. People without a storefront get the
     // "open one (free)" card (Phase 1); owners get a switch-back-to-storefront
     // strip (Phase 2 identity switcher, person side).
@@ -581,6 +605,126 @@
     var segs = mount.querySelectorAll('.lk-seg');
     var idx = PANES.indexOf(pane);
     for (var i = 0; i < segs.length; i++) segs[i].classList.toggle('is-active', i === idx);
+  }
+
+  // ── #96-SUGGEST: the Lokali admin panel ────────────────────
+  var SUGG_LABEL_RE = /^[A-Za-z0-9&'’\-+/() ]+$/;
+  function injectAdminCSS() {
+    if (document.getElementById('lokali-account-admin-styles')) return;
+    var s = document.createElement('style');
+    s.id = 'lokali-account-admin-styles';
+    s.textContent =
+      ".lk-admin{background:#fff;border:1px solid #E4D6FB;border-radius:16px;padding:20px 22px;margin:0 0 18px;font-family:'Plus Jakarta Sans',sans-serif;}" +
+      ".lk-admin-head{display:flex;align-items:center;gap:10px;margin-bottom:4px;}" +
+      ".lk-admin-title{font-size:17px;font-weight:700;color:#1A1829;margin:0;}" +
+      ".lk-admin-badge{font-size:10px;font-weight:700;letter-spacing:.08em;background:#6002EE;color:#fff;border-radius:100px;padding:3px 10px;}" +
+      ".lk-admin-sub{font-size:12.5px;color:#6B6880;margin:0 0 14px;}" +
+      ".lk-admin-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:16px;}" +
+      ".lk-admin-stat{background:#F7F6FC;border-radius:12px;padding:10px 12px;}" +
+      ".lk-admin-stat-num{font-size:20px;font-weight:700;color:#1A1829;}" +
+      ".lk-admin-stat-lbl{font-size:11px;color:#8E8BA6;margin-top:2px;}" +
+      ".lk-admin-qtitle{font-size:13px;font-weight:600;color:#4A4761;margin:0 0 4px;display:flex;align-items:center;gap:8px;}" +
+      ".lk-admin-qcount{font-size:10.5px;font-weight:600;background:#F3EBFF;color:#6002EE;border-radius:100px;padding:1px 8px;}" +
+      ".lk-admin-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 0;border-top:.5px solid #EEEDF6;}" +
+      ".lk-admin-row-meta{flex:1;min-width:170px;}" +
+      ".lk-admin-row-l1{font-size:13.5px;color:#1A1829;}" +
+      ".lk-admin-row-l1 span{color:#8E8BA6;}" +
+      ".lk-admin-row-l2{font-size:11.5px;color:#8E8BA6;}" +
+      ".lk-admin-input{font-family:inherit;font-size:13px;padding:7px 10px;border:1px solid #C9BDE8;border-radius:8px;color:#1A1829;width:170px;}" +
+      ".lk-admin-approve{font-family:inherit;font-size:12.5px;font-weight:600;padding:7px 14px;border-radius:8px;border:1px solid #A8DFC4;background:#EDFAF3;color:#1A6640;cursor:pointer;}" +
+      ".lk-admin-decline{font-family:inherit;font-size:12.5px;padding:7px 14px;border-radius:8px;border:1px solid #E4E2F0;background:#F7F6FC;color:#6B6880;cursor:pointer;}" +
+      ".lk-admin-empty{font-size:12.5px;color:#8E8BA6;padding:8px 0 2px;border-top:.5px solid #EEEDF6;}";
+    document.head.appendChild(s);
+  }
+
+  function renderAdminPanel() {
+    injectAdminCSS();
+    var a = state.admin, ov = a.overview;
+    var wrap = el('div', 'lk-admin');
+    var head = el('div', 'lk-admin-head');
+    head.appendChild(el('h3', 'lk-admin-title', 'Lokali admin'));
+    head.appendChild(el('span', 'lk-admin-badge', 'ADMIN'));
+    wrap.appendChild(head);
+    wrap.appendChild(el('p', 'lk-admin-sub', 'Only you can see this panel.'));
+
+    var stats = el('div', 'lk-admin-stats');
+    [[ov.vendors_active, 'Active vendors'], [ov.vendors_public, 'On The Market'],
+     [ov.users_total, 'Accounts'], [ov.subcategories_live, 'Specialties live'],
+     [ov.pending_suggestions, 'Suggestions pending']].forEach(function (t) {
+      var tile = el('div', 'lk-admin-stat');
+      tile.appendChild(el('div', 'lk-admin-stat-num', esc(String(t[0] != null ? t[0] : '—'))));
+      tile.appendChild(el('div', 'lk-admin-stat-lbl', esc(t[1])));
+      stats.appendChild(tile);
+    });
+    wrap.appendChild(stats);
+
+    var qt = el('div', 'lk-admin-qtitle');
+    qt.appendChild(document.createTextNode('Specialty suggestions'));
+    var qc = el('span', 'lk-admin-qcount', String(a.queue.length));
+    qt.appendChild(qc);
+    wrap.appendChild(qt);
+    wrap.appendChild(el('p', 'lk-admin-sub', 'Approve with the wording customers should see — it goes live for everyone instantly, and the vendor gets the pill if they have a free slot.'));
+
+    if (!a.queue.length) {
+      wrap.appendChild(el('div', 'lk-admin-empty', 'No suggestions waiting. New ones from vendors land here.'));
+      return wrap;
+    }
+
+    a.queue.forEach(function (item) {
+      var row = el('div', 'lk-admin-row');
+      var meta = el('div', 'lk-admin-row-meta');
+      var l1 = el('div', 'lk-admin-row-l1');
+      l1.textContent = '“' + item.label + '”';
+      var l1cat = document.createElement('span');
+      l1cat.textContent = ' — ' + (item.category_name || '');
+      l1.appendChild(l1cat);
+      var l2 = el('div', 'lk-admin-row-l2');
+      l2.textContent = 'from ' + (item.vendor_name || 'a vendor');
+      meta.appendChild(l1); meta.appendChild(l2);
+      var input = document.createElement('input');
+      input.type = 'text'; input.maxLength = 40; input.className = 'lk-admin-input';
+      input.value = String(item.label || '').charAt(0).toUpperCase() + String(item.label || '').slice(1);
+      var ok = document.createElement('button');
+      ok.type = 'button'; ok.className = 'lk-admin-approve'; ok.textContent = 'Approve';
+      var no = document.createElement('button');
+      no.type = 'button'; no.className = 'lk-admin-decline'; no.textContent = 'Decline';
+      var act = function (approve) {
+        var wording = String(input.value || '').replace(/\s+/g, ' ').trim();
+        if (approve && (wording.length < 3 || wording.length > 40 ||
+            !SUGG_LABEL_RE.test(wording) || !/[A-Za-z0-9]/.test(wording))) {
+          l2.textContent = '3–40 characters — letters, numbers and simple punctuation.';
+          l2.style.color = '#B3400F';
+          return;
+        }
+        ok.disabled = true; no.disabled = true;
+        window.LokaliSupabaseAPI.subcategories.adminReview(item.id, approve, approve ? wording : null).then(function (res) {
+          var rd = res && res.data;
+          if (rd && rd.ok) {
+            row.style.opacity = '.45';
+            row.style.pointerEvents = 'none';
+            l2.textContent = approve
+              ? ('Live as “' + (rd.label || wording) + '”' + (rd.added_to_vendor ? ' · added to the vendor’s picks' : ''))
+              : 'Declined';
+            l2.style.color = approve ? '#1A6640' : '#8E8BA6';
+            var left = Math.max(0, parseInt(qc.textContent, 10) - 1);
+            qc.textContent = String(left);
+          } else {
+            ok.disabled = false; no.disabled = false;
+            l2.textContent = 'Couldn’t save — try again.';
+            l2.style.color = '#B3400F';
+          }
+        }).catch(function () {
+          ok.disabled = false; no.disabled = false;
+          l2.textContent = 'Couldn’t save — try again.';
+          l2.style.color = '#B3400F';
+        });
+      };
+      ok.addEventListener('click', function () { act(true); });
+      no.addEventListener('click', function () { act(false); });
+      row.appendChild(meta); row.appendChild(input); row.appendChild(ok); row.appendChild(no);
+      wrap.appendChild(row);
+    });
+    return wrap;
   }
 
   // ── #66 Phase 1: "Open your storefront" card ───────────────

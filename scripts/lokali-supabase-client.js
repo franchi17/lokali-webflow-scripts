@@ -933,6 +933,51 @@
       waitlist: function (payload) { return postRoute('/waitlist', payload || {}, false); },
       interest: function (payload) { return postRoute('/interest', payload || {}, false); }
     },
+    // #96-SUGGEST — admin surface (is_admin()-gated server-side; non-admins
+    // get { ok:false } — safe to call from any session).
+    admin: {
+      overview: function () {
+        return withClient(function (c) { return c.rpc('admin_overview'); });
+      }
+    },
+    // #96-SUGGEST — subcategory taxonomy + the vendor suggestion pipeline.
+    // Taxonomy lives in the `subcategory` table now (approvals go live with no
+    // script ship); the picker/browse constants are the FALLBACK. The admin
+    // RPCs are is_admin()-gated server-side — safe to call from any session,
+    // non-admins just get { ok:false, reason:'not_admin' }.
+    subcategories: {
+      list: function () {
+        return withClient(function (c) {
+          return c.from('subcategory').select('category_id,slug,label,sort_order')
+            .eq('is_active', true)
+            .order('category_id', { ascending: true })
+            .order('sort_order', { ascending: true })
+            .order('id', { ascending: true });
+        });
+      },
+      suggest: function (categoryId, label) {
+        return withClient(function (c) {
+          return c.rpc('submit_subcategory_suggestion', { p_category_id: categoryId, p_label: label });
+        });
+      },
+      mySuggestions: function () {
+        return withClient(function (c) {
+          return c.from('subcategory_suggestions')
+            .select('id,category_id,suggested_label,status,final_label,created_at')
+            .order('created_at', { ascending: false });
+        });
+      },
+      adminList: function () {
+        return withClient(function (c) { return c.rpc('list_subcategory_suggestions'); });
+      },
+      adminReview: function (id, approve, finalLabel) {
+        return withClient(function (c) {
+          return c.rpc('review_subcategory_suggestion', {
+            p_id: id, p_approve: !!approve, p_final_label: finalLabel || null
+          });
+        });
+      }
+    },
     data: {
       // Active subscription plans (pricing page). RLS plan_public_read gates it.
       plans: function () {

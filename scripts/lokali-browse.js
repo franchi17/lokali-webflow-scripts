@@ -168,11 +168,58 @@
     ]
   };
   var SUBCAT_BY_SLUG = {}; // slug -> { label, catId }
-  (function () {
+  function rebuildSubcatIndex() {
+    SUBCAT_BY_SLUG = {};
     for (var cid in SUBCATS_BY_CAT) if (SUBCATS_BY_CAT.hasOwnProperty(cid)) {
-      SUBCATS_BY_CAT[cid].forEach(function (s) { SUBCAT_BY_SLUG[s.slug] = { label: s.label, catId: parseInt(cid, 10) }; });
+      (function (catId) {
+        SUBCATS_BY_CAT[catId].forEach(function (s) { SUBCAT_BY_SLUG[s.slug] = { label: s.label, catId: parseInt(catId, 10) }; });
+      })(cid);
     }
-  })();
+  }
+  rebuildSubcatIndex();
+
+  // #96-SUGGEST — the live taxonomy comes from the `subcategory` TABLE (so an
+  // approved vendor suggestion is a pill everywhere on next load, no script
+  // ship); the baked-in SUBCATS_BY_CAT above is the fallback when the fetch
+  // fails or the Supabase surface is absent (Xano rollback). Restored session
+  // picks are re-sanitized once the live list lands — a DB-only slug (approved
+  // after this script shipped) must survive the restore.
+  var _taxonomyLoaded = false;
+  function fetchSubcatTaxonomy(attempt) {
+    attempt = attempt || 0;
+    var sapi = window.LokaliSupabaseAPI;
+    if (!sapi || !sapi.subcategories || typeof sapi.subcategories.list !== 'function') return;
+    sapi.subcategories.list().then(function (out) {
+      if (!out || out.error || !Array.isArray(out.data)) {
+        if (attempt < 2) setTimeout(function () { fetchSubcatTaxonomy(attempt + 1); }, 1500 * (attempt + 1));
+        return;
+      }
+      var byCat = {};
+      out.data.forEach(function (r) {
+        if (!r || r.category_id == null || !r.slug || !r.label) return;
+        (byCat[r.category_id] = byCat[r.category_id] || []).push({ slug: r.slug, label: r.label });
+      });
+      if (!Object.keys(byCat).length) return; // empty/short read — keep the baked fallback
+      SUBCATS_BY_CAT = byCat;
+      rebuildSubcatIndex();
+      _taxonomyLoaded = true;
+      // Re-validate picks against the swapped list: restored picks re-sanitize
+      // from the RAW list (a DB-only slug now validates); live user picks are
+      // filtered so a slug the DB dropped can't linger as an invisible filter.
+      if (_rawRestoredSubcats) {
+        sanitizeRestoredSubcats();
+      } else if (activeSubcats.length) {
+        var catId = SLUG_TO_ID[activeCategory];
+        activeSubcats = activeSubcats.filter(function (sl) {
+          return SUBCAT_BY_SLUG[sl] && SUBCAT_BY_SLUG[sl].catId === catId;
+        });
+      }
+      renderSubcatRow();
+      if (_allVendors.length) applyFilters();
+    }).catch(function () {
+      if (attempt < 2) setTimeout(function () { fetchSubcatTaxonomy(attempt + 1); }, 1500 * (attempt + 1));
+    });
+  }
 
   var SLUG_TO_ID = {};
   (function () { for (var id in CAT_BY_ID) if (CAT_BY_ID.hasOwnProperty(id)) SLUG_TO_ID[CAT_BY_ID[id].slug] = parseInt(id, 10); })();
@@ -315,6 +362,17 @@
   var activeLocationId = 'all';
   var activeCategory = 'all';
   var activeSubcats = []; // #96: selected subcategory slugs (OR filter; cleared on category change)
+  var _rawRestoredSubcats = null; // #96: raw restored picks, re-sanitized when the live taxonomy lands
+
+  function sanitizeRestoredSubcats() {
+    if (!_rawRestoredSubcats) return;
+    activeSubcats = [];
+    var catId = SLUG_TO_ID[activeCategory];
+    _rawRestoredSubcats.forEach(function (sl) {
+      if (typeof sl === 'string' && SUBCAT_BY_SLUG[sl] && SUBCAT_BY_SLUG[sl].catId === catId &&
+          activeSubcats.indexOf(sl) === -1) activeSubcats.push(sl);
+    });
+  }
   var activeSort = 'best_match';
   var showNewOnly = false;
   var showFoundingOnly = false;
@@ -523,9 +581,10 @@
       hideEl(loading);
       _allVendors = extractList(out && out.data).filter(function (v) { return v && v.is_active !== false; });
       // #96 — if the payload has no subcategories key (stale cached adapter /
-      // Xano rollback), drop any restored picks and remove the pill row so the
-      // filter can't silently blank the grid.
-      if (!subcatDataPresent()) activeSubcats = [];
+      // Xano rollback), drop any restored picks (INCLUDING the raw restore
+      // list — a late taxonomy fetch must not resurrect them) and remove the
+      // pill row so the filter can't silently blank the grid.
+      if (!subcatDataPresent()) { activeSubcats = []; _rawRestoredSubcats = null; }
       renderSubcatRow();
       updateCategoryCounts();
       applyFilters();
@@ -677,6 +736,7 @@
   }
 
   function toggleSubcat(slug) {
+    _rawRestoredSubcats = null; // user is driving now — no late-restore overwrite
     var i = activeSubcats.indexOf(slug);
     if (i === -1) activeSubcats.push(slug); else activeSubcats.splice(i, 1);
     var pill = document.querySelector('#browse-filter-panel .subcat-pill[data-subcat-slug="' + slug + '"]');
@@ -744,7 +804,10 @@
   function persistState() {
     try {
       sessionStorage.setItem(STATE_KEY, JSON.stringify({
-        c: activeCategory, l: activeLocationId, s: activeSort, sc: activeSubcats,
+        c: activeCategory, l: activeLocationId, s: activeSort,
+        // Persist the RAW restored list while it's still authoritative — else
+        // an interim baked-only sanitize would permanently drop a DB-only pick.
+        sc: _rawRestoredSubcats || activeSubcats,
         n: showNewOnly, f: showFoundingOnly, v: showVerifiedOnly, q: searchTerm
       }));
     } catch (e) {}
@@ -760,13 +823,10 @@
     searchTerm = s.q || '';
     // #96 — restore subcategory picks, sanitized to real slugs OF the restored
     // category (a stale/foreign slug would silently filter everything out).
-    activeSubcats = [];
-    if (Array.isArray(s.sc)) {
-      var restoredCatId = SLUG_TO_ID[activeCategory];
-      s.sc.forEach(function (sl) {
-        if (SUBCAT_BY_SLUG[sl] && SUBCAT_BY_SLUG[sl].catId === restoredCatId) activeSubcats.push(sl);
-      });
-    }
+    // The raw list is kept so the sanitize can re-run when the LIVE taxonomy
+    // arrives (fetchSubcatTaxonomy) — dropped on any user interaction.
+    _rawRestoredSubcats = Array.isArray(s.sc) ? s.sc : null;
+    sanitizeRestoredSubcats();
     return true;
   }
   // Reflect the (restored) state into controls that renderFilterPanel doesn't pre-set.
@@ -956,7 +1016,7 @@
     applyFilters(); // client-side neighborhood filter (no re-fetch)
   }
   function setCategory(slug) {
-    if (slug !== activeCategory) activeSubcats = []; // #96 — picks belong to one category
+    if (slug !== activeCategory) { activeSubcats = []; _rawRestoredSubcats = null; } // #96 — picks belong to one category
     activeCategory = slug;
     var items = document.querySelectorAll('#browse-filter-panel .filter-item[data-category-slug]');
     for (var i = 0; i < items.length; i++) items[i].classList.toggle('active', items[i].getAttribute('data-category-slug') === slug);
@@ -1023,7 +1083,8 @@
     var restored = restoreState();
     renderFilterPanel();
     bindEvents();
-    fetchListingIndex(); // #96 — parallel with ref data + vendors; fire-and-forget
+    fetchListingIndex();   // #96 — parallel with ref data + vendors; fire-and-forget
+    fetchSubcatTaxonomy(); // #96-SUGGEST — live taxonomy; baked list is the fallback
 
     // Reference data (categories/locations) is non-critical: a failure must never block the
     // vendor grid. Previously a rejected loadRefData() skipped fetchVendors() entirely and
@@ -1055,8 +1116,10 @@
     if (!e.persisted) return;
     if (!window.LokaliAPI || !_grid) return;
     if (_renderedCards.length === 0) fetchVendors();
-    // #96 — the listing-name index can also have been lost mid-load (in-flight
-    // fetches don't survive entering the bfcache); refetch it when empty.
+    // #96 — the listing-name index and taxonomy can also have been lost
+    // mid-load (in-flight fetches don't survive entering the bfcache);
+    // refetch whichever is missing.
     if (!Object.keys(_listingsByVendor).length) fetchListingIndex();
+    if (!_taxonomyLoaded) fetchSubcatTaxonomy();
   });
 })();
