@@ -137,7 +137,7 @@
   // (vendors, reviews) and the sane presentation fields for services/products.
   var VENDOR_EDITABLE = [
     'business_name', 'business_description', 'business_tagline', 'website_url',
-    'instagram_url', 'locations_id', 'categories_id', 'profile_photo',
+    'instagram_url', 'locations_id', 'categories_id', 'subcategories', 'profile_photo', // subcategories = #96 (≤3, DB CHECK-capped)
     'owner_name', 'owner_bio', 'owner_photo', 'owner_languages', // #76e Meet the Vendor
     'text_messages', 'whatsapp_messages', 'phone_calls', // phone_calls = #76c call preference
     'phone_number', 'phone_visible',
@@ -176,7 +176,8 @@
   // get_my_vendor() RPC (security definer), never a table select.
   var VENDOR_PUBLIC_COLS =
     'id,business_name,business_description,business_tagline,' +
-    'website_url,instagram_url,locations_id,categories_id,profile_photo,' +
+    'website_url,instagram_url,locations_id,categories_id,subcategories,profile_photo,' + // subcategories = #96
+
     'owner_name,owner_bio,owner_photo,owner_languages,' +
     'text_messages,whatsapp_messages,phone_calls,phone_number,phone_visible,contact_email,' +
     'created_at,is_active,slug,is_founding_member,' +
@@ -947,6 +948,59 @@
       locations: function () {
         return withClient(function (c) {
           return c.from('locations').select('*').eq('is_active', true).order('location_name');
+        });
+      },
+      // #96 service-aware browse: the names of every ACTIVE listing (services
+      // + products) in one paginated query pair. The Market folds them into its search
+      // haystack and renders them as "offerings" chips on the vendor cards.
+      // Anon RLS (services/products public_read) already scopes rows to active
+      // listings of active+approved vendors — only names + owner ids ride the
+      // wire. Resolves { data: [{ vendors_id, name, kind }], error } with rows
+      // in per-vendor sort_order, services before products (the same order the
+      // listing page presents them).
+      listingIndex: function () {
+        // Paginated with .range(): PostgREST silently LIMITs any response to
+        // its max-rows (1000 by default) with no error, which would quietly
+        // drop the newest vendors from search once active listings pass 1000
+        // rows (#96 review finding). The order is a total one (id is unique),
+        // so pages can't skip or duplicate rows. On a mid-pagination error the
+        // rows collected so far ride back beside the error — partial coverage
+        // beats none.
+        var PAGE = 1000;
+        function fetchAll(c, table, cols) {
+          var acc = [];
+          function step(from) {
+            return c.from(table).select(cols).eq('is_active', true)
+              .order('vendors_id', { ascending: true }).order('sort_order', { ascending: true }).order('id', { ascending: true })
+              .range(from, from + PAGE - 1)
+              .then(function (res) {
+                if (res && res.error) return { data: acc, error: res.error };
+                var rows = (res && res.data) || [];
+                acc = acc.concat(rows);
+                if (rows.length < PAGE) return { data: acc, error: null };
+                return step(from + PAGE);
+              });
+          }
+          return step(0);
+        }
+        return withClient(function (c) {
+          return Promise.all([
+            fetchAll(c, 'services', 'vendors_id,service_name'),
+            fetchAll(c, 'products', 'vendors_id,product_name')
+          ]).then(function (rs) {
+            var svc = rs[0] || {}, prod = rs[1] || {};
+            // Partial success still helps (chips/search for the kind that
+            // loaded); only a double failure surfaces as an error.
+            if (svc.error && prod.error) return { data: null, error: svc.error };
+            var items = [];
+            (svc.data || []).forEach(function (r) {
+              if (r && r.vendors_id != null && r.service_name) items.push({ vendors_id: r.vendors_id, name: r.service_name, kind: 'service' });
+            });
+            (prod.data || []).forEach(function (r) {
+              if (r && r.vendors_id != null && r.product_name) items.push({ vendors_id: r.vendors_id, name: r.product_name, kind: 'product' });
+            });
+            return { data: items, error: null };
+          });
         });
       }
     }

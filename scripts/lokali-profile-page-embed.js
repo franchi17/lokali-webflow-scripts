@@ -16,7 +16,8 @@
     s.textContent = css;
     document.head.appendChild(s);
   }
-  injectStyle("lokali-profile-field-colors", "  .w-input, .w-select, .lokali-phone-number, #textarea-description {\n    color: #1A1829;\n  }\n  .w-input::placeholder, .w-select::placeholder,\n  .lokali-phone-number::placeholder, #textarea-description::placeholder {\n    color: #8E8BA6;\n  }");
+  injectStyle("lokali-subcat-ui-style", "  .subcat-block {\n    border-top: 1px solid #DCD2F2;\n    margin-top: 12px;\n    padding-top: 12px;\n  }\n  .subcat-hint {\n    margin-bottom: 10px;\n  }\n  .category-pill.subcat-pick {\n    padding: 6px 12px;\n    font-size: 13px;\n  }\n  .subcat-count {\n    font-size: 12.5px;\n    color: #6B6787;\n    margin: 10px 0 0;\n  }");
+  injectStyle("lokali-profile-field-colors","  .w-input, .w-select, .lokali-phone-number, #textarea-description {\n    color: #1A1829;\n  }\n  .w-input::placeholder, .w-select::placeholder,\n  .lokali-phone-number::placeholder, #textarea-description::placeholder {\n    color: #8E8BA6;\n  }");
   injectStyle("lokali-locations-ui-style", "  .location-multi {\n    font-family: \"Plus Jakarta Sans\", system-ui, -apple-system, sans-serif;\n    background: #eee6ff;\n    padding: 12px 14px;\n    border-radius: 8px;\n    box-sizing: border-box;\n  }\n  .location-hint {\n    font-size: 13px;\n    color: #5A5570;\n    margin: 0 0 10px;\n    line-height: 1.4;\n  }\n  .location-pills {\n    display: flex;\n    flex-wrap: wrap;\n    gap: 8px;\n  }\n  .location-pill {\n    font-family: inherit;\n    -webkit-appearance: none;\n    appearance: none;\n    display: inline-flex;\n    align-items: center;\n    gap: 7px;\n    background: #fff;\n    color: #5A5570;\n    border: 1px solid #C9BDE8;\n    border-radius: 999px;\n    padding: 8px 14px;\n    font-size: 14px;\n    line-height: 1.3;\n    cursor: pointer;\n    user-select: none;\n    transition: background .12s, border-color .12s, color .12s;\n  }\n  .location-pill:hover {\n    border-color: #6002ee;\n    color: #6002ee;\n  }\n  .location-pill.is-on {\n    background: #6002EE;\n    border-color: #6002EE;\n    color: #fff;\n    font-weight: 600;\n  }\n  .location-pill.is-on:hover {\n    background: #4a01c7;\n    border-color: #4a01c7;\n    color: #fff;\n  }\n  .location-pill .lp-g {\n    font-weight: 700;\n    font-size: 13px;\n    line-height: 1;\n  }\n  .location-count {\n    font-size: 12.5px;\n    color: #6B6787;\n    margin: 10px 0 0;\n  }\n  .category-pills {\n    font-family: \"Plus Jakarta Sans\", system-ui, -apple-system, sans-serif;\n    background: #eee6ff;\n    padding: 12px 14px;\n    border-radius: 8px;\n    box-sizing: border-box;\n  }\n  .category-hint {\n    font-size: 13px;\n    color: #5A5570;\n    margin: 0 0 10px;\n    line-height: 1.4;\n  }\n  .category-pill-row {\n    display: flex;\n    flex-wrap: wrap;\n    gap: 8px;\n  }\n  .category-pill {\n    font-family: inherit;\n    -webkit-appearance: none;\n    appearance: none;\n    display: inline-flex;\n    align-items: center;\n    gap: 8px;\n    background: #fff;\n    color: #5A5570;\n    border: 1px solid #C9BDE8;\n    border-radius: 999px;\n    padding: 8px 14px;\n    font-size: 14px;\n    line-height: 1.3;\n    cursor: pointer;\n    user-select: none;\n    transition: background .12s, border-color .12s, color .12s;\n  }\n  .category-pill:hover {\n    border-color: #6002ee;\n    color: #6002ee;\n  }\n  .category-pill.is-on {\n    background: #6002EE;\n    border-color: #6002EE;\n    color: #fff;\n    font-weight: 600;\n  }\n  .category-pill .cp-ic {\n    width: 16px;\n    height: 16px;\n    flex-shrink: 0;\n    background-color: currentColor;\n    -webkit-mask-position: center;\n    -webkit-mask-repeat: no-repeat;\n    -webkit-mask-size: contain;\n    mask-position: center;\n    mask-repeat: no-repeat;\n    mask-size: contain;\n  }");
 })();
 
@@ -938,6 +939,18 @@ var LokaliProfilePage = (function () {
       var categorySelect = _getCategorySelect();
       if (categorySelect) categorySelect.value = String(primaryCategory);
     }
+    // #96 — hydrate saved specialty picks, PRUNED to the current category's
+    // taxonomy: a stale cross-category slug would count invisibly against the
+    // cap (bricking the picker at 3) and be written back on save. Skipped once
+    // the vendor has touched the pills, so the delayed second populateUI pass
+    // can't silently revert a fresh selection.
+    if (!_subcatsTouched) {
+      var _hydAllowed = {};
+      (_SUBCATS_BY_CAT[primaryCategory] || []).forEach(function (s) { _hydAllowed[s.slug] = true; });
+      _selectedSubcats = Array.isArray(_vendor.subcategories)
+        ? _vendor.subcategories.filter(function (s) { return typeof s === 'string' && _hydAllowed[s]; }).slice(0, _SUBCAT_CAP)
+        : [];
+    }
     _initCategoryPills();
   }
 
@@ -1036,6 +1049,97 @@ var LokaliProfilePage = (function () {
   };
   var _categoryPillRowEl = null;
 
+  // #96 — curated subcategory taxonomy, keyed by category id. MIRRORED from
+  // lokali-browse.js SUBCATS_BY_CAT (labels = the categories-guide "Examples"
+  // pills) — keep the two lists identical. Vendors pick up to 3; The Market
+  // filters + renders card pills from the saved slugs.
+  var _SUBCAT_CAP = 3;
+  var _SUBCATS_BY_CAT = {
+    1: [
+      { slug: 'handmade-jewelry',     label: 'Handmade jewelry' },
+      { slug: 'candles-soap',         label: 'Candles & soap' },
+      { slug: 'art-prints',           label: 'Art prints & paintings' },
+      { slug: 'pottery-ceramics',     label: 'Pottery & ceramics' },
+      { slug: 'woodworking',          label: 'Woodworking' },
+      { slug: 'custom-embroidery',    label: 'Custom embroidery' },
+      { slug: 'floral-arrangements',  label: 'Floral arrangements' },
+      { slug: 'sewn-goods',           label: 'Sewn & stitched goods' }
+    ],
+    2: [
+      { slug: 'bookkeeping',          label: 'Bookkeeping & accounting' },
+      { slug: 'marketing',            label: 'Marketing & social media' },
+      { slug: 'graphic-design',       label: 'Graphic design' },
+      { slug: 'virtual-assistance',   label: 'Virtual assistance' },
+      { slug: 'notary',               label: 'Notary services' },
+      { slug: 'consulting',           label: 'Consulting' },
+      { slug: 'it-support',           label: 'IT & tech support' },
+      { slug: 'copywriting',          label: 'Copywriting' }
+    ],
+    3: [
+      { slug: 'hair-styling',         label: 'Hair styling & coloring' },
+      { slug: 'lash-extensions',      label: 'Lash extensions' },
+      { slug: 'nails',                label: 'Nails & manicures' },
+      { slug: 'esthetics',            label: 'Esthetics & facials' },
+      { slug: 'makeup',               label: 'Makeup artistry' },
+      { slug: 'brow-shaping',         label: 'Brow shaping' },
+      { slug: 'spray-tanning',        label: 'Spray tanning' },
+      { slug: 'mobile-beauty',        label: 'Mobile beauty services' }
+    ],
+    4: [
+      { slug: 'tutoring',             label: 'Tutoring' },
+      { slug: 'music-lessons',        label: 'Music lessons' },
+      { slug: 'after-school',         label: 'After-school programs' },
+      { slug: 'childcare',            label: 'Childcare & nannying' },
+      { slug: 'kids-art-classes',     label: 'Art classes for kids' },
+      { slug: 'sports-coaching',      label: 'Sports coaching' },
+      { slug: 'language-instruction', label: 'Language instruction' },
+      { slug: 'learning-support',     label: 'Learning support' }
+    ],
+    5: [
+      { slug: 'wedding-photography',  label: 'Wedding photography' },
+      { slug: 'event-planning',       label: 'Event planning' },
+      { slug: 'family-portraits',     label: 'Family portraits' },
+      { slug: 'party-rentals',        label: 'Party rentals' },
+      { slug: 'djs-entertainers',     label: 'DJs & entertainers' },
+      { slug: 'photo-booths',         label: 'Photo booths' },
+      { slug: 'videography',          label: 'Videography' },
+      { slug: 'balloon-decor',        label: 'Balloon & décor styling' }
+    ],
+    6: [
+      { slug: 'catering-meal-prep',   label: 'Catering & meal prep' },
+      { slug: 'home-baker',           label: 'Home-based baker' },
+      { slug: 'personal-chefs',       label: 'Personal chefs' },
+      { slug: 'food-trucks',          label: 'Food trucks' },
+      { slug: 'specialty-food',       label: 'Specialty & dietary food' },
+      { slug: 'meal-delivery',        label: 'Meal delivery' },
+      { slug: 'charcuterie',          label: 'Charcuterie & grazing boards' },
+      { slug: 'cultural-cuisine',     label: 'Cultural cuisine' }
+    ],
+    7: [
+      { slug: 'personal-training',    label: 'Personal training' },
+      { slug: 'yoga-pilates',         label: 'Yoga & pilates' },
+      { slug: 'massage-therapy',      label: 'Massage therapy' },
+      { slug: 'nutrition-coaching',   label: 'Nutrition coaching' },
+      { slug: 'life-coaching',        label: 'Life coaching' },
+      { slug: 'reiki-energy',         label: 'Reiki & energy work' },
+      { slug: 'acupuncture',          label: 'Acupuncture' },
+      { slug: 'mental-wellness',      label: 'Mental wellness support' }
+    ],
+    8: [
+      { slug: 'cleaning',             label: 'Cleaning services' },
+      { slug: 'landscaping',          label: 'Landscaping & lawn care' },
+      { slug: 'handyman',             label: 'Handyman & repairs' },
+      { slug: 'painting',             label: 'Painting' },
+      { slug: 'pool-maintenance',     label: 'Pool maintenance' },
+      { slug: 'interior-decorating',  label: 'Interior decorating' },
+      { slug: 'home-organization',    label: 'Home organization' },
+      { slug: 'pest-control',         label: 'Pest control' }
+    ]
+  };
+  var _selectedSubcats = [];
+  var _subcatsTouched = false; // user interacted — hydration must never revert their picks
+  var _subcatWrapEl = null, _subcatRowEl = null, _subcatCountEl = null;
+
   // Icon-pill radio UI over the (hidden) native select — the select stays the
   // source of truth, so hydrate (select.value = saved id) and save
   // (_getFormValues reads select.value) need no changes.
@@ -1058,8 +1162,26 @@ var LokaliProfilePage = (function () {
 
       wrapper.appendChild(hint);
       wrapper.appendChild(row);
+
+      // #96 — subcategory block lives inside the same wrapper, under the
+      // category row; shown only once a category is picked.
+      var scWrap = document.createElement('div');
+      scWrap.className = 'subcat-block';
+      var scHint = document.createElement('p');
+      scHint.className = 'category-hint subcat-hint';
+      scHint.textContent = 'Now pick up to 3 specialties — customers filter The Market by these.';
+      var scRow = document.createElement('div');
+      scRow.className = 'category-pill-row';
+      var scCount = document.createElement('p');
+      scCount.className = 'subcat-count';
+      scWrap.appendChild(scHint);
+      scWrap.appendChild(scRow);
+      scWrap.appendChild(scCount);
+      wrapper.appendChild(scWrap);
+
       sel.parentNode.insertBefore(wrapper, sel.nextSibling);
       _categoryPillRowEl = row;
+      _subcatWrapEl = scWrap; _subcatRowEl = scRow; _subcatCountEl = scCount;
     }
 
     _renderCategoryPills();
@@ -1098,11 +1220,75 @@ var LokaliProfilePage = (function () {
       pill.appendChild(text);
 
       pill.addEventListener('click', function () {
+        var changed = String(sel.value) !== String(id);
         sel.value = String(id);
+        if (changed) _dirty = true; // programmatic select.value fires no change event, so the guard misses category pill picks too
+        // #96 — picks belong to one category: drop any that aren't in the
+        // newly selected category's list (across-category slugs never overlap,
+        // so a real switch clears them).
+        if (changed) {
+          var allowed = {};
+          (_SUBCATS_BY_CAT[id] || []).forEach(function (s) { allowed[s.slug] = true; });
+          _selectedSubcats = _selectedSubcats.filter(function (sl) { return allowed[sl]; });
+        }
         _renderCategoryPills();
       });
       _categoryPillRowEl.appendChild(pill);
     });
+
+    _renderSubcatPills(); // #96 — keep the specialty pills in step with the category
+  }
+
+  // #96 — the specialty pills (multi-select, capped). Same pill visuals as the
+  // category picker; selected state = solid violet like .is-on.
+  function _renderSubcatPills() {
+    if (!_subcatWrapEl || !_subcatRowEl) return;
+    var sel = _getCategorySelect();
+    var catId = sel && sel.value !== '' ? parseInt(sel.value, 10) : null;
+    var subs = catId != null ? _SUBCATS_BY_CAT[catId] : null;
+    if (!subs || !subs.length) {
+      _subcatWrapEl.style.display = 'none';
+      return;
+    }
+    _subcatWrapEl.style.display = '';
+    _subcatRowEl.innerHTML = '';
+    subs.forEach(function (s) {
+      var on = _selectedSubcats.indexOf(s.slug) !== -1;
+      var pill = document.createElement('button');
+      pill.type = 'button';
+      pill.className = 'category-pill subcat-pick' + (on ? ' is-on' : '');
+      pill.setAttribute('aria-pressed', on ? 'true' : 'false');
+      var text = document.createElement('span');
+      text.textContent = s.label;
+      pill.appendChild(text);
+      pill.addEventListener('click', function () {
+        var i = _selectedSubcats.indexOf(s.slug);
+        if (i !== -1) _selectedSubcats.splice(i, 1);
+        else if (_selectedSubcats.length < _SUBCAT_CAP) _selectedSubcats.push(s.slug);
+        else { _flashSubcatCap(); return; }
+        _subcatsTouched = true;
+        _dirty = true; // pill clicks are BUTTONs — the input/change dirty guard never sees them
+        _renderSubcatPills();
+      });
+      _subcatRowEl.appendChild(pill);
+    });
+    _updateSubcatCount(false);
+  }
+
+  function _updateSubcatCount(capped) {
+    if (!_subcatCountEl) return;
+    var n = _selectedSubcats.length;
+    _subcatCountEl.textContent = capped
+      ? 'That’s the limit — deselect one to switch.'
+      : (n + ' of ' + _SUBCAT_CAP + ' selected' + (n === 0 ? ' — optional, but it helps customers find you.' : '.'));
+    _subcatCountEl.style.color = capped ? '#B3400F' : '#6B6787';
+  }
+
+  var _subcatCapTimer = null;
+  function _flashSubcatCap() {
+    _updateSubcatCount(true);
+    if (_subcatCapTimer) clearTimeout(_subcatCapTimer);
+    _subcatCapTimer = setTimeout(function () { _updateSubcatCount(false); }, 2200);
   }
 
   function _initLocationTokenMultiSelect() {
@@ -1344,6 +1530,7 @@ var LokaliProfilePage = (function () {
       phone_calls:          document.getElementById('checkbox-phone-calls') ? bool('checkbox-phone-calls') : undefined,
       category_id:          categoryId,
       categories_id:        categoriesId,
+      subcategories:        _selectedSubcats.slice(0, _SUBCAT_CAP), // #96 — [] clears on purpose
       locations_id: (locationIds && locationIds.length)
         ? locationIds
         : (_vendor ? _vendor.locations_id : [])
@@ -1406,6 +1593,7 @@ var LokaliProfilePage = (function () {
       phone_calls:          payload.phone_calls === undefined ? undefined : !!payload.phone_calls,
       category_id:          payload.category_id != null ? payload.category_id : null,
       categories_id:        payload.categories_id,
+      subcategories:        Array.isArray(payload.subcategories) ? payload.subcategories : undefined, // #96
       locations_id:         payload.locations_id
     };
   }

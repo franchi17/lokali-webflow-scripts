@@ -7,6 +7,19 @@
  * neighborhood, the three toggles, sorting, active-filter chips, sidebar counts,
  * and the mobile drawer.
  *
+ * #96 service-aware browse (subcategory model, Francesca 2026-07-20):
+ * - SUBCATS_BY_CAT is the curated specialty taxonomy (the categories-guide
+ *   "Examples" pills, 8 per category; mirrored in lokali-profile-page-embed.js
+ *   where vendors pick ≤3). vendors.subcategories rides the normal vendor list.
+ * - Sidebar: the active category expands IN PLACE — its subcategory pills
+ *   unfold under it (multi-select, OR), other categories stay one click away.
+ * - Cards: the vendor's subcategory pills render under the tagline; the pill
+ *   that made a search hit is promoted to the front and highlighted.
+ * - Search haystack = name/tagline/description/category + subcategory labels
+ *   + ACTIVE listing names (invisible recall layer, via
+ *   LokaliSupabaseAPI.data.listingIndex). If the Supabase surface is absent
+ *   (Xano rollback), the listing-name layer silently drops out.
+ *
  * Load AFTER lokali-api-client.js. No auth required (public list endpoints).
  *
  * Required mount points in Webflow (plain light-DOM elements, NOT code components):
@@ -67,6 +80,99 @@
     7: { slug: 'wellness',    label: 'Wellness',          bg: '#EAFAF2', text: '#1D6A45' },
     8: { slug: 'home',        label: 'Home',              bg: '#F7F6FC', text: '#4A4761' }
   };
+
+  // #96 — curated subcategory taxonomy, keyed by category id. Source of truth
+  // for labels = the categories-guide "Examples" pills (Francesca-approved
+  // 2026-07-20). MIRRORED in lokali-profile-page-embed.js (the vendor picker)
+  // — keep the two lists identical. DB stores slugs; unknown slugs are inert.
+  var SUBCATS_BY_CAT = {
+    1: [ // Handcrafted Goods (Artisans & Makers)
+      { slug: 'handmade-jewelry',     label: 'Handmade jewelry' },
+      { slug: 'candles-soap',         label: 'Candles & soap' },
+      { slug: 'art-prints',           label: 'Art prints & paintings' },
+      { slug: 'pottery-ceramics',     label: 'Pottery & ceramics' },
+      { slug: 'woodworking',          label: 'Woodworking' },
+      { slug: 'custom-embroidery',    label: 'Custom embroidery' },
+      { slug: 'floral-arrangements',  label: 'Floral arrangements' },
+      { slug: 'sewn-goods',           label: 'Sewn & stitched goods' }
+    ],
+    2: [ // Business
+      { slug: 'bookkeeping',          label: 'Bookkeeping & accounting' },
+      { slug: 'marketing',            label: 'Marketing & social media' },
+      { slug: 'graphic-design',       label: 'Graphic design' },
+      { slug: 'virtual-assistance',   label: 'Virtual assistance' },
+      { slug: 'notary',               label: 'Notary services' },
+      { slug: 'consulting',           label: 'Consulting' },
+      { slug: 'it-support',           label: 'IT & tech support' },
+      { slug: 'copywriting',          label: 'Copywriting' }
+    ],
+    3: [ // Beauty
+      { slug: 'hair-styling',         label: 'Hair styling & coloring' },
+      { slug: 'lash-extensions',      label: 'Lash extensions' },
+      { slug: 'nails',                label: 'Nails & manicures' },
+      { slug: 'esthetics',            label: 'Esthetics & facials' },
+      { slug: 'makeup',               label: 'Makeup artistry' },
+      { slug: 'brow-shaping',         label: 'Brow shaping' },
+      { slug: 'spray-tanning',        label: 'Spray tanning' },
+      { slug: 'mobile-beauty',        label: 'Mobile beauty services' }
+    ],
+    4: [ // Children
+      { slug: 'tutoring',             label: 'Tutoring' },
+      { slug: 'music-lessons',        label: 'Music lessons' },
+      { slug: 'after-school',         label: 'After-school programs' },
+      { slug: 'childcare',            label: 'Childcare & nannying' },
+      { slug: 'kids-art-classes',     label: 'Art classes for kids' },
+      { slug: 'sports-coaching',      label: 'Sports coaching' },
+      { slug: 'language-instruction', label: 'Language instruction' },
+      { slug: 'learning-support',     label: 'Learning support' }
+    ],
+    5: [ // Events
+      { slug: 'wedding-photography',  label: 'Wedding photography' },
+      { slug: 'event-planning',       label: 'Event planning' },
+      { slug: 'family-portraits',     label: 'Family portraits' },
+      { slug: 'party-rentals',        label: 'Party rentals' },
+      { slug: 'djs-entertainers',     label: 'DJs & entertainers' },
+      { slug: 'photo-booths',         label: 'Photo booths' },
+      { slug: 'videography',          label: 'Videography' },
+      { slug: 'balloon-decor',        label: 'Balloon & décor styling' }
+    ],
+    6: [ // Food
+      { slug: 'catering-meal-prep',   label: 'Catering & meal prep' },
+      { slug: 'home-baker',           label: 'Home-based baker' },
+      { slug: 'personal-chefs',       label: 'Personal chefs' },
+      { slug: 'food-trucks',          label: 'Food trucks' },
+      { slug: 'specialty-food',       label: 'Specialty & dietary food' },
+      { slug: 'meal-delivery',        label: 'Meal delivery' },
+      { slug: 'charcuterie',          label: 'Charcuterie & grazing boards' },
+      { slug: 'cultural-cuisine',     label: 'Cultural cuisine' }
+    ],
+    7: [ // Wellness
+      { slug: 'personal-training',    label: 'Personal training' },
+      { slug: 'yoga-pilates',         label: 'Yoga & pilates' },
+      { slug: 'massage-therapy',      label: 'Massage therapy' },
+      { slug: 'nutrition-coaching',   label: 'Nutrition coaching' },
+      { slug: 'life-coaching',        label: 'Life coaching' },
+      { slug: 'reiki-energy',         label: 'Reiki & energy work' },
+      { slug: 'acupuncture',          label: 'Acupuncture' },
+      { slug: 'mental-wellness',      label: 'Mental wellness support' }
+    ],
+    8: [ // Home
+      { slug: 'cleaning',             label: 'Cleaning services' },
+      { slug: 'landscaping',          label: 'Landscaping & lawn care' },
+      { slug: 'handyman',             label: 'Handyman & repairs' },
+      { slug: 'painting',             label: 'Painting' },
+      { slug: 'pool-maintenance',     label: 'Pool maintenance' },
+      { slug: 'interior-decorating',  label: 'Interior decorating' },
+      { slug: 'home-organization',    label: 'Home organization' },
+      { slug: 'pest-control',         label: 'Pest control' }
+    ]
+  };
+  var SUBCAT_BY_SLUG = {}; // slug -> { label, catId }
+  (function () {
+    for (var cid in SUBCATS_BY_CAT) if (SUBCATS_BY_CAT.hasOwnProperty(cid)) {
+      SUBCATS_BY_CAT[cid].forEach(function (s) { SUBCAT_BY_SLUG[s.slug] = { label: s.label, catId: parseInt(cid, 10) }; });
+    }
+  })();
 
   var SLUG_TO_ID = {};
   (function () { for (var id in CAT_BY_ID) if (CAT_BY_ID.hasOwnProperty(id)) SLUG_TO_ID[CAT_BY_ID[id].slug] = parseInt(id, 10); })();
@@ -142,6 +248,19 @@
     ".vcard .badge-featured{background:#FAE4FC;color:#D602EE;border:1px solid rgba(214,2,238,.28);}",
     ".vcard .cat-pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:500;border-radius:100px;padding:3px 10px;margin-bottom:8px;}",
     ".vcard-tagline{font-size:12.5px;color:#4A4761;line-height:1.5;margin-bottom:12px;}",
+    // #96 subcategory pills on the card — the vendor's curated specialties, so
+    // a visitor can tell the painter from the plumber without opening the
+    // profile. `.match` = the pill that made this card a search hit (promoted
+    // to front, violet highlight).
+    ".vcard-offerings{display:flex;flex-wrap:wrap;gap:4px;margin:-4px 0 12px;}",
+    ".vcard .offer-chip{font-size:10.5px;font-weight:500;background:#F7F6FC;border:.5px solid #EEEDF6;color:#6B6880;border-radius:100px;padding:2px 9px;max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}",
+    ".vcard .offer-chip.match{background:#F3EBFF;border-color:#D4AAFD;color:#6002EE;font-weight:600;}",
+    // #96 sidebar subcategory pills — unfold under the ACTIVE category row
+    // (expand-in-place accordion; other categories stay visible/clickable).
+    "#browse-filter-panel .lk-subcat-row{display:flex;flex-wrap:wrap;gap:5px;padding:8px 4px 10px 14px;}",
+    "#browse-filter-panel .subcat-pill{font-family:inherit;-webkit-appearance:none;appearance:none;font-size:11.5px;font-weight:500;background:#fff;border:1px solid #E4E2F0;color:#6B6880;border-radius:100px;padding:4px 11px;cursor:pointer;user-select:none;transition:all .12s;line-height:1.3;}",
+    "#browse-filter-panel .subcat-pill:hover{border-color:#6002EE;color:#6002EE;}",
+    "#browse-filter-panel .subcat-pill.on{background:#6002EE;border-color:#6002EE;color:#fff;font-weight:600;}",
     ".vcard-actions{display:flex;gap:6px;flex-wrap:wrap;}",
     // Channel-branded contact buttons (colors mirror the vendor listing page).
     ".vcard .contact-btn{font-size:11px;font-weight:500;font-family:inherit;padding:5px 10px;border-radius:6px;border:.5px solid #EEEDF6;background:#F7F6FC;color:#4A4761;cursor:pointer;transition:all .1s;display:inline-flex;align-items:center;gap:4px;}",
@@ -191,9 +310,11 @@
   var _grid = null;
   var _emptyState = null;
   var _renderedCards = [];
+  var _listingsByVendor = {}; // #96: vendor id -> active listing names (services first)
 
   var activeLocationId = 'all';
   var activeCategory = 'all';
+  var activeSubcats = []; // #96: selected subcategory slugs (OR filter; cleared on category change)
   var activeSort = 'best_match';
   var showNewOnly = false;
   var showFoundingOnly = false;
@@ -221,6 +342,14 @@
   // ── vendor accessors ──
   function vName(v)    { return v.business_name || v.businessName || 'Vendor'; }
   function vTagline(v) { return v.business_tagline || v.tagline || v.business_description || ''; }
+  function vDescription(v) { return v.business_description || ''; }
+  function vListingNames(v) { return (v.id != null && _listingsByVendor[v.id]) || []; }
+  function vSubcats(v) { return Array.isArray(v.subcategories) ? v.subcategories : []; }
+  function vSubcatLabels(v) {
+    var out = [];
+    vSubcats(v).forEach(function (s) { if (SUBCAT_BY_SLUG[s]) out.push(SUBCAT_BY_SLUG[s].label); });
+    return out;
+  }
   function vCreated(v) { var c = v.created_at; if (c == null) return 0; return typeof c === 'number' ? c : (Date.parse(c) || 0); }
   function vIsNew(v)       { var t = vCreated(v); return t > 0 && (Date.now() - t) < NEW_WINDOW_MS; }
   function vIsFounding(v)  { return v.is_founding_member === true; }
@@ -393,12 +522,41 @@
       if (out && out.error) return retryOrGiveUp();
       hideEl(loading);
       _allVendors = extractList(out && out.data).filter(function (v) { return v && v.is_active !== false; });
+      // #96 — if the payload has no subcategories key (stale cached adapter /
+      // Xano rollback), drop any restored picks and remove the pill row so the
+      // filter can't silently blank the grid.
+      if (!subcatDataPresent()) activeSubcats = [];
+      renderSubcatRow();
       updateCategoryCounts();
       applyFilters();
     }, function (err) {
       console.warn('[lokali-browse] vendors fetch rejected (attempt ' + attempt + '):', err);
       return retryOrGiveUp();
     });
+  }
+
+  // #96 — load the public listing-name index (active service/product names for
+  // every vendor, one paginated query pair). This is the INVISIBLE recall
+  // layer of search — nothing renders from it; it just lets "charcuterie
+  // board" find the vendor whose product is named that even when no
+  // subcategory says so. Non-critical by design: if the Supabase surface is
+  // absent (Xano rollback) or the fetch fails, search degrades to
+  // name/tagline/description/subcategories. Re-applies filters when it lands
+  // so a search typed before the index arrived picks up listing matches.
+  function fetchListingIndex() {
+    var sapi = window.LokaliSupabaseAPI;
+    if (!sapi || !sapi.data || typeof sapi.data.listingIndex !== 'function') return;
+    sapi.data.listingIndex().then(function (out) {
+      if (!out || out.error || !Array.isArray(out.data)) return;
+      var map = {};
+      out.data.forEach(function (r) {
+        var name = r && typeof r.name === 'string' ? r.name.trim() : '';
+        if (!name || r.vendors_id == null) return;
+        (map[r.vendors_id] = map[r.vendors_id] || []).push(name);
+      });
+      _listingsByVendor = map;
+      if (_allVendors.length) applyFilters();
+    }).catch(function () {});
   }
 
   // Self-contained masked icon: recolors any silhouette PNG/SVG to `color`. Works anywhere.
@@ -439,6 +597,7 @@
       cs.appendChild(item);
     });
     mount.appendChild(cs);
+    renderSubcatRow(); // #96 — unfold pills under the (restored) active category
     mount.appendChild(ce('div', 'lk-divider'));
 
     // Filter by (toggles)
@@ -476,6 +635,59 @@
     mount.appendChild(ss);
   }
 
+  // #96 — feature-detect: does the loaded vendor payload actually CARRY the
+  // subcategories column? A stale cached adapter (old VENDOR_LIST_COLS, up to
+  // 7 days of @v1.4 browser cache) or a Xano rollback delivers rows WITHOUT
+  // the key — rendering selectable pills then would filter every vendor out
+  // ("0 vendors found" with no explanation). Key-present-but-null still counts
+  // as supported (vendors who just haven't picked yet).
+  function subcatDataPresent() {
+    for (var i = 0; i < _allVendors.length; i++) {
+      var v = _allVendors[i];
+      if (v && typeof v === 'object' && ('subcategories' in v)) return true;
+    }
+    return false;
+  }
+
+  // #96 — the expand-in-place accordion: one pill row lives directly under the
+  // ACTIVE category's sidebar item (all categories stay visible + one-click
+  // switchable). Rebuilt on category change; pill on/off toggles in place.
+  // Suppressed (and any stale row removed) once vendors have loaded without
+  // the subcategories key — see subcatDataPresent.
+  function renderSubcatRow() {
+    var old = document.querySelector('#browse-filter-panel .lk-subcat-row');
+    if (old && old.parentNode) old.parentNode.removeChild(old);
+    if (_allVendors.length && !subcatDataPresent()) return;
+    var catId = SLUG_TO_ID[activeCategory];
+    var subs = catId != null && SUBCATS_BY_CAT[catId];
+    if (!subs || !subs.length) return;
+    var item = document.querySelector('#browse-filter-panel .filter-item[data-category-slug="' + activeCategory + '"]');
+    if (!item) return;
+    var row = ce('div', 'lk-subcat-row');
+    subs.forEach(function (s) {
+      var pill = ce('button', 'subcat-pill' + (activeSubcats.indexOf(s.slug) !== -1 ? ' on' : ''));
+      pill.type = 'button';
+      pill.textContent = s.label;
+      pill.setAttribute('data-subcat-slug', s.slug);
+      pill.setAttribute('aria-pressed', activeSubcats.indexOf(s.slug) !== -1 ? 'true' : 'false');
+      pill.addEventListener('click', function () { toggleSubcat(s.slug); });
+      row.appendChild(pill);
+    });
+    item.parentNode.insertBefore(row, item.nextSibling);
+  }
+
+  function toggleSubcat(slug) {
+    var i = activeSubcats.indexOf(slug);
+    if (i === -1) activeSubcats.push(slug); else activeSubcats.splice(i, 1);
+    var pill = document.querySelector('#browse-filter-panel .subcat-pill[data-subcat-slug="' + slug + '"]');
+    if (pill) {
+      var on = activeSubcats.indexOf(slug) !== -1;
+      pill.classList.toggle('on', on);
+      pill.setAttribute('aria-pressed', on ? 'true' : 'false');
+    }
+    applyFilters();
+  }
+
   function updateCategoryCounts() {
     var items = document.querySelectorAll('#browse-filter-panel .filter-item[data-category-slug]');
     for (var i = 0; i < items.length; i++) {
@@ -496,11 +708,28 @@
     var locId = activeLocationId === 'all' ? null : String(activeLocationId);
     var visible = _allVendors.filter(function (v) {
       if (catId != null && vCategoryIds(v).indexOf(catId) === -1) return false;
+      // #96 subcategory pills: OR within the selection — any overlap keeps the vendor.
+      if (activeSubcats.length) {
+        var subs = vSubcats(v), hit = false;
+        for (var si = 0; si < activeSubcats.length; si++) {
+          if (subs.indexOf(activeSubcats[si]) !== -1) { hit = true; break; }
+        }
+        if (!hit) return false;
+      }
       if (locId != null && vLocationIds(v).map(String).indexOf(locId) === -1) return false;
       if (showNewOnly && !vIsNew(v)) return false;
       if (showFoundingOnly && !vIsFounding(v)) return false;
       if (showVerifiedOnly && !vIsVerified(v)) return false;
-      if (q) { var hay = (vName(v) + ' ' + vTagline(v) + ' ' + vCategoryStyle(v).label).toLowerCase(); if (hay.indexOf(q) === -1) return false; }
+      if (q) {
+        // #96: search covers what vendors OFFER — subcategory labels, active
+        // listing names, and the full description — not just
+        // name/tagline/category label. Fields join on '\n' (a trimmed query
+        // can never contain one) so a phrase can't falsely match across the
+        // boundary of two adjacent fields/names.
+        var hay = [vName(v), vTagline(v), vDescription(v), vCategoryStyle(v).label]
+          .concat(vSubcatLabels(v)).concat(vListingNames(v)).join('\n').toLowerCase();
+        if (hay.indexOf(q) === -1) return false;
+      }
       return true;
     });
     sortVendors(visible);
@@ -515,7 +744,7 @@
   function persistState() {
     try {
       sessionStorage.setItem(STATE_KEY, JSON.stringify({
-        c: activeCategory, l: activeLocationId, s: activeSort,
+        c: activeCategory, l: activeLocationId, s: activeSort, sc: activeSubcats,
         n: showNewOnly, f: showFoundingOnly, v: showVerifiedOnly, q: searchTerm
       }));
     } catch (e) {}
@@ -529,6 +758,15 @@
     if (s.s) activeSort = s.s;
     showNewOnly = !!s.n; showFoundingOnly = !!s.f; showVerifiedOnly = !!s.v;
     searchTerm = s.q || '';
+    // #96 — restore subcategory picks, sanitized to real slugs OF the restored
+    // category (a stale/foreign slug would silently filter everything out).
+    activeSubcats = [];
+    if (Array.isArray(s.sc)) {
+      var restoredCatId = SLUG_TO_ID[activeCategory];
+      s.sc.forEach(function (sl) {
+        if (SUBCAT_BY_SLUG[sl] && SUBCAT_BY_SLUG[sl].catId === restoredCatId) activeSubcats.push(sl);
+      });
+    }
     return true;
   }
   // Reflect the (restored) state into controls that renderFilterPanel doesn't pre-set.
@@ -640,6 +878,29 @@
 
     var tag = ce('div', 'vcard-tagline'); tag.textContent = vTagline(v); card.appendChild(tag);
 
+    // #96 subcategory pills (max 3 by the picker's own cap). When the current
+    // search matched a subcategory label, promote that pill to the front and
+    // highlight it so the visitor sees WHY the card is in the results.
+    var subLabels = vSubcatLabels(v);
+    if (subLabels.length) {
+      var q = searchTerm.toLowerCase().trim();
+      var matchIdx = -1;
+      if (q) {
+        for (var ni = 0; ni < subLabels.length; ni++) {
+          if (subLabels[ni].toLowerCase().indexOf(q) !== -1) { matchIdx = ni; break; }
+        }
+      }
+      var ordered = subLabels.slice();
+      if (matchIdx > 0) { ordered.splice(matchIdx, 1); ordered.unshift(subLabels[matchIdx]); }
+      var offerings = ce('div', 'vcard-offerings');
+      ordered.slice(0, 3).forEach(function (nm, i) {
+        var chip = ce('span', 'offer-chip' + (matchIdx !== -1 && i === 0 ? ' match' : ''));
+        chip.textContent = nm; chip.title = nm;
+        offerings.appendChild(chip);
+      });
+      card.appendChild(offerings);
+    }
+
     var phone = v.phone_number;
     var actions = ce('div', 'vcard-actions');
     addContact(actions, v.contact_email ? 'mailto:' + v.contact_email : null, 'Email', ICON_EMAIL, 'cb-email');
@@ -664,6 +925,10 @@
     strip.innerHTML = '';
     if (activeLocationId !== 'all' && _locationsById[activeLocationId]) addChip(strip, _locationsById[activeLocationId].name, function () { setLocation('all'); });
     if (activeCategory !== 'all') { var c = CAT_BY_ID[SLUG_TO_ID[activeCategory]]; addChip(strip, c ? c.label : activeCategory, function () { setCategory('all'); }); }
+    activeSubcats.forEach(function (sl) { // #96
+      var sc = SUBCAT_BY_SLUG[sl];
+      addChip(strip, sc ? sc.label : sl, function () { toggleSubcat(sl); });
+    });
     if (showNewOnly)      addChip(strip, 'New this week',    function () { setToggle('new', false); });
     if (showFoundingOnly) addChip(strip, 'Founding vendors', function () { setToggle('founding', false); });
     if (showVerifiedOnly) addChip(strip, 'Verified',         function () { setToggle('verified', false); });
@@ -677,7 +942,7 @@
   function updateMobileIndicator() {
     var btn = el('browse-mobile-filter-btn');
     if (!btn) return;
-    btn.classList.toggle('has-filters', activeCategory !== 'all' || showNewOnly || showFoundingOnly || showVerifiedOnly || activeLocationId !== 'all' || !!searchTerm);
+    btn.classList.toggle('has-filters', activeCategory !== 'all' || activeSubcats.length > 0 || showNewOnly || showFoundingOnly || showVerifiedOnly || activeLocationId !== 'all' || !!searchTerm);
   }
 
   // ── setters ──
@@ -691,9 +956,11 @@
     applyFilters(); // client-side neighborhood filter (no re-fetch)
   }
   function setCategory(slug) {
+    if (slug !== activeCategory) activeSubcats = []; // #96 — picks belong to one category
     activeCategory = slug;
     var items = document.querySelectorAll('#browse-filter-panel .filter-item[data-category-slug]');
     for (var i = 0; i < items.length; i++) items[i].classList.toggle('active', items[i].getAttribute('data-category-slug') === slug);
+    renderSubcatRow();
     applyFilters();
   }
   function setToggle(which, on) {
@@ -756,6 +1023,7 @@
     var restored = restoreState();
     renderFilterPanel();
     bindEvents();
+    fetchListingIndex(); // #96 — parallel with ref data + vendors; fire-and-forget
 
     // Reference data (categories/locations) is non-critical: a failure must never block the
     // vendor grid. Previously a rejected loadRefData() skipped fetchVendors() entirely and
@@ -787,5 +1055,8 @@
     if (!e.persisted) return;
     if (!window.LokaliAPI || !_grid) return;
     if (_renderedCards.length === 0) fetchVendors();
+    // #96 — the listing-name index can also have been lost mid-load (in-flight
+    // fetches don't survive entering the bfcache); refetch it when empty.
+    if (!Object.keys(_listingsByVendor).length) fetchListingIndex();
   });
 })();

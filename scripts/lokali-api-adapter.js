@@ -387,7 +387,7 @@
   // Public browse columns = Xano vendors_GET |pick (fuller than the Supabase
   // client's card list — browse renders description/contact bits).
   var VENDOR_LIST_COLS = 'id,business_name,business_tagline,business_description,website_url,' +
-    'locations_id,categories_id,profile_photo,text_messages,whatsapp_messages,phone_calls,' +
+    'locations_id,categories_id,subcategories,profile_photo,text_messages,whatsapp_messages,phone_calls,' + // subcategories = #96 card pills/filter
     'contact_email,phone_number,slug,created_at,is_founding_member,is_verified,is_spotlight,is_featured,plan_rank';
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -471,6 +471,11 @@
         locations_id: Array.isArray(payload.locations_id) ? payload.locations_id
           : (payload.locations_id != null ? [payload.locations_id] : []),
         categories_id: Array.isArray(categoryId) ? categoryId : (categoryId != null ? [categoryId] : []),
+        // #96 subcategory slugs — absent (stale cached embed) leaves the column
+        // alone; an array writes through capped at 3 (DB CHECK enforces too).
+        subcategories: Array.isArray(payload.subcategories)
+          ? payload.subcategories.filter(function (s) { return typeof s === 'string' && s; }).slice(0, 3)
+          : undefined,
         profile_photo: payload.profile_photo != null ? String(payload.profile_photo)
           : (payload.profilePhoto != null ? String(payload.profilePhoto) : ''),
         address: payload.address != null ? String(payload.address) : '',
