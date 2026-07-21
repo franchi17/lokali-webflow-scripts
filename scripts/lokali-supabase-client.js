@@ -49,7 +49,9 @@
         }
       });
       window.LokaliSupabase = client;
-      try { console.log('[lokali-supabase] client ready'); } catch (e) {}
+      // CLEAN-C9 — debug-only: this fired on every pageview for every visitor.
+      // The failure path below still logs unconditionally (errors are worth seeing).
+      if (window.LOKALI_DEBUG) { try { console.log('[lokali-supabase] client ready'); } catch (e) {} }
       return client;
     })
     .catch(function (err) {
