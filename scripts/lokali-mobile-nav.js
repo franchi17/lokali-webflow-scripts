@@ -137,6 +137,14 @@
       '.search-bar{flex-wrap:wrap;gap:10px;}',
       '.search-bar .form-block-7{flex:1 1 100%;margin-bottom:0;}',
       '.search-bar #location-select{width:100%;}',
+      '}',
+      // Desktop ≥1150px — align the header content edges (logo left; Login + storefront right)
+      // with the footer's fixed 64px side margins (Francesca 2026-07-21: header buttons looked
+      // indented vs the footer on wide screens — the header container capped at 1268px centered
+      // while the footer runs full-width). 20px outer header padding + 44px here = 64px, exactly
+      // the footer's content edge; verified pixel-equal live (both edges 64 / vw-64).
+      '@media screen and (min-width:1150px){',
+      '.header-wrapper .container-default{max-width:none;margin-left:44px;margin-right:44px;padding-left:0;padding-right:0;}',
       '}'
     ].join('');
     document.head.appendChild(s);
