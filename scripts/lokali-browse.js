@@ -353,6 +353,7 @@
   // ── state ──
   var _allVendors = [];
   var _locationsById = {};
+  var _locSlugToId = {}; // CAT-LINK: location slug ('the-woodlands-tx') -> id string
   var _categoriesById = {};
   var _grid = null;
   var _emptyState = null;
@@ -482,6 +483,24 @@
         var name = l.name || l.location_name || l.title || ('Location ' + id);
         var state = l.state || l.state_code || '';
         _locationsById[id] = { id: id, name: name, label: state ? (name + ', ' + state) : name };
+        // CAT-LINK — index several spellings so ?area= is forgiving of shared/
+        // typed links and of the Webflow-CMS-vs-Supabase slug drift (the homepage
+        // neighborhood cards are a CMS collection whose slugs differ, e.g.
+        // 'the-woodlands' vs the Supabase 'the-woodlands-tx'). We register:
+        //   the exact slug ('the-woodlands-tx'),
+        //   the slug minus a trailing 2-letter state suffix ('the-woodlands'),
+        //   the name normalized to a slug ('The Woodlands' -> 'the-woodlands').
+        // First writer wins is fine — every alias points at the same id.
+        var addAlias = function (raw) {
+          var k = String(raw == null ? '' : raw).trim().toLowerCase();
+          if (k && !_locSlugToId[k]) _locSlugToId[k] = String(id);
+        };
+        var lslug = String(l.slug || l.location_slug || '').trim().toLowerCase();
+        if (lslug) {
+          addAlias(lslug);
+          addAlias(lslug.replace(/-[a-z]{2}$/, '')); // drop trailing state suffix
+        }
+        addAlias(String(name).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''));
       });
     });
   }
@@ -504,6 +523,75 @@
     var candidate = byUrl || byStore || 'all';
     if (candidate !== 'all' && !_locationsById[candidate]) candidate = 'all';
     activeLocationId = candidate;
+  }
+
+  // CAT-LINK — one-shot deep link into a filtered Market from an external entry
+  // point (homepage neighborhood cards, the category strip, a shared URL):
+  //   /the-market?area=<location-slug>[&category=<category-slug>]
+  // (?location_id=<id> is still honored for back-compat.)
+  //
+  // It OVERRIDES both restored session state and the #44 saved-area default — an
+  // explicit link must win, or a returning visitor's stale session would swallow
+  // the click that brought them here. Runs after loadRefData (needs the location
+  // slug map) and before fetchVendors, so the first paint is already filtered.
+  //
+  // The consumed params are then STRIPPED from the address bar. That is the fix
+  // for the precedence trap: once the page is interactive, persisted session
+  // state is the single source of truth, so a later in-page filter change +
+  // reload must not silently re-apply a now-stale URL. The link stays valid as a
+  // bookmark (a fresh navigation re-reads it); it just doesn't linger mid-session.
+  function applyDeepLink() {
+    var out = { location: false, category: false };
+    var qs;
+    try { qs = new URLSearchParams(window.location.search); } catch (e) { return out; }
+
+    // Neighborhood: ?area=<slug> preferred; legacy ?location_id=<id> still works.
+    var areaSlug = qs.get('area');
+    var locId = null;
+    if (areaSlug) {
+      locId = _locSlugToId[String(areaSlug).trim().toLowerCase()] || null;
+    } else {
+      var raw = qs.get('location_id');
+      if (raw != null && _locationsById[raw]) locId = String(raw);
+    }
+    if (locId) {
+      activeLocationId = locId;
+      // NOTE: deliberately NOT written to localStorage AREA_KEY. The deep link
+      // scopes to THIS session (persistState below → sessionStorage, restored on
+      // in-session navigation), but must not permanently overwrite the visitor's
+      // saved neighborhood or suppress their #44 account-region default — a
+      // shared/marketing link someone texts you shouldn't silently hijack your
+      // home area forever. An explicit dropdown pick (setLocation) still persists.
+      // Within this load the area is safe regardless: applyRegionDefault is gated
+      // on !deep.location, and its own `activeLocationId!=='all'` guard blocks it.
+      out.location = true;
+    }
+
+    // Category: ?category=<slug> (aliases like artisan/biz/kids/photo accepted).
+    var catSlug = qs.get('category');
+    if (catSlug) {
+      catSlug = String(catSlug).trim().toLowerCase();
+      if (SLUG_TO_ID[catSlug]) {
+        var canon = CAT_BY_ID[SLUG_TO_ID[catSlug]].slug; // canonicalize aliases
+        // Same rule as setCategory: subcat picks belong to one category, so a
+        // category change must drop any restored picks (a foreign subcat slug
+        // would filter the grid to zero).
+        if (canon !== activeCategory) { activeSubcats = []; _rawRestoredSubcats = null; }
+        activeCategory = canon;
+        out.category = true;
+      }
+    }
+
+    if (out.location || out.category) {
+      persistState(); // the deep-linked view becomes the remembered view
+      try {
+        qs.delete('area'); qs.delete('location_id'); qs.delete('category');
+        var rest = qs.toString();
+        var url = window.location.pathname + (rest ? '?' + rest : '') + window.location.hash;
+        window.history.replaceState(null, '', url);
+      } catch (e) {}
+    }
+    return out;
   }
 
   // #44 — soft-default the neighborhood to the signed-in user's saved
@@ -854,6 +942,14 @@
     var search = el('browse-search'); if (search && search.value !== searchTerm) search.value = searchTerm;
     var sel = locSelectEl(); if (sel) sel.value = String(activeLocationId);
     var msel = sortSelectEl(); if (msel) msel.value = activeSort;
+    // Reflect the active category into the panel. renderFilterPanel() sets this
+    // at build time, but a CAT-LINK deep link changes activeCategory afterward,
+    // so re-toggle the items and rebuild the subcat row to match.
+    var citems = document.querySelectorAll('#browse-filter-panel .filter-item[data-category-slug]');
+    for (var ci = 0; ci < citems.length; ci++) {
+      citems[ci].classList.toggle('active', citems[ci].getAttribute('data-category-slug') === activeCategory);
+    }
+    if (citems.length) renderSubcatRow();
   }
 
   function sortVendors(list) {
@@ -1108,10 +1204,11 @@
     loadRefData()
       .catch(function (err) { console.warn('[lokali-browse] ref data load failed, continuing:', err); })
       .then(function () {
-        if (!restored) resolveInitialLocation(); // saved session state wins over URL/localStorage default
+        var deep = applyDeepLink(); // CAT-LINK — external filtered entry; wins over session + default
+        if (!restored && !deep.location) resolveInitialLocation(); // else saved/URL default
         populateLocationSelect();
         syncFilterUI();
-        applyRegionDefault(); // #44 — fire-and-forget; applies only while untouched
+        if (!deep.location) applyRegionDefault(); // #44 — but never override an explicit deep-linked area
         return fetchVendors();
       })
       .catch(function (err) {

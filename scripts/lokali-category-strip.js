@@ -1,5 +1,6 @@
 /**
- * Lokali — Homepage category strip motion (#CAT-STRIP).
+ * Lokali — Homepage enhancements: category strip motion (#CAT-STRIP) +
+ * neighborhood-card deep links (#CAT-LINK).
  *
  * The strip itself (section.lcs-section: 8 category chips + 2 aria-hidden clone
  * tracks) is REAL WEBFLOW MARKUP, authored in the Designer/MCP and published in
@@ -131,9 +132,37 @@
     }
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', start);
-  } else {
+  // CAT-LINK — point the "Find Your Neighborhood Vendors" cards at their
+  // area-filtered Market. The cards are a Webflow CMS Collection List (one
+  // template link shared by all items), so per-item hrefs can't be set in the
+  // Designer without binding to a CMS field — and the CMS location slugs don't
+  // even match the Supabase ones (and Woodforest's is a typo, 'woodlforest-tx').
+  // So instead of trusting any slug, we derive ?area= from the card's VISIBLE
+  // NAME ("The Woodlands" -> "the-woodlands") and let lokali-browse.js resolve
+  // it — its matcher indexes the normalized name, so this is typo-proof and
+  // needs no CMS change. Scoped to cards still pointing at bare /the-market so
+  // it can't clobber any other link or double-apply.
+  function wireNeighborhoodCards() {
+    var cards = document.querySelectorAll('a.link-block-2');
+    for (var i = 0; i < cards.length; i++) {
+      var a = cards[i];
+      var href = a.getAttribute('href') || '';
+      if (href !== '/the-market' && href !== '/the-market/') continue;
+      var name = (a.textContent || '').replace(/\s+/g, ' ').trim();
+      if (!name) continue;
+      var slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      if (slug) a.setAttribute('href', '/the-market?area=' + slug);
+    }
+  }
+
+  function boot() {
     start();
+    try { wireNeighborhoodCards(); } catch (e) { /* card wiring is best-effort */ }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
   }
 })();
