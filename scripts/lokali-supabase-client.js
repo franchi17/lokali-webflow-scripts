@@ -897,6 +897,14 @@
             .not('id', 'is', null).select().maybeSingle();
         });
       },
+      // #54 — newsletter subscription mirror. Same shape as vendors.syncMarketing:
+      // the browser can't hold the Brevo key, so after a save that touched
+      // notif_letter the caller pings this Vercel route, which re-reads the SAVED
+      // flag server-side and adds/removes the person from the Neighborhood Edit
+      // Brevo list. Best-effort — never blocks or fails the save.
+      syncNewsletter: function () {
+        return postRoute('/preferences/newsletter-sync', {}, true);
+      },
       // #66 Phase 1 — the person-first unlock. Goes through the /open-storefront
       // route (not a direct RPC) so the server can fire the Brevo vendor-list add
       // + welcome email after admin_open_storefront creates the vendors row + free

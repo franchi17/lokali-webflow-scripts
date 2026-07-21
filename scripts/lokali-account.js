@@ -1241,6 +1241,11 @@
         state.account.notif_letter = tgLetter.get();
         state.account.notif_vendor_replies = tgReplies.get();
         state.account.notif_review_reminders = tgRemind.get();
+        // #54 — mirror the newsletter flag to the Brevo list (best-effort; the
+        // save already succeeded, so a Brevo hiccup must never surface here).
+        try {
+          if (api().account.syncNewsletter) api().account.syncNewsletter();
+        } catch (e) {}
         toast('Changes saved');
       });
     });

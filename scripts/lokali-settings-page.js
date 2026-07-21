@@ -328,6 +328,10 @@
         return;
       }
       if (_user) _user.notif_letter = !!value;
+      // Mirror to the Brevo list (best-effort; the save already succeeded).
+      try {
+        if (window.LokaliAPI.account.syncNewsletter) window.LokaliAPI.account.syncNewsletter();
+      } catch (e) {}
       toast('success', value ? 'Subscribed to The Neighborhood Edit.' : 'Unsubscribed from The Neighborhood Edit.');
     }).catch(function () {
       toast('error', 'Network error. Please try again.');
