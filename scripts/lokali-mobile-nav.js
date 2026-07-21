@@ -82,9 +82,91 @@
       '.lok-burger span:first-child{top:3px;}',
       '.lok-burger span:last-child{top:12px;}',
       'html.lok-mnav-open .lok-burger span:first-child{top:7.5px;transform:rotate(45deg);}',
-      'html.lok-mnav-open .lok-burger span:last-child{top:7.5px;transform:rotate(-45deg);}'
+      'html.lok-mnav-open .lok-burger span:last-child{top:7.5px;transform:rotate(-45deg);}',
+      // #98 F5 — 992–1149px (iPad landscape / small laptop): the desktop nav's middle grid
+      // track is too narrow and the links render UNDER the Login button (measured 15px overlap
+      // at 1024). Rather than fight the grid, run the burger nav through that range too.
+      // Lives HERE (not in injectPolishCss) on purpose: injectCss only runs once the burger is
+      // found and wired, so the desktop nav can never be hidden without a working burger.
+      // The signed-in account chip is safe: auth-nav inserts it beside the Login button inside
+      // .header-right-side, which stays visible (verified live at 1024 — Login remains shown).
+      '@media screen and (min-width:992px) and (max-width:1149px){',
+      '.header-bottom-wrapper{display:none!important;}',
+      '.header-btn-hidden-on-tablet{display:none!important;}',
+      '.hamburger-menu-wrapper{display:flex!important;align-items:center;justify-content:center;min-width:44px;min-height:44px;}',
+      '.header-right-side{margin-left:auto;}',
+      '}'
     ].join('');
     document.head.appendChild(s);
+  }
+
+  // #98 mobile/tablet polish (2026-07-21) — fixes from the site-wide responsive audit.
+  // Lives here because this script already loads on every public page and injects CSS.
+  function injectPolishCss() {
+    if (document.getElementById('lok-98-css')) return;
+    var s = document.createElement('style');
+    s.id = 'lok-98-css';
+    s.textContent = [
+      '@media screen and (max-width:991px){',
+      // F1 — iOS Safari zooms the whole page when a focused field is under 16px and never
+      // zooms back; floor every field at 16px on touch widths (the site's fields are 12–15px).
+      'input:not([type=checkbox]):not([type=radio]):not([type=hidden]),select,textarea{font-size:16px!important;}',
+      // F2 — the hamburger's tap area was just its 30x18 icon; grow the hit area, not the icon.
+      '.hamburger-menu-wrapper{min-width:44px;min-height:44px;}',
+      // F3 — sub-40px tap targets on the conversion actions (Market cards + vendor page).
+      '.vcard .contact-btn{padding:11px 14px!important;font-size:13px!important;}',
+      // :not(.lk-fav-inline) — the favorites script also has an inline "Save" PILL variant
+      // (auto width/height + text label); forcing that to 40x40 would clip the label.
+      '.lk-fav:not(.lk-fav-inline){width:40px!important;height:40px!important;}',
+      '.vl-rev-cta{padding:12px 0!important;font-size:14px!important;}',
+      '.vl-op-pay-chip{min-height:44px;box-sizing:border-box;padding:10px 16px!important;}',
+      '.vl-meet-learn{padding:8px 0;}',
+      '.vl-detail-link{padding:6px 0;display:inline-block;}',
+      'select.select-field-3,.mobile-sort-select select,#location-select{min-height:44px;}',
+      // F4 — footer links were 14px-tall targets, ~20 of them stacked; pad them out.
+      '.lok-ft-link{display:inline-block;padding:10px 0;}',
+      '.lok-ft-contactlink{display:inline-block;padding:6px 0;}',
+      // F6 — /about: the hero background video rendered 5px wider than the page (width 380
+      // at -2px left on a 375 viewport) and caused real horizontal scroll.
+      '.div-block-5{overflow-x:clip;}',
+      '.div-block-5 .w-background-video{width:100%!important;margin-left:0!important;left:0!important;}',
+      '}',
+      // F7 — The Market: search + neighborhood select share one row at phone width and the
+      // search truncates its own placeholder; stack them full-width instead.
+      '@media screen and (max-width:479px){',
+      '.search-bar{flex-wrap:wrap;gap:10px;}',
+      '.search-bar .form-block-7{flex:1 1 100%;margin-bottom:0;}',
+      '.search-bar #location-select{width:100%;}',
+      '}'
+    ].join('');
+    document.head.appendChild(s);
+  }
+
+  // #98 — The Market's search box is a Webflow code component rendered in shadow DOM, so the
+  // 16px floor above can't reach its input; patch each island's shadow root directly. Islands
+  // hydrate late, so init() retries this a couple of times.
+  function patchCodeIslands() {
+    var islands = document.querySelectorAll('code-island');
+    if (!islands.length) return;
+    islands.forEach(function (ci) {
+      var root = ci.shadowRoot;
+      if (!root) return;
+      // Style + placeholder are guarded SEPARATELY: the island's <input> can hydrate after
+      // the style lands, and the retries must still be able to apply the placeholder patch.
+      if (!root.getElementById('lok-98-island-css')) {
+        var st = document.createElement('style');
+        st.id = 'lok-98-island-css';
+        st.textContent = '@media screen and (max-width:991px){input{font-size:16px!important;}}';
+        root.appendChild(st);
+      }
+      // The full placeholder ("Search vendors, categories, services…") truncates at phone
+      // width even full-width; shorten it there. Guarded so only the search island is touched.
+      // 480 matches the F7 stack breakpoint above.
+      var inp = root.querySelector('input');
+      if (inp && window.innerWidth < 480 && /^Search vendors,/.test(inp.placeholder || '')) {
+        inp.placeholder = 'Search vendors…';
+      }
+    });
   }
 
   function build(nav, btn) {
@@ -179,6 +261,8 @@
   }
 
   function init() {
+    injectPolishCss();
+    patchCodeIslands();
     var nav = document.querySelector('.w-nav') || document.querySelector('.header-wrapper');
     if (!nav) return;
     var btn = nav.querySelector('.w-nav-button') || nav.querySelector('.hamburger-menu-wrapper');
@@ -191,4 +275,7 @@
   else init();
   // Re-run once after Webflow finishes wiring, in case the header renders late.
   setTimeout(init, 1000);
+  // Code islands (The Market search) hydrate later than DOMContentLoaded — retry the shadow patch.
+  setTimeout(patchCodeIslands, 2000);
+  setTimeout(patchCodeIslands, 5000);
 })();
