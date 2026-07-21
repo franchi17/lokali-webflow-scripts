@@ -544,6 +544,18 @@
     return PANES.indexOf(h) >= 0 ? h : 'saved';
   }
 
+  // The dedicated Lokali-admin account (francesca@golokali.com) uses /account
+  // purely to manage the site — no shopping / reviews / storefront surfaces
+  // (Francesca 2026-07-20). Gated STRICTLY on this one email; every other
+  // account (incl. francesca@panchaventures.com) renders exactly as before.
+  // This is presentational only — the admin DATA is already is_admin()-gated
+  // server-side, so the email check hides nothing sensitive, it just declutters
+  // this one account's home.
+  var ADMIN_ONLY_EMAIL = 'francesca@golokali.com';
+  function isAdminOnlyAccount() {
+    return String((state.account && state.account.email) || '').trim().toLowerCase() === ADMIN_ONLY_EMAIL;
+  }
+
   function render(mount) {
     var acc = state.account || {};
     var name = acc.first_name || 'there';
@@ -552,6 +564,10 @@
     if (acc.created_at) areaBits.push('Member since ' + monthYear(acc.created_at));
 
     mount.innerHTML = '';
+
+    // Admin-only home: strip everything customer-facing, show the management
+    // panel + a sign-out, and stop before any shopping/review UI is built.
+    if (isAdminOnlyAccount()) { renderAdminHome(mount, acc, name); return; }
 
     // band
     var band = el('div', 'lk-band');
@@ -605,6 +621,41 @@
     var segs = mount.querySelectorAll('.lk-seg');
     var idx = PANES.indexOf(pane);
     for (var i = 0; i < segs.length; i++) segs[i].classList.toggle('is-active', i === idx);
+  }
+
+  // ── Admin-only home (francesca@golokali.com) ──────────────
+  // Just the management panel + a sign-out. No stats, no storefront CTA, no
+  // Saved/Reviews tabs or panes — none of the customer surfaces are built.
+  function renderAdminHome(mount, acc, name) {
+    injectAdminCSS(); // for the fallback note if the panel data isn't loaded
+
+    var band = el('div', 'lk-band');
+    band.appendChild(avatarNode(acc, 'lk-avatar'));
+    var who = el('div');
+    who.appendChild(el('div', 'lk-greet', 'Hi, ' + esc(name)));
+    who.appendChild(el('div', 'lk-meta', 'Lokali admin'));
+    band.appendChild(who);
+    mount.appendChild(band);
+
+    if (state.admin) {
+      mount.appendChild(renderAdminPanel());
+    } else {
+      // Signed into this account but the is_admin-gated data didn't load — show
+      // a note (never the shopping UI) so it isn't a blank page.
+      var note = el('div', 'lk-admin');
+      note.appendChild(el('p', 'lk-admin-sub',
+        'Admin tools aren’t loading right now. Refresh the page — if it keeps happening, your admin access may need to be re-granted in Supabase.'));
+      mount.appendChild(note);
+    }
+
+    var bar = el('div', 'lk-save-bar');
+    var out = el('button', 'lk-btn ghost', 'Sign out');
+    out.addEventListener('click', function () {
+      try { api().clearToken(); } catch (e) {}
+      window.location.href = '/login';
+    });
+    bar.appendChild(out);
+    mount.appendChild(bar);
   }
 
   // ── #96-SUGGEST: the Lokali admin panel ────────────────────
