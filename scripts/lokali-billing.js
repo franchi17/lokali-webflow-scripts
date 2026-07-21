@@ -391,9 +391,12 @@
     },
     homepage: {
       plan: 'spotlight_home', price: '$150', name: 'Homepage Spotlight',
-      blurb: 'Two weeks as one of three “Meet the vendor” cards on the Lokali homepage — personal, front and center.'
+      blurb: 'Two weeks as one of three “Meet the vendor” cards on the Lokali homepage — plus a shoutout in Word on the Block, our newsletter.'
     }
   };
+  // Windows may not START before public launch (decision 2026-07-20). String
+  // compare works on YYYY-MM-DD; inert once launch passes (today > floor).
+  var SPOT_FLOOR = '2026-10-01';
   var spotState = { tier: 'category', me: null, windowDays: 14, cutoffDays: 7 };
 
   function sbClient() {
@@ -418,7 +421,7 @@
       '.lk-spot-tiers{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:6px 0 12px;}' +
       '@media(max-width:640px){.lk-spot-tiers{grid-template-columns:1fr;}}' +
       '.lk-spot-tier{border:1.5px solid #E4E1EF;border-radius:14px;padding:14px 16px;cursor:pointer;background:#fff;transition:border-color .15s,background .15s;}' +
-      '.lk-spot-tier.is-on{border-color:#6d5bd0;background:#F5F2FC;}' +
+      '.lk-spot-tier.is-on{border-color:var(--lokali-primary,#6002ee);background:var(--system--purple-50,#eee6ff);}' +
       '.lk-spot-tier .t-price{font-weight:700;font-size:20px;color:#231D3F;}' +
       '.lk-spot-tier .t-name{font-weight:600;font-size:14px;color:#231D3F;margin-top:2px;}' +
       '.lk-spot-tier .t-blurb{font-size:12.5px;color:#6B6580;line-height:1.5;margin-top:4px;}' +
@@ -427,10 +430,12 @@
       '.lk-spot-form{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:2px 0 10px;}' +
       '.lk-spot-form label{font-size:13px;font-weight:600;color:#231D3F;}' +
       '.lk-spot-form input[type=date]{border:1.5px solid #E4E1EF;border-radius:10px;padding:8px 10px;font-family:inherit;font-size:14px;color:#231D3F;background:#fff;}' +
-      '.lk-spot-btn{display:inline-block;border:0;border-radius:999px;padding:9px 20px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;background:#6d5bd0;color:#fff;text-decoration:none;line-height:1.2;}' +
-      '.lk-spot-btn:hover{background:#5d4bc0;}' +
-      '.lk-spot-btn.ghost{background:#fff;color:#6d5bd0;border:1.5px solid #6d5bd0;}' +
-      '.lk-spot-btn.ghost:hover{background:#F5F2FC;}' +
+      '.lk-spot-btn{display:inline-block;border:0;border-radius:999px;padding:9px 20px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;background:var(--system--primary-700,#3d00e0);color:#fff;text-decoration:none;line-height:1.2;}' +
+      '.lk-spot-btn:hover{background:var(--system--primary-900,#0000d6);}' +
+      '.lk-spot-btn.orange{background:var(--system--orange-500,#ff8d00);}' +
+      '.lk-spot-btn.orange:hover{background:#e07c00;}' +
+      '.lk-spot-btn.ghost{background:#fff;color:var(--system--primary-700,#3d00e0);border:1.5px solid var(--system--primary-700,#3d00e0);}' +
+      '.lk-spot-btn.ghost:hover{background:var(--system--purple-50,#eee6ff);}' +
       '.lk-spot-btn[disabled]{opacity:.5;pointer-events:none;}' +
       '.lk-spot-result{font-size:14px;margin:4px 0 10px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;}' +
       '.lk-spot-result .ok{color:#047857;font-weight:600;}' +
@@ -441,7 +446,7 @@
       '.lk-spot-row .r-sub{color:#6B6580;font-size:12.5px;}' +
       '.lk-spot-chip{display:inline-block;border-radius:999px;padding:3px 10px;font-size:11.5px;font-weight:700;}' +
       '.lk-spot-chip.live{background:#E3F4EC;color:#047857;}' +
-      '.lk-spot-chip.booked{background:#ECE8F8;color:#6d5bd0;}' +
+      '.lk-spot-chip.booked{background:var(--system--purple-50,#eee6ff);color:var(--lokali-primary,#6002ee);}' +
       '.lk-spot-chip.notified{background:#FBEFD6;color:#9A6B00;}' +
       '.lk-spot-link{background:none;border:0;padding:0;font-family:inherit;font-size:13px;font-weight:600;color:#E0245E;cursor:pointer;}' +
       '#lk-spot-pricing{max-width:1060px;margin:8px auto 48px;padding:0 20px;}' +
@@ -451,11 +456,12 @@
       '@media(max-width:760px){.lk-spotcards{grid-template-columns:1fr;}}' +
       '.lk-spotcard{background:#fff;border:1.5px solid #E4E1EF;border-radius:18px;padding:26px 26px 24px;box-shadow:0 10px 28px rgba(60,47,110,.06);}' +
       '.lk-spotcard .c-name{font-weight:700;font-size:17px;color:#231D3F;}' +
-      '.lk-spotcard .c-price{font-weight:800;font-size:30px;color:#6d5bd0;margin:6px 0 2px;}' +
+      '.lk-spotcard .c-price{font-weight:800;font-size:30px;color:var(--lokali-primary,#6002ee);margin:6px 0 2px;}' +
       '.lk-spotcard .c-per{color:#6B6580;font-size:13px;margin-bottom:12px;}' +
       '.lk-spotcard ul{list-style:none;padding:0;margin:0 0 16px;}' +
       '.lk-spotcard li{position:relative;padding:5px 0 5px 26px;color:#3C3550;font-size:14px;line-height:1.45;}' +
-      '.lk-spotcard li:before{content:"✓";position:absolute;left:0;top:4px;width:18px;height:18px;border-radius:50%;background:#ECE8F8;color:#6d5bd0;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;}';
+      '.lk-spotcard li:before{content:"✓";position:absolute;left:0;top:4px;width:18px;height:18px;border-radius:50%;background:var(--system--purple-50,#eee6ff);color:var(--system--primary-700,#3d00e0);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;}' +
+      '.lk-spot-prelaunch{background:var(--system--orange-50,#fff2df);color:#8a5200;border-radius:10px;padding:10px 14px;font-size:13px;line-height:1.5;margin:0 0 12px;}';
     var tag = document.createElement('style');
     tag.id = 'lk-spot-css';
     tag.textContent = css;
@@ -474,6 +480,10 @@
     if (!input || !out) return;
     var dateStr = input.value;
     if (!dateStr) { out.innerHTML = '<span class="full">Pick a start date first.</span>'; return; }
+    if (dateStr < SPOT_FLOOR) {
+      out.innerHTML = '<span class="full">Spotlight windows start at launch — pick Oct 1, 2026 or later.</span>';
+      return;
+    }
     var start = dateStr === spotTodayStr() ? new Date() : new Date(dateStr + 'T00:00:00');
     var end = new Date(start.getTime() + spotState.windowDays * DAY_MS);
     if (start.getTime() > Date.now() + 180 * DAY_MS) {
@@ -683,9 +693,13 @@
       '<div class="lk-spot-mtv" id="lk-spot-mtv" style="display:none">The Homepage Spotlight is all about ' +
         'the person behind the business — fill in your Meet-the-Vendor info (name, photo, and a short bio) ' +
         'on <a href="/vendor-dashboard/profile">your profile</a> first.</div>' +
+      (spotTodayStr() < SPOT_FLOOR
+        ? '<div class="lk-spot-prelaunch">Lokali launches <strong>October 1, 2026</strong> — Spotlight windows start ' +
+          'from launch day. You can scout dates now; booking opens at launch.</div>'
+        : '') +
       '<div class="lk-spot-form">' +
         '<label for="lk-spot-date">Start date</label>' +
-        '<input type="date" id="lk-spot-date" min="' + spotTodayStr() + '">' +
+        '<input type="date" id="lk-spot-date" min="' + (spotTodayStr() < SPOT_FLOOR ? SPOT_FLOOR : spotTodayStr()) + '">' +
         '<button type="button" class="lk-spot-btn ghost" id="lk-spot-check">Check availability</button>' +
       '</div>' +
       '<div class="lk-spot-result" id="lk-spot-result"></div>' +
@@ -747,9 +761,10 @@
           '<div class="c-price">$150</div><div class="c-per">one time · 14 days</div>' +
           '<ul><li>A “Meet the vendor” card on the Lokali homepage</li>' +
           '<li>You and your story — front and center</li>' +
+          '<li>A shoutout in <strong>Word on the Block</strong>, the Lokali newsletter</li>' +
           '<li>Only 3 vendors at a time, site-wide</li>' +
           '<li>Pick the two-week window that suits you</li></ul>' +
-          '<a class="lk-spot-btn" href="/vendor-dashboard/settings#lokali-spotlight">Book a Spotlight</a>' +
+          '<a class="lk-spot-btn orange" href="/vendor-dashboard/settings#lokali-spotlight">Book a Spotlight</a>' +
         '</div>' +
       '</div>';
     host.insertAdjacentElement('afterend', sec);

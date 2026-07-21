@@ -30,7 +30,7 @@
     var css =
       '.lok-sh{font-family:"Plus Jakarta Sans",sans-serif;padding:56px 20px;background:#FBFAFE;}' +
       '.lok-sh-inner{max-width:1060px;margin:0 auto;}' +
-      '.lok-sh-kicker{font-size:12px;font-weight:700;letter-spacing:.14em;color:#9B8BE0;text-transform:uppercase;text-align:center;}' +
+      '.lok-sh-kicker{font-size:12px;font-weight:700;letter-spacing:.14em;color:var(--system--purple-300,#916eff);text-transform:uppercase;text-align:center;}' +
       '.lok-sh-title{font-size:30px;font-weight:700;color:#231D3F;text-align:center;margin:6px 0 4px;}' +
       '.lok-sh-sub{font-size:15px;color:#6B6580;text-align:center;margin:0 0 30px;}' +
       '.lok-sh-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}' +
@@ -38,17 +38,17 @@
       '.lok-sh-card{background:#fff;border:1.5px solid #ECE8F8;border-radius:18px;padding:26px 24px 24px;' +
         'box-shadow:0 12px 30px rgba(60,47,110,.07);display:flex;flex-direction:column;align-items:center;text-align:center;}' +
       '.lok-sh-photo{width:92px;height:92px;border-radius:50%;object-fit:cover;' +
-        'border:3px solid #ECE8F8;box-shadow:0 6px 16px rgba(60,47,110,.12);}' +
+        'border:3px solid var(--system--purple-50,#eee6ff);box-shadow:0 6px 16px rgba(60,47,110,.12);}' +
       '.lok-sh-name{font-size:17px;font-weight:700;color:#231D3F;margin-top:12px;}' +
-      '.lok-sh-biz{font-size:13.5px;font-weight:600;color:#5A4BB8;margin-top:2px;}' +
-      '.lok-sh-cat{display:inline-block;background:#F5F2FC;color:#6d5bd0;border-radius:999px;' +
+      '.lok-sh-biz{font-size:13.5px;font-weight:600;color:var(--lokali-primary,#6002ee);margin-top:2px;}' +
+      '.lok-sh-cat{display:inline-block;background:var(--system--purple-50,#eee6ff);color:var(--lokali-primary,#6002ee);border-radius:999px;' +
         'padding:3px 12px;font-size:11.5px;font-weight:700;margin-top:8px;}' +
       '.lok-sh-bio{font-size:13.5px;line-height:1.6;color:#6B6580;margin:12px 0 16px;' +
         'display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;}' +
       '.lok-sh-cta{margin-top:auto;display:inline-block;border-radius:999px;padding:9px 22px;' +
-        'font-size:14px;font-weight:600;color:#fff;background:#6d5bd0;text-decoration:none;line-height:1.2;}' +
-      '.lok-sh-cta:hover{background:#5d4bc0;}' +
-      '.lok-sh-badge{font-size:11px;font-weight:700;color:#EBA97D;letter-spacing:.08em;' +
+        'font-size:14px;font-weight:600;color:#fff;background:var(--system--primary-700,#3d00e0);text-decoration:none;line-height:1.2;}' +
+      '.lok-sh-cta:hover{background:var(--system--primary-900,#0000d6);}' +
+      '.lok-sh-badge{font-size:11px;font-weight:700;color:var(--system--orange-500,#ff8d00);letter-spacing:.08em;' +
         'text-transform:uppercase;margin-bottom:10px;}';
     var el = document.createElement('style');
     el.id = STYLE_ID;
