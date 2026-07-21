@@ -797,7 +797,7 @@
   // ── #88: Spotlight bookings in the admin panel ─────────────
   // Who booked which window (name + email) so Francesca can reach out —
   // homepage-tier vendors get coordinated for the "Meet the vendor" feature
-  // and the Word on the Block shoutout. Data ships in admin_overview()
+  // and The Neighborhood Edit shoutout. Data ships in admin_overview()
   // (is_admin-gated); all vendor text lands via textContent.
   function fmtSpotDay(iso) {
     // Windows are UTC-midnight-anchored — format in UTC or the shown date
@@ -817,7 +817,7 @@
     t.appendChild(el('span', 'lk-admin-qcount', String(rows.length)));
     wrap.appendChild(t);
     wrap.appendChild(el('p', 'lk-admin-sub',
-      'Upcoming and live Spotlights — reach out to homepage vendors about their “Meet the vendor” feature and the Word on the Block shoutout.' +
+      'Upcoming and live Spotlights — reach out to homepage vendors about their “Meet the vendor” feature and The Neighborhood Edit shoutout.' +
       (waiting ? (' ' + waiting + ' vendor' + (waiting === 1 ? ' is' : 's are') + ' on window waitlists.') : '')));
 
     if (!rows.length) {
@@ -1209,7 +1209,7 @@
     // Notifications
     pane.appendChild(el('div', 'lk-group-label', 'Notifications'));
     var nc = el('div', 'lk-card');
-    var tgLetter = toggleRow('The Lokali Letter', 'New vendors and weekly local picks in your area. The good stuff — never spam.', acc.notif_letter !== false);
+    var tgLetter = toggleRow('The Neighborhood Edit', 'New vendors and weekly local picks in your area. The good stuff — never spam.', acc.notif_letter !== false);
     var tgReplies = toggleRow('Vendor replies', 'Get an email when a vendor responds to an inquiry you sent.', acc.notif_vendor_replies !== false);
     var tgRemind = toggleRow('Review reminders', 'A gentle nudge to review a vendor a few days after you contact them.', acc.notif_review_reminders === true);
     nc.appendChild(tgLetter.row); nc.appendChild(tgReplies.row); nc.appendChild(tgRemind.row);

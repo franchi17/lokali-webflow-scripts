@@ -391,7 +391,7 @@
     },
     homepage: {
       plan: 'spotlight_home', price: '$150', name: 'Homepage Spotlight',
-      blurb: 'Two weeks as one of three “Meet the vendor” cards on the Lokali homepage — plus a shoutout in Word on the Block, our newsletter.'
+      blurb: 'Two weeks as one of three “Meet the vendor” cards on the Lokali homepage — plus a shoutout in The Neighborhood Edit, our newsletter.'
     }
   };
   // Windows may not START before public launch (decision 2026-07-20). String
@@ -917,7 +917,7 @@
           '<div class="c-price">$150</div><div class="c-per">one time · 14 days · Pro &amp; Featured plans</div>' +
           '<ul><li>A “Meet the vendor” card on the Lokali homepage</li>' +
           '<li>You and your story — front and center</li>' +
-          '<li>A shoutout in <strong>Word on the Block</strong>, the Lokali newsletter</li>' +
+          '<li>A shoutout in <strong>The Neighborhood Edit</strong>, the Lokali newsletter</li>' +
           '<li>Only 3 vendors at a time, site-wide</li>' +
           '<li>Two-week window of your choice — starts on a Monday</li></ul>' +
           '<a class="lk-spot-btn orange" href="/vendor-dashboard/settings#lokali-spotlight">Book a Spotlight</a>' +
