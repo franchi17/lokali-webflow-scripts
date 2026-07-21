@@ -127,6 +127,15 @@
       '#lok-product-gallery,#lok-product-video,#lok-service-gallery,#lok-service-video{',
       'max-width:calc(100vw - 64px) !important;min-width:0 !important;box-sizing:border-box !important;}',
       '#lok-product-video-hint,#lok-service-video-hint{white-space:normal !important;overflow-wrap:anywhere;}',
+      // #98 pass 2 (2026-07-21): the SERVICES add/edit form grid carries a FIXED 682px
+      // desktop track (grid-template-columns:682px) that Webflow never overrides at
+      // smaller breakpoints — every field wrapper inherited 682px and the right half of
+      // each input/textarea clipped under .form-view{overflow:hidden}. Products is fine
+      // (its .product-form-grid is already 1fr); only ._2-columns is broken. Collapse the
+      // track and stretch the items. (#services-dashboard is the content container id on
+      // BOTH services + products pages — template id reuse — which is harmless here.)
+      '#services-dashboard ._2-columns{grid-template-columns:minmax(0,1fr) !important;width:100% !important;box-sizing:border-box !important;}',
+      '#services-dashboard ._2-columns > *{width:auto !important;min-width:0 !important;max-width:100% !important;justify-self:stretch !important;}',
       '.div-block-39 img,.div-block-39 svg,.main-content-area img,.main-content-area svg{max-width:100%;}',
       '.div-block-39 input,.div-block-39 textarea,.div-block-39 select,',
       '.main-content-area input,.main-content-area textarea,.main-content-area select{max-width:100%;}',
