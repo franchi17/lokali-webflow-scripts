@@ -464,8 +464,12 @@
       '.lk-spotcards{display:grid;grid-template-columns:1fr 1fr;gap:18px;}' +
       '@media(max-width:760px){.lk-spotcards{grid-template-columns:1fr;}}' +
       '.lk-spotcard{background:#fff;border:1.5px solid #E4E1EF;border-radius:18px;padding:26px 26px 24px;box-shadow:0 10px 28px rgba(60,47,110,.06);}' +
-      '.lk-spotcard .c-name{font-weight:700;font-size:17px;color:#231D3F;}' +
-      '.lk-spotcard .c-price{font-weight:800;font-size:30px;color:var(--lokali-primary,#6002ee);margin:6px 0 2px;}' +
+      // Card name matches the Webflow tier headers (.pricing-hard-header:
+      // uppercase, unbold, 14px, --slate) so the add-on cards read like the
+      // plan cards above them; the 14px gap gives the name room above the
+      // price (was 6px, set on the price). Francesca 2026-07-21.
+      '.lk-spotcard .c-name{font-weight:400;font-size:14px;text-transform:uppercase;color:var(--slate,#8E8BA6);margin:0 0 14px;}' +
+      '.lk-spotcard .c-price{font-weight:800;font-size:30px;color:var(--lokali-primary,#6002ee);margin:0 0 2px;}' +
       '.lk-spotcard .c-per{color:#6B6580;font-size:13px;margin-bottom:12px;}' +
       '.lk-spotcard ul{list-style:none;padding:0;margin:0 0 16px;}' +
       '.lk-spotcard li{position:relative;padding:5px 0 5px 26px;color:#3C3550;font-size:14px;line-height:1.45;}' +
