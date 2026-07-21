@@ -397,7 +397,12 @@
   // Windows may not START before public launch (decision 2026-07-20). String
   // compare works on YYYY-MM-DD; inert once launch passes (today > floor).
   var SPOT_FLOOR = '2026-10-01';
-  var spotState = { tier: 'category', me: null, windowDays: 14, cutoffDays: 7 };
+  var spotState = {
+    tier: 'category', me: null, windowDays: 14, cutoffDays: 7,
+    // Calendar picker state: viewed month (Date at day 1), per-tier busy cache
+    // ({busy:[{s,e} ms], cap}), and the selected start date ('YYYY-MM-DD').
+    calMonth: null, busyByTier: {}, sel: null
+  };
 
   function sbClient() {
     return window.LokaliSupabaseReady
@@ -405,7 +410,11 @@
       : Promise.reject(new Error('supabase client not loaded'));
   }
   function spotDay(d) {
-    return new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+    // All spotlight windows are anchored to UTC midnights ('YYYY-MM-DD' starts
+    // parse as UTC server-side) — format in UTC or local/DST offsets shift the
+    // shown date by a day (e.g. a Nov-2 end displaying as Nov 1 across the
+    // DST fall-back).
+    return new Date(d).toLocaleDateString(undefined, { timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric' });
   }
   function spotRange(a, b) { return spotDay(a) + ' – ' + spotDay(b); }
   function spotTodayStr() {
@@ -461,7 +470,26 @@
       '.lk-spotcard ul{list-style:none;padding:0;margin:0 0 16px;}' +
       '.lk-spotcard li{position:relative;padding:5px 0 5px 26px;color:#3C3550;font-size:14px;line-height:1.45;}' +
       '.lk-spotcard li:before{content:"✓";position:absolute;left:0;top:4px;width:18px;height:18px;border-radius:50%;background:var(--system--purple-50,#eee6ff);color:var(--system--primary-700,#3d00e0);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;}' +
-      '.lk-spot-prelaunch{background:var(--system--orange-50,#fff2df);color:#8a5200;border-radius:10px;padding:10px 14px;font-size:13px;line-height:1.5;margin:0 0 12px;}';
+      '.lk-spot-prelaunch{background:var(--system--orange-50,#fff2df);color:#8a5200;border-radius:10px;padding:10px 14px;font-size:13px;line-height:1.5;margin:0 0 12px;}' +
+      '.lk-cal{max-width:420px;margin:2px 0 10px;}' +
+      '.lk-cal-head{display:flex;align-items:center;justify-content:space-between;margin:0 0 8px;}' +
+      '.lk-cal-title{font-size:14px;font-weight:700;color:#231D3F;}' +
+      '.lk-cal-nav{background:#fff;border:1.5px solid #E4E1EF;border-radius:8px;width:30px;height:30px;font-family:inherit;font-size:15px;color:var(--system--primary-700,#3d00e0);cursor:pointer;line-height:1;}' +
+      '.lk-cal-nav:hover{border-color:var(--system--primary-700,#3d00e0);}' +
+      '.lk-cal-nav[disabled]{opacity:.3;pointer-events:none;}' +
+      '.lk-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}' +
+      '.lk-cal-dow{font-size:10.5px;font-weight:700;color:#A9A3BC;text-align:center;text-transform:uppercase;padding:2px 0;}' +
+      '.lk-cal-day{aspect-ratio:1;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:13px;color:#231D3F;background:#fff;border:1px solid #E4E1EF;cursor:pointer;}' +
+      '.lk-cal-day:hover{border-color:var(--system--primary-700,#3d00e0);}' +
+      '.lk-cal-day.busy{background:#F1EFF7;border-color:transparent;color:#A9A3BC;}' +
+      '.lk-cal-day.dim{visibility:hidden;pointer-events:none;}' +
+      '.lk-cal-day.off{background:transparent;border-color:transparent;color:#D6D2E4;pointer-events:none;}' +
+      '.lk-cal-day.sel{background:var(--system--primary-700,#3d00e0);border-color:var(--system--primary-700,#3d00e0);color:#fff;font-weight:700;}' +
+      '.lk-cal-legend{display:flex;gap:16px;margin-top:8px;font-size:12px;color:#6B6580;}' +
+      '.lk-cal-legend span{display:inline-flex;align-items:center;gap:6px;}' +
+      '.lk-cal-dot{width:11px;height:11px;border-radius:4px;display:inline-block;}' +
+      '.lk-cal-dot.open{background:#fff;border:1px solid #E4E1EF;}' +
+      '.lk-cal-dot.busy{background:#F1EFF7;}';
     var tag = document.createElement('style');
     tag.id = 'lk-spot-css';
     tag.textContent = css;
@@ -474,67 +502,167 @@
     return dateStr === spotTodayStr() ? 'now' : dateStr;
   }
 
-  function spotCheckAvailability() {
-    var input = document.getElementById('lk-spot-date');
-    var out = document.getElementById('lk-spot-result');
-    if (!input || !out) return;
-    var dateStr = input.value;
-    if (!dateStr) { out.innerHTML = '<span class="full">Pick a start date first.</span>'; return; }
-    if (dateStr < SPOT_FLOOR) {
-      out.innerHTML = '<span class="full">Spotlight windows start at launch — pick Oct 1, 2026 or later.</span>';
-      return;
-    }
-    var start = dateStr === spotTodayStr() ? new Date() : new Date(dateStr + 'T00:00:00');
-    var end = new Date(start.getTime() + spotState.windowDays * DAY_MS);
-    if (start.getTime() > Date.now() + 180 * DAY_MS) {
-      out.innerHTML = '<span class="full">Windows can be booked up to 180 days out.</span>';
-      return;
-    }
-    out.textContent = 'Checking…';
-    var tier = spotState.tier;
-    sbClient().then(function (c) {
+  // ---- Availability calendar (vendors see open vs taken, no guessing) --------
+  // A month grid like the #71 availability view: a day is SELECTABLE when a
+  // 14-day window STARTING there still has capacity (fewer than `cap`
+  // overlapping booked/active windows); taken start-dates render muted but
+  // stay clickable to join the waitlist for exactly that date.
+  //
+  // Day math runs in UTC-midnight space ON PURPOSE: a picked 'YYYY-MM-DD'
+  // start is parsed as UTC midnight server-side, so booked windows sit on UTC
+  // midnights — local-midnight math would smear each busy window across an
+  // extra local day and mark the abutting (actually bookable) day as taken.
+  function spotCalBounds() {
+    var minStr = spotTodayStr() < SPOT_FLOOR ? SPOT_FLOOR : spotTodayStr();
+    return {
+      minStr: minStr,
+      minMs: Date.parse(minStr + 'T00:00:00Z'),
+      maxMs: Date.now() + 180 * DAY_MS
+    };
+  }
+
+  function spotFetchBusy(tier) {
+    if (spotState.busyByTier[tier]) return Promise.resolve(spotState.busyByTier[tier]);
+    var b = spotCalBounds();
+    return sbClient().then(function (c) {
       return c.rpc('spotlight_availability', {
-        p_tier: tier, p_from: start.toISOString(), p_to: end.toISOString()
+        p_tier: tier,
+        p_from: new Date(b.minMs).toISOString(),
+        p_to: new Date(b.maxMs + spotState.windowDays * DAY_MS).toISOString()
       });
     }).then(function (res) {
       if (res.error) throw res.error;
       var d = res.data || {};
       if (d.ok === false) throw new Error(d.reason || 'unavailable');
-      var busy = (d.busy || []).filter(function (b) {
-        return new Date(b.starts_at) < end && new Date(b.ends_at) > start;
+      var info = {
+        cap: d.cap || 1,
+        busy: (d.busy || []).map(function (w) {
+          return { s: new Date(w.starts_at).getTime(), e: new Date(w.ends_at).getTime() };
+        })
+      };
+      spotState.busyByTier[tier] = info;
+      return info;
+    });
+  }
+
+  function spotDayOpen(dayMs, info) {
+    var end = dayMs + spotState.windowDays * DAY_MS, n = 0;
+    for (var i = 0; i < info.busy.length; i++) {
+      if (info.busy[i].s < end && info.busy[i].e > dayMs) n++;
+    }
+    return n < info.cap;
+  }
+
+  function spotSelectDay(dateStr, open) {
+    spotState.sel = dateStr;
+    var out = document.getElementById('lk-spot-result');
+    if (!out) return;
+    var start = new Date(dateStr + 'T00:00:00Z');
+    var end = new Date(start.getTime() + spotState.windowDays * DAY_MS);
+    var tier = spotState.tier;
+    if (open) {
+      out.innerHTML =
+        '<span class="ok">✓ ' + spotRange(start, end) + ' is available</span>' +
+        '<button type="button" class="lk-spot-btn" id="lk-spot-book">Book for ' +
+        SPOT_TIERS[tier].price + '</button>';
+      document.getElementById('lk-spot-book').addEventListener('click', function () {
+        var btn = this;
+        setButtonBusy(btn, true);
+        postForRedirect(CHECKOUT_URL, {
+          plan: SPOT_TIERS[tier].plan, interval: 'once',
+          spotlight_start: spotStartParam(dateStr)
+        }).catch(function (err) {
+          setButtonBusy(btn, false);
+          var msg = err && err.message && !/^Request failed/.test(err.message)
+            ? err.message
+            : 'Sorry — could not start checkout. Please try again.';
+          alert(msg);
+        });
       });
-      var full = busy.length >= (d.cap || 1);
-      if (!full) {
-        out.innerHTML =
-          '<span class="ok">✓ Available — ' + spotRange(start, end) + '</span>' +
-          '<button type="button" class="lk-spot-btn" id="lk-spot-book">Book for ' +
-          SPOT_TIERS[tier].price + '</button>';
-        document.getElementById('lk-spot-book').addEventListener('click', function () {
-          var btn = this;
-          setButtonBusy(btn, true);
-          postForRedirect(CHECKOUT_URL, {
-            plan: SPOT_TIERS[tier].plan, interval: 'once',
-            spotlight_start: spotStartParam(dateStr)
-          }).catch(function (err) {
-            setButtonBusy(btn, false);
-            var msg = err && err.message && !/^Request failed/.test(err.message)
-              ? err.message
-              : 'Sorry — could not start checkout. Please try again.';
-            alert(msg);
-          });
-        });
+    } else {
+      out.innerHTML =
+        '<span class="full">' + spotRange(start, end) + ' is taken.</span>' +
+        '<button type="button" class="lk-spot-btn ghost" id="lk-spot-join">Join the waitlist for ' +
+        spotDay(start) + '</button>';
+      document.getElementById('lk-spot-join').addEventListener('click', function () {
+        spotJoinWaitlist(dateStr, this);
+      });
+    }
+  }
+
+  function renderSpotCal() {
+    var host = document.getElementById('lk-spot-cal');
+    if (!host) return;
+    var tier = spotState.tier;
+    var info = spotState.busyByTier[tier];
+    if (!info) {
+      host.innerHTML = '<div class="lk-spot-intro">Loading availability…</div>';
+      spotFetchBusy(tier).then(renderSpotCal).catch(function (err) {
+        console.warn('[lokali-billing] spotlight availability failed', err);
+        host.innerHTML = '<div class="lk-spot-intro">Could not load availability — refresh to try again.</div>';
+      });
+      return;
+    }
+
+    var b = spotCalBounds();
+    if (!spotState.calMonth) {
+      // Derive from the YYYY-MM-DD string, not the UTC ms (a local getter on
+      // Oct-1-UTC-midnight would land in September for US timezones).
+      spotState.calMonth = new Date(Number(b.minStr.slice(0, 4)), Number(b.minStr.slice(5, 7)) - 1, 1);
+    }
+    var view = spotState.calMonth;
+    var vy = view.getFullYear(), vm = view.getMonth();
+    var monthLabel = view.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+    var firstDow = new Date(Date.UTC(vy, vm, 1)).getUTCDay();
+    var daysIn = new Date(Date.UTC(vy, vm + 1, 0)).getUTCDate();
+    var minMonthMs = (function (d) { return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1); })(new Date(b.minMs));
+    var prevOk = Date.UTC(vy, vm, 1) > minMonthMs;
+    var nextOk = Date.UTC(vy, vm + 1, 1) <= b.maxMs;
+
+    var h =
+      '<div class="lk-cal-head">' +
+        '<button type="button" class="lk-cal-nav" id="lk-cal-prev"' + (prevOk ? '' : ' disabled') + '>‹</button>' +
+        '<div class="lk-cal-title">' + monthLabel + '</div>' +
+        '<button type="button" class="lk-cal-nav" id="lk-cal-next"' + (nextOk ? '' : ' disabled') + '>›</button>' +
+      '</div><div class="lk-cal-grid">';
+    ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].forEach(function (d) {
+      h += '<div class="lk-cal-dow">' + d + '</div>';
+    });
+    for (var pad = 0; pad < firstDow; pad++) h += '<div class="lk-cal-day dim"></div>';
+    for (var day = 1; day <= daysIn; day++) {
+      var ms = Date.UTC(vy, vm, day);
+      var str = vy + '-' + String(vm + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+      if (ms < b.minMs || ms > b.maxMs) {
+        h += '<div class="lk-cal-day off">' + day + '</div>';
       } else {
-        out.innerHTML =
-          '<span class="full">Those dates are taken.</span>' +
-          '<button type="button" class="lk-spot-btn ghost" id="lk-spot-join">Join the waitlist for ' +
-          spotDay(start) + '</button>';
-        document.getElementById('lk-spot-join').addEventListener('click', function () {
-          spotJoinWaitlist(dateStr, this);
-        });
+        var open = spotDayOpen(ms, info);
+        var cls = 'lk-cal-day' + (open ? '' : ' busy') + (spotState.sel === str ? ' sel' : '');
+        h += '<div class="' + cls + '" data-cal-day="' + str + '" data-cal-open="' + (open ? '1' : '0') + '"' +
+          ' title="' + (open ? 'Start here' : 'Taken — click to join the waitlist') + '">' + day + '</div>';
       }
-    }).catch(function (err) {
-      console.warn('[lokali-billing] spotlight availability failed', err);
-      out.innerHTML = '<span class="full">Could not check availability — please try again.</span>';
+    }
+    h += '</div>' +
+      '<div class="lk-cal-legend">' +
+        '<span><i class="lk-cal-dot open"></i>Open start date</span>' +
+        '<span><i class="lk-cal-dot busy"></i>Taken (waitlist)</span>' +
+      '</div>';
+    host.innerHTML = h;
+
+    var prev = document.getElementById('lk-cal-prev');
+    var next = document.getElementById('lk-cal-next');
+    if (prev) prev.addEventListener('click', function () {
+      spotState.calMonth = new Date(view.getFullYear(), view.getMonth() - 1, 1);
+      renderSpotCal();
+    });
+    if (next) next.addEventListener('click', function () {
+      spotState.calMonth = new Date(view.getFullYear(), view.getMonth() + 1, 1);
+      renderSpotCal();
+    });
+    $all('[data-cal-day]').forEach(function (el) {
+      el.addEventListener('click', function () {
+        spotSelectDay(el.getAttribute('data-cal-day'), el.getAttribute('data-cal-open') === '1');
+        renderSpotCal();
+      });
     });
   }
 
@@ -634,7 +762,7 @@
         waits.forEach(function (row) {
           var t = SPOT_TIERS[row.tier] || SPOT_TIERS.category;
           w += '<div class="lk-spot-row"><div><div>' + t.name + '</div>' +
-            '<div class="r-sub">around ' + spotDay(row.desired_start + 'T00:00:00') + '</div></div>' +
+            '<div class="r-sub">around ' + spotDay(row.desired_start + 'T00:00:00Z') + '</div></div>' +
             '<div style="display:flex;gap:10px;align-items:center">' +
             (row.notified_at ? '<span class="lk-spot-chip notified">Emailed</span>' : '') +
             '<button type="button" class="lk-spot-link" data-spot-leave="' + row.id + '">Leave</button>' +
@@ -697,11 +825,7 @@
         ? '<div class="lk-spot-prelaunch">Lokali launches <strong>October 1, 2026</strong> — Spotlight windows start ' +
           'from launch day. You can scout dates now; booking opens at launch.</div>'
         : '') +
-      '<div class="lk-spot-form">' +
-        '<label for="lk-spot-date">Start date</label>' +
-        '<input type="date" id="lk-spot-date" min="' + (spotTodayStr() < SPOT_FLOOR ? SPOT_FLOOR : spotTodayStr()) + '">' +
-        '<button type="button" class="lk-spot-btn ghost" id="lk-spot-check">Check availability</button>' +
-      '</div>' +
+      '<div class="lk-cal" id="lk-spot-cal"></div>' +
       '<div class="lk-spot-result" id="lk-spot-result"></div>' +
       '<div id="lk-spot-wait"></div>';
     anchor.insertAdjacentElement('afterend', sec);
@@ -714,10 +838,12 @@
         });
         var out = document.getElementById('lk-spot-result');
         if (out) out.innerHTML = '';
+        spotState.sel = null;
         spotUpdateMtvHint();
+        renderSpotCal();   // per-tier busy set + cap (cached after first fetch)
       });
     });
-    document.getElementById('lk-spot-check').addEventListener('click', spotCheckAvailability);
+    renderSpotCal();
 
     if (window.LokaliAPI && window.LokaliAPI.vendors && window.LokaliAPI.vendors.me) {
       window.LokaliAPI.vendors.me().then(function (res) {
