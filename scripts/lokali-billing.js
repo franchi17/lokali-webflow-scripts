@@ -482,6 +482,7 @@
       '.lk-cal-day{aspect-ratio:1;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:13px;color:#231D3F;background:#fff;border:1px solid #E4E1EF;cursor:pointer;}' +
       '.lk-cal-day:hover{border-color:var(--system--primary-700,#3d00e0);}' +
       '.lk-cal-day.busy{background:#F1EFF7;border-color:transparent;color:#A9A3BC;}' +
+      '.lk-cal-day.na{background:transparent;border-color:transparent;color:#C9C4DA;pointer-events:none;}' +
       '.lk-cal-day.dim{visibility:hidden;pointer-events:none;}' +
       '.lk-cal-day.off{background:transparent;border-color:transparent;color:#D6D2E4;pointer-events:none;}' +
       '.lk-cal-day.sel{background:var(--system--primary-700,#3d00e0);border-color:var(--system--primary-700,#3d00e0);color:#fff;font-weight:700;}' +
@@ -489,17 +490,14 @@
       '.lk-cal-legend span{display:inline-flex;align-items:center;gap:6px;}' +
       '.lk-cal-dot{width:11px;height:11px;border-radius:4px;display:inline-block;}' +
       '.lk-cal-dot.open{background:#fff;border:1px solid #E4E1EF;}' +
-      '.lk-cal-dot.busy{background:#F1EFF7;}';
+      '.lk-cal-dot.busy{background:#F1EFF7;}' +
+      '.lk-spot-upsell{background:var(--system--purple-50,#eee6ff);color:#3C3550;border-radius:12px;padding:14px 16px;font-size:14px;line-height:1.55;}' +
+      '.lk-spot-upsell a{color:var(--system--primary-700,#3d00e0);font-weight:700;}' +
+      '.lk-spot-tiers.locked{opacity:.55;pointer-events:none;}';
     var tag = document.createElement('style');
     tag.id = 'lk-spot-css';
     tag.textContent = css;
     document.head.appendChild(tag);
-  }
-
-  // ---- Settings page card -------------------------------------------------------
-  function spotStartParam(dateStr) {
-    // Today -> "now" (a literal midnight would already be in the past).
-    return dateStr === spotTodayStr() ? 'now' : dateStr;
   }
 
   // ---- Availability calendar (vendors see open vs taken, no guessing) --------
@@ -570,7 +568,7 @@
         setButtonBusy(btn, true);
         postForRedirect(CHECKOUT_URL, {
           plan: SPOT_TIERS[tier].plan, interval: 'once',
-          spotlight_start: spotStartParam(dateStr)
+          spotlight_start: dateStr
         }).catch(function (err) {
           setButtonBusy(btn, false);
           var msg = err && err.message && !/^Request failed/.test(err.message)
@@ -634,6 +632,9 @@
       var str = vy + '-' + String(vm + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
       if (ms < b.minMs || ms > b.maxMs) {
         h += '<div class="lk-cal-day off">' + day + '</div>';
+      } else if (new Date(ms).getUTCDay() !== 1) {
+        // Windows start on Mondays only (round-4 rule) — other days are inert.
+        h += '<div class="lk-cal-day na">' + day + '</div>';
       } else {
         var open = spotDayOpen(ms, info);
         var cls = 'lk-cal-day' + (open ? '' : ' busy') + (spotState.sel === str ? ' sel' : '');
@@ -643,7 +644,7 @@
     }
     h += '</div>' +
       '<div class="lk-cal-legend">' +
-        '<span><i class="lk-cal-dot open"></i>Open start date</span>' +
+        '<span><i class="lk-cal-dot open"></i>Open Monday</span>' +
         '<span><i class="lk-cal-dot busy"></i>Taken (waitlist)</span>' +
       '</div>';
     host.innerHTML = h;
@@ -807,8 +808,8 @@
         '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" style="flex:none"><path d="M12 2l2.2 6.2L20 10l-5.8 1.8L12 18l-2.2-6.2L4 10l5.8-1.8L12 2z" fill="#6d5bd0"/><path d="M18.5 15l1 2.7 2.5.8-2.5.8-1 2.7-1-2.7-2.5-.8 2.5-.8 1-2.7z" fill="#F1A33C"/></svg>' +
         '<div class="section-heading">Spotlight</div>' +
       '</div>' +
-      '<div class="lk-spot-intro">A one-time, two-week boost — pick your dates, pay once, done. ' +
-        'No subscription needed.</div>' +
+      '<div class="lk-spot-intro">A one-time, two-week boost for Pro &amp; Featured vendors — windows ' +
+        'start on Mondays; pick yours, pay once, done.</div>' +
       '<div id="lk-spot-mine"></div>' +
       '<div class="lk-spot-tiers">' +
         Object.keys(SPOT_TIERS).map(function (k) {
@@ -840,10 +841,10 @@
         if (out) out.innerHTML = '';
         spotState.sel = null;
         spotUpdateMtvHint();
-        renderSpotCal();   // per-tier busy set + cap (cached after first fetch)
+        // Plan-gated vendors have the upsell where the calendar would be.
+        if (spotState.entitled !== false) renderSpotCal();
       });
     });
-    renderSpotCal();
 
     if (window.LokaliAPI && window.LokaliAPI.vendors && window.LokaliAPI.vendors.me) {
       window.LokaliAPI.vendors.me().then(function (res) {
@@ -851,6 +852,35 @@
         spotUpdateMtvHint();
       }).catch(function () {});
     }
+
+    // Paid-plan gate (round 4): Free vendors see the tiers as a teaser but get
+    // an upgrade prompt instead of the booking calendar. The server enforces
+    // the real gate — a billing-read failure fails OPEN so a hiccup can't
+    // hide booking from an entitled vendor.
+    var billingP = (window.LokaliAPI && window.LokaliAPI.plans && window.LokaliAPI.plans.getMyBilling)
+      ? window.LokaliAPI.plans.getMyBilling().catch(function () { return null; })
+      : Promise.resolve(null);
+    billingP.then(function (res) {
+      var b = (res && (res.data || res)) || {};
+      var plan = String(b.plan || 'free').toLowerCase();
+      var status = String(b.plan_status || '').toLowerCase();
+      var entitled = (plan === 'pro' || plan === 'featured') &&
+        (status === '' || status === 'active' || status === 'trialing');
+      spotState.entitled = res ? entitled : true; // no billing read -> fail open
+      if (res && !entitled) {
+        var cal = document.getElementById('lk-spot-cal');
+        if (cal) {
+          cal.innerHTML = '';
+          cal.className = 'lk-spot-upsell';
+          cal.innerHTML = 'Spotlight is a <strong>Pro &amp; Featured</strong> perk — ' +
+            '<a href="/pricing">upgrade your plan</a> to book a two-week boost.';
+        }
+        var tiers = sec.querySelector('.lk-spot-tiers');
+        if (tiers) tiers.classList.add('locked');
+      } else {
+        renderSpotCal();
+      }
+    });
     spotLoadLists();
 
     if (window.location.hash === '#lokali-spotlight') {
@@ -875,21 +905,21 @@
       '<div class="lk-spotcards">' +
         '<div class="lk-spotcard">' +
           '<div class="c-name">✦ Category Spotlight</div>' +
-          '<div class="c-price">$75</div><div class="c-per">one time · 14 days</div>' +
+          '<div class="c-price">$75</div><div class="c-per">one time · 14 days · Pro &amp; Featured plans</div>' +
           '<ul><li>Top of your category on The Market</li>' +
           '<li>✦ Spotlight badge on your card</li>' +
           '<li>Exclusive — one vendor per category at a time</li>' +
-          '<li>Pick the two-week window that suits you</li></ul>' +
+          '<li>Two-week window of your choice — starts on a Monday</li></ul>' +
           '<a class="lk-spot-btn" href="/vendor-dashboard/settings#lokali-spotlight">Book a Spotlight</a>' +
         '</div>' +
         '<div class="lk-spotcard">' +
           '<div class="c-name">✦ Homepage Spotlight</div>' +
-          '<div class="c-price">$150</div><div class="c-per">one time · 14 days</div>' +
+          '<div class="c-price">$150</div><div class="c-per">one time · 14 days · Pro &amp; Featured plans</div>' +
           '<ul><li>A “Meet the vendor” card on the Lokali homepage</li>' +
           '<li>You and your story — front and center</li>' +
           '<li>A shoutout in <strong>Word on the Block</strong>, the Lokali newsletter</li>' +
           '<li>Only 3 vendors at a time, site-wide</li>' +
-          '<li>Pick the two-week window that suits you</li></ul>' +
+          '<li>Two-week window of your choice — starts on a Monday</li></ul>' +
           '<a class="lk-spot-btn orange" href="/vendor-dashboard/settings#lokali-spotlight">Book a Spotlight</a>' +
         '</div>' +
       '</div>';

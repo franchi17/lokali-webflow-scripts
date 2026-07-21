@@ -670,7 +670,6 @@
 
     if (!a.queue.length) {
       wrap.appendChild(el('div', 'lk-admin-empty', 'No suggestions waiting. New ones from vendors land here.'));
-      return wrap;
     }
 
     a.queue.forEach(function (item) {
@@ -739,7 +738,78 @@
       row.appendChild(meta); row.appendChild(input); row.appendChild(ok); row.appendChild(no);
       wrap.appendChild(row);
     });
+
+    appendSpotlightSection(wrap, ov);
     return wrap;
+  }
+
+  // ── #88: Spotlight bookings in the admin panel ─────────────
+  // Who booked which window (name + email) so Francesca can reach out —
+  // homepage-tier vendors get coordinated for the "Meet the vendor" feature
+  // and the Word on the Block shoutout. Data ships in admin_overview()
+  // (is_admin-gated); all vendor text lands via textContent.
+  function fmtSpotDay(iso) {
+    // Windows are UTC-midnight-anchored — format in UTC or the shown date
+    // slips a day for US timezones.
+    try {
+      return new Date(iso).toLocaleDateString(undefined, { timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric' });
+    } catch (e) { return String(iso || ''); }
+  }
+
+  function appendSpotlightSection(wrap, ov) {
+    var rows = Array.isArray(ov.spotlights) ? ov.spotlights : [];
+    var waiting = ov.spotlight_waitlist_open;
+
+    var t = el('div', 'lk-admin-qtitle');
+    t.style.marginTop = '18px';
+    t.appendChild(document.createTextNode('Spotlight bookings'));
+    t.appendChild(el('span', 'lk-admin-qcount', String(rows.length)));
+    wrap.appendChild(t);
+    wrap.appendChild(el('p', 'lk-admin-sub',
+      'Upcoming and live Spotlights — reach out to homepage vendors about their “Meet the vendor” feature and the Word on the Block shoutout.' +
+      (waiting ? (' ' + waiting + ' vendor' + (waiting === 1 ? ' is' : 's are') + ' on window waitlists.') : '')));
+
+    if (!rows.length) {
+      wrap.appendChild(el('div', 'lk-admin-empty', 'No Spotlights booked yet. Paid bookings land here with contact details.'));
+      return;
+    }
+
+    rows.forEach(function (b) {
+      var row = el('div', 'lk-admin-row');
+      var meta = el('div', 'lk-admin-row-meta');
+      var l1 = el('div', 'lk-admin-row-l1');
+      l1.textContent = b.business_name || 'Unknown vendor';
+      var tierSpan = document.createElement('span');
+      tierSpan.textContent = ' — ' + (b.tier === 'homepage' ? 'Homepage ($150)' : 'Category ($75)');
+      l1.appendChild(tierSpan);
+      var l2 = el('div', 'lk-admin-row-l2');
+      l2.textContent = fmtSpotDay(b.starts_at) + ' – ' + fmtSpotDay(b.ends_at) +
+        ' · ' + (b.status === 'active' ? 'LIVE NOW' : 'booked') +
+        (b.source === 'admin' ? ' · comped' : '');
+      if (b.status === 'active') l2.style.color = '#1A6640';
+      meta.appendChild(l1); meta.appendChild(l2);
+      row.appendChild(meta);
+      if (b.email) {
+        var mail = document.createElement('a');
+        mail.className = 'lk-admin-decline';
+        mail.style.textDecoration = 'none';
+        mail.textContent = 'Email';
+        mail.href = 'mailto:' + encodeURIComponent(b.email) +
+          '?subject=' + encodeURIComponent('Your Lokali Spotlight');
+        row.appendChild(mail);
+      }
+      if (b.slug) {
+        var view = document.createElement('a');
+        view.className = 'lk-admin-decline';
+        view.style.textDecoration = 'none';
+        view.textContent = 'View';
+        view.href = '/' + encodeURIComponent(b.slug);
+        view.target = '_blank';
+        view.rel = 'noopener';
+        row.appendChild(view);
+      }
+      wrap.appendChild(row);
+    });
   }
 
   // ── #66 Phase 1: "Open your storefront" card ───────────────
