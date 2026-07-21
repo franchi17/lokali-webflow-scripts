@@ -134,7 +134,13 @@
       // (its .product-form-grid is already 1fr); only ._2-columns is broken. Collapse the
       // track and stretch the items. (#services-dashboard is the content container id on
       // BOTH services + products pages — template id reuse — which is harmless here.)
-      '#services-dashboard ._2-columns{grid-template-columns:minmax(0,1fr) !important;width:100% !important;box-sizing:border-box !important;}',
+      // margin:0 — the grid carries a 20px desktop margin-left; combined with width:100%
+      // it shifted the whole column 20px right and the card clipped the overhang ("everything
+      // smooshed to the right / cut off", Francesca 2026-07-21). Symmetric 20px PADDING
+      // replaces it: same inset as desktop (card 858 vs grid 818 there), fields land at
+      // 301px — identical to the products form.
+      '#services-dashboard ._2-columns{grid-template-columns:minmax(0,1fr) !important;width:100% !important;box-sizing:border-box !important;',
+      'margin-left:0 !important;margin-right:0 !important;padding-left:20px !important;padding-right:20px !important;}',
       '#services-dashboard ._2-columns > *{width:auto !important;min-width:0 !important;max-width:100% !important;justify-self:stretch !important;}',
       '.div-block-39 img,.div-block-39 svg,.main-content-area img,.main-content-area svg{max-width:100%;}',
       '.div-block-39 input,.div-block-39 textarea,.div-block-39 select,',
