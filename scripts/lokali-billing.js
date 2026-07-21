@@ -472,6 +472,7 @@
       '.lk-spotcard li:before{content:"✓";position:absolute;left:0;top:4px;width:18px;height:18px;border-radius:50%;background:var(--system--purple-50,#eee6ff);color:var(--system--primary-700,#3d00e0);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;}' +
       '.lk-spot-prelaunch{background:var(--system--orange-50,#fff2df);color:#8a5200;border-radius:10px;padding:10px 14px;font-size:13px;line-height:1.5;margin:0 0 12px;}' +
       '.lk-cal{max-width:420px;margin:2px 0 10px;}' +
+      '.lk-cal-tier{font-size:12px;font-weight:700;letter-spacing:.03em;color:var(--lokali-primary,#6002ee);margin:0 0 6px;text-transform:uppercase;}' +
       '.lk-cal-head{display:flex;align-items:center;justify-content:space-between;margin:0 0 8px;}' +
       '.lk-cal-title{font-size:14px;font-weight:700;color:#231D3F;}' +
       '.lk-cal-nav{background:#fff;border:1.5px solid #E4E1EF;border-radius:8px;width:30px;height:30px;font-family:inherit;font-size:15px;color:var(--system--primary-700,#3d00e0);cursor:pointer;line-height:1;}' +
@@ -618,6 +619,9 @@
     var nextOk = Date.UTC(vy, vm + 1, 1) <= b.maxMs;
 
     var h =
+      // Which tier this calendar belongs to — the tiers are separate placements
+      // with separate availability, so the active one is named explicitly.
+      '<div class="lk-cal-tier">' + SPOT_TIERS[tier].name + ' availability</div>' +
       '<div class="lk-cal-head">' +
         '<button type="button" class="lk-cal-nav" id="lk-cal-prev"' + (prevOk ? '' : ' disabled') + '>‹</button>' +
         '<div class="lk-cal-title">' + monthLabel + '</div>' +
@@ -809,7 +813,8 @@
         '<div class="section-heading">Spotlight</div>' +
       '</div>' +
       '<div class="lk-spot-intro">A one-time, two-week boost for Pro &amp; Featured vendors — windows ' +
-        'start on Mondays; pick yours, pay once, done.</div>' +
+        'start on Mondays; pick yours, pay once, done. The two tiers are separate placements with ' +
+        'their own calendars — booking one doesn’t include the other (want both? book both).</div>' +
       '<div id="lk-spot-mine"></div>' +
       '<div class="lk-spot-tiers">' +
         Object.keys(SPOT_TIERS).map(function (k) {
@@ -901,7 +906,7 @@
     sec.id = 'lk-spot-pricing';
     sec.innerHTML =
       '<div class="sp-head">Spotlight add-ons</div>' +
-      '<div class="sp-sub">One-time, two-week boosts on top of any plan — including Free.</div>' +
+      '<div class="sp-sub">One-time, two-week boosts for Pro &amp; Featured vendors — two separate placements, book either or both.</div>' +
       '<div class="lk-spotcards">' +
         '<div class="lk-spotcard">' +
           '<div class="c-name">✦ Category Spotlight</div>' +

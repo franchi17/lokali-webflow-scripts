@@ -132,6 +132,16 @@
       '.lok-ava .ava-ovr{margin-top:6px;display:flex;align-items:center;gap:7px;flex-wrap:wrap;}' +
       '.lok-ava .ava-ovr input{width:56px;font-family:inherit;font-size:12px;color:#45415A;border:1px solid #E4DEF4;border-radius:8px;padding:4px 7px;background:#fff;}' +
       '.lok-ava .ava-ovr label{font-size:11px;color:#8B8798;}' +
+      // #93 — copy one day's hours to other days (Calendly-style)
+      '.lok-ava .ava-copylink{cursor:pointer;text-decoration:none;font-style:normal;font-size:11.5px;color:#8B8798;padding-top:9px;flex-shrink:0;}' +
+      '.lok-ava .ava-copylink:hover{color:#5D4F9E;}' +
+      '.lok-ava .ava-copy{flex-basis:100%;margin:8px 0 2px 86px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;' +
+        'background:#FCFBFE;border:1px solid #E9E3F7;border-radius:10px;padding:9px 12px;}' +
+      '.lok-ava .ava-copy .ava-copyto{font-size:11.5px;color:#8B8798;flex-basis:100%;}' +
+      '.lok-ava .ava-copy label{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:#45415A;cursor:pointer;}' +
+      '.lok-ava .ava-copy input[type=checkbox]{accent-color:#5D4F9E;width:14px;height:14px;cursor:pointer;}' +
+      '.lok-ava .ava-copy .ava-copycancel{cursor:pointer;text-decoration:none;font-style:normal;font-size:11.5px;color:#B0A9C4;}' +
+      '@media (max-width:600px){.lok-ava .ava-copy{margin-left:0;}}' +
       // Mobile: the day-hours row [label][windows][start–end + Add] overflowed
       // 375px and clipped the "Add" button. Let it wrap so the add-window
       // controls drop to their own full-width line under the label+windows.
@@ -598,6 +608,24 @@
             '<span class="ava-htime">' + fmt12(openM) + ' – ' + fmt12(closeM) + '</span>' +
             '<u data-delh="' + w.id + '" title="Remove">&#10005;</u>' + extra + '</div>';
       }).join('');
+      // #93 — a day with hours gets "Copy" (Calendly-style): pick target days,
+      // Apply REPLACES those days' hours with this day's windows (custom
+      // per-window timings carried along).
+      var copyLink = wins.length
+        ? '<u class="ava-copylink" data-copyh="' + wd + '" title="Copy this day’s hours to other days">Copy</u>'
+        : '';
+      var copyPanel = '';
+      if (self._copyFrom === wd && wins.length) {
+        copyPanel =
+          '<div class="ava-copy">' +
+            '<span class="ava-copyto">Copy ' + WDAYS[wd] + '’s hours to — this replaces those days’ existing hours:</span>' +
+            [1, 2, 3, 4, 5, 6, 0].filter(function (d) { return d !== wd; }).map(function (d) {
+              return '<label><input type="checkbox" class="ava-copyday" value="' + d + '" />' + WDAYS[d] + '</label>';
+            }).join('') +
+            '<button class="ava-btn2" data-copyapply="' + wd + '">Apply</button>' +
+            '<u class="ava-copycancel" data-copycancel="1">cancel</u>' +
+          '</div>';
+      }
       return '<div class="ava-hday">' +
           '<span class="ava-hlabel">' + WDAYS[wd] + '</span>' +
           '<div class="ava-hwins">' + (chips || '<span class="ava-sub" style="line-height:32px;">Closed</span>') + '</div>' +
@@ -606,6 +634,7 @@
             '<span style="color:#B0ACBC;font-size:12px;">to</span>' +
             '<input type="time" class="ava-hclose" data-wd="' + wd + '" step="300" />' +
             '<button class="ava-btn2" data-addh="' + wd + '">Add</button></span>' +
+          copyLink + copyPanel +
         '</div>';
     }).join('');
 
@@ -654,6 +683,40 @@
         var buf = Math.max(0, +(box.querySelector('.ava-ovrbuf').value) || 0);
         API.updateHours(sid, { slot_minutes: dur, buffer_minutes: buf }).then(function () {
           self._editOvr = null; self.reloadHours();
+        });
+        return;
+      }
+      // #93 — copy-hours flow: open the panel, cancel it, or apply the copy.
+      var cp = e.target.closest('[data-copyh]');
+      if (cp) { self._copyFrom = Number(cp.getAttribute('data-copyh')); self.renderHours(); return; }
+      var cpc = e.target.closest('[data-copycancel]');
+      if (cpc) { self._copyFrom = null; self.renderHours(); return; }
+      var cpa = e.target.closest('button[data-copyapply]');
+      if (cpa) {
+        var src = Number(cpa.getAttribute('data-copyapply'));
+        var targets = Array.prototype.slice.call(self.$hours.querySelectorAll('.ava-copyday:checked'))
+          .map(function (c) { return Number(c.value); });
+        if (!targets.length) { self._copyFrom = null; self.renderHours(); return; }
+        var srcWins = self.hours.filter(function (h) { return h.weekday === src; });
+        cpa.textContent = '…'; cpa.disabled = true;
+        Promise.all(targets.map(function (twd) {
+          // Replace semantics: clear the target day, then re-create the source
+          // windows there (per-window slot/buffer overrides carried along).
+          var dels = self.hours.filter(function (h) { return h.weekday === twd; })
+            .map(function (h) { return API.removeHours(h.id); });
+          return Promise.all(dels).then(function () {
+            return Promise.all(srcWins.map(function (w) {
+              return API.addHours(self.vendorId, twd, w.open_time, w.close_time, w.slot_minutes, w.buffer_minutes);
+            }));
+          });
+        })).then(function () {
+          self._copyFrom = null;
+          self.reloadHours();
+        }).catch(function (err) {
+          // Re-read from the server either way — it is the source of truth.
+          console.warn('[lokali-availability] copy hours failed', err);
+          self._copyFrom = null;
+          self.reloadHours();
         });
         return;
       }
