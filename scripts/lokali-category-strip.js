@@ -51,7 +51,10 @@
     return [
       '.lcs-on .lcs-belt{flex-wrap:nowrap;width:max-content;justify-content:flex-start;',
       'animation:lcsscroll ', DURATION, 's linear infinite;will-change:transform}',
-      '.lcs-on .lcs-track{flex-wrap:nowrap}',
+      // width:auto + flex:none undoes the static rail's width:100%, which exists
+      // so the no-script state wraps into rows instead of shrinking each track to
+      // one chip and stacking all 8 vertically.
+      '.lcs-on .lcs-track{flex-wrap:nowrap;width:auto;flex:0 0 auto}',
       '.lcs-on .lcs-clone{display:flex}',
       '.lcs-on .lcs-fade{display:block}',
       '.lcs-on .lcs-chip{margin-bottom:0}',
