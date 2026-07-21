@@ -154,6 +154,7 @@
     }
 
     mountSlugEditor();
+    mountNewsletterToggle(); // #54 — person-level newsletter opt-out
 
     // Gate paid-only toggles on Free plans
     if (!isPro()) {
@@ -262,6 +263,78 @@
   }
 
   // Persist a single preference toggle (notifications / review visibility).
+  // ── #54 "The Neighborhood Edit" newsletter toggle ──────────────────────────
+  // Injected rather than authored in Webflow because the sibling notification
+  // toggles are HtmlEmbed elements wrapping a raw <input type="checkbox">, and
+  // Webflow's element builder refuses a standalone checkbox ("Checkbox Field can
+  // only be placed in a Form"). We clone the existing row markup exactly
+  // (.div-block-160 + .notifications-header + .settings-lokali-text + the
+  // .lk-toggle embed) so it is visually indistinguishable; the .lk-toggle CSS is
+  // already on the page from the sibling embeds, so no styles are duplicated.
+  //
+  // PERSON-LEVEL, not storefront-level: this writes app_user.notif_letter — the
+  // same flag the customer /account page toggles — NOT vendor_preferences. A
+  // newsletter goes to a person's inbox, every vendor owns an app_user row, and
+  // the #66 account model is person-first. (vendor_preferences.notify_promotional
+  // is a different thing: storefront marketing consent, default OFF, Pro-gated.)
+  // Consequence worth knowing: a vendor who also shops sees one shared setting
+  // here and on /account, which is correct — one person, one newsletter.
+  function mountNewsletterToggle() {
+    if ($('toggle-notify-letter')) return;                 // idempotent
+    var anchor = $('toggle-notify-announcements');
+    if (!anchor) return;                                   // markup changed — skip silently
+    var row = anchor.closest ? anchor.closest('.div-block-160') : null;
+    if (!row || !row.parentNode) return;
+
+    var newRow = document.createElement('div');
+    newRow.className = row.className || 'div-block-160';
+    var label = document.createElement('div');
+    var h = document.createElement('div');
+    h.className = 'notifications-header';
+    h.textContent = 'The Neighborhood Edit';
+    var p = document.createElement('div');
+    p.className = 'settings-lokali-text';
+    p.textContent = 'Our bi-monthly newsletter — vendor spotlights and what’s new on Lokali. Rare by design.';
+    label.appendChild(h); label.appendChild(p);
+
+    var embed = document.createElement('div');
+    embed.id = 'toggle-notify-letter';
+    embed.className = anchor.className || 'w-embed';
+    // Static markup only (no interpolation) — matches the sibling embeds.
+    embed.innerHTML =
+      '<label class="lk-toggle">' +
+        '<input type="checkbox" />' +
+        '<span class="lk-toggle-track"><span class="lk-toggle-thumb"></span></span>' +
+      '</label>';
+
+    newRow.appendChild(label);
+    newRow.appendChild(embed);
+    row.parentNode.insertBefore(newRow, row.nextSibling);
+
+    var input = inputOf(embed);
+    if (!input) return;
+    // Default ON: treat null/undefined as subscribed, same reading as
+    // lokali-account.js and the admin_newsletter_recipients() `is not false`.
+    input.checked = !(_user && _user.notif_letter === false);
+    input.addEventListener('change', function () { saveLetter(input.checked, input); });
+  }
+
+  function saveLetter(value, inputEl) {
+    if (!(window.LokaliAPI.account && window.LokaliAPI.account.update)) return;
+    window.LokaliAPI.account.update({ notif_letter: !!value }).then(function (res) {
+      if (res && res.error) {
+        toast('error', 'Could not save preference.');
+        if (inputEl) inputEl.checked = !value; // revert
+        return;
+      }
+      if (_user) _user.notif_letter = !!value;
+      toast('success', value ? 'Subscribed to The Neighborhood Edit.' : 'Unsubscribed from The Neighborhood Edit.');
+    }).catch(function () {
+      toast('error', 'Network error. Please try again.');
+      if (inputEl) inputEl.checked = !value;
+    });
+  }
+
   function savePref(key, value, inputEl) {
     if (!window.LokaliAPI.vendors || !window.LokaliAPI.vendors.updatePreferences) return;
     var payload = {};
