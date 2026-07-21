@@ -1921,7 +1921,16 @@
         locations: buildLabelMap(unwrap(res[2]), ['id', 'locations_id'], ['name', 'location_name', 'title'])
       };
       populateVendor(v, labels);
-      document.title = (v.business_name || 'Vendor') + ' — Lokali';
+      // #97: on clean /{slug} URLs the Cloudflare Worker already injected a
+      // RICHER server-side title ("{Business} — {Category} in {Place} | Lokali")
+      // plus description/canonical/OG/JSON-LD, and that is what crawlers and
+      // social cards read. Overwriting it here would throw the category+location
+      // keywords away for Googlebot (which renders JS). So only set the title on
+      // surfaces the Worker didn't decorate — e.g. the raw /vendor?id= template —
+      // identified by Webflow's stock title still being in place.
+      if (/^\s*Vendor Listing/i.test(document.title)) {
+        document.title = (v.business_name || 'Vendor') + ' — Lokali';
+      }
 
       var vid = v.id != null ? v.id : id;
       currentVendorId = vid;
