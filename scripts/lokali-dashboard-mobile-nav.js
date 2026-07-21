@@ -141,6 +141,12 @@
       // 301px — identical to the products form.
       '#services-dashboard ._2-columns{grid-template-columns:minmax(0,1fr) !important;width:100% !important;box-sizing:border-box !important;',
       'margin-left:0 !important;margin-right:0 !important;padding-left:20px !important;padding-right:20px !important;}',
+      // The whole services/products content container carries white-space:nowrap (Webflow
+      // style on .container-11/#services-dashboard) — every long hint line inherits it and
+      // gets CUT at phone width (the Specialty "Pick the one that fits…" line, the
+      // "New specialties are reviewed first…" line, etc.). Desktop is wide enough to hide
+      // it; reset at mobile so text wraps like text.
+      '#services-dashboard{white-space:normal !important;}',
       '#services-dashboard ._2-columns > *{width:auto !important;min-width:0 !important;max-width:100% !important;justify-self:stretch !important;}',
       '.div-block-39 img,.div-block-39 svg,.main-content-area img,.main-content-area svg{max-width:100%;}',
       '.div-block-39 input,.div-block-39 textarea,.div-block-39 select,',
