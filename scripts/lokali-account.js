@@ -136,6 +136,7 @@
   // A picked city is normalized to "City, ST" (state/country short code), which
   // The Market's #44 region-default matches by name-contains.
   var _mapsLoading = false;
+  var _areaACCleanup = null; // tears down the previous AC instance's dropdown + window listeners
   function loadMapsThen(cb) {
     if (window.google && window.google.maps && window.google.maps.places) { cb(); return; }
     var key = (typeof window.LOKALI_GMAPS_KEY === 'string') ? window.LOKALI_GMAPS_KEY.trim() : '';
@@ -303,8 +304,17 @@
       else if (e.key === 'Escape') { hide(); }
     });
     input.addEventListener('blur', function () { setTimeout(hide, 150); });
+    // Every rerender() builds a fresh input → a fresh instance; without teardown
+    // each one leaves a permanent dropdown node + capture-phase window listeners.
+    if (_areaACCleanup) _areaACCleanup();
     window.addEventListener('scroll', position, true);
     window.addEventListener('resize', position);
+    _areaACCleanup = function () {
+      window.removeEventListener('scroll', position, true);
+      window.removeEventListener('resize', position);
+      if (dd && dd.parentNode) dd.parentNode.removeChild(dd);
+      dd = null;
+    };
   }
   function initAreaLegacyAC(input) {
     var ac = new google.maps.places.Autocomplete(input, {
@@ -652,6 +662,9 @@
     var bar = el('div', 'lk-save-bar');
     var out = el('button', 'lk-btn ghost', 'Sign out');
     out.addEventListener('click', function () {
+      // clearToken() only drops adapter caches — LokaliAuth.signOut() also ends
+      // the Supabase session (and redirects itself), else /login bounces back in.
+      if (window.LokaliAuth && window.LokaliAuth.signOut) { window.LokaliAuth.signOut(); return; }
       try { api().clearToken(); } catch (e) {}
       window.location.href = '/login';
     });
@@ -1067,7 +1080,8 @@
     var view = el('button', 'lk-btn primary', 'View');
     view.addEventListener('click', function () { window.location.href = vendorHref(v); });
     var contact = el('button', 'lk-btn ghost', 'Contact');
-    contact.addEventListener('click', function () { window.location.href = vendorHref(v); });
+    // #contact lands at the listing's contact block — distinct from View.
+    contact.addEventListener('click', function () { window.location.href = vendorHref(v) + '#contact'; });
     var heart = el('button', 'lk-heart', '<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>');
     heart.title = 'Remove from saved';
     heart.addEventListener('click', function () {
@@ -1175,7 +1189,7 @@
     var del = el('button', null, 'Delete');
     edit.addEventListener('click', function () { editReview(c, row); });
     del.addEventListener('click', function () {
-      if (row.id == null) { toast('Can’t edit until reloaded'); return; }
+      if (row.id == null) { toast('Can’t delete until reloaded'); return; }
       del.disabled = true;
       api().reviews.remove(row.id).then(function (res) {
         if (res && res.error) { del.disabled = false; toast('Could not delete'); return; }
@@ -1289,7 +1303,7 @@
     // Notifications
     pane.appendChild(el('div', 'lk-group-label', 'Notifications'));
     var nc = el('div', 'lk-card');
-    var tgLetter = toggleRow('The Neighborhood Edit', 'New vendors and weekly local picks in your area. The good stuff — never spam.', acc.notif_letter !== false);
+    var tgLetter = toggleRow('The Neighborhood Edit', 'Our bi-monthly newsletter — vendor spotlights and what’s new on Lokali. Rare by design.', acc.notif_letter !== false);
     var tgReplies = toggleRow('Vendor replies', 'Get an email when a vendor responds to an inquiry you sent.', acc.notif_vendor_replies !== false);
     var tgRemind = toggleRow('Review reminders', 'A gentle nudge to review a vendor a few days after you contact them.', acc.notif_review_reminders === true);
     nc.appendChild(tgLetter.row); nc.appendChild(tgReplies.row); nc.appendChild(tgRemind.row);
@@ -1338,7 +1352,13 @@
     var outRow = el('div', 'lk-set-row');
     outRow.innerHTML = '<div><div class="lk-set-label">Sign out</div><div class="lk-set-help">Sign out of Lokali on this device.</div></div>';
     var outWrap = el('div'); var outBtn = el('button', 'lk-btn ghost', 'Sign out');
-    outBtn.addEventListener('click', function () { try { api().clearToken(); } catch (e) {} window.location.href = '/login'; });
+    outBtn.addEventListener('click', function () {
+      // clearToken() only drops adapter caches — LokaliAuth.signOut() also ends
+      // the Supabase session (and redirects itself), else /login bounces back in.
+      if (window.LokaliAuth && window.LokaliAuth.signOut) { window.LokaliAuth.signOut(); return; }
+      try { api().clearToken(); } catch (e) {}
+      window.location.href = '/login';
+    });
     outWrap.appendChild(outBtn); outRow.appendChild(outWrap); ac.appendChild(outRow);
     var delRow = el('div', 'lk-set-row');
     delRow.innerHTML = '<div><div class="lk-set-label lk-danger">Delete account</div><div class="lk-set-help">Permanently removes your account and saves. Reviews you wrote stay but lose your name. If you have a vendor listing, it and its reviews are deleted too. This can\'t be undone.</div></div>';
@@ -1484,7 +1504,15 @@
     var left = el('div', null, '<div class="lk-set-label">' + esc(label) + '</div><div class="lk-set-help">' + esc(help) + '</div>');
     var ctrl = el('div');
     var tg = el('button', 'lk-toggle' + (on ? ' on' : ''));
-    tg.addEventListener('click', function () { tg.classList.toggle('on'); });
+    // The button has no text content — the sibling label div isn't associated.
+    tg.type = 'button';
+    tg.setAttribute('role', 'switch');
+    tg.setAttribute('aria-checked', on ? 'true' : 'false');
+    tg.setAttribute('aria-label', label);
+    tg.addEventListener('click', function () {
+      tg.classList.toggle('on');
+      tg.setAttribute('aria-checked', tg.classList.contains('on') ? 'true' : 'false');
+    });
     ctrl.appendChild(tg);
     row.appendChild(left); row.appendChild(ctrl);
     return { row: row, get: function () { return tg.classList.contains('on'); } };

@@ -111,9 +111,12 @@
   // ── mint + share ───────────────────────────────────────────
   // Opens the native share sheet when available; otherwise copies the link.
   // channel is best-effort: "copy_link" when we fall back to clipboard.
-  function deliverShare(shareUrl, vendorName) {
+  // noNative: navigator.share requires transient user activation — the
+  // sign-up-to-share completion runs off 'lokali:authed' (no gesture), where
+  // the sheet would reject silently, so that path goes straight to copy.
+  function deliverShare(shareUrl, vendorName, noNative) {
     var title = vendorName ? (vendorName + ' on Lokali') : 'Check out this local vendor on Lokali';
-    if (navigator.share) {
+    if (navigator.share && !noNative) {
       navigator.share({ title: title, url: shareUrl }).catch(function () {});
       return;
     }
@@ -128,18 +131,18 @@
     try { window.prompt('Copy this link to share:', shareUrl); } catch (e) {}
   }
 
-  function mintAndShare(vendorId, btn) {
+  function mintAndShare(vendorId, btn, noNative) {
     if (btn) btn.classList.add('is-busy');
     // navigator.share routes to whatever app the user picks (we can't know it);
     // stamp channel only when we know it (clipboard fallback → copy_link).
-    var channel = navigator.share ? null : 'copy_link';
+    var channel = (navigator.share && !noNative) ? null : 'copy_link';
     return api().share.create(Number(vendorId), channel).then(function (res) {
       if (btn) btn.classList.remove('is-busy');
       if (res && res.error) { toast('Could not create a share link'); return; }
       var url = res && res.data && res.data.share_url;
       if (!url) { toast('Could not create a share link'); return; }
       var name = (btn && btn.getAttribute('data-vendor-name')) || (typeof window.LOKALI_VENDOR_NAME === 'string' ? window.LOKALI_VENDOR_NAME : '');
-      deliverShare(url, name);
+      deliverShare(url, name, noNative);
     }).catch(function () {
       if (btn) btn.classList.remove('is-busy');
       toast('Could not create a share link');
@@ -231,7 +234,7 @@
     var pending = getPendingShare();
     if (!pending || !hasToken()) return;
     clearPendingShare();
-    mintAndShare(Number(pending), null);
+    mintAndShare(Number(pending), null, true); // no user gesture here — skip the native sheet
   }
 
   // ── init ───────────────────────────────────────────────────

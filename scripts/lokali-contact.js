@@ -56,6 +56,10 @@
 
   var FORM_ID = 'lokali-contact-form';
 
+  // Webflow's default #cf-error copy, captured at init so fail() can restore
+  // it after a custom validation message has overwritten it.
+  var ERR_DEFAULT = null;
+
   // #46 — the live topic <select> option for city requests. A plain contact
   // email is a dead end for these; the site-wide waitlist modal
   // (lokali-waitlist.js, any [data-lokali-waitlist] element opens it) captures
@@ -108,6 +112,9 @@
   function init() {
     var form = $(FORM_ID);
     if (!form) return; // not on the contact page
+
+    var errEl = $('cf-error');
+    if (errEl) ERR_DEFAULT = errEl.textContent;
 
     // #46 — route "request a new city" through the structured waitlist flow.
     injectWaitlistHint(form);
@@ -187,17 +194,15 @@
     function fail(custom) {
       if (btn) { btn.disabled = false; if (btnText != null) btn.value = btnText; }
       var err = $('cf-error');
-      if (err && custom) err.textContent = custom;
+      // No custom message = delivery failure — restore the default copy so a
+      // stale field-validation message isn't shown for a network/5xx error.
+      if (err) {
+        if (custom) err.textContent = custom;
+        else if (ERR_DEFAULT != null) err.textContent = ERR_DEFAULT;
+      }
       showMsg('error');
       return false;
     }
-  }
-
-  function fail(custom) {
-    var err = $('cf-error');
-    if (err && custom) err.textContent = custom;
-    showMsg('error');
-    return false;
   }
 
   function send(data) {

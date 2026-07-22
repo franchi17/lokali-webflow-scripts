@@ -253,7 +253,7 @@
       var s = root.querySelector('[data-ls-score]');    if (s) s.textContent = pct + '%';
       var p = root.querySelector('[data-ls-progress]'); if (p) p.style.width = pct + '%';
       var sub = root.querySelector('[data-ls-subtitle]');
-      if (sub) sub.textContent = "You're missing " + missing + ' thing' + (missing > 1 ? 's' : '') + ' that help customers decide to reach out.';
+      if (sub) sub.textContent = "You're missing " + missing + (missing > 1 ? ' things that help' : ' thing that helps') + ' customers decide to reach out.';
     }
     return pct;
   }
@@ -284,6 +284,17 @@
     // Webflow has a single combined "Active Products / Services" card bound to
     // id="stat-active-products" — show the total of both, not products alone.
     setId('stat-active-products', activeServices + activeProducts);
+    // The static Webflow label reads "Active Products /SerVICEs" (mid-word
+    // caps typo) — normalize it here, same retitle pattern as the Leads card.
+    var apVal = document.getElementById('stat-active-products');
+    if (apVal) {
+      var apCard = apVal, apLabel = null;
+      for (var k = 0; k < 4 && apCard && !apLabel; k++) {
+        apCard = apCard.parentElement;
+        apLabel = apCard && apCard.querySelector('.dashboard-card-header');
+      }
+      if (apLabel) apLabel.textContent = 'Active Products / Services';
+    }
     // Profile views. Needs an element with id="stat-profile-views" in Webflow.
     // vendor/me now returns profile_views_total computed LIVE from page_views
     // (same source as the analytics page, so the two numbers agree). Falls back
@@ -301,7 +312,10 @@
     function in30(rows) {
       var now = Date.now();
       return (rows || []).filter(function (r) {
-        var t = Date.parse(r.created_at || r.created || 0);
+        // The adapter normalizes created_at to epoch-ms NUMBERS — Date.parse
+        // NaNs on those, so coerce numerics (incl. numeric strings) first.
+        var raw = r.created_at || r.created || 0;
+        var t = isNaN(Number(raw)) ? Date.parse(raw) : Number(raw);
         return t && (now - t) < DAY30;
       }).length;
     }
@@ -340,7 +354,6 @@
     var flagged = false, seen = false;
     try {
       flagged = sessionStorage.getItem(WZ_FLAG) === '1';
-      if (flagged) sessionStorage.removeItem(WZ_FLAG);
       seen = sessionStorage.getItem(WZ_SEEN) === '1';
     } catch (e) {}
     if (!v) return;
@@ -351,11 +364,15 @@
     // Session-gated so ✕ isn't re-nagged on every dashboard nav — the
     // persistent nudge stays the Listing-Strength gate banner.
     if (!flagged && (v.business_name || seen)) return;
-    // Don't burn the once-per-session shot if the wizard's deps aren't up yet
-    // (runSetupWizard bails silently on them).
+    // Don't burn the one-shot flags if the wizard's deps aren't up yet
+    // (runSetupWizard bails silently on them) — consume them only once we
+    // know the wizard will actually run.
     var SB = window.LokaliSupabaseAPI;
     if (!window.LokaliAPI || !SB || !SB.vendors || !SB.vendors.updateProfile) return;
-    try { sessionStorage.setItem(WZ_SEEN, '1'); } catch (e) {}
+    try {
+      if (flagged) sessionStorage.removeItem(WZ_FLAG);
+      sessionStorage.setItem(WZ_SEEN, '1');
+    } catch (e) {}
     runSetupWizard(v);
   }
 
@@ -372,17 +389,35 @@
     card.style.cssText = "font-family:'Plus Jakarta Sans',sans-serif;background:#fff;max-width:480px;" +
       'width:100%;border-radius:20px;padding:28px 26px 24px;position:relative;color:#3b3654;' +
       'box-shadow:0 18px 60px rgba(35,29,63,.25);max-height:86vh;overflow:auto;';
+    card.setAttribute('role', 'dialog');
+    card.setAttribute('aria-modal', 'true');
+    card.setAttribute('aria-labelledby', 'lok-wz-title');
     wrap.appendChild(card);
 
     var steps = [];
     var stepIdx = 0;
+    var opener = document.activeElement; // restore focus here on close
 
     function esc(s) {
       return String(s).replace(/[&<>"']/g, function (c) {
         return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
       });
     }
-    function close() { if (wrap.parentNode) wrap.parentNode.removeChild(wrap); }
+    // Escape closes; Tab is contained within the dialog (aria-modal promise).
+    function onWzKeydown(e) {
+      if (e.key === 'Escape') { close(); return; }
+      if (e.key !== 'Tab') return;
+      var f = card.querySelectorAll('button, a[href], input');
+      if (!f.length) return;
+      var first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+    function close() {
+      document.removeEventListener('keydown', onWzKeydown);
+      if (wrap.parentNode) wrap.parentNode.removeChild(wrap);
+      try { if (opener && opener.focus) opener.focus(); } catch (e) {}
+    }
     function next() { stepIdx++; if (stepIdx >= steps.length) close(); else steps[stepIdx](); }
 
     function shell(title, sub, bodyHtml, opts) {
@@ -392,15 +427,16 @@
           'border:none;cursor:pointer;font-size:18px;color:#9A9AB0;line-height:1;">✕</button>' +
         '<div style="font-size:12px;font-weight:700;letter-spacing:.06em;color:#6E3CFF;margin-bottom:6px;">' +
           'STEP ' + (stepIdx + 1) + ' OF ' + steps.length + '</div>' +
-        '<h3 style="font-size:21px;font-weight:800;color:#231d3f;margin:0 0 6px;font-family:inherit;">' + title + '</h3>' +
+        '<h3 id="lok-wz-title" style="font-size:21px;font-weight:800;color:#231d3f;margin:0 0 6px;font-family:inherit;">' + title + '</h3>' +
         '<p style="font-size:14px;line-height:1.55;margin:0 0 16px;">' + sub + '</p>' +
         '<div data-wz-body>' + bodyHtml + '</div>' +
-        '<div data-wz-err style="display:none;color:#C05621;font-size:13px;margin-top:10px;"></div>' +
+        '<div data-wz-err aria-live="polite" style="display:none;color:#C05621;font-size:13px;margin-top:10px;"></div>' +
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:18px;gap:12px;">' +
           '<div style="font-size:12.5px;line-height:1.45;color:#9A9AB0;max-width:55%;">' +
             'You can skip — but your storefront <strong style="color:#8A4B14;">won’t go live</strong> until this is set.</div>' +
           '<div style="display:flex;align-items:center;gap:14px;white-space:nowrap;">' +
-            '<a data-wz-skip style="cursor:pointer;font-size:14px;color:#9A9AB0;text-decoration:underline;">Skip for now</a>' +
+            '<button type="button" data-wz-skip style="background:none;border:none;padding:0;cursor:pointer;' +
+              'font-family:inherit;font-size:14px;color:#9A9AB0;text-decoration:underline;">Skip for now</button>' +
             (opts.noContinue ? '' :
               '<button data-wz-next style="background:#6E3CFF;color:#fff;border:none;cursor:pointer;font-family:inherit;' +
               'font-weight:700;font-size:14px;padding:10px 22px;border-radius:999px;">Continue</button>') +
@@ -408,6 +444,10 @@
         '</div>';
       card.querySelector('[data-wz-x]').addEventListener('click', close);
       card.querySelector('[data-wz-skip]').addEventListener('click', next);
+      // Focus follows each swapped-in step (the innerHTML reset drops it to body).
+      var fc = card.querySelector('[data-wz-body] input') || card.querySelector('[data-wz-body] a[href]') ||
+               card.querySelector('[data-wz-next]') || card.querySelector('[data-wz-skip]');
+      setTimeout(function () { try { fc.focus(); } catch (e) {} }, 0);
       return card.querySelector('[data-wz-body]');
     }
     function showErr(msg) {
@@ -423,14 +463,17 @@
         var b = document.createElement('button');
         b.type = 'button';
         b.textContent = name;
+        b.setAttribute('aria-pressed', 'false'); // selected state isn't color-only
         b.style.cssText = 'font-family:inherit;font-size:14px;padding:8px 16px;border-radius:999px;cursor:pointer;' +
           'border:1.5px solid #E4DCF7;background:#FAF7FF;color:#3b3654;';
         b.addEventListener('click', function () {
           if (!multi) { sel = {}; box.querySelectorAll('button').forEach(function (o) {
-            o.style.background = '#FAF7FF'; o.style.borderColor = '#E4DCF7'; o.style.color = '#3b3654'; }); }
+            o.style.background = '#FAF7FF'; o.style.borderColor = '#E4DCF7'; o.style.color = '#3b3654';
+            o.setAttribute('aria-pressed', 'false'); }); }
           var on = !sel[id];
           sel[id] = on;
           if (!on) delete sel[id];
+          b.setAttribute('aria-pressed', on ? 'true' : 'false');
           b.style.background = on ? '#6E3CFF' : '#FAF7FF';
           b.style.borderColor = on ? '#6E3CFF' : '#E4DCF7';
           b.style.color = on ? '#fff' : '#3b3654';
@@ -439,6 +482,24 @@
       });
       body.appendChild(box);
       return function () { return Object.keys(sel).map(Number); };
+    }
+    // Lookup failed/empty: the step body used to clear to a blank box (or hang
+    // on "Loading…" with a dead Continue). Inline message + retry; the footer
+    // Skip stays live, so the step is never a dead end.
+    function stepLoadFail(body, what, retryFn) {
+      body.innerHTML = '';
+      var m = document.createElement('div');
+      m.style.cssText = 'font-size:14px;line-height:1.5;color:#8A4B14;background:#FDF1E7;' +
+        'border:1px solid #F6D9BE;border-radius:12px;padding:12px 14px;';
+      m.textContent = 'Couldn’t load ' + what + ' — try again, or use Skip for now and set this later on your profile page.';
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = 'Try again';
+      b.style.cssText = 'font-family:inherit;font-weight:700;font-size:14px;color:#fff;background:#6E3CFF;' +
+        'border:none;border-radius:999px;padding:10px 20px;cursor:pointer;margin-top:10px;';
+      b.addEventListener('click', retryFn);
+      body.appendChild(m);
+      body.appendChild(b);
     }
 
     // Step: business name (#101) — only for storefronts created straight from
@@ -468,39 +529,53 @@
     // Step: category (single pick — more can be added on the profile page later)
     if (!(v.categories_id && v.categories_id.length)) steps.push(function () {
       var body = shell('What do you do?', 'Pick the category that fits your business best.', '<div data-wz-load>Loading categories…</div>');
-      (A.data && A.data.categories ? A.data.categories() : Promise.resolve({ data: [] })).then(function (r) {
-        var items = (r && r.data) || [];
-        if (items.items) items = items.items;
-        body.innerHTML = '';
-        var getSel = pillList(body, items, 'id', 'category_name', false);
-        card.querySelector('[data-wz-next]').addEventListener('click', function () {
-          var ids = getSel();
-          if (!ids.length) { showErr('Pick a category (or use Skip for now).'); return; }
-          SB.vendors.updateProfile(v.id, { categories_id: ids }).then(function (res) {
-            if (res && res.error) { showErr('Could not save — try again.'); return; }
-            next();
-          });
+      var getSel = null;
+      // Bound before the fetch so Continue always answers, even mid-load.
+      card.querySelector('[data-wz-next]').addEventListener('click', function () {
+        var ids = getSel ? getSel() : [];
+        if (!ids.length) { showErr('Pick a category (or use Skip for now).'); return; }
+        SB.vendors.updateProfile(v.id, { categories_id: ids }).then(function (res) {
+          if (res && res.error) { showErr('Could not save — try again.'); return; }
+          next();
         });
       });
+      function loadCats() {
+        body.innerHTML = '<div>Loading categories…</div>';
+        (A.data && A.data.categories ? A.data.categories() : Promise.resolve({ data: [] })).then(function (r) {
+          var items = (r && !r.error && r.data) || [];
+          if (items.items) items = items.items;
+          if (!items.length) { stepLoadFail(body, 'categories', loadCats); return; }
+          body.innerHTML = '';
+          getSel = pillList(body, items, 'id', 'category_name', false);
+        }, function () { stepLoadFail(body, 'categories', loadCats); });
+      }
+      loadCats();
     });
 
     // Step: service area (multi pick — a vendor can serve several communities)
     if (!(v.locations_id && v.locations_id.length)) steps.push(function () {
       var body = shell('Where do you serve?', 'Choose your community — pick every area you serve.', '<div>Loading areas…</div>');
-      (A.data && A.data.locations ? A.data.locations() : Promise.resolve({ data: [] })).then(function (r) {
-        var items = (r && r.data) || [];
-        if (items.items) items = items.items;
-        body.innerHTML = '';
-        var getSel = pillList(body, items, 'id', 'location_name', true);
-        card.querySelector('[data-wz-next]').addEventListener('click', function () {
-          var ids = getSel();
-          if (!ids.length) { showErr('Pick at least one area (or use Skip for now).'); return; }
-          SB.vendors.updateProfile(v.id, { locations_id: ids }).then(function (res) {
-            if (res && res.error) { showErr('Could not save — try again.'); return; }
-            next();
-          });
+      var getSel = null;
+      // Bound before the fetch so Continue always answers, even mid-load.
+      card.querySelector('[data-wz-next]').addEventListener('click', function () {
+        var ids = getSel ? getSel() : [];
+        if (!ids.length) { showErr('Pick at least one area (or use Skip for now).'); return; }
+        SB.vendors.updateProfile(v.id, { locations_id: ids }).then(function (res) {
+          if (res && res.error) { showErr('Could not save — try again.'); return; }
+          next();
         });
       });
+      function loadAreas() {
+        body.innerHTML = '<div>Loading areas…</div>';
+        (A.data && A.data.locations ? A.data.locations() : Promise.resolve({ data: [] })).then(function (r) {
+          var items = (r && !r.error && r.data) || [];
+          if (items.items) items = items.items;
+          if (!items.length) { stepLoadFail(body, 'areas', loadAreas); return; }
+          body.innerHTML = '';
+          getSel = pillList(body, items, 'id', 'location_name', true);
+        }, function () { stepLoadFail(body, 'areas', loadAreas); });
+      }
+      loadAreas();
     });
 
     // Step: first listing — out-and-back CTA into the real add-service/product
@@ -518,7 +593,40 @@
 
     if (!steps.length) return;
     document.body.appendChild(wrap);
+    document.addEventListener('keydown', onWzKeydown);
     steps[0]();
+  }
+
+  // Load-failure card: after the retry budget is spent the page used to sit on
+  // the static Webflow placeholders with no hint anything failed. Inline card
+  // with a Retry button, mounted above the listing-strength card.
+  function showLoadError() {
+    var box = document.querySelector('[data-dash-load-err]');
+    if (!box) {
+      box = document.createElement('div');
+      box.setAttribute('data-dash-load-err', '');
+      box.setAttribute('role', 'alert');
+      box.style.cssText = "font-family:'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;" +
+        'flex-wrap:wrap;gap:12px;background:#FDF1E7;border:1px solid #F6D9BE;border-radius:12px;' +
+        'padding:14px 16px;margin:0 0 16px;font-size:14px;line-height:1.5;color:#8A4B14;';
+      box.innerHTML = '<span style="flex:1;min-width:200px;">We couldn’t load your dashboard. ' +
+        'Check your connection and try again.</span>' +
+        '<button type="button" data-dash-load-retry style="font-family:inherit;font-weight:700;font-size:14px;' +
+        'color:#fff;background:#6002EE;border:none;border-radius:999px;padding:10px 22px;cursor:pointer;min-height:44px;">Retry</button>';
+      var anchor = document.querySelector('[data-listing-strength]');
+      if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(box, anchor);
+      else document.body.insertBefore(box, document.body.firstChild);
+      box.querySelector('[data-dash-load-retry]').addEventListener('click', function () {
+        box.style.display = 'none';
+        _initRetries = 0;
+        init();
+      });
+    }
+    box.style.display = 'flex';
+  }
+  function hideLoadError() {
+    var box = document.querySelector('[data-dash-load-err]');
+    if (box) box.style.display = 'none';
   }
 
   function init() {
@@ -563,14 +671,25 @@
         if (_initRetries < 2) {
           _initRetries++;
           setTimeout(init, 4000 * _initRetries);
+          return;
         }
+        showLoadError(); // retry budget spent — never fail silent
         return;
       }
+      hideLoadError();
       var v = vendorRes.data.vendor || vendorRes.data;
       var leadsRes = r[3];
       var leadsData = leadsRes && !leadsRes.error ? (leadsRes.data != null ? leadsRes.data : leadsRes) : null;
       render(v, toArr(r[1].data), toArr(r[2].data), leadsData);
       maybeRunWizard(v); // #90 first-run setup wizard (one-shot, flag-gated)
+    }).catch(function () {
+      // Hard rejection (thrown error anywhere in the chain) — same budget + card.
+      if (_initRetries < 2) {
+        _initRetries++;
+        setTimeout(init, 4000 * _initRetries);
+        return;
+      }
+      showLoadError();
     });
   }
 

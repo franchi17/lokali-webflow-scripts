@@ -87,7 +87,16 @@
     catch (e) { return null; }
   }
   function getCache() { try { return JSON.parse(localStorage.getItem(CACHE_KEY) || 'null'); } catch (e) { return null; } }
-  function setCache(o) { try { localStorage.setItem(CACHE_KEY, JSON.stringify(o)); } catch (e) {} }
+  // Merge-write: /account rides extra keys on this cache (#79 avatar) — this
+  // writer owns only role/first_name/last_name/business_name, so a replace
+  // would wipe the rest.
+  function setCache(o) {
+    try {
+      var ex = getCache() || {};
+      for (var k in o) { if (Object.prototype.hasOwnProperty.call(o, k)) ex[k] = o[k]; }
+      localStorage.setItem(CACHE_KEY, JSON.stringify(ex));
+    } catch (e) {}
+  }
   function clearAll() { try { localStorage.removeItem(TOKEN_KEY); localStorage.removeItem(CACHE_KEY); } catch (e) {} }
 
   if (!token()) return; // signed out → leave the native "Login" link alone
@@ -146,7 +155,9 @@
       // held the SAME in the current state (no violet/solid takeover).
       ".lok-idsw--shop .lok-idsw-ic{background:#FFF2DF;color:#FF8D00;}",
       ".lok-idsw--shop.is-current .lok-idsw-ic{background:#FFF2DF;color:#FF8D00;}",
-      ".lok-idsw-dot{margin-left:auto;width:7px;height:7px;border-radius:50%;background:#2BB673;flex-shrink:0;}"
+      ".lok-idsw-dot{margin-left:auto;width:7px;height:7px;border-radius:50%;background:#2BB673;flex-shrink:0;}",
+      // #98 house rule: ≥44px tap targets on mobile — chip trigger + menu rows.
+      "@media (max-width:991px){.lok-acct-trigger{min-height:44px;}.lok-acct-menu a,.lok-acct-menu button{min-height:44px;display:flex;align-items:center;}}"
       // (No #lok-mnav-panel switcher rules: the menu is header-chip only now —
       // render() skips the hamburger panel, which just gets its Login hidden.)
     ].join('');
@@ -374,12 +385,15 @@
                 var meta = u.user_metadata || {};
                 var cached = getCache() || {};
                 A.fetchRole().then(function (role) {
-                  resolve({
-                    role: role || cached.role || null,
-                    first_name: meta.first_name || cached.first_name || '',
-                    last_name: meta.last_name || cached.last_name || '',
-                    business_name: cached.business_name || ''  // #66 P2 switcher label
-                  });
+                  // Mutate the cached object (not a fresh one) so keys this
+                  // writer doesn't own (#79 avatar) survive into acct/setCache.
+                  cached.role = role || cached.role || null;
+                  // Google identities carry given_name/family_name/full_name,
+                  // not first_name — same fallback as the auth-sync route.
+                  cached.first_name = meta.first_name || meta.given_name || (meta.full_name || meta.name || '').split(' ')[0] || cached.first_name || '';
+                  cached.last_name = meta.last_name || meta.family_name || cached.last_name || '';
+                  cached.business_name = cached.business_name || '';  // #66 P2 switcher label
+                  resolve(cached);
                 });
                 return;
               }

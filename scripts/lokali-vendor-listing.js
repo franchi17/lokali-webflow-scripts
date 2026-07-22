@@ -36,9 +36,25 @@
   // ---- tiny DOM helpers -------------------------------------------------
   function $(sel, root) { return (root || document).querySelector(sel); }
   function $all(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
-  function setText(id, val) { var el = document.getElementById(id); if (el) el.textContent = (val == null || val === '') ? el.textContent : String(val); }
+  // Empty value CLEARS the node — keeping the old text left the Webflow
+  // template's placeholder copy reading as real data on sparse/failed fields.
+  function setText(id, val) { var el = document.getElementById(id); if (el) el.textContent = (val == null) ? '' : String(val); }
   function show(el, on) { if (el) el.style.display = on ? '' : 'none'; }
   function digits(s) { return String(s || '').replace(/[^0-9]/g, ''); }
+  // Digits-with-country-code for tel:/sms:/wa.me links. Stored values vary:
+  // '+14155550123' (E.164 — the dashboard phone widget's format), bare
+  // '4155550123', '14155550123', AND legacy '+4155550123' — the pre-#103
+  // widget stored '+' + the raw 10 national digits, so a bare 10-digit result
+  // is ALWAYS a NANP number regardless of the '+' (real foreign E.164 never
+  // digits-out to exactly 10 here). Heal 10-digit first, THEN trust '+'.
+  function normPhone(raw) {
+    var s = String(raw || '').trim();
+    var d = digits(s);
+    if (!d) return '';
+    if (d.length === 10) return '1' + d;
+    if (s.charAt(0) === '+') return d;
+    return d;
+  }
   function ce(tag, cls) { var e = document.createElement(tag); if (cls) e.className = cls; return e; }
   function initials(name) {
     var p = String(name || '').trim().split(/\s+/).filter(Boolean);
@@ -224,6 +240,9 @@
       btn.setAttribute('role', 'button');
       btn.setAttribute('aria-pressed', 'false');
       btn.setAttribute('aria-label', 'Save vendor');
+      // Webflow element is a div — needs a tabindex to be reachable at all
+      // (Enter/Space handling lives in initSave beside the click wiring).
+      if (btn.tagName !== 'BUTTON' && btn.tagName !== 'A') btn.setAttribute('tabindex', '0');
     }
     // Share + Save side by side: wrap the share mount (lokali-share.js fills
     // it) and the save button in one flex row at the foot of the action column.
@@ -594,7 +613,7 @@
     // the sticky nav/rail/anchor offsets clear it (0 if the header ever changes).
     opSetTop();
     var t = null;
-    window.addEventListener('resize', function () { clearTimeout(t); t = setTimeout(function () { placeOpCard(); setOpTop(); opNavFadeSync(nav); }, 150); });
+    window.addEventListener('resize', function () { clearTimeout(t); t = setTimeout(function () { placeOpCard(); opSetTop(); opNavFadeSync(nav); }, 150); });
     initOpNavScroll(navSentinel, nav);
     watchAvailability(main, nav);
     loadInquiryScript();
@@ -651,7 +670,10 @@
       var b = document.getElementById('lok-inq-btn');
       if (b) b.click();
     });
-    var call = ce('a', 'vl-op-bar-call');
+    // Real <button> (was an href-less <a>) so it's focusable + keyboard-fires;
+    // the bar CSS already styles button and a alike.
+    var call = ce('button', 'vl-op-bar-call');
+    call.type = 'button';
     call.textContent = 'Call';
     call.addEventListener('click', function (ev) {
       ev.preventDefault();
@@ -668,8 +690,14 @@
     // no inquiry mount (script missing) → no message button either
     var msgBtn = document.querySelector('.vl-op-bar-msg');
     if (msgBtn && !document.getElementById('lok-inq-btn')) {
-      // check again shortly — lokali-inquiry.js mounts off the vendor-loaded event
-      setTimeout(function () { show(msgBtn, !!document.getElementById('lok-inq-btn')); }, 1200);
+      // lokali-inquiry.js is injected dynamically and mounts off the
+      // vendor-loaded event — a slow connection can beat a one-shot check, so
+      // poll (~10s) before deciding the bar's primary CTA has nothing to proxy.
+      var tries = 0;
+      var iv = setInterval(function () {
+        var has = !!document.getElementById('lok-inq-btn');
+        if (has || ++tries >= 20) { clearInterval(iv); show(msgBtn, has); }
+      }, 500);
     }
   }
 
@@ -865,8 +893,22 @@
       p.then(function (res) { if (res && res.error) vlSetSaveUI(was); })
        .catch(function () { vlSetSaveUI(was); });
     });
+    // role="button" on a div (styleHeroChrome) — Enter/Space must activate it.
+    if (btn.tagName !== 'BUTTON' && btn.tagName !== 'A') {
+      btn.addEventListener('keydown', function (ev) {
+        if (ev.key === 'Enter' || ev.key === ' ' || ev.key === 'Spacebar') { ev.preventDefault(); btn.click(); }
+      });
+    }
     // Reflect the save once the customer finishes a sign-up-to-save flow.
-    window.addEventListener('lokali:authed', function () { setTimeout(refreshSaveState, 400); });
+    // With a pending save, lokali-favorites.js owns completion and announces
+    // 'lokali:favorites-synced' when its POST settles — refreshing on a fixed
+    // timer raced that POST and painted the button back to "Save".
+    window.addEventListener('lokali:authed', function () {
+      var pending = null;
+      try { pending = sessionStorage.getItem('lokali_pending_fav'); } catch (e) {}
+      if (!pending) setTimeout(refreshSaveState, 400);
+    });
+    window.addEventListener('lokali:favorites-synced', function () { refreshSaveState(); });
   }
 
   // Initial saved/unsaved state once we know the numeric id + have a token.
@@ -1314,7 +1356,9 @@
   function initContact(v) {
     var name = v.business_name || 'this vendor';
     var email = v.contact_email;
-    var phone = digits(v.phone_number);
+    // Country-code-normalized digits — ONE builder for every channel (sms/wa/
+    // tel + the op-bar Call proxy, which clicks the real #vl-ch-call anchor).
+    var phone = normPhone(v.phone_number);
     var foundCopy = "Hi " + name + ", I found you on Lokali and I'd love to learn more about your services.";
 
     var emailEl = document.getElementById('vl-ch-email');
@@ -1327,19 +1371,19 @@
     }
     var smsEl = document.getElementById('vl-ch-sms');
     if (smsEl) {
-      if (phone && v.text_messages) { smsEl.href = 'sms:+1' + phone + '?body=' + encodeURIComponent(foundCopy); }
+      if (phone && v.text_messages) { smsEl.href = 'sms:+' + phone + '?body=' + encodeURIComponent(foundCopy); }
       else { show(smsEl, false); }
     }
     var waEl = document.getElementById('vl-ch-whatsapp');
     if (waEl) {
-      if (phone && v.whatsapp_messages) { waEl.href = 'https://wa.me/1' + phone + '?text=' + encodeURIComponent(foundCopy); }
+      if (phone && v.whatsapp_messages) { waEl.href = 'https://wa.me/' + phone + '?text=' + encodeURIComponent(foundCopy); }
       else { show(waEl, false); }
     }
     var callEl = document.getElementById('vl-ch-call');
     if (callEl) {
       // #76c: phone_calls===false means the vendor unticked "Customers can call
       // me" — missing/null (pre-patch rows) keeps the legacy always-show.
-      if (phone && v.phone_calls !== false) { callEl.href = 'tel:+1' + phone; }
+      if (phone && v.phone_calls !== false) { callEl.href = 'tel:+' + phone; }
       else { show(callEl, false); }
     }
     // Label helper for the meta links (set by styleHeroChrome); falls back to
@@ -1411,18 +1455,11 @@
   // a storefront that hasn't met the minimum bar. Never a 404: the row is
   // readable, only discovery is gated. Visitors get a soft check-back note;
   // the OWNER gets a requirements checklist + a dashboard link.
-  function renderNotPublicState(v) {
-    var API = window.LokaliAPI;
-    function escapeHtml(s) {
-      return String(s).replace(/[&<>"']/g, function (c) {
-        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-      });
-    }
-    var page = document.querySelector('.vl-page') || document.querySelector('main') || document.body;
-    // Hide the Webflow template content so placeholder data never shows.
-    for (var i = 0; i < page.children.length; i++) page.children[i].style.display = 'none';
-
+  // Shared by the not-public and not-found states.
+  function injectNpStyles() {
+    if (document.getElementById('vl-np-styles')) return;
     var st = ce('style');
+    st.id = 'vl-np-styles';
     st.textContent = [
       '.vl-np{font-family:"Plus Jakarta Sans",sans-serif;max-width:560px;margin:64px auto 96px;padding:40px 32px;',
       'background:linear-gradient(180deg,#faf7ff 0%,#fff 70%);border:1px solid #eee9fb;border-radius:20px;',
@@ -1437,11 +1474,24 @@
       '.vl-np-done{background:#e9f8ef;color:#1e7e46;}',
       '.vl-np-todo{background:#fdeee2;color:#c05621;}',
       '.vl-np-btn{display:inline-block;background:#6E3CFF;color:#fff;font-weight:700;font-size:15px;',
-      'padding:12px 26px;border-radius:999px;text-decoration:none;font-family:inherit;}',
+      'padding:12px 26px;border-radius:999px;text-decoration:none;font-family:inherit;border:none;cursor:pointer;}', // border/cursor: the retry variant is a <button>
       '.vl-np-sub{display:block;margin-top:14px;font-size:14px;}',
       '.vl-np-sub a{color:#6E3CFF;text-decoration:underline;}'
     ].join('');
     document.head.appendChild(st);
+  }
+
+  function renderNotPublicState(v) {
+    var API = window.LokaliAPI;
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+      });
+    }
+    var page = document.querySelector('.vl-page') || document.querySelector('main') || document.body;
+    // Hide the Webflow template content so placeholder data never shows.
+    for (var i = 0; i < page.children.length; i++) page.children[i].style.display = 'none';
+    injectNpStyles();
 
     var card = ce('div', 'vl-np');
     function frag(html) { var d = ce('div'); d.innerHTML = html; return d; }
@@ -1464,25 +1514,67 @@
         if (!mine || String(mine.id) !== String(v.id)) return;
         var catsOk = !!(v.categories_id && v.categories_id.length);
         var locsOk = !!(v.locations_id && v.locations_id.length);
-        // name is always set at creation; if both fields are ok the only
-        // remaining gap must be the live-listing requirement.
         function row(ok, label) {
           return '<li><span class="vl-np-dot ' + (ok ? 'vl-np-done">✓' : 'vl-np-todo">•') +
                  '</span>' + label + '</li>';
         }
-        card.innerHTML =
-          '<div class="vl-np-emoji">🚧</div>' +
-          '<h1>Your storefront isn’t live yet</h1>' +
-          '<p>Customers can’t find it on The Market until these are done:</p>' +
-          '<ul class="vl-np-list">' +
-          row(catsOk, 'Pick your category') +
-          row(locsOk, 'Set your service area') +
-          row(false, 'Add at least one service or product') +
-          '</ul>' +
-          '<a class="vl-np-btn" href="/vendor-dashboard/dashboard">Finish setting up</a>' +
-          '<span class="vl-np-sub">It goes live automatically the moment everything’s in.</span>';
+        // The listings requirement needs real data — a hardcoded false told
+        // vendors with live listings to fix the wrong thing. Owner-context
+        // lists return all rows, so count only active ones (the publish gate
+        // requires >=1 LIVE listing).
+        Promise.all([
+          API.services.listByVendor(v.id).catch(function () { return { data: [] }; }),
+          API.products.listByVendor(v.id).catch(function () { return { data: [] }; })
+        ]).then(function (lr) {
+          function liveCount(res) {
+            return asArray(unwrap(res)).filter(function (x) { return x && x.is_active !== false; }).length;
+          }
+          var itemsOk = (liveCount(lr[0]) + liveCount(lr[1])) > 0;
+          card.innerHTML =
+            '<div class="vl-np-emoji">🚧</div>' +
+            '<h1>Your storefront isn’t live yet</h1>' +
+            '<p>Customers can’t find it on The Market until these are done:</p>' +
+            '<ul class="vl-np-list">' +
+            row(catsOk, 'Pick your category') +
+            row(locsOk, 'Set your service area') +
+            row(itemsOk, 'Add at least one service or product') +
+            '</ul>' +
+            '<a class="vl-np-btn" href="/vendor-dashboard/dashboard">Finish setting up</a>' +
+            '<span class="vl-np-sub">It goes live automatically the moment everything’s in.</span>';
+        });
       }).catch(function () {});
     }
+  }
+
+  // Unknown slug / vendor fetch dead after retries — the template's demo
+  // vendor ("Maria's Sweet Studio") must never render as a real storefront.
+  // Transient-failure sibling of renderNotFoundState — same shell, honest copy.
+  function renderLoadErrorState() {
+    var page = document.querySelector('.vl-page') || document.querySelector('main') || document.body;
+    for (var i = 0; i < page.children.length; i++) page.children[i].style.display = 'none';
+    injectNpStyles();
+    var card = ce('div', 'vl-np');
+    card.innerHTML =
+      '<div class="vl-np-emoji">⏳</div>' +
+      '<h1>Having trouble loading this storefront</h1>' +
+      '<p>It’s us, not you — give it another try in a moment.</p>' +
+      '<button type="button" class="vl-np-btn" data-vl-retry>Try again</button>';
+    card.querySelector('[data-vl-retry]').addEventListener('click', function () { window.location.reload(); });
+    page.appendChild(card);
+  }
+
+  function renderNotFoundState() {
+    var page = document.querySelector('.vl-page') || document.querySelector('main') || document.body;
+    for (var i = 0; i < page.children.length; i++) page.children[i].style.display = 'none';
+    injectNpStyles();
+    var card = ce('div', 'vl-np');
+    card.innerHTML =
+      '<div class="vl-np-emoji">🔍</div>' +
+      '<h1>This vendor isn’t available</h1>' +
+      '<p>The storefront you’re looking for doesn’t exist, or the link is out of date.</p>' +
+      '<a class="vl-np-btn" href="/the-market">Browse local vendors</a>';
+    page.appendChild(card);
+    document.title = 'Vendor not found — Lokali';
   }
 
   function populateVendor(v, labels) {
@@ -1537,6 +1629,15 @@
     var catName = '';
     if (catId != null && labels.categories) catName = labels.categories[catId] || '';
     if (catName) { setText('vl-category', catName); setText('vl-about-category', catName); }
+    else {
+      // No resolvable name (labels fetch failed / no category) — the template's
+      // hardcoded category must not read as this vendor's; clear + hide the row.
+      setText('vl-category', '');
+      setText('vl-about-category', '');
+      var catSpan0 = document.getElementById('vl-category');
+      var catRow0 = catSpan0 && catSpan0.closest ? catSpan0.closest('.vl-meta-row') : null;
+      show(catRow0 || catSpan0, false);
+    }
     styleCategoryPill(catId); // colored pill + icon, matching the vendor card
 
     // area pills (locations_id mapped via labels.locations)
@@ -1557,8 +1658,8 @@
       if (yr) { setText('vl-since', 'Part of the Lokali community since ' + yr); setText('vl-about-since', yr); }
     }
 
-    // about bio + website
-    if (v.business_description) setText('vl-about-bio', v.business_description);
+    // about bio + website — empty must CLEAR the template's demo bio
+    setText('vl-about-bio', v.business_description || '');
     var web = document.getElementById('vl-about-website');
     if (web) {
       if (v.website_url) {
@@ -1952,7 +2053,16 @@
     ]).then(function (res) {
       var v = unwrap(res[0]);
       if (v && v.vendor) v = v.vendor; // GET vendor/id/{id} returns { vendor: {...} }
-      if (!v || (res[0] && res[0].error)) { console.warn('[lokali-vendor-listing] vendor fetch failed', res[0] && res[0].error); return; }
+      if (!v || (res[0] && res[0].error)) {
+        console.warn('[lokali-vendor-listing] vendor fetch failed', res[0] && res[0].error);
+        // A persistent TRANSIENT failure (rate-limit burst, network blip) must
+        // not claim the vendor "doesn't exist" — that copy is confidently
+        // wrong about a real storefront. Offer a retry instead.
+        var errTxt = String((res[0] && res[0].error) || '').toLowerCase();
+        if (v == null && /rate|429|too many|timeout|network|fetch|load failed/.test(errTxt)) renderLoadErrorState();
+        else renderNotFoundState(); // never leave the template's demo vendor as the hero
+        return;
+      }
       // #90 publish gate — storefront exists but hasn't met the minimum bar
       // (category + service area + >=1 live listing). Render the friendly
       // "not public yet" state instead of the template page; the owner gets a
@@ -2356,7 +2466,24 @@
     });
   }
 
-  function init() { injectStyles(); styleHeroChrome(); if (ONEPAGE) onepageLayout(); initTabs(); initSave(); hydrate(); }
+  // #contact deep-link — the /account Saved-row "Contact" button points here.
+  // Scroll to the contact-channels block once it exists (initContact fills it
+  // after hydrate, so poll briefly rather than racing it).
+  function handleContactHash() {
+    if ((window.location.hash || '').toLowerCase() !== '#contact') return;
+    var tries = 0;
+    (function poll() {
+      var ch = document.getElementById('lok-inq-btn') || document.getElementById('vl-ch-email');
+      var target = ch && (ch.parentNode || ch);
+      if (target && target.offsetParent !== null) {
+        try { target.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) { target.scrollIntoView(); }
+        return;
+      }
+      if (++tries < 40) setTimeout(poll, 250); // ~10s cap
+    })();
+  }
+
+  function init() { injectStyles(); styleHeroChrome(); if (ONEPAGE) onepageLayout(); initTabs(); initSave(); hydrate(); handleContactHash(); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
 })();

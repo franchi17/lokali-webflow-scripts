@@ -323,12 +323,31 @@
     html += '</div>';
     this.$inbox.innerHTML = html;
 
+    // $inbox persists across re-renders (settings Save re-calls renderInbox) —
+    // bind once or a single Confirm click fires the RPC once per render.
+    if (this._inboxWired) return;
+    this._inboxWired = true;
     this.$inbox.addEventListener('click', function (e) {
       var btn = e.target.closest('button[data-a]');
       if (!btn) return;
       var row = btn.closest('[data-inq]');
       var id = Number(row.getAttribute('data-inq'));
       var actions = row.querySelector('.ava-actions');
+      // Decline sits 7px from Confirm and can't be undone (not_pending guard) —
+      // arm on the first click, fire only on a second within the window.
+      if (btn.getAttribute('data-a') === 'decline' && !btn.getAttribute('data-armed')) {
+        btn.setAttribute('data-armed', '1');
+        btn.textContent = 'Decline — sure?';
+        btn.style.color = '#9E5F44';
+        setTimeout(function () {
+          if (btn.getAttribute('data-armed')) {
+            btn.removeAttribute('data-armed');
+            btn.textContent = 'Decline';
+            btn.style.color = '';
+          }
+        }, 4000);
+        return;
+      }
       actions.innerHTML = '<span class="ava-sub">Working…</span>';
       var call = btn.getAttribute('data-a') === 'confirm' ? API.confirm(id) : API.decline(id);
       call.then(function (r) {
@@ -368,39 +387,39 @@
         '</div>' +
         '<p class="ava-sub" style="margin:0 0 4px;">Capacity mode</p>' +
         '<div class="ava-seg ava-mode" style="margin-bottom:14px;">' +
-          '<div data-m="quantity" class="' + (c.capacity_mode === 'quantity' ? 'on' : '') + '">By quantity</div>' +
-          '<div data-m="slot" class="' + (c.capacity_mode === 'slot' ? 'on' : '') + '">By time slot</div>' +
+          '<div data-m="quantity" role="button" tabindex="0" aria-pressed="' + (c.capacity_mode === 'quantity') + '" class="' + (c.capacity_mode === 'quantity' ? 'on' : '') + '">By quantity</div>' +
+          '<div data-m="slot" role="button" tabindex="0" aria-pressed="' + (c.capacity_mode === 'slot') + '" class="' + (c.capacity_mode === 'slot' ? 'on' : '') + '">By time slot</div>' +
         '</div>' +
         '<div style="display:flex;flex-wrap:wrap;gap:18px;margin-bottom:6px;">' +
           '<div class="ava-caprow"><p class="ava-sub" style="margin:0 0 4px;">Orders per day</p>' +
-            '<span class="ava-step" data-f="default_daily_cap"><span data-d="-1">&#8722;</span><b>' + c.default_daily_cap + '</b><span data-d="1">+</span></span></div>' +
+            '<span class="ava-step" data-f="default_daily_cap"><span data-d="-1" role="button" tabindex="0" aria-label="Decrease orders per day">&#8722;</span><b>' + c.default_daily_cap + '</b><span data-d="1" role="button" tabindex="0" aria-label="Increase orders per day">+</span></span></div>' +
           '<div><p class="ava-sub" style="margin:0 0 4px;">Show &ldquo;Limited&rdquo; at</p>' +
-            '<span class="ava-step" data-f="limited_threshold"><span data-d="-1">&#8722;</span><b>' + c.limited_threshold + '</b><span data-d="1">+</span></span></div>' +
+            '<span class="ava-step" data-f="limited_threshold"><span data-d="-1" role="button" tabindex="0" aria-label="Decrease Limited threshold">&#8722;</span><b>' + c.limited_threshold + '</b><span data-d="1" role="button" tabindex="0" aria-label="Increase Limited threshold">+</span></span></div>' +
           '<div><p class="ava-sub" style="margin:0 0 4px;">Minimum notice (hours)</p>' +
-            '<span class="ava-step" data-f="lead_time_hours"><span data-d="-1">&#8722;</span><b>' + c.lead_time_hours + '</b><span data-d="1">+</span></span></div>' +
+            '<span class="ava-step" data-f="lead_time_hours"><span data-d="-1" role="button" tabindex="0" aria-label="Decrease minimum notice">&#8722;</span><b>' + c.lead_time_hours + '</b><span data-d="1" role="button" tabindex="0" aria-label="Increase minimum notice">+</span></span></div>' +
         '</div>' +
         '<p class="ava-note ava-leadhint" style="margin:0 0 14px;">' + leadHint(c.lead_time_hours) + '</p>' +
         '<div class="ava-slotrow" style="display:flex;flex-wrap:wrap;gap:18px;margin-bottom:14px;">' +
           '<div><p class="ava-sub" style="margin:0 0 4px;">Booking length (min)</p>' +
-            '<span class="ava-step" data-f="slot_minutes"><span data-d="-5">&#8722;</span><b>' + slotMin + '</b><span data-d="5">+</span></span></div>' +
+            '<span class="ava-step" data-f="slot_minutes"><span data-d="-5" role="button" tabindex="0" aria-label="Decrease booking length">&#8722;</span><b>' + slotMin + '</b><span data-d="5" role="button" tabindex="0" aria-label="Increase booking length">+</span></span></div>' +
           '<div><p class="ava-sub" style="margin:0 0 4px;">Buffer between (min)</p>' +
-            '<span class="ava-step" data-f="buffer_minutes"><span data-d="-5">&#8722;</span><b>' + bufMin + '</b><span data-d="5">+</span></span></div>' +
+            '<span class="ava-step" data-f="buffer_minutes"><span data-d="-5" role="button" tabindex="0" aria-label="Decrease buffer">&#8722;</span><b>' + bufMin + '</b><span data-d="5" role="button" tabindex="0" aria-label="Increase buffer">+</span></span></div>' +
         '</div>' +
         '<p class="ava-sub" style="margin:0 0 4px;">When a customer requests</p>' +
         '<div class="ava-seg ava-hold" style="margin-bottom:6px;">' +
-          '<div data-h="on_confirm" class="' + (c.hold_mode === 'on_confirm' ? 'on' : '') + '">Hold on confirm</div>' +
-          '<div data-h="on_inquiry" class="' + (c.hold_mode === 'on_inquiry' ? 'on' : '') + '">Hold on inquiry</div>' +
+          '<div data-h="on_confirm" role="button" tabindex="0" aria-pressed="' + (c.hold_mode === 'on_confirm') + '" class="' + (c.hold_mode === 'on_confirm' ? 'on' : '') + '">Hold on confirm</div>' +
+          '<div data-h="on_inquiry" role="button" tabindex="0" aria-pressed="' + (c.hold_mode === 'on_inquiry') + '" class="' + (c.hold_mode === 'on_inquiry' ? 'on' : '') + '">Hold on inquiry</div>' +
         '</div>' +
         '<div class="ava-holdwin" style="' + (c.hold_mode === 'on_inquiry' ? '' : 'display:none;') + 'margin-bottom:6px;">' +
           '<p class="ava-sub" style="margin:6px 0 4px;">Release unconfirmed holds after (hours)</p>' +
-          '<span class="ava-step" data-f="hold_window_hours"><span data-d="-1">&#8722;</span><b>' + c.hold_window_hours + '</b><span data-d="1">+</span></span></div>' +
+          '<span class="ava-step" data-f="hold_window_hours"><span data-d="-1" role="button" tabindex="0" aria-label="Decrease hold window">&#8722;</span><b>' + c.hold_window_hours + '</b><span data-d="1" role="button" tabindex="0" aria-label="Increase hold window">+</span></span></div>' +
         '<div style="display:flex;align-items:center;gap:12px;margin-top:12px;">' +
           '<button class="ava-save">Save settings</button><span class="ava-savemsg ava-sub"></span></div>' +
       '</div>';
 
-    // steppers
+    // steppers — the +/- spans carry role=button, so Enter/Space must step too
     this.$settings.querySelectorAll('.ava-step').forEach(function (st) {
-      st.addEventListener('click', function (e) {
+      function step(e) {
         var d = e.target.getAttribute && e.target.getAttribute('data-d');
         if (!d) return;
         var b = st.querySelector('b');
@@ -416,17 +435,29 @@
           self.renderHours();
           self.renderDaysOff();
         }
+      }
+      st.addEventListener('click', step);
+      st.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); step(e); }
       });
     });
     // segmented controls
     function seg(rootSel, attr, after) {
       var root = self.$settings.querySelector(rootSel);
-      root.addEventListener('click', function (e) {
+      function pick(e) {
         var t = e.target.closest('div[' + attr + ']');
         if (!t) return;
-        root.querySelectorAll('div').forEach(function (n) { n.classList.remove('on'); });
+        root.querySelectorAll('div').forEach(function (n) {
+          n.classList.remove('on');
+          n.setAttribute('aria-pressed', 'false');
+        });
         t.classList.add('on');
+        t.setAttribute('aria-pressed', 'true');
         if (after) after(t.getAttribute(attr));
+      }
+      root.addEventListener('click', pick);
+      root.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(e); }
       });
     }
     seg('.ava-mode', 'data-m', function (m) {
@@ -488,10 +519,10 @@
       '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">' +
         '<h3>Days off &amp; capacity</h3>' +
         '<div style="display:flex;align-items:center;gap:10px;">' +
-          '<span class="ava-mnav" data-d="-1" style="cursor:pointer;color:#8B7FC4;font-size:17px;">&#8249;</span>' +
+          '<button type="button" class="ava-mnav" data-d="-1" aria-label="Previous month" style="cursor:pointer;color:#8B7FC4;font-size:17px;background:none;border:none;padding:2px 6px;line-height:1;">&#8249;</button>' +
           '<span style="font-size:13px;color:#6C6880;min-width:110px;text-align:center;">' +
             MONTHS[from.getMonth()] + ' ' + from.getFullYear() + '</span>' +
-          '<span class="ava-mnav" data-d="1" style="cursor:pointer;color:' + BRAND + ';font-size:17px;">&#8250;</span>' +
+          '<button type="button" class="ava-mnav" data-d="1" aria-label="Next month" style="cursor:pointer;color:' + BRAND + ';font-size:17px;background:none;border:none;padding:2px 6px;line-height:1;">&#8250;</button>' +
         '</div></div>' +
       '<p class="ava-sub" style="margin:0 0 8px;">' +
         (isSlot
@@ -518,7 +549,9 @@
       } else {
         sub = this.usedFor(dISO) + '/' + this.capFor(dISO);
       }
-      html += '<div class="ava-cell' + (blocked ? ' off' : closed ? ' closed' : '') + '" data-date="' + dISO + '">' +
+      html += '<div class="ava-cell' + (blocked ? ' off' : closed ? ' closed' : '') + '" data-date="' + dISO + '"' +
+        ' role="button" tabindex="0" aria-pressed="' + (!!blocked) + '"' +
+        ' aria-label="' + esc(prettyDate(dISO)) + (blocked ? ' — blocked (day off)' : ' — tap to block') + '">' +
         '<span>' + i + '</span>' +
         (sub ? '<span style="font-size:9px;font-weight:400;">' + sub + '</span>' : '') +
         '</div>';
@@ -533,6 +566,9 @@
       });
     });
     this.$daysoff.querySelectorAll('.ava-cell[data-date]').forEach(function (cell) {
+      cell.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); cell.click(); }
+      });
       cell.addEventListener('click', function () {
         var dISO = cell.getAttribute('data-date');
         var row = self.dates[dISO];

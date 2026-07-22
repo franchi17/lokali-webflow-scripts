@@ -123,6 +123,7 @@
       '.vl-meet-learn{padding:8px 0;}',
       '.vl-detail-link{padding:6px 0;display:inline-block;}',
       'select.select-field-3,.mobile-sort-select select,#location-select{min-height:44px;}',
+      '#browse-mobile-filter-btn{min-height:44px;box-sizing:border-box;}',
       // F4 — footer links were 14px-tall targets, ~20 of them stacked; pad them out.
       '.lok-ft-link{display:inline-block;padding:10px 0;}',
       '.lok-ft-contactlink{display:inline-block;padding:6px 0;}',
@@ -245,10 +246,22 @@
       document.documentElement.classList.toggle('lok-mnav-open', open);
       btn.setAttribute('aria-expanded', open ? 'true' : 'false');
       btn.classList.toggle('w--open', open);
+      // Focus follows the panel: first link on open, back to the button on close
+      // (Escape/backdrop included) — else keyboard focus stays behind the backdrop.
+      if (open) {
+        var first = panel.querySelector('a,button');
+        if (first) first.focus();
+      } else if (panel.contains(document.activeElement)) {
+        btn.focus();
+      }
     }
 
     function isHamburgerVisible() {
       return getComputedStyle(btn).display !== 'none';
+    }
+
+    function toggle() {
+      setOpen(!document.documentElement.classList.contains('lok-mnav-open'));
     }
 
     // Capture phase + stopPropagation so we run before (and instead of) Webflow's dead handler.
@@ -256,7 +269,19 @@
       if (!isHamburgerVisible()) return; // desktop: let the normal nav be
       e.preventDefault();
       e.stopPropagation();
-      setOpen(!document.documentElement.classList.contains('lok-mnav-open'));
+      toggle();
+    }, true);
+    // The button is a div — it never synthesizes click from Enter/Space, and
+    // Webflow's own keydown drives its broken native menu. In the 992–1149px
+    // range this panel is the ONLY nav, so it must be keyboard-openable.
+    if (!btn.getAttribute('role')) btn.setAttribute('role', 'button');
+    if (!btn.hasAttribute('tabindex')) btn.setAttribute('tabindex', '0');
+    btn.addEventListener('keydown', function (e) {
+      if (!isHamburgerVisible()) return;
+      if (e.key !== 'Enter' && e.key !== ' ' && e.key !== 'Spacebar') return;
+      e.preventDefault(); // Space must not scroll the page
+      e.stopPropagation();
+      toggle();
     }, true);
 
     panel.addEventListener('click', function (e) { if (e.target.closest('a')) setOpen(false); });

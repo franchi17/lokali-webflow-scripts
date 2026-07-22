@@ -303,6 +303,14 @@
         window.LokaliAPI.plans.invalidateBilling();
       }
       loadBilling();
+      // #88 — a Spotlight purchase lands via the same webhook: refresh the
+      // card's bookings + availability cache too, or the just-paid window
+      // keeps rendering as open (inviting a double booking).
+      if (document.getElementById('lokali-spotlight')) {
+        spotState.busyByTier = {};
+        spotLoadLists();
+        if (spotState.entitled !== false) renderSpotCal();
+      }
       if (tries >= 5) clearInterval(iv);
     }, 1500);
   }
@@ -563,11 +571,13 @@
     var out = document.getElementById('lk-spot-result');
     if (!out) return;
     var start = new Date(dateStr + 'T00:00:00Z');
-    var end = new Date(start.getTime() + spotState.windowDays * DAY_MS);
+    // Windows end EXCLUSIVE — show the last included day, or back-to-back
+    // bookings read as overlapping on the shared boundary date.
+    var lastDay = new Date(start.getTime() + (spotState.windowDays - 1) * DAY_MS);
     var tier = spotState.tier;
     if (open) {
       out.innerHTML =
-        '<span class="ok">✓ ' + spotRange(start, end) + ' is available</span>' +
+        '<span class="ok">✓ ' + spotRange(start, lastDay) + ' is available</span>' +
         '<button type="button" class="lk-spot-btn" id="lk-spot-book">Book for ' +
         SPOT_TIERS[tier].price + '</button>';
       document.getElementById('lk-spot-book').addEventListener('click', function () {
@@ -586,7 +596,7 @@
       });
     } else {
       out.innerHTML =
-        '<span class="full">' + spotRange(start, end) + ' is taken.</span>' +
+        '<span class="full">' + spotRange(start, lastDay) + ' is taken.</span>' +
         '<button type="button" class="lk-spot-btn ghost" id="lk-spot-join">Join the waitlist for ' +
         spotDay(start) + '</button>';
       document.getElementById('lk-spot-join').addEventListener('click', function () {
@@ -647,8 +657,11 @@
         h += '<div class="lk-cal-day na">' + day + '</div>';
       } else {
         var open = spotDayOpen(ms, info);
-        var cls = 'lk-cal-day' + (open ? '' : ' busy') + (spotState.sel === str ? ' sel' : '');
+        var sel = spotState.sel === str;
+        var cls = 'lk-cal-day' + (open ? '' : ' busy') + (sel ? ' sel' : '');
         h += '<div class="' + cls + '" data-cal-day="' + str + '" data-cal-open="' + (open ? '1' : '0') + '"' +
+          ' role="button" tabindex="0" aria-pressed="' + sel + '"' +
+          ' aria-label="Monday ' + spotDay(ms) + (open ? ' — available' : ' — taken, join the waitlist') + '"' +
           ' title="' + (open ? 'Start here' : 'Taken — click to join the waitlist') + '">' + day + '</div>';
       }
     }
@@ -670,9 +683,19 @@
       renderSpotCal();
     });
     $all('[data-cal-day]').forEach(function (el) {
-      el.addEventListener('click', function () {
+      function choose() {
         spotSelectDay(el.getAttribute('data-cal-day'), el.getAttribute('data-cal-open') === '1');
         renderSpotCal();
+      }
+      el.addEventListener('click', choose);
+      el.addEventListener('keydown', function (e) {
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        e.preventDefault();
+        var str = el.getAttribute('data-cal-day');
+        choose();
+        // The re-render replaced the node — put focus back on the same day.
+        var again = document.querySelector('[data-cal-day="' + str + '"]');
+        if (again) again.focus();
       });
     });
   }
@@ -750,7 +773,8 @@
           var cancelable = !live &&
             new Date(b.starts_at).getTime() >= Date.now() + spotState.cutoffDays * DAY_MS;
           h += '<div class="lk-spot-row"><div><div>' + t.name + '</div>' +
-            '<div class="r-sub">' + spotRange(b.starts_at, b.ends_at) + '</div></div>' +
+            // ends_at is exclusive — display the last included day.
+            '<div class="r-sub">' + spotRange(b.starts_at, new Date(new Date(b.ends_at).getTime() - DAY_MS)) + '</div></div>' +
             '<div style="display:flex;gap:10px;align-items:center">' +
             '<span class="lk-spot-chip ' + (live ? 'live' : 'booked') + '">' + (live ? 'Live now' : 'Booked') + '</span>' +
             (cancelable
@@ -825,7 +849,8 @@
       '<div class="lk-spot-tiers">' +
         Object.keys(SPOT_TIERS).map(function (k) {
           var t = SPOT_TIERS[k];
-          return '<div class="lk-spot-tier' + (k === spotState.tier ? ' is-on' : '') + '" data-spot-tier="' + k + '">' +
+          return '<div class="lk-spot-tier' + (k === spotState.tier ? ' is-on' : '') + '" data-spot-tier="' + k + '"' +
+            ' role="button" tabindex="0" aria-pressed="' + (k === spotState.tier) + '" aria-label="' + t.name + ', ' + t.price + '">' +
             '<div class="t-price">' + t.price + '</div><div class="t-name">' + t.name + '</div>' +
             '<div class="t-blurb">' + t.blurb + '</div></div>';
         }).join('') +
@@ -843,10 +868,14 @@
     anchor.insertAdjacentElement('afterend', sec);
 
     $all('[data-spot-tier]').forEach(function (el) {
+      el.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); el.click(); }
+      });
       el.addEventListener('click', function () {
         spotState.tier = el.getAttribute('data-spot-tier');
         $all('[data-spot-tier]').forEach(function (o) {
           o.classList.toggle('is-on', o === el);
+          o.setAttribute('aria-pressed', o === el ? 'true' : 'false');
         });
         var out = document.getElementById('lk-spot-result');
         if (out) out.innerHTML = '';

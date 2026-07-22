@@ -128,9 +128,10 @@
   }
 
   // ── acct cache (the synchronous signed-in/role signal) ────────────────────
-  // Shape: { role, first_name, last_name } — lokali-auth-nav.js paints the
+  // Core shape: { role, first_name, last_name } — lokali-auth-nav.js paints the
   // header menu from it and lokali-dashboard.js's requireAuth reads it at
-  // parse time (supabase-js boots async). Keep this shape EXACTLY.
+  // parse time (supabase-js boots async). Writers MERGE — other scripts stash
+  // extra keys here (avatar #79, business_name) that must survive a rewrite.
   function cachedRole() {
     try {
       var c = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
@@ -140,11 +141,16 @@
   function writeAcctCache(role) {
     try {
       var meta = (_user && _user.user_metadata) || {};
-      localStorage.setItem(CACHE_KEY, JSON.stringify({
-        role: role || null,
-        first_name: meta.first_name || '',
-        last_name: meta.last_name || ''
-      }));
+      var c = null;
+      try { c = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null'); } catch (e2) {}
+      if (!c || typeof c !== 'object') c = {};
+      // Google identities carry given_name/family_name/full_name, not
+      // first_name — fall through so OAuth users get a header chip name.
+      var full = String(meta.full_name || meta.name || '');
+      c.role = role || null;
+      c.first_name = meta.first_name || meta.given_name || full.split(' ')[0] || c.first_name || '';
+      c.last_name = meta.last_name || meta.family_name || full.split(' ').slice(1).join(' ') || c.last_name || '';
+      localStorage.setItem(CACHE_KEY, JSON.stringify(c));
     } catch (e) {}
   }
   function clearAcctCache() {
@@ -543,8 +549,16 @@
       btn.textContent = btn._label;
     }
   }
-  function errorBox() { return el('div', 'lok-auth-error'); }
-  function infoBox() { return el('div', 'lok-auth-info'); }
+  function errorBox() {
+    var b = el('div', 'lok-auth-error');
+    b.setAttribute('role', 'alert'); // showMsg is visual-only otherwise — announce to AT
+    return b;
+  }
+  function infoBox() {
+    var b = el('div', 'lok-auth-info');
+    b.setAttribute('aria-live', 'polite');
+    return b;
+  }
   function showMsg(box, msg) {
     box.textContent = '';
     if (typeof msg === 'string') box.textContent = msg;
@@ -556,6 +570,13 @@
     var a = el('a', 'lok-auth-link', text);
     a.setAttribute('role', 'button');
     a.setAttribute('tabindex', '0');
+    // href-less anchors never click on Enter, and role=button demands Space too.
+    a.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+        e.preventDefault();
+        a.click();
+      }
+    });
     return a;
   }
   function googleIconSVG() {
@@ -611,16 +632,19 @@
     return _turnstileLoading;
   }
   // Attach a Turnstile widget into `form` (before the submit button). Returns
-  // { token() } — null when the widget is disabled/unsolved.
+  // { token(), reset() } — token() is null when the widget is disabled/unsolved.
+  // Tokens are SINGLE-USE: a failed submit consumes one server-side, so every
+  // submit error path must reset() or the retry re-sends the spent token.
   function attachTurnstile(container) {
-    if (!TURNSTILE_KEY) return { token: function () { return null; } };
+    if (!TURNSTILE_KEY) return { token: function () { return null; }, reset: function () {} };
     var holder = el('div', 'lok-auth-turnstile');
     container.appendChild(holder);
     var tok = null;
+    var wid = null;
     loadTurnstile().then(function () {
       if (!window.turnstile) return;
       try {
-        window.turnstile.render(holder, {
+        wid = window.turnstile.render(holder, {
           sitekey: TURNSTILE_KEY,
           theme: 'light', // default 'auto' rendered an ink-dark widget on the light card for dark-mode visitors
           callback: function (t) { tok = t; },
@@ -628,7 +652,13 @@
         });
       } catch (e) {}
     });
-    return { token: function () { return tok; } };
+    return {
+      token: function () { return tok; },
+      reset: function () {
+        tok = null;
+        try { if (wid != null && window.turnstile) window.turnstile.reset(wid); } catch (e) {}
+      }
+    };
   }
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -700,6 +730,7 @@
       }).then(function (res) {
         setBusy(submit, false);
         if (res && res.error) {
+          captcha.reset();
           if (isUnconfirmedError(res.error)) {
             var frag = document.createDocumentFragment();
             frag.appendChild(document.createTextNode('Please confirm your email first — check your inbox. '));
@@ -724,6 +755,7 @@
         else { syncUser().then(function () { routeAfterAuth(); }); }
       }).catch(function (ex) {
         setBusy(submit, false);
+        captcha.reset();
         showMsg(err, friendlyAuthError(ex));
       });
     });
@@ -781,9 +813,9 @@
         return _client.auth.resetPasswordForEmail(em, o);
       }).then(function (res) {
         setBusy(submit, false);
-        if (res && res.error) { showMsg(err, friendlyAuthError(res.error)); return; }
+        if (res && res.error) { captcha.reset(); showMsg(err, friendlyAuthError(res.error)); return; }
         showMsg(info, 'Check your email — if an account exists for ' + em + ', a reset link is on its way.');
-      }).catch(function (ex) { setBusy(submit, false); showMsg(err, friendlyAuthError(ex)); });
+      }).catch(function (ex) { setBusy(submit, false); captcha.reset(); showMsg(err, friendlyAuthError(ex)); });
     });
     card.appendChild(form);
 
@@ -957,6 +989,9 @@
   function renderSignUpForm(root, opts) {
     opts = opts || {};
     var intent = getSignupIntent();
+    // Re-stamp the stash so its TTL can't lapse mid-form — the answer shown in
+    // the note above the form must be the one the submit sends (#101 edge).
+    if (intent) setSignupIntent(intent);
     root.innerHTML = '';
     var box = el('div', 'lok-auth');
     var card = el('div', 'lok-auth-card');
@@ -967,8 +1002,7 @@
     var note = el('div', 'lok-role-note');
     note.appendChild(document.createTextNode(
       intent === 'vendor' ? 'Setting up your storefront. ' : 'Signing up to shop. '));
-    var change = document.createElement('a');
-    change.textContent = 'Change';
+    var change = linkBtn('Change');
     change.addEventListener('click', function () {
       clearSignupIntent();
       renderRoleChooser(root, opts);
@@ -1020,7 +1054,9 @@
           data: {
             first_name: (first.input.value || '').trim(),
             last_name: (last.input.value || '').trim(),
-            intended_role: getSignupIntent() || 'customer'
+            // render-time intent: always matches the on-screen note, even if
+            // the sessionStorage stash expired while the form sat open.
+            intended_role: intent || 'customer'
           },
           emailRedirectTo: window.location.origin + SIGN_IN_PATH
         };
@@ -1029,7 +1065,7 @@
         return _client.auth.signUp({ email: em, password: pw, options: o });
       }).then(function (res) {
         setBusy(submit, false);
-        if (res && res.error) { showMsg(err, friendlyAuthError(res.error)); return; }
+        if (res && res.error) { captcha.reset(); showMsg(err, friendlyAuthError(res.error)); return; }
         var d = (res && res.data) || {};
         if (d.session) {
           // Auto-confirm path (confirmations off) — proceed like a sign-in.
@@ -1043,6 +1079,7 @@
         renderCheckEmail(root, em);
       }).catch(function (ex) {
         setBusy(submit, false);
+        captcha.reset();
         showMsg(err, friendlyAuthError(ex));
       });
     });
@@ -1148,17 +1185,41 @@
   // OVERLAY MODAL (openSignUp / openSignIn / openAccountPanel host)
   // ──────────────────────────────────────────────────────────────────────────
   var _overlay = null;
+  var _overlayPrevFocus = null; // element to hand focus back to on close
   function closeOverlay() {
     if (_overlay && _overlay.parentNode) _overlay.parentNode.removeChild(_overlay);
     _overlay = null;
-    document.removeEventListener('keydown', overlayEsc, true);
+    document.removeEventListener('keydown', overlayKeydown, true);
+    if (_overlayPrevFocus && typeof _overlayPrevFocus.focus === 'function') {
+      try { _overlayPrevFocus.focus(); } catch (e) {}
+    }
+    _overlayPrevFocus = null;
   }
-  function overlayEsc(e) {
-    if (e.key === 'Escape') { e.stopPropagation(); closeOverlay(); }
+  function overlayKeydown(e) {
+    if (e.key === 'Escape') { e.stopPropagation(); closeOverlay(); return; }
+    // aria-modal promises focus can't leave the dialog — wrap Tab inside it.
+    if (e.key === 'Tab' && _overlay) {
+      var list = _overlay.querySelectorAll('a[href],button:not([disabled]),input,[tabindex="0"]');
+      var items = [];
+      for (var i = 0; i < list.length; i++) {
+        if (list[i].offsetParent !== null) items.push(list[i]);
+      }
+      if (!items.length) return;
+      var first = items[0];
+      var last = items[items.length - 1];
+      var active = document.activeElement;
+      if (e.shiftKey) {
+        if (active === first || !_overlay.contains(active)) { e.preventDefault(); last.focus(); }
+      } else if (active === last || !_overlay.contains(active)) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
   }
   function openOverlay(build) {
     injectStyles();
     closeOverlay();
+    _overlayPrevFocus = document.activeElement || null;
     var ov = el('div', 'lok-auth-overlay');
     ov.setAttribute('role', 'dialog');
     ov.setAttribute('aria-modal', 'true');
@@ -1174,7 +1235,7 @@
     ov.addEventListener('mousedown', function (e) {
       if (e.target === ov) closeOverlay();
     });
-    document.addEventListener('keydown', overlayEsc, true);
+    document.addEventListener('keydown', overlayKeydown, true);
     document.body.appendChild(ov);
     _overlay = ov;
     build(body);
@@ -1267,7 +1328,9 @@
     icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="#6002EE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16.5" x2="12" y2="16.5"/></svg>';
     chk.appendChild(icon);
     chk.appendChild(el('h2', null, 'This link couldn’t be confirmed'));
-    chk.appendChild(el('p', 'lok-auth-sub', 'Confirmation links open only in the same browser you signed up on, and they expire after a while. Try logging in, or request a fresh link.'));
+    // token_hash links work in ANY browser (see the verifyOtp boot comment) —
+    // expiry/reuse is the real failure, so the copy leads with that.
+    chk.appendChild(el('p', 'lok-auth-sub', 'This link may have expired. Try logging in, or request a fresh link.'));
     var btn = primaryBtn('Go to log in'); btn.type = 'button';
     btn.addEventListener('click', function () { window.location.href = SIGN_IN_PATH; });
     card.appendChild(chk); card.appendChild(btn); box.appendChild(card); root.appendChild(box);

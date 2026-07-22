@@ -228,11 +228,13 @@
         try {
           var cached = acctCache();
           if (!cached || !cached.role) {
-            localStorage.setItem('LOKALI_ACCT_CACHE', JSON.stringify({
-              role: res.data.role,
-              first_name: res.data.first_name || '',
-              last_name: res.data.last_name || ''
-            }));
+            // Merge, don't replace — the cache can already carry extra keys
+            // (#79 avatar) even before a role lands.
+            var seeded = cached || {};
+            seeded.role = res.data.role;
+            seeded.first_name = seeded.first_name || res.data.first_name || '';
+            seeded.last_name = seeded.last_name || res.data.last_name || '';
+            localStorage.setItem('LOKALI_ACCT_CACHE', JSON.stringify(seeded));
           }
         } catch (e) {}
       }
@@ -416,14 +418,15 @@
       if (!out.error && !out.data) return fail('Not found', 404);
       normalizeTs(out.data);
       return out;
-    });
+    }, function (e) { return fail(errText(e)); }); // envelope contract: never reject (e.g. supabase-js CDN import failed)
   }
 
   // Public browse columns = Xano vendors_GET |pick (fuller than the Supabase
   // client's card list — browse renders description/contact bits).
   var VENDOR_LIST_COLS = 'id,business_name,business_tagline,business_description,website_url,' +
     'locations_id,categories_id,subcategories,profile_photo,text_messages,whatsapp_messages,phone_calls,' + // subcategories = #96 card pills/filter
-    'contact_email,phone_number,slug,created_at,is_founding_member,is_verified,is_spotlight,is_featured,plan_rank';
+    'contact_email,phone_number,slug,created_at,is_founding_member,is_verified,is_spotlight,is_featured,plan_rank,' +
+    'is_active'; // browse guards v.is_active !== false — unselected it was always undefined (column-granted in patch_vendor_columns.sql)
 
   // ═══════════════════════════════════════════════════════════════════════════
   // The legacy surface
@@ -491,12 +494,35 @@
 
   var vendors = {
     me: vendorMe,
+    // Me-cache buster (mirrors plans.invalidateBilling) — the verification
+    // return-from-Stripe poll re-reads identity_status via me() and must not
+    // be served the session-memoized snapshot.
+    invalidateMe: invalidateMe,
     updateMe: function (payload) {
       payload = payload || {};
       // Same key normalization the Xano client did (category_id→categories_id
       // array, tagline/instagram alias keys). The Supabase client's
       // VENDOR_EDITABLE whitelist drops anything non-writable.
       var categoryId = payload.category_id != null ? payload.category_id : payload.categories_id;
+      // A present-but-invalid payment field fails the save with a field-named
+      // error (the form renders envelope errors) — never a silent '' write
+      // under a success toast. Empty string stays a deliberate clear.
+      var payErr = null;
+      function checkHandle(raw, label) {
+        if (payErr || raw === undefined) return;
+        if (String(raw == null ? '' : raw).trim() && !normalizePayHandle(raw)) {
+          payErr = label + ' looks invalid — letters, numbers, dots, dashes or underscores only (no spaces, max 30). It was not saved.';
+        }
+      }
+      checkHandle(payload.venmo_username, 'Venmo username');
+      checkHandle(payload.cashapp_cashtag, 'Cash App cashtag');
+      checkHandle(payload.paypalme_slug, 'PayPal.Me name');
+      if (!payErr && payload.other_pay_url !== undefined &&
+          String(payload.other_pay_url == null ? '' : payload.other_pay_url).trim() &&
+          !normalizePayUrl(payload.other_pay_url)) {
+        payErr = 'The payment link must be a valid https:// URL. It was not saved.';
+      }
+      if (payErr) return Promise.resolve(fail(payErr, 400));
       var fields = {
         business_name: payload.business_name != null ? String(payload.business_name) : '',
         business_description: payload.business_description != null ? String(payload.business_description) : '',
@@ -530,20 +556,23 @@
           : (payload.instagram_handle != null ? String(payload.instagram_handle) : ''),
         // P2P payment handles — normalized to bare identifiers (the render side
         // builds venmo.com/u/…, cash.app/$…, paypal.me/… from these). The generic
-        // link is validated to https:// only; anything else is dropped to ''.
-        venmo_username:  normalizePayHandle(payload.venmo_username),
-        cashapp_cashtag: normalizePayHandle(payload.cashapp_cashtag),
-        paypalme_slug:   normalizePayHandle(payload.paypalme_slug),
-        other_pay_url:   normalizePayUrl(payload.other_pay_url),
-        other_pay_label: payload.other_pay_label != null ? String(payload.other_pay_label).trim().slice(0, 40) : '',
+        // link is validated to https:// only. undefined = key absent from the
+        // caller's payload (stale cached embed, same as phone_calls/zelle):
+        // leave the column alone — defaulting to '' wiped saved handles.
+        venmo_username:  payload.venmo_username  === undefined ? undefined : normalizePayHandle(payload.venmo_username),
+        cashapp_cashtag: payload.cashapp_cashtag === undefined ? undefined : normalizePayHandle(payload.cashapp_cashtag),
+        paypalme_slug:   payload.paypalme_slug   === undefined ? undefined : normalizePayHandle(payload.paypalme_slug),
+        other_pay_url:   payload.other_pay_url   === undefined ? undefined : normalizePayUrl(payload.other_pay_url),
+        other_pay_label: payload.other_pay_label === undefined ? undefined : String(payload.other_pay_label == null ? '' : payload.other_pay_label).trim().slice(0, 40),
         // #77 Zelle — email or US phone stored verbatim (whitelisted charset;
         // no link is ever built from it — the listing renders tap-to-copy).
         // undefined = field absent (stale cached embed): leave the column alone.
         zelle_contact: payload.zelle_contact === undefined ? undefined
           : (function (s) { s = String(s || '').trim(); return /^[A-Za-z0-9._@+\-() ]{3,80}$/.test(s) ? s : ''; })(payload.zelle_contact)
       };
-      // A generic link with no valid URL clears its label too (no orphan label).
-      if (!fields.other_pay_url) fields.other_pay_label = '';
+      // A generic link cleared in THIS payload clears its label too (no orphan
+      // label) — but an absent key must not touch the saved label.
+      if (payload.other_pay_url !== undefined && !fields.other_pay_url) fields.other_pay_label = '';
       return withVendor(function (vid) {
         return SAPI().vendors.updateProfile(vid, fields).then(function (res) {
           invalidateMe();
@@ -582,8 +611,11 @@
           if (res && res.error) return envelope(res);
           var url = res.data.url;
           // Xano's endpoint stored the photo on the vendor row itself — keep that.
-          return SAPI().vendors.updateProfile(vid, { profile_photo: url }).then(function () {
+          return SAPI().vendors.updateProfile(vid, { profile_photo: url }).then(function (uRes) {
             invalidateMe();
+            // A failed row update (RLS, grant, transient) must not report
+            // success — the UI would show a photo the vendors row never got.
+            if (uRes && uRes.error) return envelope(uRes);
             // No `path` key on purpose: a consumer branch prepends the Xano
             // origin to `path`; url/image_url take priority and are absolute.
             return { data: { profile_photo: url, url: url, image_url: url }, error: null, status: 200 };
@@ -639,7 +671,7 @@
         for (var i = 0; i < rows.length; i++) vendorAliases(rows[i]);
         normalizeTs(rows);
         return { data: { items: rows }, error: null, status: 200 };
-      });
+      }, function (e) { return fail(errText(e)); }); // envelope contract: never reject
     },
     getById: function (id) {
       return SAPI().vendors.getById(id).then(function (res) {
@@ -667,7 +699,7 @@
             if (!v) return fail('Not found', 404);
             return { data: { moved: true, vendor: vendorAliases(normalizeTs(v)) }, error: null, status: 200 };
           });
-        });
+        }, function (e) { return fail(errText(e)); }); // envelope contract: never reject
       });
     },
     delete: function () {
@@ -675,6 +707,10 @@
     },
     // Custom profile URL (Pro/Featured) — the settings page always guarded on
     // these existing; the change_vendor_slug RPC finally provides them.
+    // BEST-EFFORT: vendors_public_read RLS hides unapproved/inactive vendors'
+    // slugs from this caller, so available:true is advisory — a slug held by a
+    // hidden vendor still fails the change_vendor_slug uniqueness check on
+    // save. A security-definer RPC (slug_taken) would be the exact check.
     slugAvailable: function (slug) {
       return rawClient().then(function (c) {
         return Promise.all([
@@ -720,13 +756,21 @@
     });
   }
 
-  function listByVendorPublic(kind, vendorId, wrap) {
+  function listByVendorPublic(kind, vendorId, wrap, includeInactive) {
     return SAPI()[kind].listByVendor(vendorId).then(function (res) {
       var out = envelope(res);
       if (out.error) return out;
-      // Anonymous RLS already limits to active rows.
-      normalizeTs(out.data || []);
-      return { data: listShape(out.data || [], wrap), error: null, status: 200 };
+      // Anonymous RLS limits to active rows, but the OWNER's JWT rides every
+      // query (owner_all policy returns ALL their rows) — so the owner viewing
+      // their own public page must not see deactivated items rendered as live.
+      // includeInactive=true = the owner-view opt-in: rows keep is_active so
+      // the caller can render inactive items marked, not as public.
+      var rows = out.data || [];
+      if (includeInactive !== true) {
+        rows = rows.filter(function (r) { return r.is_active === true; });
+      }
+      normalizeTs(rows);
+      return { data: listShape(rows, wrap), error: null, status: 200 };
     });
   }
 
@@ -782,7 +826,7 @@
 
   var services = {
     getMine: function (includeInactive) { return listMine('services', includeInactive, true); },
-    listByVendor: function (vendorId) { return listByVendorPublic('services', vendorId, true); },
+    listByVendor: function (vendorId, includeInactive) { return listByVendorPublic('services', vendorId, true, includeInactive); },
     getById: function (id) { return rawGetById('services', id); },
     create: function (payload) {
       return withVendor(function (vid) {
@@ -810,7 +854,7 @@
 
   var products = {
     getMine: function (includeInactive) { return listMine('products', includeInactive, false); },
-    listByVendor: function (vendorId) { return listByVendorPublic('products', vendorId, false); },
+    listByVendor: function (vendorId, includeInactive) { return listByVendorPublic('products', vendorId, false, includeInactive); },
     getById: function (id) { return rawGetById('products', id); },
     create: function (payload) {
       return withVendor(function (vid) {
@@ -842,7 +886,11 @@
   };
 
   var THIRTY_D = 30 * 24 * 3600 * 1000;
-  var ONE80_D = 180 * 24 * 3600 * 1000;
+  // Widest tier's analytics window (Featured = 360d, the #73 12-month range).
+  // Fetching it for everyone is safe: page_views owner reads are RLS-clamped
+  // per plan (60d free / 180d Pro / 360d Featured) — a 180d fetch here starved
+  // months 7-12 of the Featured chart.
+  var THREE60_D = 360 * 24 * 3600 * 1000;
 
   var leads = {
     submitInquiry: function (vendorId, payload) {
@@ -888,7 +936,7 @@
     },
     analytics: function () {
       return withVendor(function (vid) {
-        var sinceIso = new Date(Date.now() - ONE80_D).toISOString();
+        var sinceIso = new Date(Date.now() - THREE60_D).toISOString();
         return Promise.all([
           SAPI().analytics.pageViews(vid, sinceIso), // RLS clamps to the plan window
           SAPI().leads.inquiries(vid),
@@ -899,7 +947,7 @@
           var firstErr = pv.error || iq.error || ev.error;
           if (firstErr) return envelope({ error: firstErr });
           var now = Date.now();
-          var winStart = now - ONE80_D;
+          var winStart = now - THREE60_D;
           var inquiries = normalizeTs(iq.data || []);
           var allEvents = normalizeTs(ev.data || []);
           // Split payment-link clicks off from contact leads — they're their own metric.
@@ -1017,7 +1065,7 @@
           }
           normalizeTs(rows);
           return { data: rows, error: null, status: 200 };
-        });
+        }, function (e) { return fail(errText(e)); }); // envelope contract: never reject
       });
     },
     awaiting: function () {

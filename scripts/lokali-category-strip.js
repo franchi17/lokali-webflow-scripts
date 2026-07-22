@@ -85,21 +85,24 @@
     document.head.appendChild(s);
   }
 
+  // Single writer for icon/label/aria — apply() also resets through here, so the
+  // button can't invert after a reduced-motion round trip clears .lcs-paused.
+  function setBtnState(btn, paused) {
+    btn.setAttribute('aria-pressed', paused ? 'true' : 'false');
+    btn.setAttribute(
+      'aria-label',
+      paused ? 'Resume the scrolling category list' : 'Pause the scrolling category list'
+    );
+    btn.innerHTML = paused ? ICON_PLAY : ICON_PAUSE;
+  }
+
   function makePauseButton(section) {
     var btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'lcs-pausebtn';
-    btn.setAttribute('aria-label', 'Pause the scrolling category list');
-    btn.setAttribute('aria-pressed', 'false');
-    btn.innerHTML = ICON_PAUSE;
+    setBtnState(btn, false);
     btn.addEventListener('click', function () {
-      var paused = section.classList.toggle('lcs-paused');
-      btn.setAttribute('aria-pressed', paused ? 'true' : 'false');
-      btn.setAttribute(
-        'aria-label',
-        paused ? 'Resume the scrolling category list' : 'Pause the scrolling category list'
-      );
-      btn.innerHTML = paused ? ICON_PLAY : ICON_PAUSE;
+      setBtnState(btn, section.classList.toggle('lcs-paused'));
     });
     section.appendChild(btn);
     return btn;
@@ -119,6 +122,7 @@
       var reduce = !!(mq && mq.matches);
       if (reduce) {
         section.classList.remove('lcs-on', 'lcs-paused');
+        if (btn) setBtnState(btn, false); // .lcs-paused was just cleared
         return;
       }
       if (!btn) btn = makePauseButton(section);

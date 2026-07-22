@@ -53,8 +53,13 @@
       // inline (detail) variant sits in normal flow rather than overlaid
       ".lk-fav.lk-fav-inline{position:static;top:auto;right:auto;width:auto;height:auto;border-radius:8px;padding:8px 14px;gap:7px;font:600 13px/1 'Plus Jakarta Sans',sans-serif;color:#1A1829;}",
       ".lk-fav.lk-fav-inline.is-saved{background:#F3EBFF;border-color:#D4AAFD;color:#6002EE;}",
-      // saved page
+      // saved page — the .vcard styles live in lokali-browse.js (loaded only on
+      // /the-market), so scope minimal card styling here or the cards render
+      // unstyled and the absolute-positioned heart escapes to the grid corner.
       "#" + SAVED_GRID_ID + "{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;}",
+      "#" + SAVED_GRID_ID + " .vcard{position:relative;background:#fff;border:.5px solid #EEEDF6;border-radius:14px;padding:16px;font-family:'Plus Jakarta Sans',sans-serif;}",
+      "#" + SAVED_GRID_ID + " .vcard-name{font-weight:600;font-size:15px;color:#1A1829;}",
+      "#" + SAVED_GRID_ID + " .vcard-tagline{font-size:13px;color:#6B6880;}",
       ".lk-saved-empty{font:500 14px/1.5 'Plus Jakarta Sans',sans-serif;color:#6B6880;padding:2rem 0;}",
       ".lk-saved-empty a{color:#6002EE;font-weight:600;text-decoration:none;}"
     ].join('');
@@ -158,11 +163,23 @@
           '<button data-sn-go style="font-family:inherit;font-size:13px;font-weight:600;color:#fff;background:#6002EE;border:none;border-radius:9px;padding:9px 16px;cursor:pointer;">Continue</button>' +
         '</div>' +
       '</div>';
-    ov.addEventListener('click', function (e) { if (e.target === ov) ov.remove(); });
-    ov.querySelector('[data-sn-cancel]').addEventListener('click', function () { ov.remove(); });
+    // Dialog basics: Escape dismisses, and focus returns to the opener.
+    var prevFocus = document.activeElement;
+    function dismiss() {
+      document.removeEventListener('keydown', snEsc, true);
+      ov.remove();
+      if (prevFocus && prevFocus.focus) { try { prevFocus.focus(); } catch (e) {} }
+    }
+    ov.addEventListener('click', function (e) { if (e.target === ov) dismiss(); });
+    // Escape at DOCUMENT level: a click on non-focusable card text can drop
+    // focus to <body> (Safari), where an overlay-scoped listener never hears
+    // the key. Removed again in dismiss().
+    function snEsc(e) { if (e.key === 'Escape') dismiss(); }
+    document.addEventListener('keydown', snEsc, true);
+    ov.querySelector('[data-sn-cancel]').addEventListener('click', dismiss);
     ov.querySelector('[data-sn-go]').addEventListener('click', function () {
       try { localStorage.setItem(SHOP_NOTICE_KEY, '1'); } catch (e) {}
-      ov.remove();
+      dismiss();
       onContinue();
     });
     document.body.appendChild(ov);
@@ -260,14 +277,29 @@
   }
 
   // ── surface 3: saved page ──────────────────────────────────
+  function savedLoadError(grid) {
+    grid.innerHTML = '';
+    var d = document.createElement('div');
+    d.className = 'lk-saved-empty';
+    d.setAttribute('aria-live', 'polite');
+    d.textContent = 'Couldn’t load your saved vendors. ';
+    var a = document.createElement('a');
+    a.href = '#';
+    a.textContent = 'Try again';
+    a.addEventListener('click', function (ev) { ev.preventDefault(); renderSaved(); });
+    d.appendChild(a);
+    grid.appendChild(d);
+  }
+
   function renderSaved() {
     var grid = document.getElementById(SAVED_GRID_ID);
     if (!grid) return;
     if (!hasToken()) {
-      grid.innerHTML = '<div class="lk-saved-empty">Please <a href="/sign-up">sign in</a> to see your saved vendors.</div>';
+      grid.innerHTML = '<div class="lk-saved-empty">Please <a href="/login">sign in</a> to see your saved vendors.</div>';
       return;
     }
     api().request('favorites', 'GET', '/favorites', null, true).then(function (res) {
+      if (res && res.error) { savedLoadError(grid); return; }
       var rows = (res && res.data) || [];
       if (!Array.isArray(rows) || !rows.length) {
         grid.innerHTML = '<div class="lk-saved-empty">You haven\'t saved any vendors yet. Browse <a href="/the-market">The Market</a> and tap the heart on a vendor to save them here.</div>';
@@ -279,7 +311,7 @@
         if (!v) return;
         grid.appendChild(buildSavedCard(v));
       });
-    });
+    }).catch(function () { savedLoadError(grid); });
   }
 
   // A lightweight card for the saved page (independent of lokali-browse.js).
@@ -307,17 +339,31 @@
   }
 
   // ── sign-up-to-save completion ─────────────────────────────
+  // lokali-vendor-listing.js waits on this signal before re-reading #vl-save
+  // state (a fixed post-authed timer raced the POST below).
+  function announceSynced() {
+    try { window.dispatchEvent(new CustomEvent('lokali:favorites-synced')); } catch (e) {}
+  }
   function completePendingSave() {
     var pending = getPendingFav();
     if (!pending || !hasToken()) return;
-    clearPendingFav();
     // Reload the saved set fresh (the new account has none yet), then save.
+    // The pending key is cleared only once the POST settles: vendor-listing's
+    // 'lokali:authed' listener reads it to suppress its refreshSaveState timer,
+    // and clearing up-front let that timer flash the button back to "Save"
+    // mid-POST.
     _savedSet = null;
     loadSavedSet().then(function () {
-      persistToggle(Number(pending), true).then(function () {
-        if (_savedSet) _savedSet.add(Number(pending));
-        syncAllHeartsFor(Number(pending), true);
-      });
+      persistToggle(Number(pending), true).then(function (res) {
+        clearPendingFav();
+        // The adapter resolves failures as { error } — only paint saved state
+        // on a real success, otherwise the heart lies about a failed POST.
+        if (!(res && res.error)) {
+          if (_savedSet) _savedSet.add(Number(pending));
+          syncAllHeartsFor(Number(pending), true);
+        }
+        announceSynced();
+      }).catch(function () { clearPendingFav(); announceSynced(); });
     });
   }
 

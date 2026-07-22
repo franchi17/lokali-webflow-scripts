@@ -262,6 +262,21 @@
     });
   }
 
+  // The Supabase adapter memoizes vendors.me() for the whole session, so a poll
+  // that doesn't bust the cache re-reads the same pre-webhook snapshot forever.
+  // Mirrors plans.invalidateBilling in lokali-billing.js; until the adapter
+  // exports vendors.invalidateMe, its no-arg setToken() is a pure cache
+  // invalidator (Xano mode has no memo, so no bypass is needed there).
+  function invalidateMeCache() {
+    var api = window.LokaliAPI;
+    if (!api) return;
+    if (api.vendors && typeof api.vendors.invalidateMe === 'function') {
+      api.vendors.invalidateMe();
+    } else if (window.LOKALI_BACKEND === 'supabase' && typeof api.setToken === 'function') {
+      try { api.setToken(); } catch (e) {}
+    }
+  }
+
   // After returning from Stripe (?status=done) the webhook may land a moment later —
   // re-poll a few times so the badge appears without a manual refresh. ?status=done is
   // UX only; the webhook is the sole grant of the badge.
@@ -271,6 +286,7 @@
     var tries = 0;
     var iv = setInterval(function () {
       tries++;
+      invalidateMeCache();
       loadStatus().then(function (s) {
         if (s === 'verified' || s === 'failed') clearInterval(iv);
       });

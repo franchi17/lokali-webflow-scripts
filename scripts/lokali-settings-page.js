@@ -163,7 +163,20 @@
         var input = t.tagName === 'INPUT' ? t : inputOf(t);
         if (input) { input.disabled = true; input.checked = false; }
         var label = (input && input.closest) ? input.closest('label') : t;
-        if (label && label.style) { label.style.opacity = '0.5'; label.style.pointerEvents = 'none'; label.title = 'Available on Pro & Featured plans'; }
+        if (label && label.style) { label.style.opacity = '0.5'; label.style.pointerEvents = 'none'; }
+        // pointer-events:none suppresses a title tooltip — the unlock hint has
+        // to be visible text (linked to /pricing).
+        var row = t.closest ? t.closest('.div-block-160') : null;
+        var head = row ? row.querySelector('.notifications-header') : null;
+        if (head && !head.querySelector('.lok-pro-pill')) {
+          var pill = document.createElement('a');
+          pill.className = 'lok-pro-pill';
+          pill.href = (typeof window.LOKALI_PRICING_URL === 'string' && window.LOKALI_PRICING_URL) || '/pricing';
+          pill.textContent = 'Pro & Featured';
+          pill.style.cssText = 'display:inline-block;margin-left:8px;padding:2px 9px;border-radius:999px;background:#F3EBFF;color:#6002EE;' +
+            "font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:600;text-decoration:none;vertical-align:middle;";
+          head.appendChild(pill);
+        }
       });
     }
   }
@@ -232,6 +245,9 @@
       checkTimer = setTimeout(function () {
         window.LokaliAPI.vendors.slugAvailable(v).then(function (r) {
           if (input.value.trim() !== v) return; // stale
+          // A failed check resolves an { error } envelope with no `available`
+          // key — don't report that as "taken".
+          if (!r || r.error) { setStatus('Couldn’t check availability — try again.'); return; }
           if (r.available) setStatus('✓ golokali.com/' + v + ' is available', '#047857');
           else setStatus('That URL is already taken.', '#B1006A');
         });
@@ -313,6 +329,8 @@
 
     var input = inputOf(embed);
     if (!input) return;
+    // The header div isn't associated with the checkbox — name it directly.
+    input.setAttribute('aria-label', 'The Neighborhood Edit newsletter');
     // Default ON: treat null/undefined as subscribed, same reading as
     // lokali-account.js and the admin_newsletter_recipients() `is not false`.
     input.checked = !(_user && _user.notif_letter === false);
@@ -496,10 +514,22 @@
   function saveProfile() {
     var fn = inputOf(firstEl(['settings-first-name', 'First-Name-Input']));
     var ln = inputOf(firstEl(['settings-last-name', 'Last-Name-Input']));
-    var payload = {
-      first_name: fn ? String(fn.value || '').trim() : '',
-      last_name:  ln ? String(ln.value || '').trim() : ''
-    };
+    // A missing or blank input stays out of the payload — sending '' would
+    // wipe the stored name on every save.
+    var payload = {};
+    var fnVal = fn ? String(fn.value || '').trim() : '';
+    var lnVal = ln ? String(ln.value || '').trim() : '';
+    if (fnVal) payload.first_name = fnVal;
+    if (lnVal) payload.last_name = lnVal;
+    // A blanked field keeps its saved value — SAY so instead of silently
+    // no-oping (both blank) or claiming a clean save (one blank).
+    var kept = (fn && !fnVal) || (ln && !lnVal);
+    if (!fnVal && !lnVal) {
+      toast('error', 'Name fields can’t be blank — your saved name was kept.');
+      if (fn && _user.first_name) fn.value = _user.first_name;
+      if (ln && _user.last_name) ln.value = _user.last_name;
+      return;
+    }
     var btn = $('settings-save-btn');
     if (btn) btn.setAttribute('disabled', 'disabled');
     window.LokaliAPI.auth.updateProfile(payload).then(function (res) {
@@ -507,7 +537,11 @@
       var u = (res.data && res.data.value) || res.data || {};
       if (u.first_name != null) _user.first_name = u.first_name;
       if (u.last_name != null) _user.last_name = u.last_name;
-      toast('success', 'Settings saved.');
+      if (kept) {
+        if (fn && !fnVal && _user.first_name) fn.value = _user.first_name;
+        if (ln && !lnVal && _user.last_name) ln.value = _user.last_name;
+      }
+      toast('success', kept ? 'Saved — blank fields kept their previous value.' : 'Settings saved.');
     }).catch(function () {
       toast('error', 'Network error. Please try again.');
     }).then(function () { if (btn) btn.removeAttribute('disabled'); });

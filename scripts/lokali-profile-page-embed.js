@@ -70,11 +70,16 @@ var LokaliPhoneInput = (function () {
     function getNumber() {
       var d = digitsOnly(input.value);
       if (!d) return '';
+      // Stored format is E.164 ('+' + country code + digits) — the public
+      // listing link builder consumes it verbatim. No country select, so a
+      // bare 10-digit national number defaults to US/CA (+1).
+      if (d.length === 10) d = '1' + d;
       return '+' + d;
     }
 
     function setNumber(e164) {
       var d = digitsOnly(e164);
+      if (d.length === 10) d = '1' + d; // heal pre-E.164 10-digit rows on display
       input.value = d ? '+' + d : '';
     }
 

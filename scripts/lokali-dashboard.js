@@ -265,112 +265,11 @@
 
 })();
 
-(function initVendorDashboardSidebar() {
-  'use strict';
-
-  var MOBILE_MAX_PX = 991;
-
-  function isMobileLayout() {
-    return window.innerWidth <= MOBILE_MAX_PX;
-  }
-
-  function run() {
-    var btn = document.getElementById('hamburger-btn');
-    var sidebar = document.getElementById('sidebar-wrapper');
-    if (!btn || !sidebar) return;
-
-    var z = parseInt(window.getComputedStyle(sidebar).zIndex, 10);
-    if (!z || z < 999) sidebar.style.zIndex = '1001';
-
-    var closeBtn = document.getElementById('sidebar-close-btn');
-    if (!btn.hasAttribute('aria-expanded')) btn.setAttribute('aria-expanded', 'false');
-    var overlay = document.getElementById('sidebar-overlay');
-    if (!overlay) {
-      overlay = document.createElement('div');
-      overlay.id = 'sidebar-overlay';
-      overlay.setAttribute('aria-hidden', 'true');
-      overlay.style.cssText = [
-        'display:none',
-        'position:fixed',
-        'top:0', 'right:0', 'bottom:0', 'left:0',
-        'background:rgba(0,0,0,0.4)',
-        'z-index:998',
-        'transition:opacity 300ms ease',
-        'opacity:0'
-      ].join(';');
-      document.body.appendChild(overlay);
-    }
-
-    var open = false;
-
-    function releaseDesktopLayout() {
-      open = false;
-      sidebar.style.removeProperty('transform');
-      overlay.style.opacity = '0';
-      overlay.style.display = 'none';
-      btn.classList.remove('lokali-nav-open');
-      btn.setAttribute('aria-expanded', 'false');
-      overlay.setAttribute('aria-hidden', 'true');
-    }
-
-    function closeSidebar() {
-      if (!open) return;
-      open = false;
-      if (isMobileLayout()) {
-        sidebar.style.transform = 'translateX(-100%)';
-      } else {
-        sidebar.style.removeProperty('transform');
-      }
-      overlay.style.opacity = '0';
-      btn.classList.remove('lokali-nav-open');
-      btn.setAttribute('aria-expanded', 'false');
-      overlay.setAttribute('aria-hidden', 'true');
-      setTimeout(function () { overlay.style.display = 'none'; }, 300);
-    }
-
-    function openSidebar() {
-      if (open) return;
-      open = true;
-      sidebar.style.transform = 'translateX(0%)';
-      overlay.style.display = 'block';
-      btn.classList.add('lokali-nav-open');
-      btn.setAttribute('aria-expanded', 'true');
-      overlay.setAttribute('aria-hidden', 'false');
-      requestAnimationFrame(function () { overlay.style.opacity = '1'; });
-    }
-
-    function onViewportChange() {
-      if (!isMobileLayout()) {
-        releaseDesktopLayout();
-      }
-    }
-
-    btn.addEventListener('click', function () {
-      if (!isMobileLayout()) return;
-      if (open) closeSidebar();
-      else openSidebar();
-    });
-    overlay.addEventListener('click', closeSidebar);
-
-    if (closeBtn) {
-      if (!String(closeBtn.textContent || '').trim()) closeBtn.textContent = '\u00D7';
-      closeBtn.addEventListener('click', closeSidebar);
-    }
-
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && open) closeSidebar();
-    });
-
-    window.addEventListener('resize', onViewportChange);
-    window.addEventListener('orientationchange', onViewportChange);
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', run);
-  } else {
-    run();
-  }
-})();
+// The legacy initVendorDashboardSidebar drawer (keyed off #hamburger-btn /
+// #sidebar-close-btn) was deleted 2026-07-22: those ids exist on no published
+// page, and the live mobile drawer is lokali-dashboard-mobile-nav.js \u2014 keeping
+// both risked two drawer systems binding the same sidebar if Webflow ever
+// reintroduced the ids.
 
 // Wire the static "View My Listing" sidebar link to the vendor's public page.
 // The Webflow template ships it with a dead href (/dashboard//view-listing → 404);

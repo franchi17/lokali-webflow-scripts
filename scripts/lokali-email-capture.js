@@ -178,9 +178,13 @@
             input.value = '';
             input.disabled = true;
           } else {
+            // Delivery failed — the address may be fine, so no invalid flash;
+            // the button is the only feedback channel in this island.
             btn.disabled = false;
-            btn.textContent = idleLabel;
-            flashInvalid(input);
+            btn.textContent = 'Try again';
+            setTimeout(function () {
+              if (!btn.disabled && btn.textContent === 'Try again') btn.textContent = idleLabel;
+            }, 2600);
           }
         });
     }

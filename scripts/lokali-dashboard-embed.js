@@ -3,8 +3,11 @@
  * Load AFTER lokali-api-client.js and lokali-dashboard.js (site or page footer).
  * Expects: <div id="lokali-vendor-dashboard-root">…</div> in an HTML Embed on the page.
  *
- * Webflow often injects footer scripts BEFORE the page body content, so this file
- * polls until the embed exists (see tryBoot / ROOT_POLL).
+ * Webflow often injects footer scripts BEFORE the page body content, so boot is
+ * re-attempted at DOMContentLoaded / load / a few short timeouts (see the
+ * scheduleTryBoot calls at the bottom). No long root polling: the loader ships
+ * site-wide but the embed root exists only where the embed is used, so a page
+ * without the mount id bails after those checks.
  *
  * Debug: in console, set window.LOKALI_DASHBOARD_EMBED_DEBUG = true and reload.
  */
@@ -14,8 +17,6 @@
   var ROOT_ID = 'lokali-vendor-dashboard-root';
   var API_WAIT_MS = 150;
   var API_MAX_TRIES = 100;
-  var ROOT_POLL_MS = 200;
-  var ROOT_MAX_POLLS = 150;
 
   var bootStarted = false;
   var rootPollChainStarted = false;
@@ -479,7 +480,7 @@
 
       if (vendorRes.error || vendorRes.data == null) {
         var msg = (vendorRes.error && String(vendorRes.error)) || 'Unknown error';
-        showError('Could not load your vendor profile from Xano (vendor/me). ' + msg);
+        showError('Could not load your vendor profile. ' + msg);
         return;
       }
 
@@ -527,34 +528,19 @@
   }
 
   /**
-   * Single poll chain until #lokali-vendor-dashboard-root exists (Webflow embed often loads after footer scripts).
+   * One look for #lokali-vendor-dashboard-root — no polling. The loader ships
+   * site-wide but the mount id exists only where the embed is used; the
+   * scheduled scheduleTryBoot passes (DOMContentLoaded / load / timeouts)
+   * re-check through runBoot, so a late-injected embed still boots.
    */
   function startRootPollChain() {
     if (bootStarted || rootPollChainStarted) return;
     rootPollChainStarted = true;
-    var n = 0;
-    function poll() {
-      if (bootStarted) return;
-      if (document.getElementById(ROOT_ID)) {
-        runBoot();
-        return;
-      }
-      n++;
-      if (n > ROOT_MAX_POLLS) {
-        // Informational, not an error: the loader ships site-wide but the
-        // embed root only exists where the embed is actually used.
-        console.info(
-          '[Lokali dashboard embed] No #' +
-            ROOT_ID +
-            ' after ~' +
-            Math.round((ROOT_MAX_POLLS * ROOT_POLL_MS) / 1000) +
-            's — nothing to mount on this page.'
-        );
-        return;
-      }
-      setTimeout(poll, ROOT_POLL_MS);
+    if (document.getElementById(ROOT_ID)) {
+      runBoot();
+      return;
     }
-    poll();
+    dbg('No #' + ROOT_ID + ' on this page — nothing to mount.');
   }
 
   function runBoot() {

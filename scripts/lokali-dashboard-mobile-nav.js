@@ -26,7 +26,7 @@
 (function () {
   'use strict';
 
-  var BAR = 56, tries = 0, sidebar, panel, content, ov, isOpen = false;
+  var BAR = 56, tries = 0, sidebar, panel, content, ov, btnEl, barEl, isOpen = false;
   var mq = window.matchMedia('(max-width: 991px)');
 
   function injectCss() {
@@ -45,7 +45,8 @@
       // chip + its Settings/expansion menu pin to the BOTTOM instead of stacking
       // right under the last nav row (Availability).
       '@media (max-width:991px){.section-11 .div-block-29{margin-top:auto !important;}}',
-      '#lok-ham{width:40px;height:40px;border:none;border-radius:9px;padding:0;',
+      // 44px = mobile tap-target floor (#98); the icon stays 22px.
+      '#lok-ham{width:44px;height:44px;border:none;border-radius:9px;padding:0;',
       'background:#6E3CFF;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;}',
       '#lok-ham svg{width:22px;height:22px;}',
       '#lok-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);',
@@ -174,6 +175,12 @@
     'padding-bottom':'env(safe-area-inset-bottom, 0px)'
   };
 
+  function pageBgColor() {
+    var bg = getComputedStyle(document.body).backgroundColor;
+    if (!bg || bg === 'transparent' || bg === 'rgba(0, 0, 0, 0)') bg = getComputedStyle(document.documentElement).backgroundColor;
+    if (!bg || bg === 'transparent' || bg === 'rgba(0, 0, 0, 0)') bg = '#F7F6FC';
+    return bg;
+  }
   function findContent() {
     var kids = document.body.children;
     for (var i = 0; i < kids.length; i++) {
@@ -196,10 +203,31 @@
   // clicks too, and unguarded they stamped the drawer transform onto the
   // wrapper on DESKTOP — a transformed ancestor un-pins the position:fixed
   // rail (containing-block change), floating it mid-page.
-  function setOpen()  { if (!mq.matches) return; panel.style.setProperty('transform','translateX(0)','important');    isOpen = true;  if (ov) ov.classList.add('lok-show'); }
-  function setClosed(){ if (!mq.matches) { isOpen = false; if (ov) ov.classList.remove('lok-show'); return; } panel.style.setProperty('transform','translateX(-100%)','important'); isOpen = false; if (ov) ov.classList.remove('lok-show'); }
+  function setOpen()  {
+    if (!mq.matches) return;
+    panel.style.setProperty('transform','translateX(0)','important');
+    isOpen = true;
+    if (ov) ov.classList.add('lok-show');
+    if (btnEl) btnEl.setAttribute('aria-expanded', 'true');
+    // a11y: land keyboard/SR users in the menu, not behind the overlay.
+    var first = panel.querySelector('a');
+    if (first) { try { first.focus(); } catch (e) {} }
+  }
+  function setClosed(){
+    var wasOpen = isOpen;
+    if (btnEl) btnEl.setAttribute('aria-expanded', 'false');
+    if (!mq.matches) { isOpen = false; if (ov) ov.classList.remove('lok-show'); return; }
+    panel.style.setProperty('transform','translateX(-100%)','important');
+    isOpen = false;
+    if (ov) ov.classList.remove('lok-show');
+    // Return focus to the toggle only on a real open→close (not the init call).
+    if (wasOpen && btnEl && panel.contains(document.activeElement)) { try { btnEl.focus(); } catch (e) {} }
+  }
   function enterMobile() {
     if (content) content.style.setProperty('padding-top', BAR + 'px', 'important');
+    // Re-read the bar bg on each entry — a value captured at desktop init
+    // froze white over the #F7F6FC mobile body after a resize/rotation.
+    if (barEl) barEl.style.background = pageBgColor();
     drawerBase();
     if (!isOpen) setClosed();
   }
@@ -221,18 +249,22 @@
     if (document.getElementById('lok-topbar')) return;
     content = findContent();
 
-    var bar = document.createElement('div'); bar.id = 'lok-topbar';
+    var bar = document.createElement('div'); bar.id = 'lok-topbar'; barEl = bar;
     // Match the bar to the page background so it disappears into the page
-    // instead of reading as a white slab.
-    var pageBg = getComputedStyle(document.body).backgroundColor;
-    if (!pageBg || pageBg === 'transparent' || pageBg === 'rgba(0, 0, 0, 0)') pageBg = getComputedStyle(document.documentElement).backgroundColor;
-    if (!pageBg || pageBg === 'transparent' || pageBg === 'rgba(0, 0, 0, 0)') pageBg = '#F7F6FC';
-    bar.style.background = pageBg;
+    // instead of reading as a white slab (re-read in enterMobile on breakpoint
+    // changes).
+    bar.style.background = pageBgColor();
     var btn = document.createElement('button'); btn.id = 'lok-ham'; btn.setAttribute('aria-label', 'Menu');
+    btn.setAttribute('aria-expanded', 'false');
+    if (!panel.id) panel.id = 'lok-drawer';
+    btn.setAttribute('aria-controls', panel.id);
+    panel.setAttribute('role', 'navigation');
+    panel.setAttribute('aria-label', 'Dashboard menu');
+    btnEl = btn;
     btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>';
     bar.appendChild(btn); document.body.appendChild(bar);
 
-    ov = document.createElement('div'); ov.id = 'lok-overlay'; document.body.appendChild(ov);
+    ov = document.createElement('div'); ov.id = 'lok-overlay'; ov.setAttribute('aria-hidden', 'true'); document.body.appendChild(ov);
 
     btn.addEventListener('click', function () { isOpen ? setClosed() : setOpen(); });
     ov.addEventListener('click', setClosed);

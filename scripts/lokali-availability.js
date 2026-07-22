@@ -245,9 +245,9 @@
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">' +
           '<p style="margin:0;font-size:15px;font-weight:600;color:#3E3A55;">Pick a date</p>' +
           '<div style="display:flex;align-items:center;gap:10px;">' +
-            '<span class="av-nav" data-d="-1" style="cursor:pointer;color:#8B7FC4;font-size:18px;user-select:none;">&#8249;</span>' +
+            '<button type="button" class="av-nav" data-d="-1" aria-label="Previous month" style="cursor:pointer;color:#8B7FC4;font-size:18px;user-select:none;background:none;border:none;padding:2px 6px;line-height:1;">&#8249;</button>' +
             '<span class="av-month" style="font-size:13px;color:#6C6880;min-width:110px;text-align:center;"></span>' +
-            '<span class="av-nav" data-d="1" style="cursor:pointer;color:' + BRAND + ';font-size:18px;user-select:none;">&#8250;</span>' +
+            '<button type="button" class="av-nav" data-d="1" aria-label="Next month" style="cursor:pointer;color:' + BRAND + ';font-size:18px;user-select:none;background:none;border:none;padding:2px 6px;line-height:1;">&#8250;</button>' +
           '</div>' +
         '</div>' +
         '<div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;font-size:11px;color:#B0ACBC;text-align:center;margin-bottom:6px;">' +
@@ -287,9 +287,25 @@
     this.monthLabel = this.mount.querySelector('.av-month');
   };
 
+  // Dim + disable an arrow when the clamp makes it inert (an active-looking
+  // arrow that no-ops reads as broken — the back arrow is dead on first load).
+  Widget.prototype.updateNav = function () {
+    var self = this;
+    var floor = firstOfMonth(new Date());
+    var ceil = addMonths(floor, 2);
+    this.mount.querySelectorAll('.av-nav').forEach(function (n) {
+      var next = addMonths(self.viewMonth, Number(n.getAttribute('data-d')));
+      var dead = next < floor || next > ceil;
+      n.disabled = dead;
+      n.style.opacity = dead ? '.35' : '';
+      n.style.cursor = dead ? 'default' : 'pointer';
+    });
+  };
+
   Widget.prototype.loadMonth = function () {
     var self = this;
     var from = firstOfMonth(this.viewMonth), to = lastOfMonth(this.viewMonth);
+    this.updateNav();
     this.monthLabel.textContent = MONTHS[from.getMonth()] + ' ' + from.getFullYear();
     this.grid.innerHTML = '';
     this.panel.innerHTML = '';
@@ -324,7 +340,16 @@
         cell.style.background = s.bg; cell.style.color = s.fg; cell.style.border = '1px solid ' + s.bd;
         cell.innerHTML = '<span>' + i + '</span><span style="font-size:9px;font-weight:400;margin-top:1px;">' + s.tag + '</span>';
         if (clickable) {
-          (function (dd) { cell.addEventListener('click', function () { self.selectDate(dd); }); })(dISO);
+          cell.setAttribute('role', 'button');
+          cell.setAttribute('tabindex', '0');
+          cell.setAttribute('aria-label', prettyDate(dISO) + ' — ' + s.tag);
+          (function (dd) {
+            function go() { self.selectDate(dd); }
+            cell.addEventListener('click', go);
+            cell.addEventListener('keydown', function (e) {
+              if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); }
+            });
+          })(dISO);
         }
       }
       this.grid.appendChild(cell);
@@ -349,11 +374,11 @@
   Widget.prototype.contactFields = function () {
     return '<div style="display:flex;gap:10px;margin-bottom:12px;">' +
         '<div style="flex:1;"><p style="margin:0 0 4px;font-size:12px;color:#8B8798;">Your name</p>' +
-          '<input class="av-name" maxlength="120" placeholder="Jordan Mills" /></div>' +
+          '<input class="av-name" maxlength="120" aria-label="Your name" placeholder="Jordan Mills" /></div>' +
         '<div style="flex:1;"><p style="margin:0 0 4px;font-size:12px;color:#8B8798;">Email</p>' +
-          '<input class="av-email" type="email" maxlength="200" placeholder="you@email.com" /></div>' +
+          '<input class="av-email" type="email" maxlength="200" aria-label="Email" placeholder="you@email.com" /></div>' +
       '</div>' +
-      '<input class="av-hp" style="display:none;" tabindex="-1" autocomplete="off" />';
+      '<input class="av-hp" style="display:none;" tabindex="-1" autocomplete="off" aria-hidden="true" />';
   };
 
   Widget.prototype.renderQtyForm = function (dISO) {
@@ -367,21 +392,28 @@
       '</div>' +
       '<div style="display:flex;gap:10px;margin-bottom:12px;">' +
         '<div style="flex:1;"><p style="margin:0 0 4px;font-size:12px;color:#8B8798;">How many?</p>' +
-          '<div class="av-step"><span class="av-dec">&#8722;</span><b class="av-qty">1</b><span class="av-inc">+</span></div></div>' +
+          '<div class="av-step"><span class="av-dec" role="button" tabindex="0" aria-label="Decrease quantity">&#8722;</span><b class="av-qty">1</b><span class="av-inc" role="button" tabindex="0" aria-label="Increase quantity">+</span></div></div>' +
         '<div style="flex:1;"><p style="margin:0 0 4px;font-size:12px;color:#8B8798;">Phone (optional)</p>' +
-          '<input class="av-phone" maxlength="40" placeholder="(555) 555-5555" /></div>' +
+          '<input class="av-phone" maxlength="40" aria-label="Phone (optional)" placeholder="(555) 555-5555" /></div>' +
       '</div>' +
       this.contactFields() +
       '<p style="margin:0 0 4px;font-size:12px;color:#8B8798;">Anything they should know?</p>' +
-      '<textarea class="av-msg" rows="2" maxlength="2000" style="margin-bottom:14px;resize:none;"></textarea>' +
+      '<textarea class="av-msg" rows="2" maxlength="2000" aria-label="Anything they should know?" style="margin-bottom:14px;resize:none;"></textarea>' +
       '<button class="av-cta av-send">Send request</button>' +
       '<p style="margin:9px 0 0;font-size:11px;color:#B0ACBC;text-align:center;">They confirm each order — you\'ll hear back before it\'s reserved.</p>';
 
     var qtyEl = this.panel.querySelector('.av-qty');
-    this.panel.querySelector('.av-dec').addEventListener('click', function () {
+    // Steppers are spans with role=button — wire Enter/Space alongside click.
+    function wireStep(el, fn) {
+      el.addEventListener('click', fn);
+      el.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fn(); }
+      });
+    }
+    wireStep(this.panel.querySelector('.av-dec'), function () {
       qtyEl.textContent = String(Math.max(1, (+qtyEl.textContent) - 1));
     });
-    this.panel.querySelector('.av-inc').addEventListener('click', function () {
+    wireStep(this.panel.querySelector('.av-inc'), function () {
       qtyEl.textContent = String(Math.min(99, (+qtyEl.textContent) + 1));
     });
     this.panel.querySelector('.av-send').addEventListener('click', function () {
@@ -396,6 +428,7 @@
       var col = av ? STATUS.open : (s.status === 'held' ? STATUS.limited : STATUS.sold_out);
       var label = av ? 'Available' : (s.status === 'held' ? 'On hold' : 'Booked');
       return '<div class="av-slot' + (av ? ' pick' : '') + '" data-t="' + esc(s.time) + '" data-idx="' + idx + '" ' +
+        (av ? 'role="button" tabindex="0" aria-label="' + esc(fmt12(s.time)) + ', ' + label + '" ' : '') +
         'style="background:' + col.bg + ';color:' + col.fg + ';border:1px solid ' + col.bd + ';">' +
         '<span>' + esc(fmt12(s.time)) + '</span><span style="font-size:12px;">' + label + '</span></div>';
     }).join('');
@@ -404,18 +437,22 @@
       '<div class="av-slots" style="margin-bottom:14px;">' + rows + '</div>' +
       this.contactFields() +
       '<p style="margin:0 0 4px;font-size:12px;color:#8B8798;">Anything they should know?</p>' +
-      '<textarea class="av-msg" rows="2" maxlength="2000" style="margin-bottom:14px;resize:none;"></textarea>' +
+      '<textarea class="av-msg" rows="2" maxlength="2000" aria-label="Anything they should know?" style="margin-bottom:14px;resize:none;"></textarea>' +
       '<button class="av-cta av-send" disabled>Pick a time to continue</button>';
 
     var picked = { time: null };
     var send = this.panel.querySelector('.av-send');
     this.panel.querySelectorAll('.av-slot.pick').forEach(function (el) {
-      el.addEventListener('click', function () {
+      function pickSlot() {
         self.panel.querySelectorAll('.av-slot').forEach(function (n) { n.classList.remove('on'); });
         el.classList.add('on');
         picked.time = el.getAttribute('data-t');
         send.removeAttribute('disabled');
         send.textContent = 'Request ' + fmt12(picked.time);
+      }
+      el.addEventListener('click', pickSlot);
+      el.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pickSlot(); }
       });
     });
     send.addEventListener('click', function () {
@@ -452,8 +489,27 @@
       if (r && r.error && !res.reason) { self.errorState(dISO); return; }
       if (res.ok) { self.successState(dISO, false); return; }
       if (res.reason === 'sold_out') { self.renderWaitlist(dISO); return; }
+      if (res.reason) { self.rejectState(dISO, res.reason); return; }
       self.errorState(dISO);
     }).catch(function () { self.errorState(dISO); });
+  };
+
+  // Structured RPC rejections get honest copy — a generic "try again" is wrong
+  // for these (retrying keeps failing); unmapped reasons fall through to
+  // errorState, whose retry re-fetches the date and genuinely can recover.
+  Widget.prototype.rejectState = function (dISO, reason) {
+    var copy = {
+      rate_limited: "You've sent a few requests recently — please wait a while before sending another.",
+      past_lead_time: 'This date needs more notice than they can take — please pick a later date above.',
+      day_off: "They're not taking requests for this day — please pick another date above.",
+      availability_off: "This storefront isn't taking requests right now."
+    }[reason];
+    if (!copy) { this.errorState(dISO); return; }
+    this.panel.innerHTML =
+      '<div style="display:flex;align-items:center;gap:9px;margin-bottom:6px;">' +
+        '<span style="font-size:19px;color:#C77B63;">&#9888;</span>' +
+        '<p style="margin:0;font-size:15px;font-weight:600;color:#3E3A55;">' + esc(prettyDate(dISO)) + '</p></div>' +
+      '<p style="margin:0;font-size:13px;color:#8B8798;line-height:1.5;">' + esc(copy) + '</p>';
   };
 
   Widget.prototype.successState = function (dISO, isWaitlist) {
@@ -504,9 +560,9 @@
         '<p style="margin:0;font-size:15px;font-weight:600;color:#3E3A55;">' + esc(prettyDate(dISO)) + ' is sold out</p></div>' +
       '<p style="margin:0 0 14px;font-size:13px;color:#8B8798;line-height:1.5;">Join the waitlist and you\'ll be first to know if a spot frees up.</p>' +
       '<div style="display:flex;gap:10px;margin-bottom:10px;">' +
-        '<input class="av-name" maxlength="120" placeholder="Your name" />' +
-        '<input class="av-email" type="email" maxlength="200" placeholder="you@email.com" /></div>' +
-      '<input class="av-hp" style="display:none;" tabindex="-1" autocomplete="off" />' +
+        '<input class="av-name" maxlength="120" aria-label="Your name" placeholder="Your name" />' +
+        '<input class="av-email" type="email" maxlength="200" aria-label="Email" placeholder="you@email.com" /></div>' +
+      '<input class="av-hp" style="display:none;" tabindex="-1" autocomplete="off" aria-hidden="true" />' +
       '<button class="av-cta2 av-join">Join the waitlist</button>';
     this.panel.querySelector('.av-join').addEventListener('click', function () {
       var email = (self.panel.querySelector('.av-email') || {}).value || '';

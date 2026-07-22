@@ -30,7 +30,9 @@
         'background:#fff;box-shadow:0 6px 22px rgba(26,24,41,.08);}' +
       // White circle + violet arrow: the old brand-violet fill vanished against
       // the vendor page's violet Send-a-message bar (Francesca 2026-07-20).
-      '#lok-totop{position:fixed;right:16px;bottom:18px;z-index:990;width:44px;height:44px;border-radius:50%;' +
+      // z-index must sit BELOW every overlay/backdrop (Market filter drawer
+      // 199/200, mobile nav 9997/9998) so an open drawer covers the button.
+      '#lok-totop{position:fixed;right:16px;bottom:18px;z-index:150;width:44px;height:44px;border-radius:50%;' +
         'background:#fff;color:' + BRAND + ';border:1.5px solid #E4DFF6;cursor:pointer;display:flex;align-items:center;' +
         'justify-content:center;box-shadow:0 8px 22px rgba(38,10,80,.22);opacity:0;visibility:hidden;' +
         'transform:translateY(8px);transition:opacity .2s ease,transform .2s ease,visibility .2s ease;}' +

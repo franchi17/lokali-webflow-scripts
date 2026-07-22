@@ -16,7 +16,9 @@
   'use strict';
 
   function $(id) { return document.getElementById(id); }
-  function setText(id, v) { var el = $(id); if (el && v != null && v !== '') el.textContent = String(v); }
+  // Empty value CLEARS the node — keeping the old text left the Webflow
+  // template's placeholder copy reading as real data.
+  function setText(id, v) { var el = $(id); if (el) el.textContent = (v == null) ? '' : String(v); }
   function show(el, on) { if (el) el.style.display = on ? '' : 'none'; }
   function digits(s) { return String(s || '').replace(/[^0-9]/g, ''); }
   function unwrap(res) { return (res && res.data != null) ? res.data : res; }
@@ -77,6 +79,39 @@
   function pageType() {
     var el = document.querySelector('[data-vd-type]');
     return el ? el.getAttribute('data-vd-type') : null;
+  }
+
+  // Hard failure / 404 after the retry budget: the template ships a full demo
+  // item (name, price, description, gallery) that would otherwise render as
+  // real — hide it and say so. backHref/backLabel default to The Market.
+  function renderNotFound(msg, backHref, backLabel) {
+    var root = document.querySelector('[data-vd-type]');
+    if (!root || root === document.body || root === document.documentElement) {
+      root = document.querySelector('main') || document.body;
+    }
+    for (var i = 0; i < root.children.length; i++) root.children[i].style.display = 'none';
+    var card = document.createElement('div');
+    card.style.cssText = 'max-width:520px;margin:64px auto 96px;padding:40px 32px;text-align:center;' +
+      'background:linear-gradient(180deg,#faf7ff 0%,#fff 70%);border:1px solid #eee9fb;border-radius:20px;' +
+      'color:#3b3654;font-family:"Plus Jakarta Sans",system-ui,sans-serif;';
+    var h = document.createElement('h1');
+    h.style.cssText = 'font-size:24px;font-weight:800;color:#231d3f;margin:0 0 10px;font-family:inherit;';
+    h.textContent = msg || 'This item isn’t available';
+    var p = document.createElement('p');
+    p.style.cssText = 'font-size:15px;line-height:1.6;margin:0 0 20px;';
+    p.textContent = 'It may have been removed, or the link is out of date.';
+    var a = document.createElement('a');
+    a.href = backHref || '/the-market';
+    a.textContent = backLabel || 'Browse local vendors';
+    a.style.cssText = 'display:inline-block;background:#6E3CFF;color:#fff;font-weight:700;font-size:15px;' +
+      'padding:12px 26px;border-radius:999px;text-decoration:none;font-family:inherit;';
+    card.appendChild(h); card.appendChild(p); card.appendChild(a);
+    root.appendChild(card);
+    document.title = 'Not found — Lokali';
+  }
+  // Best back-link for the id-based hydrators (?vendor= is the only context).
+  function vendorBackHref(vendorParam) {
+    return vendorParam ? ('/vendor?id=' + encodeURIComponent(vendorParam)) : '/the-market';
   }
   function params() { return new URLSearchParams(window.location.search || ''); }
 
@@ -358,8 +393,8 @@
   // ---- service ----------------------------------------------------------
   function hydrateService(id, vendorParam) {
     reqRetry(function () { return window.LokaliAPI.services.getById(id); }).then(function (res) {
-      if (res && res.error) { console.warn('[vd] service load failed', res.error); return; }
-      var s = unwrap(res); if (!s || s.error != null) { console.warn('[vd] service not found'); return; }
+      if (res && res.error) { console.warn('[vd] service load failed', res.error); renderNotFound('This service isn’t available', vendorBackHref(vendorParam), vendorParam ? 'Back to the vendor' : null); return; }
+      var s = unwrap(res); if (!s || s.error != null) { console.warn('[vd] service not found'); renderNotFound('This service isn’t available', vendorBackHref(vendorParam), vendorParam ? 'Back to the vendor' : null); return; }
       var name = s.service_name || s.name || '';
       setText('vd-name', name);
       document.title = name + ' — Lokali';
@@ -433,7 +468,7 @@
   function hydrateProduct(id, vendorParam) {
     // products/{id} is owner-only; resolve from public vendor list.
     var done = function (p) {
-      if (!p) { console.warn('[vd] product not found'); return; }
+      if (!p) { console.warn('[vd] product not found'); renderNotFound('This product isn’t available', vendorBackHref(vendorParam), vendorParam ? 'Back to the vendor' : null); return; }
       var name = p.product_name || p.name || '';
       setText('vd-name', name);
       document.title = name + ' — Lokali';
@@ -446,7 +481,9 @@
       }
       show($('vd-tag-custom'), !!p.is_custom);
       show($('vd-tag-shipping'), !!p.shipping_offered);
-      show($('vd-tag-pickup'), !!p.pickup_only || !!p.shipping_offered);
+      // pickup_only ONLY — shipping_offered was lighting the pickup tag for
+      // shipping-only products, contradicting the fulfilment meta row below.
+      show($('vd-tag-pickup'), !!p.pickup_only);
       // #78: the template ships a "Lead time / 5–7 days" placeholder in this row.
       // Fill it from the vendor's own words (falling back to the legacy numeric
       // turnaround), or hide the row entirely so the placeholder never reads as data.
@@ -464,14 +501,14 @@
     };
     if (vendorParam) {
       reqRetry(function () { return window.LokaliAPI.products.listByVendor(vendorParam); }).then(function (res) {
-        if (res && res.error) { console.warn('[vd] product load failed', res.error); return; }
+        if (res && res.error) { console.warn('[vd] product load failed', res.error); renderNotFound('This product isn’t available', vendorBackHref(vendorParam), 'Back to the vendor'); return; }
         var found = asArray(unwrap(res)).filter(function (x) { return String(x.id) === String(id); })[0];
         done(found);
       });
     } else {
       // last resort: owner endpoint (works only if logged in as owner)
       reqRetry(function () { return window.LokaliAPI.products.getById(id); }).then(function (res) {
-        if (res && res.error) { console.warn('[vd] product load failed', res.error); return; }
+        if (res && res.error) { console.warn('[vd] product load failed', res.error); renderNotFound('This product isn’t available', null, null); return; }
         done(unwrap(res));
       });
     }
@@ -492,15 +529,16 @@
   // slug → hand off to the existing id-based hydrators (which fill vendor + gallery).
   function hydrateFromSlug(info) {
     var isProduct = info.kind === 'products';
+    var itemMsg = isProduct ? 'This product isn’t available' : 'This service isn’t available';
     reqRetry(function () { return window.LokaliAPI.vendors.getBySlug(info.vendorSlug); }).then(function (res) {
-      if (res && res.error) { console.warn('[vd] vendor slug load failed', res.error); return; }
+      if (res && res.error) { console.warn('[vd] vendor slug load failed', res.error); renderNotFound('This vendor isn’t available', null, null); return; }
       var v = unwrap(res); if (v && v.vendor) v = v.vendor;
-      if (!v || v.error != null || v.id == null) { console.warn('[vd] vendor not found for slug', info.vendorSlug); return; }
+      if (!v || v.error != null || v.id == null) { console.warn('[vd] vendor not found for slug', info.vendorSlug); renderNotFound('This vendor isn’t available', null, null); return; }
       var listFn = isProduct ? window.LokaliAPI.products.listByVendor : window.LokaliAPI.services.listByVendor;
       reqRetry(function () { return listFn(v.id); }).then(function (lres) {
-        if (lres && lres.error) { console.warn('[vd] item list load failed', lres.error); return; }
+        if (lres && lres.error) { console.warn('[vd] item list load failed', lres.error); renderNotFound(itemMsg, '/' + info.vendorSlug, 'Back to the vendor'); return; }
         var match = asArray(unwrap(lres)).filter(function (x) { return x && String(x.slug) === String(info.itemSlug); })[0];
-        if (!match || match.id == null) { console.warn('[vd] item not found for slug', info.itemSlug); return; }
+        if (!match || match.id == null) { console.warn('[vd] item not found for slug', info.itemSlug); renderNotFound(itemMsg, '/' + info.vendorSlug, 'Back to the vendor'); return; }
         if (isProduct) hydrateProduct(match.id, v.id);
         else hydrateService(match.id, v.id);
       });

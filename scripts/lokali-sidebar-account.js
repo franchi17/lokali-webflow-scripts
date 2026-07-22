@@ -246,7 +246,16 @@
   function openAccountPanel(tries) {
     var a = window.LokaliAuth;
     if (a && typeof a.openAccountPanel === 'function') { a.openAccountPanel(); return; }
-    if ((tries || 0) < 20) setTimeout(function () { openAccountPanel((tries || 0) + 1); }, 250);
+    if ((tries || 0) < 20) { setTimeout(function () { openAccountPanel((tries || 0) + 1); }, 250); return; }
+    // Retry budget spent (lokali-auth.js never loaded) — say so instead of a
+    // silently dead control (mirrors the settings-page toast).
+    var t = document.createElement('div');
+    t.textContent = 'Couldn’t open sign-in settings — please refresh the page.';
+    t.style.cssText = 'position:fixed;top:24px;left:50%;transform:translateX(-50%);z-index:9999;' +
+      'padding:12px 20px;border-radius:999px;background:#b91c1c;color:#fff;box-shadow:0 8px 20px rgba(15,23,42,.2);' +
+      "font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:500;max-width:90vw;text-align:center;";
+    document.body.appendChild(t);
+    setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 5000);
   }
 
   function addManageSignInRow(wrap) {

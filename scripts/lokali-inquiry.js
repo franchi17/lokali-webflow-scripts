@@ -58,7 +58,7 @@
         '<form id="lok-inq-form" novalidate>' +
           '<h3>Contact <span id="lok-inq-vname"></span></h3>' +
           '<p class="lok-inq-sub">Send your question or request — they’ll reply to you directly.</p>' +
-          '<div id="lok-inq-error"></div>' +
+          '<div id="lok-inq-error" aria-live="polite"></div>' +
           '<div class="lok-inq-field"><label for="lok-inq-name">Your name</label>' +
             '<input id="lok-inq-name" type="text" autocomplete="name" maxlength="100"/></div>' +
           '<div class="lok-inq-field"><label for="lok-inq-email">Email</label>' +
@@ -82,6 +82,20 @@
 
     overlay.addEventListener('click', function (e) { if (e.target === overlay) close(); });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && overlay.style.display !== 'none') close(); });
+    // aria-modal promises focus can't leave the card — wrap Tab within it.
+    overlay.addEventListener('keydown', function (e) {
+      if (e.key !== 'Tab') return;
+      var card = overlay.querySelector('#lok-inq-card');
+      var els = card.querySelectorAll('button, input, textarea, a[href]');
+      var vis = [];
+      for (var i = 0; i < els.length; i++) {
+        if (els[i].offsetParent !== null && els[i].tabIndex !== -1) vis.push(els[i]);
+      }
+      if (!vis.length) return;
+      var first = vis[0], last = vis[vis.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    });
     overlay.querySelector('#lok-inq-cancel').addEventListener('click', close);
     overlay.querySelector('#lok-inq-close').addEventListener('click', close);
     overlay.querySelector('#lok-inq-form').addEventListener('submit', submit);
@@ -115,11 +129,23 @@
           '<button data-sn-go style="font-family:inherit;font-size:13px;font-weight:600;color:#fff;background:#6002EE;border:none;border-radius:9px;padding:9px 16px;cursor:pointer;">Continue</button>' +
         '</div>' +
       '</div>';
-    ov.addEventListener('click', function (e) { if (e.target === ov) ov.remove(); });
-    ov.querySelector('[data-sn-cancel]').addEventListener('click', function () { ov.remove(); });
+    // Dialog basics: Escape dismisses, and focus returns to the opener.
+    var prevFocus = document.activeElement;
+    function dismiss() {
+      document.removeEventListener('keydown', snEsc, true);
+      ov.remove();
+      if (prevFocus && prevFocus.focus) { try { prevFocus.focus(); } catch (e) {} }
+    }
+    ov.addEventListener('click', function (e) { if (e.target === ov) dismiss(); });
+    // Escape at DOCUMENT level: a click on non-focusable card text can drop
+    // focus to <body> (Safari), where an overlay-scoped listener never hears
+    // the key. Removed again in dismiss().
+    function snEsc(e) { if (e.key === 'Escape') dismiss(); }
+    document.addEventListener('keydown', snEsc, true);
+    ov.querySelector('[data-sn-cancel]').addEventListener('click', dismiss);
     ov.querySelector('[data-sn-go]').addEventListener('click', function () {
       try { localStorage.setItem(SHOP_NOTICE_KEY, '1'); } catch (e) {}
-      ov.remove();
+      dismiss();
       onContinue();
     });
     document.body.appendChild(ov);
@@ -134,6 +160,7 @@
     }
     reallyOpen(context);
   }
+  var lastFocus = null; // restored on close (keyboard/SR users otherwise land at document top)
   function reallyOpen(context) {
     if (!vendor) return;
     injectStyles();
@@ -143,6 +170,8 @@
     modal.querySelector('#lok-inq-form').style.display = '';
     modal.querySelector('#lok-inq-done').style.display = 'none';
     modal.querySelector('#lok-inq-error').style.display = 'none';
+    lastFocus = document.activeElement;
+    document.body.style.overflow = 'hidden'; // lock the page behind the overlay
     modal.style.display = 'flex';
     var first = modal.querySelector('#lok-inq-name');
     if (first) first.focus();
@@ -150,6 +179,9 @@
 
   function close() {
     if (modal) modal.style.display = 'none';
+    document.body.style.overflow = '';
+    if (lastFocus && lastFocus.focus) { try { lastFocus.focus(); } catch (e) {} }
+    lastFocus = null;
   }
 
   function showError(msg) {

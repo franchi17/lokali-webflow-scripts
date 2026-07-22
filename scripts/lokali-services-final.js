@@ -10,6 +10,24 @@ const LokaliServicesPage = (() => {
     (document.head || document.documentElement).appendChild(s);
   })();
 
+  // #98 tap targets for injected controls on mobile: the gallery corner buttons
+  // are 22px inline-styled and the featured-pick star inherits the 25px
+  // icon-btn circle. 34px is the geometric max for three controls on an 84px
+  // tile; the star gets the full 44. !important beats the inline styles.
+  (function injectTapTargetStyle() {
+    if (document.getElementById('lok-services-tap-style')) return;
+    var s = document.createElement('style');
+    s.id = 'lok-services-tap-style';
+    s.textContent =
+      '@media (max-width:991px){' +
+      '#lok-service-gallery button[data-photo-id],#lok-service-gallery button[data-move-id],' +
+      '#lok-service-gallery button[data-pending-remove],#lok-service-gallery button[data-pending-move]' +
+      '{width:34px!important;height:34px!important;font-size:18px!important;}' +
+      '.lok-pick-star{min-width:44px!important;min-height:44px!important;}' +
+      '}';
+    (document.head || document.documentElement).appendChild(s);
+  })();
+
   // #62 field-alignment + #61 required markers. The Webflow detail/pricing field
   // wrappers carry a stray margin:0 20px that insets them ~20px from the section
   // headers, video, checkboxes and action buttons (all at the panel column) —
@@ -53,6 +71,7 @@ const LokaliServicesPage = (() => {
 
   let filterStatus   = 'all';
   let saveInProgress = false;
+  var loadFailed     = false;   // init load failed — error card is up, not the empty state
 
   const CLONED_CARD_DISPLAY = null;
 
@@ -449,19 +468,31 @@ const LokaliServicesPage = (() => {
     });
 
     const stack = el.stack();
-    if (stack && sortVal !== 'custom') {
+    if (stack) {
       const all = [...stack.querySelectorAll(STACK_CARD_SEL)];
-      all.sort((a, b) => {
-        if (sortVal === 'newest')     return parseInt(b.dataset.created) - parseInt(a.dataset.created);
-        if (sortVal === 'alpha') {
-          const nameA = (a.querySelector('[data-field="service-name"]') || a.querySelector('.service-name'))?.textContent || '';
-          const nameB = (b.querySelector('[data-field="service-name"]') || b.querySelector('.service-name'))?.textContent || '';
-          return nameA.localeCompare(nameB) || 0;
-        }
-        if (sortVal === 'price_asc')  return parseInt(a.dataset.price) - parseInt(b.dataset.price);
-        if (sortVal === 'price_desc') return parseInt(b.dataset.price) - parseInt(a.dataset.price);
-        return 0;
-      });
+      if (sortVal === 'custom') {
+        // #94: a view sort physically reorders the DOM — returning to Custom
+        // must restore the curated sort_order arrangement, or the next drag
+        // would persist the view order as the public order.
+        var pos = {};
+        services.forEach(function (s, i) { pos[String(s.id)] = i; });
+        all.sort(function (a, b) {
+          var pa = pos[a.dataset.serviceId], pb = pos[b.dataset.serviceId];
+          return (pa == null ? 9999 : pa) - (pb == null ? 9999 : pb);
+        });
+      } else {
+        all.sort((a, b) => {
+          if (sortVal === 'newest')     return parseInt(b.dataset.created) - parseInt(a.dataset.created);
+          if (sortVal === 'alpha') {
+            const nameA = (a.querySelector('[data-field="service-name"]') || a.querySelector('.service-name'))?.textContent || '';
+            const nameB = (b.querySelector('[data-field="service-name"]') || b.querySelector('.service-name'))?.textContent || '';
+            return nameA.localeCompare(nameB) || 0;
+          }
+          if (sortVal === 'price_asc')  return parseInt(a.dataset.price) - parseInt(b.dataset.price);
+          if (sortVal === 'price_desc') return parseInt(b.dataset.price) - parseInt(a.dataset.price);
+          return 0;
+        });
+      }
       all.forEach(c => stack.appendChild(c));
     }
 
@@ -470,6 +501,7 @@ const LokaliServicesPage = (() => {
   };
 
   const updateEmptyState = () => {
+    if (loadFailed) return; // load-error card is up — don't paint the empty state over it
     const stack = el.stack();
     const emptyNew = el.emptyState();
     const emptyFiltered = el.emptyStateFiltered();
@@ -578,7 +610,12 @@ const LokaliServicesPage = (() => {
       card.setAttribute('data-active',     isServiceActive(service) ? 'true' : 'false');
       card.setAttribute('data-category',   getCategoryName(service.category_id));
       card.setAttribute('data-price',      service.price_cents || service.price_min_cents || 0);
-      card.setAttribute('data-created',    index);
+      // 'Newest' sorts by real creation time — a render index inverted it
+      // under #94's new-items-on-top order.
+      var createdTs = typeof service.created_at === 'number'
+        ? service.created_at
+        : (Date.parse(service.created_at || '') || 0);
+      card.setAttribute('data-created',    createdTs);
       card.setAttribute('draggable',       'true');
 
       const find = (field, ...fallbackClasses) => {
@@ -720,6 +757,7 @@ const LokaliServicesPage = (() => {
   };
 
   const reconcileListDom = () => {
+    if (loadFailed) return; // error card is up — renderList would swap it for the empty state
     const stack = el.stack();
     const template = el.cardTemplate();
     if (!stack || !template) return;
@@ -1261,7 +1299,11 @@ const LokaliServicesPage = (() => {
     const desired = _galleryPhotos.length ? _galleryPhotos[0].image_url : null;
     if (svc && svc.image_url === desired) return;
     const payload = buildPayload(desired);
-    if (!payload.service_name) return; // form mid-edit/invalid — Save will handle it
+    // Same checks as the Save button: a form Save would block (cleared price,
+    // bad range) must not be committed live by a photo action. The photo
+    // change stays local; the explicit Save persists it once the form is fixed.
+    var invalid = validate(payload);
+    if (invalid) { showError(invalid); return; }
     // #96-LISTING: the cover autosave must never commit a Specialty the vendor
     // is still deciding on (or revert one from a stale local row) — only the
     // explicit Save persists the tag.
@@ -1464,20 +1506,65 @@ const LokaliServicesPage = (() => {
     }
   };
 
+  // Trash: the old confirm promised a reversible deactivation but ran a real
+  // DELETE (adapter -> supabase .delete(), no trigger intercepts). Honest
+  // two-path dialog instead — primary = Deactivate (reversible, the same
+  // is_active path as the form checkbox), secondary = permanent delete with
+  // explicit can't-be-undone copy. Injected modal: role=dialog + aria-modal,
+  // focus moved in on open / restored on close, Escape closes.
+  function openTrashDialog(itemName) {
+    return new Promise(function (resolve) {
+      var prev = document.activeElement;
+      var overlay = document.createElement('div');
+      overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:9990;background:rgba(51,37,78,.5);display:flex;align-items:center;justify-content:center;padding:20px;';
+      var card = document.createElement('div');
+      card.setAttribute('role', 'dialog');
+      card.setAttribute('aria-modal', 'true');
+      card.setAttribute('aria-labelledby', 'lok-trash-title');
+      card.style.cssText = 'background:#fff;border-radius:14px;max-width:420px;width:100%;padding:22px 20px;box-sizing:border-box;font-family:"Plus Jakarta Sans",system-ui,sans-serif;box-shadow:0 12px 40px rgba(51,37,78,.28);';
+      var btnBase = 'display:flex;align-items:center;justify-content:center;width:100%;min-height:44px;border-radius:10px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;';
+      card.innerHTML =
+        '<div id="lok-trash-title" style="font-size:16px;font-weight:700;color:#1A1829;margin-bottom:6px;"></div>' +
+        '<p style="font-size:13.5px;color:#5A5570;line-height:1.5;margin:0 0 16px;">Deactivating hides it from your public page — it moves to your Inactive list and you can bring it back anytime.</p>' +
+        '<button type="button" data-trash-deactivate style="' + btnBase + 'border:1px solid #6002EE;background:#6002EE;color:#fff;margin-bottom:10px;">Deactivate (hide it, keep it)</button>' +
+        '<button type="button" data-trash-delete style="' + btnBase + 'border:1px solid #F2C4CB;background:#fff;color:#C0152F;margin-bottom:10px;">Delete permanently — can’t be undone</button>' +
+        '<button type="button" data-trash-cancel style="' + btnBase + 'border:1px solid #E6E4F0;background:#fff;color:#5A5570;">Cancel</button>';
+      overlay.appendChild(card);
+      // The name goes in as text, never markup.
+      card.querySelector('#lok-trash-title').textContent = 'Remove “' + itemName + '”?';
+      function close(choice) {
+        document.removeEventListener('keydown', onKey, true);
+        overlay.remove();
+        if (prev && prev.focus) { try { prev.focus(); } catch (e) {} }
+        resolve(choice);
+      }
+      function onKey(ev) {
+        if (ev.key === 'Escape') { ev.preventDefault(); close(null); }
+      }
+      document.addEventListener('keydown', onKey, true);
+      overlay.addEventListener('click', function (ev) { if (ev.target === overlay) close(null); });
+      card.querySelector('[data-trash-deactivate]').addEventListener('click', function () { close('deactivate'); });
+      card.querySelector('[data-trash-delete]').addEventListener('click', function () { close('delete'); });
+      card.querySelector('[data-trash-cancel]').addEventListener('click', function () { close(null); });
+      document.body.appendChild(overlay);
+      card.querySelector('[data-trash-deactivate]').focus();
+    });
+  }
+
   const handleDeactivate = async (serviceId) => {
-    const service   = services.find(s => s.id === serviceId);
-    const confirmed = window.confirm(
-      `Deactivate "${service?.service_name || 'this service'}"? It will move to your inactive list and you can reactivate it anytime.`
-    );
-    if (!confirmed) return;
+    const service = services.find(s => s.id === serviceId);
+    const choice  = await openTrashDialog((service && service.service_name) || 'this service');
+    if (!choice) return;
 
     try {
-      const result = await window.LokaliAPI.services.delete(serviceId);
+      const result = choice === 'delete'
+        ? await window.LokaliAPI.services.delete(serviceId)
+        : await window.LokaliAPI.services.update(serviceId, { is_active: false });
       if (result.error) throw new Error(result.error);
       await loadData();
       showListView();
     } catch (err) {
-      showError(err.message || 'Could not deactivate service. Please try again.');
+      showError(err.message || 'Could not update service. Please try again.');
     }
   };
 
@@ -1518,6 +1605,10 @@ const LokaliServicesPage = (() => {
   const onDrop = (e) => e.preventDefault();
 
   const persistSortOrder = async () => {
+    // #94 guard: only the Custom view may write sort_order — a view-sorted
+    // DOM arrangement must never overwrite the curated public order.
+    var sortSel = el.sortSelect();
+    if (normalizeSortValue(sortSel && sortSel.value) !== 'custom') return;
     const cards = el.stack()?.querySelectorAll(STACK_CARD_SEL);
     if (!cards || !cards.length) return;
 
@@ -1528,14 +1619,33 @@ const LokaliServicesPage = (() => {
       }))
       .filter(o => !isNaN(o.id));
 
+    // Sync the in-memory rows immediately — buildPayload's edit branch re-sends
+    // ex.sort_order, so a stale value would silently revert the slot on the
+    // next Save (or cover autosave). A failed persist reloads server truth below.
+    updates.forEach(function (o) {
+      for (var k = 0; k < services.length; k++) {
+        if (String(services[k].id) === String(o.id)) { services[k].sort_order = o.sort_order; break; }
+      }
+    });
+    services.sort(function (a, b) {
+      return (a.sort_order != null ? a.sort_order : 9999) - (b.sort_order != null ? b.sort_order : 9999);
+    });
+
     try {
-      await Promise.all(
+      var results = await Promise.all(
         updates.map(o =>
           window.LokaliAPI.services.update(o.id, { sort_order: o.sort_order })
         )
       );
+      // The adapter resolves { error } envelopes instead of throwing — a
+      // silently-failed persist would revert the public order on next load.
+      for (var i = 0; i < results.length; i++) {
+        if (results[i] && results[i].error) throw new Error(String(results[i].error));
+      }
     } catch (err) {
       console.error('[ServicesPage] Reorder error:', err);
+      alert('Couldn’t save your new order — please try again.');
+      try { await loadData(); } catch (e) {}
     }
   };
 
@@ -1560,6 +1670,9 @@ const LokaliServicesPage = (() => {
     if (servicesRes.error) throw new Error(servicesRes.error);
 
     services = normalizeServiceList(servicesRes.data);
+    loadFailed = false;
+    var loadErrBox = document.getElementById('services-load-error');
+    if (loadErrBox) loadErrBox.remove();
 
     // Only trust the billing response when the call actually succeeded. On a
     // transient Xano free-tier 429/cold-start the call errors, and we must NOT
@@ -1608,6 +1721,39 @@ const LokaliServicesPage = (() => {
 
     renderList();
     requestAnimationFrame(reconcileListDom);
+  };
+
+  // A failed load must not masquerade as the "Add your first service" empty
+  // state (it reads as data loss). Explicit error card + retry instead.
+  const renderLoadError = () => {
+    const stack = el.stack();
+    const emptyNew = el.emptyState();
+    const emptyFiltered = el.emptyStateFiltered();
+    if (emptyNew) emptyNew.style.display = 'none';
+    if (emptyFiltered) emptyFiltered.style.display = 'none';
+    if (!stack) return;
+    clearStackDataCards(stack);
+    var box = document.getElementById('services-load-error');
+    if (!box) {
+      box = document.createElement('div');
+      box.id = 'services-load-error';
+      box.style.cssText = 'font-family:"Plus Jakarta Sans",system-ui,sans-serif;background:#fff;border:1px solid #E6E4F0;border-radius:12px;padding:24px 20px;margin:8px 0;text-align:center;';
+      stack.appendChild(box);
+    }
+    box.innerHTML =
+      '<div style="font-size:15px;font-weight:600;color:#1A1829;margin-bottom:4px;">Couldn’t load your services</div>' +
+      '<div style="font-size:13px;color:#6B6580;margin-bottom:14px;">Check your connection and try again.</div>' +
+      '<button type="button" data-load-retry style="font-family:inherit;font-size:14px;font-weight:600;min-height:44px;padding:10px 24px;border-radius:10px;border:1px solid #6002EE;background:#6002EE;color:#fff;cursor:pointer;">Try again</button>';
+    var btn = box.querySelector('[data-load-retry]');
+    btn.addEventListener('click', function () {
+      btn.disabled = true;
+      btn.textContent = 'Loading…';
+      loadData().catch(function (e) {
+        console.error('[ServicesPage] retry error:', e);
+        btn.disabled = false;
+        btn.textContent = 'Try again';
+      });
+    });
   };
 
   // #61 required-field markers. The Webflow field labels are static, so mark the
@@ -1980,8 +2126,9 @@ const LokaliServicesPage = (() => {
       console.error('[ServicesPage] init error:', err);
       services = [];
       _maxServices = null;
+      loadFailed = true;
       try {
-        renderList();
+        renderLoadError();
       } catch (_e) {}
     }
   };

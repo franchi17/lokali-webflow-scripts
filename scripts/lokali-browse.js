@@ -22,8 +22,10 @@
  *
  * Load AFTER lokali-api-client.js. No auth required (public list endpoints).
  *
- * Required mount points in Webflow (plain light-DOM elements, NOT code components):
- *   #browse-search          text input
+ * Required mount points in Webflow (plain light-DOM elements, NOT code components —
+ * EXCEPT #browse-search, which on the live page renders inside a code-island's
+ * OPEN shadow root; search binds via composed input events + a shadow-root scan):
+ *   #browse-search          text input (light DOM or shadow-DOM code island)
  *   #browse-location        <select> (script fills options)
  *   #browse-result-count    <strong> ("N vendors found")
  *   #browse-grid-count      <strong> ("Showing N vendors")
@@ -280,7 +282,8 @@
     ".vcard-avatar-img{width:100%;height:100%;object-fit:cover;display:block;}",
     ".vcard-meta{flex:1;min-width:0;}",
     ".vcard-name-row{display:flex;align-items:center;gap:6px;margin-bottom:3px;flex-wrap:wrap;}",
-    ".vcard-name{font-size:14px;font-weight:600;color:#1A1829;letter-spacing:-.2px;line-height:1.2;}",
+    // .vcard-name is a real <a> (keyboard/SR path into the profile) — kill link chrome.
+    ".vcard-name{font-size:14px;font-weight:600;color:#1A1829;letter-spacing:-.2px;line-height:1.2;text-decoration:none;}",
     ".vcard-area{font-size:11px;color:#6B6880;display:flex;align-items:center;gap:4px;}",
     // Badges live on their own row under the location (out of the way of the top-right heart),
     // icon-only — a brighter/cleaner tint background with a darker icon on top.
@@ -323,7 +326,8 @@
     "#browse-filter-panel .lk-filter-section{margin-bottom:1.5rem;}",
     "#browse-filter-panel .lk-filter-section:last-child{margin-bottom:0;}",
     "#browse-filter-panel .lk-filter-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:#8E8BA6;margin-bottom:.6rem;}",
-    "#browse-filter-panel .filter-item{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;border-radius:8px;font-size:13px;line-height:1.45;color:#4A4761;cursor:pointer;transition:all .1s;margin-bottom:2px;user-select:none;}",
+    // .filter-item / .lk-toggle are real <button>s (keyboard path) — reset UA button chrome.
+    "#browse-filter-panel .filter-item{display:flex;align-items:center;justify-content:space-between;width:100%;background:none;border:none;font-family:inherit;-webkit-appearance:none;appearance:none;text-align:left;padding:7px 10px;border-radius:8px;font-size:13px;line-height:1.45;color:#4A4761;cursor:pointer;transition:all .1s;margin-bottom:2px;user-select:none;}",
     "#browse-filter-panel .filter-item:hover{background:#F7F6FC;color:#1A1829;}",
     "#browse-filter-panel .filter-item.active{background:#F3EBFF;color:#6002EE;font-weight:600;}",
     "#browse-filter-panel .fi-left{display:flex;align-items:center;gap:8px;}",
@@ -331,13 +335,25 @@
     "#browse-filter-panel .filter-count-pill{font-size:10px;font-weight:600;background:#EEEDF6;color:#8E8BA6;border-radius:100px;padding:1px 7px;min-width:22px;text-align:center;}",
     "#browse-filter-panel .filter-item.active .filter-count-pill{background:rgba(96,2,238,.12);color:#6002EE;}",
     "#browse-filter-panel .lk-divider{height:.5px;background:#EEEDF6;margin:1rem 0;}",
-    "#browse-filter-panel .lk-toggle{display:flex;align-items:center;justify-content:space-between;padding:6px 0;cursor:pointer;user-select:none;}",
+    "#browse-filter-panel .lk-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;background:none;border:none;font-family:inherit;-webkit-appearance:none;appearance:none;text-align:left;padding:6px 0;cursor:pointer;user-select:none;}",
     "#browse-filter-panel .lk-toggle-label{font-size:13px;line-height:1.45;color:#4A4761;display:flex;align-items:flex-start;gap:6px;}",
     "#browse-filter-panel .lk-tg-ic{font-size:12px;font-weight:700;}",
     "#browse-filter-panel .toggle-switch{width:32px;height:18px;border-radius:100px;background:#C8C6D8;position:relative;transition:background .18s;flex-shrink:0;}",
     "#browse-filter-panel .toggle-switch.on{background:#1D6A45;}",
     "#browse-filter-panel .toggle-switch::after{content:'';position:absolute;width:14px;height:14px;border-radius:50%;background:#fff;top:2px;left:2px;transition:left .18s;box-shadow:0 1px 3px rgba(0,0,0,.18);}",
     "#browse-filter-panel .toggle-switch.on::after{left:16px;}",
+    // Active-filter chips (no Webflow styles exist for them) — pill matching the
+    // sidebar's .filter-item.active; the × is a real button with a 32px hit area.
+    ".active-filter-chip{display:inline-flex;align-items:center;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:500;background:#F3EBFF;color:#6002EE;border:1px solid #E4D6FF;border-radius:100px;padding:2px 2px 2px 12px;min-height:28px;box-sizing:border-box;margin:2px 6px 2px 0;}",
+    ".active-filter-chip .remove-x{-webkit-appearance:none;appearance:none;background:none;border:none;font-family:inherit;font-size:15px;line-height:1;color:#6002EE;cursor:pointer;padding:0;width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;}",
+    ".active-filter-chip .remove-x:hover{background:rgba(96,2,238,.1);}",
+    // Mobile Filter button 'filters active' cue (.has-filters set in JS).
+    "#browse-mobile-filter-btn.has-filters{border-color:#6002EE;color:#6002EE;}",
+    "#browse-mobile-filter-btn.has-filters::after{content:'';display:inline-block;width:8px;height:8px;border-radius:50%;background:#FF8D00;margin-left:6px;vertical-align:middle;}",
+    // Injected loading state (#browse-loading — no such mount exists in the Webflow page).
+    "#browse-loading{display:none;text-align:center;padding:36px 0;font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;color:#6B6880;}",
+    ".lk-browse-spin{display:inline-block;vertical-align:-4px;margin-right:10px;width:18px;height:18px;border:2.5px solid #E4E2F0;border-top-color:#6002EE;border-radius:50%;animation:lkbrspin .8s linear infinite;}",
+    "@keyframes lkbrspin{to{transform:rotate(360deg)}}",
     // Mobile: vendor cards were stuck at 2 columns (Webflow grid is `1fr 1fr` with no
     // responsive override) — too cramped on phones. Drop to a single column at ≤767px.
     "@media screen and (max-width:767px){#browse-vendor-grid{grid-template-columns:1fr;}}",
@@ -389,6 +405,9 @@
   function showEl(node, disp) { if (node) { node.style.display = disp || ''; node.classList.remove('w-condition-invisible'); } }
   function hideEl(node) { if (node) node.style.display = 'none'; }
   function digits(s) { return String(s || '').replace(/[^0-9]/g, ''); }
+  // Vendors stored both '+14155550123' and bare 10-digit values — normalize to
+  // the 11-digit US form so tel/sms/wa links agree with the listing page.
+  function phoneDigits(s) { var d = digits(s); return d.length === 10 ? '1' + d : d; }
   function debounce(fn, ms) { var t; return function () { clearTimeout(t); t = setTimeout(fn, ms); }; }
 
   function extractList(d) {
@@ -612,9 +631,13 @@
     try { byUrl = new URLSearchParams(window.location.search).get('location_id'); } catch (e) {}
     try { byStore = localStorage.getItem(AREA_KEY); } catch (e) {}
     if (byUrl != null || byStore != null) return; // explicit choice exists somewhere
-    var token = null;
-    try { token = localStorage.getItem('LOKALI_AUTH_TOKEN'); } catch (e) {}
-    if (!token) return; // signed out — no account to read
+    // Signed-in detection: Supabase-era pages carry no Xano token — mirror
+    // auth-nav and treat a parseable LOKALI_ACCT_CACHE as the signal; the
+    // legacy token key stays as the Xano-rollback fallback only.
+    var signedIn = false;
+    try { signedIn = !!JSON.parse(localStorage.getItem('LOKALI_ACCT_CACHE') || 'null'); } catch (e) {}
+    if (!signedIn) { try { signedIn = !!localStorage.getItem('LOKALI_AUTH_TOKEN'); } catch (e) {} }
+    if (!signedIn) return; // signed out — no account to read
     if (!(window.LokaliAPI.account && window.LokaliAPI.account.get)) return;
     window.LokaliAPI.account.get().then(function (res) {
       // The page-load burst regularly trips the free-tier rate limit — retry a
@@ -669,6 +692,9 @@
     return window.LokaliAPI.vendors.list(params).then(function (out) {
       if (out && out.error) return retryOrGiveUp();
       hideEl(loading);
+      // is_active guard is deliberately tolerant: rows without the column (the
+      // adapter's VENDOR_LIST_COLS may not select it yet) count as active —
+      // only an explicit false is excluded. #74 three-place gotcha applies.
       _allVendors = extractList(out && out.data).filter(function (v) { return v && v.is_active !== false; });
       // #96 — if the payload has no subcategories key (stale cached adapter /
       // Xano rollback), drop any restored picks (INCLUDING the raw restore
@@ -735,7 +761,8 @@
     var cs = ce('div', 'lk-filter-section');
     var cl = ce('div', 'lk-filter-label'); cl.textContent = 'Category'; cs.appendChild(cl);
     CATEGORY_LIST.forEach(function (c) {
-      var item = ce('div', 'filter-item' + (c.slug === activeCategory ? ' active' : ''));
+      var item = ce('button', 'filter-item' + (c.slug === activeCategory ? ' active' : ''));
+      item.type = 'button';
       item.setAttribute('data-category-slug', c.slug);
       var left = ce('div', 'fi-left');
       left.appendChild(maskIcon(c.url, ICON_VIOLET, 18));
@@ -753,7 +780,11 @@
     var fs = ce('div', 'lk-filter-section');
     var fl = ce('div', 'lk-filter-label'); fl.textContent = 'Filter by'; fs.appendChild(fl);
     TOGGLE_LIST.forEach(function (t) {
-      var row = ce('div', 'lk-toggle');
+      var row = ce('button', 'lk-toggle');
+      row.type = 'button';
+      row.setAttribute('role', 'switch');
+      var on0 = t.key === 'new' ? showNewOnly : (t.key === 'founding' ? showFoundingOnly : showVerifiedOnly);
+      row.setAttribute('aria-checked', on0 ? 'true' : 'false');
       var label = ce('span', 'lk-toggle-label');
       label.appendChild(t.url ? maskIcon(t.url, t.color, 16) : glyphIcon(t.glyph, t.color));
       label.appendChild(document.createTextNode(t.label));
@@ -772,7 +803,8 @@
     var ss = ce('div', 'lk-filter-section');
     var sl = ce('div', 'lk-filter-label'); sl.textContent = 'Sort'; ss.appendChild(sl);
     SORT_LIST.forEach(function (s) {
-      var item = ce('div', 'filter-item' + (s.sort === activeSort ? ' active' : ''));
+      var item = ce('button', 'filter-item' + (s.sort === activeSort ? ' active' : ''));
+      item.type = 'button';
       item.id = s.id;
       var left = ce('div', 'fi-left');
       left.appendChild(maskIcon(s.url, ICON_VIOLET, 16));
@@ -934,14 +966,53 @@
     sanitizeRestoredSubcats();
     return true;
   }
+  // The toggle row (the switch span's parent) carries role=switch + aria-checked.
+  function syncSwitchAria(sw, on) {
+    var row = sw.parentNode;
+    if (row && row.getAttribute && row.getAttribute('role') === 'switch') row.setAttribute('aria-checked', on ? 'true' : 'false');
+  }
+  // The live page renders #browse-search inside a code-island's OPEN shadow
+  // root — getElementById can't see it, but shadowRoot scans can. Light-DOM
+  // markup (older pages) resolves first.
+  function findSearchInput() {
+    var direct = el('browse-search');
+    if (direct) return direct;
+    var islands = document.querySelectorAll('code-island');
+    for (var i = 0; i < islands.length; i++) {
+      var root = islands[i].shadowRoot;
+      if (!root) continue;
+      var inp = root.getElementById ? root.getElementById('browse-search') : root.querySelector('#browse-search');
+      if (inp) return inp;
+    }
+    return null;
+  }
+  // Islands hydrate late — retry briefly so a session-restored search term
+  // lands in the input once it exists.
+  function syncSearchBox(attempt) {
+    var search = findSearchInput();
+    if (search) { if (search.value !== searchTerm) search.value = searchTerm; return; }
+    if (searchTerm && attempt < 5) setTimeout(function () { syncSearchBox(attempt + 1); }, 1000);
+  }
+  // Webflow-owned div controls: add button semantics + Enter/Space activation.
+  function wireButton(node, fn) {
+    if (!node) return;
+    node.addEventListener('click', fn);
+    if (node.tagName === 'BUTTON' || (node.tagName === 'A' && node.hasAttribute('href'))) return; // already keyboard-native
+    if (!node.getAttribute('role')) node.setAttribute('role', 'button');
+    if (!node.hasAttribute('tabindex')) node.setAttribute('tabindex', '0');
+    node.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') { e.preventDefault(); fn(); }
+    });
+  }
+
   // Reflect the (restored) state into controls that renderFilterPanel doesn't pre-set.
   function syncFilterUI() {
     if (activeLocationId !== 'all' && !_locationsById[activeLocationId]) activeLocationId = 'all';
     TOGGLE_LIST.forEach(function (t) {
       var on = t.key === 'new' ? showNewOnly : (t.key === 'founding' ? showFoundingOnly : showVerifiedOnly);
-      var sw = el(t.id); if (sw) sw.classList.toggle('on', on);
+      var sw = el(t.id); if (sw) { sw.classList.toggle('on', on); syncSwitchAria(sw, on); }
     });
-    var search = el('browse-search'); if (search && search.value !== searchTerm) search.value = searchTerm;
+    syncSearchBox(0); // shadow-DOM aware; retries while the island hydrates
     var sel = locSelectEl(); if (sel) sel.value = String(activeLocationId);
     var msel = sortSelectEl(); if (msel) msel.value = activeSort;
     // Reflect the active category into the panel. renderFilterPanel() sets this
@@ -1014,6 +1085,7 @@
 
   function buildCard(v) {
     var style = vCategoryStyle(v);
+    var href = vProfileHref(v);
     var card = ce('div', 'vcard' + (vIsSpotlight(v) ? ' vcard-spotlight' : ''));
     // Expose the vendor id so lokali-favorites.js can attach a save/heart control
     // without coupling favorites logic into this renderer.
@@ -1021,7 +1093,11 @@
     var header = ce('div', 'vcard-header');
     var meta = ce('div', 'vcard-meta');
     var nameRow = ce('div', 'vcard-name-row');
-    var name = ce('span', 'vcard-name'); name.textContent = vName(v); nameRow.appendChild(name);
+    // Real link = the keyboard/screen-reader path into the profile (the
+    // whole-card click below is a pointer convenience on top of it).
+    var name = ce('a', 'vcard-name'); name.textContent = vName(v); name.href = href;
+    name.addEventListener('click', function (ev) { ev.stopPropagation(); }); // native link wins (incl. cmd-click)
+    nameRow.appendChild(name);
     var area = ce('div', 'vcard-area');
     area.appendChild(maskIcon(ICON_PIN, AREA_GREY, 11));
     area.appendChild(document.createTextNode(' ' + vAreaLabel(v)));
@@ -1074,17 +1150,18 @@
       card.appendChild(offerings);
     }
 
-    var phone = v.phone_number;
+    // Gate on the NORMALIZED digits, not the raw value — a stored "n/a" must
+    // hide the buttons, not render a dead tel:+ link.
+    var phone = phoneDigits(v.phone_number);
     var actions = ce('div', 'vcard-actions');
     addContact(actions, v.contact_email ? 'mailto:' + v.contact_email : null, 'Email', ICON_EMAIL, 'cb-email');
     // #76c: hide Call when the vendor unticked "Customers can call me"
     // (missing/null = legacy rows -> keep showing).
-    addContact(actions, (phone && v.phone_calls !== false) ? 'tel:' + phone : null, 'Call', ICON_CALL, 'cb-call');
-    addContact(actions, (v.text_messages && phone) ? 'sms:' + phone : null, 'Text', ICON_TEXT, 'cb-text');
-    addContact(actions, (v.whatsapp_messages && phone) ? 'https://wa.me/' + digits(phone) : null, 'WhatsApp', ICON_WHATSAPP, 'cb-whatsapp');
+    addContact(actions, (phone && v.phone_calls !== false) ? 'tel:+' + phone : null, 'Call', ICON_CALL, 'cb-call');
+    addContact(actions, (v.text_messages && phone) ? 'sms:+' + phone : null, 'Text', ICON_TEXT, 'cb-text');
+    addContact(actions, (v.whatsapp_messages && phone) ? 'https://wa.me/' + phone : null, 'WhatsApp', ICON_WHATSAPP, 'cb-whatsapp');
     card.appendChild(actions);
 
-    var href = vProfileHref(v);
     card.addEventListener('click', function () { window.location.href = href; });
     return card;
   }
@@ -1108,8 +1185,10 @@
   }
   function addChip(strip, label, onRemove) {
     var chip = ce('span', 'active-filter-chip');
-    chip.appendChild(document.createTextNode(label + ' '));
-    var x = ce('span', 'remove-x'); x.textContent = '×'; x.addEventListener('click', onRemove);
+    chip.appendChild(document.createTextNode(label));
+    var x = ce('button', 'remove-x'); x.type = 'button'; x.textContent = '×';
+    x.setAttribute('aria-label', 'Remove ' + label + ' filter');
+    x.addEventListener('click', onRemove);
     chip.appendChild(x); strip.appendChild(chip);
   }
   function updateMobileIndicator() {
@@ -1141,7 +1220,7 @@
     if (which === 'new')      { showNewOnly = on;      sw = el('browse-toggle-new'); }
     if (which === 'founding') { showFoundingOnly = on; sw = el('browse-toggle-founding'); }
     if (which === 'verified') { showVerifiedOnly = on; sw = el('browse-toggle-verified'); }
-    if (sw) sw.classList.toggle('on', on);
+    if (sw) { sw.classList.toggle('on', on); syncSwitchAria(sw, on); }
     applyFilters();
   }
   function setSort(sort) {
@@ -1166,19 +1245,44 @@
 
   // ── events (search/location/mobile/drawer; category/toggle/sort bound during render) ──
   function bindEvents() {
-    var search = el('browse-search');
-    if (search) search.addEventListener('input', debounce(function () { searchTerm = search.value || ''; applyFilters(); }, 200));
+    // Search binds at the DOCUMENT level, not on the element: the live input
+    // sits inside a code-island's open shadow root (getElementById === null),
+    // but composed input events cross open shadow boundaries — composedPath
+    // resolves the real target. Same island pattern as the CTA handler up top.
+    var applySearch = debounce(applyFilters, 200);
+    document.addEventListener('input', function (e) {
+      var t = (e.composedPath && e.composedPath()[0]) || e.target;
+      if (!t || t.id !== 'browse-search') return;
+      searchTerm = t.value || '';
+      applySearch();
+    }, true);
     var loc = locSelectEl();
     if (loc) loc.addEventListener('change', function () { setLocation(loc.value); });
     var msel = sortSelectEl(); if (msel) msel.addEventListener('change', function () { setSort(msel.value); });
-    var openBtn = el('browse-mobile-filter-btn'); if (openBtn) openBtn.addEventListener('click', openFilters);
+    wireButton(el('browse-mobile-filter-btn'), openFilters);
     var backdrop = el('browse-filter-backdrop'); if (backdrop) backdrop.addEventListener('click', closeFilters);
-    var closeX = el('browse-close-filters'); if (closeX) closeX.addEventListener('click', closeFilters);
+    wireButton(el('browse-close-filters'), closeFilters);
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Escape') return;
+      var sb = el('browse-sidebar');
+      if (sb && sb.classList.contains('open')) closeFilters();
+    });
   }
 
   function injectStyles() {
     if (el('lokali-browse-styles')) return;
     var s = ce('style'); s.id = 'lokali-browse-styles'; s.textContent = CSS; document.head.appendChild(s);
+  }
+
+  // The Webflow page never shipped a #browse-loading mount — inject the element
+  // fetchVendors() drives (shown through the retry/backoff window, hidden on load).
+  function ensureLoadingEl() {
+    if (el('browse-loading') || !_grid || !_grid.parentNode) return;
+    var d = ce('div');
+    d.id = 'browse-loading';
+    d.appendChild(ce('span', 'lk-browse-spin'));
+    d.appendChild(document.createTextNode('Loading vendors…'));
+    _grid.parentNode.insertBefore(d, _grid);
   }
 
   // ── init ──
@@ -1189,6 +1293,10 @@
     _emptyState = el('browse-empty-state');
 
     injectStyles();
+    ensureLoadingEl();
+    // Blank the Webflow-baked "0" counts until the first real result lands —
+    // "0 vendors found" over an empty grid reads as an empty marketplace.
+    setText(el('browse-result-count'), '…'); setText(el('browse-grid-count'), '…');
     Array.prototype.slice.call(_grid.children).forEach(function (k) { if (k !== _emptyState) _grid.removeChild(k); });
     if (_emptyState) hideEl(_emptyState);
 

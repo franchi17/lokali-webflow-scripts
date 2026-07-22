@@ -83,7 +83,14 @@
   // next; for now they're independently testable.
   // -------------------------------------------------------------------------
   function withClient(run) {
-    return window.LokaliSupabaseReady.then(function (c) { return run(c); });
+    return window.LokaliSupabaseReady.then(function (c) { return run(c); })
+      // Contract: every method RESOLVES { data, error } — the page scripts were
+      // written against the Xano client, which never rejected. A failed ESM
+      // import of supabase-js (flaky network, CDN hiccup, blocker) must surface
+      // as an error envelope, not strand every caller on an unhandled rejection.
+      .catch(function (err) {
+        return { data: null, error: { message: (err && err.message) || 'Supabase client failed to load' } };
+      });
   }
 
   // Base URL of the Vercel API. A couple of writes go through a route instead
@@ -712,6 +719,9 @@
       },
       // vendor_preferences has no unique(vendors_id), so upsert = update-or-insert
       // in two steps (a single row per vendor is the invariant the app keeps).
+      // The settings page saves PER TOGGLE, so two first-ever saves can race the
+      // no-row select — the insert catches the duplicate-key error (23505, once
+      // unique(vendors_id) exists in SQL) and retries as an update.
       save: function (vendorId, fields) {
         var allowed = pick(fields, PREF_EDITABLE);
         return withClient(function (c) {
@@ -723,8 +733,16 @@
                 return c.from('vendor_preferences').update(allowed)
                   .eq('id', res.data.id).select().maybeSingle();
               }
-              allowed.vendors_id = vendorId;
-              return c.from('vendor_preferences').insert(allowed).select().maybeSingle();
+              var row = pick(fields, PREF_EDITABLE); // fresh copy: `allowed` stays column-granted-only for the update paths
+              row.vendors_id = vendorId;
+              return c.from('vendor_preferences').insert(row).select().maybeSingle()
+                .then(function (ins) {
+                  if (ins && ins.error && String(ins.error.code) === '23505') {
+                    return c.from('vendor_preferences').update(allowed)
+                      .eq('vendors_id', vendorId).select().maybeSingle();
+                  }
+                  return ins;
+                });
             });
         });
       },

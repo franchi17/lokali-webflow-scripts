@@ -49,6 +49,11 @@
 
   var built = false, mapsReady = false, mapsLoading = false, ac = null;
   var picked = null; // { city, state, country, place_id, label }
+  // True only once suggestions have actually RENDERED — mapsReady alone doesn't
+  // prove the autocomplete works (quota/network failures leave the field
+  // functionally free-text, and submit must not dead-end on it).
+  var acSawSuggestions = false;
+  var lastTrigger = null; // element to restore focus to on close
 
   function $(id) { return document.getElementById(id); }
 
@@ -75,7 +80,7 @@
       + '.lok-wl-picked{font-size:12.5px;color:#1d9e75;margin:6px 2px 0;display:none;}'
       + '.lok-wl-picked.show{display:block;}'
       + '.lok-wl-roles{display:flex;gap:8px;margin:0 0 18px;}'
-      + '.lok-wl-role{flex:1;text-align:center;padding:9px 6px;border:1.5px solid #e4def2;border-radius:11px;font-size:13.5px;font-weight:600;color:#5d5470;background:#faf8ff;cursor:pointer;transition:all .15s;}'
+      + '.lok-wl-role{flex:1;text-align:center;padding:9px 6px;border:1.5px solid #e4def2;border-radius:11px;font-size:13.5px;font-weight:600;color:#5d5470;background:#faf8ff;cursor:pointer;transition:all .15s;font-family:inherit;}'
       + '.lok-wl-role.on{border-color:#8B6CF0;background:#efe9ff;color:#5a3fc0;}'
       + '.lok-wl-btn{width:100%;border:0;border-radius:12px;padding:13px;font-size:15.5px;font-weight:700;color:#fff;cursor:pointer;background:linear-gradient(90deg,#8B6CF0,#A45FE8);box-shadow:0 8px 20px rgba(139,108,240,.35);transition:filter .15s;}'
       + '.lok-wl-btn:hover{filter:brightness(1.06);}.lok-wl-btn:disabled{opacity:.6;cursor:default;}'
@@ -119,8 +124,8 @@
       +         '<input id="wl-city" name="city" type="text" autocomplete="off" placeholder="Start typing your city…">'
       +         '<p id="wl-picked" class="lok-wl-picked"></p></div>'
       +       '<div class="lok-wl-roles" role="group" aria-label="I am a">'
-      +         '<div class="lok-wl-role on" data-role="customer">I’m a neighbor</div>'
-      +         '<div class="lok-wl-role" data-role="vendor">I’m a vendor</div></div>'
+      +         '<button type="button" class="lok-wl-role on" data-role="customer" aria-pressed="true">I’m a neighbor</button>'
+      +         '<button type="button" class="lok-wl-role" data-role="vendor" aria-pressed="false">I’m a vendor</button></div>'
       +       '<input id="wl-role" type="hidden" value="customer">'
       +       '<button id="wl-submit" class="lok-wl-btn" type="submit">Add me to the list</button>'
       +       '<p id="wl-error" class="lok-wl-msg">Something went wrong. Please try again.</p>'
@@ -145,8 +150,12 @@
 
     back.querySelectorAll('.lok-wl-role').forEach(function (r) {
       r.addEventListener('click', function () {
-        back.querySelectorAll('.lok-wl-role').forEach(function (x) { x.classList.remove('on'); });
+        back.querySelectorAll('.lok-wl-role').forEach(function (x) {
+          x.classList.remove('on');
+          x.setAttribute('aria-pressed', 'false');
+        });
         r.classList.add('on');
+        r.setAttribute('aria-pressed', 'true');
         $('wl-role').value = r.getAttribute('data-role');
       });
     });
@@ -161,6 +170,19 @@
     $('wl-done-close').addEventListener('click', close);
     back.addEventListener('click', function (e) { if (e.target === back) close(); });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+    // Minimal focus trap — aria-modal promises Tab stays inside the dialog.
+    back.addEventListener('keydown', function (e) {
+      if (e.key !== 'Tab') return;
+      var all = back.querySelectorAll('button, input, a[href]');
+      var f = [];
+      for (var i = 0; i < all.length; i++) {
+        if (all[i].tabIndex !== -1 && !all[i].disabled && all[i].offsetParent !== null) f.push(all[i]);
+      }
+      if (!f.length) return;
+      var first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    });
     form.addEventListener('submit', function (e) { e.preventDefault(); e.stopImmediatePropagation(); submit(form); }, true);
   }
 
@@ -297,6 +319,7 @@
         items.push({ row: row, pred: pred, text: text });
       }
       if (!items.length) { hide(); return; }
+      acSawSuggestions = true;
       position();
       dd.style.display = 'block';
     }
@@ -332,7 +355,12 @@
         e.preventDefault(); // pick instead of submitting the form
         var it = items[active >= 0 ? active : 0];
         select(it.pred, it.text);
-      } else if (e.key === 'Escape') { hide(); }
+      } else if (e.key === 'Escape') {
+        // Standard combobox gesture: Escape dismisses the dropdown only — stop
+        // it here so the document-level handler doesn't close the whole modal.
+        e.preventDefault(); e.stopPropagation();
+        hide();
+      }
     });
     input.addEventListener('blur', function () { setTimeout(hide, 150); });
     window.addEventListener('scroll', position, true);
@@ -362,15 +390,22 @@
     } catch (e) { /* free-text fallback */ }
   }
 
-  function open() {
+  function open(trigger) {
     build();
+    lastTrigger = (trigger && trigger.focus) ? trigger : document.activeElement;
     $('lok-wl-form-wrap').style.display = '';
     $('lok-wl-done').style.display = 'none';
     $('lok-wl-back').classList.add('open');
     loadMaps();
     setTimeout(function () { var e = $('wl-email'); if (e) e.focus(); }, 40);
   }
-  function close() { var b = $('lok-wl-back'); if (b) b.classList.remove('open'); }
+  function close() {
+    var b = $('lok-wl-back');
+    if (!b || !b.classList.contains('open')) return;
+    b.classList.remove('open');
+    if (lastTrigger && lastTrigger.focus) { try { lastTrigger.focus(); } catch (e) {} }
+    lastTrigger = null;
+  }
 
   function v(id) { var el = $(id); return el ? el.value.trim() : ''; }
 
@@ -383,8 +418,11 @@
 
     var typed = v('wl-city');
     if (!typed) return showErr('Please tell us your city.');
-    // When Maps is available, require a real selection so the data stays clean.
-    if (mapsReady && !picked) return showErr('Please choose your city from the suggestions.');
+    // Require a real selection only once suggestions have demonstrably worked —
+    // mapsReady alone can't gate: a quota/network-dead autocomplete would make
+    // this an instruction the user can never follow. Free text is accepted
+    // otherwise (the no-key path already handles free-text payloads).
+    if (acSawSuggestions && !picked) return showErr('Please choose your city from the suggestions.');
 
     var data = picked
       ? { email: email, city: picked.city, state: picked.state, country: picked.country,
@@ -436,6 +474,6 @@
     var el = (e.composedPath && e.composedPath()[0]) || e.target;
     if (!el || el.nodeType !== 1 || !isCityCta(el)) return;
     e.preventDefault();
-    open();
+    open(el);
   }, true);
 })();
