@@ -429,6 +429,24 @@ const LokaliProductsPage = (() => {
       catTool.setAttribute('aria-hidden', 'true');
     }
 
+    // #94 — surface the reorder → public-page link (see services-final.js twin).
+    let orderHint = document.getElementById('products-order-hint');
+    if (totalCount > 1) {
+      if (!orderHint && stack.parentNode) {
+        orderHint = document.createElement('div');
+        orderHint.id = 'products-order-hint';
+        orderHint.style.cssText =
+          'font-family:"Plus Jakarta Sans",sans-serif;font-size:13px;color:#6B6580;' +
+          'margin:2px 0 10px;line-height:1.5;';
+        orderHint.textContent =
+          'Drag cards to reorder — your first 6 lead your public page. New products start at the top.';
+        stack.parentNode.insertBefore(orderHint, stack);
+      }
+      if (orderHint) orderHint.style.display = '';
+    } else if (orderHint) {
+      orderHint.style.display = 'none';
+    }
+
     products.forEach((product, index) => {
       const card = template.cloneNode(true);
       card.removeAttribute('id');
@@ -1203,8 +1221,16 @@ const LokaliProductsPage = (() => {
 
       let result;
       if (editingId) {
+        // Edits deliberately OMIT sort_order — the saved slot is preserved.
         result = await window.LokaliAPI.products.update(editingId, payload);
       } else {
+        // #94 — the "buried new product" fix. buildPayload never set sort_order,
+        // and products.sort_order had no DB default, so every new product was
+        // NULL → sorted DEAD LAST on the public page (order is sort_order ASC
+        // NULLs LAST) — structurally invisible behind the "Show all" fold.
+        // Policy (Francesca 2026-07-21): new items go to the TOP, min-1, same
+        // as services. Negative values are expected; drag re-normalizes.
+        payload.sort_order = topProductSortOrder();
         result = await window.LokaliAPI.products.create(payload);
       }
 
@@ -1302,6 +1328,17 @@ const LokaliProductsPage = (() => {
   };
 
   const onDrop = (e) => e.preventDefault();
+
+  // #94 — new products enter at min-1 (TOP of the vendor's arrangement); see
+  // the create branch above for the full why. Mirrors services' helper.
+  const topProductSortOrder = () => {
+    let min = 1;
+    for (const p of products) {
+      const n = Number(p.sort_order);
+      if (!isNaN(n) && n < min) min = n;
+    }
+    return min - 1;
+  };
 
   const persistSortOrder = async () => {
     const cards = el.stack()?.querySelectorAll(STACK_CARD_SEL);

@@ -381,6 +381,22 @@ const LokaliServicesPage = (() => {
     return max + 1;
   };
 
+  // #94 — NEW ITEMS GO TO THE TOP (Francesca 2026-07-21, Etsy's model): a new
+  // service takes min-1 so it lands in the public page's above-the-fold slots
+  // where it can actually be seen. Negative values are fine (integer column,
+  // ASC order); any drag re-normalizes the whole list to 0..n-1.
+  // nextServiceSortOrder (max+1) is kept for the EDIT fallback only — an
+  // existing row that somehow lost its slot should re-enter at the bottom,
+  // not silently jump the vendor's curated fold.
+  const topServiceSortOrder = () => {
+    let min = 1;
+    for (const s of services) {
+      const n = Number(s.sort_order);
+      if (!isNaN(n) && n < min) min = n;
+    }
+    return min - 1;
+  };
+
   const applyPillStyle = (pill, selected) => {
     if (!pill) return;
     const inner = pill.firstElementChild || pill;
@@ -527,6 +543,28 @@ const LokaliServicesPage = (() => {
     if (catTool) {
       catTool.style.display = 'none';
       catTool.setAttribute('aria-hidden', 'true');
+    }
+
+    // #94 — surface the reorder → public-page link. The mechanism always
+    // existed (drag persists sort_order; the public page renders that order,
+    // first 5 above the "Show all" fold) but nothing ever TOLD vendors, so a
+    // never-dragged list rode on creation order. One line, only when there is
+    // something to arrange. Plus Jakarta Sans + muted violet-gray per house style.
+    let orderHint = document.getElementById('services-order-hint');
+    if (totalCount > 1) {
+      if (!orderHint && stack.parentNode) {
+        orderHint = document.createElement('div');
+        orderHint.id = 'services-order-hint';
+        orderHint.style.cssText =
+          'font-family:"Plus Jakarta Sans",sans-serif;font-size:13px;color:#6B6580;' +
+          'margin:2px 0 10px;line-height:1.5;';
+        orderHint.textContent =
+          'Drag cards to reorder — your first 5 lead your public page. New services start at the top.';
+        stack.parentNode.insertBefore(orderHint, stack);
+      }
+      if (orderHint) orderHint.style.display = '';
+    } else if (orderHint) {
+      orderHint.style.display = 'none';
     }
 
     services.forEach((service, index) => {
@@ -1200,7 +1238,7 @@ const LokaliServicesPage = (() => {
     };
 
     if (!editingId) {
-      payload.sort_order = nextServiceSortOrder();
+      payload.sort_order = topServiceSortOrder(); // #94: new items on TOP
     } else {
       const ex = services.find(s => s.id === editingId);
       const so = ex != null ? ex.sort_order : null;

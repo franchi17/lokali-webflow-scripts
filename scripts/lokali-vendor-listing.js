@@ -1017,6 +1017,9 @@
     // attribute string) so a crafted item title can't break out into stored XSS.
     if (opts.image) {
       var imgEl = document.createElement('img');
+      // #94: an unlimited Featured catalog must not fetch every image on load —
+      // and display:none never stopped <img> downloads under the old collapse.
+      imgEl.loading = 'lazy';
       imgEl.src = opts.image;
       imgEl.alt = opts.name || '';
       a.querySelector('.vl-card-img').appendChild(imgEl);
@@ -1038,36 +1041,50 @@
     return a;
   }
 
-  // ---- one-page: long lists collapse behind a "Show all" toggle ----------
-  // A vendor with 50 products must not become a 50-card scroll (Francesca
-  // 2026-07-20). The first OP_LIST_CAP cards show; the rest sit behind an
-  // Airbnb-style "Show all N products" pill that expands in place. "Show
-  // fewer" collapses back and scrolls you to the top of the section.
-  var OP_LIST_CAP = { services: 5, products: 6 }; // services collapse only past 5 (Francesca 2026-07-20)
-  function opCapList(grid, total, kind) {
-    if (!ONEPAGE || !grid || !grid.parentNode) return;
+  // ---- one-page: long lists render PROGRESSIVELY behind "Show more" ------
+  // #94 rework (Francesca 2026-07-21). Two problems with the old hide-the-tail
+  // collapse once Featured's UNLIMITED caps are in play: (1) every card was
+  // built (and every image fetched — display:none doesn't stop <img> loads)
+  // even while collapsed, so a 300-item catalog paid full page weight on first
+  // paint; (2) one click dumped the entire catalog into the DOM. Now only the
+  // first OP_LIST_CAP cards are BUILT; "Show all N" appends OP_BATCH more per
+  // click ("Show more (K of N)…" until exhausted) — Etsy-like progressive
+  // browse in the vendor's own drag-arranged order (sort_order ASC, the same
+  // order their dashboard shows). The visible label always carries the true
+  // total so a customer can never mistake the fold for the whole catalog.
+  // AUTO-EXPAND (decided 2026-07-21): a list only 1-2 items past the cap
+  // renders in full — hiding one card behind a button is pure truncation risk
+  // for zero scroll saved. No "Show fewer": no marketplace collapses inventory
+  // back, and the sticky section nav already jumps past a long section.
+  var OP_LIST_CAP = { services: 5, products: 6 }; // above-the-fold slots = the vendor's first 5/6 by drag order
+  var OP_EXPAND_SLACK = 2; // ≤ cap+2 → just show everything
+  var OP_BATCH = 24;       // per "Show more" click
+  function opProgressiveList(grid, list, kind, build) {
+    if (!grid || !grid.parentNode) return;
     var old = grid.parentNode.querySelector('.vl-op-showall');
     if (old) old.parentNode.removeChild(old);
     var cap = OP_LIST_CAP[kind] || 6;
-    if (total <= cap) return;
-    var cards = Array.prototype.slice.call(grid.children);
+    var total = list.length;
+    var initial = (!ONEPAGE || total <= cap + OP_EXPAND_SLACK) ? total : cap;
+    var rendered = 0;
+    function append(n) {
+      var end = Math.min(rendered + n, total);
+      var frag = document.createDocumentFragment();
+      for (; rendered < end; rendered++) frag.appendChild(build(list[rendered], rendered));
+      grid.appendChild(frag);
+    }
+    append(initial);
+    if (rendered >= total) return;
     var btn = ce('button', 'vl-op-showall');
     btn.type = 'button';
-    var collapsed = true;
-    function apply() {
-      cards.forEach(function (c, i) { if (i >= cap) c.style.display = collapsed ? 'none' : ''; });
-      btn.textContent = collapsed ? ('Show all ' + total + ' ' + kind) : 'Show fewer';
-    }
+    btn.textContent = 'Show all ' + total + ' ' + kind;
     btn.addEventListener('click', function () {
-      collapsed = !collapsed;
-      apply();
-      if (collapsed) {
-        var sec = document.getElementById('vl-op-sec-' + kind);
-        if (sec && sec.scrollIntoView) sec.scrollIntoView({ block: 'start' });
-      }
+      append(OP_BATCH);
+      var left = total - rendered;
+      if (left <= 0) { if (btn.parentNode) btn.parentNode.removeChild(btn); }
+      else btn.textContent = 'Show more — ' + left + ' of ' + total + ' ' + kind + ' left';
     });
     grid.parentNode.insertBefore(btn, grid.nextSibling);
-    apply();
   }
 
   function renderServices(list, ok) {
@@ -1081,9 +1098,11 @@
     grid.innerHTML = '';
     if (!list.length) { show(grid, false); show(empty, true); ensureActiveTab(); return; }
     show(grid, true); show(empty, false);
-    list.forEach(function (s, i) {
+    // #94: cards are built on demand by opProgressiveList — only the first
+    // OP_LIST_CAP exist in the DOM until the customer asks for more.
+    opProgressiveList(grid, list, 'services', function (s, i) {
       var p = servicePrice(s);
-      grid.appendChild(cardEl({
+      return cardEl({
         name: s.service_name || s.name,
         desc: s.service_description || s.description || '',
         price: p.text, quote: p.quote,
@@ -1092,9 +1111,8 @@
         cta: p.quote ? 'Request quote' : 'Inquire',
         lead: leadText(s),
         href: itemHref('services', s)
-      }));
+      });
     });
-    opCapList(grid, list.length, 'services');
     ensureActiveTab();
   }
 
@@ -1108,9 +1126,10 @@
     grid.innerHTML = '';
     if (!list.length) { show(grid, false); show(empty, true); ensureActiveTab(); return; }
     show(grid, true); show(empty, false);
-    list.forEach(function (p, i) {
+    // #94: built on demand — see opProgressiveList.
+    opProgressiveList(grid, list, 'products', function (p, i) {
       var pr = productPrice(p);
-      grid.appendChild(cardEl({
+      return cardEl({
         name: p.product_name || p.name,
         desc: p.product_description || p.description || '',
         price: pr.text, quote: pr.quote,
@@ -1119,9 +1138,8 @@
         cta: 'Order', orange: true,
         lead: leadText(p),
         href: itemHref('products', p)
-      }));
+      });
     });
-    opCapList(grid, list.length, 'products');
     ensureActiveTab();
   }
 
