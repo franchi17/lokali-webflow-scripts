@@ -47,7 +47,8 @@ const LokaliServicesPage = (() => {
   let dragSrc      = null;
   let _maxServices = null;
   let _maxServicePhotos = null;   // gallery cap (Free=1, Pro/Featured=5)
-  let _isProPlan = false;         // gallery is a Pro/Featured perk
+  let _isProPlan = false;
+  let _isFeaturedPlan = false;   // FEAT-PICKS: the star toggle is a Featured-plan perk         // gallery is a Pro/Featured perk
   let _imagePreviewObjectUrl = null;
 
   let filterStatus   = 'all';
@@ -609,6 +610,58 @@ const LokaliServicesPage = (() => {
 
       const remoteBadge = find('service-remote', 'remote-badge', 'service-remote');
       if (remoteBadge) remoteBadge.style.display = service.remote ? 'inline-flex' : 'none';
+
+      // FEAT-PICKS — the star: a Featured-plan vendor hand-picks up to 5
+      // services to LEAD the public page (picks sort before the drag order, so
+      // they fill the above-the-fold slots). Non-Featured vendors see the star
+      // dimmed — it is the perk's sales surface, not dead UI. The DB trigger is
+      // the real gate (plan + cap); this UI just mirrors it politely.
+      (function () {
+        const actions = card.querySelector('.card-actions');
+        if (!actions) return;
+        const item = service;
+        const starBtn = document.createElement('button');
+        starBtn.type = 'button';
+        starBtn.className = 'icon-btn lok-pick-star';
+        starBtn.setAttribute('data-action', 'feature');
+        const paint = (on) => {
+          starBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="' +
+            (on ? '#6002EE' : 'none') + '" stroke="' + (on ? '#6002EE' : 'currentColor') +
+            '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+            '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
+          starBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+          starBtn.setAttribute('aria-label', on ? 'Un-feature this service' : 'Feature this service');
+          starBtn.title = _isFeaturedPlan
+            ? (on ? 'Featured pick — shows first on your public page. Click to un-feature.'
+                  : 'Feature this service — up to 5 lead your public page.')
+            : 'Featured picks are a Featured-plan perk — upgrade to hand-pick what leads your page.';
+        };
+        paint(item.is_featured_pick === true);
+        if (!_isFeaturedPlan && item.is_featured_pick !== true) {
+          starBtn.style.opacity = '0.35';
+        }
+        starBtn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          if (!_isFeaturedPlan && item.is_featured_pick !== true) {
+            alert('Featured picks are a Featured-plan perk — upgrade to hand-pick what leads your public page.');
+            return;
+          }
+          const next = item.is_featured_pick !== true;
+          starBtn.disabled = true;
+          const res = await window.LokaliAPI.services.update(item.id, { is_featured_pick: next });
+          starBtn.disabled = false;
+          if (res && res.error) {
+            alert(String(res.error).replace(/^LOKALI_LIMIT_REACHED:\s*/, ''));
+            return;
+          }
+          item.is_featured_pick = next;
+          paint(next);
+          // Grandfathered un-star on a non-Featured plan: re-dim immediately
+          // (re-starring is gated), don't wait for the next full render.
+          starBtn.style.opacity = (!_isFeaturedPlan && !next) ? '0.35' : '';
+        });
+        actions.insertBefore(starBtn, actions.firstChild);
+      })();
 
       const editBtn = card.querySelector('[data-action="edit"]') || card.querySelector('.icon-btn-edit');
       if (editBtn) editBtn.addEventListener('click', (e) => {
@@ -1527,11 +1580,12 @@ const LokaliServicesPage = (() => {
         ?? 'free'
       ).toLowerCase();
       _isProPlan = planCode === 'pro' || planCode === 'featured';
+      _isFeaturedPlan = planCode === 'featured'; // FEAT-PICKS
       _maxServicePhotos = billing?.features?.max_service_photos
                        ?? billing?.subscription?.max_service_photos
                        ?? (_isProPlan ? 5 : 1);
       try {
-        sessionStorage.setItem(PLAN_CACHE_KEY, JSON.stringify({ pro: _isProPlan, maxPhotos: _maxServicePhotos, maxItems: _maxServices }));
+        sessionStorage.setItem(PLAN_CACHE_KEY, JSON.stringify({ pro: _isProPlan, feat: _isFeaturedPlan, maxPhotos: _maxServicePhotos, maxItems: _maxServices }));
       } catch (e) {}
     } else {
       // Billing call failed — reuse this session's last-known-good plan so a
@@ -1540,6 +1594,7 @@ const LokaliServicesPage = (() => {
       let cached = null;
       try { cached = JSON.parse(sessionStorage.getItem(PLAN_CACHE_KEY) || 'null'); } catch (e) {}
       _isProPlan = cached ? !!cached.pro : false;
+      _isFeaturedPlan = cached ? !!cached.feat : false; // FEAT-PICKS
       _maxServicePhotos = cached ? (cached.maxPhotos ?? (_isProPlan ? 5 : 1)) : 1;
       _maxServices = cached ? (cached.maxItems ?? null) : null;
     }

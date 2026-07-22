@@ -396,6 +396,8 @@
     // #78 lead time — a quiet clock line under the description, never louder
     // than the price. Violet-tinted to sit in the palette, no ink.
     '.vl-card-lead{display:inline-flex;align-items:center;gap:6px;margin-top:8px;font-size:12.5px;font-weight:600;line-height:1;color:#5A4A7A;background:#F1ECFC;border-radius:999px;padding:6px 12px;align-self:flex-start;}',
+    '.vl-card-pick{position:absolute;top:10px;left:10px;z-index:2;font-family:"Plus Jakarta Sans",sans-serif;font-size:11px;font-weight:700;letter-spacing:.2px;color:#6002EE;background:#F3EBFF;border-radius:999px;padding:5px 10px;box-shadow:0 1px 4px rgba(96,2,238,.12);}',
+    '.vl-card-img{position:relative;}',
     // CTA reads as a real pill button (was a 12px 8px-radius tag) — same
     // outline language as the Show-all pill / pay chips; Order gets the soft
     // peach variant. Whole card is the link, so hover lights the button.
@@ -1013,6 +1015,15 @@
       '<div class="' + priceClass + '"></div></div>' +
       '<div class="vl-card-desc"></div>' +
       '<div class="vl-card-foot"><span class="' + ctaClass + '">' + (opts.cta || 'Inquire') + '</span></div></div>';
+    // FEAT-PICKS: a small "Vendor's pick" chip on hand-picked items — makes the
+    // curation visible to customers (and the perk visible to vendors). Static
+    // markup only; positioned over the tinted image block.
+    if (opts.pick) {
+      var pickChip = document.createElement('div');
+      pickChip.className = 'vl-card-pick';
+      pickChip.textContent = "★ Vendor's pick";
+      a.querySelector('.vl-card-img').appendChild(pickChip);
+    }
     // Build the image via properties (never interpolate vendor free-text into an
     // attribute string) so a crafted item title can't break out into stored XSS.
     if (opts.image) {
@@ -1098,6 +1109,13 @@
     grid.innerHTML = '';
     if (!list.length) { show(grid, false); show(empty, true); ensureActiveTab(); return; }
     show(grid, true); show(empty, false);
+    // FEAT-PICKS: starred items lead — the fold (first 5) becomes the vendor's
+    // hand-picked shop window; drag order holds within each group. Done here
+    // (stable client-side sort) rather than in the query so a DB without the
+    // column degrades to plain drag order instead of a 400 (verified hazard).
+    list = list.slice().sort(function (a, b) {
+      return (b.is_featured_pick === true ? 1 : 0) - (a.is_featured_pick === true ? 1 : 0);
+    });
     // #94: cards are built on demand by opProgressiveList — only the first
     // OP_LIST_CAP exist in the DOM until the customer asks for more.
     opProgressiveList(grid, list, 'services', function (s, i) {
@@ -1108,6 +1126,7 @@
         price: p.text, quote: p.quote,
         image: imgUrl(s.image_url || s.image),
         tint: IMG_TINTS[i % IMG_TINTS.length],
+        pick: s.is_featured_pick === true, // FEAT-PICKS
         cta: p.quote ? 'Request quote' : 'Inquire',
         lead: leadText(s),
         href: itemHref('services', s)
@@ -1126,6 +1145,10 @@
     grid.innerHTML = '';
     if (!list.length) { show(grid, false); show(empty, true); ensureActiveTab(); return; }
     show(grid, true); show(empty, false);
+    // FEAT-PICKS: picks first (see services note); stable, so drag order holds.
+    list = list.slice().sort(function (a, b) {
+      return (b.is_featured_pick === true ? 1 : 0) - (a.is_featured_pick === true ? 1 : 0);
+    });
     // #94: built on demand — see opProgressiveList.
     opProgressiveList(grid, list, 'products', function (p, i) {
       var pr = productPrice(p);
@@ -1135,6 +1158,7 @@
         price: pr.text, quote: pr.quote,
         image: imgUrl(p.image_url || p.image),
         tint: IMG_TINTS[(i + 1) % IMG_TINTS.length],
+        pick: p.is_featured_pick === true, // FEAT-PICKS
         cta: 'Order', orange: true,
         lead: leadText(p),
         href: itemHref('products', p)

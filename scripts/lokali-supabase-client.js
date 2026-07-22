@@ -155,14 +155,16 @@
     'remote', 'sort_order', 'price_type', 'price_cents', 'price_min_cents',
     'price_max_cents', 'price_note', 'image_url', 'video_url', 'slug',
     'subcategory', // #96-LISTING: one optional taxonomy slug per listing
-    'lead_time'    // #78: free-text per-item lead time (display only)
+    'lead_time',   // #78: free-text per-item lead time (display only)
+    'is_featured_pick' // FEAT-PICKS: Featured-plan shop window (cap+plan gate = DB trigger)
   ];
   var PRODUCT_EDITABLE = [
     'product_name', 'product_description', 'price', 'stock_quantity', 'image_url',
     'video_url', 'is_custom', 'turnaround_days', 'is_quote_based', 'is_active',
     'shipping_offered', 'pickup_only', 'sort_order', 'slug',
     'subcategory', // #96-LISTING
-    'lead_time'    // #78: free-text per-item lead time (supersedes turnaround_days for display)
+    'lead_time',   // #78: free-text per-item lead time (supersedes turnaround_days for display)
+    'is_featured_pick' // FEAT-PICKS: Featured-plan shop window (cap+plan gate = DB trigger)
   ];
   // Author may edit only these (vendor_reply is stamped by the guard trigger).
   var REVIEW_EDITABLE = ['comment', 'is_recommended', 'rating'];
@@ -585,6 +587,11 @@
         return withClient(function (c) {
           return c.from('services').select('*')
             .eq('vendors_id', vendorId)
+            // FEAT-PICKS: picks-first ordering is applied CLIENT-SIDE in
+            // lokali-vendor-listing.js, NOT here — ordering by a column the DB
+            // doesn't have yet 400s the WHOLE query (verified live), so a
+            // query-side order would hard-couple this script's ship to the SQL
+            // patch and break every listing if they ever drift.
             .order('sort_order', { ascending: true })
             .order('id', { ascending: true });
         });
@@ -616,6 +623,7 @@
         return withClient(function (c) {
           return c.from('products').select('*')
             .eq('vendors_id', vendorId)
+            // FEAT-PICKS: picks-first is client-side (see services note above).
             .order('sort_order', { ascending: true })
             .order('id', { ascending: true });
         });
