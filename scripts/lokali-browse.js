@@ -305,7 +305,9 @@
     // #96 sidebar subcategory pills — unfold under the ACTIVE category row
     // (expand-in-place accordion; other categories stay visible/clickable).
     "#browse-filter-panel .lk-subcat-row{display:flex;flex-wrap:wrap;gap:5px;padding:8px 4px 10px 14px;}",
-    "#browse-filter-panel .subcat-pill{font-family:inherit;-webkit-appearance:none;appearance:none;font-size:11.5px;font-weight:500;background:#fff;border:1px solid #E4E2F0;color:#6B6880;border-radius:100px;padding:4px 11px;cursor:pointer;user-select:none;transition:all .12s;line-height:1.3;}",
+    // text-align:left — <button> defaults to center, which reads as ragged/odd on the
+    // labels long enough to wrap in the narrow sidebar ("Bookkeeping & accounting").
+    "#browse-filter-panel .subcat-pill{font-family:inherit;-webkit-appearance:none;appearance:none;font-size:11.5px;font-weight:500;background:#fff;border:1px solid #E4E2F0;color:#6B6880;border-radius:100px;padding:4px 11px;cursor:pointer;user-select:none;transition:all .12s;line-height:1.3;text-align:left;}",
     "#browse-filter-panel .subcat-pill:hover{border-color:#6002EE;color:#6002EE;}",
     "#browse-filter-panel .subcat-pill.on{background:#6002EE;border-color:#6002EE;color:#fff;font-weight:600;}",
     ".vcard-actions{display:flex;gap:6px;flex-wrap:wrap;}",

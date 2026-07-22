@@ -147,6 +147,12 @@
       // "New specialties are reviewed first…" line, etc.). Desktop is wide enough to hide
       // it; reset at mobile so text wraps like text.
       '#services-dashboard{white-space:normal !important;}',
+      // Specialty + lead-time pills are <button>s built with inline styles in the
+      // SRI-pinned *-final.js (no text-align set), so they inherit the button default
+      // of center — visibly off once a long label wraps at phone width. Patched from
+      // here rather than re-registering the pinned scripts; the inline cssText sets no
+      // text-align, so a plain external rule wins without !important.
+      '#services-dashboard [data-subcat-slug],#services-dashboard [data-lead-presets] button{text-align:left;}',
       '#services-dashboard ._2-columns > *{width:auto !important;min-width:0 !important;max-width:100% !important;justify-self:stretch !important;}',
       '.div-block-39 img,.div-block-39 svg,.main-content-area img,.main-content-area svg{max-width:100%;}',
       '.div-block-39 input,.div-block-39 textarea,.div-block-39 select,',
