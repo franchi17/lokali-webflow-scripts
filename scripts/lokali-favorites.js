@@ -1,13 +1,16 @@
 /**
  * lokali-favorites.js — customer "save vendor" / favorites front-end.
  *
- * Three surfaces, all driven by this one script:
+ * Two surfaces, both driven by this one script:
  *   1. Browse cards (/the-market): a heart overlay on every `.vcard[data-vendor-id]`
  *      rendered by lokali-browse.js.
  *   2. Vendor detail page: a heart attached to an element you place with
  *      id="lokali-fav-detail" (vendor id resolved from the ?id= URL param, the
  *      element's data-vendor-id, or window.LOKALI_VENDOR_ID).
- *   3. Saved page: renders the customer's saved vendors into #lokali-saved-grid.
+ *
+ * (A third surface — a standalone saved page rendering into #lokali-saved-grid
+ * — was removed in #103/v1.4.228: that mount exists on no published page, and
+ * /account owns the Saved pane via lokali-account.js.)
  *
  * Auth: uses the session token via window.LokaliAPI. If the user isn't signed in,
  * clicking a heart starts "sign up to save" — it stashes the pending vendor,
@@ -25,7 +28,6 @@
   var SIGNUP_INTENT_KEY = 'lokali_signup_intent'; // read by lokali-auth.js
   var BROWSE_GRID_ID = 'browse-vendor-grid';
   var DETAIL_ANCHOR_ID = 'lokali-fav-detail';
-  var SAVED_GRID_ID = 'lokali-saved-grid';
 
   var _savedSet = null;   // Set of vendor ids the user has saved (null = not loaded)
   var _loadingSaved = null; // in-flight promise so we load the set once
@@ -52,16 +54,7 @@
       ".lk-fav.is-busy{opacity:.55;pointer-events:none;}",
       // inline (detail) variant sits in normal flow rather than overlaid
       ".lk-fav.lk-fav-inline{position:static;top:auto;right:auto;width:auto;height:auto;border-radius:8px;padding:8px 14px;gap:7px;font:600 13px/1 'Plus Jakarta Sans',sans-serif;color:#1A1829;}",
-      ".lk-fav.lk-fav-inline.is-saved{background:#F3EBFF;border-color:#D4AAFD;color:#6002EE;}",
-      // saved page — the .vcard styles live in lokali-browse.js (loaded only on
-      // /the-market), so scope minimal card styling here or the cards render
-      // unstyled and the absolute-positioned heart escapes to the grid corner.
-      "#" + SAVED_GRID_ID + "{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;}",
-      "#" + SAVED_GRID_ID + " .vcard{position:relative;background:#fff;border:.5px solid #EEEDF6;border-radius:14px;padding:16px;font-family:'Plus Jakarta Sans',sans-serif;}",
-      "#" + SAVED_GRID_ID + " .vcard-name{font-weight:600;font-size:15px;color:#1A1829;}",
-      "#" + SAVED_GRID_ID + " .vcard-tagline{font-size:13px;color:#6B6880;}",
-      ".lk-saved-empty{font:500 14px/1.5 'Plus Jakarta Sans',sans-serif;color:#6B6880;padding:2rem 0;}",
-      ".lk-saved-empty a{color:#6002EE;font-weight:600;text-decoration:none;}"
+      ".lk-fav.lk-fav-inline.is-saved{background:#F3EBFF;border-color:#D4AAFD;color:#6002EE;}"
     ].join('');
     document.head.appendChild(s);
   }
@@ -276,68 +269,6 @@
     });
   }
 
-  // ── surface 3: saved page ──────────────────────────────────
-  function savedLoadError(grid) {
-    grid.innerHTML = '';
-    var d = document.createElement('div');
-    d.className = 'lk-saved-empty';
-    d.setAttribute('aria-live', 'polite');
-    d.textContent = 'Couldn’t load your saved vendors. ';
-    var a = document.createElement('a');
-    a.href = '#';
-    a.textContent = 'Try again';
-    a.addEventListener('click', function (ev) { ev.preventDefault(); renderSaved(); });
-    d.appendChild(a);
-    grid.appendChild(d);
-  }
-
-  function renderSaved() {
-    var grid = document.getElementById(SAVED_GRID_ID);
-    if (!grid) return;
-    if (!hasToken()) {
-      grid.innerHTML = '<div class="lk-saved-empty">Please <a href="/login">sign in</a> to see your saved vendors.</div>';
-      return;
-    }
-    api().request('favorites', 'GET', '/favorites', null, true).then(function (res) {
-      if (res && res.error) { savedLoadError(grid); return; }
-      var rows = (res && res.data) || [];
-      if (!Array.isArray(rows) || !rows.length) {
-        grid.innerHTML = '<div class="lk-saved-empty">You haven\'t saved any vendors yet. Browse <a href="/the-market">The Market</a> and tap the heart on a vendor to save them here.</div>';
-        return;
-      }
-      grid.innerHTML = '';
-      rows.forEach(function (row) {
-        var v = row.vendor || row._vendor || null;
-        if (!v) return;
-        grid.appendChild(buildSavedCard(v));
-      });
-    }).catch(function () { savedLoadError(grid); });
-  }
-
-  // A lightweight card for the saved page (independent of lokali-browse.js).
-  function buildSavedCard(v) {
-    var card = document.createElement('div');
-    card.className = 'vcard';
-    card.setAttribute('data-vendor-id', String(v.id));
-    var name = document.createElement('div');
-    name.className = 'vcard-name';
-    name.style.marginBottom = '4px';
-    name.textContent = v.business_name || 'Vendor';
-    var tag = document.createElement('div');
-    tag.className = 'vcard-tagline';
-    tag.textContent = v.business_tagline || v.business_description || '';
-    card.appendChild(name);
-    card.appendChild(tag);
-    card.appendChild(makeHeart(v.id, false));
-    var href = v.slug ? ('/' + v.slug) : ('/vendor?id=' + v.id);
-    card.style.cursor = 'pointer';
-    card.addEventListener('click', function (ev) {
-      if (ev.target.closest && ev.target.closest('.lk-fav')) return;
-      window.location.href = href;
-    });
-    return card;
-  }
-
   // ── sign-up-to-save completion ─────────────────────────────
   // lokali-vendor-listing.js waits on this signal before re-reading #vl-save
   // state (a fixed post-authed timer raced the POST below).
@@ -374,7 +305,6 @@
     window.addEventListener('lokali:authed', function () { completePendingSave(); });
     decorateBrowse();
     decorateDetail();
-    renderSaved();
   }
 
   // Wait for the API client (load order isn't guaranteed across page custom code

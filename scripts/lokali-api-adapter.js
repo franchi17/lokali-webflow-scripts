@@ -707,20 +707,26 @@
     },
     // Custom profile URL (Pro/Featured) — the settings page always guarded on
     // these existing; the change_vendor_slug RPC finally provides them.
-    // BEST-EFFORT: vendors_public_read RLS hides unapproved/inactive vendors'
-    // slugs from this caller, so available:true is advisory — a slug held by a
-    // hidden vendor still fails the change_vendor_slug uniqueness check on
-    // save. A security-definer RPC (slug_taken) would be the exact check.
     slugAvailable: function (slug) {
       return rawClient().then(function (c) {
         return Promise.all([
-          c.from('vendors').select('id', { count: 'exact', head: true }).eq('slug', slug),
+          // #103: the vendors half goes through slug_taken() — a direct read is
+          // RLS-limited to approved+active rows, so a slug owned by a hidden
+          // (deactivated/unapproved) vendor looked FREE and the rename then
+          // failed downstream. The security-definer RPC sees every row.
+          // slug_aliases stays a direct read: its policy is public (using
+          // (true)), so it has no such blind spot.
+          c.rpc('slug_taken', { p_slug: slug }),
           c.from('slug_aliases').select('id', { count: 'exact', head: true }).eq('old_slug', slug)
         ]);
       }).then(function (rs) {
-        var taken = ((rs[0] && rs[0].count) || 0) + ((rs[1] && rs[1].count) || 0);
-        var out = { data: { available: taken === 0 }, error: null, status: 200 };
-        out.available = taken === 0; // some callers read it off the envelope
+        // Neither half may fail silently: a null count reads as 0 = "free",
+        // which is the exact false-available this check exists to prevent.
+        if (rs[0] && rs[0].error) return fail(errText(rs[0].error));
+        if (rs[1] && rs[1].error) return fail(errText(rs[1].error));
+        var taken = (rs[0] && rs[0].data === true) || ((rs[1] && rs[1].count) || 0) > 0;
+        var out = { data: { available: !taken }, error: null, status: 200 };
+        out.available = !taken; // some callers read it off the envelope
         return out;
       }, function (e) { return fail(errText(e)); });
     },
