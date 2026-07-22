@@ -792,6 +792,7 @@
     });
 
     appendSpotlightSection(wrap, ov);
+    appendExitSurveySection(wrap, ov);
     return wrap;
   }
 
@@ -806,6 +807,84 @@
     try {
       return new Date(iso).toLocaleDateString(undefined, { timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric' });
     } catch (e) { return String(iso || ''); }
+  }
+
+  // ── #100: exit survey in the admin panel ──────────────────
+  // Why people deleted their account. Tallies first (the shape of churn), then
+  // the raw recent answers — the free text is where the real signal is. Rows
+  // are anonymous by construction (see patch_exit_survey.sql): no name, no
+  // email, nothing that ties back to the deleted person.
+  var EXIT_LABELS = {
+    not_enough_customers: 'Not enough customers/leads',
+    too_expensive: 'Too expensive',
+    closing_business: 'Closing/pausing the business',
+    not_right_fit: 'Not the right fit',
+    too_hard_to_use: 'Too hard to use',
+    found_another_platform: 'Found another platform',
+    not_enough_vendors: 'Not enough vendors nearby',
+    didnt_find_what_i_needed: 'Didn’t find what they needed',
+    too_many_emails: 'Too many emails',
+    privacy: 'Privacy',
+    other: 'Something else',
+    skipped: 'Skipped'
+  };
+
+  function appendExitSurveySection(wrap, ov) {
+    var rows = Array.isArray(ov.exit_recent) ? ov.exit_recent : [];
+    var tallies = (ov.exit_reasons && typeof ov.exit_reasons === 'object') ? ov.exit_reasons : {};
+    var keys = Object.keys(tallies).sort(function (a, b) { return tallies[b] - tallies[a]; });
+
+    var t = el('div', 'lk-admin-qtitle');
+    t.style.marginTop = '18px';
+    t.appendChild(document.createTextNode('Why people left'));
+    t.appendChild(el('span', 'lk-admin-qcount', String(rows.length)));
+    wrap.appendChild(t);
+    wrap.appendChild(el('p', 'lk-admin-sub',
+      'Answers from the delete-account survey — optional, so treat counts as a floor. ' +
+      'Cancellations (dropping to Free) are surveyed by Stripe instead: Billing → Subscriptions → the subscription.'));
+
+    if (!keys.length && !rows.length) {
+      wrap.appendChild(el('div', 'lk-admin-empty', 'Nobody has deleted their account yet.'));
+      return;
+    }
+
+    if (keys.length) {
+      var tally = el('div');
+      tally.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 12px;';
+      keys.forEach(function (k) {
+        var chip = el('span');
+        chip.style.cssText = 'font-size:12px;padding:4px 10px;border-radius:999px;' +
+          'background:#F3EBFF;color:#5F51B8;font-weight:600;';
+        chip.textContent = (EXIT_LABELS[k] || k) + ' · ' + tallies[k];
+        tally.appendChild(chip);
+      });
+      wrap.appendChild(tally);
+    }
+
+    rows.forEach(function (r) {
+      var row = el('div', 'lk-admin-row');
+      var meta = el('div', 'lk-admin-row-meta');
+      var l1 = el('div', 'lk-admin-row-l1');
+      l1.textContent = EXIT_LABELS[r.reason] || r.reason || 'Unknown';
+      var l2 = el('div', 'lk-admin-row-l2');
+      var bits = [];
+      bits.push(r.was_vendor ? ('vendor' + (r.plan ? ' · ' + r.plan : '')) : 'shopper');
+      if (typeof r.tenure_days === 'number') {
+        bits.push(r.tenure_days < 1 ? 'same day'
+          : r.tenure_days + ' day' + (r.tenure_days === 1 ? '' : 's') + ' with us');
+      }
+      if (r.created_at) bits.push(fmtSpotDay(r.created_at));
+      l2.textContent = bits.join(' · ');
+      meta.appendChild(l1); meta.appendChild(l2);
+      if (r.comment) {
+        var q = el('div', 'lk-admin-row-l2');
+        q.style.cssText = 'margin-top:4px;color:#4A4761;font-style:italic;white-space:normal;';
+        q.textContent = '“' + r.comment + '”';
+        meta.appendChild(q);
+      }
+      row.appendChild(meta);
+      wrap.appendChild(row);
+    });
   }
 
   function appendSpotlightSection(wrap, ov) {
@@ -1279,6 +1358,65 @@
       foundWarn.textContent = 'Heads up — you’re a founding member. Deleting permanently retires your founding spot and its lifetime pricing. It can’t be undone or reclaimed.';
       confirmBox.appendChild(foundWarn);
     }
+    // #100 exit survey — one optional question, asked before the point of no
+    // return. Deliberately SKIPPABLE and never validated: the answer is nice to
+    // have, deleting your own account is a right. Reasons are role-aware
+    // (a vendor leaves for different reasons than a shopper) and the slugs must
+    // match the CHECK list in patch_exit_survey.sql (unknowns coerce to 'other').
+    var EXIT_REASONS = state.hasStorefront ? [
+      ['not_enough_customers',    'Not enough customers or leads'],
+      ['too_expensive',           'Too expensive'],
+      ['closing_business',        'Closing or pausing my business'],
+      ['not_right_fit',           'Not the right fit for my business'],
+      ['too_hard_to_use',         'Too hard to use'],
+      ['found_another_platform',  'Found another platform'],
+      ['other',                   'Something else']
+    ] : [
+      ['not_enough_vendors',       'Not enough vendors near me'],
+      ['didnt_find_what_i_needed', 'Didn’t find what I was looking for'],
+      ['too_many_emails',          'Too many emails'],
+      ['privacy',                  'Privacy — I don’t want an account'],
+      ['other',                    'Something else']
+    ];
+    var exitReason = '';
+    var surveyWrap = el('div');
+    surveyWrap.style.cssText = 'margin:2px 0 14px;padding-bottom:12px;border-bottom:1px solid #F3D6D6;';
+    var sTitle = el('div', 'lk-set-help');
+    sTitle.style.cssText = 'margin-bottom:8px;color:#4A4761;font-weight:600;';
+    sTitle.textContent = 'Before you go — why are you leaving? (optional)';
+    surveyWrap.appendChild(sTitle);
+    var pillRow = el('div');
+    pillRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;';
+    var exitComment = el('textarea', 'lk-input');
+    exitComment.rows = 2;
+    exitComment.placeholder = 'Anything we could have done better? (optional)';
+    exitComment.style.cssText = 'width:100%;max-width:100%;box-sizing:border-box;display:none;' +
+      'margin-bottom:10px;font-family:inherit;resize:vertical;';
+    EXIT_REASONS.forEach(function (r) {
+      var b = el('button', null, null);
+      b.type = 'button';
+      b.textContent = r[1];
+      b.setAttribute('aria-pressed', 'false');
+      var base = 'font-family:inherit;font-size:12.5px;line-height:1.3;text-align:left;padding:7px 12px;' +
+        'border-radius:999px;cursor:pointer;transition:all .12s;';
+      var off = base + 'background:#fff;border:1px solid #E4E2F0;color:#4A4761;';
+      var on  = base + 'background:#6002EE;border:1px solid #6002EE;color:#fff;font-weight:600;';
+      b.style.cssText = off;
+      b.addEventListener('click', function () {
+        var already = exitReason === r[0];
+        exitReason = already ? '' : r[0];           // tap again to unselect
+        Array.prototype.forEach.call(pillRow.children, function (el2) {
+          el2.style.cssText = off; el2.setAttribute('aria-pressed', 'false');
+        });
+        if (!already) { b.style.cssText = on; b.setAttribute('aria-pressed', 'true'); }
+        exitComment.style.display = exitReason ? 'block' : 'none';
+      });
+      pillRow.appendChild(b);
+    });
+    surveyWrap.appendChild(pillRow);
+    surveyWrap.appendChild(exitComment);
+    confirmBox.appendChild(surveyWrap);
+
     var confirmIn = el('input', 'lk-input'); confirmIn.type = 'text'; confirmIn.placeholder = 'Type DELETE';
     confirmIn.style.cssText = 'max-width:200px;margin-right:8px;';
     var confirmBtn = el('button', 'lk-btn danger', 'Permanently delete');
@@ -1305,7 +1443,12 @@
         return fetch(base + '/account/delete', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + jwt },
-          body: JSON.stringify({ confirm: 'DELETE' })
+          body: JSON.stringify({
+            confirm: 'DELETE',
+            // #100 — omitted entirely when skipped; the route ignores a missing reason.
+            reason: exitReason || undefined,
+            comment: exitReason ? (exitComment.value || '').trim().slice(0, 1000) : undefined
+          })
         });
       }).then(function (res) {
         if (!res.ok) return res.json().catch(function () { return {}; }).then(function (b) { throw new Error(b && b.error ? b.error : 'delete_failed'); });
