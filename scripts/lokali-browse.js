@@ -57,7 +57,7 @@
     var txt = (a.textContent || '').replace(/\s+/g, ' ').trim().toLowerCase();
     if (txt.indexOf('list your business') !== 0) return;
     e.preventDefault();
-    try { sessionStorage.setItem('lokali_signup_intent', 'vendor'); } catch (err) {}
+    try { sessionStorage.setItem('lokali_signup_intent', 'vendor:' + Date.now()); } catch (err) {} // timestamped (#101 — intent expires)
     window.location.href = '/sign-up';
   }, true);
 

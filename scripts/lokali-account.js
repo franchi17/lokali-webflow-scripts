@@ -335,7 +335,7 @@
       R + '*{box-sizing:border-box;}',
       '#lokali-account{font-family:' + F + ';color:' + INK + ';max-width:760px;margin:0 auto;padding:1.5rem 0 3rem;}',
       // band
-      R + '.lk-band{background:linear-gradient(135deg,#F3EBFF 0%,#FAF7FF 55%,#FFF4EC 100%);border:.5px solid ' + VM + ';border-radius:16px;padding:22px 24px;display:flex;align-items:center;gap:16px;margin-bottom:1.5rem;}',
+      R + '.lk-band{background:#fff;border:.5px solid ' + BORDER + ';border-radius:16px;padding:22px 24px;display:flex;align-items:center;gap:16px;margin-bottom:1.5rem;}',
       R + '.lk-avatar{width:52px;height:52px;border-radius:50%;background:' + V + ';color:#fff;font-size:19px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 14px rgba(96,2,238,.25);text-transform:uppercase;}',
       R + '.lk-greet{font-size:20px;font-weight:600;letter-spacing:-.3px;}',
       R + '.lk-meta{font-size:12.5px;color:' + DUSK + ';margin-top:3px;}',
@@ -413,7 +413,7 @@
       R + '.lk-toggle.on::after{transform:translateX(17px);}',
       R + '.lk-save-bar{display:flex;justify-content:flex-end;margin:1.25rem 0 2rem;}',
       // #66 Phase 1 — "Open your storefront" card (shown to people without one).
-      R + '.lk-sf{background:linear-gradient(135deg,#F3EBFF 0%,#FAF7FF 50%,#FFF4EC 100%);border:.5px solid ' + VM + ';border-radius:16px;padding:18px 20px;margin-bottom:1.5rem;display:flex;align-items:center;gap:16px;}',
+      R + '.lk-sf{background:#fff;border:.5px solid ' + BORDER + ';border-radius:16px;padding:18px 20px;margin-bottom:1.5rem;display:flex;flex-wrap:wrap;align-items:center;gap:16px;}',
       R + '.lk-sf-icon{width:46px;height:46px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:' + V + ';color:#fff;box-shadow:0 4px 14px rgba(96,2,238,.22);}',
       R + '.lk-sf-body{flex:1;min-width:0;}',
       R + '.lk-sf-title{font-size:15px;font-weight:600;letter-spacing:-.2px;}',
@@ -422,6 +422,7 @@
       R + '.lk-sf-cta:hover{opacity:.9;}',
       R + '.lk-sf-form{flex-basis:100%;margin-top:12px;padding-top:14px;border-top:.5px solid ' + VM + ';display:none;}',
       R + '.lk-sf.open .lk-sf-form{display:block;}',
+      R + '.lk-sf.open .lk-sf-cta{display:none;}',
       R + '.lk-sf-label{font-size:12px;font-weight:600;color:' + INK + ';margin-bottom:7px;}',
       R + '.lk-sf-in{font-family:' + F + ';font-size:14px;color:' + INK + ';background:#fff;border:.5px solid ' + FOG + ';border-radius:9px;padding:10px 13px;width:100%;max-width:360px;}',
       R + '.lk-sf-in:focus{outline:none;border-color:' + V + ';}',
@@ -887,7 +888,7 @@
     // Inline confirm form (business name).
     var form = el('div', 'lk-sf-form');
     form.appendChild(el('div', 'lk-sf-label', "What's your business called?"));
-    var input = el('input', 'lk-sf-in'); input.type = 'text'; input.placeholder = 'e.g. Pancha Ventures'; input.maxLength = 120;
+    var input = el('input', 'lk-sf-in'); input.type = 'text'; input.placeholder = 'e.g. Hazel & Fern Handmade'; input.maxLength = 120;
     form.appendChild(input);
     var foot = el('div', 'lk-sf-foot');
     var create = el('button', 'lk-btn primary', 'Create storefront');

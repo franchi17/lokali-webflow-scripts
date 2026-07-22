@@ -43,7 +43,7 @@
   function setPendingShare(id) { try { sessionStorage.setItem(PENDING_SHARE_KEY, String(id)); } catch (e) {} }
   function getPendingShare() { try { return sessionStorage.getItem(PENDING_SHARE_KEY); } catch (e) { return null; } }
   function clearPendingShare() { try { sessionStorage.removeItem(PENDING_SHARE_KEY); } catch (e) {} }
-  function stampCustomerIntent() { try { sessionStorage.setItem(SIGNUP_INTENT_KEY, 'customer'); } catch (e) {} }
+  function stampCustomerIntent() { try { sessionStorage.setItem(SIGNUP_INTENT_KEY, 'customer:' + Date.now()); } catch (e) {} } // timestamped (#101 — intent expires)
 
   // Stable anonymous session id (localStorage). NOT a user id, NOT cross-site —
   // used solely to dedup landings. Derived from the same UUID-ish primitive.

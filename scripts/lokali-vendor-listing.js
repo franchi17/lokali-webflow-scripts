@@ -851,7 +851,7 @@
       if (!API || !vid) return;
       if (!vlHasToken()) {
         try { sessionStorage.setItem('lokali_pending_fav', String(vid)); } catch (e) {}
-        try { sessionStorage.setItem('lokali_signup_intent', 'customer'); } catch (e) {}
+        try { sessionStorage.setItem('lokali_signup_intent', 'customer:' + Date.now()); } catch (e) {} // timestamped (#101 — a stale 'customer' stash was silently pre-answering the /sign-up role chooser)
         if (window.LokaliAuth && typeof window.LokaliAuth.openSignUp === 'function') window.LokaliAuth.openSignUp();
         else window.location.href = '/sign-up';
         return;

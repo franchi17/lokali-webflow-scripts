@@ -63,7 +63,7 @@
           try {
             sessionStorage.setItem('lokali_pending_plan',
               JSON.stringify({ plan: plan, interval: interval, ts: Date.now() }));
-            sessionStorage.setItem('lokali_signup_intent', 'vendor');
+            sessionStorage.setItem('lokali_signup_intent', 'vendor:' + Date.now()); // timestamped (#101 — intent expires)
           } catch (e) {}
         }
 

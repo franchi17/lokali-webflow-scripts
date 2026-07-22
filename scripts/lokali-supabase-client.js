@@ -535,13 +535,26 @@
     auth: {
       // Call once right after login: self-provisions the app_user row so
       // RLS can match this user. Returns { data: <app_user row>, error }.
+      // #101: passes the sessionStorage signup intent as a fallback role hint —
+      // OAuth signups have no user_metadata.intended_role in the JWT, so
+      // without this a Google vendor signup that reached ensure_app_user first
+      // would be minted 'customer' permanently (role is SET-ONCE). The RPC
+      // clamps it (vendor/customer only) and metadata still wins when present.
       ensureUser: function (profile) {
         profile = profile || {};
+        var intent = null;
+        try {
+          // 'role:timestamp' since #101 (bare legacy value also accepted);
+          // freshness is lokali-auth.js's concern — here any stash is a hint.
+          var v = (sessionStorage.getItem('lokali_signup_intent') || '').trim().toLowerCase().split(':')[0];
+          if (v === 'vendor' || v === 'customer') intent = v;
+        } catch (e) {}
         return withClient(function (c) {
           return c.rpc('ensure_app_user', {
             p_email: profile.email || null,
             p_first_name: profile.firstName || null,
-            p_last_name: profile.lastName || null
+            p_last_name: profile.lastName || null,
+            p_intended_role: intent
           }).then(function (res) {
             if (res && res.data && res.data.id != null) appUserId = res.data.id;
             return res;

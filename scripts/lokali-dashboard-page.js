@@ -196,6 +196,7 @@
     var el = root.querySelector('[data-ls-gate]');
     if (gateReady) { if (el) el.parentNode.removeChild(el); return; }
     var missing = [];
+    if (!bits.name) missing.push('name your storefront'); // #101 — signup-path vendors start nameless
     if (!bits.cats) missing.push('pick your category');
     if (!bits.locs) missing.push('set your service area');
     if (!bits.listing) missing.push('add a service or product');
@@ -246,7 +247,7 @@
     var gLocs = !!(v.locations_id && v.locations_id.length);
     var gateReady = (v.is_publish_ready != null) ? !!v.is_publish_ready
                     : (!!v.business_name && gCats && gLocs && !!hasListing);
-    renderGateBanner(root, gateReady, { cats: gCats, locs: gLocs, listing: !!hasListing });
+    renderGateBanner(root, gateReady, { name: !!v.business_name, cats: gCats, locs: gLocs, listing: !!hasListing });
     if (root) {
       if (score >= MAX_SCORE) { root.classList.add('is-complete'); }
       var s = root.querySelector('[data-ls-score]');    if (s) s.textContent = pct + '%';
@@ -333,15 +334,28 @@
   // listing CTA. Every step is skippable (with the won't-go-live warning
   // shown at the step), and the whole wizard closes on ✕.
   var WZ_FLAG = 'lokali_sf_wizard';
+  var WZ_SEEN = 'lokali_sf_wizard_seen'; // #101 — once per browsing session for the nameless auto-run
 
   function maybeRunWizard(v) {
-    var flagged = false;
+    var flagged = false, seen = false;
     try {
       flagged = sessionStorage.getItem(WZ_FLAG) === '1';
       if (flagged) sessionStorage.removeItem(WZ_FLAG);
+      seen = sessionStorage.getItem(WZ_SEEN) === '1';
     } catch (e) {}
-    if (!flagged || !v) return;
+    if (!v) return;
     if (v.is_publish_ready === true) return; // already live somehow — nothing to set up
+    // #101 — a vendor-intent SIGNUP lands here directly (no /account card, so
+    // no flag) with a nameless storefront; that state can only mean first
+    // arrival, so onboard them too (the wizard leads with the name step).
+    // Session-gated so ✕ isn't re-nagged on every dashboard nav — the
+    // persistent nudge stays the Listing-Strength gate banner.
+    if (!flagged && (v.business_name || seen)) return;
+    // Don't burn the once-per-session shot if the wizard's deps aren't up yet
+    // (runSetupWizard bails silently on them).
+    var SB = window.LokaliSupabaseAPI;
+    if (!window.LokaliAPI || !SB || !SB.vendors || !SB.vendors.updateProfile) return;
+    try { sessionStorage.setItem(WZ_SEEN, '1'); } catch (e) {}
     runSetupWizard(v);
   }
 
@@ -426,6 +440,30 @@
       body.appendChild(box);
       return function () { return Object.keys(sel).map(Number); };
     }
+
+    // Step: business name (#101) — only for storefronts created straight from
+    // a vendor-intent signup: the /account upgrade card collects the name
+    // before the dashboard is ever reached, but the signup path lands here
+    // nameless, and nothing else on the dashboard can set it.
+    if (!v.business_name) steps.push(function () {
+      var body = shell("What's your business called?",
+        'This is the name customers see on The Market.',
+        '<input data-wz-name type="text" maxlength="120" placeholder="e.g. Hazel &amp; Fern Handmade" ' +
+          'style="font-family:inherit;font-size:15px;color:#3b3654;background:#FAF7FF;border:1.5px solid #E4DCF7;' +
+          'border-radius:12px;padding:11px 14px;width:100%;box-sizing:border-box;">');
+      var input = body.querySelector('[data-wz-name]');
+      setTimeout(function () { try { input.focus(); } catch (e) {} }, 60);
+      card.querySelector('[data-wz-next]').addEventListener('click', function () {
+        var name = (input.value || '').trim();
+        if (!name) { showErr('Enter a name (or use Skip for now).'); return; }
+        SB.vendors.updateProfile(v.id, { business_name: name }).then(function (res) {
+          if (res && res.error) { showErr('Could not save — try again.'); return; }
+          v.business_name = name;
+          setId('vendor-name', name); // heading was 'Vendor' until now
+          next();
+        });
+      });
+    });
 
     // Step: category (single pick — more can be added on the profile page later)
     if (!(v.categories_id && v.categories_id.length)) steps.push(function () {

@@ -40,7 +40,10 @@
       if (t.length < 40 && (/^open (a|your|my) storefront$/.test(t) || t === 'sell on lokali' || t === 'become a vendor' || t === 'sign up to be a vendor' || t === 'join as a vendor' || t.indexOf('list your business') === 0)) { hit = node; break; }
     }
     if (!hit) return;
-    try { sessionStorage.setItem('lokali_signup_intent', 'vendor'); } catch (err) {}
+    // Timestamped since #101: lokali-auth.js treats an intent older than ~15
+    // min as expired, so a stale stash can't silently pre-answer the /sign-up
+    // role chooser later in the session.
+    try { sessionStorage.setItem('lokali_signup_intent', 'vendor:' + Date.now()); } catch (err) {}
     // #66: a signed-in person already HAS an account — "Become a Vendor" must not
     // send them to /sign-up, which bounces an authenticated user to the homepage
     // (dead end). Route them to the account hub's "Open your storefront" card

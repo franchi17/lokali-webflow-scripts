@@ -37,7 +37,7 @@
   function setPendingFav(id) { try { sessionStorage.setItem(PENDING_FAV_KEY, String(id)); } catch (e) {} }
   function getPendingFav() { try { return sessionStorage.getItem(PENDING_FAV_KEY); } catch (e) { return null; } }
   function clearPendingFav() { try { sessionStorage.removeItem(PENDING_FAV_KEY); } catch (e) {} }
-  function stampCustomerIntent() { try { sessionStorage.setItem(SIGNUP_INTENT_KEY, 'customer'); } catch (e) {} }
+  function stampCustomerIntent() { try { sessionStorage.setItem(SIGNUP_INTENT_KEY, 'customer:' + Date.now()); } catch (e) {} } // timestamped (#101 — intent expires)
 
   function injectCSS() {
     if (document.getElementById('lokali-favorites-styles')) return;
@@ -129,9 +129,59 @@
     });
   }
 
+  // ── #102: a VENDOR's first shopping-side action gets an explicit heads-up ──
+  // (Francesca 2026-07-22: never open the customer side silently — "tell them
+  // hey, we're switching you to customer"). One-time per browser; customers
+  // and already-acknowledged vendors never see it. Same pattern lives in
+  // lokali-inquiry.js for the contact modal.
+  var SHOP_NOTICE_KEY = 'lokali_shop_side_ok';
+  function vendorNeedsShopNotice() {
+    try {
+      if (localStorage.getItem(SHOP_NOTICE_KEY) === '1') return false;
+      var c = JSON.parse(localStorage.getItem('LOKALI_ACCT_CACHE') || 'null');
+      return !!(c && c.role === 'vendor');
+    } catch (e) { return false; }
+  }
+  function showShopNotice(onContinue) {
+    var old = document.getElementById('lok-shop-notice');
+    if (old) old.remove();
+    var ov = document.createElement('div');
+    ov.id = 'lok-shop-notice';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:99998;display:flex;align-items:center;justify-content:center;' +
+      "padding:20px;background:rgba(35,29,63,.55);font-family:'Plus Jakarta Sans',-apple-system,sans-serif;";
+    ov.innerHTML =
+      '<div role="dialog" aria-modal="true" style="background:#fff;border-radius:16px;max-width:400px;width:100%;padding:26px 24px;box-shadow:0 20px 60px rgba(35,29,63,.25);">' +
+        '<h3 style="margin:0 0 8px;font-size:18px;font-weight:700;color:#231D3F;font-family:inherit;">Switching you to your shopping space</h3>' +
+        '<p style="margin:0 0 18px;font-size:13.5px;line-height:1.55;color:#4A4761;">You’re signed in as a vendor. Saving and contacting other vendors happens on your customer side — your storefront isn’t touched. We won’t ask again.</p>' +
+        '<div style="display:flex;gap:8px;justify-content:flex-end;">' +
+          '<button data-sn-cancel style="font-family:inherit;font-size:13px;font-weight:600;color:#4A4761;background:#fff;border:.5px solid #C8C6D8;border-radius:9px;padding:9px 16px;cursor:pointer;">Not now</button>' +
+          '<button data-sn-go style="font-family:inherit;font-size:13px;font-weight:600;color:#fff;background:#6002EE;border:none;border-radius:9px;padding:9px 16px;cursor:pointer;">Continue</button>' +
+        '</div>' +
+      '</div>';
+    ov.addEventListener('click', function (e) { if (e.target === ov) ov.remove(); });
+    ov.querySelector('[data-sn-cancel]').addEventListener('click', function () { ov.remove(); });
+    ov.querySelector('[data-sn-go]').addEventListener('click', function () {
+      try { localStorage.setItem(SHOP_NOTICE_KEY, '1'); } catch (e) {}
+      ov.remove();
+      onContinue();
+    });
+    document.body.appendChild(ov);
+    try { ov.querySelector('[data-sn-go]').focus(); } catch (e) {}
+  }
+
   function onHeartClick(vendorId, btn, ev) {
     if (ev) { ev.preventDefault(); ev.stopPropagation(); }
-    if (hasToken()) { doToggle(vendorId, btn); return; }
+    if (hasToken()) {
+      // #102 — only an ADD (first shopping action) warrants the notice; an
+      // un-save means they've been here before.
+      var saving = !(_savedSet ? _savedSet.has(Number(vendorId)) : btn.classList.contains('is-saved'));
+      if (saving && vendorNeedsShopNotice()) {
+        showShopNotice(function () { doToggle(vendorId, btn); });
+        return;
+      }
+      doToggle(vendorId, btn);
+      return;
+    }
     // Not signed in → sign up to save.
     setPendingFav(vendorId);
     stampCustomerIntent();

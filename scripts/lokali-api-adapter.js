@@ -191,16 +191,51 @@
   }
 
   // Lazily self-provision/locate the app_user row and cache its id — needed only
-  // by "my own rows" reads (reviews.mine). Deliberately LAZY, never on load:
-  // on a fresh vendor signup auth-sync must reach the server first (role is
-  // set-once); by the time a user opens a my-reviews surface, that's long done.
+  // by "my own rows" reads (reviews.mine). The old "lazy = auth-sync is long
+  // done" assumption was FALSE on /account, whose loadAll calls reviews.mine at
+  // page load — for a signed-in-but-unprovisioned user this minted a role
+  // ='customer' row and the SET-ONCE rule made it permanent, eating vendor
+  // signups (#101). So: wait (bounded) for the acct-cache role that a completed
+  // auth-sync writes (lokali-auth.js now syncs on /account too) before self-
+  // provisioning. Provisioned users have the cache instantly = zero wait; on
+  // timeout we still fall through — since patch_signup_intent_provision.sql
+  // the RPC honors the signup intent itself (metadata JWT, or its own intent
+  // param for OAuth signups), so the fallback stays correct for every path
+  // except an OAuth signup completing in a different tab — auth-sync's own
+  // retry covers that one. After a fallback provision we seed the acct cache
+  // from the returned row, so a repeat visit never re-pays the wait.
   var _appUserP = null;
+  function waitForProvision() {
+    return new Promise(function (resolve) {
+      var tries = 0;
+      (function poll() {
+        var c = acctCache();
+        if (c && c.role) return resolve();
+        if (++tries > 24) return resolve(); // ~6s cap — fall through
+        setTimeout(poll, 250);
+      })();
+    });
+  }
   function ensureAppUser() {
     if (_appUserP) return _appUserP;
-    _appUserP = waitForAuth().then(function () {
+    _appUserP = waitForAuth().then(waitForProvision).then(function () {
       return SAPI().auth.ensureUser();
     }).then(function (res) {
       if (res && res.error) { _appUserP = null; }
+      else if (res && res.data && res.data.role) {
+        // Keep the synchronous role signal honest when we were the provisioner
+        // (auth-sync failed/late) — exact LOKALI_ACCT_CACHE shape.
+        try {
+          var cached = acctCache();
+          if (!cached || !cached.role) {
+            localStorage.setItem('LOKALI_ACCT_CACHE', JSON.stringify({
+              role: res.data.role,
+              first_name: res.data.first_name || '',
+              last_name: res.data.last_name || ''
+            }));
+          }
+        } catch (e) {}
+      }
       return SAPI().auth.currentUserId();
     }, function () { _appUserP = null; return null; });
     return _appUserP;

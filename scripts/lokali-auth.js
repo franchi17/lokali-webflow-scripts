@@ -98,14 +98,30 @@
     } catch (e) {}
   }
 
+  // #101/#102 — the intent EXPIRES (~15 min). It used to live for the whole
+  // tab session, and a stale stash silently pre-answered the /sign-up role
+  // chooser: e.g. an abandoned save-to-favorite overlay stashed 'customer',
+  // and someone later signing up to SELL never saw the chooser — their
+  // storefront signup was minted as a shopper (hit for real, diag 2026-07-22).
+  // Format 'role:timestamp'; a bare legacy value (old cached scripts) is
+  // accepted as-is until the 7-day @v1.4 caches converge.
+  var SIGNUP_INTENT_TTL_MS = 15 * 60 * 1000;
   function getSignupIntent() {
     try {
-      var v = (sessionStorage.getItem(SIGNUP_INTENT_KEY) || '').trim().toLowerCase();
-      return (v === 'customer' || v === 'vendor') ? v : '';
+      var raw = (sessionStorage.getItem(SIGNUP_INTENT_KEY) || '').trim().toLowerCase();
+      var parts = raw.split(':');
+      var v = parts[0];
+      if (v !== 'customer' && v !== 'vendor') return '';
+      var ts = parseInt(parts[1], 10);
+      if (ts && (Date.now() - ts) > SIGNUP_INTENT_TTL_MS) {
+        clearSignupIntent();
+        return '';
+      }
+      return v;
     } catch (e) { return ''; }
   }
   function setSignupIntent(role) {
-    try { sessionStorage.setItem(SIGNUP_INTENT_KEY, role); } catch (e) {}
+    try { sessionStorage.setItem(SIGNUP_INTENT_KEY, role + ':' + Date.now()); } catch (e) {}
   }
   function clearSignupIntent() {
     try { sessionStorage.removeItem(SIGNUP_INTENT_KEY); } catch (e) {}
@@ -179,6 +195,12 @@
     var path = window.location.pathname || '/';
     return path === '/' || path === '';
   }
+  function isAccountPath() {
+    // Exact-prefix on purpose: a bare indexOf('/account') would also match
+    // Worker vendor-slug pages like /accounting-plus.
+    var path = window.location.pathname || '/';
+    return path === '/account' || path.indexOf('/account/') === 0;
+  }
   function isSignUpPage() {
     var path = (window.location.pathname || '/').toLowerCase();
     return path.indexOf('/sign-up') === 0 || path.indexOf('/signup') === 0 || path.indexOf('/register') === 0;
@@ -250,13 +272,19 @@
           'Authorization': 'Bearer ' + token
         },
         body: JSON.stringify(intent ? { intended_role: intent } : {})
-      }).then(function (res) { return res.json(); });
+      }).then(function (res) {
+        // Surface non-2xx in the console — a 403/5xx here used to fail with
+        // no trace at all (#101), which made provisioning bugs undebuggable.
+        if (!res.ok) console.warn('[Lokali] auth-sync HTTP ' + res.status);
+        return res.json();
+      });
     }).then(function (data) {
       _syncing = false;
       if (data && data.ok === true) {
         markSynced();
         clearSignupIntent();
         writeAcctCache(data.role || null);
+        _syncRetryArmed = false; // #101 — a later failure gets its own retry
         return data.role || null;
       }
       return null;
@@ -333,11 +361,14 @@
 
     // Trigger a sync when NOT provisioned yet, on the pages where it matters
     // (auth page = just signed in/up; dashboard = needs identity; home =
-    // common OAuth-return landing), OR whenever a sign-up intent is pending —
-    // that fires on browse/detail pages where the pending save must complete.
-    if (!existing && (isAuthPage() || isDashboardPath() || isHomePath() || getSignupIntent())) {
+    // common OAuth-return landing; /account = its own data loads self-provision
+    // via ensure_app_user, and role is SET-ONCE, so auth-sync must get there
+    // first — #101), OR whenever a sign-up intent is pending — that fires on
+    // browse/detail pages where the pending save must complete.
+    if (!existing && (isAuthPage() || isDashboardPath() || isHomePath() || isAccountPath() || getSignupIntent())) {
       syncUser().then(function (role) {
         if (role) routeAfterAuth();
+        else scheduleSyncRetry(); // #101 — silent provisioning failure ≠ dead end
       });
     } else if (existing && isAuthPage()) {
       routeAfterAuth();
@@ -1244,6 +1275,53 @@
   function showConfirmingUI() { var m = confirmMount(); if (!m) return; injectStyles(); m.style.display = ''; m.setAttribute('data-lok-mounted', '1'); renderConfirming(m); }
   function showConfirmError() { var m = confirmMount(); if (m) renderConfirmError(m); }
 
+  // #101 — provisioning resilience. syncUser() resolves null on every failure
+  // (cold start, 403/5xx, dropped response), and before this the auth pages
+  // just sat on "Signing you in…" forever with no retry and no error surface.
+  // One automatic retry after a beat; if that also fails, swap the spinner for
+  // an actionable card. On non-auth pages (/account, home) the retry still
+  // runs quietly — routing/UX there is handled by the page itself.
+  var _syncRetryArmed = false;
+  function scheduleSyncRetry() {
+    if (!_session || _recoveryMode) return;
+    if (_syncRetryArmed) { showSyncStuck(); return; }
+    _syncRetryArmed = true;
+    setTimeout(function () {
+      if (!_session || cachedRole()) return; // a parallel sync already landed
+      if (_syncing) { _syncRetryArmed = false; scheduleSyncRetry(); return; } // real attempt in flight — don't fail over under it
+      clearSyncCooldown();
+      syncUser().then(function (role) {
+        if (role) routeAfterAuth();
+        else showSyncStuck();
+      });
+    }, 2600);
+  }
+  function showSyncStuck() {
+    if (!isAuthPage()) return; // only ever replace our own auth-page card
+    var m = confirmMount();
+    if (!m) return;
+    injectStyles();
+    m.style.display = '';
+    m.setAttribute('data-lok-mounted', '1');
+    m.innerHTML = '';
+    var box = el('div', 'lok-auth'), card = el('div', 'lok-auth-card'), chk = el('div', 'lok-auth-check');
+    var icon = el('div', 'lok-auth-check-icon');
+    icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="#6002EE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16.5" x2="12" y2="16.5"/></svg>';
+    chk.appendChild(icon);
+    chk.appendChild(el('h2', null, 'Almost there'));
+    chk.appendChild(el('p', 'lok-auth-sub', 'You’re signed in, but we couldn’t finish setting up your account. Give it another try — it usually works right away.'));
+    var btn = primaryBtn('Try again'); btn.type = 'button';
+    btn.addEventListener('click', function () {
+      setBusy(btn, true);
+      clearSyncCooldown();
+      syncUser().then(function (role) {
+        setBusy(btn, false);
+        if (role) routeAfterAuth();
+      });
+    });
+    card.appendChild(chk); card.appendChild(btn); box.appendChild(card); m.appendChild(box);
+  }
+
   // ──────────────────────────────────────────────────────────────────────────
   // PUBLIC API — FROZEN CONTRACT (Phase D2 sweeps build against this)
   // ──────────────────────────────────────────────────────────────────────────
@@ -1419,6 +1497,13 @@
               c.auth.signOut().catch(function () {});
               setSession(null);
               _confirming = false;
+              // #101 — a sync-failure card may already have claimed the mount
+              // (data-lok-mounted='1'); clear it so the login form can render
+              // instead of stranding the user on a dead "Try again".
+              try {
+                var deadMount = confirmMount();
+                if (deadMount) deadMount.removeAttribute('data-lok-mounted');
+              } catch (e2) {}
               try { mountAuthUI(); } catch (e) {}
             }
           }).catch(function () {});
