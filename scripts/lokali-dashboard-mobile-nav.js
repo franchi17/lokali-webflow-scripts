@@ -158,9 +158,43 @@
       '.div-block-39 img,.div-block-39 svg,.main-content-area img,.main-content-area svg{max-width:100%;}',
       '.div-block-39 input,.div-block-39 textarea,.div-block-39 select,',
       '.main-content-area input,.main-content-area textarea,.main-content-area select{max-width:100%;}',
+      // #104 (a) Spotlight calendar month arrows. lokali-billing.js builds the ‹ / › as
+      // real <button>s but at a fixed 30x30 — under the 44px touch floor, and they are the
+      // ONLY month navigation on a PAID feature's booking calendar, so a missed tap costs
+      // a booking. min-* (not width/height) so it beats the 30px the pinned script sets
+      // without !important, and the row keeps its own alignment.
+      '.lk-cal-nav{min-width:44px !important;min-height:44px !important;}',
+      // #104 (b) The email "Change" link renders 26px tall. It is Webflow markup with no
+      // class of ours, but this whole sheet is gated on the dashboard sidebar existing, so
+      // the bare class can't leak to public pages. inline-block is required for the
+      // vertical padding to actually grow the hit area on an inline <a>.
+      '.link-block-6{display:inline-block !important;padding-top:9px !important;padding-bottom:9px !important;}',
       '}'
     ].join('');
     document.head.appendChild(s);
+  }
+
+  // #104 (d) "Add Service" / "Add product" are plain <div>s in the Webflow markup — the
+  // pinned *-final.js only ever getElementById's them and binds click. A div has no
+  // implicit role, is not in the tab order, and does not fire click on Enter/Space, so
+  // the primary create action on both pages is unreachable by keyboard (and unnamed to a
+  // screen reader). Give them real button semantics from here rather than re-registering
+  // the SRI-pinned scripts or editing Webflow markup. Idempotent — safe to re-run.
+  function upgradeDivButtons() {
+    ['services-add-btn', 'products-add-btn'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (!el || el.tagName === 'BUTTON' || el.getAttribute('data-lok-a11y')) return;
+      el.setAttribute('data-lok-a11y', '1');
+      el.setAttribute('role', 'button');
+      if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '0');
+      el.addEventListener('keydown', function (e) {
+        // Space must be preventDefault()ed or it scrolls the page instead of activating.
+        if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+          e.preventDefault();
+          el.click();
+        }
+      });
+    });
   }
 
   // Fill the drawer as a flex column so the account chip (.div-block-29, which
@@ -245,6 +279,11 @@
     sidebar = document.querySelector('.section-11');
     if (!sidebar) { if (tries++ < 20) setTimeout(init, 300); return; }
     injectPageFixCss(); // dashboard pages only — gated on the sidebar existing
+    // Same gate. Retried because the pinned *-final.js re-render the list view (and can
+    // replace the container) after their own data load, which drops the listeners.
+    upgradeDivButtons();
+    setTimeout(upgradeDivButtons, 1200);
+    setTimeout(upgradeDivButtons, 3000);
     panel = sidebar.parentElement;
     if (document.getElementById('lok-topbar')) return;
     content = findContent();
