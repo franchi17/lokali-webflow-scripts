@@ -63,6 +63,17 @@
       if (o && typeof o === 'object') { o.avatar = av || ''; localStorage.setItem('LOKALI_ACCT_CACHE', JSON.stringify(o)); }
     } catch (e) {}
   }
+  // #103b — stash the admin flag so the header (lokali-auth-nav.js) can hide the
+  // "Open your storefront" CTA on the admin account, which can never open one
+  // (admin_open_storefront returns admin_cannot_open). Merge-write, like the
+  // avatar sync — never clobber role/name/etc.
+  function syncAcctCacheAdmin(isAdmin) {
+    try {
+      var raw = localStorage.getItem('LOKALI_ACCT_CACHE');
+      var o = raw ? JSON.parse(raw) : null;
+      if (o && typeof o === 'object') { o.is_admin = !!isAdmin; localStorage.setItem('LOKALI_ACCT_CACHE', JSON.stringify(o)); }
+    } catch (e) {}
+  }
 
   // Circle node for the given account: chosen preset, else initials on violet.
   function avatarNode(acc, cls) {
@@ -536,6 +547,10 @@
       state.admin = r[5] || null;
       state.account = (r[0] && r[0].data) || {};
       syncAcctCacheAvatar(state.account.avatar); // #79 — header chip stays in step
+      // #103b — state.admin is set only when the is_admin()-gated admin_overview
+      // RPC returned ok (server truth); publish it so the header hides the
+      // storefront CTA this account can't use. False for everyone else.
+      syncAcctCacheAdmin(!!state.admin || isAdminOnlyAccount());
       state.saved = arr(r[1] && r[1].data);
       state.mine = arr(r[2] && r[2].data);
       state.awaiting = arr(r[3] && r[3].data);
@@ -567,6 +582,28 @@
     return String((state.account && state.account.email) || '').trim().toLowerCase() === ADMIN_ONLY_EMAIL;
   }
 
+  // #103b — the header "Open your storefront" CTA is hidden by lokali-auth-nav.js
+  // off the cached is_admin flag, but that flag isn't cached until this page has
+  // run once (fresh/incognito session = the CTA would flash on first /account
+  // view). Hide it directly here too, so the admin's own console never shows a
+  // button that admin_open_storefront refuses. Same scope + matcher as auth-nav.
+  function hideHeaderStorefrontCTA() {
+    try {
+      var scopes = document.querySelectorAll('.header-wrapper, #lok-mnav-panel');
+      for (var s = 0; s < scopes.length; s++) {
+        var links = scopes[s].querySelectorAll('a');
+        for (var i = 0; i < links.length; i++) {
+          var a = links[i];
+          var href = (a.getAttribute('href') || '').split('?')[0].split('#')[0].replace(/\/$/, '') || '/';
+          var txt = (a.textContent || '').trim().toLowerCase();
+          if (href === '/sign-up' || txt === 'become a vendor' || /^open (a|your|my) storefront$/.test(txt)) {
+            a.style.setProperty('display', 'none', 'important');
+          }
+        }
+      }
+    } catch (e) {}
+  }
+
   function render(mount) {
     var acc = state.account || {};
     var name = acc.first_name || 'there';
@@ -575,6 +612,8 @@
     if (acc.created_at) areaBits.push('Member since ' + monthYear(acc.created_at));
 
     mount.innerHTML = '';
+
+    if (isAdminOnlyAccount()) hideHeaderStorefrontCTA(); // #103b — no dead storefront button on the admin console
 
     // Admin-only home: strip everything customer-facing, show the management
     // panel + a sign-out, and stop before any shopping/review UI is built.

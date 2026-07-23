@@ -52,7 +52,11 @@
     if (token()) {
       e.preventDefault();
       var c = getCache();
-      window.location.href = (c && c.role === 'vendor') ? DASH_URL : (ACCOUNT_URL + '#storefront');
+      // Admin can't open a storefront (#103b) — never route it to the (absent)
+      // storefront card; send it to its account home. Vendors -> dashboard;
+      // customers -> the account hub's "Open your storefront" card.
+      if (c && c.is_admin) window.location.href = ACCOUNT_URL;
+      else window.location.href = (c && c.role === 'vendor') ? DASH_URL : (ACCOUNT_URL + '#storefront');
       return;
     }
     // Signed OUT: real links (header "Become a Vendor" -> /sign-up) proceed
@@ -232,8 +236,12 @@
   // Hide the header "Become a Vendor" CTA once we know the user is already a
   // vendor (it's redundant for them). Customers still see it. Scoped to the
   // header + mobile nav only — footer "For Vendors" links are left alone.
+  // Hide the "Open your storefront" / "Become a vendor" CTAs for accounts that
+  // shouldn't act on them: existing vendors (already have one) and the admin
+  // account (#103b — admin_open_storefront refuses it, so the button was a
+  // dead end).
   function hideBecomeVendorForVendor() {
-    if (!acct || acct.role !== 'vendor') return;
+    if (!acct || (acct.role !== 'vendor' && !acct.is_admin)) return;
     var scopes = document.querySelectorAll(SCOPES);
     for (var s = 0; s < scopes.length; s++) {
       var links = scopes[s].querySelectorAll('a');
