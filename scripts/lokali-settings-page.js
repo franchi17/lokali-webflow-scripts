@@ -446,6 +446,52 @@
         foundWarn.textContent = 'Heads up — you’re a founding member. Deleting permanently retires your founding spot and its lifetime pricing. It can’t be undone or reclaimed.';
         delCard.appendChild(foundWarn);
       }
+      // #100 exit survey — vendor list (this page is vendor-only). One optional,
+      // fully skippable question before the point of no return; slugs must match
+      // patch_exit_survey.sql (unknowns coerce to 'other'). Same UI as the
+      // /account (customer) delete confirm in lokali-account.js.
+      var EXIT_REASONS = [
+        ['not_enough_customers',   'Not enough customers or leads'],
+        ['too_expensive',          'Too expensive'],
+        ['closing_business',       'Closing or pausing my business'],
+        ['not_right_fit',          'Not the right fit for my business'],
+        ['too_hard_to_use',        'Too hard to use'],
+        ['found_another_platform', 'Found another platform'],
+        ['other',                  'Something else']
+      ];
+      var exitReason = '';
+      var surveyWrap = document.createElement('div');
+      surveyWrap.style.cssText = 'margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #F3D6D6;';
+      var sTitle = document.createElement('div');
+      sTitle.style.cssText = 'font-size:13px;font-weight:600;color:#4A4761;margin-bottom:8px;';
+      sTitle.textContent = 'Before you go — why are you leaving? (optional)';
+      surveyWrap.appendChild(sTitle);
+      var pillRow = document.createElement('div');
+      pillRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;';
+      var exitComment = document.createElement('textarea');
+      exitComment.rows = 2;
+      exitComment.placeholder = 'Anything we could have done better? (optional)';
+      exitComment.style.cssText = 'width:100%;max-width:100%;box-sizing:border-box;display:none;' +
+        'margin-bottom:2px;padding:9px 12px;border:1px solid #ECE8F8;border-radius:10px;font:inherit;resize:vertical;';
+      var pillOff = 'font-family:inherit;font-size:12.5px;line-height:1.3;text-align:left;padding:7px 12px;' +
+        'border-radius:999px;cursor:pointer;transition:all .12s;background:#fff;border:1px solid #E4E2F0;color:#4A4761;';
+      var pillOn = 'font-family:inherit;font-size:12.5px;line-height:1.3;text-align:left;padding:7px 12px;' +
+        'border-radius:999px;cursor:pointer;transition:all .12s;background:#6002EE;border:1px solid #6002EE;color:#fff;font-weight:600;';
+      EXIT_REASONS.forEach(function (r) {
+        var b = document.createElement('button');
+        b.type = 'button'; b.textContent = r[1]; b.style.cssText = pillOff;
+        b.setAttribute('aria-pressed', 'false');
+        b.addEventListener('click', function () {
+          var already = exitReason === r[0];
+          exitReason = already ? '' : r[0];
+          Array.prototype.forEach.call(pillRow.children, function (c) { c.style.cssText = pillOff; c.setAttribute('aria-pressed', 'false'); });
+          if (!already) { b.style.cssText = pillOn; b.setAttribute('aria-pressed', 'true'); }
+          exitComment.style.display = exitReason ? 'block' : 'none';
+        });
+        pillRow.appendChild(b);
+      });
+      surveyWrap.appendChild(pillRow); surveyWrap.appendChild(exitComment);
+
       var delIn = document.createElement('input');
       delIn.type = 'text'; delIn.placeholder = 'Type DELETE';
       delIn.style.cssText = 'max-width:180px;margin-right:8px;padding:9px 12px;border:1px solid #ECE8F8;border-radius:10px;font:inherit;';
@@ -455,7 +501,7 @@
       var delNo = document.createElement('button');
       delNo.type = 'button'; delNo.textContent = 'Cancel';
       delNo.style.cssText = 'padding:9px 16px;border:1px solid #ECE8F8;border-radius:999px;background:#fff;color:#231D3F;font:inherit;font-weight:600;cursor:pointer;';
-      delCard.appendChild(delHelp); delCard.appendChild(delIn); delCard.appendChild(delGo); delCard.appendChild(delNo);
+      delCard.appendChild(surveyWrap); delCard.appendChild(delHelp); delCard.appendChild(delIn); delCard.appendChild(delGo); delCard.appendChild(delNo);
       if (del.parentNode) del.parentNode.insertBefore(delCard, del.nextSibling);
 
       del.addEventListener('click', function (e) {
@@ -477,7 +523,12 @@
           return fetch(base + '/account/delete', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + jwt },
-            body: JSON.stringify({ confirm: 'DELETE' })
+            body: JSON.stringify({
+              confirm: 'DELETE',
+              // #100 — omitted when skipped; the route ignores a missing reason.
+              reason: exitReason || undefined,
+              comment: exitReason ? (exitComment.value || '').trim().slice(0, 1000) : undefined
+            })
           });
         }).then(function (res) {
           if (!res.ok) return res.json().catch(function () { return {}; }).then(function (b) { throw new Error(b && b.error ? b.error : 'delete_failed'); });
