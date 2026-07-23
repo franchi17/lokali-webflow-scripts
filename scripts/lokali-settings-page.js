@@ -429,8 +429,8 @@
     if (del) {
       var delCard = document.createElement('div');
       delCard.id = 'settings-delete-confirm';
-      delCard.style.cssText = 'display:none;margin-top:12px;padding:14px 16px;border:1px solid #F3D6D6;' +
-        "border-radius:12px;background:#FDF7F7;font-family:'Plus Jakarta Sans',sans-serif;";
+      delCard.style.cssText = 'display:none;width:100%;box-sizing:border-box;margin-top:14px;padding:14px 16px;' +
+        "border:1px solid #F3D6D6;border-radius:12px;background:#FDF7F7;font-family:'Plus Jakarta Sans',sans-serif;";
       var delHelp = document.createElement('div');
       delHelp.style.cssText = 'font-size:13px;color:#6B6580;margin-bottom:10px;';
       delHelp.appendChild(document.createTextNode('Type '));
@@ -502,7 +502,12 @@
       delNo.type = 'button'; delNo.textContent = 'Cancel';
       delNo.style.cssText = 'padding:9px 16px;border:1px solid #ECE8F8;border-radius:999px;background:#fff;color:#231D3F;font:inherit;font-weight:600;cursor:pointer;';
       delCard.appendChild(surveyWrap); delCard.appendChild(delHelp); delCard.appendChild(delIn); delCard.appendChild(delGo); delCard.appendChild(delNo);
-      if (del.parentNode) del.parentNode.insertBefore(delCard, del.nextSibling);
+      // Drop the card BELOW the whole [description | button] flex row (as a sibling
+      // of that row) so it spans full width, instead of being trapped in the
+      // button's narrow right column. Fall back to the old spot if the row is flat.
+      var delRow = del.parentNode;
+      if (delRow && delRow.parentNode) delRow.parentNode.insertBefore(delCard, delRow.nextSibling);
+      else if (del.parentNode) del.parentNode.insertBefore(delCard, del.nextSibling);
 
       del.addEventListener('click', function (e) {
         e.preventDefault();
