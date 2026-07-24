@@ -112,6 +112,14 @@
       // own full-width row under the pills.
       '.filter-bar .form-block-2{margin:0 !important;flex:1 1 100% !important;}',
       '.filter-bar{row-gap:10px !important;}',
+      // #104(c) 2026-07-24: the services-list card description (.service-description,
+      // from the SRI-pinned lokali-services-final.js) is white-space:nowrap + ellipsis,
+      // so on a phone only ~40 chars of a multi-line blurb show (verified live: a 279-char
+      // description rendered 1 line / scrollWidth 1742 in a 225px column). Clamp to 2 lines
+      // so more of the blurb reads on mobile. Overriding here (floating @v1.4) avoids
+      // re-registering the pinned script. Verified live: 1 line (h26) -> 2 lines (h52), no overflow.
+      '.service-description{white-space:normal !important;display:-webkit-box !important;',
+      '-webkit-line-clamp:2 !important;-webkit-box-orient:vertical !important;overflow:hidden !important;text-overflow:ellipsis;}',
       // Profile page photo section: guide card + upload column sat side by
       // side, scrunching the guide into a 2-word-per-line strip. Stack with
       // the photo + Upload button FIRST, guide full-width below.
