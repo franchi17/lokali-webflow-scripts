@@ -57,14 +57,12 @@
     s = s.trim();
     // Block javascript:/data: schemes + attribute/CSS-breakout chars.
     if (!s || /[\s"'<>`\\]/.test(s) || /^(?:javascript|data|vbscript):/i.test(s)) return '';
-    if (/^https?:\/\//.test(s)) return s;
+    if (/^https?:\/\//.test(s)) return s; // full URL (Supabase Storage / Webflow CDN) — the only live shape
     if (s.indexOf('//') === 0) return '';
-    // Relative path (Xano-era /vault/... uploads): resolve against the file
-    // base like lokali-vendor-listing.js photoUrl() does — returned as-is it
-    // resolved against golokali.com and 404'd (vendor avatar showed as an
-    // empty circle on service/product pages).
-    var base = window.LOKALI_FILE_BASE || 'https://x8ki-letl-twmt.n7.xano.io';
-    return base.replace(/\/$/, '') + (s.charAt(0) === '/' ? '' : '/') + s;
+    // A non-absolute value is a legacy Xano-era /vault/... upload path. Xano is
+    // retired (XANO-DECOMM 2026-07-24) so it can no longer resolve — return no
+    // image rather than a broken-host URL. Live rows store full URLs (handled above).
+    return '';
   }
   function cents(n) { var x = Number(n); if (!isFinite(x)) return ''; return '$' + (x % 100 === 0 ? (x / 100).toFixed(0) : (x / 100).toFixed(2)); }
   // Hide the .vd-meta-row containing the given key element (placeholder rows

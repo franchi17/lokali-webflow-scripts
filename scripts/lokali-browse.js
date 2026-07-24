@@ -472,10 +472,12 @@
     p = p.trim();
     // Block javascript:/data: schemes, protocol-relative //host, breakout chars.
     if (!p || /[\s"'<>`\\]/.test(p) || /^(?:javascript|data|vbscript):/i.test(p)) return '';
-    if (/^https?:\/\//.test(p)) return p;
+    if (/^https?:\/\//.test(p)) return p; // full URL (Supabase Storage / Webflow CDN) — the only live shape
     if (p.indexOf('//') === 0) return '';
-    var base = window.LOKALI_FILE_BASE || 'https://x8ki-letl-twmt.n7.xano.io';
-    return base.replace(/\/$/, '') + (p.charAt(0) === '/' ? '' : '/') + p;
+    // A non-absolute value is a legacy Xano-era /vault path. Xano is retired
+    // (XANO-DECOMM 2026-07-24) so it can no longer resolve — return no image
+    // rather than a broken-host URL. Live rows store full URLs (handled above).
+    return '';
   }
   function vAreaLabel(v) {
     var ids = Array.isArray(v.locations_id) ? v.locations_id : (v.locations_id != null ? [v.locations_id] : []);
