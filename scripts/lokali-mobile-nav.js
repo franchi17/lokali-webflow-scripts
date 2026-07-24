@@ -107,14 +107,25 @@
     var s = document.createElement('style');
     s.id = 'lok-98-css';
     s.textContent = [
-      '@media screen and (max-width:991px){',
+      // #98 optional-polish (2026-07-24): the touch-ergonomics rules below (F1 input floor,
+      // F2 hamburger, F3 tap-target growth, F4 footer links) run to 1149px — matching the
+      // range where the burger nav already takes over (see F5). iPad landscape (1024) is a
+      // touch device that was keeping desktop-size targets AND still zooms on sub-16px inputs
+      // in Safari, the exact device the audit flagged. 44px targets + 16px fields don't harm a
+      // small-laptop window at this width; the WIDTH-SPECIFIC layout fixes (F6/F7) stay tighter.
+      '@media screen and (max-width:1149px){',
       // F1 — iOS Safari zooms the whole page when a focused field is under 16px and never
       // zooms back; floor every field at 16px on touch widths (the site's fields are 12–15px).
       'input:not([type=checkbox]):not([type=radio]):not([type=hidden]),select,textarea{font-size:16px!important;}',
       // F2 — the hamburger's tap area was just its 30x18 icon; grow the hit area, not the icon.
       '.hamburger-menu-wrapper{min-width:44px;min-height:44px;}',
       // F3 — sub-40px tap targets on the conversion actions (Market cards + vendor page).
-      '.vcard .contact-btn{padding:11px 14px!important;font-size:13px!important;}',
+      // NOTE: the card CSS pins .contact-btn at height:37px with !important, which silently
+      // ate the original padding/font-size directive (verified live 2026-07-24 — even a
+      // max-specificity !important padding was inert, but min-height overrides a smaller fixed
+      // height). The buttons already sit in a 44px .vcard-actions flex row, so min-height:44px
+      // fills the row without shifting card layout — this is what actually grows the target.
+      '.vcard .contact-btn{min-height:44px!important;box-sizing:border-box;}',
       // :not(.lk-fav-inline) — the favorites script also has an inline "Save" PILL variant
       // (auto width/height + text label); forcing that to 40x40 would clip the label.
       '.lk-fav:not(.lk-fav-inline){width:40px!important;height:40px!important;}',
@@ -127,8 +138,12 @@
       // F4 — footer links were 14px-tall targets, ~20 of them stacked; pad them out.
       '.lok-ft-link{display:inline-block;padding:10px 0;}',
       '.lok-ft-contactlink{display:inline-block;padding:6px 0;}',
+      '}',
       // F6 — /about: the hero background video rendered 5px wider than the page (width 380
-      // at -2px left on a 375 viewport) and caused real horizontal scroll.
+      // at -2px left on a 375 viewport) and caused real horizontal scroll. Kept at ≤991 (a
+      // small-width layout fix, NOT touch ergonomics) so extending the block above to 1149
+      // can't touch the hero video at iPad-landscape widths.
+      '@media screen and (max-width:991px){',
       '.div-block-5{overflow-x:clip;}',
       '.div-block-5 .w-background-video{width:100%!important;margin-left:0!important;left:0!important;}',
       '}',
