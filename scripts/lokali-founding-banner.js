@@ -14,11 +14,16 @@
  * consumes the cap, so the bar should reflect it).
  *
  * Community: the cap is GLOBAL since 2026-07-16 — 50 spots TOTAL across all
- * communities (The Woodlands, Houston, Woodforest), because one vendor can
- * serve all three. The RPC still takes a location id (echoed back, same
+ * active communities (The Woodlands, Woodforest — Houston deactivated
+ * 2026-07-27, patch_deactivate_houston.sql), because one vendor can serve
+ * more than one. The RPC still takes a location id (echoed back, same
  * numbers for every community); the hero passes the flagship community —
  * resolved by NAME so we don't hardcode a brittle location id. Override with:
  *   window.LOKALI_FOUNDING_COMMUNITY = 'The Woodlands'   // default
+ * The headline text itself no longer names the community (2026-07-27 — a
+ * bare city name next to a "50" cap read as a PER-CITY cap to an outside
+ * reader), so this constant now only drives which location id the RPC call
+ * echoes back — cosmetic, no behavior change.
  *
  * Graceful: if the banner element, the API, or the community can't be resolved,
  * it leaves the existing static markup untouched and no-ops. Loaded site-wide;
@@ -82,9 +87,16 @@
     injectStyle();
 
     // Update the existing headline sentence to the live count.
+    // 2026-07-27: dropped '  in ' + COMMUNITY — the cap is GLOBAL (see the
+    // header note), and naming one community here read as a per-city cap
+    // (an outside read of the site took "in The Woodlands" to mean 50 spots
+    // PER community, i.e. 150 total once Houston/Woodforest were counted).
+    // COMMUNITY / resolveLocationId() below are kept: the RPC still accepts a
+    // location id (echoed back only, per fn_misc.sql), so this is a display-
+    // string-only change with no behavior change to the data call.
     countEl.textContent = full
-      ? ('All ' + cap + ' founding spots claimed in ' + COMMUNITY)
-      : (claimed + ' of ' + cap + ' founding spots claimed in ' + COMMUNITY);
+      ? ('All ' + cap + ' founding spots claimed')
+      : (claimed + ' of ' + cap + ' founding spots claimed');
 
     // Build (or reuse) the progress bar, inserted directly above the headline.
     var bar = document.getElementById('lok-fb-bar');
