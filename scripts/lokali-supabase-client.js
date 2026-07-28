@@ -146,7 +146,7 @@
   // (vendors, reviews) and the sane presentation fields for services/products.
   var VENDOR_EDITABLE = [
     'business_name', 'business_description', 'business_tagline', 'website_url',
-    'instagram_url', 'locations_id', 'categories_id', 'subcategories', 'profile_photo', // subcategories = #96 (≤3, DB CHECK-capped)
+    'instagram_url', 'locations_id', 'categories_id', 'profile_photo', // subcategories REMOVED (96-CLEANUP): trigger-derived from listings; owner grant revoked
     'owner_name', 'owner_bio', 'owner_photo', 'owner_languages', // #76e Meet the Vendor
     'text_messages', 'whatsapp_messages', 'phone_calls', // phone_calls = #76c call preference
     'phone_number', 'phone_visible',

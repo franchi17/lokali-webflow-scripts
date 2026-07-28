@@ -532,11 +532,9 @@
         locations_id: Array.isArray(payload.locations_id) ? payload.locations_id
           : (payload.locations_id != null ? [payload.locations_id] : []),
         categories_id: Array.isArray(categoryId) ? categoryId : (categoryId != null ? [categoryId] : []),
-        // #96 subcategory slugs — absent (stale cached embed) leaves the column
-        // alone; an array writes through capped at 3 (DB CHECK enforces too).
-        subcategories: Array.isArray(payload.subcategories)
-          ? payload.subcategories.filter(function (s) { return typeof s === 'string' && s; }).slice(0, 3)
-          : undefined,
+        // subcategories passthrough REMOVED (96-CLEANUP 2026-07-28): the column
+        // is trigger-derived from listings since #96-LISTING and the transient
+        // owner UPDATE grant is revoked — a write would now be DENIED anyway.
         profile_photo: payload.profile_photo != null ? String(payload.profile_photo)
           : (payload.profilePhoto != null ? String(payload.profilePhoto) : ''),
         address: payload.address != null ? String(payload.address) : '',
