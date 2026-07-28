@@ -64,7 +64,7 @@ const LokaliServicesPage = (() => {
   let imageRemoved = false;
   let dragSrc      = null;
   let _maxServices = null;
-  let _maxServicePhotos = null;   // gallery cap (Free=1, Pro/Featured=5)
+  let _maxServicePhotos = null;   // gallery cap (Free=1, Pro=3, Featured=5 — #82)
   let _isProPlan = false;
   let _isFeaturedPlan = false;   // FEAT-PICKS: the star toggle is a Featured-plan perk         // gallery is a Pro/Featured perk
   let _imagePreviewObjectUrl = null;
@@ -1069,8 +1069,8 @@ const LokaliServicesPage = (() => {
     if (!_isProPlan) {
       body.innerHTML = title +
         '<div style="color:#4A4761;font-size:14px;line-height:1.5;">' +
-        '🔒 Add a <strong>photo gallery</strong> with Pro &amp; Featured — show up to 5' +
-        ' images per service so customers see more of your work.</div>';
+        '🔒 Add a <strong>photo gallery</strong> with Pro &amp; Featured — 3 photos per' +
+        ' service on Pro, 5 on Featured, so customers see your work before they call.</div>';
       return;
     }
     // New service (no id yet): stage photos in the browser — they attach to the
@@ -1091,7 +1091,7 @@ const LokaliServicesPage = (() => {
       .filter(p => p && p.is_active !== false)
       .sort((a, b) => (a.sort_order ?? 9999) - (b.sort_order ?? 9999));
 
-    const cap = _maxServicePhotos || 5;
+    const cap = _maxServicePhotos || 1;
     const count = _galleryPhotos.length;
 
     let html = title +
@@ -1140,7 +1140,7 @@ const LokaliServicesPage = (() => {
   // storage and pushes here; remove/reorder are local array ops; the first photo is
   // the cover. All of these attach to the service on Save (see handleSave).
   const renderPendingGallery = (body, title) => {
-    const cap = _maxServicePhotos || 5;
+    const cap = _maxServicePhotos || 1;
     const count = _pendingGalleryPhotos.length;
     const arrowStyle = 'position:absolute;bottom:4px;width:22px;height:22px;border:none;border-radius:50%;background:rgba(26,24,41,.72);color:#fff;font-size:13px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;';
     let html = title +
@@ -1224,7 +1224,7 @@ const LokaliServicesPage = (() => {
     // Add mode (no service id yet): upload to storage and stage locally — the
     // photo attaches to the service on Save. No addPhoto call (nothing to attach to).
     if (!editingId) {
-      const cap = _maxServicePhotos || 5;
+      const cap = _maxServicePhotos || 1;
       if (_pendingGalleryPhotos.length >= cap) { if (gi) gi.value = ''; return; }
       _galleryBusy = true;
       const addBtn0 = document.getElementById('lok-gallery-add');
@@ -1699,7 +1699,7 @@ const LokaliServicesPage = (() => {
       _isFeaturedPlan = planCode === 'featured'; // FEAT-PICKS
       _maxServicePhotos = billing?.features?.max_service_photos
                        ?? billing?.subscription?.max_service_photos
-                       ?? (_isProPlan ? 5 : 1);
+                       ?? (_isFeaturedPlan ? 5 : _isProPlan ? 3 : 1);
       try {
         sessionStorage.setItem(PLAN_CACHE_KEY, JSON.stringify({ pro: _isProPlan, feat: _isFeaturedPlan, maxPhotos: _maxServicePhotos, maxItems: _maxServices }));
       } catch (e) {}
@@ -1711,7 +1711,7 @@ const LokaliServicesPage = (() => {
       try { cached = JSON.parse(sessionStorage.getItem(PLAN_CACHE_KEY) || 'null'); } catch (e) {}
       _isProPlan = cached ? !!cached.pro : false;
       _isFeaturedPlan = cached ? !!cached.feat : false; // FEAT-PICKS
-      _maxServicePhotos = cached ? (cached.maxPhotos ?? (_isProPlan ? 5 : 1)) : 1;
+      _maxServicePhotos = cached ? (cached.maxPhotos ?? (_isFeaturedPlan ? 5 : _isProPlan ? 3 : 1)) : 1;
       _maxServices = cached ? (cached.maxItems ?? null) : null;
     }
 

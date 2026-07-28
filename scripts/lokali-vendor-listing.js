@@ -1274,16 +1274,24 @@
   }
   function openLightbox(urls, start) { ensureLightbox().open(urls, start); }
 
-  // ---- portfolio gallery (Pro/Featured plans, max 5) --------------------
-  var PORTFOLIO_MAX = 5;
-  var PORTFOLIO_PLANS = ['pro', 'featured'];
+  // ---- portfolio gallery (Pro/Featured only) -----------------------------
+  // Ceiling = the TOP tier's entitlement (plan.max_vendor_photos: Free 0 / Pro
+  // 5 / Featured 15). The real per-plan cap is enforced at write time by the
+  // trigger in fn_limits.sql, so this is only a runaway guard — it must never
+  // sit below the top tier or paid vendors silently lose photos they uploaded.
+  var PORTFOLIO_MAX = 15;
 
-  // null = unknown (no plan field on the public vendor) -> defer to server (empty list hides it)
+  // The gallery is a paid feature, and it has to be gated on READ as well as on
+  // write: a vendor who downgrades keeps their existing vendor_photos rows, so
+  // without this their paid gallery would keep rendering on the free plan.
+  // `plan_rank` is the server-synced tier already selected on both public vendor
+  // paths (0 free / 1 Pro / 2 Featured) and it counts `trialing`, so founding
+  // trials qualify. null/undefined = column absent (older cached payload) =>
+  // unknown, so defer rather than hide a legitimate paid gallery.
   function planEligible(v) {
-    var tier = (v.plan_tier || v.plan || v.plan_name || v.subscription_tier || v.tier || v.plan_slug || '');
-    tier = String(tier).toLowerCase();
-    if (!tier) return null;
-    return PORTFOLIO_PLANS.some(function (p) { return tier.indexOf(p) >= 0; });
+    var rank = v && v.plan_rank;
+    if (rank == null) return null;
+    return Number(rank) > 0;
   }
 
   function wireStrip(strip, pips) {
@@ -1312,7 +1320,7 @@
         .filter(function (p) { return p && p.is_active !== false && imgUrl(p.image_url || p.image); })
         .sort(function (a, b) { return (a.sort_order || 0) - (b.sort_order || 0); })
         .slice(0, PORTFOLIO_MAX);
-      if (!photos.length) return; // server enforces plan gating; empty => stay hidden
+      if (!photos.length) return; // nothing to show (free vendors are capped at 0)
       var strip = document.getElementById('vl-portfolio-strip');
       var pips = document.getElementById('vl-portfolio-pips');
       if (!strip) return;

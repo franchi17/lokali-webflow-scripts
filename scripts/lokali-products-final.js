@@ -63,7 +63,7 @@ const LokaliProductsPage = (() => {
   let imageRemoved = false;
   let dragSrc      = null;
   let _maxProducts = null;
-  let _maxProductPhotos = null;   // gallery cap (Free=1, Pro/Featured=5)
+  let _maxProductPhotos = null;   // gallery cap (Free=1, Pro=3, Featured=5 — #82)
   let _isProPlan = false;
   let _isFeaturedPlan = false;   // FEAT-PICKS: the star toggle is a Featured-plan perk         // gallery is a Pro/Featured perk
   let _imagePreviewObjectUrl = null;
@@ -957,8 +957,8 @@ const LokaliProductsPage = (() => {
     if (!_isProPlan) {
       body.innerHTML = title +
         '<div style="color:#4A4761;font-size:14px;line-height:1.5;">' +
-        '🔒 Add a <strong>photo gallery</strong> with Pro &amp; Featured — show up to 5' +
-        ' images per product so customers see more before they buy.</div>';
+        '🔒 Add a <strong>photo gallery</strong> with Pro &amp; Featured — 3 photos per' +
+        ' product on Pro, 5 on Featured, so customers see more before they buy.</div>';
       return;
     }
     // New product (no id yet): stage photos in the browser — they attach to the
@@ -979,7 +979,7 @@ const LokaliProductsPage = (() => {
       .filter(p => p && p.is_active !== false)
       .sort((a, b) => (a.sort_order ?? 9999) - (b.sort_order ?? 9999));
 
-    const cap = _maxProductPhotos || 5;
+    const cap = _maxProductPhotos || 1;
     const count = _galleryPhotos.length;
 
     let html = title +
@@ -1028,7 +1028,7 @@ const LokaliProductsPage = (() => {
   // storage and pushes here; remove/reorder are local array ops; the first photo is
   // the cover. All of these attach to the product on Save (see handleSave).
   const renderPendingGallery = (body, title) => {
-    const cap = _maxProductPhotos || 5;
+    const cap = _maxProductPhotos || 1;
     const count = _pendingGalleryPhotos.length;
     const arrowStyle = 'position:absolute;bottom:4px;width:22px;height:22px;border:none;border-radius:50%;background:rgba(26,24,41,.72);color:#fff;font-size:13px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;';
     let html = title +
@@ -1112,7 +1112,7 @@ const LokaliProductsPage = (() => {
     // Add mode (no product id yet): upload to storage and stage locally — the
     // photo attaches to the product on Save. No addPhoto call (nothing to attach to).
     if (!editingId) {
-      const cap = _maxProductPhotos || 5;
+      const cap = _maxProductPhotos || 1;
       if (_pendingGalleryPhotos.length >= cap) { if (gi) gi.value = ''; return; }
       _galleryBusy = true;
       const addBtn0 = document.getElementById('lok-gallery-add');
@@ -1577,7 +1577,7 @@ const LokaliProductsPage = (() => {
       _isFeaturedPlan = planCode === 'featured'; // FEAT-PICKS
       _maxProductPhotos = billing?.features?.max_product_photos
                        ?? billing?.subscription?.max_product_photos
-                       ?? (_isProPlan ? 5 : 1);
+                       ?? (_isFeaturedPlan ? 5 : _isProPlan ? 3 : 1);
       try {
         sessionStorage.setItem(PLAN_CACHE_KEY, JSON.stringify({ pro: _isProPlan, feat: _isFeaturedPlan, maxPhotos: _maxProductPhotos, maxItems: _maxProducts }));
       } catch (e) {}
@@ -1589,7 +1589,7 @@ const LokaliProductsPage = (() => {
       try { cached = JSON.parse(sessionStorage.getItem(PLAN_CACHE_KEY) || 'null'); } catch (e) {}
       _isProPlan = cached ? !!cached.pro : false;
       _isFeaturedPlan = cached ? !!cached.feat : false; // FEAT-PICKS
-      _maxProductPhotos = cached ? (cached.maxPhotos ?? (_isProPlan ? 5 : 1)) : 1;
+      _maxProductPhotos = cached ? (cached.maxPhotos ?? (_isFeaturedPlan ? 5 : _isProPlan ? 3 : 1)) : 1;
       _maxProducts = cached ? (cached.maxItems ?? null) : null;
     }
 

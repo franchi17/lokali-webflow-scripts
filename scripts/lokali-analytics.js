@@ -342,13 +342,25 @@
 
     // tier-aware upsell — hidden once the vendor is on the top tier (#67:
     // tier-agnostic label; a vendor could pick Pro or Featured on /pricing).
+    //
+    // The pitch now depends on which tier they're actually on. It used to show
+    // the Featured "top of your category" line to free vendors too, which is
+    // the wrong ask (skipping Pro) and the wrong argument: ranking is worth
+    // little while categories are thin, and a service vendor with three
+    // services feels no listing cap. Free vendors hear about depth instead —
+    // the storefront gallery, photos per listing, bookings, Verified.
     if (!isTopTier(vendor, billing)) {
       var up = el('div', 'an-up');
       var ut = el('div');
-      ut.appendChild(el('div', 'an-up-t', 'Get seen by more local customers'));
-      ut.appendChild(el('div', 'an-up-s', 'Featured vendors appear at the top of their category with a Featured badge on every listing.'));
+      if (paidHist) {
+        ut.appendChild(el('div', 'an-up-t', 'Get seen by more local customers'));
+        ut.appendChild(el('div', 'an-up-s', 'Featured vendors appear at the top of their category with a Featured badge on every listing.'));
+      } else {
+        ut.appendChild(el('div', 'an-up-t', 'Show customers more of your work'));
+        ut.appendChild(el('div', 'an-up-s', 'Pro adds a photo gallery across the top of your storefront, 3 photos per listing, bookings straight from your page, and the Verified badge.'));
+      }
       up.appendChild(ut);
-      var btn = el('a', 'an-up-btn', 'Upgrade'); btn.href = '/pricing';
+      var btn = el('a', 'an-up-btn', paidHist ? 'Upgrade' : 'See what Pro includes'); btn.href = '/pricing';
       up.appendChild(btn);
       mount.appendChild(up);
     }

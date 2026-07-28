@@ -268,11 +268,37 @@ var LokaliProfilePage = (function () {
     return Promise.all([
       window.LokaliAPI.vendors.me(),
       window.LokaliAPI.data.categories(),
-      window.LokaliAPI.data.locations()
+      window.LokaliAPI.data.locations(),
+      // The portfolio cap is plan-derived, and the card bakes it into its copy
+      // at injection time — so it has to be known before populateUI() runs.
+      // getMyBilling is memoized per page load, so this costs nothing.
+      (window.LokaliAPI.plans && window.LokaliAPI.plans.getMyBilling)
+        ? window.LokaliAPI.plans.getMyBilling()
+        : Promise.resolve(null)
     ]).then(function (results) {
       var vendorRes = results[0];
       var categoriesRes = results[1];
       var locationsRes = results[2];
+      var billingRes = results[3];
+
+      // Only trust billing when the call actually succeeded, then cache it for
+      // the session: on a transient failure we reuse the last-known-good cap so
+      // a hiccup can't lock a paying vendor's gallery mid-session. With no good
+      // response at all we fall through to locked, which is correct for free
+      // vendors and self-heals for paid ones on the next load. (Same reasoning
+      // as the services/products PLAN_CACHE_KEY guard.)
+      if (billingRes && !billingRes.error && billingRes.data && billingRes.data.features) {
+        var pfCap = billingRes.data.features.max_vendor_photos;
+        if (typeof pfCap === 'number' && pfCap >= 0) {
+          _PF_MAX = pfCap;
+          try { sessionStorage.setItem(_PF_CACHE_KEY, String(pfCap)); } catch (e) {}
+        }
+      }
+      if (_PF_MAX == null) {
+        var pfCached = null;
+        try { pfCached = sessionStorage.getItem(_PF_CACHE_KEY); } catch (e) {}
+        _PF_MAX = pfCached != null ? Number(pfCached) : 0;
+      }
 
       if (vendorRes.error) {
         var errMsg = String(vendorRes.error || '');
@@ -776,14 +802,34 @@ var LokaliProfilePage = (function () {
   }
 
   // ---- #76d portfolio manager ---------------------------------------------
-  var _PF_MAX = 5;
+  // The cap is a plan entitlement: plan.max_vendor_photos, Free 0 / Pro 5 /
+  // Featured 15 (enforced by the trigger at fn_limits.sql:159). null = not yet
+  // resolved; loadData() fills it from billing.
+  var _PF_MAX = null;
+  var _PF_CACHE_KEY = 'lok_plan_portfolio_v1';
   var _pfPhotos = [];
   function _injectPortfolioCard() {
     if (document.getElementById('lok-portfolio-card')) return;
     var anchorSection = document.getElementById('lok-about-you') || document.getElementById('lok-pay-card');
     if (!anchorSection || !anchorSection.parentNode) return;
+
+    // Free has no gallery at all, so show a locked upsell rather than an upload
+    // UI whose every insert the SQL trigger would reject. Same shape as the
+    // services/products gallery lockout.
+    if (!(_PF_MAX > 0)) {
+      var locked = _mkCard('lok-portfolio-card', _PF_ICON, 'Portfolio Photos',
+        '🔒 The photo gallery at the top of your public page is a Pro & Featured feature — 5 photos on Pro, 15 on Featured. It is the first thing a customer sees.');
+      var seePlans = document.createElement('a');
+      seePlans.href = '/pricing';
+      seePlans.textContent = 'See plans →';
+      seePlans.style.cssText = 'display:inline-block;font:600 13px/1 "Plus Jakarta Sans",sans-serif;color:#6002EE;text-decoration:none;margin-top:2px;';
+      locked.col.appendChild(seePlans);
+      anchorSection.parentNode.insertBefore(locked.section, anchorSection.nextSibling);
+      return;
+    }
+
     var card = _mkCard('lok-portfolio-card', _PF_ICON, 'Portfolio Photos',
-      'Up to 5 photos — they become the big photo gallery at the top of your public page (shown on Pro & Featured plans). First photo = the lead image.');
+      'Up to ' + _PF_MAX + ' photos — they become the big photo gallery at the top of your public page. First photo = the lead image.');
     var strip = document.createElement('div');
     strip.id = 'lok-pf-strip';
     strip.style.cssText = 'display:flex;flex-wrap:wrap;gap:10px;margin:10px 0;';
