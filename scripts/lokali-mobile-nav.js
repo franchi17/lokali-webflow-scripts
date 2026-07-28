@@ -154,6 +154,10 @@
       '.search-bar .form-block-7{flex:1 1 100%;margin-bottom:0;}',
       '.search-bar #location-select{width:100%;}',
       '}',
+      // #105(b) — the footer's recast "Resources" group label (see fixFooterResources).
+      // Styled as a quiet sub-heading over the guide links, matching the footer's
+      // muted label tone; explicit font per the Plus Jakarta Sans rule.
+      '.lok-ft-grouplabel{display:inline-block;font-family:"Plus Jakarta Sans",sans-serif;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#8E8BA6;cursor:default;padding:10px 0 2px;}',
       // Desktop ≥1150px — align the header content edges (logo left; Login + storefront right)
       // with the footer's fixed 64px side margins (Francesca 2026-07-21: header buttons looked
       // indented vs the footer on wide screens — the header container capped at 1268px centered
@@ -308,8 +312,27 @@
     });
   }
 
+  // #105(b): the footer "For Vendors" column ships a dead `<a href="#">Resources</a>`
+  // directly above the five guide links — unwired in Webflow (the header's
+  // Resources dropdown is a separate, working control). A link that goes nowhere
+  // reads as broken, so recast it as a non-interactive group label introducing
+  // the guides. Scoped to .lok-ft + exact text match so no other anchor —
+  // e.g. the homepage waitlist trigger, also href="#" by design — can be hit.
+  // Fixed here (site-wide @v1.4 script) rather than in Webflow so the change
+  // ships without a site publish.
+  function fixFooterResources() {
+    document.querySelectorAll('.lok-ft a.lok-ft-link[href="#"]').forEach(function (a) {
+      if ((a.textContent || '').trim().toLowerCase() !== 'resources') return;
+      var s = document.createElement('span');
+      s.className = 'lok-ft-grouplabel';
+      s.textContent = (a.textContent || '').trim();
+      a.parentNode.replaceChild(s, a);
+    });
+  }
+
   function init() {
     injectPolishCss();
+    fixFooterResources();
     patchCodeIslands();
     var nav = document.querySelector('.w-nav') || document.querySelector('.header-wrapper');
     if (!nav) return;
