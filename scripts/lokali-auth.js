@@ -1066,6 +1066,14 @@
       }).then(function (res) {
         setBusy(submit, false);
         if (res && res.error) { captcha.reset(); showMsg(err, friendlyAuthError(res.error)); return; }
+        // #110 GA4: account created (covers both confirm-pending and auto-confirm).
+        // Google-OAuth signups navigate away pre-event — not captured here.
+        try {
+          if (typeof window.gtag === 'function') {
+            var _gaIntent = ''; try { _gaIntent = String(sessionStorage.getItem('lokali_signup_intent') || '').split(':')[0]; } catch (e2) {}
+            window.gtag('event', 'sign_up', { method: 'email', intent: _gaIntent || 'unknown' });
+          }
+        } catch (e3) {}
         var d = (res && res.data) || {};
         if (d.session) {
           // Auto-confirm path (confirmations off) — proceed like a sign-in.

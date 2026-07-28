@@ -221,6 +221,8 @@
         showError(res.error === 'Request failed' ? 'Something went wrong — please try again.' : res.error);
         return;
       }
+      // #110 GA4: the highest-intent lead event (no form contents sent, id only).
+      try { if (typeof window.gtag === 'function') window.gtag('event', 'inquiry_submit', { vendor_id: vendor && vendor.id != null ? String(vendor.id) : '' }); } catch (e) {}
       modal.querySelector('#lok-inq-form').style.display = 'none';
       modal.querySelector('#lok-inq-done-sub').textContent =
         (vendor.name || 'The vendor') + ' will get back to you at ' + email + '.';

@@ -39,6 +39,8 @@
         if (role === 'vendor') {
           if (plan === 'free') { window.location.href = '/vendor-dashboard/dashboard'; return; }
           if (window.LokaliBilling && typeof window.LokaliBilling.checkout === 'function') {
+            // #110 GA4: funnel event — fires only when checkout actually starts.
+            try { if (typeof window.gtag === 'function') window.gtag('event', 'begin_checkout', { plan: plan, interval: interval, source: 'pricing' }); } catch (e) {}
             btn.style.opacity = '0.6';
             btn.style.pointerEvents = 'none';
             window.LokaliBilling.checkout(plan, interval).catch(function (err) {

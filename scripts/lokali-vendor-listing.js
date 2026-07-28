@@ -1360,6 +1360,9 @@
       if (window.LokaliAPI && window.LokaliAPI.leads && currentVendorId != null) {
         window.LokaliAPI.leads.trackEvent(currentVendorId, type, 'listing');
       }
+      // #110 GA4: mirror of the first-party lead event (channel = email/sms/
+      // whatsapp/call/website/instagram). No contact values, ids only.
+      try { if (typeof window.gtag === 'function') window.gtag('event', 'lead_click', { channel: type, vendor_id: currentVendorId != null ? String(currentVendorId) : '' }); } catch (e) {}
     });
   }
 

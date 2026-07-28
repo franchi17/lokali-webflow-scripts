@@ -1269,6 +1269,8 @@
     applyFilters(); // client-side neighborhood filter (no re-fetch)
   }
   function setCategory(slug) {
+    // #110 GA4: category engagement ('all' reset not tracked).
+    try { if (slug && slug !== 'all' && typeof window.gtag === 'function') window.gtag('event', 'market_filter', { category: slug }); } catch (e) {}
     if (slug !== activeCategory) { activeSubcats = []; _rawRestoredSubcats = null; } // #96 — picks belong to one category
     activeCategory = slug;
     var items = document.querySelectorAll('#browse-filter-panel .filter-item[data-category-slug]');
@@ -1311,11 +1313,21 @@
     // but composed input events cross open shadow boundaries — composedPath
     // resolves the real target. Same island pattern as the CTA handler up top.
     var applySearch = debounce(applyFilters, 200);
+    // #110 GA4: search terms, settle-debounced (800ms) + deduped + capped at 50
+    // chars — one event per settled term, not one per keystroke.
+    var _gaLastTerm = '';
+    var gaSearch = debounce(function () {
+      var term = String(searchTerm || '').trim().slice(0, 50);
+      if (term.length < 2 || term === _gaLastTerm) return;
+      _gaLastTerm = term;
+      try { if (typeof window.gtag === 'function') window.gtag('event', 'market_search', { term: term }); } catch (e) {}
+    }, 800);
     document.addEventListener('input', function (e) {
       var t = (e.composedPath && e.composedPath()[0]) || e.target;
       if (!t || t.id !== 'browse-search') return;
       searchTerm = t.value || '';
       applySearch();
+      gaSearch();
     }, true);
     var loc = locSelectEl();
     if (loc) loc.addEventListener('change', function () { setLocation(loc.value); });

@@ -109,6 +109,8 @@
     var id = Number(vendorId);
     var currentlySaved = _savedSet ? _savedSet.has(id) : btn.classList.contains('is-saved');
     var next = !currentlySaved;
+    // #110 GA4: save intent (fired optimistically; unsaves not tracked).
+    try { if (next && typeof window.gtag === 'function') window.gtag('event', 'save_vendor', { vendor_id: String(id) }); } catch (e) {}
     // optimistic
     if (_savedSet) { if (next) _savedSet.add(id); else _savedSet.delete(id); }
     syncAllHeartsFor(id, next);
