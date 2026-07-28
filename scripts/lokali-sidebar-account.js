@@ -22,8 +22,6 @@
 (function () {
   'use strict';
 
-  var XANO_ORIGIN = 'https://x8ki-letl-twmt.n7.xano.io';
-
   // #36 + polish: open the menu ABOVE the chip, and lay the native
   // .dashboard-btn rows out horizontally (icon beside label, not stacked).
   // #67 — one type ramp for EVERY row. Natively the menu mixes two row kinds:
@@ -162,7 +160,9 @@
     if (!s || typeof s !== 'string') return '';
     s = s.trim();
     if (/[\s"'<>`\\]/.test(s) || /^(?:javascript|data|vbscript):/i.test(s)) return '';
-    if (s.charAt(0) === '/') return XANO_ORIGIN + s;
+    // Full URL (Supabase Storage / Webflow CDN) only — a leading-slash relative
+    // path is a legacy Xano-era /vault upload that can no longer resolve
+    // (XANO-DECOMM 2026-07-24), so the chip keeps its initials avatar.
     return /^https?:\/\//i.test(s) ? s : '';
   }
   function initials(name) {

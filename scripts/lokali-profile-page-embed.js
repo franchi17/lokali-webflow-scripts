@@ -181,10 +181,10 @@ var LokaliProfilePage = (function () {
     if (!s || /[\s"'<>`\\]/.test(s) || /^(?:javascript|data|vbscript):/i.test(s)) return '';
     if (s.indexOf('http://') === 0 || s.indexOf('https://') === 0) return s;
     if (s.indexOf('//') === 0) return '';
-    if (s.indexOf('/') === 0) {
-      var origin = typeof window.LOKALI_XANO_ORIGIN === 'string' ? window.LOKALI_XANO_ORIGIN : 'https://x8ki-letl-twmt.n7.xano.io';
-      return origin.replace(/\/$/, '') + s;
-    }
+    // A leading-slash relative path is a legacy Xano-era /vault upload that can
+    // no longer resolve (XANO-DECOMM 2026-07-24) — show no photo rather than a
+    // broken-host URL. Live rows store full Supabase/Webflow-CDN URLs (above).
+    if (s.indexOf('/') === 0) return '';
     return s;
   }
 

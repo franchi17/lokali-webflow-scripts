@@ -118,13 +118,14 @@
 
   // Vendor profile photo, sanitized (same guard as the sidebar chip) — used to
   // upgrade the initials thumbs to the real photo when one exists.
-  var XANO_ORIGIN = 'https://x8ki-letl-twmt.n7.xano.io';
   function vendorPhotoUrl(v) {
     var s = v && (v.profile_photo || v.photo || v.logo);
     if (!s || typeof s !== 'string') return '';
     s = s.trim();
     if (/[\s"'<>`\\]/.test(s) || /^(?:javascript|data|vbscript):/i.test(s)) return '';
-    if (s.charAt(0) === '/') return XANO_ORIGIN + s;
+    // Full URL (Supabase Storage / Webflow CDN) only — a leading-slash relative
+    // path is a legacy Xano-era /vault upload that can no longer resolve
+    // (XANO-DECOMM 2026-07-24), so it renders as the initials thumb instead.
     return /^https?:\/\//i.test(s) ? s : '';
   }
   function thumbPhoto(node, v) {
