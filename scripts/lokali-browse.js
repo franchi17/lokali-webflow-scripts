@@ -342,6 +342,11 @@
     "#browse-filter-panel .toggle-switch.on{background:#1D6A45;}",
     "#browse-filter-panel .toggle-switch::after{content:'';position:absolute;width:14px;height:14px;border-radius:50%;background:#fff;top:2px;left:2px;transition:left .18s;box-shadow:0 1px 3px rgba(0,0,0,.18);}",
     "#browse-filter-panel .toggle-switch.on::after{left:16px;}",
+    // #107(d) recruitment empty-state CTA (injected node — Webflow has no style
+    // for it, so font is set explicitly per the Plus Jakarta Sans rule; brand
+    // primary-700 violet; 44px min-height per the tap-target floor).
+    ".browse-empty-cta{display:inline-flex;align-items:center;justify-content:center;margin-top:16px;padding:12px 22px;min-height:44px;box-sizing:border-box;background:#3d00e0;color:#fff;border-radius:10px;font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:600;text-decoration:none;transition:background .15s;}",
+    ".browse-empty-cta:hover{background:#3100b3;color:#fff;}",
     // Active-filter chips (no Webflow styles exist for them) — pill matching the
     // sidebar's .filter-item.active; the × is a real button with a 32px hit area.
     ".active-filter-chip{display:inline-flex;align-items:center;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:500;background:#F3EBFF;color:#6002EE;border:1px solid #E4D6FF;border-radius:100px;padding:2px 2px 2px 12px;min-height:28px;box-sizing:border-box;margin:2px 6px 2px 0;}",
@@ -689,7 +694,8 @@
         });
       }
       hideEl(loading);
-      if (_emptyState && _renderedCards.length === 0) showEl(_emptyState, 'block');
+      // Fetch FAILED — this is not a recruitment surface; keep the stock copy.
+      if (_renderedCards.length === 0) showEmpty(false);
     }
     return window.LokaliAPI.vendors.list(params).then(function (out) {
       if (out && out.error) return retryOrGiveUp();
@@ -1046,7 +1052,60 @@
       else _grid.appendChild(card);
       _renderedCards.push(card);
     });
-    if (_emptyState) (list.length === 0 ? showEl(_emptyState, 'block') : hideEl(_emptyState));
+    if (list.length === 0) showEmpty(structuralEmpty());
+    else if (_emptyState) hideEl(_emptyState);
+  }
+
+  // #107(d): pre-launch, most categories genuinely have no vendors yet — and the
+  // stock empty state ("No vendors found — try adjusting your filters") reads as
+  // FAILURE copy one click from the homepage CTA. When the emptiness is
+  // STRUCTURAL (plain browsing: no search term, no toggle filters), reframe it
+  // as a founding-vendor recruitment surface instead. A search/toggle miss — and
+  // any fetch failure — keeps the original Webflow copy, where "adjust your
+  // filters" is genuinely the right advice. Deliberately NO launch date in the
+  // copy (Francesca 2026-07-27: seeding may not land by Oct 1).
+  // The newsletter code-island is a SIBLING of #browse-empty-state, never inside
+  // it, so these targeted text swaps can't touch the live Brevo capture.
+  var _emptyOrig = null; // original Webflow title/sub, captured before first rewrite
+  function structuralEmpty() {
+    return !searchTerm && !showNewOnly && !showFoundingOnly && !showVerifiedOnly;
+  }
+  function categoryLabel() {
+    if (activeCategory === 'all') return '';
+    for (var i = 0; i < CATEGORY_LIST.length; i++) {
+      if (CATEGORY_LIST[i].slug === activeCategory) return CATEGORY_LIST[i].label;
+    }
+    return '';
+  }
+  function showEmpty(recruit) {
+    if (!_emptyState) return;
+    var title = _emptyState.querySelector('.browse-empty-title');
+    var sub = _emptyState.querySelector('.browse-empty-sub');
+    var cta = _emptyState.querySelector('.browse-empty-cta');
+    if (title && sub && !_emptyOrig) _emptyOrig = { title: title.textContent, sub: sub.textContent };
+    if (recruit && title && sub) {
+      var cat = categoryLabel();
+      title.textContent = cat
+        ? cat + ' in your neighborhood is still unclaimed'
+        : 'This corner of the market is still unclaimed';
+      sub.textContent = 'Founding vendors are claiming their spots now — be the ' +
+        (cat ? 'first ' + cat + ' vendor' : 'one your neighbors find first') +
+        (cat ? ' your neighbors find here.' : '.');
+      if (!cta) {
+        cta = ce('a', 'browse-empty-cta');
+        cta.href = '/sign-up';
+        cta.textContent = 'Become a founding vendor →';
+        // Same timestamped intent stash as the island CTA above (#101 — expires).
+        cta.addEventListener('click', function () {
+          try { sessionStorage.setItem('lokali_signup_intent', 'vendor:' + Date.now()); } catch (err) {}
+        });
+        _emptyState.appendChild(cta);
+      }
+    } else {
+      if (_emptyOrig && title && sub) { title.textContent = _emptyOrig.title; sub.textContent = _emptyOrig.sub; }
+      if (cta && cta.parentNode) cta.parentNode.removeChild(cta);
+    }
+    showEl(_emptyState, 'block');
   }
 
   // opts: { title, url+color (masked icon) | glyph (text, colored by CSS) }
@@ -1325,7 +1384,7 @@
       })
       .catch(function (err) {
         console.error('[lokali-browse] vendor load failed:', err);
-        if (_emptyState) showEl(_emptyState, 'block');
+        showEmpty(false); // load failure ≠ "unclaimed spot" — stock copy only
       });
   }
 
