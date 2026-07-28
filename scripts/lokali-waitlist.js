@@ -31,7 +31,9 @@
          window.LOKALI_CLERK_SYNC_URL ? String(window.LOKALI_CLERK_SYNC_URL).replace(/\/(auth-sync|clerk-sync)\/?$/, '') : '');
       if (base) return base.replace(/\/$/, '') + '/waitlist';
     }
-    return 'https://x8ki-letl-twmt.n7.xano.io/api:oYK_cDmG/waitlist';
+    // Xano is retired (XANO-DECOMM 2026-07-24) — last-resort fallback is the
+    // production Vercel API itself.
+    return 'https://lokali-api.vercel.app/api/lokali/waitlist';
   })();
   // #46 — the modal opens from many pages now (about/home/market/contact), so
   // attribute each signup to the page it came from instead of a fixed string.

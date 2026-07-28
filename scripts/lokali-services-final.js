@@ -999,7 +999,6 @@ const LokaliServicesPage = (() => {
   // Per-service photo gallery (Pro & Featured). Self-mounting — no Webflow edits.
   // Photos attach to a saved service id, so the gallery only enables in edit mode.
   // ---------------------------------------------------------------------------
-  const XANO_ORIGIN = 'https://x8ki-letl-twmt.n7.xano.io';
   let _galleryBusy = false;
   let _galleryPhotos = [];
   // Add-mode staging: photos uploaded to storage but not yet attached (a brand-new
@@ -1016,7 +1015,10 @@ const LokaliServicesPage = (() => {
     if (!s || /[\s"'<>`\\]/.test(s) || /^(?:javascript|data|vbscript):/i.test(s)) return '';
     if (s.indexOf('http://') === 0 || s.indexOf('https://') === 0) return s;
     if (s.indexOf('//') === 0) return '';
-    if (s.indexOf('/') === 0) return XANO_ORIGIN + s;
+    // A leading-slash relative path is a legacy Xano-era upload that can no
+    // longer resolve (XANO-DECOMM 2026-07-24) — show nothing rather than a
+    // broken-host URL. Live rows store full Supabase/CDN URLs (handled above).
+    if (s.indexOf('/') === 0) return '';
     return s;
   };
 
@@ -1424,8 +1426,9 @@ const LokaliServicesPage = (() => {
 
         const uploadRes = await window.LokaliAPI.services.uploadServiceImage(imgFile);
         if (uploadRes.error) throw new Error('Image upload failed: ' + uploadRes.error);
-        const p = uploadRes.data?.path || uploadRes.data?.image_path || null;
-        imageUrl = uploadRes.data?.url || uploadRes.data?.image_url || (p ? ('https://x8ki-letl-twmt.n7.xano.io' + p) : null);
+        // Supabase storage returns a full public URL; the old Xano path-concat
+        // fallback is gone (XANO-DECOMM 2026-07-24).
+        imageUrl = uploadRes.data?.url || uploadRes.data?.image_url || null;
       } else if (imageRemoved) {
 
         imageUrl = null;

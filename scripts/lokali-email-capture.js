@@ -36,7 +36,9 @@
          window.LOKALI_CLERK_SYNC_URL ? String(window.LOKALI_CLERK_SYNC_URL).replace(/\/(auth-sync|clerk-sync)\/?$/, '') : '');
       if (base) return base.replace(/\/$/, '') + '/interest';
     }
-    return 'https://x8ki-letl-twmt.n7.xano.io/api:oYK_cDmG/email/interest';
+    // Xano is retired (XANO-DECOMM 2026-07-24) — last-resort fallback is the
+    // production Vercel API itself.
+    return 'https://lokali-api.vercel.app/api/lokali/interest';
   })();
   var FORM_ID  = 'wf-form-Newsletter';
   var SOURCE   = 'homepage_capture';

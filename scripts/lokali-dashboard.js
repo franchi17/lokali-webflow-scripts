@@ -80,12 +80,9 @@
       var c = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
       if (c && c.role && c.role !== 'vendor') { window.location.replace('/account'); return; }
     } catch (e) {}
-    var AUTH_BASE = (typeof window !== 'undefined' && window.LOKALI_AUTH_BASE) ||
-                    'https://x8ki-letl-twmt.n7.xano.io/api:mp2-aEJM';
-    fetch(AUTH_BASE + '/account', { headers: { Accept: 'application/json', Authorization: 'Bearer ' + t } })
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (a) { if (a && a.role && a.role !== 'vendor') window.location.replace('/account'); })
-      .catch(function () {});
+    // The Xano /account role lookup is gone (XANO-DECOMM 2026-07-24). The cache
+    // check above still handles the legacy-token case; Supabase-era role
+    // routing lives in lokali-auth.js / the auth-nav cache, not here.
   })();
 
   window.LokaliDashboard = {

@@ -71,8 +71,6 @@
 
   var TOKEN_KEY = 'LOKALI_AUTH_TOKEN';
   var CACHE_KEY = 'LOKALI_ACCT_CACHE';
-  var AUTH_BASE = (typeof window !== 'undefined' && window.LOKALI_AUTH_BASE) ||
-                  'https://x8ki-letl-twmt.n7.xano.io/api:mp2-aEJM';
   var DASH_URL    = '/vendor-dashboard/dashboard';
   var ACCOUNT_URL = '/account';
   var LOGIN_URL   = '/login';
@@ -421,9 +419,9 @@
         })();
       });
     }
-    return fetch(AUTH_BASE + '/account', { headers: { Accept: 'application/json', Authorization: 'Bearer ' + t } })
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .catch(function () { return null; });
+    // Non-Supabase mode with a legacy token: the Xano /account lookup is gone
+    // (XANO-DECOMM 2026-07-24) — treat the stale token as signed-out.
+    return Promise.resolve(null);
   }
 
   // ── boot ────────────────────────────────────────────────────────────────

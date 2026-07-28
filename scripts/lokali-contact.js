@@ -40,9 +40,12 @@
          window.LOKALI_CLERK_SYNC_URL ? String(window.LOKALI_CLERK_SYNC_URL).replace(/\/(auth-sync|clerk-sync)\/?$/, '') : '');
       if (base) return base.replace(/\/$/, '') + '/contact';
     }
-    return 'https://x8ki-letl-twmt.n7.xano.io/api:oYK_cDmG/contact'; // Xano POST /contact (Contact group)
+    // Xano is retired (XANO-DECOMM 2026-07-24) — last-resort fallback is the
+    // production Vercel API itself, so the form still works even if the
+    // base-derivation globals are ever missing.
+    return 'https://lokali-api.vercel.app/api/lokali/contact';
   })();
-  var TRANSPORT = 'json';    // 'json' for Xano/custom · 'form' for Brevo sibforms
+  var TRANSPORT = 'json';    // 'json' for the Vercel API · 'form' for Brevo sibforms
 
   // Only used when TRANSPORT === 'form' (Brevo). Maps our field → Brevo attr.
   var FIELD_MAP = {
