@@ -94,9 +94,16 @@
     // COMMUNITY / resolveLocationId() below are kept: the RPC still accepts a
     // location id (echoed back only, per fn_misc.sql), so this is a display-
     // string-only change with no behavior change to the data call.
+    // 2026-07-28 (Francesca): scarcity framing — "Only N founding spots left"
+    // instead of "N of 50 claimed". At 1 claimed, "1 of 50 claimed" read as an
+    // empty room; remaining-count leads with what a vendor can still get.
+    // (findCountEl matches on the 'founding spot' substring, which both this
+    // and the static Webflow fallback contain — keep that substring if the
+    // wording ever changes again.) `full` keeps the claimed framing: once
+    // there's nothing left to get, "All 50 claimed" is the honest headline.
     countEl.textContent = full
       ? ('All ' + cap + ' founding spots claimed')
-      : (claimed + ' of ' + cap + ' founding spots claimed');
+      : ('Only ' + remaining + ' founding spot' + (remaining === 1 ? '' : 's') + ' left');
 
     // Build (or reuse) the progress bar, inserted directly above the headline.
     var bar = document.getElementById('lok-fb-bar');
