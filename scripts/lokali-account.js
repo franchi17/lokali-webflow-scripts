@@ -21,7 +21,7 @@
   'use strict';
 
   var MOUNT_ID = 'lokali-account';
-  var PANES = ['saved', 'reviews', 'settings'];
+  var PANES = ['saved', 'reviews', 'badges', 'settings'];
 
   function api() { return window.LokaliAPI; }
   function hasToken() { var a = api(); return !!(a && a.getToken && a.getToken()); }
@@ -724,7 +724,7 @@
     // segmented
     var pane = currentPane();
     var seg = el('div', 'lk-seg-wrap');
-    [['saved', 'Saved', state.saved.length], ['reviews', 'Reviews', state.mine.length], ['settings', 'Settings', null]].forEach(function (s) {
+    [['saved', 'Saved', state.saved.length], ['reviews', 'Reviews', state.mine.length], ['badges', 'Badges', earnedBadgeCount()], ['settings', 'Settings', null]].forEach(function (s) {
       var b = el('button', 'lk-seg' + (pane === s[0] ? ' is-active' : ''));
       b.innerHTML = esc(s[1]) + (s[2] != null ? ' <span class="lk-seg-count">' + s[2] + '</span>' : '');
       b.addEventListener('click', function () { location.hash = s[0]; show(s[0]); });
@@ -735,6 +735,7 @@
     // panes
     mount.appendChild(renderSaved());
     mount.appendChild(renderReviews());
+    mount.appendChild(renderBadges());
     mount.appendChild(renderSettings());
 
     show(pane);
@@ -1177,8 +1178,6 @@
     } else {
       state.saved.forEach(function (row) { pane.appendChild(savedRow(row)); });
     }
-    // Neighborhood Explorer lives on the account home, below saved vendors.
-    appendExplorerCard(pane);
     return pane;
   }
 
@@ -1235,7 +1234,6 @@
     if (!state.mine.length) {
       if (!state.awaiting.length) {
         pane.appendChild(emptyState('No reviews yet', "Once you've contacted a vendor through Lokali, you can share how it went here.", 'Browse vendors', '/the-market'));
-        appendBadgeCards(pane);
         return pane;
       }
       mg.appendChild(el('p', 'lk-intro', 'Reviews you write will appear here.'));
@@ -1243,7 +1241,6 @@
       state.mine.forEach(function (row) { mg.appendChild(myReview(row)); });
     }
     pane.appendChild(mg);
-    appendBadgeCards(pane);
     return pane;
   }
 
@@ -1362,13 +1359,36 @@
     pane.appendChild(card);
   }
 
-  // Review milestones + Scout + Connector — profile (Reviews pane).
-  function appendBadgeCards(pane) {
+  // How many of the five badges are earned — the Badges tab count chip.
+  // (Explorer, First Review, Neighborhood Regular, Scout, Connector.)
+  function earnedBadgeCount() {
     var b = state.badges;
-    if (!b) return;
+    if (!b) return null;
+    var n = 0;
+    var cats = (b.explorer && b.explorer.categories) || [];
+    if (cats.length && cats.every(function (c) { return c && c.explored; })) n++;
+    var rc = (b.reviews && b.reviews.count) || 0;
+    if (rc >= 1) n++;
+    if (rc >= 5) n++;
+    if (((b.scout && b.scout.count) || 0) >= 1) n++;
+    if (((b.connector && b.connector.count) || 0) >= 5) n++;
+    return n;
+  }
+
+  // ── pane: Badges — the customer's badge home (all four cards) ──
+  function renderBadges() {
+    var pane = el('div', 'lk-pane'); pane.setAttribute('data-pane', 'badges');
+    pane.appendChild(el('p', 'lk-intro', "Badges you earn by being part of the neighborhood — exploring, reviewing, and spreading the word. Status only: they show on your profile and next to your reviews, nothing more."));
+    var b = state.badges;
+    if (!b) {
+      pane.appendChild(emptyState('Badges couldn’t load', 'Give it a refresh — your progress is safe.', 'Browse vendors', '/the-market'));
+      return pane;
+    }
+    appendExplorerCard(pane);
     pane.appendChild(milestonesCard(b));
     pane.appendChild(scoutCard(b));
     pane.appendChild(connectorCard(b));
+    return pane;
   }
 
   function milestonesCard(b) {
