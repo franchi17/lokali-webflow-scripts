@@ -495,7 +495,79 @@
         '#lokali-account .lk-await{gap:10px;}' +
         '#lokali-account .lk-await-cta{margin-left:52px;}' +
         '#lokali-account .lk-composer-foot{flex-wrap:wrap;}' +
-      '}'
+      '}',
+      // ── gamification badge cards (Explorer / Milestones / Scout / Connector).
+      // Status-only, gold = earned. Palette + shapes from the design reference.
+      R + '.lkg-card{background:#fff;border:.5px solid ' + BORDER + ';border-radius:10px;padding:1.75rem;margin-top:1.75rem;font-family:' + F + ';}',
+      R + '.lkg-eyebrow{font-size:11px;font-weight:700;color:' + V + ';text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;}',
+      R + '.lkg-title{font-size:19px;font-weight:700;letter-spacing:-.3px;color:' + INK + ';}',
+      R + '.lkg-sub{font-size:13px;color:' + DUSK + ';margin-top:4px;line-height:1.5;}',
+      R + '.lkg-bar{display:flex;gap:4px;margin:1.4rem 0 8px;}',
+      R + '.lkg-seg{flex:1;height:10px;border-radius:100px;background:#EEEDF6;}',
+      R + '.lkg-seg.done{background:' + V + ';}',
+      R + '.lkg-seg.next{background:#FFF0E6;box-shadow:inset 0 0 0 1.5px #FF6B00;}',
+      R + '.lkg-count{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:1.4rem;}',
+      R + '.lkg-count-main{font-size:13px;font-weight:600;color:' + INK + ';}',
+      R + '.lkg-count-main span{color:' + SLATE + ';font-weight:500;}',
+      R + '.lkg-hint{font-size:12px;color:' + SLATE + ';}',
+      R + '.lkg-hint.almost{color:#FF6B00;font-weight:600;}',
+      R + '.lkg-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}',
+      R + '.lkg-chip{display:flex;align-items:center;gap:10px;border:.5px solid ' + BORDER + ';border-radius:8px;padding:10px 12px;font-size:13px;text-decoration:none;transition:all .12s;}',
+      R + '.lkg-chip .ico{width:26px;height:26px;border-radius:7px;flex-shrink:0;display:flex;align-items:center;justify-content:center;}',
+      R + '.lkg-chip.done{background:' + SNOW + ';}',
+      R + '.lkg-chip.done .ico{background:' + GREENL + ';color:' + GREEN + ';}',
+      R + '.lkg-chip.done .nm{color:' + DUSK + ';}',
+      R + '.lkg-chip.todo{background:#fff;cursor:pointer;}',
+      R + '.lkg-chip.todo .ico{background:' + VL + ';color:' + V + ';}',
+      R + '.lkg-chip.todo:hover{border-color:' + V + ';}',
+      R + '.lkg-chip.todo:hover .go{opacity:1;transform:translateX(0);}',
+      R + '.lkg-chip.highlight{border-color:#FF6B00;background:#FFF0E6;}',
+      R + '.lkg-chip.highlight .ico{background:#fff;color:#FF6B00;}',
+      R + '.lkg-chip.highlight .go{opacity:1;transform:none;color:#FF6B00;}',
+      R + '.lkg-chip .nm{flex:1;font-weight:500;color:' + INK + ';min-width:0;}',
+      R + '.lkg-chip .go{font-size:11.5px;font-weight:600;color:' + V + ';opacity:0;transform:translateX(-3px);transition:all .15s;flex-shrink:0;}',
+      R + '.lkg-foot{display:flex;align-items:center;gap:12px;margin-top:1.4rem;padding-top:1.25rem;border-top:.5px solid ' + BORDER + ';}',
+      R + '.lkg-dot{width:40px;height:40px;border-radius:50%;flex-shrink:0;background:#FEF3D6;color:#8B5E0A;display:flex;align-items:center;justify-content:center;}',
+      R + '.lkg-dot.earned{background:#8B5E0A;color:#fff;box-shadow:0 3px 10px rgba(139,94,10,.3);}',
+      R + '.lkg-foot-text{font-size:12.5px;color:' + DUSK + ';line-height:1.5;}',
+      R + '.lkg-foot-text strong{font-weight:600;color:' + INK + ';}',
+      R + '.lkg-banner{display:flex;align-items:center;gap:14px;background:linear-gradient(120deg,#FEF3D6 0%,#fff 70%);border:.5px solid #F3E3B4;border-radius:10px;padding:1.25rem 1.5rem;margin-top:1.75rem;font-family:' + F + ';}',
+      R + '.lkg-banner .lkg-dot{width:48px;height:48px;}',
+      R + '.lkg-banner+.lkg-card{margin-top:1rem;}',
+      R + '.lkg-banner-title{font-size:15px;font-weight:700;color:' + INK + ';}',
+      R + '.lkg-banner-sub{font-size:12.5px;color:' + DUSK + ';margin-top:2px;}',
+      // milestones track
+      R + '.lkg-track{position:relative;margin:1.75rem 0 .5rem;}',
+      R + '.lkg-line{position:absolute;top:19px;left:70px;right:70px;height:4px;background:#EEEDF6;border-radius:100px;}',
+      R + '.lkg-fill{height:100%;width:0;background:#8B5E0A;border-radius:100px;transition:width .4s ease;}',
+      R + '.lkg-nodes{position:relative;display:flex;justify-content:space-between;}',
+      R + '.lkg-node{display:flex;flex-direction:column;align-items:center;gap:7px;width:140px;text-align:center;}',
+      R + '.lkg-node-dot{width:42px;height:42px;border-radius:50%;background:#fff;border:1.5px dashed ' + FOG + ';color:' + FOG + ';display:flex;align-items:center;justify-content:center;}',
+      R + '.lkg-node.earned .lkg-node-dot{background:#8B5E0A;border:1.5px solid #8B5E0A;color:#fff;box-shadow:0 3px 10px rgba(139,94,10,.28);}',
+      R + '.lkg-node-name{font-size:12px;font-weight:600;color:' + SLATE + ';}',
+      R + '.lkg-node.earned .lkg-node-name{color:' + INK + ';}',
+      R + '.lkg-node-req{font-size:11px;color:' + SLATE + ';}',
+      // badge preview + scout list
+      R + '.lkg-preview{margin-top:1.5rem;padding-top:1.25rem;border-top:.5px solid ' + BORDER + ';}',
+      R + '.lkg-preview-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:' + SLATE + ';margin-bottom:10px;}',
+      R + '.lkg-mini{background:' + SNOW + ';border:.5px solid ' + BORDER + ';border-radius:8px;padding:12px 14px;}',
+      R + '.lkg-mini-top{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;}',
+      R + '.lkg-mini-ava{width:28px;height:28px;border-radius:50%;flex-shrink:0;background:#EEEDF6;font-size:11px;font-weight:500;color:' + DUSK + ';display:flex;align-items:center;justify-content:center;text-transform:uppercase;}',
+      R + '.lkg-mini-name{font-size:12.5px;font-weight:600;color:' + INK + ';}',
+      R + '.lkg-badge-pill{font-size:9.5px;font-weight:700;padding:2px 8px;border-radius:100px;background:#FEF3D6;color:#8B5E0A;}',
+      R + '.lkg-mini-rec{display:inline-flex;align-items:center;font-size:11px;font-weight:600;color:' + GREEN + ';margin-bottom:4px;}',
+      R + '.lkg-mini-body{font-size:12px;color:' + DUSK + ';line-height:1.5;}',
+      R + '.lkg-hero{display:flex;align-items:center;gap:14px;margin-top:1.5rem;}',
+      R + '.lkg-hero .lkg-node-dot,' + R + '.lkg-hero .lkg-dot{width:48px;height:48px;}',
+      R + '.lkg-hero-count{font-size:15px;font-weight:700;color:' + INK + ';}',
+      R + '.lkg-hero-sub{font-size:12px;color:' + SLATE + ';margin-top:2px;}',
+      R + '.lkg-list{margin-top:1.25rem;padding-top:.25rem;border-top:.5px solid ' + BORDER + ';}',
+      R + '.lkg-lrow{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:.5px solid ' + BORDER + ';font-size:13px;}',
+      R + '.lkg-lrow:last-child{border-bottom:none;padding-bottom:2px;}',
+      R + '.lkg-lrow .vn{flex:1;font-weight:500;color:' + INK + ';min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
+      R + '.lkg-lrow .ord{font-size:10.5px;font-weight:700;color:#8B5E0A;background:#FEF3D6;border-radius:100px;padding:2px 8px;flex-shrink:0;}',
+      R + '.lkg-lrow .dt{font-size:11.5px;color:' + SLATE + ';width:60px;text-align:right;flex-shrink:0;}',
+      '@media (max-width:560px){#lokali-account .lkg-grid{grid-template-columns:1fr;}#lokali-account .lkg-line{left:50px;right:50px;}}'
     ].join('');
     document.head.appendChild(s);
   }
@@ -508,7 +580,7 @@
   }
 
   // ── state ──────────────────────────────────────────────────
-  var state = { account: null, saved: [], mine: [], awaiting: [], hasStorefront: false, storefrontName: '', admin: null };
+  var state = { account: null, saved: [], mine: [], awaiting: [], hasStorefront: false, storefrontName: '', admin: null, badges: null };
 
   // ── #96-SUGGEST: admin data (Francesca's admin home lives on /account — no
   // vendor account needed). Server-enforced: admin_overview() and
@@ -543,8 +615,14 @@
       A.reviews.mine().catch(function () { return { data: [] }; }),
       A.reviews.awaiting().catch(function () { return { data: [] }; }),
       meP,
-      fetchAdminData() // #96-SUGGEST — null for everyone but the admin
+      fetchAdminData(), // #96-SUGGEST — null for everyone but the admin
+      // Gamification badge state (guarded: stale adapter caches lack the group)
+      (A.gamification && typeof A.gamification.badges === 'function')
+        ? A.gamification.badges().catch(function () { return { data: null }; })
+        : Promise.resolve({ data: null })
     ]).then(function (r) {
+      var bd = r[6] && r[6].data;
+      state.badges = (bd && bd.ok === true) ? bd : null;
       state.admin = r[5] || null;
       state.account = (r[0] && r[0].data) || {};
       syncAcctCacheAvatar(state.account.avatar); // #79 — header chip stays in step
@@ -1096,9 +1174,11 @@
     pane.appendChild(el('p', 'lk-intro', "Vendors you've saved to come back to. Tap the heart on any listing to add it here."));
     if (!state.saved.length) {
       pane.appendChild(emptyState('Nothing saved yet', 'When you find a vendor you like, tap the heart to keep them here for later.', 'Browse vendors', '/the-market'));
-      return pane;
+    } else {
+      state.saved.forEach(function (row) { pane.appendChild(savedRow(row)); });
     }
-    state.saved.forEach(function (row) { pane.appendChild(savedRow(row)); });
+    // Neighborhood Explorer lives on the account home, below saved vendors.
+    appendExplorerCard(pane);
     return pane;
   }
 
@@ -1155,6 +1235,7 @@
     if (!state.mine.length) {
       if (!state.awaiting.length) {
         pane.appendChild(emptyState('No reviews yet', "Once you've contacted a vendor through Lokali, you can share how it went here.", 'Browse vendors', '/the-market'));
+        appendBadgeCards(pane);
         return pane;
       }
       mg.appendChild(el('p', 'lk-intro', 'Reviews you write will appear here.'));
@@ -1162,7 +1243,241 @@
       state.mine.forEach(function (row) { mg.appendChild(myReview(row)); });
     }
     pane.appendChild(mg);
+    appendBadgeCards(pane);
     return pane;
+  }
+
+  // ── gamification badge cards ───────────────────────────────
+  // Four customer badges, all STATUS-ONLY (no perks — perks on review badges
+  // would taint review authenticity; none of this feeds ranking). Data = one
+  // get_customer_badges() call via the adapter; if it didn't load (signed-out
+  // race, stale cached adapter), the cards simply don't render.
+  var GOLD_STAR_ICO = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>';
+  var COMPASS_ICO = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>';
+  var SHARE_NODES_ICO = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>';
+  var CHECK_ICO = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+  var PEN_ICO = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>';
+  var STAR_POLY_ICO = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
+  // Category icons by seeded id (1 handcrafted … 8 home); unknown → tag.
+  var CAT_ICOS = {
+    1: 'M12 19l7-7 3 3-7 7-3-3zM18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5zM2 2l7.586 7.586M11 11a2 2 0 1 0 4 0 2 2 0 0 0-4 0z',
+    2: 'M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2zM16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2',
+    3: 'M6 3v18M6 8c4 0 4 3 8 3s4-3 4-3M6 16c4 0 4-3 8-3s4 3 4 3',
+    4: 'M22 10L12 5 2 10l10 5 10-5zM6 12v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5',
+    5: 'M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2zM12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z',
+    6: 'M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2M7 2v20M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7',
+    7: 'M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z',
+    8: 'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM9 22V12h6v10'
+  };
+  var CAT_ICO_FALLBACK = 'M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.83zM7 7h.01';
+  function catIco(id) {
+    return '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="' + (CAT_ICOS[id] || CAT_ICO_FALLBACK) + '"/></svg>';
+  }
+  function marketName() {
+    var b = state.badges || {};
+    var acc = state.account || {};
+    return b.region || acc.region || 'your neighborhood';
+  }
+  function gCard(eyebrow, title, subText) {
+    var card = el('div', 'lkg-card');
+    card.appendChild(el('div', 'lkg-eyebrow', esc(eyebrow)));
+    card.appendChild(el('div', 'lkg-title', esc(title)));
+    card.appendChild(el('div', 'lkg-sub', esc(subText)));
+    return card;
+  }
+  function gBar(total, done, highlightNext) {
+    var bar = el('div', 'lkg-bar');
+    for (var i = 0; i < total; i++) {
+      bar.appendChild(el('div', 'lkg-seg' + (i < done ? ' done' : (highlightNext && i === done ? ' next' : ''))));
+    }
+    return bar;
+  }
+  function gListRow(name, pill, dateText) {
+    var row = el('div', 'lkg-lrow');
+    var vn = el('div', 'vn'); vn.textContent = name;
+    row.appendChild(vn);
+    row.appendChild(el('div', 'ord', esc(pill)));
+    row.appendChild(el('div', 'dt', esc(dateText)));
+    return row;
+  }
+
+  // Neighborhood Explorer — account home, below saved vendors.
+  function appendExplorerCard(pane) {
+    var b = state.badges;
+    if (!b || !b.explorer || !Array.isArray(b.explorer.categories) || !b.explorer.categories.length) return;
+    var cats = b.explorer.categories;
+    var total = cats.length;
+    var n = cats.filter(function (c) { return c && c.explored; }).length;
+    var earned = n >= total;
+    var almost = n === total - 1;
+    var market = marketName();
+
+    if (earned) {
+      var banner = el('div', 'lkg-banner');
+      banner.appendChild(el('div', 'lkg-dot earned', GOLD_STAR_ICO));
+      var bt = el('div');
+      bt.appendChild(el('div', 'lkg-banner-title', "You're a Neighborhood Explorer"));
+      bt.appendChild(el('div', 'lkg-banner-sub', "You've browsed every corner of " + esc(market) + '. The badge now shows on your profile and next to your reviews.'));
+      banner.appendChild(bt);
+      pane.appendChild(banner);
+    }
+
+    var card = gCard('Your neighborhood', 'Explore ' + market, earned
+      ? 'Every category explored. New vendors join weekly — there’s always something new on the block.'
+      : 'You’ve discovered ' + n + ' of ' + total + ' corners of your local marketplace.');
+
+    card.appendChild(gBar(total, n, almost));
+    var count = el('div', 'lkg-count');
+    count.appendChild(el('div', 'lkg-count-main', n + ' <span>of ' + total + ' explored</span>'));
+    count.appendChild(el('div', 'lkg-hint' + (almost ? ' almost' : ''),
+      earned ? 'Complete' : (almost ? 'Just 1 to go' : (total - n) + ' to go')));
+    card.appendChild(count);
+
+    var grid = el('div', 'lkg-grid');
+    cats.forEach(function (c) {
+      if (!c) return;
+      var done = !!c.explored;
+      var chip;
+      if (done) {
+        chip = el('div', 'lkg-chip done');
+        chip.appendChild(el('div', 'ico', CHECK_ICO));
+      } else {
+        chip = el('a', 'lkg-chip todo' + (almost ? ' highlight' : ''));
+        chip.href = '/the-market?category=' + encodeURIComponent(c.slug || '');
+        chip.appendChild(el('div', 'ico', catIco(c.id)));
+      }
+      var nm = el('div', 'nm'); nm.textContent = c.name || '';
+      chip.appendChild(nm);
+      if (!done) chip.appendChild(el('div', 'go', 'Browse →'));
+      grid.appendChild(chip);
+    });
+    card.appendChild(grid);
+
+    if (!earned) {
+      var foot = el('div', 'lkg-foot');
+      foot.appendChild(el('div', 'lkg-dot', GOLD_STAR_ICO));
+      foot.appendChild(el('div', 'lkg-foot-text', 'Explore all ' + total + ' categories to earn the <strong>Neighborhood Explorer</strong> badge on your profile.'));
+      card.appendChild(foot);
+    }
+    pane.appendChild(card);
+  }
+
+  // Review milestones + Scout + Connector — profile (Reviews pane).
+  function appendBadgeCards(pane) {
+    var b = state.badges;
+    if (!b) return;
+    pane.appendChild(milestonesCard(b));
+    pane.appendChild(scoutCard(b));
+    pane.appendChild(connectorCard(b));
+  }
+
+  function milestonesCard(b) {
+    var n = (b.reviews && b.reviews.count) || 0;
+    var sub;
+    if (n === 0) sub = 'Reviews come from vendors you’ve contacted through Lokali. After your next inquiry, share how it went.';
+    else if (n < 5) sub = n + ' review' + (n === 1 ? '' : 's') + ' shared. ' + (5 - n) + ' more and you’re a Neighborhood Regular.';
+    else sub = '5 reviews shared — you’re a Neighborhood Regular. Your badge now shows on every review you write.';
+    var card = gCard('Your voice', 'Review milestones', sub);
+
+    var track = el('div', 'lkg-track');
+    var line = el('div', 'lkg-line');
+    var fill = el('div', 'lkg-fill');
+    fill.style.width = (n <= 1 ? 0 : Math.min((n - 1) / 4 * 100, 100)) + '%';
+    line.appendChild(fill); track.appendChild(line);
+    var nodes = el('div', 'lkg-nodes');
+    [['First Review', '1 review', PEN_ICO, n >= 1], ['Neighborhood Regular', '5 reviews', STAR_POLY_ICO, n >= 5]].forEach(function (spec) {
+      var node = el('div', 'lkg-node' + (spec[3] ? ' earned' : ''));
+      node.appendChild(el('div', 'lkg-node-dot', spec[2]));
+      node.appendChild(el('div', 'lkg-node-name', esc(spec[0])));
+      node.appendChild(el('div', 'lkg-node-req', esc(spec[1])));
+      nodes.appendChild(node);
+    });
+    track.appendChild(nodes);
+    card.appendChild(track);
+
+    if (n >= 1) {
+      var acc = state.account || {};
+      var dispName = (acc.first_name || 'You') + (acc.last_name ? ' ' + acc.last_name.charAt(0).toUpperCase() + '.' : '');
+      var prev = el('div', 'lkg-preview');
+      prev.appendChild(el('div', 'lkg-preview-label', 'How your badge appears'));
+      var mini = el('div', 'lkg-mini');
+      var top = el('div', 'lkg-mini-top');
+      top.appendChild(el('div', 'lkg-mini-ava', esc(initials(dispName) || 'Y')));
+      var mn = el('div', 'lkg-mini-name'); mn.textContent = dispName;
+      top.appendChild(mn);
+      top.appendChild(el('div', 'lkg-badge-pill', n >= 5 ? 'Neighborhood Regular' : 'First Review'));
+      mini.appendChild(top);
+      mini.appendChild(el('div', 'lkg-mini-rec', '👍 Recommends'));
+      mini.appendChild(el('div', 'lkg-mini-body', 'The custom cookie set was even better than the photos. Ordering was easy and pickup was right in my neighborhood.'));
+      prev.appendChild(mini);
+      card.appendChild(prev);
+    }
+    return card;
+  }
+
+  function scoutCard(b) {
+    var rows = (b.scout && b.scout.rows) || [];
+    var n = (b.scout && b.scout.count) || 0;
+    var sub;
+    if (n === 0) sub = 'Be among the first 3 reviews on any vendor and you’re a Scout. New businesses join every week — someone has to go first.';
+    else if (n === 1) sub = 'You’re officially a Neighborhood Scout. Your early review helps a brand-new business get its footing.';
+    else sub = n + ' businesses got their start with your help. Your Scout badge shows on your profile and every review.';
+    var card = gCard('Your discoveries', 'Neighborhood Scout', sub);
+
+    var hero = el('div', 'lkg-hero');
+    // Unearned = dashed pending circle; earned = solid gold badge dot.
+    hero.appendChild(el('div', n >= 1 ? 'lkg-dot earned' : 'lkg-node-dot', COMPASS_ICO));
+    var ht = el('div');
+    ht.appendChild(el('div', 'lkg-hero-count', n === 0 ? 'No scouts yet' : 'Scouted ' + n + ' vendor' + (n > 1 ? 's' : '')));
+    ht.appendChild(el('div', 'lkg-hero-sub', n === 0 ? 'Your first one earns the badge' : 'Among the first 3 reviews each time'));
+    hero.appendChild(ht);
+    card.appendChild(hero);
+
+    if (rows.length) {
+      var list = el('div', 'lkg-list');
+      rows.forEach(function (r) {
+        if (!r) return;
+        var pill = (Number(r.ord) === 1) ? '#1 review' : '#' + r.ord + ' of first 3';
+        list.appendChild(gListRow(r.vendor || 'Vendor', pill, monthDay(r.created_at)));
+      });
+      card.appendChild(list);
+    }
+    return card;
+  }
+
+  function connectorCard(b) {
+    var n = (b.connector && b.connector.count) || 0;
+    var shares = (b.connector && b.connector.shares) || [];
+    var earned = n >= 5;
+    var sub;
+    if (n === 0) sub = 'Share a vendor you love. When 5 people visit through your links, you’re a Connector.';
+    else if (!earned) sub = 'Your shares have brought ' + n + ' visitor' + (n === 1 ? '' : 's') + ' to local businesses. ' + (5 - n) + ' more and you’re a Neighborhood Connector.';
+    else sub = n + ' visitors and counting — you’re a Neighborhood Connector. Word of mouth is how neighborhoods grow.';
+    var card = gCard('Your reach', 'Neighborhood Connector', sub);
+
+    card.appendChild(gBar(5, Math.min(n, 5), false));
+    var count = el('div', 'lkg-count');
+    count.appendChild(el('div', 'lkg-count-main', n + ' <span>of 5 visitors brought</span>'));
+    count.appendChild(el('div', 'lkg-hint', n === 0 ? 'Share to get started' : (earned ? 'Earned' : (5 - n) + ' to go')));
+    card.appendChild(count);
+
+    if (shares.length) {
+      var list = el('div', 'lkg-list');
+      shares.forEach(function (s) {
+        if (!s) return;
+        var v = Number(s.visitors) || 0;
+        list.appendChild(gListRow(s.vendor || 'Vendor', v + ' visitor' + (v === 1 ? '' : 's'), monthDay(s.last_at)));
+      });
+      card.appendChild(list);
+    }
+
+    var foot = el('div', 'lkg-foot');
+    foot.appendChild(el('div', 'lkg-dot' + (earned ? ' earned' : ''), SHARE_NODES_ICO));
+    foot.appendChild(el('div', 'lkg-foot-text', earned
+      ? 'Earned — the <strong>Neighborhood Connector</strong> badge now shows on your profile.'
+      : 'Bring 5 visitors to local businesses through your shared links to earn the <strong>Neighborhood Connector</strong> badge.'));
+    card.appendChild(foot);
+    return card;
   }
 
   function awaitRow(row) {

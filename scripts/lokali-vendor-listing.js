@@ -2141,6 +2141,19 @@
           }
         }
       } catch (e) {}
+      // Gamification: Neighborhood Explorer accrual — a signed-in view of this
+      // listing marks its categories "explored" (record_category_engagement
+      // no-ops server-side for anonymous callers and the owner's own listing).
+      // Status-only; independent of the view-count emit above.
+      try {
+        var gkey = 'lok_gami_' + vid;
+        if (vid != null && !sessionStorage.getItem(gkey) &&
+            window.LokaliAPI.getToken && window.LokaliAPI.getToken() &&
+            window.LokaliAPI.gamification && window.LokaliAPI.gamification.recordEngagement) {
+          sessionStorage.setItem(gkey, '1');
+          window.LokaliAPI.gamification.recordEngagement(vid);
+        }
+      } catch (e) {}
       // #80 — storefront-mode banner. When a vendor lands on their OWN public
       // listing (View-my-storefront / View-my-listing buttons), the header
       // identity switcher shows "shopping", which read as being lost in the
@@ -2212,7 +2225,14 @@
       '.vl-rev-empty{text-align:center;padding:2.5rem 1.5rem;border:.5px dashed #C8C6D8;border-radius:14px;background:#fff;}',
       '.vl-rev-empty-title{font:600 15px/1.3 ' + FONT + ';color:#1A1829;margin-bottom:5px;}',
       '.vl-rev-empty-sub{font:400 13px/1.5 ' + FONT + ';color:#8E8BA6;}',
-      '.vl-rev-cta{display:inline-block;margin-top:14px;font:600 13px/1 ' + FONT + ';color:#6002EE;text-decoration:none;}'
+      '.vl-rev-cta{display:inline-block;margin-top:14px;font:600 13px/1 ' + FONT + ';color:#6002EE;text-decoration:none;}',
+      // gamification: reviewer badge pills (status-only credibility signal),
+      // the permanent gold EARLY REVIEW marker, and the NEW TO LOKALI pill
+      // that reframes a sparse review section as an early-days story.
+      '.vl-rev-name-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}',
+      '.vl-rev-badge{font:700 9.5px/1 ' + FONT + ';padding:2px 8px;border-radius:100px;background:#FEF3D6;color:#8B5E0A;white-space:nowrap;}',
+      '.vl-rev-early{display:inline-flex;align-items:center;gap:4px;font:700 9.5px/1 ' + FONT + ';padding:2px 8px;border-radius:100px;background:#FEF3D6;color:#8B5E0A;white-space:nowrap;}',
+      '.vl-new-pill{display:inline-block;font:700 9.5px/1 ' + FONT + ';padding:3px 8px;border-radius:100px;background:#FFF0E6;color:#FF6B00;margin-left:8px;vertical-align:2px;white-space:nowrap;}'
     ].join('');
     document.head.appendChild(s);
   }
@@ -2223,6 +2243,11 @@
     var d = new Date(t); return M[d.getMonth()] + ' ' + d.getFullYear();
   }
 
+  // review_author_badges rows keyed by review id — filled by renderReviews
+  // before the cards render; empty when the RPC is unavailable (stale cache).
+  var REV_BADGES = {};
+  var EARLY_ICO = '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>';
+
   function reviewCard(r) {
     var card = ce('div', 'vl-rev');
     if (r.id != null) card.setAttribute('data-rev-id', String(r.id));
@@ -2230,8 +2255,29 @@
     var av = ce('div', 'vl-rev-av'); av.textContent = initials(r.author_name || 'A neighbor');
     head.appendChild(av);
     var who = ce('div', 'vl-rev-who');
+    var nameRow = ce('div', 'vl-rev-name-row');
     var nm = ce('div', 'vl-rev-name'); nm.textContent = r.author_name || 'A neighbor';
-    who.appendChild(nm);
+    nameRow.appendChild(nm);
+    // Reviewer badge pill (status-only, from review_author_badges): a Scout's
+    // early review says Scout; otherwise review-volume tier. Explorer rides
+    // along as a second pill. The gold EARLY REVIEW marker is permanent —
+    // it pairs with the NEW TO LOKALI pill to make sparse reviews a story.
+    var gb = (r.id != null && REV_BADGES[r.id]) || { badges: [], early: false };
+    var bl = gb.badges || [];
+    var tier = (gb.early && bl.indexOf('scout') >= 0) ? 'Neighborhood Scout'
+             : (bl.indexOf('regular') >= 0) ? 'Neighborhood Regular'
+             : (bl.indexOf('first') >= 0) ? 'First Review' : null;
+    if (tier) { var tp = ce('div', 'vl-rev-badge'); tp.textContent = tier; nameRow.appendChild(tp); }
+    if (bl.indexOf('explorer') >= 0) {
+      var xp = ce('div', 'vl-rev-badge'); xp.textContent = 'Neighborhood Explorer'; nameRow.appendChild(xp);
+    }
+    if (gb.early === true) {
+      var ep = ce('div', 'vl-rev-early');
+      ep.innerHTML = EARLY_ICO;
+      ep.appendChild(document.createTextNode(' EARLY REVIEW'));
+      nameRow.appendChild(ep);
+    }
+    who.appendChild(nameRow);
     // Two trust tiers: inquiry-sourced reviews (Lokali provably delivered the
     // message) get the green "Verified contact" check; click-sourced ones
     // (call/sms/whatsapp/email intent) get a neutral "Contacted through Lokali".
@@ -2448,16 +2494,37 @@
     setTabVisible('reviews', true); // always shown — never-zero "be the first" design
     var API = window.LokaliAPI;
     if (!API || !API.reviews || !API.reviews.forVendor) { ensureActiveTab(); return; }
-    API.reviews.forVendor(vendorId).then(function (res) {
+    // Reviewer badges load alongside the reviews (guarded: stale cached
+    // adapters lack the group; a failed badge call never blocks the reviews).
+    var badgesP = (API.gamification && typeof API.gamification.reviewBadges === 'function')
+      ? API.gamification.reviewBadges(vendorId).catch(function () { return { data: [] }; })
+      : Promise.resolve({ data: [] });
+    Promise.all([API.reviews.forVendor(vendorId), badgesP]).then(function (rs) {
+      var res = rs[0];
+      REV_BADGES = {};
+      ((rs[1] && rs[1].data) || []).forEach(function (row) {
+        if (row && row.review_id != null) {
+          REV_BADGES[row.review_id] = {
+            badges: Array.isArray(row.badges) ? row.badges : [],
+            early: row.is_early === true
+          };
+        }
+      });
       var data = res && res.data; var items = (data && (data.items || data)) || [];
       if (!Array.isArray(items)) items = [];
       panel.innerHTML = '';
+      var newPill;
       if (items.length) {
         var rec = items.filter(function (r) { return r.is_recommended; }).length;
         var sum = ce('div', 'vl-rev-summary');
         var strong = ce('strong'); strong.textContent = String(rec);
         sum.appendChild(strong);
         sum.appendChild(document.createTextNode(' ' + (rec === 1 ? 'neighbor recommends ' : 'neighbors recommend ') + (vendorName || 'this vendor')));
+        if (items.length < 3) {
+          // Fewer than 3 reviews = still in Scout territory — say it proudly.
+          newPill = ce('span', 'vl-new-pill'); newPill.textContent = 'NEW TO LOKALI';
+          sum.appendChild(newPill);
+        }
         panel.appendChild(sum);
         items.forEach(function (r) { panel.appendChild(reviewCard(r)); });
         maybeAddReportButtons(panel, vendorId);

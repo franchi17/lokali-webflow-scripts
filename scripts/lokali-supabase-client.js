@@ -477,7 +477,10 @@
       listByVendor: function (vendorId) {
         return withClient(function (c) {
           return c.from('reviews')
-            .select('id,author_name,is_recommended,is_verified_contact,comment,vendor_reply,vendor_reply_at,services_id,products_id,created_at,is_early')
+            // NOTE: is_early (gamification) is deliberately NOT selected here —
+            // it rides in via the review_author_badges RPC instead, so this
+            // core read keeps working even before/without the gamification SQL.
+            .select('id,author_name,is_recommended,is_verified_contact,comment,vendor_reply,vendor_reply_at,services_id,products_id,created_at')
             .eq('vendors_id', vendorId)
             .order('created_at', { ascending: false });
         });

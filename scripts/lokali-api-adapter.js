@@ -1242,6 +1242,29 @@
     return out;
   }
 
+  // Customer gamification (badges) — thin passthrough to the RPCs in
+  // fn_gamification.sql. Status-only; nothing here affects ranking or billing.
+  var gamification = {
+    recordEngagement: function (vendorId) {
+      // Fire-and-forget accrual — never block or break the listing page.
+      try { SAPI().gamification.recordEngagement(vendorId).then(function () {}, function () {}); } catch (e) {}
+    },
+    badges: function () {
+      return SAPI().gamification.badges().then(function (res) {
+        if (res && res.error) return envelope(res);
+        var d = (res && res.data) || {};
+        if (d.ok === false) return { data: d, error: d.reason || 'badges_failed', status: 401 };
+        return { data: d, error: null, status: 200 };
+      });
+    },
+    reviewBadges: function (vendorId) {
+      return SAPI().gamification.reviewBadges(vendorId).then(function (res) {
+        if (res && res.error) return envelope(res);
+        return { data: (res && res.data) || [], error: null, status: 200 };
+      });
+    }
+  };
+
   var adapter = {
     request: requestShim,
     auth: auth,
@@ -1253,6 +1276,7 @@
     share: share,
     account: account,
     reviews: reviews,
+    gamification: gamification,
     data: data,
     getToken: auth.getToken,
     setToken: auth.setToken,

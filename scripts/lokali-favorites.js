@@ -277,6 +277,40 @@
   function announceSynced() {
     try { window.dispatchEvent(new CustomEvent('lokali:favorites-synced')); } catch (e) {}
   }
+
+  // ── gamification: seeded-start welcome moment ──────────────
+  // The save that just completed was the one that prompted sign-up, and the
+  // favorites trigger (fn_gamification.sql) has already seeded the
+  // Neighborhood Explorer meter at 1/8 — say so. Fires only on this
+  // signup-driven path, only when exactly one category is explored (so the
+  // named category is unambiguous), and never blocks the save flow.
+  function welcomeExplorerToast() {
+    try {
+      var A = api();
+      if (!A || !A.gamification || typeof A.gamification.badges !== 'function') return;
+      A.gamification.badges().then(function (res) {
+        var d = res && res.data;
+        var cats = (d && d.explorer && d.explorer.categories) || [];
+        var done = cats.filter(function (c) { return c && c.explored; });
+        if (done.length !== 1 || cats.length < 2) return;
+        var market = (d && d.region) || 'your neighborhood';
+        var el = document.createElement('div');
+        el.setAttribute('style',
+          'position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(8px);z-index:9999;' +
+          'background:#fff;border:.5px solid #E5D4FD;border-radius:12px;padding:12px 18px;' +
+          'box-shadow:0 8px 28px rgba(26,24,41,.14);font:500 13px/1.5 "Plus Jakarta Sans",-apple-system,sans-serif;' +
+          'color:#1A1829;max-width:min(92vw,420px);opacity:0;transition:all .25s ease;');
+        el.textContent = 'You’ve discovered ' + done[0].name + ' — ' +
+          (cats.length - 1) + ' more corners of ' + market + ' to explore.';
+        document.body.appendChild(el);
+        requestAnimationFrame(function () { el.style.opacity = '1'; el.style.transform = 'translateX(-50%)'; });
+        setTimeout(function () {
+          el.style.opacity = '0';
+          setTimeout(function () { try { el.remove(); } catch (e) {} }, 300);
+        }, 6000);
+      }, function () {});
+    } catch (e) {}
+  }
   function completePendingSave() {
     var pending = getPendingFav();
     if (!pending || !hasToken()) return;
@@ -294,6 +328,7 @@
         if (!(res && res.error)) {
           if (_savedSet) _savedSet.add(Number(pending));
           syncAllHeartsFor(Number(pending), true);
+          welcomeExplorerToast(); // seeded start — the meter just opened at 1/8
         }
         announceSynced();
       }).catch(function () { clearPendingFav(); announceSynced(); });
