@@ -310,6 +310,7 @@
     '.lok-gam-pill{font-size:10.5px;font-weight:700;border-radius:100px;padding:2px 8px;flex-shrink:0;white-space:nowrap;}',
     '.lok-gam-pill.green{background:#EAFAF2;color:#1D6A45;}',
     '.lok-gam-pill.grey{background:#EEEDF6;color:#8E8BA6;}',
+    '.lok-gam-cb{display:inline-flex;align-items:center;gap:6px;margin-top:10px;font-size:11px;font-weight:700;border-radius:100px;padding:4px 12px;background:#FFF0E6;color:#B4530A;}',
     '.lok-gam-moment{font-family:"Plus Jakarta Sans",-apple-system,sans-serif;background:linear-gradient(135deg,#F3EBFF 0%,#fff 65%);border:.5px solid #E5D4FD;border-radius:12px;padding:1.5rem;margin:0 0 16px;display:flex;gap:14px;align-items:flex-start;color:#1A1829;}',
     '.lok-gam-moment-ico{width:44px;height:44px;border-radius:50%;flex-shrink:0;background:#6002EE;color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(96,2,238,.25);}',
     '.lok-gam-moment-title{font-size:16px;font-weight:700;}',
@@ -477,6 +478,11 @@
       '<div class="lok-gam-eyebrow">Grow the neighborhood</div>' +
       '<div class="lok-gam-title">Bring your neighbors</div>' +
       '<div class="lok-gam-sub">' + gamEsc(sub) + '</div>' +
+      // Community Builder recognition at 3+ — peach house, matching the
+      // badges-guide treatment.
+      (n >= 3
+        ? '<div><span class="lok-gam-cb"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Community Builder</span></div>'
+        : '') +
       '<div class="lok-gam-linkbox"><div class="lok-gam-linktext">' + gamEsc(shownUrl) + '</div>' +
         '<button type="button" class="lok-gam-copy" data-gam-copy>Copy link</button></div>' +
       '<div class="lok-gam-incentive">' +

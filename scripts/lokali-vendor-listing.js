@@ -2231,6 +2231,11 @@
       // that reframes a sparse review section as an early-days story.
       '.vl-rev-name-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}',
       '.vl-rev-badge{font:700 9.5px/1 ' + FONT + ';padding:2px 8px;border-radius:100px;background:#F3EBFF;color:#6002EE;white-space:nowrap;}',
+      // Per-badge colors — /vendor-resources/badges-guide is the visual source
+      // of truth: Scout green, Regular rose, First Review peach, Explorer violet.
+      '.vl-rev-badge.vl-b-green{background:#E7F3EC;color:#3E7C5E;}',
+      '.vl-rev-badge.vl-b-rose{background:#FBE9F2;color:#A63D74;}',
+      '.vl-rev-badge.vl-b-peach{background:#FFF0E6;color:#B4530A;}',
       '.vl-rev-early{display:inline-flex;align-items:center;gap:4px;font:700 9.5px/1 ' + FONT + ';padding:2px 8px;border-radius:100px;background:#FFF0E6;color:#FF6B00;white-space:nowrap;}',
       '.vl-new-pill{display:inline-block;font:700 9.5px/1 ' + FONT + ';padding:3px 8px;border-radius:100px;background:#FFF0E6;color:#FF6B00;margin-left:8px;vertical-align:2px;white-space:nowrap;}'
     ].join('');
@@ -2269,7 +2274,11 @@
     var tier = (gb.early && bl.indexOf('scout') >= 0) ? 'Neighborhood Scout'
              : (bl.indexOf('regular') >= 0) ? 'Neighborhood Regular'
              : (bl.indexOf('first') >= 0) ? 'First Review' : null;
-    if (tier) { var tp = ce('div', 'vl-rev-badge'); tp.textContent = tier; nameRow.appendChild(tp); }
+    if (tier) {
+      var tierCls = tier === 'Neighborhood Scout' ? ' vl-b-green'
+                  : tier === 'Neighborhood Regular' ? ' vl-b-rose' : ' vl-b-peach';
+      var tp = ce('div', 'vl-rev-badge' + tierCls); tp.textContent = tier; nameRow.appendChild(tp);
+    }
     if (bl.indexOf('explorer') >= 0) {
       var xp = ce('div', 'vl-rev-badge'); xp.textContent = 'Neighborhood Explorer'; nameRow.appendChild(xp);
     }
