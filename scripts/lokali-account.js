@@ -21,7 +21,7 @@
   'use strict';
 
   var MOUNT_ID = 'lokali-account';
-  var PANES = ['saved', 'reviews', 'badges', 'settings'];
+  var PANES = ['badges', 'saved', 'reviews', 'settings'];
 
   function api() { return window.LokaliAPI; }
   function hasToken() { var a = api(); return !!(a && a.getToken && a.getToken()); }
@@ -499,6 +499,8 @@
       // ── gamification badge cards (Explorer / Milestones / Scout / Connector).
       // Status-only, gold = earned. Palette + shapes from the design reference.
       R + '.lkg-card{background:#fff;border:.5px solid ' + BORDER + ';border-radius:10px;padding:1.75rem;margin-top:1.75rem;font-family:' + F + ';}',
+      R + '.lkg-head{display:flex;align-items:center;gap:14px;margin-bottom:4px;}',
+      R + '.lkg-head-text{flex:1;min-width:0;}',
       R + '.lkg-eyebrow{font-size:11px;font-weight:700;color:' + V + ';text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;}',
       R + '.lkg-title{font-size:19px;font-weight:700;letter-spacing:-.3px;color:' + INK + ';}',
       R + '.lkg-sub{font-size:13px;color:' + DUSK + ';margin-top:4px;line-height:1.5;}',
@@ -646,7 +648,7 @@
   // ── render: shell ──────────────────────────────────────────
   function currentPane() {
     var h = (location.hash || '').replace('#', '').toLowerCase();
-    return PANES.indexOf(h) >= 0 ? h : 'saved';
+    return PANES.indexOf(h) >= 0 ? h : 'badges';
   }
 
   // The dedicated Lokali-admin account (francesca@golokali.com) uses /account
@@ -724,7 +726,7 @@
     // segmented
     var pane = currentPane();
     var seg = el('div', 'lk-seg-wrap');
-    [['saved', 'Saved', state.saved.length], ['reviews', 'Reviews', state.mine.length], ['badges', 'Badges', earnedBadgeCount()], ['settings', 'Settings', null]].forEach(function (s) {
+    [['badges', 'Badges', earnedBadgeCount()], ['saved', 'Saved', state.saved.length], ['reviews', 'Reviews', state.mine.length], ['settings', 'Settings', null]].forEach(function (s) {
       var b = el('button', 'lk-seg' + (pane === s[0] ? ' is-active' : ''));
       b.innerHTML = esc(s[1]) + (s[2] != null ? ' <span class="lk-seg-count">' + s[2] + '</span>' : '');
       b.addEventListener('click', function () { location.hash = s[0]; show(s[0]); });
@@ -733,9 +735,9 @@
     mount.appendChild(seg);
 
     // panes
+    mount.appendChild(renderBadges());
     mount.appendChild(renderSaved());
     mount.appendChild(renderReviews());
-    mount.appendChild(renderBadges());
     mount.appendChild(renderSettings());
 
     show(pane);
@@ -1275,10 +1277,18 @@
     var acc = state.account || {};
     return b.region || acc.region || 'your neighborhood';
   }
-  function gCard(eyebrow, title, subText) {
+  // Card shell. The badge icon sits next to the title like an app icon —
+  // light violet while in progress, solid violet once earned — so the four
+  // cards are tellable apart at a glance.
+  function gCard(eyebrow, title, subText, ico, earned) {
     var card = el('div', 'lkg-card');
-    card.appendChild(el('div', 'lkg-eyebrow', esc(eyebrow)));
-    card.appendChild(el('div', 'lkg-title', esc(title)));
+    var head = el('div', 'lkg-head');
+    if (ico) head.appendChild(el('div', 'lkg-dot' + (earned ? ' earned' : ''), ico));
+    var tx = el('div', 'lkg-head-text');
+    tx.appendChild(el('div', 'lkg-eyebrow', esc(eyebrow)));
+    tx.appendChild(el('div', 'lkg-title', esc(title)));
+    head.appendChild(tx);
+    card.appendChild(head);
     card.appendChild(el('div', 'lkg-sub', esc(subText)));
     return card;
   }
@@ -1321,7 +1331,8 @@
 
     var card = gCard('Your neighborhood', 'Explore ' + market, earned
       ? 'Every category explored. New vendors join weekly — there’s always something new on the block.'
-      : 'You’ve discovered ' + n + ' of ' + total + ' corners of your local marketplace.');
+      : 'You’ve discovered ' + n + ' of ' + total + ' corners of your local marketplace.',
+      GOLD_STAR_ICO, earned);
 
     card.appendChild(gBar(total, n, almost));
     var count = el('div', 'lkg-count');
@@ -1352,7 +1363,6 @@
 
     if (!earned) {
       var foot = el('div', 'lkg-foot');
-      foot.appendChild(el('div', 'lkg-dot', GOLD_STAR_ICO));
       foot.appendChild(el('div', 'lkg-foot-text', 'Explore all ' + total + ' categories to earn the <strong>Neighborhood Explorer</strong> badge on your profile.'));
       card.appendChild(foot);
     }
@@ -1397,7 +1407,7 @@
     if (n === 0) sub = 'Reviews come from vendors you’ve contacted through Lokali. After your next inquiry, share how it went.';
     else if (n < 5) sub = n + ' review' + (n === 1 ? '' : 's') + ' shared. ' + (5 - n) + ' more and you’re a Neighborhood Regular.';
     else sub = '5 reviews shared — you’re a Neighborhood Regular. Your badge now shows on every review you write.';
-    var card = gCard('Your voice', 'Review milestones', sub);
+    var card = gCard('Your voice', 'Review milestones', sub, STAR_POLY_ICO, n >= 1);
 
     var track = el('div', 'lkg-track');
     var line = el('div', 'lkg-line');
@@ -1442,11 +1452,10 @@
     if (n === 0) sub = 'Be among the first 3 reviews on any vendor and you’re a Scout. New businesses join every week — someone has to go first.';
     else if (n === 1) sub = 'You’re officially a Neighborhood Scout. Your early review helps a brand-new business get its footing.';
     else sub = n + ' businesses got their start with your help. Your Scout badge shows on your profile and every review.';
-    var card = gCard('Your discoveries', 'Neighborhood Scout', sub);
+    var card = gCard('Your discoveries', 'Neighborhood Scout', sub, COMPASS_ICO, n >= 1);
 
+    // Header icon carries the badge state now — the hero is just the count.
     var hero = el('div', 'lkg-hero');
-    // Unearned = dashed pending circle; earned = solid gold badge dot.
-    hero.appendChild(el('div', n >= 1 ? 'lkg-dot earned' : 'lkg-node-dot', COMPASS_ICO));
     var ht = el('div');
     ht.appendChild(el('div', 'lkg-hero-count', n === 0 ? 'No scouts yet' : 'Scouted ' + n + ' vendor' + (n > 1 ? 's' : '')));
     ht.appendChild(el('div', 'lkg-hero-sub', n === 0 ? 'Your first one earns the badge' : 'Among the first 3 reviews each time'));
@@ -1473,7 +1482,7 @@
     if (n === 0) sub = 'Share a vendor you love. When 5 people visit through your links, you’re a Connector.';
     else if (!earned) sub = 'Your shares have brought ' + n + ' visitor' + (n === 1 ? '' : 's') + ' to local businesses. ' + (5 - n) + ' more and you’re a Neighborhood Connector.';
     else sub = n + ' visitors and counting — you’re a Neighborhood Connector. Word of mouth is how neighborhoods grow.';
-    var card = gCard('Your reach', 'Neighborhood Connector', sub);
+    var card = gCard('Your reach', 'Neighborhood Connector', sub, SHARE_NODES_ICO, earned);
 
     card.appendChild(gBar(5, Math.min(n, 5), false));
     var count = el('div', 'lkg-count');
@@ -1492,7 +1501,6 @@
     }
 
     var foot = el('div', 'lkg-foot');
-    foot.appendChild(el('div', 'lkg-dot' + (earned ? ' earned' : ''), SHARE_NODES_ICO));
     foot.appendChild(el('div', 'lkg-foot-text', earned
       ? 'Earned — the <strong>Neighborhood Connector</strong> badge now shows on your profile.'
       : 'Bring 5 visitors to local businesses through your shared links to earn the <strong>Neighborhood Connector</strong> badge.'));
