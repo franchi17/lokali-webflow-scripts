@@ -1251,12 +1251,17 @@
   // would taint review authenticity; none of this feeds ranking). Data = one
   // get_customer_badges() call via the adapter; if it didn't load (signed-out
   // race, stale cached adapter), the cards simply don't render.
-  var GOLD_STAR_ICO = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>';
-  var COMPASS_ICO = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>';
-  var SHARE_NODES_ICO = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>';
+  // Badge glyphs = Font Awesome Free 7.3.1 (fontawesome.com/license/free).
+  // fill = currentColor so the dots recolor across pending/earned states.
+  function faIco(path, size) {
+    return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 640 640" fill="currentColor" aria-hidden="true"><path d="' + path + '"/></svg>';
+  }
+  var FA_BINOCULARS = 'M192 96L224 96C241.7 96 256 110.3 256 128L256 160L160 160L160 128C160 110.3 174.3 96 192 96zM256 192L256 512C256 529.7 241.7 544 224 544L96 544C78.3 544 64 529.7 64 512L64 452.9C64 418.3 73.4 384.3 91.2 354.6C104.9 331.8 113.7 306.4 117 280L124.5 220C126.5 204 140.1 192 156.3 192L256.1 192zM483.8 192C499.9 192 513.6 204 515.6 220L523 280C526.3 306.4 535.1 331.8 548.8 354.6C566.6 384.3 576 418.3 576 452.9L576 512C576 529.7 561.7 544 544 544L416 544C398.3 544 384 529.7 384 512L384 192L483.8 192zM384 128C384 110.3 398.3 96 416 96L448 96C465.7 96 480 110.3 480 128L480 160L384 160L384 128zM352 192L352 352L288 352L288 192L352 192z';
+  var FA_COMPASS = 'M528 320C528 205.1 434.9 112 320 112C205.1 112 112 205.1 112 320C112 434.9 205.1 528 320 528C434.9 528 528 434.9 528 320zM64 320C64 178.6 178.6 64 320 64C461.4 64 576 178.6 576 320C576 461.4 461.4 576 320 576C178.6 576 64 461.4 64 320zM370.7 389.1L226.4 444.6C207 452.1 187.9 433 195.4 413.6L250.9 269.3C254.2 260.8 260.8 254.2 269.3 250.9L413.6 195.4C433 187.9 452.1 207 444.6 226.4L389.1 370.7C385.8 379.2 379.2 385.8 370.7 389.1zM352 320C352 302.3 337.7 288 320 288C302.3 288 288 302.3 288 320C288 337.7 302.3 352 320 352C337.7 352 352 337.7 352 320z';
+  var FA_PUZZLE = 'M288 64C323.3 64 352 85.5 352 112C352 122.4 347.6 132 340 139.9C333.4 146.8 328 155.2 328 164.8C328 179.8 340.2 192 355.2 192L400 192C426.5 192 448 213.5 448 240L448 284.8C448 299.8 460.2 312 475.2 312C484.7 312 493.2 306.6 500.1 300C508 292.5 517.6 288 528 288C554.5 288 576 316.7 576 352C576 387.3 554.5 416 528 416C517.6 416 507.9 411.6 500.1 404C493.2 397.4 484.8 392 475.2 392C460.2 392 448 404.2 448 419.2L448 528C448 554.5 426.5 576 400 576L343.2 576C330.4 576 320 565.6 320 552.8C320 543.6 325.8 535.5 333.2 530C344.8 521.3 352 509.3 352 496C352 469.5 323.3 448 288 448C252.7 448 224 469.5 224 496C224 509.3 231.2 521.3 242.8 530C250.2 535.5 256 543.5 256 552.8C256 565.6 245.6 576 232.8 576L112 576C85.5 576 64 554.5 64 528L64 407.2C64 394.4 74.4 384 87.2 384C96.4 384 104.5 389.8 110 397.2C118.7 408.8 130.7 416 144 416C170.5 416 192 387.3 192 352C192 316.7 170.5 288 144 288C130.7 288 118.7 295.2 110 306.8C104.5 314.2 96.5 320 87.2 320C74.4 320 64 309.6 64 296.8L64 240C64 213.5 85.5 192 112 192L220.8 192C235.8 192 248 179.8 248 164.8C248 155.3 242.6 146.8 236 139.9C228.5 132 224 122.4 224 112C224 85.5 252.7 64 288 64z';
+  var FA_STAR = 'M320.1 32C329.1 32 337.4 37.1 341.5 45.1L415 189.3L574.9 214.7C583.8 216.1 591.2 222.4 594 231C596.8 239.6 594.5 249 588.2 255.4L473.7 369.9L499 529.8C500.4 538.7 496.7 547.7 489.4 553C482.1 558.3 472.4 559.1 464.4 555L320.1 481.6L175.8 555C167.8 559.1 158.1 558.3 150.8 553C143.5 547.7 139.8 538.8 141.2 529.8L166.4 369.9L52 255.4C45.6 249 43.4 239.6 46.2 231C49 222.4 56.3 216.1 65.3 214.7L225.2 189.3L298.8 45.1C302.9 37.1 311.2 32 320.2 32zM320.1 108.8L262.3 222C258.8 228.8 252.3 233.6 244.7 234.8L119.2 254.8L209 344.7C214.4 350.1 216.9 357.8 215.7 365.4L195.9 490.9L309.2 433.3C316 429.8 324.1 429.8 331 433.3L444.3 490.9L424.5 365.4C423.3 357.8 425.8 350.1 431.2 344.7L521 254.8L395.5 234.8C387.9 233.6 381.4 228.8 377.9 222L320.1 108.8z';
   var CHECK_ICO = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
   var PEN_ICO = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>';
-  var STAR_POLY_ICO = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
   // Category icons by seeded id (1 handcrafted … 8 home); unknown → tag.
   var CAT_ICOS = {
     1: 'M12 19l7-7 3 3-7 7-3-3zM18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5zM2 2l7.586 7.586M11 11a2 2 0 1 0 4 0 2 2 0 0 0-4 0z',
@@ -1321,7 +1326,7 @@
 
     if (earned) {
       var banner = el('div', 'lkg-banner');
-      banner.appendChild(el('div', 'lkg-dot earned', GOLD_STAR_ICO));
+      banner.appendChild(el('div', 'lkg-dot earned', faIco(FA_BINOCULARS, 22)));
       var bt = el('div');
       bt.appendChild(el('div', 'lkg-banner-title', "You're a Neighborhood Explorer"));
       bt.appendChild(el('div', 'lkg-banner-sub', "You've browsed every corner of " + esc(market) + '. The badge now shows on your profile and next to your reviews.'));
@@ -1332,7 +1337,7 @@
     var card = gCard('Your neighborhood', 'Explore ' + market, earned
       ? 'Every category explored. New vendors join weekly — there’s always something new on the block.'
       : 'You’ve discovered ' + n + ' of ' + total + ' corners of your local marketplace.',
-      GOLD_STAR_ICO, earned);
+      faIco(FA_BINOCULARS, 20), earned);
 
     card.appendChild(gBar(total, n, almost));
     var count = el('div', 'lkg-count');
@@ -1407,7 +1412,7 @@
     if (n === 0) sub = 'Reviews come from vendors you’ve contacted through Lokali. After your next inquiry, share how it went.';
     else if (n < 5) sub = n + ' review' + (n === 1 ? '' : 's') + ' shared. ' + (5 - n) + ' more and you’re a Neighborhood Regular.';
     else sub = '5 reviews shared — you’re a Neighborhood Regular. Your badge now shows on every review you write.';
-    var card = gCard('Your voice', 'Review milestones', sub, STAR_POLY_ICO, n >= 1);
+    var card = gCard('Your voice', 'Review milestones', sub, faIco(FA_STAR, 18), n >= 1);
 
     var track = el('div', 'lkg-track');
     var line = el('div', 'lkg-line');
@@ -1415,7 +1420,7 @@
     fill.style.width = (n <= 1 ? 0 : Math.min((n - 1) / 4 * 100, 100)) + '%';
     line.appendChild(fill); track.appendChild(line);
     var nodes = el('div', 'lkg-nodes');
-    [['First Review', '1 review', PEN_ICO, n >= 1], ['Neighborhood Regular', '5 reviews', STAR_POLY_ICO, n >= 5]].forEach(function (spec) {
+    [['First Review', '1 review', PEN_ICO, n >= 1], ['Neighborhood Regular', '5 reviews', faIco(FA_STAR, 16), n >= 5]].forEach(function (spec) {
       var node = el('div', 'lkg-node' + (spec[3] ? ' earned' : ''));
       node.appendChild(el('div', 'lkg-node-dot', spec[2]));
       node.appendChild(el('div', 'lkg-node-name', esc(spec[0])));
@@ -1452,7 +1457,7 @@
     if (n === 0) sub = 'Be among the first 3 reviews on any vendor and you’re a Scout. New businesses join every week — someone has to go first.';
     else if (n === 1) sub = 'You’re officially a Neighborhood Scout. Your early review helps a brand-new business get its footing.';
     else sub = n + ' businesses got their start with your help. Your Scout badge shows on your profile and every review.';
-    var card = gCard('Your discoveries', 'Neighborhood Scout', sub, COMPASS_ICO, n >= 1);
+    var card = gCard('Your discoveries', 'Neighborhood Scout', sub, faIco(FA_COMPASS, 20), n >= 1);
 
     // Header icon carries the badge state now — the hero is just the count.
     var hero = el('div', 'lkg-hero');
@@ -1482,7 +1487,7 @@
     if (n === 0) sub = 'Share a vendor you love. When 5 people visit through your links, you’re a Connector.';
     else if (!earned) sub = 'Your shares have brought ' + n + ' visitor' + (n === 1 ? '' : 's') + ' to local businesses. ' + (5 - n) + ' more and you’re a Neighborhood Connector.';
     else sub = n + ' visitors and counting — you’re a Neighborhood Connector. Word of mouth is how neighborhoods grow.';
-    var card = gCard('Your reach', 'Neighborhood Connector', sub, SHARE_NODES_ICO, earned);
+    var card = gCard('Your reach', 'Neighborhood Connector', sub, faIco(FA_PUZZLE, 20), earned);
 
     card.appendChild(gBar(5, Math.min(n, 5), false));
     var count = el('div', 'lkg-count');
