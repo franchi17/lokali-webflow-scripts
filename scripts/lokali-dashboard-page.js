@@ -452,7 +452,7 @@
         '<button type="button" class="lok-gam-copy" data-gam-copy>Copy link</button></div>' +
       '<div class="lok-gam-incentive">' +
         '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4h-4z"/></svg>' +
-        '<span>You get <strong>1 month free</strong> for each neighbor who joins a paid plan.</span></div>';
+        '<span>You get <strong>1 month free</strong> for each neighbor who joins a paid plan — up to 12 months a year.</span></div>';
     if (n > 0) {
       html += '<div class="lok-gam-list">';
       refs.forEach(function (r) {
