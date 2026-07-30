@@ -2230,8 +2230,8 @@
       // the permanent gold EARLY REVIEW marker, and the NEW TO LOKALI pill
       // that reframes a sparse review section as an early-days story.
       '.vl-rev-name-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}',
-      '.vl-rev-badge{font:700 9.5px/1 ' + FONT + ';padding:2px 8px;border-radius:100px;background:#FEF3D6;color:#8B5E0A;white-space:nowrap;}',
-      '.vl-rev-early{display:inline-flex;align-items:center;gap:4px;font:700 9.5px/1 ' + FONT + ';padding:2px 8px;border-radius:100px;background:#FEF3D6;color:#8B5E0A;white-space:nowrap;}',
+      '.vl-rev-badge{font:700 9.5px/1 ' + FONT + ';padding:2px 8px;border-radius:100px;background:#F3EBFF;color:#6002EE;white-space:nowrap;}',
+      '.vl-rev-early{display:inline-flex;align-items:center;gap:4px;font:700 9.5px/1 ' + FONT + ';padding:2px 8px;border-radius:100px;background:#FFF0E6;color:#FF6B00;white-space:nowrap;}',
       '.vl-new-pill{display:inline-block;font:700 9.5px/1 ' + FONT + ';padding:3px 8px;border-radius:100px;background:#FFF0E6;color:#FF6B00;margin-left:8px;vertical-align:2px;white-space:nowrap;}'
     ].join('');
     document.head.appendChild(s);
