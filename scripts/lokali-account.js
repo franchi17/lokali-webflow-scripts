@@ -542,7 +542,7 @@
       R + '.lkg-fill{height:100%;width:0;background:' + V + ';border-radius:100px;transition:width .4s ease;}',
       R + '.lkg-nodes{position:relative;display:flex;justify-content:space-between;}',
       R + '.lkg-node{display:flex;flex-direction:column;align-items:center;gap:7px;width:140px;text-align:center;}',
-      R + '.lkg-node-dot{width:42px;height:42px;border-radius:50%;background:#fff;border:1.5px dashed ' + FOG + ';color:' + FOG + ';display:flex;align-items:center;justify-content:center;}',
+      R + '.lkg-node-dot{width:42px;height:42px;border-radius:50%;background:' + VL + ';border:1.5px dashed ' + VM + ';color:' + V + ';display:flex;align-items:center;justify-content:center;}',
       R + '.lkg-node.earned .lkg-node-dot{background:' + V + ';border:1.5px solid ' + V + ';color:#fff;box-shadow:0 3px 10px rgba(96,2,238,.26);}',
       R + '.lkg-node-name{font-size:12px;font-weight:600;color:' + SLATE + ';}',
       R + '.lkg-node.earned .lkg-node-name{color:' + INK + ';}',
