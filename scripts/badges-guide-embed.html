@@ -1,7 +1,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@800&display=swap" rel="stylesheet">
 
 <style>
-  .lg-wrap { display: block; width: 100%; font-family: 'Plus Jakarta Sans', sans-serif; color: #0f0f14; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  /* Explicit light background — the no-ink rule must never depend on what's
+     behind the embed (a dark body/theme would otherwise show through). */
+  .lg-wrap { display: block; width: 100%; background: #ffffff; font-family: 'Plus Jakarta Sans', sans-serif; color: #0f0f14; line-height: 1.6; -webkit-font-smoothing: antialiased; }
   .lg-wrap *, .lg-wrap *::before, .lg-wrap *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   .lg-hero { display: block; width: 100%; background: #f8f7fc; border-bottom: 1px solid rgba(0,0,0,0.1); padding: 5rem 1.5rem 4rem; text-align: center; }
@@ -18,12 +20,14 @@
 
   .lg-tips { display: flex; flex-direction: column; gap: 12px; width: 100%; }
   .lg-tip { display: flex; align-items: flex-start; gap: 14px; padding: 16px 18px; background: #ffffff; border: 1px solid rgba(0,0,0,0.1); border-radius: 14px; }
-  .lg-tip.violet { background: #f0e6ff; border: none; }
-  .lg-tip-badge { flex-shrink: 0; margin-top: 2px; font-size: 12px; font-weight: 700; border-radius: 20px; padding: 4px 12px; white-space: nowrap; }
+  .lg-tip-ico { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .lg-tip-head { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0; }
+  .lg-tip-badge { align-self: flex-start; font-size: 12px; font-weight: 700; border-radius: 20px; padding: 4px 12px; white-space: nowrap; }
   .lg-b-violet { background: #f0e6ff; color: #6002EE; }
   .lg-b-green { background: #E7F3EC; color: #3E7C5E; }
   .lg-b-peach { background: #FFF0E6; color: #B4530A; }
-  .lg-tip-title { display: block; font-size: 16px; font-weight: 700; color: #0f0f14; margin-bottom: 3px; }
+  .lg-b-rose { background: #FBE9F2; color: #A63D74; }
+  .lg-tip-title { display: block; font-size: 16px; font-weight: 700; color: #0f0f14; }
   .lg-tip-body { display: block; font-size: 15px; color: #4a4a5a; line-height: 1.55; }
 
   .lg-callout { display: flex; gap: 12px; align-items: flex-start; background: #f0e6ff; border-radius: 14px; padding: 16px 18px; margin-top: 18px; }
@@ -75,29 +79,44 @@
     <div class="lg-section-body">These appear on your account and, for some, next to your name on reviews you write. They recognize the neighbors who explore, review, and spread the word.</div>
     <div class="lg-tips">
       <div class="lg-tip">
-        <span class="lg-tip-badge lg-b-violet">Neighborhood Explorer</span>
-        <div><span class="lg-tip-title">You've looked everywhere</span>
-        <span class="lg-tip-body">Earned by exploring vendors in every category on The Market &mdash; from food to photography. The full tour.</span></div>
+        <div class="lg-tip-ico lg-b-violet"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg></div>
+        <div class="lg-tip-head">
+          <span class="lg-tip-badge lg-b-violet">Neighborhood Explorer</span>
+          <span class="lg-tip-title">You've looked everywhere</span>
+          <span class="lg-tip-body">Earned by exploring vendors in every category on The Market &mdash; from food to photography. The full tour.</span>
+        </div>
       </div>
       <div class="lg-tip">
-        <span class="lg-tip-badge lg-b-violet">First Review</span>
-        <div><span class="lg-tip-title">Your first review</span>
-        <span class="lg-tip-body">You wrote your first review of a local business. Every storefront's reputation starts with someone like you.</span></div>
+        <div class="lg-tip-ico lg-b-peach"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
+        <div class="lg-tip-head">
+          <span class="lg-tip-badge lg-b-peach">First Review</span>
+          <span class="lg-tip-title">Your first review</span>
+          <span class="lg-tip-body">You wrote your first review of a local business. Every storefront's reputation starts with someone like you.</span>
+        </div>
       </div>
       <div class="lg-tip">
-        <span class="lg-tip-badge lg-b-violet">Neighborhood Regular</span>
-        <div><span class="lg-tip-title">Five reviews strong</span>
-        <span class="lg-tip-body">Earned at five reviews. Regulars are the backbone of trustworthy local reputations.</span></div>
+        <div class="lg-tip-ico lg-b-rose"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div>
+        <div class="lg-tip-head">
+          <span class="lg-tip-badge lg-b-rose">Neighborhood Regular</span>
+          <span class="lg-tip-title">Five reviews strong</span>
+          <span class="lg-tip-body">Earned at five reviews. Regulars are the backbone of trustworthy local reputations.</span>
+        </div>
       </div>
       <div class="lg-tip">
-        <span class="lg-tip-badge lg-b-green">Neighborhood Scout</span>
-        <div><span class="lg-tip-title">You found them first</span>
-        <span class="lg-tip-body">Earned by being among the first three people to review a vendor. Scouts give new businesses their first proof &mdash; you can earn this one again and again.</span></div>
+        <div class="lg-tip-ico lg-b-green"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></div>
+        <div class="lg-tip-head">
+          <span class="lg-tip-badge lg-b-green">Neighborhood Scout</span>
+          <span class="lg-tip-title">You found them first</span>
+          <span class="lg-tip-body">Earned by being among the first three people to review a vendor. Scouts give new businesses their first proof &mdash; you can earn this one again and again.</span>
+        </div>
       </div>
       <div class="lg-tip">
-        <span class="lg-tip-badge lg-b-peach">Neighborhood Connector</span>
-        <div><span class="lg-tip-title">Your shares bring people in</span>
-        <span class="lg-tip-body">Earned when links you've shared bring five visitors to local storefronts. Word of mouth, measured honestly &mdash; we count real visits, not taps.</span></div>
+        <div class="lg-tip-ico lg-b-violet"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></div>
+        <div class="lg-tip-head">
+          <span class="lg-tip-badge lg-b-violet">Neighborhood Connector</span>
+          <span class="lg-tip-title">Your shares bring people in</span>
+          <span class="lg-tip-body">Earned when links you've shared bring five visitors to local storefronts. Word of mouth, measured honestly &mdash; we count real visits, not taps.</span>
+        </div>
       </div>
     </div>
     <div class="lg-callout">
@@ -112,19 +131,28 @@
     <div class="lg-section-body">Vendor recognition works differently &mdash; most of it is private, for your eyes only.</div>
     <div class="lg-tips">
       <div class="lg-tip">
-        <span class="lg-tip-badge lg-b-violet">Milestones</span>
-        <div><span class="lg-tip-title">Private, just for you</span>
-        <span class="lg-tip-body">Your dashboard quietly records five early firsts: first save, first inquiry, first 100 views, first review, and first customer share. They never appear on your public listing &mdash; they're a record of your business taking root, visible only to you.</span></div>
+        <div class="lg-tip-ico lg-b-violet"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+        <div class="lg-tip-head">
+          <span class="lg-tip-badge lg-b-violet">Milestones</span>
+          <span class="lg-tip-title">Private, just for you</span>
+          <span class="lg-tip-body">Your dashboard quietly records five early firsts: first save, first inquiry, first 100 views, first review, and first customer share. They never appear on your public listing &mdash; they're a record of your business taking root, visible only to you.</span>
+        </div>
       </div>
       <div class="lg-tip">
-        <span class="lg-tip-badge lg-b-violet">Community Builder</span>
-        <div><span class="lg-tip-title">You grew the neighborhood</span>
-        <span class="lg-tip-body">Earned by bringing three other local businesses onto Lokali through your referral link. Every referral counts toward this &mdash; whether they join free or paid.</span></div>
+        <div class="lg-tip-ico lg-b-peach"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+        <div class="lg-tip-head">
+          <span class="lg-tip-badge lg-b-peach">Community Builder</span>
+          <span class="lg-tip-title">You grew the neighborhood</span>
+          <span class="lg-tip-body">Earned by bringing three other local businesses onto Lokali through your referral link. Every referral counts toward this &mdash; whether they join free or paid.</span>
+        </div>
       </div>
       <div class="lg-tip">
-        <span class="lg-tip-badge lg-b-green">Responds quickly</span>
-        <div><span class="lg-tip-title">Coming to listings soon</span>
-        <span class="lg-tip-body">A badge that appears automatically on vendors who consistently reply to inquiries within about a day. It comes and goes on its own based on your recent replies &mdash; and true to rule three, there is no "slow to respond" counterpart. If you don't have the badge, your listing simply shows nothing.</span></div>
+        <div class="lg-tip-ico lg-b-green"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+        <div class="lg-tip-head">
+          <span class="lg-tip-badge lg-b-green">Responds quickly</span>
+          <span class="lg-tip-title">Coming to listings soon</span>
+          <span class="lg-tip-body">A badge that appears automatically on vendors who consistently reply to inquiries within about a day. It comes and goes on its own based on your recent replies &mdash; and true to rule three, there is no "slow to respond" counterpart. If you don't have the badge, your listing simply shows nothing.</span>
+        </div>
       </div>
     </div>
   </div>
