@@ -272,7 +272,7 @@
     '.lok-gam-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:.5px solid #EEEDF6;}',
     '.lok-gam-row:last-child{border-bottom:none;padding-bottom:2px;}',
     '.lok-gam-check{width:22px;height:22px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;}',
-    '.lok-gam-check.done{background:#FEF3D6;color:#8B5E0A;}',
+    '.lok-gam-check.done{background:#F3EBFF;color:#6002EE;}',
     '.lok-gam-check.todo{border:1.5px dashed #C8C6D8;}',
     '.lok-gam-name{font-size:13px;font-weight:500;}',
     '.lok-gam-row.upcoming .lok-gam-name{color:#8E8BA6;font-weight:400;}',
