@@ -258,6 +258,261 @@
     return pct;
   }
 
+  // ── Vendor gamification: milestones + referrals ────────────────────────────
+  // Data: LokaliSupabaseAPI.vendorGamification (patch_vendor_gamification.sql).
+  // Best-effort everywhere: if the RPCs/table aren't live yet (SQL-before-tag
+  // window) or the client is an older cached copy, the dashboard renders
+  // exactly as before — these cards simply don't mount.
+  var GAM_CSS = [
+    '.lok-gam-card{font-family:"Plus Jakarta Sans",-apple-system,sans-serif;background:#fff;border:.5px solid #EEEDF6;border-radius:12px;padding:1.5rem;margin:0 0 16px;color:#1A1829;}',
+    '.lok-gam-eyebrow{font-size:11px;font-weight:700;color:#6002EE;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;}',
+    '.lok-gam-title{font-size:17px;font-weight:700;letter-spacing:-.2px;}',
+    '.lok-gam-sub{font-size:13px;color:#4A4761;margin-top:4px;line-height:1.5;}',
+    '.lok-gam-list{margin-top:1.25rem;padding-top:.25rem;border-top:.5px solid #EEEDF6;}',
+    '.lok-gam-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:.5px solid #EEEDF6;}',
+    '.lok-gam-row:last-child{border-bottom:none;padding-bottom:2px;}',
+    '.lok-gam-check{width:22px;height:22px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;}',
+    '.lok-gam-check.done{background:#FEF3D6;color:#8B5E0A;}',
+    '.lok-gam-check.todo{border:1.5px dashed #C8C6D8;}',
+    '.lok-gam-name{font-size:13px;font-weight:500;}',
+    '.lok-gam-row.upcoming .lok-gam-name{color:#8E8BA6;font-weight:400;}',
+    '.lok-gam-detail{font-size:11.5px;color:#8E8BA6;margin-top:1px;}',
+    '.lok-gam-date{font-size:11.5px;color:#8E8BA6;flex-shrink:0;text-align:right;min-width:52px;}',
+    '.lok-gam-pill{font-size:10.5px;font-weight:700;border-radius:100px;padding:2px 8px;flex-shrink:0;white-space:nowrap;}',
+    '.lok-gam-pill.green{background:#EAFAF2;color:#1D6A45;}',
+    '.lok-gam-pill.grey{background:#EEEDF6;color:#8E8BA6;}',
+    '.lok-gam-moment{font-family:"Plus Jakarta Sans",-apple-system,sans-serif;background:linear-gradient(135deg,#F3EBFF 0%,#fff 65%);border:.5px solid #E5D4FD;border-radius:12px;padding:1.5rem;margin:0 0 16px;display:flex;gap:14px;align-items:flex-start;color:#1A1829;}',
+    '.lok-gam-moment-ico{width:44px;height:44px;border-radius:50%;flex-shrink:0;background:#6002EE;color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(96,2,238,.25);}',
+    '.lok-gam-moment-title{font-size:16px;font-weight:700;}',
+    '.lok-gam-moment-sub{font-size:13px;color:#4A4761;margin-top:4px;line-height:1.5;}',
+    '.lok-gam-actions{display:flex;gap:8px;margin-top:12px;}',
+    '.lok-gam-btn{font-family:inherit;font-size:12.5px;font-weight:600;color:#fff;background:#6002EE;border:none;border-radius:8px;padding:8px 16px;cursor:pointer;text-decoration:none;display:inline-block;}',
+    '.lok-gam-btn:hover{opacity:.9;}',
+    '.lok-gam-ghost{font-family:inherit;font-size:12.5px;font-weight:500;color:#8E8BA6;background:none;border:none;padding:8px 10px;cursor:pointer;}',
+    '.lok-gam-ghost:hover{color:#4A4761;}',
+    '.lok-gam-linkbox{display:flex;align-items:center;gap:10px;background:#F7F6FC;border:.5px solid #EEEDF6;border-radius:8px;padding:10px 12px;margin-top:1.25rem;}',
+    '.lok-gam-linktext{flex:1;font-size:12.5px;color:#4A4761;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
+    '.lok-gam-copy{font-family:inherit;font-size:12px;font-weight:600;color:#6002EE;background:#fff;border:.5px solid #E5D4FD;border-radius:8px;padding:6px 14px;flex-shrink:0;cursor:pointer;}',
+    '.lok-gam-copy:hover{background:#F3EBFF;}',
+    '.lok-gam-incentive{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12px;color:#4A4761;}',
+    '.lok-gam-incentive svg{color:#1D6A45;flex-shrink:0;}'
+  ].join('');
+
+  var GAM_CHECK = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+
+  // Fixed set of five (handoff §4 — names verbatim). `moment` = celebration
+  // card copy; the first-inquiry strings are the handoff's exact copy block.
+  var GAM_MILESTONES = [
+    { key: 'first_save', name: 'First save', locked: 'Unlocks when a shopper saves your listing',
+      done: 'A shopper saved your listing',
+      moment: { title: 'Someone saved your listing', sub: 'Your first save is in — a shopper bookmarked your storefront to come back to. Saves often turn into inquiries.', cta: null } },
+    { key: 'first_inquiry', name: 'First inquiry', locked: 'Unlocks when a customer reaches out',
+      done: 'A customer reached out about your services',
+      moment: { title: 'Someone just found you', sub: 'Your first inquiry is in — a reply within a day makes a great first impression.', cta: { label: 'View inquiry', href: '/vendor-dashboard/leads' } } },
+    { key: 'first_100_views', name: 'First 100 views', locked: 'Unlocks when your listing reaches 100 views',
+      done: 'Your listing reached 100 views',
+      moment: { title: '100 views and counting', sub: 'Your listing just passed 100 views — shoppers are finding you.', cta: null } },
+    { key: 'first_review', name: 'First review', locked: 'Unlocks when a customer reviews you',
+      done: 'A customer reviewed your business',
+      moment: { title: 'Your first review is in', sub: 'A customer took the time to write about your business — that’s the kind of proof no ad can buy.', cta: null } },
+    { key: 'first_share', name: 'First customer share', locked: 'Unlocks when someone shares your listing',
+      done: 'A customer shared your listing',
+      moment: { title: 'Someone passed your name along', sub: 'A customer liked your storefront enough to share it — word of mouth is officially working.', cta: null } }
+  ];
+
+  function gamStyles() {
+    if (document.getElementById('lok-gam-styles')) return;
+    var s = document.createElement('style'); s.id = 'lok-gam-styles'; s.textContent = GAM_CSS;
+    document.head.appendChild(s);
+  }
+  function gamDate(iso) {
+    var t = Date.parse(iso);
+    if (isNaN(t)) return '';
+    return new Date(t).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+  function gamEsc(s) {
+    return String(s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+
+  // Claim a stashed ?ref= code (lokali-auth-nav.js wrote it on the landing
+  // page). All validation is server-side; the stash is cleared only once the
+  // RPC actually answers, so a pre-SQL 404 retries on a later visit.
+  function gamClaimReferral(SB) {
+    var raw = null;
+    try { raw = localStorage.getItem('lokali_vendor_ref'); } catch (e) {}
+    if (!raw) return Promise.resolve();
+    var stash = null;
+    try { stash = JSON.parse(raw); } catch (e) {}
+    if (!stash || !stash.code || (stash.exp && stash.exp < Date.now())) {
+      try { localStorage.removeItem('lokali_vendor_ref'); } catch (e) {}
+      return Promise.resolve();
+    }
+    return SB.vendorGamification.claimReferral(stash.code).then(function (res) {
+      if (res && !res.error) {
+        try { localStorage.removeItem('lokali_vendor_ref'); } catch (e) {}
+      }
+    }).catch(function () {});
+  }
+
+  function gamCelebration(earned) {
+    // Newest undismissed milestone reached within 7 days — one card max.
+    var DAY7 = 7 * 24 * 60 * 60 * 1000;
+    var pick = null;
+    earned.forEach(function (m) {
+      if (m.dismissed_at) return;
+      var t = Date.parse(m.reached_at);
+      if (isNaN(t) || (Date.now() - t) > DAY7) return;
+      if (!pick || t > Date.parse(pick.reached_at)) pick = m;
+    });
+    if (!pick) return null;
+    var meta = null;
+    GAM_MILESTONES.forEach(function (d) { if (d.key === pick.milestone) meta = d; });
+    if (!meta) return null;
+
+    var card = document.createElement('div');
+    card.className = 'lok-gam-moment';
+    card.innerHTML =
+      '<div class="lok-gam-moment-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>' +
+      '<div><div class="lok-gam-moment-title">' + gamEsc(meta.moment.title) + '</div>' +
+      '<div class="lok-gam-moment-sub">' + gamEsc(meta.moment.sub) + '</div>' +
+      '<div class="lok-gam-actions">' +
+        (meta.moment.cta ? '<a class="lok-gam-btn" href="' + meta.moment.cta.href + '">' + gamEsc(meta.moment.cta.label) + '</a>' : '') +
+        '<button type="button" class="lok-gam-ghost" data-gam-dismiss>Dismiss</button>' +
+      '</div></div>';
+    card.querySelector('[data-gam-dismiss]').addEventListener('click', function () {
+      if (card.parentNode) card.parentNode.removeChild(card);
+      var SB = window.LokaliSupabaseAPI;
+      if (SB && SB.vendorGamification) SB.vendorGamification.dismissMilestone(pick.milestone);
+    });
+    return card;
+  }
+
+  function gamMilestonesCard(rows) {
+    var byKey = {};
+    (rows || []).forEach(function (m) { byKey[m.milestone] = m; });
+    var earnedCount = 0;
+    GAM_MILESTONES.forEach(function (d) { if (byKey[d.key]) earnedCount++; });
+
+    var COUNT_WORDS = ['', 'One', 'Two', 'Three', 'Four', 'Five'];
+    var sub = earnedCount === 5
+      ? 'Five for five — every early milestone, reached. These are yours to see.'
+      : earnedCount === 0
+        ? 'Every business starts at zero. These unlock as customers find you — only you can see them.'
+        : COUNT_WORDS[earnedCount] + ' down. These are yours to see — a record of your business taking root on Lokali.';
+
+    var card = document.createElement('div');
+    card.className = 'lok-gam-card';
+    var html =
+      '<div class="lok-gam-eyebrow">Your journey</div>' +
+      '<div class="lok-gam-title">Milestones</div>' +
+      '<div class="lok-gam-sub">' + sub + '</div>' +
+      '<div class="lok-gam-list">';
+    GAM_MILESTONES.forEach(function (d) {
+      var m = byKey[d.key];
+      html +=
+        '<div class="lok-gam-row' + (m ? '' : ' upcoming') + '">' +
+          '<div class="lok-gam-check ' + (m ? 'done' : 'todo') + '">' + (m ? GAM_CHECK : '') + '</div>' +
+          '<div style="flex:1;min-width:0;"><div class="lok-gam-name">' + d.name + '</div>' +
+          '<div class="lok-gam-detail">' + (m ? d.done : d.locked) + '</div></div>' +
+          '<div class="lok-gam-date">' + (m ? gamDate(m.reached_at) : '') + '</div>' +
+        '</div>';
+    });
+    html += '</div>';
+    card.innerHTML = html;
+    return card;
+  }
+
+  function gamReferralCard(data) {
+    var refs = (data && data.referrals) || [];
+    var n = refs.length;
+    var m = (data && data.months_earned) || 0;
+    var url = data && data.referral_url;
+    if (!url) return null;
+    var shownUrl = url.replace(/^https?:\/\/(www\.)?/, '');
+
+    var sub;
+    if (n >= 3) {
+      sub = n + ' neighbors and counting — you’re a Community Builder. The neighborhood is bigger because of you.';
+    } else if (n > 0) {
+      sub = (n === 1 ? '1 neighbor has' : n + ' neighbors have') + ' joined through your link — ' +
+            (m === 1 ? '1 free month' : m + ' free months') + ' earned so far.';
+    } else {
+      sub = 'Know another local business that belongs on Lokali? Send them your link — founding slots are limited.';
+    }
+
+    var card = document.createElement('div');
+    card.className = 'lok-gam-card';
+    var html =
+      '<div class="lok-gam-eyebrow">Grow the neighborhood</div>' +
+      '<div class="lok-gam-title">Bring your neighbors</div>' +
+      '<div class="lok-gam-sub">' + gamEsc(sub) + '</div>' +
+      '<div class="lok-gam-linkbox"><div class="lok-gam-linktext">' + gamEsc(shownUrl) + '</div>' +
+        '<button type="button" class="lok-gam-copy" data-gam-copy>Copy link</button></div>' +
+      '<div class="lok-gam-incentive">' +
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4h-4z"/></svg>' +
+        '<span>You get <strong>1 month free</strong> for each neighbor who joins a paid plan.</span></div>';
+    if (n > 0) {
+      html += '<div class="lok-gam-list">';
+      refs.forEach(function (r) {
+        var paid = !!r.is_paid;
+        var planLabel = (r.plan === 'featured' ? 'Featured' : r.plan === 'pro' ? 'Pro' : 'Free') + ' plan';
+        html +=
+          '<div class="lok-gam-row">' +
+            '<div class="lok-gam-check done">' + GAM_CHECK + '</div>' +
+            '<div class="lok-gam-name" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + gamEsc(r.business_name || 'A neighbor') + '</div>' +
+            '<div class="lok-gam-pill ' + (paid ? 'green' : 'grey') + '">' + planLabel + '</div>' +
+            '<div class="lok-gam-date">' + gamDate(r.created_at) + '</div>' +
+          '</div>';
+      });
+      html += '</div>';
+    }
+    card.innerHTML = html;
+    card.querySelector('[data-gam-copy]').addEventListener('click', function () {
+      var btn = card.querySelector('[data-gam-copy]');
+      copyToClipboard(url).then(function (ok) { if (ok) flashCopied(btn); });
+    });
+    return card;
+  }
+
+  function renderGamification() {
+    var SB = window.LokaliSupabaseAPI;
+    if (!SB || !SB.vendorGamification) return;
+    var anchor = document.querySelector('[data-listing-strength]');
+    if (!anchor || !anchor.parentNode) return;
+    if (document.querySelector('[data-gam-mounted]')) return;
+
+    gamClaimReferral(SB).then(function () {
+      return Promise.all([
+        SB.vendorGamification.milestones(),
+        SB.vendorGamification.referralData()
+      ]);
+    }).then(function (res) {
+      var msRes = res[0], refRes = res[1];
+      gamStyles();
+      var wrap = document.createElement('div');
+      wrap.setAttribute('data-gam-mounted', '');
+
+      var rows = (msRes && !msRes.error && msRes.data) || null;
+      if (rows) {
+        var moment = gamCelebration(rows);
+        // Celebration rides ABOVE the listing-strength card; the two standing
+        // cards mount together right after it.
+        if (moment) anchor.parentNode.insertBefore(moment, anchor);
+        wrap.appendChild(gamMilestonesCard(rows));
+      }
+      var refData = refRes && !refRes.error && refRes.data;
+      if (refData && refData.ok) {
+        var refCard = gamReferralCard(refData);
+        if (refCard) wrap.appendChild(refCard);
+      }
+      if (wrap.children.length) {
+        anchor.parentNode.insertBefore(wrap, anchor.nextSibling);
+      }
+    }).catch(function () {});
+  }
+
   function render(v, services, products, leadsData) {
     var hasListing = services.length > 0 || products.length > 0;
 
@@ -338,6 +593,9 @@
     // Share card buttons + quick-action cards
     wireShareButtons(v);
     wireQuickActions(v, services, products);
+
+    // Milestones + referral cards (best-effort; no-op until the SQL is live)
+    renderGamification();
   }
 
   // ── #90 first-run setup wizard ─────────────────────────────────────────────

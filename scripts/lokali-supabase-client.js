@@ -477,7 +477,7 @@
       listByVendor: function (vendorId) {
         return withClient(function (c) {
           return c.from('reviews')
-            .select('id,author_name,is_recommended,is_verified_contact,comment,vendor_reply,vendor_reply_at,services_id,products_id,created_at')
+            .select('id,author_name,is_recommended,is_verified_contact,comment,vendor_reply,vendor_reply_at,services_id,products_id,created_at,is_early')
             .eq('vendors_id', vendorId)
             .order('created_at', { ascending: false });
         });
@@ -975,6 +975,52 @@
       count: function (vendorId) {
         return withClient(function (c) {
           return c.rpc('share_count', { p_vendors_id: vendorId != null ? vendorId : null });
+        });
+      }
+    },
+    // Customer gamification (badges) — fn_gamification.sql. All status-only.
+    gamification: {
+      // Explorer accrual: signed-in listing view. Fire-and-forget on the
+      // vendor page; anonymous / owner-preview calls are server-side no-ops.
+      recordEngagement: function (vendorId) {
+        return withClient(function (c) {
+          return c.rpc('record_category_engagement', { p_vendors_id: vendorId });
+        });
+      },
+      // One call: the signed-in customer's full badge state (explorer,
+      // review milestones, scout rows, connector landings).
+      badges: function () {
+        return withClient(function (c) { return c.rpc('get_customer_badges'); });
+      },
+      // Public: per-review author badge slugs for a vendor's review cards.
+      reviewBadges: function (vendorId) {
+        return withClient(function (c) {
+          return c.rpc('review_author_badges', { p_vendors_id: vendorId });
+        });
+      }
+    },
+    // Vendor gamification (milestones + referrals) — patch_vendor_gamification.sql.
+    // Milestones are PRIVATE (owner-read RLS); referrals go through definer RPCs.
+    vendorGamification: {
+      milestones: function () {
+        return withClient(function (c) {
+          return c.from('vendor_milestones').select('milestone,reached_at,dismissed_at');
+        });
+      },
+      dismissMilestone: function (milestone) {
+        return withClient(function (c) {
+          return c.rpc('dismiss_milestone', { p_milestone: milestone });
+        });
+      },
+      // Mints the vendor's ref code on first call; returns url + list + earned.
+      referralData: function () {
+        return withClient(function (c) { return c.rpc('my_referral_data'); });
+      },
+      // Post-signup attribution claim — every guard is server-side, so a stale
+      // or bogus stashed code resolves { attributed:false } instead of erroring.
+      claimReferral: function (code) {
+        return withClient(function (c) {
+          return c.rpc('claim_referral', { p_code: code });
         });
       }
     },

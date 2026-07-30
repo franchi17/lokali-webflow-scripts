@@ -25,6 +25,20 @@
 (function () {
   'use strict';
 
+  // Vendor referral landing (?ref= — patch_vendor_gamification.sql): stash the
+  // code for 30 days; the referred vendor's first dashboard load claims it
+  // server-side (claim_referral RPC validates everything — self-referral,
+  // one-referrer-max, 30-day window — so this is just a dumb hand-off).
+  // Header script = every page, so the link can point anywhere (/pricing).
+  try {
+    var _refCode = new URLSearchParams(window.location.search).get('ref');
+    if (_refCode && /^[a-z0-9-]{4,32}$/i.test(_refCode)) {
+      localStorage.setItem('lokali_vendor_ref', JSON.stringify({
+        code: _refCode, exp: Date.now() + 30 * 24 * 60 * 60 * 1000
+      }));
+    }
+  } catch (e) {}
+
   // Vendor signup intent (#57 QA find): since the role default flipped to
   // CUSTOMER (2026-07-01), any signup missing a stashed intent mints a
   // customer — but only pricing CTAs were stashing 'vendor'. Delegate here
