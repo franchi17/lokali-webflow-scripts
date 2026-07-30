@@ -250,8 +250,37 @@
     renderGateBanner(root, gateReady, { name: !!v.business_name, cats: gCats, locs: gLocs, listing: !!hasListing });
     if (root) {
       if (score >= MAX_SCORE) { root.classList.add('is-complete'); }
-      var s = root.querySelector('[data-ls-score]');    if (s) s.textContent = pct + '%';
-      var p = root.querySelector('[data-ls-progress]'); if (p) p.style.width = pct + '%';
+      // Score = donut ring with the % centered (Francesca 2026-07-30, replaces
+      // the straight progress bar). Runtime transform of the embed's markup so
+      // no Webflow edit/publish is needed: hide the linear track, rebuild the
+      // score element as an SVG ring, then update arc + label on every pass.
+      var track = root.querySelector('.ls-progress-track');
+      if (track) track.style.display = 'none';
+      var s = root.querySelector('[data-ls-score]');
+      if (s) {
+        var RING_C = 188.5; // 2πr for r=30
+        if (!s.querySelector('[data-ls-ring]')) {
+          s.style.lineHeight = '0';
+          s.innerHTML =
+            '<svg data-ls-ring width="76" height="76" viewBox="0 0 76 76" role="img">' +
+              '<circle cx="38" cy="38" r="30" fill="none" stroke="#EEEDF6" stroke-width="9"/>' +
+              '<circle data-ls-ring-arc cx="38" cy="38" r="30" fill="none" stroke="#6002EE" stroke-width="9" ' +
+                'stroke-linecap="round" stroke-dasharray="0 ' + RING_C + '" transform="rotate(-90 38 38)"/>' +
+              '<text data-ls-ring-txt x="38" y="39" text-anchor="middle" dominant-baseline="central" ' +
+                'font-family="\'Plus Jakarta Sans\',sans-serif" font-weight="800" font-size="17" fill="#1A1829"></text>' +
+            '</svg>';
+        }
+        var arc = s.querySelector('[data-ls-ring-arc]');
+        var txt = s.querySelector('[data-ls-ring-txt]');
+        if (arc) {
+          // Round linecap draws a dot even at 0 — hide the arc entirely there.
+          arc.style.display = pct > 0 ? '' : 'none';
+          arc.setAttribute('stroke-dasharray', (pct / 100 * RING_C).toFixed(1) + ' ' + RING_C);
+        }
+        if (txt) txt.textContent = pct + '%';
+        var ringSvg = s.querySelector('[data-ls-ring]');
+        if (ringSvg) ringSvg.setAttribute('aria-label', 'Listing strength ' + pct + '%');
+      }
       var sub = root.querySelector('[data-ls-subtitle]');
       if (sub) sub.textContent = "You're missing " + missing + (missing > 1 ? ' things that help' : ' thing that helps') + ' customers decide to reach out.';
     }
