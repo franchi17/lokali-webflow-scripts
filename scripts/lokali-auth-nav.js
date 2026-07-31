@@ -147,6 +147,14 @@
       ".lok-acct-name{font-size:13px;font-weight:500;color:#1A1829;white-space:nowrap;}",
       ".lok-acct-caret{width:14px;height:14px;flex-shrink:0;color:#8E8BA6;transition:transform .15s;}",
       ".lok-acct.open .lok-acct-caret{transform:rotate(180deg);}",
+      // ≤640px (Francesca 2026-07-31: header squished on phones): avatar-only —
+      // the name is the space hog; the caret stays as the tap affordance, and a
+      // soft violet ring makes the circle read as a control, not decoration.
+      "@media (max-width:640px){",
+      ".lok-acct-name{display:none;}",
+      ".lok-acct-trigger{gap:4px;padding:3px 5px 3px 3px;}",
+      ".lok-acct-av{box-shadow:0 0 0 1.5px #E5D4FD;}",
+      "}",
       ".lok-acct-menu{position:absolute;top:calc(100% + 8px);right:0;min-width:190px;background:#fff;border:.5px solid #EEEDF6;border-radius:12px;box-shadow:0 12px 32px rgba(26,24,41,.14);padding:6px;display:none;z-index:1000;}",
       ".lok-acct.open .lok-acct-menu{display:block;}",
       ".lok-acct-menu a,.lok-acct-menu button{display:block;width:100%;text-align:left;padding:9px 12px;border-radius:8px;font-family:inherit;font-size:13px;font-weight:500;color:#1A1829;background:none;border:none;cursor:pointer;text-decoration:none;box-sizing:border-box;}",

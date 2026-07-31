@@ -45,6 +45,13 @@
       // chip + its Settings/expansion menu pin to the BOTTOM instead of stacking
       // right under the last nav row (Availability).
       '@media (max-width:991px){.section-11 .div-block-29{margin-top:auto !important;}}',
+      // Francesca 2026-07-31: the bottom account/Settings area was easy to miss in
+      // the drawer — separate it with a hairline + give the chip a violet-tinted
+      // button treatment so it reads as a control, not footer residue.
+      '@media (max-width:991px){',
+      '.section-11 .div-block-29{border-top:1px solid #EEEDF6 !important;padding-top:12px !important;}',
+      '.section-11 .div-block-29 .lok-acct-chip{background:#F3EBFF !important;border-radius:12px !important;}',
+      '}',
       // 44px = mobile tap-target floor (#98); the icon stays 22px.
       '#lok-ham{width:44px;height:44px;border:none;border-radius:9px;padding:0;',
       'background:#6E3CFF;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;}',

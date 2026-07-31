@@ -368,8 +368,10 @@
       R + '.lk-seg-wrap{display:inline-flex;background:#fff;border:.5px solid ' + BORDER + ';border-radius:100px;padding:4px;gap:2px;margin-bottom:1.75rem;}',
       R + '.lk-seg{font-family:' + F + ';font-size:13px;font-weight:600;color:' + SLATE + ';padding:8px 20px;border-radius:100px;cursor:pointer;border:none;background:none;transition:all .15s;display:flex;align-items:center;gap:6px;}',
       R + '.lk-seg:hover:not(.is-active){color:' + DUSK + ';}',
-      // #39 — active tab pill in Lokali orange (was brand purple V).
-      R + '.lk-seg.is-active{background:#FF8D00;color:#fff;}',
+      // #39 orange → light violet (Francesca 2026-07-31: with the storefront CTA
+      // already orange, two oranges on one screen was too aggressive — the CTA
+      // keeps the action color, the active tab goes soft brand violet).
+      R + '.lk-seg.is-active{background:#F3EBFF;color:#6002EE;}',
       R + '.lk-seg-count{font-size:11px;opacity:.85;}',
       R + '.lk-pane{display:none;}',
       R + '.lk-pane.is-active{display:block;}',

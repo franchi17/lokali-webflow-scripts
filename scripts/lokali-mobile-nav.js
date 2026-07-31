@@ -26,7 +26,8 @@
       { label: 'Categories Guide',    href: '/vendor-resources/categories-guide' },
       { label: 'Product Photo Guide', href: '/vendor-resources/product-photo-guide' },
       { label: 'Service Photo Guide', href: '/vendor-resources/service-photo-guide' },
-      { label: 'Availability Guide',  href: '/vendor-resources/availability-guide' }
+      { label: 'Availability Guide',  href: '/vendor-resources/availability-guide' },
+      { label: 'Badges & Referrals',  href: '/vendor-resources/badges-guide' }
     ] },
     { label: 'Contact us',      href: '/contact-us' },
     { label: 'Login',           href: '/login' },
@@ -136,8 +137,19 @@
       'select.select-field-3,.mobile-sort-select select,#location-select{min-height:44px;}',
       '#browse-mobile-filter-btn{min-height:44px;box-sizing:border-box;}',
       // F4 — footer links were 14px-tall targets, ~20 of them stacked; pad them out.
-      '.lok-ft-link{display:inline-block;padding:10px 0;}',
-      '.lok-ft-contactlink{display:inline-block;padding:6px 0;}',
+      // Retuned 2026-07-31 (Francesca: mobile footer too spaced out): 10px→7px
+      // padding + line-height reset on the list rows + tighter group headings —
+      // rows stay comfortably tappable (~40px pitch) but the column reads compact.
+      '.lok-ft-link{display:inline-block;padding:7px 0;}',
+      '.lok-ft-contactlink{display:inline-block;padding:4px 0;}',
+      '.lok-ft-li{line-height:1;}',
+      '.lok-ft-h{margin-bottom:10px;}',
+      '}',
+      // Header decompression ≤640 (Francesca 2026-07-31: logo more to the left,
+      // nav bar squished): the header container ships margin-left/right 40px on
+      // top of the wrapper’s 20px padding = 60px inset. Trim to 12px on phones.
+      '@media screen and (max-width:640px){',
+      '.header-wrapper .container-default{margin-left:12px!important;margin-right:12px!important;}',
       '}',
       // F6 — /about: the hero background video rendered 5px wider than the page (width 380
       // at -2px left on a 375 viewport) and caused real horizontal scroll. Kept at ≤991 (a
@@ -328,6 +340,20 @@
       s.textContent = (a.textContent || '').trim();
       a.parentNode.replaceChild(s, a);
     });
+    // Badges & Referrals guide (2026-07-31): the footer's Resources list is
+    // native Webflow markup that predates the page — inject the sixth link
+    // after Availability Guide, cloned from its row so the styling can never
+    // drift. Script-side for the same reason as the label recast above: ships
+    // without a site publish.
+    var avail = document.querySelector('.lok-ft a[href*="availability-guide"]');
+    if (avail && !document.querySelector('.lok-ft a[href*="badges-guide"]')) {
+      var li = avail.closest('li') || avail.parentElement;
+      var clone = li.cloneNode(true);
+      var link = clone.querySelector('a') || clone;
+      link.setAttribute('href', '/vendor-resources/badges-guide');
+      link.textContent = 'Badges & Referrals';
+      li.parentNode.insertBefore(clone, li.nextSibling);
+    }
   }
 
   function init() {
