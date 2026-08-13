@@ -18,7 +18,14 @@
   var LINKS = [
     { label: 'About',           href: '/about' },
     { label: 'The Market',      href: '/the-market' },
-    { label: 'Pricing',         href: '/pricing' },
+    // Pricing = link + tap-to-expand anchor links into the page's key sections
+    // (mirrors the desktop "Pricing" dropdown from lokali-pricing-nav.js).
+    { label: 'Pricing', href: '/pricing', children: [
+      { label: 'Plans',             href: '/pricing#plans' },
+      { label: 'Compare plans',     href: '/pricing#compare' },
+      { label: 'Lokali vs. others', href: '/pricing#versus' },
+      { label: 'FAQ',               href: '/pricing#faq' }
+    ] },
     // Resources = a tap-to-expand accordion of the vendor-resources guides
     // (mirrors the desktop "Resources" dropdown from lokali-resources-nav.js).
     { label: 'Resources', children: [
@@ -62,6 +69,11 @@
       '#lok-mnav-panel .lok-mnav-car{width:9px;height:9px;border-right:2px solid currentColor;',
       'border-bottom:2px solid currentColor;transform:rotate(45deg);transition:transform .2s;flex-shrink:0;margin-right:4px;}',
       '#lok-mnav-panel .lok-mnav-grp.open .lok-mnav-car{transform:rotate(-135deg);}',
+      // Link + caret header row (Pricing): the label navigates, the caret expands.
+      '#lok-mnav-panel .lok-mnav-row{display:flex;align-items:stretch;border-bottom:1px solid rgba(15,23,42,.06);}',
+      '#lok-mnav-panel .lok-mnav-row a{flex:1 1 auto;border-bottom:0;}',
+      '#lok-mnav-panel .lok-mnav-accbtn{background:none;border:none;cursor:pointer;color:var(--lokali-primary,#6002ee);',
+      'display:flex;align-items:center;justify-content:center;min-width:44px;padding:0 6px;}',
       '#lok-mnav-panel .lok-mnav-sub{max-height:0;overflow:hidden;transition:max-height .25s ease;}',
       '#lok-mnav-panel .lok-mnav-grp.open .lok-mnav-sub{max-height:360px;}',
       '#lok-mnav-panel .lok-mnav-sub a{padding-left:20px;font-size:15px;}',
@@ -226,14 +238,12 @@
     panel.setAttribute('aria-label', 'Mobile navigation');
     LINKS.forEach(function (l) {
       if (l.children) {
-        // Accordion group (Resources): a tappable header + collapsible sub-links.
+        // Accordion group: a tappable header + collapsible sub-links. Two header
+        // shapes: no href (Resources) = the whole row is the toggle button;
+        // href (Pricing) = the label stays a normal link and only a separate
+        // 44px caret button toggles, so the two taps never fight.
         var grp = document.createElement('div');
         grp.className = 'lok-mnav-grp';
-        var hdr = document.createElement('button');
-        hdr.type = 'button';
-        hdr.className = 'lok-mnav-acc';
-        hdr.setAttribute('aria-expanded', 'false');
-        hdr.innerHTML = l.label + '<i class="lok-mnav-car" aria-hidden="true"></i>';
         var sub = document.createElement('div');
         sub.className = 'lok-mnav-sub';
         l.children.forEach(function (c) {
@@ -242,12 +252,37 @@
           sa.textContent = c.label;
           sub.appendChild(sa);
         });
-        hdr.addEventListener('click', function (e) {
+        var hdr;
+        function toggleSub(e) {
           e.preventDefault();
           var open = grp.classList.toggle('open');
           hdr.setAttribute('aria-expanded', open ? 'true' : 'false');
-        });
-        grp.appendChild(hdr);
+        }
+        if (l.href) {
+          var row = document.createElement('div');
+          row.className = 'lok-mnav-row';
+          var la = document.createElement('a');
+          la.href = l.href;
+          la.textContent = l.label;
+          hdr = document.createElement('button');
+          hdr.type = 'button';
+          hdr.className = 'lok-mnav-accbtn';
+          hdr.setAttribute('aria-expanded', 'false');
+          hdr.setAttribute('aria-label', l.label + ' sections');
+          hdr.innerHTML = '<i class="lok-mnav-car" aria-hidden="true"></i>';
+          hdr.addEventListener('click', toggleSub);
+          row.appendChild(la);
+          row.appendChild(hdr);
+          grp.appendChild(row);
+        } else {
+          hdr = document.createElement('button');
+          hdr.type = 'button';
+          hdr.className = 'lok-mnav-acc';
+          hdr.setAttribute('aria-expanded', 'false');
+          hdr.innerHTML = l.label + '<i class="lok-mnav-car" aria-hidden="true"></i>';
+          hdr.addEventListener('click', toggleSub);
+          grp.appendChild(hdr);
+        }
         grp.appendChild(sub);
         panel.appendChild(grp);
         return;
