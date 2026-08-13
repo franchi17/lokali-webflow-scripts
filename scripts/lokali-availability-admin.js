@@ -432,6 +432,17 @@
           '<label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#6C6880;cursor:pointer;">' +
             '<input type="checkbox" class="ava-enabled"' + (c.is_enabled ? ' checked' : '') + ' /> Calendar on</label>' +
         '</div>' +
+        // "Accepting new clients" (Francesca 2026-08-13) — instant-save on flip,
+        // separate from the main Save so a missing DB column (patch not applied
+        // yet) can never break the other settings. Off = the storefront shows
+        // a "not taking new clients" note + the general waitlist join.
+        '<div class="ava-acceptrow" style="display:flex;align-items:center;justify-content:space-between;gap:12px;background:#F6F2FD;border:1px solid #E9E3F7;border-radius:10px;padding:10px 14px;margin-bottom:14px;">' +
+          '<div><p style="margin:0;font-size:13px;font-weight:600;color:#3E3A55;">Accepting new clients</p>' +
+            '<p class="ava-note" style="margin:2px 0 0;">Off = your page says you&rsquo;re full and new clients can join your waitlist instead.</p></div>' +
+          '<label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#6C6880;cursor:pointer;flex-shrink:0;">' +
+            '<input type="checkbox" class="ava-accepting"' + (c.accepting_new_clients !== false ? ' checked' : '') + ' />' +
+            '<span class="ava-accepting-msg"></span></label>' +
+        '</div>' +
         '<p class="ava-sub" style="margin:0 0 4px;">Capacity mode</p>' +
         '<div class="ava-seg ava-mode" style="margin-bottom:14px;">' +
           '<div data-m="quantity" role="button" tabindex="0" aria-pressed="' + (c.capacity_mode === 'quantity') + '" class="' + (c.capacity_mode === 'quantity' ? 'on' : '') + '">By quantity</div>' +
@@ -522,6 +533,31 @@
       this.$settings.querySelector('.ava-caprow').style.display = 'none';
     } else {
       this.$settings.querySelector('.ava-slotrow').style.display = 'none';
+    }
+
+    // Accepting-new-clients: save the one field on flip. On failure (e.g. the
+    // SQL patch isn't applied yet) revert the checkbox and say so quietly.
+    var acceptCb = this.$settings.querySelector('.ava-accepting');
+    var acceptMsg = this.$settings.querySelector('.ava-accepting-msg');
+    if (acceptCb) {
+      acceptCb.addEventListener('change', function () {
+        var next = acceptCb.checked;
+        acceptMsg.textContent = 'Saving…';
+        API.saveConfig(self.vendorId, {
+          accepting_new_clients: next,
+          updated_at: new Date().toISOString()
+        }).then(function (r) {
+          if (r && r.error) {
+            acceptCb.checked = !next;
+            acceptMsg.textContent = 'Couldn’t save';
+            console.warn('[availability] accepting_new_clients save failed (SQL patch applied?)', r.error);
+          } else {
+            self.cfg.accepting_new_clients = next;
+            acceptMsg.textContent = next ? 'On' : 'Off';
+          }
+          setTimeout(function () { acceptMsg.textContent = ''; }, 2500);
+        });
+      });
     }
 
     this.$settings.querySelector('.ava-save').addEventListener('click', function () {
@@ -845,17 +881,22 @@
       return;
     }
     if (!this.waitlist.length) { this.$waitlist.innerHTML = ''; return; }
+    // General (date-less) rows = the NEW-CLIENT waitlist (vendor flipped
+    // "accepting new clients" off; Francesca 2026-08-13) — grouped first,
+    // then the per-date queues. Same Offer flow for both.
+    var general = this.waitlist.filter(function (w) { return !w.the_date; });
+    var dated = this.waitlist.filter(function (w) { return !!w.the_date; });
     var byDate = {};
-    this.waitlist.forEach(function (w) { (byDate[w.the_date] = byDate[w.the_date] || []).push(w); });
+    dated.forEach(function (w) { (byDate[w.the_date] = byDate[w.the_date] || []).push(w); });
     var html = '<div class="ava-card"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">' +
       '<h3>Waitlist</h3><span class="ava-sub">' + this.waitlist.length + ' waiting for a spot</span></div>';
-    Object.keys(byDate).sort().forEach(function (dISO) {
-      html += '<p style="margin:12px 0 2px;font-size:13px;font-weight:600;color:#3E3A55;">' + esc(prettyDate(dISO)) + '</p>';
-      byDate[dISO].forEach(function (w, idx) {
+    function rowsFor(list) {
+      var out = '';
+      list.forEach(function (w, idx) {
         var right = w.status === 'offered'
           ? '<span class="ava-chip" style="background:#E7F3EC;color:#3E7C5E;">Offer sent</span>'
           : '<button class="ava-btn" data-offer="' + w.id + '">Offer spot</button>';
-        html += '<div class="ava-row">' +
+        out += '<div class="ava-row">' +
           '<span style="font-size:12px;font-weight:600;color:#B0ACBC;width:14px;">' + (idx + 1) + '</span>' +
           '<div class="ava-avatar" style="background:#F5EFE4;color:#B5793B;">' + esc(initials(w.customer_name || w.customer_email)) + '</div>' +
           '<div style="flex:1;min-width:0;"><p style="margin:0;font-size:14px;font-weight:500;color:#3E3A55;">' +
@@ -864,6 +905,16 @@
             '<p style="margin:1px 0 0;font-size:12px;color:#8B8798;">' + esc(w.customer_email || '') + '</p></div>' +
           '<div data-wrow="' + w.id + '">' + right + '</div></div>';
       });
+      return out;
+    }
+    if (general.length) {
+      html += '<p style="margin:12px 0 2px;font-size:13px;font-weight:600;color:#3E3A55;">New clients' +
+        '<span class="ava-sub" style="font-weight:400;"> · waiting for any opening</span></p>';
+      html += rowsFor(general);
+    }
+    Object.keys(byDate).sort().forEach(function (dISO) {
+      html += '<p style="margin:12px 0 2px;font-size:13px;font-weight:600;color:#3E3A55;">' + esc(prettyDate(dISO)) + '</p>';
+      html += rowsFor(byDate[dISO]);
     });
     html += '</div>';
     this.$waitlist.innerHTML = html;

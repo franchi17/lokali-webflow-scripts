@@ -315,6 +315,14 @@
           return c.rpc('availability_hours_public', { p_vendors_id: vendorId });
         });
       },
+      // "Accepting new clients" flag (anon boolean RPC). Defensive: until
+      // patch_accepting_new_clients.sql is applied the RPC doesn't exist —
+      // callers must treat an error as "accepting" (true).
+      accepting: function (vendorId) {
+        return withClient(function (c) {
+          return c.rpc('availability_accepting', { p_vendors_id: vendorId });
+        });
+      },
       // Public date-aware inquiry -> /availability/submit (service-role RPC +
       // vendor notify). No auth (open to logged-out visitors). Returns
       // { data: { ok, inquiry_id } | { ok:false, reason }, error }.

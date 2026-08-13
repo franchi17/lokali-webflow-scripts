@@ -282,7 +282,9 @@
     ".vcard:hover{border-color:#D4AAFD;box-shadow:0 4px 16px rgba(96,2,238,.08);transform:translateY(-1px);}",
     ".vcard-spotlight{border-color:rgba(96,2,238,.2);background:linear-gradient(160deg,rgba(96,2,238,.02) 0%,#fff 60%);}",
     ".vcard-header{display:flex;align-items:flex-start;gap:12px;margin-bottom:10px;}",
-    ".vcard-avatar{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;flex-shrink:0;border:.5px solid rgba(0,0,0,.06);overflow:hidden;}",
+    // Circle, not rounded square — the profile page promises vendors a round
+    // logo, and the storefront renders it round (Francesca 2026-08-13).
+    ".vcard-avatar{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;flex-shrink:0;border:.5px solid rgba(0,0,0,.06);overflow:hidden;}",
     ".vcard-avatar-initials{background:#F3EBFF;color:#6002EE;letter-spacing:.5px;}",
     ".vcard-avatar-img{width:100%;height:100%;object-fit:cover;display:block;}",
     ".vcard-meta{flex:1;min-width:0;}",
@@ -1372,6 +1374,10 @@
 
     injectStyles();
     ensureLoadingEl();
+    // Hand-off from the page-head pre-script guard (the-market head CSS hides
+    // the Webflow-baked "No vendors found"/"0 vendors" and spins a pure-CSS
+    // loader until this script boots) — from here the script owns presentation.
+    document.body.classList.add('lk-browse-ready');
     // Blank the Webflow-baked "0" counts until the first real result lands —
     // "0 vendors found" over an empty grid reads as an empty marketplace.
     setText(el('browse-result-count'), '…'); setText(el('browse-grid-count'), '…');

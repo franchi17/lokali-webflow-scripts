@@ -209,17 +209,67 @@
   }
 
   // ---- rendering -----------------------------------------------------------
-  function Widget(mount, vendorId, hours, hasCalendar) {
+  function Widget(mount, vendorId, hours, hasCalendar, opts) {
     this.mount = mount;
     this.vendorId = vendorId;
     this.hours = hours || [];         // [{weekday, open, close}] from hoursPublic
     this.hasCalendar = !!hasCalendar; // false => hours-only storefront (booking off)
+    // "Accepting new clients" (Francesca 2026-08-13): off = the booking flow is
+    // replaced by a full-books note + (Featured) the general waitlist join.
+    this.accepting = !opts || opts.accepting !== false;
+    this.canWaitlist = !!(opts && opts.canWaitlist);
     this.viewMonth = firstOfMonth(new Date());
     this.statusByDate = {};
     this.selected = null;
     this.render();
-    if (this.hasCalendar) this.loadMonth();
+    if (this.hasCalendar && this.accepting) this.loadMonth();
   }
+
+  // Full-books banner + general (date-less) waitlist join.
+  Widget.prototype.closedHTML = function () {
+    var inp = 'font-family:inherit;font-size:16px;color:#45415A;border:1px solid #E4DEF4;border-radius:9px;padding:9px 11px;background:#fff;box-sizing:border-box;width:100%;';
+    return '<div class="av-card av-closed" style="margin-bottom:14px;">' +
+      '<p style="margin:0 0 6px;font-size:15px;font-weight:600;color:#3E3A55;">Not taking new clients right now</p>' +
+      '<p style="margin:0;font-size:13px;color:#6C6880;line-height:1.5;">' + (this.canWaitlist
+        ? 'Their books are full at the moment — join the waitlist and they’ll reach out when a spot opens up.'
+        : 'Their books are full at the moment — check back soon.') + '</p>' +
+      (this.canWaitlist
+        ? '<div class="av-join" style="margin-top:12px;display:flex;flex-direction:column;gap:8px;max-width:340px;">' +
+            '<input type="text" class="av-join-name" placeholder="Your name" style="' + inp + '">' +
+            '<input type="email" class="av-join-email" placeholder="you@email.com" style="' + inp + '">' +
+            '<input type="text" class="av-join-hp" tabindex="-1" autocomplete="off" style="display:none;">' +
+            '<button type="button" class="av-join-btn" style="font-family:inherit;font-size:14px;font-weight:600;color:#fff;background:#6002EE;border:none;border-radius:9px;padding:11px 16px;cursor:pointer;">Join the waitlist</button>' +
+            '<p class="av-join-msg" style="margin:0;font-size:12px;color:#8B8798;"></p>' +
+          '</div>'
+        : '') +
+      '</div>';
+  };
+
+  Widget.prototype.bindJoin = function () {
+    var self = this;
+    var btn = this.mount.querySelector('.av-join-btn');
+    if (!btn) return;
+    btn.addEventListener('click', function () {
+      var name = (self.mount.querySelector('.av-join-name').value || '').trim();
+      var email = (self.mount.querySelector('.av-join-email').value || '').trim();
+      var hp = (self.mount.querySelector('.av-join-hp').value || '').trim();
+      var msg = self.mount.querySelector('.av-join-msg');
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { msg.textContent = 'Please enter a valid email.'; return; }
+      btn.disabled = true; btn.style.opacity = '.6';
+      API.joinWaitlist({ vendorId: self.vendorId, date: null, email: email, name: name || null, website: hp || null })
+        .then(function (r) {
+          var res = (r && r.data) || {};
+          if (res.ok) {
+            var box = self.mount.querySelector('.av-join');
+            box.innerHTML = '<p style="margin:0;font-size:13.5px;font-weight:600;color:#3E7C5E;">You’re on the list ✓ They’ll reach out when a spot opens.</p>';
+          } else {
+            btn.disabled = false; btn.style.opacity = '';
+            msg.textContent = 'Couldn’t join right now — please try again.';
+          }
+        })
+        .catch(function () { btn.disabled = false; btn.style.opacity = ''; msg.textContent = 'Couldn’t join right now — please try again.'; });
+    });
+  };
 
   // "Hours" card — the vendor's weekly open→close schedule (split days render as
   // "9:00 AM – 12:00 PM, 2:00 – 5:00 PM"). Empty string when the vendor set none.
@@ -265,6 +315,13 @@
 
   Widget.prototype.render = function () {
     this.mount.className = 'lok-av';
+    // Books full: the closed banner (+ waitlist join) replaces the booking
+    // flow entirely; hours stay visible for existing clients.
+    if (!this.accepting) {
+      this.mount.innerHTML = this.closedHTML() + this.hoursHTML();
+      this.bindJoin();
+      return;
+    }
     // Calendar leads, hours follow (Francesca 2026-07-20 — was hours-first).
     this.mount.innerHTML = (this.hasCalendar ? this.calendarHTML() : '') + this.hoursHTML();
     if (!this.hasCalendar) return;    // hours-only: nothing else to wire
@@ -595,15 +652,23 @@
       var from = firstOfMonth(new Date()), to = lastOfMonth(new Date());
       Promise.all([
         API.calendar(vid, iso(from), iso(to)),
-        API.hoursPublic ? API.hoursPublic(vid) : Promise.resolve({ data: [] })
+        API.hoursPublic ? API.hoursPublic(vid) : Promise.resolve({ data: [] }),
+        // Defensive probes: until patch_accepting_new_clients.sql is applied
+        // the accepting RPC doesn't exist — any error reads as "accepting".
+        API.accepting ? API.accepting(vid) : Promise.resolve(null),
+        API.waitlistOpen ? API.waitlistOpen(vid) : Promise.resolve(null)
       ]).then(function (res) {
         var calRows = (res[0] && res[0].data) || [];
         var hours = (res[1] && res[1].data) || [];
-        if (!calRows.length && !hours.length) return;
+        var accepting = !(res[2] && res[2].data === false);
+        var canWaitlist = !!(res[3] && res[3].data === true);
+        // Books-full vendors render the closed banner even with no calendar
+        // or hours — the banner IS the content.
+        if (!calRows.length && !hours.length && accepting) return;
         var mount = findMount();
         if (!mount) return;
         injectStyles();
-        new Widget(mount, vid, hours, calRows.length > 0);
+        new Widget(mount, vid, hours, calRows.length > 0, { accepting: accepting, canWaitlist: canWaitlist });
       });
     });
   }
