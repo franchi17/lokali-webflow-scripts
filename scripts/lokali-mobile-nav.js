@@ -76,6 +76,11 @@
       '#lok-mnav-panel .lok-mnav-car{width:9px;height:9px;border-right:2px solid currentColor;',
       'border-bottom:2px solid currentColor;transform:rotate(45deg);transition:transform .2s;flex-shrink:0;margin-right:4px;}',
       '#lok-mnav-panel .lok-mnav-grp.open .lok-mnav-car{transform:rotate(-135deg);}',
+      // Group-header caret (Resources) hugs the button's right edge while the
+      // 44px accbtn carets (Features/Pricing) are flex-centered ~22px from the
+      // edge - align all three to the same x-center (13.5px measured live:
+      // all three at the same pixel).
+      '#lok-mnav-panel .lok-mnav-acc .lok-mnav-car{margin-right:13.5px;}',
       // Link + caret header row (Pricing): the label navigates, the caret expands.
       '#lok-mnav-panel .lok-mnav-row{display:flex;align-items:stretch;border-bottom:1px solid rgba(15,23,42,.06);}',
       '#lok-mnav-panel .lok-mnav-row a{flex:1 1 auto;border-bottom:0;}',
