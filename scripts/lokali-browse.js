@@ -85,8 +85,12 @@
 
   // #96 — curated subcategory taxonomy, keyed by category id. Source of truth
   // for labels = the categories-guide "Examples" pills (Francesca-approved
-  // 2026-07-20). MIRRORED in lokali-profile-page-embed.js (the vendor picker)
-  // — keep the two lists identical. DB stores slugs; unknown slugs are inert.
+  // 2026-07-20). DB stores slugs; unknown/deactivated slugs are inert.
+  // ⚠️ This is only the FALLBACK — the live `subcategory` table wins (fetched
+  // below), which is why a taxonomy change is SQL-first, then ship this.
+  // (Corrected 2026-08-13: an older note here claimed this list is mirrored in
+  // lokali-profile-page-embed.js. It isn't — that file has no subcategory list
+  // at all, and the listing forms read the live table directly.)
   var SUBCATS_BY_CAT = {
     1: [ // Handcrafted Goods (Artisans & Makers)
       { slug: 'handmade-jewelry',     label: 'Handmade jewelry' },
@@ -158,14 +162,15 @@
       { slug: 'acupuncture',          label: 'Acupuncture' },
       { slug: 'mental-wellness',      label: 'Mental wellness support' }
     ],
-    8: [ // Home
+    8: [ // Home & Property (#118 — property roles lead, then the trades;
+         // 'painting' + 'home-organization' retired to keep the 8-pill grid)
+      { slug: 'real-estate-agents',   label: 'Real estate agents' },
+      { slug: 'mortgage-lending',     label: 'Mortgage & lending' },
       { slug: 'cleaning',             label: 'Cleaning services' },
       { slug: 'landscaping',          label: 'Landscaping & lawn care' },
       { slug: 'handyman',             label: 'Handyman & repairs' },
-      { slug: 'painting',             label: 'Painting' },
       { slug: 'pool-maintenance',     label: 'Pool maintenance' },
-      { slug: 'interior-decorating',  label: 'Interior decorating' },
-      { slug: 'home-organization',    label: 'Home organization' },
+      { slug: 'interior-decorating',  label: 'Interior decorating & staging' },
       { slug: 'pest-control',         label: 'Pest control' }
     ]
   };
