@@ -18,6 +18,13 @@
   var LINKS = [
     { label: 'About',           href: '/about' },
     { label: 'The Market',      href: '/the-market' },
+    // Features = link + tap-to-expand audience pages (mirrors the desktop
+    // "Features" dropdown from lokali-resources-nav.js; the label lands on
+    // the /features chooser).
+    { label: 'Features', href: '/features', children: [
+      { label: 'For customers', href: '/for-customers' },
+      { label: 'For vendors',   href: '/for-vendors' }
+    ] },
     // Pricing = link + tap-to-expand anchor links into the page's key sections
     // (mirrors the desktop "Pricing" dropdown from lokali-pricing-nav.js).
     { label: 'Pricing', href: '/pricing', children: [

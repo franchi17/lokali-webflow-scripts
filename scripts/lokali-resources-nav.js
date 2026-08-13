@@ -1,17 +1,22 @@
 /*
-  Lokali — "Vendor Resources" header dropdown (nav injection).
+  Lokali — header dropdowns (nav injection): "Features" + "Resources".
 
-  Adds a "Vendor Resources" item to the header nav, right after Pricing, that
-  reveals the vendor-resources guide pages. Injected by JS (same established
-  pattern as lokali-auth-nav.js / lokali-availability.js) so the shared Webflow
-  header component is never edited — additive + trivially reversible (remove the
-  one footer <script> tag and it's gone).
+  Adds a "Features" item (after The Market) revealing the two audience feature
+  pages, and a "Resources" item (after Pricing) revealing the vendor-resources
+  guide pages. Injected by JS (same established pattern as lokali-auth-nav.js /
+  lokali-availability.js) so the shared Webflow header component is never
+  edited — additive + trivially reversible (remove the one footer <script> tag
+  and it's gone).
 
   Responsive by design, works in BOTH nav menus:
     - Desktop list (.header-nav-menu-list, not in .w-nav-menu): a hover/click
       dropdown panel positioned under the trigger.
     - Mobile hamburger list (inside .w-nav-menu / .show-in-tablet): a tap-to-
       expand inline accordion (hover doesn't exist on touch).
+
+  "Features" is a real link — clicking it lands on /features (the chooser
+  page); only the two audience pages appear in its hover panel. On mobile the
+  tap therefore navigates to /features, which links both pages itself.
 
   Load site-wide via the footer:
     <script src="https://cdn.jsdelivr.net/gh/franchi17/lokali-webflow-scripts@v1.4/scripts/lokali-resources-nav.js"></script>
@@ -24,15 +29,35 @@
 
   var BRAND = '#6002EE';
   var FONT = "'Plus Jakarta Sans', sans-serif";
-  // Onboarding-ish order: set up the profile, pick categories, add photos, then
-  // turn on availability. Keep labels short — they wrap on mobile otherwise.
-  var LINKS = [
-    { href: '/vendor-resources/profile-photo-guide', label: 'Profile Photo Guide' },
-    { href: '/vendor-resources/categories-guide',    label: 'Categories Guide' },
-    { href: '/vendor-resources/product-photo-guide', label: 'Product Photo Guide' },
-    { href: '/vendor-resources/service-photo-guide', label: 'Service Photo Guide' },
-    { href: '/vendor-resources/availability-guide',  label: 'Availability Guide' },
-    { href: '/vendor-resources/badges-guide',        label: 'Badges & Referrals' }
+  var MENUS = [
+    {
+      // A real link: click lands on the /features chooser; the panel only
+      // holds the two audience pages.
+      marker: 'lok-dd-feat',
+      label: 'Features',
+      href: '/features',
+      anchor: 'a[href*="/the-market"]',
+      links: [
+        { href: '/for-customers', label: 'For customers' },
+        { href: '/for-vendors',   label: 'For vendors' }
+      ]
+    },
+    {
+      marker: 'lok-dd-res',
+      label: 'Resources',
+      href: null, // toggle-only trigger (button)
+      anchor: 'a[href*="/pricing"]',
+      // Onboarding-ish order: set up the profile, pick categories, add photos,
+      // then turn on availability. Keep labels short — they wrap on mobile.
+      links: [
+        { href: '/vendor-resources/profile-photo-guide', label: 'Profile Photo Guide' },
+        { href: '/vendor-resources/categories-guide',    label: 'Categories Guide' },
+        { href: '/vendor-resources/product-photo-guide', label: 'Product Photo Guide' },
+        { href: '/vendor-resources/service-photo-guide', label: 'Service Photo Guide' },
+        { href: '/vendor-resources/availability-guide',  label: 'Availability Guide' },
+        { href: '/vendor-resources/badges-guide',        label: 'Badges & Referrals' }
+      ]
+    }
   ];
 
   function injectStyles() {
@@ -40,7 +65,7 @@
     var css =
       '.lok-res-li{position:relative;}' +
       '.lok-res-trig{display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-family:' + FONT + ';' +
-        'font-size:16px;font-weight:500;color:' + BRAND + ';background:none;border:none;padding:0;margin:0;line-height:inherit;}' +
+        'font-size:16px;font-weight:500;color:' + BRAND + ';background:none;border:none;padding:0;margin:0;line-height:inherit;text-decoration:none;}' +
       '.lok-res-car{display:inline-block;width:7px;height:7px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;' +
         'transform:rotate(45deg) translateY(-1px);transition:transform .2s;flex-shrink:0;}' +
       // caret flips on desktop hover OR when pinned open (click); mobile uses .open only
@@ -69,10 +94,10 @@
     document.head.appendChild(s);
   }
 
-  function buildPanel() {
+  function buildPanel(links) {
     var p = document.createElement('div');
     p.className = 'lok-res-panel';
-    LINKS.forEach(function (l) {
+    links.forEach(function (l) {
       var a = document.createElement('a');
       a.href = l.href;
       a.textContent = l.label;
@@ -81,28 +106,39 @@
     return p;
   }
 
-  function inject(ul) {
-    if (!ul || ul.querySelector('.lok-res-li')) return;          // idempotent per list
-    var pricing = ul.querySelector('a[href*="/pricing"]');
-    var anchorLi = pricing ? pricing.closest('li') : null;
+  function inject(ul, cfg) {
+    if (!ul || ul.querySelector('.' + cfg.marker)) return;        // idempotent per list+menu
+    var anchor = ul.querySelector(cfg.anchor);
+    var anchorLi = anchor ? anchor.closest('li') : null;
     var isMobile = !!ul.closest('.w-nav-menu, .show-in-tablet');
 
     var li = document.createElement('li');
-    li.className = (anchorLi ? anchorLi.className + ' ' : 'header-nav-list-item middle ') + 'lok-res-li' + (isMobile ? ' mob' : '');
+    li.className = (anchorLi ? anchorLi.className + ' ' : 'header-nav-list-item middle ') +
+      'lok-res-li ' + cfg.marker + (isMobile ? ' mob' : '');
 
-    var trig = document.createElement('button');
+    // Link triggers navigate on click (desktop hover still reveals the panel);
+    // null-href triggers are toggle buttons.
+    var trig;
+    if (cfg.href) {
+      trig = document.createElement('a');
+      trig.href = cfg.href;
+    } else {
+      trig = document.createElement('button');
+      trig.setAttribute('type', 'button');
+    }
     trig.className = 'lok-res-trig';
-    trig.setAttribute('type', 'button');
     trig.setAttribute('aria-haspopup', 'true');
     trig.setAttribute('aria-expanded', 'false');
-    trig.innerHTML = 'Resources<i class="lok-res-car" aria-hidden="true"></i>';
+    trig.innerHTML = cfg.label + '<i class="lok-res-car" aria-hidden="true"></i>';
 
-    var panel = buildPanel();
+    var panel = buildPanel(cfg.links);
     li.appendChild(trig);
     li.appendChild(panel);
 
     if (anchorLi && anchorLi.parentNode === ul) ul.insertBefore(li, anchorLi.nextSibling);
     else ul.appendChild(li);
+
+    if (cfg.href) return; // link trigger: hover-only panel, click navigates
 
     function setOpen(open) {
       li.classList.toggle('open', open);
@@ -126,7 +162,9 @@
     var lists = document.querySelectorAll('.header-nav-menu-list');
     if (!lists.length) return false;
     injectStyles();
-    Array.prototype.forEach.call(lists, inject);
+    Array.prototype.forEach.call(lists, function (ul) {
+      MENUS.forEach(function (cfg) { inject(ul, cfg); });
+    });
     return true;
   }
 
