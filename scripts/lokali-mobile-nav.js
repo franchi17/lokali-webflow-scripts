@@ -30,7 +30,7 @@
     { label: 'Pricing', href: '/pricing', children: [
       { label: 'Plans',             href: '/pricing#plans' },
       { label: 'Compare plans',     href: '/pricing#compare' },
-      { label: 'Lokali vs. others', href: '/pricing#versus' },
+      { label: 'Why Lokali',        href: '/pricing#versus' },
       { label: 'FAQ',               href: '/pricing#faq' }
     ] },
     // Resources = a tap-to-expand accordion of the vendor-resources guides
