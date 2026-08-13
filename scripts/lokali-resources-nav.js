@@ -63,6 +63,13 @@
   function injectStyles() {
     if (document.getElementById('lok-res-styles')) return;
     var css =
+      // Vertical alignment of the whole desktop nav row: Webflow NavbarLinks
+      // ride vertical-align:top while plain links (Contact us) and our
+      // injected triggers sit on the baseline, ~2px lower. Normalize all of
+      // them to the NavbarLink position (measured: every label at the same
+      // pixel afterwards).
+      '.header-nav-menu-list a.header-nav-link:not(.w-nav-link){vertical-align:top;}' +
+      '.lok-res-li:not(.mob) > .lok-res-trig{position:relative;top:-2px;}' +
       '.lok-res-li{position:relative;}' +
       '.lok-res-trig{display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-family:' + FONT + ';' +
         'font-size:16px;font-weight:500;color:' + BRAND + ';background:none;border:none;padding:0;margin:0;line-height:inherit;text-decoration:none;}' +
