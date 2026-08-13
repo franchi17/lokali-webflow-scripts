@@ -465,18 +465,6 @@
         return { data: out.data || { ok: true }, error: null, status: 200 };
       });
     },
-    // #66 Phase 1 — open a storefront (person-first unlock). Promotes the caller
-    // customer->vendor + creates their vendors row server-side. Busts the memoized
-    // vendor/billing caches so the (now-vendor) session reads fresh; the caller
-    // then hard-navs to /dashboard, which re-boots role from get_my_role(). The
-    // jsonb ({ ok, vendors_id, ... } | { ok:false, reason }) rides through as data.
-    openStorefront: function (businessName) {
-      return SAPI().account.openStorefront(businessName).then(function (res) {
-        var out = envelope(res);
-        if (!out.error) { invalidateMe(); invalidateBilling(); }
-        return out;
-      });
-    },
     logout: function () {
       invalidateMe(); invalidateBilling(); _appUserP = null;
       return Promise.resolve({ data: null, error: null, status: 200 });
@@ -1036,6 +1024,21 @@
         var out = envelope(res);
         if (out.error) return out;
         return { data: { ok: true }, error: null, status: 200 };
+      });
+    },
+    // #66 Phase 1 — open a storefront (person-first unlock). Promotes the caller
+    // customer->vendor + creates their vendors row server-side. Busts the memoized
+    // vendor/billing caches so the (now-vendor) session reads fresh; the caller
+    // then hard-navs to /dashboard, which re-boots role from get_my_role(). The
+    // jsonb ({ ok, vendors_id, ... } | { ok:false, reason }) rides through as data.
+    // ⚠️ Lives HERE in the account group because lokali-account.js calls
+    // api().account.openStorefront — it sat unreachable in `auth` from 07-10 to
+    // 2026-08-13 (#114): the first real click of the /account card found it.
+    openStorefront: function (businessName) {
+      return SAPI().account.openStorefront(businessName).then(function (res) {
+        var out = envelope(res);
+        if (!out.error) { invalidateMe(); invalidateBilling(); }
+        return out;
       });
     }
   };

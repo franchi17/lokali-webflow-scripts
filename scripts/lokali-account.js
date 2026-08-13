@@ -1131,16 +1131,21 @@
       card.classList.toggle('open', opening);
       if (opening) input.focus();
     });
-    cancel.addEventListener('click', function () { card.classList.remove('open'); });
+    // #113/#114 hardening: ANY exit that isn't success must reset the button —
+    // a throw or rejection used to strand it at "Creating…" forever (and Cancel
+    // didn't reset it either), which is exactly how the 2026-08-13 wiring bug
+    // presented. The .catch below is load-bearing, not decoration.
+    function resetCreate() { create.disabled = false; create.textContent = 'Create storefront'; }
+    cancel.addEventListener('click', function () { card.classList.remove('open'); resetCreate(); });
     function submit() {
       var name = (input.value || '').trim();
       if (!name) { toast(SF_REASONS.name_required); input.focus(); return; }
       create.disabled = true; create.textContent = 'Creating…';
       api().account.openStorefront(name).then(function (res) {
         var d = res && res.data;
-        if (res && res.error) { create.disabled = false; create.textContent = 'Create storefront'; toast('Couldn’t open your storefront — please try again.'); return; }
+        if (res && res.error) { resetCreate(); toast('Couldn’t open your storefront — please try again.'); return; }
         if (!d || d.ok !== true) {
-          create.disabled = false; create.textContent = 'Create storefront';
+          resetCreate();
           toast(SF_REASONS[d && d.reason] || 'Couldn’t open your storefront — please try again.');
           return;
         }
@@ -1155,6 +1160,9 @@
         // (lokali-dashboard-page.js consumes + clears this flag).
         try { sessionStorage.setItem('lokali_sf_wizard', '1'); } catch (e) {}
         setTimeout(function () { window.location.href = '/vendor-dashboard/dashboard'; }, 700);
+      }).catch(function () {
+        resetCreate();
+        toast('Couldn’t open your storefront — please try again.');
       });
     }
     create.addEventListener('click', submit);
