@@ -110,8 +110,13 @@
       '.lok-ava .ava-cell.closed{background:#FAFAFC;color:#C9C5D6;border:1px solid #F0EDF5;}' +
       '.lok-ava .ava-cell.err{outline:2px solid #DFA284;outline-offset:-2px;}' +
       '.lok-ava .ava-cell.pad{background:transparent;border:none;cursor:default;}' +
-      '.lok-ava .ava-row{display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid #F2EFF8;}' +
+      '.lok-ava .ava-row{display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid #F2EFF8;}' +
       '.lok-ava .ava-row:last-child{border-bottom:none;}' +
+      // decline-with-note panel (Francesca 2026-08-13)
+      '.lok-ava .ava-decline-panel{flex-basis:100%;display:flex;flex-direction:column;gap:8px;background:#FCFBFE;border:1px solid #E9E3F7;border-radius:10px;padding:10px 12px;}' +
+      '.lok-ava .ava-decline-note{font-family:inherit;font-size:13px;line-height:1.5;color:#45415A;border:1px solid #E4DEF4;border-radius:9px;padding:8px 10px;background:#fff;resize:vertical;min-height:48px;}' +
+      '.lok-ava .ava-decline-btns{display:flex;gap:8px;flex-wrap:wrap;}' +
+      '.lok-ava .ava-decline-send{color:#9E5F44;background:#FAE9E2;}' +
       '.lok-ava .ava-avatar{width:36px;height:36px;border-radius:50%;background:#EEE6FF;display:flex;align-items:center;' +
         'justify-content:center;color:' + BRAND + ';font-weight:600;font-size:13px;flex-shrink:0;}' +
       '.lok-ava input[type=time]{font-family:inherit;font-size:13px;color:#45415A;border:1px solid #E4DEF4;border-radius:9px;padding:5px 8px;background:#FCFBFE;}' +
@@ -340,32 +345,67 @@
       var row = btn.closest('[data-inq]');
       var id = Number(row.getAttribute('data-inq'));
       var actions = row.querySelector('.ava-actions');
-      // Decline sits 7px from Confirm and can't be undone (not_pending guard) —
-      // arm on the first click, fire only on a second within the window.
-      if (btn.getAttribute('data-a') === 'decline' && !btn.getAttribute('data-armed')) {
-        btn.setAttribute('data-armed', '1');
-        btn.textContent = 'Decline — sure?';
-        btn.style.color = '#9E5F44';
-        setTimeout(function () {
-          if (btn.getAttribute('data-armed')) {
-            btn.removeAttribute('data-armed');
-            btn.textContent = 'Decline';
-            btn.style.color = '';
-          }
-        }, 4000);
+      var act = btn.getAttribute('data-a');
+
+      // Decline opens an inline panel (Francesca 2026-08-13): an OPTIONAL
+      // customer-facing note plus an explicit Send step — which also replaces
+      // the old "Decline — sure?" arming (decline can't be undone).
+      if (act === 'decline') {
+        if (row.querySelector('.ava-decline-panel')) return;
+        var panel = document.createElement('div');
+        panel.className = 'ava-decline-panel';
+        panel.innerHTML =
+          '<textarea class="ava-decline-note" maxlength="500" rows="2" placeholder="Optional: a short note for the customer — e.g. “booked up that week, the 24th is open”. It goes in their email."></textarea>' +
+          '<div class="ava-decline-btns">' +
+            '<button type="button" class="ava-btn2 ava-decline-send" data-a="decline-send">Send decline</button>' +
+            '<button type="button" class="ava-btn2" data-a="decline-cancel">Keep request</button></div>';
+        row.appendChild(panel);
         return;
       }
+      if (act === 'decline-cancel') {
+        var pc = row.querySelector('.ava-decline-panel');
+        if (pc) pc.remove();
+        return;
+      }
+      if (act === 'decline-send') {
+        var pd = row.querySelector('.ava-decline-panel');
+        var noteEl = pd && pd.querySelector('.ava-decline-note');
+        var reason = noteEl ? String(noteEl.value || '').trim().slice(0, 500) : '';
+        if (pd) pd.remove();
+        actions.innerHTML = '<span class="ava-sub">Working…</span>';
+        API.decline(id).then(function (r) {
+          var res = (r && r.data) || {};
+          if (res.ok) {
+            actions.innerHTML = '<span class="ava-sub">Declined</span>';
+            // Best-effort decline email carrying the optional note — the RPC
+            // already committed the state; a mail failure must not undo it.
+            // The chip only claims an email once the server says it sent one.
+            if (API.notifyDeclined) {
+              try {
+                API.notifyDeclined(id, reason).then(function (nr) {
+                  if (nr && nr.data && nr.data.sent) {
+                    actions.innerHTML = '<span class="ava-sub">Declined · customer emailed</span>';
+                  }
+                }).catch(function () {});
+              } catch (e2) {}
+            }
+            self.pending = self.pending.filter(function (p) { return p.id !== id; });
+            self.refreshMonth();
+          } else {
+            actions.innerHTML = '<span class="ava-chip" style="background:#FAE9E2;color:#9E5F44;">Couldn’t update — reload</span>';
+          }
+        });
+        return;
+      }
+
       actions.innerHTML = '<span class="ava-sub">Working…</span>';
-      var call = btn.getAttribute('data-a') === 'confirm' ? API.confirm(id) : API.decline(id);
-      call.then(function (r) {
+      API.confirm(id).then(function (r) {
         var res = (r && r.data) || {};
         if (res.ok) {
-          actions.innerHTML = btn.getAttribute('data-a') === 'confirm'
-            ? '<span class="ava-chip" style="background:#E7F3EC;color:#3E7C5E;">✓ Confirmed · customer keeps their spot</span>'
-            : '<span class="ava-sub">Declined</span>';
+          actions.innerHTML = '<span class="ava-chip" style="background:#E7F3EC;color:#3E7C5E;">✓ Confirmed · customer keeps their spot</span>';
           // Email the customer their request is confirmed (best-effort; the RPC
           // already committed the state — a mail failure must not undo it).
-          if (btn.getAttribute('data-a') === 'confirm' && API.notifyConfirmed) {
+          if (API.notifyConfirmed) {
             try { API.notifyConfirmed(id); } catch (e) {}
           }
           // Refresh counters (a confirm changes the date's remaining — quantity

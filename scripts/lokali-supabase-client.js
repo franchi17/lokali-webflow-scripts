@@ -465,6 +465,11 @@
       notifyConfirmed: function (inquiryId) {
         return postRoute('/availability/notify', { kind: 'confirm', inquiryId: inquiryId }, true);
       },
+      // Decline email with the vendor's optional customer-facing note
+      // (Francesca 2026-08-13). Server-side escaped before it reaches Brevo.
+      notifyDeclined: function (inquiryId, reason) {
+        return postRoute('/availability/notify', { kind: 'declined', inquiryId: inquiryId, reason: reason || '' }, true);
+      },
       notifyOffered: function (waitlistId) {
         return postRoute('/availability/notify', { kind: 'offer', waitlistId: waitlistId }, true);
       }
