@@ -560,6 +560,19 @@ var LokaliProfilePage = (function () {
     return a;
   }
 
+  // Feedback 2026-08-13 (Francesca): an explicit ✕ so mobile readers can
+  // dismiss a popover when done (tap-outside still works too). Standalone so
+  // panels whose content gets rebuilt (_polishLogoSection) can re-add it.
+  function _popCloseX(pop) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.setAttribute('aria-label', 'Close');
+    b.textContent = '✕';
+    b.style.cssText = 'position:absolute;top:8px;right:8px;width:22px;height:22px;border:none;background:transparent;color:#8E8BA6;font-size:12px;cursor:pointer;padding:0;line-height:1;font-family:inherit;';
+    b.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); pop.style.display = 'none'; });
+    pop.appendChild(b);
+  }
+
   // Circled glyph ("i" / "?") in brand violet — hover or click opens a small
   // popover. popHtml is STATIC markup only (never user data).
   function _infoPopover(glyph, ariaLabel, popHtml) {
@@ -574,15 +587,7 @@ var LokaliProfilePage = (function () {
     var pop = document.createElement('div');
     pop.style.cssText = 'position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);z-index:60;width:min(250px,calc(100vw - 32px));background:#fff;border:1px solid #EEEDF6;border-radius:12px;box-shadow:0 10px 30px rgba(26,24,41,.15);padding:14px 30px 14px 14px;display:none;font-family:"Plus Jakarta Sans",sans-serif;text-align:left;text-transform:none;';
     pop.innerHTML = popHtml;
-    // Feedback 2026-08-13 (Francesca): an explicit ✕ so mobile readers can
-    // dismiss it when done (tap-outside still works too).
-    var popClose = document.createElement('button');
-    popClose.type = 'button';
-    popClose.setAttribute('aria-label', 'Close');
-    popClose.textContent = '✕';
-    popClose.style.cssText = 'position:absolute;top:8px;right:8px;width:22px;height:22px;border:none;background:transparent;color:#8E8BA6;font-size:12px;cursor:pointer;padding:0;line-height:1;font-family:inherit;';
-    popClose.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); showPop(false); });
-    pop.appendChild(popClose);
+    _popCloseX(pop);
     wrap.appendChild(btn);
     wrap.appendChild(pop);
     var over = false;
@@ -590,7 +595,9 @@ var LokaliProfilePage = (function () {
       pop.style.display = on ? 'block' : 'none';
       if (!on) return;
       // Clamp inside the viewport — centered under an icon near the right
-      // edge, the panel otherwise hangs off-screen on phones.
+      // edge, the panel otherwise hangs off-screen on phones. showPop owns
+      // positioning: reset to centered, measure, then shift into frame.
+      pop.style.left = '50%';
       pop.style.transform = 'translateX(-50%)';
       var r = pop.getBoundingClientRect();
       var pad = 12;
@@ -647,11 +654,9 @@ var LokaliProfilePage = (function () {
           var tip = sec && sec.querySelector('.photo-tip-card');
           if (tip) {
             var pop = icon.querySelector('div'); // the popover panel
-            pop.innerHTML = '';
+            pop.innerHTML = ''; // wipes the ✕ too — re-added below
             pop.style.width = 'min(440px, 88vw)';
-            // anchor to the icon's left edge so it never clips off-screen on phones
-            pop.style.left = '0';
-            pop.style.transform = 'none';
+            // (no manual left/transform anchoring — showPop clamps on open)
             tip.style.margin = '0';
             tip.style.maxWidth = '100%';
             tip.style.border = 'none';
@@ -665,6 +670,7 @@ var LokaliProfilePage = (function () {
             full.textContent = 'Read the full guide →';
             full.style.cssText = 'display:inline-block;margin-top:10px;font-weight:700;font-size:12.5px;color:#6002EE;text-decoration:none;font-family:"Plus Jakarta Sans",sans-serif;';
             pop.appendChild(full);
+            _popCloseX(pop);
           }
           heads[i].parentNode.appendChild(icon);
         }
