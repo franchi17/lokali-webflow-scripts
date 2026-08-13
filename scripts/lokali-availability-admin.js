@@ -112,6 +112,21 @@
       '.lok-ava .ava-cell.pad{background:transparent;border:none;cursor:default;}' +
       '.lok-ava .ava-row{display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid #F2EFF8;}' +
       '.lok-ava .ava-row:last-child{border-bottom:none;}' +
+      // accepting-new-clients switch + info popover (Francesca 2026-08-13:
+      // "a toggle instead of a checkmark" + an explainer card)
+      '.lok-ava .ava-switch{position:relative;display:inline-block;width:40px;height:22px;flex-shrink:0;cursor:pointer;}' +
+      '.lok-ava .ava-switch input{opacity:0;width:0;height:0;position:absolute;}' +
+      '.lok-ava .ava-track{position:absolute;top:0;left:0;right:0;bottom:0;background:#C8C6D8;border-radius:999px;transition:background .18s;}' +
+      '.lok-ava .ava-track::after{content:"";position:absolute;width:18px;height:18px;border-radius:50%;background:#fff;top:2px;left:2px;transition:left .18s;box-shadow:0 1px 3px rgba(0,0,0,.18);}' +
+      '.lok-ava .ava-switch input:checked + .ava-track{background:#6002EE;}' +
+      '.lok-ava .ava-switch input:checked + .ava-track::after{left:20px;}' +
+      '.lok-ava .ava-info-wrap{position:relative;display:inline-flex;align-items:center;}' +
+      '.lok-ava .ava-info-btn{width:20px;height:20px;border-radius:50%;border:1.5px solid #6002EE;background:#fff;color:#6002EE;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0;font-family:inherit;font-weight:700;font-size:11px;line-height:1;margin-left:7px;}' +
+      '.lok-ava .ava-info-pop{position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);z-index:60;width:min(290px,calc(100vw - 32px));background:#fff;border:1px solid #E9E3F7;border-radius:12px;box-shadow:0 10px 30px rgba(26,24,41,.15);padding:14px 30px 14px 14px;display:none;text-align:left;}' +
+      '.lok-ava .ava-ip-h{display:block;margin:0 0 6px;font-size:13px;font-weight:700;color:#3E3A55;}' +
+      '.lok-ava .ava-ip-p{display:block;margin:0 0 8px;font-size:12.5px;font-weight:400;line-height:1.6;color:#6C6880;}' +
+      '.lok-ava .ava-ip-p:last-child{margin-bottom:0;}' +
+      '.lok-ava .ava-info-x{position:absolute;top:8px;right:8px;width:22px;height:22px;border:none;background:transparent;color:#8B8798;font-size:12px;cursor:pointer;padding:0;line-height:1;font-family:inherit;}' +
       // decline-with-note panel (Francesca 2026-08-13)
       '.lok-ava .ava-decline-panel{flex-basis:100%;display:flex;flex-direction:column;gap:8px;background:#FCFBFE;border:1px solid #E9E3F7;border-radius:10px;padding:10px 12px;}' +
       '.lok-ava .ava-decline-note{font-family:inherit;font-size:13px;line-height:1.5;color:#45415A;border:1px solid #E4DEF4;border-radius:9px;padding:8px 10px;background:#fff;resize:vertical;min-height:48px;}' +
@@ -437,11 +452,19 @@
         // yet) can never break the other settings. Off = the storefront shows
         // a "not taking new clients" note + the general waitlist join.
         '<div class="ava-acceptrow" style="display:flex;align-items:center;justify-content:space-between;gap:12px;background:#F6F2FD;border:1px solid #E9E3F7;border-radius:10px;padding:10px 14px;margin-bottom:14px;">' +
-          '<div><p style="margin:0;font-size:13px;font-weight:600;color:#3E3A55;">Accepting new clients</p>' +
-            '<p class="ava-note" style="margin:2px 0 0;">Off = your page says you&rsquo;re full and new clients can join your waitlist instead.</p></div>' +
-          '<label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#6C6880;cursor:pointer;flex-shrink:0;">' +
-            '<input type="checkbox" class="ava-accepting"' + (c.accepting_new_clients !== false ? ' checked' : '') + ' />' +
-            '<span class="ava-accepting-msg"></span></label>' +
+          // divs/spans only in this block — an injected <p> would be auto-closed
+          // by the parser around the popover's inner blocks and mangle the tree.
+          '<div><div style="font-size:13px;font-weight:600;color:#3E3A55;display:flex;align-items:center;">Accepting new clients' +
+            '<span class="ava-info-wrap"><button type="button" class="ava-info-btn" aria-label="What does this do?">?</button>' +
+              '<span class="ava-info-pop">' +
+                '<button type="button" class="ava-info-x" aria-label="Close">✕</button>' +
+                '<span class="ava-ip-h">Accepting new clients</span>' +
+                '<span class="ava-ip-p"><b>On</b> &mdash; customers book you normally from your storefront.</span>' +
+                '<span class="ava-ip-p"><b>Off</b> &mdash; your page says your books are full. Instead of the booking calendar, new customers can join your waitlist; they appear below under <b>Waitlist &rarr; New clients</b>, and when a spot frees up you tap <b>Offer spot</b> to invite one. Your hours stay visible either way.</span>' +
+              '</span></span></div>' +
+            '<p class="ava-note" style="margin:2px 0 0;">Off = new clients see a books-full note and can join your waitlist.</p></div>' +
+          '<span style="display:flex;align-items:center;gap:8px;flex-shrink:0;"><span class="ava-accepting-msg" style="font-size:12px;color:#6C6880;"></span>' +
+            '<label class="ava-switch"><input type="checkbox" class="ava-accepting"' + (c.accepting_new_clients !== false ? ' checked' : '') + ' /><span class="ava-track"></span></label></span>' +
         '</div>' +
         '<p class="ava-sub" style="margin:0 0 4px;">Capacity mode</p>' +
         '<div class="ava-seg ava-mode" style="margin-bottom:14px;">' +
@@ -535,8 +558,28 @@
       this.$settings.querySelector('.ava-slotrow').style.display = 'none';
     }
 
+    // Accepting-new-clients info popover: click "?" to open, ✕ / outside
+    // click to close; clamped inside the viewport on phones.
+    var infoWrap = this.$settings.querySelector('.ava-info-wrap');
+    if (infoWrap) {
+      var infoBtn = infoWrap.querySelector('.ava-info-btn');
+      var infoPop = infoWrap.querySelector('.ava-info-pop');
+      var showPop = function (on) {
+        infoPop.style.display = on ? 'block' : 'none';
+        if (!on) return;
+        infoPop.style.transform = 'translateX(-50%)';
+        var r = infoPop.getBoundingClientRect(), pad = 12, shift = 0;
+        if (r.right > window.innerWidth - pad) shift = (window.innerWidth - pad) - r.right;
+        else if (r.left < pad) shift = pad - r.left;
+        if (shift) infoPop.style.transform = 'translateX(calc(-50% + ' + Math.round(shift) + 'px))';
+      };
+      infoBtn.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); showPop(infoPop.style.display !== 'block'); });
+      infoWrap.querySelector('.ava-info-x').addEventListener('click', function (e) { e.stopPropagation(); showPop(false); });
+      document.addEventListener('click', function (e) { if (!infoWrap.contains(e.target)) showPop(false); });
+    }
+
     // Accepting-new-clients: save the one field on flip. On failure (e.g. the
-    // SQL patch isn't applied yet) revert the checkbox and say so quietly.
+    // SQL patch isn't applied yet) revert the switch and say so quietly.
     var acceptCb = this.$settings.querySelector('.ava-accepting');
     var acceptMsg = this.$settings.querySelector('.ava-accepting-msg');
     if (acceptCb) {
