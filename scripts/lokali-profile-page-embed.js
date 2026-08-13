@@ -17,6 +17,33 @@
     document.head.appendChild(s);
   }
   injectStyle("lokali-profile-field-colors", "  .w-input, .w-select, .lokali-phone-number, #textarea-description {\n    color: #1A1829;\n  }\n  .w-input::placeholder, .w-select::placeholder,\n  .lokali-phone-number::placeholder, #textarea-description::placeholder {\n    color: #8E8BA6;\n  }");
+  // Feedback 2026-08-13 (Francesca, mobile pass): the Designer's .div-block-128
+  // is column+center+margin-left:40px, which reads as "the logo is right-aligned"
+  // on a phone -> make it a row (logo left, upload button right); the Webflow
+  // .grid keeps two ~120px columns at phone widths -> single column; and the
+  // page's inherited 26px line-height is too airy on 13-14px description text.
+  injectStyle("lokali-profile-mobile-polish",
+    "  @media (max-width: 991px) {\n" +
+    "    .div-block-128 {\n" +
+    "      flex-flow: row !important;\n" +
+    "      align-items: center !important;\n" +
+    "      justify-content: space-between !important;\n" +
+    "      margin-left: 0 !important;\n" +
+    "      width: 100%;\n" +
+    "      gap: 12px;\n" +
+    "    }\n" +
+    "    .div-block-128 .image-placeholder { margin: 0 !important; }\n" +
+    "  }\n" +
+    "  @media (max-width: 767px) {\n" +
+    "    /* Webflow's .grid is grid-auto-flow:column — items spawn IMPLICIT side\n" +
+    "       columns, so grid-template-columns alone can't collapse it. */\n" +
+    "    #wf-form-Business-Profile .w-layout-grid.grid {\n" +
+    "      grid-template-columns: 1fr !important;\n" +
+    "      grid-auto-flow: row !important;\n" +
+    "    }\n" +
+    "  }\n" +
+    "  .subheader { line-height: 1.5 !important; }\n" +
+    "  #wf-form-Business-Profile .input-heading { line-height: 1.5; }");
   injectStyle("lokali-locations-ui-style", "  .location-multi {\n    font-family: \"Plus Jakarta Sans\", system-ui, -apple-system, sans-serif;\n    background: #eee6ff;\n    padding: 12px 14px;\n    border-radius: 8px;\n    box-sizing: border-box;\n  }\n  .location-hint {\n    font-size: 13px;\n    color: #5A5570;\n    margin: 0 0 10px;\n    line-height: 1.4;\n  }\n  .location-pills {\n    display: flex;\n    flex-wrap: wrap;\n    gap: 8px;\n  }\n  .location-pill {\n    font-family: inherit;\n    -webkit-appearance: none;\n    appearance: none;\n    display: inline-flex;\n    align-items: center;\n    gap: 7px;\n    background: #fff;\n    color: #5A5570;\n    border: 1px solid #C9BDE8;\n    border-radius: 999px;\n    padding: 8px 14px;\n    font-size: 14px;\n    line-height: 1.3;\n    cursor: pointer;\n    user-select: none;\n    transition: background .12s, border-color .12s, color .12s;\n  }\n  .location-pill:hover {\n    border-color: #6002ee;\n    color: #6002ee;\n  }\n  .location-pill.is-on {\n    background: #6002EE;\n    border-color: #6002EE;\n    color: #fff;\n    font-weight: 600;\n  }\n  .location-pill.is-on:hover {\n    background: #4a01c7;\n    border-color: #4a01c7;\n    color: #fff;\n  }\n  .location-pill .lp-g {\n    font-weight: 700;\n    font-size: 13px;\n    line-height: 1;\n  }\n  .location-count {\n    font-size: 12.5px;\n    color: #6B6787;\n    margin: 10px 0 0;\n  }\n  .category-pills {\n    font-family: \"Plus Jakarta Sans\", system-ui, -apple-system, sans-serif;\n    background: #eee6ff;\n    padding: 12px 14px;\n    border-radius: 8px;\n    box-sizing: border-box;\n  }\n  .category-hint {\n    font-size: 13px;\n    color: #5A5570;\n    margin: 0 0 10px;\n    line-height: 1.4;\n  }\n  .category-pill-row {\n    display: flex;\n    flex-wrap: wrap;\n    gap: 8px;\n  }\n  .category-pill {\n    font-family: inherit;\n    -webkit-appearance: none;\n    appearance: none;\n    display: inline-flex;\n    align-items: center;\n    gap: 8px;\n    background: #fff;\n    color: #5A5570;\n    border: 1px solid #C9BDE8;\n    border-radius: 999px;\n    padding: 8px 14px;\n    font-size: 14px;\n    line-height: 1.3;\n    cursor: pointer;\n    user-select: none;\n    transition: background .12s, border-color .12s, color .12s;\n  }\n  .category-pill:hover {\n    border-color: #6002ee;\n    color: #6002ee;\n  }\n  .category-pill.is-on {\n    background: #6002EE;\n    border-color: #6002EE;\n    color: #fff;\n    font-weight: 600;\n  }\n  .category-pill .cp-ic {\n    width: 16px;\n    height: 16px;\n    flex-shrink: 0;\n    background-color: currentColor;\n    -webkit-mask-position: center;\n    -webkit-mask-repeat: no-repeat;\n    -webkit-mask-size: contain;\n    mask-position: center;\n    mask-repeat: no-repeat;\n    mask-size: contain;\n  }");
 })();
 
@@ -497,6 +524,7 @@ var LokaliProfilePage = (function () {
       sub.style.fontWeight = '400';
       sub.style.opacity = '.7';
       sub.style.marginBottom = '6px';
+      sub.style.lineHeight = '1.5';
       col.appendChild(sub);
     }
     grid.appendChild(col);
@@ -544,12 +572,33 @@ var LokaliProfilePage = (function () {
     btn.style.cssText = 'width:22px;height:22px;border-radius:50%;border:1.5px solid #6002EE;background:#fff;color:#6002EE;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0;font-family:"Plus Jakarta Sans",sans-serif;font-weight:700;font-size:12px;line-height:1;';
     btn.textContent = glyph;
     var pop = document.createElement('div');
-    pop.style.cssText = 'position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);z-index:60;width:250px;background:#fff;border:1px solid #EEEDF6;border-radius:12px;box-shadow:0 10px 30px rgba(26,24,41,.15);padding:14px;display:none;font-family:"Plus Jakarta Sans",sans-serif;text-align:left;text-transform:none;';
+    pop.style.cssText = 'position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);z-index:60;width:min(250px,calc(100vw - 32px));background:#fff;border:1px solid #EEEDF6;border-radius:12px;box-shadow:0 10px 30px rgba(26,24,41,.15);padding:14px 30px 14px 14px;display:none;font-family:"Plus Jakarta Sans",sans-serif;text-align:left;text-transform:none;';
     pop.innerHTML = popHtml;
+    // Feedback 2026-08-13 (Francesca): an explicit ✕ so mobile readers can
+    // dismiss it when done (tap-outside still works too).
+    var popClose = document.createElement('button');
+    popClose.type = 'button';
+    popClose.setAttribute('aria-label', 'Close');
+    popClose.textContent = '✕';
+    popClose.style.cssText = 'position:absolute;top:8px;right:8px;width:22px;height:22px;border:none;background:transparent;color:#8E8BA6;font-size:12px;cursor:pointer;padding:0;line-height:1;font-family:inherit;';
+    popClose.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); showPop(false); });
+    pop.appendChild(popClose);
     wrap.appendChild(btn);
     wrap.appendChild(pop);
     var over = false;
-    function showPop(on) { pop.style.display = on ? 'block' : 'none'; }
+    function showPop(on) {
+      pop.style.display = on ? 'block' : 'none';
+      if (!on) return;
+      // Clamp inside the viewport — centered under an icon near the right
+      // edge, the panel otherwise hangs off-screen on phones.
+      pop.style.transform = 'translateX(-50%)';
+      var r = pop.getBoundingClientRect();
+      var pad = 12;
+      var shift = 0;
+      if (r.right > window.innerWidth - pad) shift = (window.innerWidth - pad) - r.right;
+      else if (r.left < pad) shift = pad - r.left;
+      if (shift) pop.style.transform = 'translateX(calc(-50% + ' + Math.round(shift) + 'px))';
+    }
     wrap.addEventListener('mouseenter', function () { over = true; showPop(true); });
     wrap.addEventListener('mouseleave', function () { over = false; setTimeout(function () { if (!over) showPop(false); }, 150); });
     btn.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); showPop(pop.style.display === 'none'); });
@@ -766,19 +815,22 @@ var LokaliProfilePage = (function () {
     }
     head.appendChild(row);
     var sub = document.createElement('div');
-    sub.style.cssText = 'font-size:13px;color:#6B6880;margin-bottom:6px;';
+    sub.style.cssText = 'font-size:13px;line-height:1.5;color:#6B6880;margin-bottom:6px;';
     sub.textContent = 'Everything below builds your public page — in the same order customers see it.';
     head.appendChild(sub);
     // Feedback 2026-08-13: two save models coexist on this page (photos persist
     // instantly, text needs SAVE) and nothing said so — spell it out up front.
     var saveHint = document.createElement('div');
-    saveHint.style.cssText = 'font-size:13px;color:#6B6880;margin-bottom:6px;';
+    saveHint.style.cssText = 'font-size:13px;line-height:1.5;color:#6B6880;margin-bottom:6px;';
     saveHint.textContent = 'Photos save automatically the moment you add them — everything else saves when you press SAVE.';
     head.appendChild(saveHint);
 
     var nav = document.createElement('div');
     nav.id = 'lok-profile-nav';
-    nav.style.cssText = 'position:sticky;top:0;z-index:40;background:#fff;display:flex;gap:22px;overflow-x:auto;border-bottom:1px solid #EEEDF6;margin-bottom:8px;font-family:"Plus Jakarta Sans",sans-serif;';
+    // Feedback 2026-08-13 (Francesca): no white bar — sit on the page's snow
+    // background (it still masks content while stuck) and make each stop a
+    // quiet neutral pill button that doesn't compete with the cards.
+    nav.style.cssText = 'position:sticky;top:0;z-index:40;background:#F7F6FC;display:flex;gap:8px;overflow-x:auto;padding:10px 2px;margin-bottom:8px;font-family:"Plus Jakarta Sans",sans-serif;-webkit-overflow-scrolling:touch;';
     [
       ['lok-portfolio-card', 'Photos', portfolio],
       ['lok-sec-logo', 'Logo', logo],
@@ -793,10 +845,10 @@ var LokaliProfilePage = (function () {
       var a = document.createElement('a');
       a.href = '#' + sec.id;
       a.textContent = it[1];
-      a.style.cssText = 'padding:13px 2px;font-weight:600;font-size:14px;color:#6B6880;text-decoration:none;border-bottom:2px solid transparent;white-space:nowrap;';
+      a.style.cssText = 'flex:0 0 auto;padding:8px 14px;font-weight:600;font-size:13px;color:#5A5570;text-decoration:none;background:#fff;border:1px solid #E4DFF6;border-radius:999px;white-space:nowrap;transition:border-color .12s,color .12s;';
       a.addEventListener('click', function (e) { e.preventDefault(); sec.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
-      a.addEventListener('mouseenter', function () { a.style.color = '#1A1829'; a.style.borderBottomColor = '#6002EE'; });
-      a.addEventListener('mouseleave', function () { a.style.color = '#6B6880'; a.style.borderBottomColor = 'transparent'; });
+      a.addEventListener('mouseenter', function () { a.style.color = '#1A1829'; a.style.borderColor = '#C9BDE8'; });
+      a.addEventListener('mouseleave', function () { a.style.color = '#5A5570'; a.style.borderColor = '#E4DFF6'; });
       nav.appendChild(a);
     });
 
@@ -811,6 +863,20 @@ var LokaliProfilePage = (function () {
       container.insertBefore(sec, cursor.nextSibling);
       cursor = sec;
     });
+
+    // Feedback 2026-08-13 (Francesca): SAVE belongs under the descriptions,
+    // right above the first card — not up in the page header where it scrolls
+    // away from the fields it saves. Move the existing button (same node, so
+    // the id lookup in bindEvents and disable states keep working).
+    var topSave = document.getElementById(SAVE_BTN);
+    if (topSave) {
+      var saveRow = document.createElement('div');
+      saveRow.id = 'lok-save-row';
+      saveRow.style.cssText = 'display:flex;justify-content:flex-start;margin:2px 0 14px;';
+      topSave.style.cursor = 'pointer';
+      saveRow.appendChild(topSave);
+      container.insertBefore(saveRow, nav.nextSibling);
+    }
   }
 
   // ---- #76d portfolio manager ---------------------------------------------
@@ -1375,7 +1441,7 @@ var LokaliProfilePage = (function () {
     var anchor = formWrap ? formWrap.querySelector('.w-form') : null;
     if (!anchor || !anchor.parentNode) return;
     var bar = document.createElement('div');
-    bar.style.cssText = 'display:flex;justify-content:flex-end;margin:4px 0 28px;';
+    bar.style.cssText = 'display:flex;justify-content:flex-start;margin:4px 0 28px;';
     var clone = topBtn.cloneNode(true);
     clone.id = SAVE_BTN_BOTTOM;
     clone.style.cursor = 'pointer';
