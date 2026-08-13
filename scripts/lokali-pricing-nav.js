@@ -43,10 +43,13 @@
       // anchor targets clear the fixed header on jump (any entry path, incl. the #plans CTA)
       '#plans,#compare,#versus,#faq{scroll-margin-top:96px;}' +
       '.lok-pri-li{position:relative;}' +
+      // translate BEFORE rotate = pure-vertical nudge; -3px compensates the
+      // baseline-aligned inline-block sitting ~2px below the text center-line
+      // (the flex-centered 44px mobile button needs only -1px, overridden below).
       '.lok-pri-car{display:inline-block;width:7px;height:7px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;' +
-        'transform:rotate(45deg) translateY(-1px);transition:transform .2s;flex-shrink:0;margin-left:6px;}' +
+        'transform:translateY(-3px) rotate(45deg);transition:transform .2s;flex-shrink:0;margin-left:6px;}' +
       '.lok-pri-li:not(.mob):hover .lok-pri-car,' +
-      '.lok-pri-li.open .lok-pri-car{transform:rotate(-135deg) translateY(2px);}' +
+      '.lok-pri-li.open .lok-pri-car{transform:translateY(-3px) rotate(-135deg);}' +
       // desktop floating panel — opens on pure-CSS :hover (robust; no JS event quirks)
       '.lok-pri-panel{position:absolute;top:100%;left:0;margin-top:12px;min-width:190px;background:#fff;border:1px solid #ECE8F6;' +
         'border-radius:14px;box-shadow:0 14px 34px rgba(60,45,120,.16);padding:8px;opacity:0;visibility:hidden;' +
@@ -64,7 +67,8 @@
       '.lok-pri-btn{display:none;background:none;border:none;padding:0;margin:0;cursor:pointer;color:' + BRAND + ';' +
         'width:44px;height:44px;align-items:center;justify-content:center;flex:0 0 auto;}' +
       '.lok-pri-li.mob .lok-pri-btn{display:inline-flex;}' +
-      '.lok-pri-li.mob .lok-pri-btn .lok-pri-car{margin-left:0;}' +
+      '.lok-pri-li.mob .lok-pri-btn .lok-pri-car{margin-left:0;transform:translateY(-1px) rotate(45deg);}' +
+      '.lok-pri-li.mob.open .lok-pri-btn .lok-pri-car{transform:translateY(-1px) rotate(-135deg);}' +
       '.lok-pri-li.mob .lok-pri-panel{position:static;opacity:1;visibility:visible;transform:none;box-shadow:none;border:none;' +
         'background:none;padding:0 0 0 14px;margin:0;min-width:0;flex-basis:100%;max-height:0;overflow:hidden;transition:max-height .24s ease;}' +
       '.lok-pri-li.mob.open .lok-pri-panel{max-height:260px;margin-top:4px;}' +

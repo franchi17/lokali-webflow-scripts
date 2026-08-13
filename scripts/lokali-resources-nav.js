@@ -66,11 +66,13 @@
       '.lok-res-li{position:relative;}' +
       '.lok-res-trig{display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-family:' + FONT + ';' +
         'font-size:16px;font-weight:500;color:' + BRAND + ';background:none;border:none;padding:0;margin:0;line-height:inherit;text-decoration:none;}' +
+      // translate BEFORE rotate = pure-vertical nudge (post-rotation translate
+      // drifts diagonally); -1px aligns the glyph with the pricing-nav caret.
       '.lok-res-car{display:inline-block;width:7px;height:7px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;' +
-        'transform:rotate(45deg) translateY(-1px);transition:transform .2s;flex-shrink:0;}' +
+        'transform:translateY(-1px) rotate(45deg);transition:transform .2s;flex-shrink:0;}' +
       // caret flips on desktop hover OR when pinned open (click); mobile uses .open only
       '.lok-res-li:not(.mob):hover > .lok-res-trig .lok-res-car,' +
-      '.lok-res-li.open > .lok-res-trig .lok-res-car{transform:rotate(-135deg) translateY(2px);}' +
+      '.lok-res-li.open > .lok-res-trig .lok-res-car{transform:translateY(-1px) rotate(-135deg);}' +
       // desktop floating panel — opens on pure-CSS :hover (robust; no JS event quirks) or .open
       '.lok-res-panel{position:absolute;top:100%;left:0;margin-top:12px;min-width:230px;background:#fff;border:1px solid #ECE8F6;' +
         'border-radius:14px;box-shadow:0 14px 34px rgba(60,45,120,.16);padding:8px;opacity:0;visibility:hidden;' +
