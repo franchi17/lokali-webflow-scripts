@@ -350,7 +350,20 @@
       toggle();
     }, true);
 
-    panel.addEventListener('click', function (e) { if (e.target.closest('a')) setOpen(false); });
+    panel.addEventListener('click', function (e) {
+      var a = e.target.closest('a');
+      if (!a) return;
+      setOpen(false);
+      // Same-page #hash links (the Pricing section anchors): the drawer's
+      // scroll lock (html overflow:hidden) can swallow the browser's own
+      // fragment jump, so redo it once the lock is released.
+      var href = a.getAttribute('href') || '';
+      var hi = href.indexOf('#');
+      if (hi > -1 && href.slice(0, hi).replace(/\/$/, '') === location.pathname.replace(/\/$/, '')) {
+        var t = document.getElementById(href.slice(hi + 1));
+        if (t) setTimeout(function () { t.scrollIntoView(); }, 50);
+      }
+    });
     backdrop.addEventListener('click', function () { setOpen(false); });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') setOpen(false); });
     window.addEventListener('resize', function () {
