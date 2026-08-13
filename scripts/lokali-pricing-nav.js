@@ -83,7 +83,13 @@
     var target = hash && document.getElementById(hash);
     if (!target) return;
     e.preventDefault();
+    var startY = window.scrollY;
     target.scrollIntoView({ behavior: 'smooth' });
+    // Some browsers/embeds silently drop smooth scrolling — if nothing moved,
+    // jump instantly so the link always works.
+    setTimeout(function () {
+      if (Math.abs(window.scrollY - startY) < 10) target.scrollIntoView();
+    }, 250);
     if (history.pushState) history.pushState(null, '', '#' + hash);
   }
 
