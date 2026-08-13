@@ -85,6 +85,10 @@
     var css =
       '.lok-ava,.lok-ava *{font-family:' + FONT + ';box-sizing:border-box;}' +
       '.lok-ava{background:#F7F5FD;border-radius:20px;padding:22px;color:#45415A;}' +
+      // Francesca 2026-08-13: on phones the tinted wrapper's 22px padding made
+      // the cards ~44px narrower than every other dashboard page's — drop the
+      // wrapper chrome ≤767px so the cards line up with the profile/leads cards.
+      '@media(max-width:767px){.lok-ava{background:transparent;border-radius:0;padding:0;}}' +
       '.lok-ava .ava-card{background:#fff;border:1px solid #ECE8F6;border-radius:16px;padding:18px 20px;margin-bottom:14px;}' +
       '.lok-ava h3{margin:0;font-size:14px;font-weight:600;color:#3E3A55;}' +
       '.lok-ava .ava-sub{font-size:12px;color:#8B8798;}' +

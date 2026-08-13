@@ -84,7 +84,12 @@
     '#lok-analytics-section .an-up-btn{font:inherit;font-size:12px;font-weight:600;color:#fff;background:' + VIOLET + ';border:none;border-radius:8px;padding:8px 16px;cursor:pointer;text-decoration:none;}',
     '#lok-analytics-section .an-insight{background:#FFFCF0;border:.5px solid #F5E6A8;border-radius:10px;padding:.85rem 1.1rem;font-size:12px;color:#8a6d1a;line-height:1.55;margin-bottom:1rem;}',
     '#lok-analytics-section .an-insight strong{color:#6b540f;}',
-    '@media(max-width:720px){#lok-analytics-section .an-grid{grid-template-columns:1fr;}#lok-analytics-section .an-two{grid-template-columns:1fr;}}'
+    '@media(max-width:720px){#lok-analytics-section .an-grid{grid-template-columns:1fr;}#lok-analytics-section .an-two{grid-template-columns:1fr;}}',
+    // loading card — same spinner language as the auth "Signing you in…" card
+    '#lok-analytics-section .an-load{background:#fff;border:.5px solid ' + BORDER + ';border-radius:10px;padding:36px 20px;text-align:center;}',
+    '#lok-analytics-section .an-spin{display:inline-block;width:26px;height:26px;border:3px solid rgba(96,2,238,.22);border-top-color:' + VIOLET + ';border-radius:50%;animation:lokAnSpin .7s linear infinite;}',
+    '#lok-analytics-section .an-load-t{margin-top:12px;font-size:13px;font-weight:500;color:' + SLATE + ';}',
+    '@keyframes lokAnSpin{to{transform:rotate(360deg);}}'
   ].join('');
 
   function injectStyles() {
@@ -379,16 +384,27 @@
   // nothing on screen — the old code either bailed silently or let Promise.all
   // reject with no .catch. Now: poll until the API + auth token exist, always
   // paint SOMETHING, and offer a retry on failure.
+  function showLoading(mount, text) {
+    mount.innerHTML = '';
+    var c = el('div', 'an-load');
+    c.appendChild(el('div', 'an-spin'));
+    c.appendChild(el('div', 'an-load-t', text));
+    mount.appendChild(c);
+  }
+
   function showMsg(mount, text, withRetry) {
     mount.innerHTML = '';
-    var c = el('div', 'an-card');
-    c.appendChild(el('div', 'an-empty', text));
+    var c = el('div', 'an-load');
+    c.appendChild(el('div', 'an-load-t', text));
     if (withRetry) {
       var b = document.createElement('button');
       b.textContent = 'Try again';
-      b.style.cssText = 'display:block;margin:10px auto 0;font-family:inherit;font-size:13px;font-weight:600;' +
+      b.style.cssText = 'display:block;margin:14px auto 0;font-family:inherit;font-size:13px;font-weight:600;' +
         'color:#fff;background:#6002ee;border:none;border-radius:9px;padding:9px 18px;cursor:pointer;';
-      b.addEventListener('click', function () { load(mount, 0); });
+      // Restart the FULL boot — the old handler called load() directly, which
+      // threw (and blanked the page) when the retry was needed because the
+      // API/adapter never arrived in the first place.
+      b.addEventListener('click', function () { init(0); });
       c.appendChild(b);
     }
     mount.appendChild(c);
@@ -432,9 +448,12 @@
     var mount = document.getElementById('lok-analytics-section');
     if (!mount) return;
     injectStyles();
+    // Spinner up FIRST — also covers the ready-API-but-slow-fetch case, so the
+    // page never sits on static/blank content while data loads (Francesca
+    // 2026-08-13: mobile "doesn't load" reports).
+    if (tries === 0) showLoading(mount, 'Loading your analytics…');
     if (!apiReady()) {
-      if (tries === 0) showMsg(mount, 'Loading your analytics…', false);
-      if (tries < 40) { setTimeout(function () { init(tries + 1); }, 250); return; }
+      if (tries < 120) { setTimeout(function () { init(tries + 1); }, 250); return; } // ~30s of patience for slow mobile session restores
       showMsg(mount, "We couldn't load your analytics.", true);
       return;
     }

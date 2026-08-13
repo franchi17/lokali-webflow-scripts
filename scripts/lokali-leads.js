@@ -79,7 +79,12 @@
     '#lok-leads-page .lp-status.won{background:' + GREEN_L + ';color:' + GREEN + ';}',
     '#lok-leads-page .lp-status.closed{background:' + SNOW + ';color:' + SLATE + ';}',
     '#lok-leads-page .lp-explain{font-size:11px;color:' + SLATE + ';line-height:1.6;margin-top:12px;padding:0 2px;}',
-    '#lok-leads-page .lp-empty{padding:32px;text-align:center;color:' + SLATE + ';font-size:13.5px;}'
+    '#lok-leads-page .lp-empty{padding:32px;text-align:center;color:' + SLATE + ';font-size:13.5px;}',
+    // loading card — same spinner language as the auth "Signing you in…" card
+    '#lok-leads-page .lp-load{background:#fff;border:.5px solid ' + BORDER + ';border-radius:12px;padding:36px 20px;text-align:center;}',
+    '#lok-leads-page .lp-spin{display:inline-block;width:26px;height:26px;border:3px solid rgba(96,2,238,.22);border-top-color:' + VIOLET + ';border-radius:50%;animation:lokLpSpin .7s linear infinite;}',
+    '#lok-leads-page .lp-load-t{margin-top:12px;font-size:13px;font-weight:500;color:' + SLATE + ';}',
+    '@keyframes lokLpSpin{to{transform:rotate(360deg);}}'
   ].join('');
 
   function injectStyles() {
@@ -280,25 +285,77 @@
 
   function escapeHtml(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
-  function init() {
-    var mount = document.getElementById('lok-leads-page');
-    if (!mount) return;
-    if (!window.LokaliAPI || !window.LokaliAPI.leads || typeof window.LokaliAPI.leads.analytics !== 'function') {
-      console.warn('[lokali-leads] LokaliAPI.leads not available'); return;
-    }
-    injectStyles();
+  // The page could render BLANK on mobile — the same failure class the
+  // Analytics page hit 2026-07-13: init ran ONCE at DOMContentLoaded, and if
+  // the adapter wasn't installed yet or the Supabase session was still
+  // restoring it bailed silently (console.warn + return); a rejected fetch
+  // had no .catch either. Reported live by Francesca 2026-08-13 ("sometimes
+  // doesn't load on mobile"). Now: spinner immediately, poll until the API +
+  // auth token exist (slow phones can take >10s), always paint something,
+  // and offer a retry that restarts the whole boot.
+  function showLoading(mount, text) {
+    mount.innerHTML = '';
+    var c = el('div', 'lp-load');
+    c.appendChild(el('div', 'lp-spin'));
+    c.appendChild(el('div', 'lp-load-t', text));
+    mount.appendChild(c);
+  }
+
+  function showError(mount, text) {
+    mount.innerHTML = '';
+    var c = el('div', 'lp-load');
+    c.appendChild(el('div', 'lp-load-t', text));
+    var b = document.createElement('button');
+    b.textContent = 'Try again';
+    b.style.cssText = 'display:block;margin:14px auto 0;font-family:inherit;font-size:13px;font-weight:600;' +
+      'color:#fff;background:' + VIOLET + ';border:none;border-radius:9px;padding:9px 18px;cursor:pointer;';
+    b.addEventListener('click', function () { init(0); });
+    c.appendChild(b);
+    mount.appendChild(c);
+  }
+
+  function apiReady() {
+    var A = window.LokaliAPI;
+    if (!A || !A.leads || typeof A.leads.getMine !== 'function' || typeof A.leads.analytics !== 'function') return false;
+    // Wait for the restored auth token too — calling before the session is
+    // back gets an anon 401/empty and stranded the page blank.
+    try { return !!(typeof A.getToken === 'function' ? A.getToken() : true); } catch (e) { return true; }
+  }
+
+  function load(mount, attempt) {
     Promise.all([window.LokaliAPI.leads.getMine(), window.LokaliAPI.leads.analytics()])
       .then(function (res) {
         var leadsRes = res[0], anRes = res[1];
         if ((!leadsRes || leadsRes.error) && (!anRes || anRes.error)) {
-          mount.innerHTML = '';
-          var c = el('div', 'lp-list'); c.appendChild(el('div', 'lp-empty', 'Leads are taking a moment to load. Refresh in a few seconds.'));
-          mount.appendChild(c); return;
+          if (attempt < 1) { setTimeout(function () { load(mount, attempt + 1); }, 2500); return; }
+          showError(mount, 'Leads are taking a moment to load.');
+          return;
         }
         render(mount, (leadsRes && leadsRes.data) || {}, (anRes && anRes.data) || {});
+      })
+      .catch(function (err) {
+        console.warn('[lokali-leads] load failed', err);
+        if (attempt < 1) { setTimeout(function () { load(mount, attempt + 1); }, 2500); return; }
+        showError(mount, "We couldn't load your leads.");
       });
   }
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
-  else init();
+  function init(tries) {
+    tries = tries || 0;
+    var mount = document.getElementById('lok-leads-page');
+    if (!mount) return;
+    injectStyles();
+    // Spinner up FIRST — also covers the ready-API-but-slow-fetch case, so the
+    // page never sits on static/blank content while data loads.
+    if (tries === 0) showLoading(mount, 'Loading your leads…');
+    if (!apiReady()) {
+      if (tries < 120) { setTimeout(function () { init(tries + 1); }, 250); return; } // ~30s of patience for slow mobile session restores
+      showError(mount, "We couldn't load your leads.");
+      return;
+    }
+    load(mount, 0);
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { init(0); });
+  else init(0);
 })();
