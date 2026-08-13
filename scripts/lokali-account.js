@@ -107,7 +107,7 @@
   var CAT_NAMES = {
     1: 'Handcrafted Goods', 2: 'Business Services', 3: 'Beauty',
     4: 'Children & Education', 5: 'Events', 6: 'Food',
-    7: 'Health & Wellness', 8: 'Home Services'
+    7: 'Health & Wellness', 8: 'Home & Property'
   };
   function vendorCat(v) {
     var c = v && (v.category || v.category_name);

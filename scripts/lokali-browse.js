@@ -80,7 +80,7 @@
     5: { slug: 'events',      label: 'Events',            bg: '#F3EBFF', text: '#6002EE' },
     6: { slug: 'food',        label: 'Food',              bg: '#FFF3EA', text: '#FF6B00' },
     7: { slug: 'wellness',    label: 'Wellness',          bg: '#EAFAF2', text: '#1D6A45' },
-    8: { slug: 'home',        label: 'Home',              bg: '#F7F6FC', text: '#4A4761' }
+    8: { slug: 'home',        label: 'Home & Property',              bg: '#F7F6FC', text: '#4A4761' }
   };
 
   // #96 — curated subcategory taxonomy, keyed by category id. Source of truth
@@ -242,7 +242,7 @@
     { slug: 'events',      label: 'Events',            url: ASSET + '6a18f6d414c76bb968f180db_balloon.svg' },
     { slug: 'food',        label: 'Food',              url: ASSET + '6a186b067365d964abee8918_utensils-solid.png' },
     { slug: 'handcrafted', label: 'Handcrafted Goods', url: ASSET + '6a186b061a80eb9ba75f0d0a_scissors-solid.png' },
-    { slug: 'home',        label: 'Home',              url: ASSET + '6a186b06a37dcea6514f15f9_house-regular.png' },
+    { slug: 'home',        label: 'Home & Property',              url: ASSET + '6a186b06a37dcea6514f15f9_house-regular.png' },
     { slug: 'wellness',    label: 'Wellness',          url: ASSET + '6a186b06cfcb6c4d6d1e1cf7_heart-regular.png' }
   ];
   var TOGGLE_LIST = [
