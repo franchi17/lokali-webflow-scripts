@@ -303,10 +303,12 @@
     '.lok-gam-check{width:22px;height:22px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;}',
     '.lok-gam-check.done{background:#F3EBFF;color:#6002EE;}',
     '.lok-gam-check.todo{border:1.5px dashed #C8C6D8;}',
-    '.lok-gam-name{font-size:13px;font-weight:500;}',
+    // line-height 1.5 throughout — these inherit the page's 26px line-height,
+    // which reads far too airy on 11.5-13px text (Francesca 2026-08-13).
+    '.lok-gam-name{font-size:13px;font-weight:500;line-height:1.5;}',
     '.lok-gam-row.upcoming .lok-gam-name{color:#8E8BA6;font-weight:400;}',
-    '.lok-gam-detail{font-size:11.5px;color:#8E8BA6;margin-top:1px;}',
-    '.lok-gam-date{font-size:11.5px;color:#8E8BA6;flex-shrink:0;text-align:right;min-width:52px;}',
+    '.lok-gam-detail{font-size:11.5px;color:#8E8BA6;margin-top:1px;line-height:1.5;}',
+    '.lok-gam-date{font-size:11.5px;color:#8E8BA6;flex-shrink:0;text-align:right;min-width:52px;line-height:1.5;}',
     '.lok-gam-pill{font-size:10.5px;font-weight:700;border-radius:100px;padding:2px 8px;flex-shrink:0;white-space:nowrap;}',
     '.lok-gam-pill.green{background:#EAFAF2;color:#1D6A45;}',
     '.lok-gam-pill.grey{background:#EEEDF6;color:#8E8BA6;}',
@@ -324,8 +326,17 @@
     '.lok-gam-linktext{flex:1;font-size:12.5px;color:#4A4761;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
     '.lok-gam-copy{font-family:inherit;font-size:12px;font-weight:600;color:#6002EE;background:#fff;border:.5px solid #E5D4FD;border-radius:8px;padding:6px 14px;flex-shrink:0;cursor:pointer;}',
     '.lok-gam-copy:hover{background:#F3EBFF;}',
-    '.lok-gam-incentive{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12px;color:#4A4761;}',
-    '.lok-gam-incentive svg{color:#1D6A45;flex-shrink:0;}'
+    '.lok-gam-incentive{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12px;color:#4A4761;line-height:1.5;}',
+    '.lok-gam-incentive svg{color:#1D6A45;flex-shrink:0;}',
+    // Share-your-profile card polish (Francesca 2026-08-13): the Webflow
+    // "Copy link" pill carried a stray 20px left margin (misaligned with the
+    // Share Profile button below it), and the Share button was oversized —
+    // 12px+5px double padding stacking to a 60px-tall button with 14px text
+    // next to the pill's 12px. Align edges, one text size, slimmer button.
+    '#share-copy-link{margin-left:0 !important;font-size:13px;line-height:1.5;}',
+    '#share-copy-link .text-block-97{font-size:13px;line-height:1.5;}',
+    '#share-profile-btn{padding:9px 16px !important;align-items:center;}',
+    '#share-profile-btn .share{font-size:13px;line-height:1.5;padding:5px 0 5px 4px;}'
   ].join('');
 
   var GAM_CHECK = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';

@@ -121,9 +121,12 @@
       '.lok-ava .ava-save{font-family:inherit;font-size:14px;font-weight:600;color:#fff;background:' + BRAND + ';' +
         'border:none;border-radius:10px;padding:11px 22px;cursor:pointer;}' +
       '.lok-ava .ava-note{font-size:12px;color:#8B8798;line-height:1.5;}' +
-      '.lok-ava .ava-hday{display:flex;align-items:flex-start;gap:12px;padding:9px 0;border-bottom:1px solid #F4F1FB;}' +
+      '.lok-ava .ava-hday{display:flex;flex-wrap:wrap;align-items:flex-start;gap:8px 12px;padding:11px 0;border-bottom:1px solid #F4F1FB;}' +
       '.lok-ava .ava-hday:last-child{border-bottom:none;}' +
-      '.lok-ava .ava-hlabel{width:74px;flex-shrink:0;font-size:13px;font-weight:600;color:#5D4F9E;padding-top:7px;}' +
+      // Francesca 2026-08-13: hours used to sit BESIDE the day, and "Mon, Tue,
+      // Wed kind of get lost" — the day now heads its own line (uppercase, a
+      // step larger) with the saved-hours card underneath.
+      '.lok-ava .ava-hlabel{flex-basis:100%;font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#5D4F9E;padding-top:0;}' +
       '.lok-ava .ava-hwins{flex:1;min-width:120px;display:flex;flex-direction:column;gap:6px;}' +
       '.lok-ava .ava-hwin{background:#F6F2FD;border:1px solid #E9E3F7;border-radius:10px;padding:7px 11px;}' +
       '.lok-ava .ava-hwin .ava-htime{font-size:13px;font-weight:600;color:#4B4666;}' +
@@ -139,7 +142,7 @@
       // #93 — copy one day's hours to other days (Calendly-style)
       '.lok-ava .ava-copylink{cursor:pointer;text-decoration:none;font-style:normal;font-size:11.5px;color:#8B8798;padding-top:9px;flex-shrink:0;}' +
       '.lok-ava .ava-copylink:hover{color:#5D4F9E;}' +
-      '.lok-ava .ava-copy{flex-basis:100%;margin:8px 0 2px 86px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;' +
+      '.lok-ava .ava-copy{flex-basis:100%;margin:8px 0 2px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;' +
         'background:#FCFBFE;border:1px solid #E9E3F7;border-radius:10px;padding:9px 12px;}' +
       '.lok-ava .ava-copy .ava-copyto{font-size:11.5px;color:#8B8798;flex-basis:100%;}' +
       '.lok-ava .ava-copy label{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:#45415A;cursor:pointer;}' +
