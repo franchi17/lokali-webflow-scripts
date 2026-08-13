@@ -41,7 +41,7 @@
   // PostgREST directly with fetch keepalive, like the Xano client did).
   var SUPABASE_URL =
     (typeof window !== 'undefined' && window.LOKALI_SUPABASE_URL) ||
-    'https://baacipkokiweipncavov.supabase.co';
+    'https://api.golokali.com';
   var SUPABASE_KEY =
     (typeof window !== 'undefined' && window.LOKALI_SUPABASE_PUBLISHABLE_KEY) ||
     'sb_publishable_--wRW6DD_9ZCBqfb0kJUww_0lzfzs39';
