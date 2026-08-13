@@ -43,7 +43,10 @@
     "    }\n" +
     "  }\n" +
     "  .subheader { line-height: 1.5 !important; }\n" +
-    "  #wf-form-Business-Profile .input-heading { line-height: 1.5; }");
+    "  #wf-form-Business-Profile .input-heading { line-height: 1.5; }\n" +
+    "  /* breathing room under the phone input and between the contact checkboxes */\n" +
+    "  #wf-form-Business-Profile .lokali-phone { margin-bottom: 12px; }\n" +
+    "  #wf-form-Business-Profile .checkbox-form { margin-bottom: 9px; }");
   injectStyle("lokali-locations-ui-style", "  .location-multi {\n    font-family: \"Plus Jakarta Sans\", system-ui, -apple-system, sans-serif;\n    background: #eee6ff;\n    padding: 12px 14px;\n    border-radius: 8px;\n    box-sizing: border-box;\n  }\n  .location-hint {\n    font-size: 13px;\n    color: #5A5570;\n    margin: 0 0 10px;\n    line-height: 1.4;\n  }\n  .location-pills {\n    display: flex;\n    flex-wrap: wrap;\n    gap: 8px;\n  }\n  .location-pill {\n    font-family: inherit;\n    -webkit-appearance: none;\n    appearance: none;\n    display: inline-flex;\n    align-items: center;\n    gap: 7px;\n    background: #fff;\n    color: #5A5570;\n    border: 1px solid #C9BDE8;\n    border-radius: 999px;\n    padding: 8px 14px;\n    font-size: 14px;\n    line-height: 1.3;\n    cursor: pointer;\n    user-select: none;\n    transition: background .12s, border-color .12s, color .12s;\n  }\n  .location-pill:hover {\n    border-color: #6002ee;\n    color: #6002ee;\n  }\n  .location-pill.is-on {\n    background: #6002EE;\n    border-color: #6002EE;\n    color: #fff;\n    font-weight: 600;\n  }\n  .location-pill.is-on:hover {\n    background: #4a01c7;\n    border-color: #4a01c7;\n    color: #fff;\n  }\n  .location-pill .lp-g {\n    font-weight: 700;\n    font-size: 13px;\n    line-height: 1;\n  }\n  .location-count {\n    font-size: 12.5px;\n    color: #6B6787;\n    margin: 10px 0 0;\n  }\n  .category-pills {\n    font-family: \"Plus Jakarta Sans\", system-ui, -apple-system, sans-serif;\n    background: #eee6ff;\n    padding: 12px 14px;\n    border-radius: 8px;\n    box-sizing: border-box;\n  }\n  .category-hint {\n    font-size: 13px;\n    color: #5A5570;\n    margin: 0 0 10px;\n    line-height: 1.4;\n  }\n  .category-pill-row {\n    display: flex;\n    flex-wrap: wrap;\n    gap: 8px;\n  }\n  .category-pill {\n    font-family: inherit;\n    -webkit-appearance: none;\n    appearance: none;\n    display: inline-flex;\n    align-items: center;\n    gap: 8px;\n    background: #fff;\n    color: #5A5570;\n    border: 1px solid #C9BDE8;\n    border-radius: 999px;\n    padding: 8px 14px;\n    font-size: 14px;\n    line-height: 1.3;\n    cursor: pointer;\n    user-select: none;\n    transition: background .12s, border-color .12s, color .12s;\n  }\n  .category-pill:hover {\n    border-color: #6002ee;\n    color: #6002ee;\n  }\n  .category-pill.is-on {\n    background: #6002EE;\n    border-color: #6002EE;\n    color: #fff;\n    font-weight: 600;\n  }\n  .category-pill .cp-ic {\n    width: 16px;\n    height: 16px;\n    flex-shrink: 0;\n    background-color: currentColor;\n    -webkit-mask-position: center;\n    -webkit-mask-repeat: no-repeat;\n    -webkit-mask-size: contain;\n    mask-position: center;\n    mask-repeat: no-repeat;\n    mask-size: contain;\n  }");
 })();
 
@@ -1296,23 +1299,20 @@ var LokaliProfilePage = (function () {
     if (!_locationPillsEl) return;
     _locationPillsEl.innerHTML = '';
 
-    // All active locations as toggle pills, plus any already-selected id the
-    // active list no longer carries (deactivated community) so a saved pick is
-    // never silently dropped — it stays visible and de-selectable.
+    // All active locations as toggle pills. A selected id the active list no
+    // longer carries (deactivated community, e.g. Houston paused 2026-07-27)
+    // used to render as a cryptic "Location N" pill — Francesca 2026-08-13:
+    // hide it instead. The id STAYS in _selectedLocationIds, so saves preserve
+    // the pick and the named pill reappears if the community reactivates.
     var entries = [];
-    var seen = {};
     if (_locations && _locations.length) {
       for (var i = 0; i < _locations.length; i++) {
         var loc = _locations[i];
         var id = loc.id != null ? loc.id : loc.location_id;
         if (id == null) continue;
         entries.push({ id: id, label: _getLocationLabel(loc) || ('Location ' + id) });
-        seen[String(id)] = true;
       }
     }
-    _selectedLocationIds.forEach(function (id) {
-      if (!seen[String(id)]) entries.push({ id: id, label: 'Location ' + id });
-    });
 
     entries.forEach(function (entry) {
       var on = _isLocationSelected(entry.id);

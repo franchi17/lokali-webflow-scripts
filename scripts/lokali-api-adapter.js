@@ -355,6 +355,10 @@
         max_services: plan.max_services,
         max_products: plan.max_products,
         max_photo_per_listing: plan.max_photo_per_listing,
+        // 2026-08-13: was missing — the profile portfolio card gates on this,
+        // so every paid vendor with a cold session cache saw the Free-plan
+        // locked teaser (found by Francesca on her own Featured account).
+        max_vendor_photos: plan.max_vendor_photos,
         ranking_priority: plan.ranking_priority,
         custom_profile_url: !!plan.custom_profile_url,
         business_hours: !!plan.business_hours,
