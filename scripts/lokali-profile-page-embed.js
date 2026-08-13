@@ -113,6 +113,7 @@ var LokaliProfilePage = (function () {
   }
 
   var SAVE_BTN   = 'profile-save-btn';
+  var SAVE_BTN_BOTTOM = 'profile-save-btn-bottom';
   var SUCCESS_ID = 'profile-save-success';
   var ERROR_ID   = 'profile-save-error';
 
@@ -671,6 +672,11 @@ var LokaliProfilePage = (function () {
         }
         _uploadedOwnerPhotoUrl = res.data.url;
         prev.src = res.data.url; prev.style.display = '';
+        // Unlike the logo/portfolio, the owner photo only reaches the vendor
+        // row via save() — flag it dirty (the guard skips file inputs) and
+        // tell the vendor, or the photo is silently lost on leave.
+        _dirty = true;
+        _showToast('success', 'Photo added — press SAVE to keep it.');
       });
     });
   }
@@ -763,6 +769,12 @@ var LokaliProfilePage = (function () {
     sub.style.cssText = 'font-size:13px;color:#6B6880;margin-bottom:6px;';
     sub.textContent = 'Everything below builds your public page — in the same order customers see it.';
     head.appendChild(sub);
+    // Feedback 2026-08-13: two save models coexist on this page (photos persist
+    // instantly, text needs SAVE) and nothing said so — spell it out up front.
+    var saveHint = document.createElement('div');
+    saveHint.style.cssText = 'font-size:13px;color:#6B6880;margin-bottom:6px;';
+    saveHint.textContent = 'Photos save automatically the moment you add them — everything else saves when you press SAVE.';
+    head.appendChild(saveHint);
 
     var nav = document.createElement('div');
     nav.id = 'lok-profile-nav';
@@ -862,6 +874,7 @@ var LokaliProfilePage = (function () {
         S.photos.add('vendor', _vendor.id, res.data.url, nextSort).then(function () {
           pick.textContent = 'Add photo';
           _renderPortfolio();
+          _showToast('success', 'Photo added to your gallery — saved automatically.');
         });
       });
     });
@@ -898,7 +911,10 @@ var LokaliProfilePage = (function () {
         }
         bar.appendChild(mkBtn('‹', 'Move left', function () { _pfSwap(i, i - 1); }, i === 0));
         bar.appendChild(mkBtn('✕', 'Remove photo', function () {
-          window.LokaliSupabaseAPI.photos.remove('vendor', p.id).then(_renderPortfolio);
+          window.LokaliSupabaseAPI.photos.remove('vendor', p.id).then(function () {
+            _renderPortfolio();
+            _showToast('success', 'Photo removed — saved automatically.');
+          });
         }, false));
         bar.appendChild(mkBtn('›', 'Move right', function () { _pfSwap(i, i + 1); }, i === _pfPhotos.length - 1));
         cell.appendChild(bar);
@@ -1304,6 +1320,9 @@ var LokaliProfilePage = (function () {
               _setProfilePhotoPreviewSrc(url);
               _setPhotoUrlValue(url);
               if (objectUrl) URL.revokeObjectURL(objectUrl);
+              // Feedback 2026-08-13: uploads persist server-side instantly, but
+              // nothing said so — vendors went hunting for a save button.
+              _showToast('success', 'Logo uploaded — saved automatically.');
             } else {
 
               window.LokaliAPI.vendors.me()
@@ -1318,6 +1337,7 @@ var LokaliProfilePage = (function () {
                       _uploadedProfilePhotoUrl = newUrl;
                       _setProfilePhotoPreviewSrc(newUrl);
                       _setPhotoUrlValue(newUrl);
+                      _showToast('success', 'Logo uploaded — saved automatically.');
                     }
                     if (typeof console !== 'undefined' && console.log) {
                       _dbg('[ProfilePage] After refetch, profile_photo:', newUrl || '(empty)');
@@ -1340,7 +1360,28 @@ var LokaliProfilePage = (function () {
     var saveBtn = document.getElementById(SAVE_BTN);
     if (saveBtn) {
       saveBtn.addEventListener('click', save);
+      _injectBottomSave(saveBtn);
     }
+  }
+
+  // Vendor feedback 2026-08-13: the lone SAVE sits at the top of a long page —
+  // after filling the last section you had to scroll all the way back up to
+  // find it. Mirror it at the natural end of the form. Anchored AFTER the
+  // .w-form wrapper (sections reorder/inject inside the form, so the bar can
+  // never end up mid-page).
+  function _injectBottomSave(topBtn) {
+    if (document.getElementById(SAVE_BTN_BOTTOM)) return;
+    var formWrap = topBtn.closest ? topBtn.closest('.div-block-39') : null;
+    var anchor = formWrap ? formWrap.querySelector('.w-form') : null;
+    if (!anchor || !anchor.parentNode) return;
+    var bar = document.createElement('div');
+    bar.style.cssText = 'display:flex;justify-content:flex-end;margin:4px 0 28px;';
+    var clone = topBtn.cloneNode(true);
+    clone.id = SAVE_BTN_BOTTOM;
+    clone.style.cursor = 'pointer';
+    clone.addEventListener('click', save);
+    bar.appendChild(clone);
+    anchor.parentNode.insertBefore(bar, anchor.nextSibling);
   }
 
   function _getFormValues() {
@@ -1462,18 +1503,33 @@ var LokaliProfilePage = (function () {
     };
   }
 
+  // The save buttons are Webflow DIVs, so element.disabled alone doesn't stop
+  // clicks — gate re-entry with a flag and dim both buttons (top + bottom).
+  var _saving = false;
+  function _setSaving(on) {
+    _saving = on;
+    [SAVE_BTN, SAVE_BTN_BOTTOM].forEach(function (id) {
+      var b = document.getElementById(id);
+      if (!b) return;
+      b.style.opacity = on ? '0.6' : '';
+      b.style.pointerEvents = on ? 'none' : '';
+    });
+    window.LokaliDashboard.disableButton(SAVE_BTN, on);
+  }
+
   function save() {
+    if (_saving) return;
     var successEl = _getSuccessEl();
     var errorEl = _getErrorEl();
     if (successEl) successEl.style.display = 'none';
     if (errorEl) errorEl.style.display = 'none';
-    window.LokaliDashboard.disableButton(SAVE_BTN, true);
+    _setSaving(true);
     var payload = _getFormValues();
     var validationError = _validate(payload);
     if (validationError) {
       console.warn('[ProfilePage] Validation failed:', validationError);
       _showErrorPopup(validationError);
-      window.LokaliDashboard.disableButton(SAVE_BTN, false);
+      _setSaving(false);
       return;
     }
     var body = _normalizePayload(payload);
@@ -1496,7 +1552,7 @@ var LokaliProfilePage = (function () {
         console.error('[ProfilePage] save network error:', err);
         _showErrorPopup('Network error. Please check your connection and try again.');
       })
-      .then(function () { window.LokaliDashboard.disableButton(SAVE_BTN, false); });
+      .then(function () { _setSaving(false); });
   }
 
   return { init: init, loadData: loadData, populateUI: populateUI, bindEvents: bindEvents, save: save };
