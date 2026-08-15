@@ -212,17 +212,37 @@
     this.mount.className = 'lok-ava';
     // #85 (Francesca 2026-07-18): calendar right after the pending requests —
     // requests → calendar (days off) → settings → hours → waitlist.
+    // #121 (Francesca 2026-08-15): the two waitlists now get their OWN cards,
+    // adjacent so the difference is visible at a glance —
+    //   .ava-newclients = vendor-level "new clients" queue + the toggle that
+    //                     opens it (moved here out of Settings, where it sat
+    //                     under the calendar config and read as a booking knob)
+    //   .ava-waitlist   = per-date queues for sold-out days
     this.mount.innerHTML =
       '<div class="ava-inbox"></div>' +
       '<div class="ava-daysoff"></div>' +
       '<div class="ava-settings"></div>' +
       '<div class="ava-hours"></div>' +
+      '<div class="ava-newclients"></div>' +
       '<div class="ava-waitlist"></div>';
     this.$inbox = this.mount.querySelector('.ava-inbox');
     this.$settings = this.mount.querySelector('.ava-settings');
     this.$hours = this.mount.querySelector('.ava-hours');
     this.$daysoff = this.mount.querySelector('.ava-daysoff');
+    this.$newclients = this.mount.querySelector('.ava-newclients');
     this.$waitlist = this.mount.querySelector('.ava-waitlist');
+
+    // Offer-spot delegation, bound ONCE on the mount. It used to be re-bound
+    // inside renderWaitlist on every render — and since only innerHTML was
+    // replaced, the listeners stacked up, so one "Offer spot" click fired the
+    // RPC once per render since page load. Delegating here also covers the new
+    // .ava-newclients card without a second binding.
+    var self = this;
+    this.mount.addEventListener('click', function (e) {
+      var btn = e.target.closest('button[data-offer]');
+      if (!btn) return;
+      self.offerSpot(Number(btn.getAttribute('data-offer')));
+    });
   };
 
   Page.prototype.loadAll = function () {
@@ -262,6 +282,7 @@
     this.renderSettings();
     this.renderHours();
     this.renderDaysOff();
+    this.renderNewClients();   // #121: own card, above the sold-out date queues
     this.renderWaitlist();
   };
 
@@ -447,25 +468,10 @@
           '<label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#6C6880;cursor:pointer;">' +
             '<input type="checkbox" class="ava-enabled"' + (c.is_enabled ? ' checked' : '') + ' /> Calendar on</label>' +
         '</div>' +
-        // "Accepting new clients" (Francesca 2026-08-13) — instant-save on flip,
-        // separate from the main Save so a missing DB column (patch not applied
-        // yet) can never break the other settings. Off = the storefront shows
-        // a "not taking new clients" note + the general waitlist join.
-        '<div class="ava-acceptrow" style="display:flex;align-items:center;justify-content:space-between;gap:12px;background:#F6F2FD;border:1px solid #E9E3F7;border-radius:10px;padding:10px 14px;margin-bottom:14px;">' +
-          // divs/spans only in this block — an injected <p> would be auto-closed
-          // by the parser around the popover's inner blocks and mangle the tree.
-          '<div><div style="font-size:13px;font-weight:600;color:#3E3A55;display:flex;align-items:center;">Accepting new clients' +
-            '<span class="ava-info-wrap"><button type="button" class="ava-info-btn" aria-label="What does this do?">?</button>' +
-              '<span class="ava-info-pop">' +
-                '<button type="button" class="ava-info-x" aria-label="Close">✕</button>' +
-                '<span class="ava-ip-h">Accepting new clients</span>' +
-                '<span class="ava-ip-p"><b>On</b> &mdash; customers book you normally from your storefront.</span>' +
-                '<span class="ava-ip-p"><b>Off</b> &mdash; your page says your books are full. Instead of the booking calendar, new customers can join your waitlist; they appear below under <b>Waitlist &rarr; New clients</b>, and when a spot frees up you tap <b>Offer spot</b> to invite one. Your hours stay visible either way.</span>' +
-              '</span></span></div>' +
-            '<p class="ava-note" style="margin:2px 0 0;">Off = new clients see a books-full note and can join your waitlist.</p></div>' +
-          '<span style="display:flex;align-items:center;gap:8px;flex-shrink:0;"><span class="ava-accepting-msg" style="font-size:12px;color:#6C6880;"></span>' +
-            '<label class="ava-switch"><input type="checkbox" class="ava-accepting"' + (c.accepting_new_clients !== false ? ' checked' : '') + ' /><span class="ava-track"></span></label></span>' +
-        '</div>' +
+        // #121: "Accepting new clients" MOVED OUT of Settings — see
+        // renderNewClients(). It sat directly under the calendar config and read
+        // as another booking knob, when it actually governs the vendor-level
+        // new-client waitlist. It now lives on that queue's own card.
         '<p class="ava-sub" style="margin:0 0 4px;">Capacity mode</p>' +
         '<div class="ava-seg ava-mode" style="margin-bottom:14px;">' +
           '<div data-m="quantity" role="button" tabindex="0" aria-pressed="' + (c.capacity_mode === 'quantity') + '" class="' + (c.capacity_mode === 'quantity' ? 'on' : '') + '">By quantity</div>' +
@@ -558,8 +564,9 @@
       this.$settings.querySelector('.ava-slotrow').style.display = 'none';
     }
 
-    // Accepting-new-clients info popover: click "?" to open, ✕ / outside
-    // click to close; clamped inside the viewport on phones.
+    // #121: the accepting-new-clients popover + toggle wiring moved with their
+    // markup to renderNewClients(). Kept generic here in case Settings ever
+    // grows its own "?" popover; scoped to $settings so it no-ops today.
     var infoWrap = this.$settings.querySelector('.ava-info-wrap');
     if (infoWrap) {
       var infoBtn = infoWrap.querySelector('.ava-info-btn');
@@ -576,31 +583,6 @@
       infoBtn.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); showPop(infoPop.style.display !== 'block'); });
       infoWrap.querySelector('.ava-info-x').addEventListener('click', function (e) { e.stopPropagation(); showPop(false); });
       document.addEventListener('click', function (e) { if (!infoWrap.contains(e.target)) showPop(false); });
-    }
-
-    // Accepting-new-clients: save the one field on flip. On failure (e.g. the
-    // SQL patch isn't applied yet) revert the switch and say so quietly.
-    var acceptCb = this.$settings.querySelector('.ava-accepting');
-    var acceptMsg = this.$settings.querySelector('.ava-accepting-msg');
-    if (acceptCb) {
-      acceptCb.addEventListener('change', function () {
-        var next = acceptCb.checked;
-        acceptMsg.textContent = 'Saving…';
-        API.saveConfig(self.vendorId, {
-          accepting_new_clients: next,
-          updated_at: new Date().toISOString()
-        }).then(function (r) {
-          if (r && r.error) {
-            acceptCb.checked = !next;
-            acceptMsg.textContent = 'Couldn’t save';
-            console.warn('[availability] accepting_new_clients save failed (SQL patch applied?)', r.error);
-          } else {
-            self.cfg.accepting_new_clients = next;
-            acceptMsg.textContent = next ? 'On' : 'Off';
-          }
-          setTimeout(function () { acceptMsg.textContent = ''; }, 2500);
-        });
-      });
     }
 
     this.$settings.querySelector('.ava-save').addEventListener('click', function () {
@@ -917,67 +899,157 @@
       // and offers regardless — this is honest UI, same as the analytics locks).
       this.$waitlist.innerHTML =
         '<div class="ava-card" style="display:flex;align-items:center;justify-content:space-between;gap:14px;">' +
-          '<div><h3>Waitlist <span class="ava-chip" style="background:#FBEEDD;color:#B5793B;margin-left:6px;">Featured</span></h3>' +
-          '<p class="ava-note" style="margin:6px 0 0;">When a date sells out, Featured storefronts capture the demand — customers join a queue and you offer freed spots. Every cancellation becomes a warm lead.</p></div>' +
+          '<div><h3>Sold-out date waitlist <span class="ava-chip" style="background:#FBEEDD;color:#B5793B;margin-left:6px;">Featured</span></h3>' +
+          '<p class="ava-note" style="margin:6px 0 0;">When a date sells out, Featured storefronts capture the demand — customers join a queue for that day and you offer freed spots. Every cancellation becomes a warm lead.</p></div>' +
           '<a href="/pricing" style="flex-shrink:0;background:' + BRAND + ';color:#fff;border-radius:9px;padding:10px 16px;font-size:13px;font-weight:600;text-decoration:none;">Upgrade</a>' +
         '</div>';
       return;
     }
-    if (!this.waitlist.length) { this.$waitlist.innerHTML = ''; return; }
-    // General (date-less) rows = the NEW-CLIENT waitlist (vendor flipped
-    // "accepting new clients" off; Francesca 2026-08-13) — grouped first,
-    // then the per-date queues. Same Offer flow for both.
-    var general = this.waitlist.filter(function (w) { return !w.the_date; });
+    // #121: DATED rows only. The date-less "new clients" queue moved to its own
+    // card (renderNewClients) so it sits with the toggle that opens it — the two
+    // used to share one "Waitlist" card and read as one feature.
     var dated = this.waitlist.filter(function (w) { return !!w.the_date; });
+    if (!dated.length) { this.$waitlist.innerHTML = ''; return; }
     var byDate = {};
     dated.forEach(function (w) { (byDate[w.the_date] = byDate[w.the_date] || []).push(w); });
-    var html = '<div class="ava-card"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">' +
-      '<h3>Waitlist</h3><span class="ava-sub">' + this.waitlist.length + ' waiting for a spot</span></div>';
-    function rowsFor(list) {
-      var out = '';
-      list.forEach(function (w, idx) {
-        var right = w.status === 'offered'
-          ? '<span class="ava-chip" style="background:#E7F3EC;color:#3E7C5E;">Offer sent</span>'
-          : '<button class="ava-btn" data-offer="' + w.id + '">Offer spot</button>';
-        out += '<div class="ava-row">' +
-          '<span style="font-size:12px;font-weight:600;color:#B0ACBC;width:14px;">' + (idx + 1) + '</span>' +
-          '<div class="ava-avatar" style="background:#F5EFE4;color:#B5793B;">' + esc(initials(w.customer_name || w.customer_email)) + '</div>' +
-          '<div style="flex:1;min-width:0;"><p style="margin:0;font-size:14px;font-weight:500;color:#3E3A55;">' +
-            esc(w.customer_name || w.customer_email) +
-            (w.requested_qty ? ' · <span style="color:#5D4F9E;">wants ' + w.requested_qty + '</span>' : '') + '</p>' +
-            '<p style="margin:1px 0 0;font-size:12px;color:#8B8798;">' + esc(w.customer_email || '') + '</p></div>' +
-          '<div data-wrow="' + w.id + '">' + right + '</div></div>';
-      });
-      return out;
-    }
-    if (general.length) {
-      html += '<p style="margin:12px 0 2px;font-size:13px;font-weight:600;color:#3E3A55;">New clients' +
-        '<span class="ava-sub" style="font-weight:400;"> · waiting for any opening</span></p>';
-      html += rowsFor(general);
-    }
+    var html = '<div class="ava-card"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">' +
+      '<h3>Sold-out date waitlist</h3><span class="ava-sub">' + dated.length + ' waiting on a specific day</span></div>' +
+      '<p class="ava-note" style="margin:0 0 6px;">Each person below asked for one particular date. Offer a spot when that day frees up.</p>';
     Object.keys(byDate).sort().forEach(function (dISO) {
       html += '<p style="margin:12px 0 2px;font-size:13px;font-weight:600;color:#3E3A55;">' + esc(prettyDate(dISO)) + '</p>';
-      html += rowsFor(byDate[dISO]);
+      html += waitlistRows(byDate[dISO]);
     });
     html += '</div>';
     this.$waitlist.innerHTML = html;
+  };
 
-    this.$waitlist.addEventListener('click', function (e) {
-      var btn = e.target.closest('button[data-offer]');
-      if (!btn) return;
-      var id = Number(btn.getAttribute('data-offer'));
-      var cellEl = self.$waitlist.querySelector('[data-wrow="' + id + '"]');
-      cellEl.innerHTML = '<span class="ava-sub">Working…</span>';
-      API.offerSpot(id, 6).then(function (r) {
-        var res = (r && r.data) || {};
-        cellEl.innerHTML = res.ok
-          ? '<span class="ava-chip" style="background:#E7F3EC;color:#3E7C5E;">Offer sent · 6h to claim</span>'
-          : '<span class="ava-chip" style="background:#FAE9E2;color:#9E5F44;">Couldn’t offer</span>';
-        // Email the waitlisted customer the spot's theirs (best-effort).
-        if (res.ok && API.notifyOffered) {
-          try { API.notifyOffered(id); } catch (e) {}
-        }
+  // #121: the vendor-level NEW-CLIENT queue and the switch that opens it, on one
+  // card. Renders for EVERY plan — the toggle is not a Featured perk (any vendor
+  // can say "not taking new clients"; only the customer-side JOIN is gated), and
+  // it must stay reachable when the queue is empty, which is exactly when a
+  // vendor reaches for it. That's why it can't live inside renderWaitlist, whose
+  // two early returns blank the section for non-Featured or empty queues.
+  Page.prototype.renderNewClients = function () {
+    var self = this, c = this.cfg || {};
+    var accepting = c.accepting_new_clients !== false;
+    var general = (this.waitlist || []).filter(function (w) { return !w.the_date; });
+
+    var html = '<div class="ava-card">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">' +
+        '<h3>New clients</h3>' +
+        (general.length ? '<span class="ava-sub">' + general.length + ' waiting to be taken on</span>' : '') +
+      '</div>' +
+      '<p class="ava-note" style="margin:0 0 12px;">Whether you\'re open to taking anyone new at all — not tied to any one date.</p>' +
+      // divs/spans only in this block — an injected <p> would be auto-closed by
+      // the parser around the popover's inner blocks and mangle the tree.
+      '<div class="ava-acceptrow" style="display:flex;align-items:center;justify-content:space-between;gap:12px;background:#F6F2FD;border:1px solid #E9E3F7;border-radius:10px;padding:10px 14px;">' +
+        '<div><div style="font-size:13px;font-weight:600;color:#3E3A55;display:flex;align-items:center;">Accepting new clients' +
+          '<span class="ava-info-wrap"><button type="button" class="ava-info-btn" aria-label="What does this do?">?</button>' +
+            '<span class="ava-info-pop">' +
+              '<button type="button" class="ava-info-x" aria-label="Close">✕</button>' +
+              '<span class="ava-ip-h">Accepting new clients</span>' +
+              '<span class="ava-ip-p"><b>On</b> &mdash; customers book you normally from your storefront.</span>' +
+              '<span class="ava-ip-p"><b>Off</b> &mdash; your page says your books are full. Instead of the booking calendar, new customers join the queue on THIS card, and when you have room you tap <b>Offer spot</b> to invite one. Your hours stay visible either way.</span>' +
+              '<span class="ava-ip-p">This is separate from the <b>sold-out date waitlist</b> below, where people wait on one particular day.</span>' +
+            '</span></span></div>' +
+          '<p class="ava-note" style="margin:2px 0 0;">Off = new clients see a books-full note and can join the queue below.</p></div>' +
+        '<span style="display:flex;align-items:center;gap:8px;flex-shrink:0;"><span class="ava-accepting-msg" style="font-size:12px;color:#6C6880;"></span>' +
+          '<label class="ava-switch"><input type="checkbox" class="ava-accepting"' + (accepting ? ' checked' : '') + ' /><span class="ava-track"></span></label></span>' +
+      '</div>';
+
+    if (general.length) {
+      html += '<p style="margin:14px 0 2px;font-size:13px;font-weight:600;color:#3E3A55;">Waiting to be taken on' +
+        '<span class="ava-sub" style="font-weight:400;"> · no date in mind</span></p>' +
+        waitlistRows(general);
+    } else if (!accepting) {
+      html += '<p class="ava-note" style="margin:12px 0 0;">Nobody in the queue yet. While this is off, new customers can add themselves here from your storefront.</p>';
+    }
+    html += '</div>';
+    this.$newclients.innerHTML = html;
+
+    // Info popover: click "?" to open, ✕ / outside click to close; clamped
+    // inside the viewport on phones.
+    var infoWrap = this.$newclients.querySelector('.ava-info-wrap');
+    if (infoWrap) {
+      var infoBtn = infoWrap.querySelector('.ava-info-btn');
+      var infoPop = infoWrap.querySelector('.ava-info-pop');
+      var showPop = function (on) {
+        infoPop.style.display = on ? 'block' : 'none';
+        if (!on) return;
+        infoPop.style.transform = 'translateX(-50%)';
+        var r = infoPop.getBoundingClientRect(), pad = 12, shift = 0;
+        if (r.right > window.innerWidth - pad) shift = (window.innerWidth - pad) - r.right;
+        else if (r.left < pad) shift = pad - r.left;
+        if (shift) infoPop.style.transform = 'translateX(calc(-50% + ' + Math.round(shift) + 'px))';
+      };
+      infoBtn.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); showPop(infoPop.style.display !== 'block'); });
+      infoWrap.querySelector('.ava-info-x').addEventListener('click', function (e) { e.stopPropagation(); showPop(false); });
+      document.addEventListener('click', function (e) { if (!infoWrap.contains(e.target)) showPop(false); });
+    }
+
+    // Instant-save on flip, separate from the main Settings Save so a missing DB
+    // column (patch not applied yet) can never break the other settings.
+    var acceptCb = this.$newclients.querySelector('.ava-accepting');
+    var acceptMsg = this.$newclients.querySelector('.ava-accepting-msg');
+    if (acceptCb) {
+      acceptCb.addEventListener('change', function () {
+        var next = acceptCb.checked;
+        acceptMsg.textContent = 'Saving…';
+        API.saveConfig(self.vendorId, {
+          accepting_new_clients: next,
+          updated_at: new Date().toISOString()
+        }).then(function (r) {
+          if (r && r.error) {
+            acceptCb.checked = !next;
+            acceptMsg.textContent = 'Couldn’t save';
+            console.warn('[availability] accepting_new_clients save failed (SQL patch applied?)', r.error);
+          } else {
+            self.cfg.accepting_new_clients = next;
+            acceptMsg.textContent = next ? 'On' : 'Off';
+            self.renderNewClients();          // reflect the empty-queue hint
+          }
+          setTimeout(function () {
+            var m = self.$newclients.querySelector('.ava-accepting-msg');
+            if (m) m.textContent = '';
+          }, 2500);
+        });
       });
+    }
+  };
+
+  // Shared by both waitlist cards — identical row, identical Offer flow.
+  function waitlistRows(list) {
+    var out = '';
+    list.forEach(function (w, idx) {
+      var right = w.status === 'offered'
+        ? '<span class="ava-chip" style="background:#E7F3EC;color:#3E7C5E;">Offer sent</span>'
+        : '<button class="ava-btn" data-offer="' + w.id + '">Offer spot</button>';
+      out += '<div class="ava-row">' +
+        '<span style="font-size:12px;font-weight:600;color:#B0ACBC;width:14px;">' + (idx + 1) + '</span>' +
+        '<div class="ava-avatar" style="background:#F5EFE4;color:#B5793B;">' + esc(initials(w.customer_name || w.customer_email)) + '</div>' +
+        '<div style="flex:1;min-width:0;"><p style="margin:0;font-size:14px;font-weight:500;color:#3E3A55;">' +
+          esc(w.customer_name || w.customer_email) +
+          (w.requested_qty ? ' · <span style="color:#5D4F9E;">wants ' + w.requested_qty + '</span>' : '') + '</p>' +
+          '<p style="margin:1px 0 0;font-size:12px;color:#8B8798;">' + esc(w.customer_email || '') + '</p></div>' +
+        '<div data-wrow="' + w.id + '">' + right + '</div></div>';
+    });
+    return out;
+  }
+
+  // Offer flow, shared by both cards (delegated from the mount in shell()).
+  Page.prototype.offerSpot = function (id) {
+    var cellEl = this.mount.querySelector('[data-wrow="' + id + '"]');
+    if (!cellEl) return;
+    cellEl.innerHTML = '<span class="ava-sub">Working…</span>';
+    API.offerSpot(id, 6).then(function (r) {
+      var res = (r && r.data) || {};
+      cellEl.innerHTML = res.ok
+        ? '<span class="ava-chip" style="background:#E7F3EC;color:#3E7C5E;">Offer sent · 6h to claim</span>'
+        : '<span class="ava-chip" style="background:#FAE9E2;color:#9E5F44;">Couldn’t offer</span>';
+      // Email the waitlisted customer the spot's theirs (best-effort).
+      if (res.ok && API.notifyOffered) {
+        try { API.notifyOffered(id); } catch (e) {}
+      }
     });
   };
 
