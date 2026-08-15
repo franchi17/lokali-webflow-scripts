@@ -455,7 +455,7 @@
     '.vl-host-stats{border-top:1px solid #EEEDF6;text-align:left;padding-top:12px;}',
     '.vl-host-st{display:flex;justify-content:space-between;gap:10px;padding:6px 0;font-size:13.5px;color:#6B6880;font-weight:600;}',
     '.vl-host-st b{color:#1A1829;font-weight:700;text-align:right;}',
-    '.vl-meet-bio{color:#565170;font-size:15px;line-height:1.6;white-space:pre-line;}',
+    '.vl-meet-bio{color:#565170;font-size:15px;line-height:1.6;white-space:pre-line;overflow-wrap:anywhere;}',
     '.vl-meet-txt #vl-about-bio{color:#565170;font-size:15px;}',
     '.vl-meet-h3{font-size:15.5px;font-weight:800;color:#1A1829;margin:18px 0 8px;font-family:"Plus Jakarta Sans",sans-serif;}',
     // "Ways to pay" chips in the card (labeled pills, not bare icon circles)
@@ -493,7 +493,9 @@
     '.vl-meet-row{flex-wrap:wrap !important;}',
     '.vl-meet-learn{margin-left:0 !important;flex-basis:100%;}',
     'html.vl-op [data-vl-panel="products"] .vl-grid{grid-template-columns:1fr;}',
-    '.vl-meet-grid{grid-template-columns:1fr;}',
+    // minmax(0,…) is load-bearing: bare 1fr has a min-content floor, so an
+    // unbreakable bio URL forces the column past the viewport (Umoh 2026-08-14).
+    '.vl-meet-grid{grid-template-columns:minmax(0,1fr);}',
     'html.vl-op body{padding-bottom:76px;}',
     '#vl-op-bar{position:fixed;left:0;right:0;bottom:0;z-index:60;display:flex;gap:10px;background:#fff;border-top:1px solid #EEEDF6;padding:10px 14px calc(10px + env(safe-area-inset-bottom));box-shadow:0 -6px 20px rgba(26,24,41,.08);}',
     '#vl-op-bar button,#vl-op-bar a{font-family:"Plus Jakarta Sans",sans-serif;font-weight:600;font-size:15px;border-radius:10px;min-height:46px;display:flex;align-items:center;justify-content:center;cursor:pointer;text-decoration:none;}',
