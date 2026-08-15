@@ -161,13 +161,15 @@
       'select.select-field-3,.mobile-sort-select select,#location-select{min-height:44px;}',
       '#browse-mobile-filter-btn{min-height:44px;box-sizing:border-box;}',
       // F4 — footer links were 14px-tall targets, ~20 of them stacked; pad them out.
-      // Retuned 2026-07-31 (Francesca: mobile footer too spaced out): 10px→7px
-      // padding + line-height reset on the list rows + tighter group headings —
-      // rows stay comfortably tappable (~40px pitch) but the column reads compact.
-      '.lok-ft-link{display:inline-block;padding:7px 0;}',
+      // Retune ROUND 2, 2026-08-14 (Francesca: still too spaced after the 07-31
+      // pass): round 1 shrank the link padding but missed the REAL culprit — the
+      // Webflow-side 11px row-gap on .lok-ft-list itself. Override it here too.
+      // Now: 5px pads + 3px gap = ~27px row pitch (was ~39px), headings 6px.
+      '.lok-ft-link{display:inline-block;padding:5px 0;}',
       '.lok-ft-contactlink{display:inline-block;padding:4px 0;}',
       '.lok-ft-li{line-height:1;}',
-      '.lok-ft-h{margin-bottom:10px;}',
+      '.lok-ft-list{row-gap:3px;}',
+      '.lok-ft-h{margin-bottom:6px;}',
       '}',
       // Header decompression ≤640 (Francesca 2026-07-31: logo more to the left,
       // nav bar squished): the header container ships margin-left/right 40px on
