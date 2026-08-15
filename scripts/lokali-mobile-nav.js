@@ -176,6 +176,13 @@
       // top of the wrapper’s 20px padding = 60px inset. Trim to 12px on phones.
       '@media screen and (max-width:640px){',
       '.header-wrapper .container-default{margin-left:12px!important;margin-right:12px!important;}',
+      // #127 (Francesca 2026-08-14): tighten phone side insets. Body containers
+      // ran 20px but the footer STACKED to 50px (lok-ft-inner 20px padding +
+      // 20px margin, + .footer's own 10px). Unify content at 16px; header keeps
+      // its deliberate 12px from 07-31.
+      '.inner-container{padding-left:16px!important;padding-right:16px!important;}',
+      '.lok-ft-inner{padding-left:16px!important;padding-right:16px!important;margin-left:0!important;margin-right:0!important;}',
+      '.footer{padding-left:0!important;padding-right:0!important;}',
       '}',
       // F6 — /about: the hero background video rendered 5px wider than the page (width 380
       // at -2px left on a 375 viewport) and caused real horizontal scroll. Kept at ≤991 (a
