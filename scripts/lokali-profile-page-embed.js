@@ -137,7 +137,7 @@ var LokaliPhoneInput = (function () {
     // identical rules, so load order does not matter.
     s.textContent =
       '.lokali-phone{display:flex;gap:8px;align-items:stretch;width:100%;max-width:100%;box-sizing:border-box;}' +
-      '.lokali-phone-country{flex:0 0 auto;width:152px;max-width:45%;padding:8px 28px 8px 10px;' +
+      '.lokali-phone-country{flex:0 0 auto;width:190px;max-width:48%;padding:8px 28px 8px 10px;' +
         'border:1px solid #ccc;border-radius:4px;background-color:#fff;color:#1A1829;' +
         'font-family:"Plus Jakarta Sans",system-ui,-apple-system,sans-serif;font-size:14px;' +
         'box-sizing:border-box;cursor:pointer;-webkit-appearance:none;appearance:none;' +
@@ -151,7 +151,7 @@ var LokaliPhoneInput = (function () {
       '.lokali-phone-number:focus{outline:none;border-color:#6002EE;box-shadow:0 0 0 3px rgba(96,2,238,.15);}' +
       /* iOS zoom floor: inputs stay >=16px below the tablet breakpoint */
       '@media (max-width:991px){.lokali-phone-country,.lokali-phone-number{font-size:16px;}' +
-        '.lokali-phone-country{width:132px;}}';
+        '.lokali-phone-country{width:156px;}}';
     document.head.appendChild(s);
   }
 

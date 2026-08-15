@@ -16,8 +16,8 @@
 
 .lokali-phone-country {
   flex: 0 0 auto;
-  width: 152px;
-  max-width: 45%;
+  width: 190px;
+  max-width: 48%;
   padding: 8px 28px 8px 10px;
   border: 1px solid #ccc;
   border-radius: 4px;
@@ -67,6 +67,6 @@
     font-size: 16px;
   }
   .lokali-phone-country {
-    width: 132px;
+    width: 156px;
   }
 }
