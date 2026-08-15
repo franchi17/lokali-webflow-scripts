@@ -253,10 +253,33 @@
     mounted = true;
   }
 
+  // Deep link from The Market card's Email button (/{slug}?inquiry=1). The card
+  // has no vendor context of its own, so instead of teaching the modal to live
+  // on the grid we send the visitor to the storefront and open the form on
+  // arrival — same modal, same gate, and they can see who they're writing to.
+  // One-shot: vendor-loaded can fire more than once, and a reopened modal the
+  // visitor just dismissed reads as a bug.
+  var deepLinked = false;
+  function maybeDeepLink() {
+    if (deepLinked || !/[?&]inquiry=1(&|$)/.test(window.location.search)) return;
+    deepLinked = true;
+    // Drop the param so a refresh (or a shared URL) doesn't reopen the form.
+    // Strips ONLY inquiry=1 — vendor-listing reads onepage=0 off the same query.
+    try {
+      var kept = window.location.search.replace(/^\?/, '').split('&').filter(function (kv) {
+        return kv && kv !== 'inquiry=1';
+      });
+      window.history.replaceState(null, '',
+        window.location.pathname + (kept.length ? '?' + kept.join('&') : '') + window.location.hash);
+    } catch (e) {}
+    open('market');
+  }
+
   function setVendor(v) {
     if (!v || v.id == null) return;
     vendor = { id: v.id, name: v.name || '' };
     mountButton();
+    maybeDeepLink();
   }
 
   document.addEventListener('lokali:vendor-loaded', function (e) { setVendor(e.detail); });

@@ -1122,13 +1122,32 @@
     else b.textContent = opts.glyph;
     return b;
   }
-  function addContact(parent, href, label, iconUrl, cls) {
+  // Mirror of the storefront's trackChannel() (lokali-vendor-listing.js): a
+  // direct-contact click is a lead event, and the write must carry the signed-in
+  // user so the DB trigger stamps user_id — that column IS the review gate.
+  // Until this existed, every Call/Text/WhatsApp tap from The Market was
+  // invisible: no vendor lead, no GA4, no gate credit. Fire-and-forget, so the
+  // tel:/sms:/wa.me navigation on the next line proceeds untouched.
+  // source stays 'listing' (the documented vocabulary is listing|service|product,
+  // and lokali-leads.js renders anything else as "listing" anyway).
+  function trackContact(vendorId, eventType) {
+    if (vendorId == null || !eventType) return;
+    try {
+      if (window.LokaliAPI && window.LokaliAPI.leads && window.LokaliAPI.leads.trackEvent) {
+        window.LokaliAPI.leads.trackEvent(vendorId, eventType, 'listing');
+      }
+    } catch (e) {}
+    // #110 GA4: mirror of the first-party lead event. No contact values, ids only.
+    try { if (typeof window.gtag === 'function') window.gtag('event', 'lead_click', { channel: eventType, vendor_id: String(vendorId) }); } catch (e) {}
+  }
+  function addContact(parent, href, label, iconUrl, cls, vendorId, eventType) {
     if (!href) return;
     var b = ce('button', 'contact-btn' + (cls ? ' ' + cls : '')); b.type = 'button';
     b.appendChild(maskIcon(iconUrl, 'currentColor', 13)); // icon follows button text color (incl. hover)
     b.appendChild(document.createTextNode(label));
     b.addEventListener('click', function (ev) {
       ev.stopPropagation(); ev.preventDefault();
+      trackContact(vendorId, eventType);
       if (href.indexOf('http') === 0) window.open(href, '_blank'); else window.location.href = href;
     });
     parent.appendChild(b);
@@ -1222,12 +1241,22 @@
     // hide the buttons, not render a dead tel:+ link.
     var phone = phoneDigits(v.phone_number);
     var actions = ce('div', 'vcard-actions');
-    addContact(actions, v.contact_email ? 'mailto:' + v.contact_email : null, 'Email', ICON_EMAIL, 'cb-email');
+    // Email opens the on-platform inquiry form, not a mailto — same decision the
+    // storefront took on 07-17 (vendor-listing hides #vl-ch-email and lets
+    // "Send a message" replace it); the card had been left behind on raw mailto.
+    // The modal lives on the storefront, so deep-link there and let
+    // lokali-inquiry.js open it on arrival. Still gated on contact_email: no
+    // address means the /inquiry route has nowhere to deliver it.
+    // No lead event here — the inquiry row itself is the record (and it's the
+    // path that earns the "Contacted through Lokali" badge), exactly as on the
+    // storefront, where "Send a message" logs no channel click either.
+    addContact(actions, v.contact_email ? (href + (href.indexOf('?') === -1 ? '?' : '&') + 'inquiry=1') : null,
+      'Email', ICON_EMAIL, 'cb-email', v.id, null);
     // #76c: hide Call when the vendor unticked "Customers can call me"
     // (missing/null = legacy rows -> keep showing).
-    addContact(actions, (phone && v.phone_calls !== false) ? 'tel:+' + phone : null, 'Call', ICON_CALL, 'cb-call');
-    addContact(actions, (v.text_messages && phone) ? 'sms:+' + phone : null, 'Text', ICON_TEXT, 'cb-text');
-    addContact(actions, (v.whatsapp_messages && phone) ? 'https://wa.me/' + phone : null, 'WhatsApp', ICON_WHATSAPP, 'cb-whatsapp');
+    addContact(actions, (phone && v.phone_calls !== false) ? 'tel:+' + phone : null, 'Call', ICON_CALL, 'cb-call', v.id, 'call');
+    addContact(actions, (v.text_messages && phone) ? 'sms:+' + phone : null, 'Text', ICON_TEXT, 'cb-text', v.id, 'sms');
+    addContact(actions, (v.whatsapp_messages && phone) ? 'https://wa.me/' + phone : null, 'WhatsApp', ICON_WHATSAPP, 'cb-whatsapp', v.id, 'whatsapp');
     card.appendChild(actions);
 
     card.addEventListener('click', function () { window.location.href = href; });
