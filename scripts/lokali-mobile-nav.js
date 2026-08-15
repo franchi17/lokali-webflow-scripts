@@ -181,6 +181,9 @@
       // 20px margin, + .footer's own 10px). Unify content at 16px; header keeps
       // its deliberate 12px from 07-31.
       '.inner-container{padding-left:16px!important;padding-right:16px!important;}',
+      // Webflow nests .inner-container (e.g. ._520px > ._700px---tablet): pad
+      // only the outermost or the insets stack (16+16=32 — caught live 08-14).
+      '.inner-container .inner-container{padding-left:0!important;padding-right:0!important;}',
       '.lok-ft-inner{padding-left:16px!important;padding-right:16px!important;margin-left:0!important;margin-right:0!important;}',
       '.footer{padding-left:0!important;padding-right:0!important;}',
       '}',
