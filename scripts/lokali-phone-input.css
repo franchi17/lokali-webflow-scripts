@@ -1,15 +1,50 @@
 
 
+/* Kept byte-for-byte in sync with the rules lokali-phone-input.js injects at
+   runtime (style#lokali-phone-input-css). The widget injects its own copy
+   because this file is delivered by a Webflow page tag and cannot be assumed
+   present; identical rules mean load order never matters. */
+
 .lokali-phone {
-  display: block;
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
 }
 
+.lokali-phone-country {
+  flex: 0 0 auto;
+  width: 152px;
+  max-width: 45%;
+  padding: 8px 28px 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #fff;
+  color: #1A1829;
+  font-family: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  box-sizing: border-box;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='none' stroke='%235A5570' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round' d='M1 1.5 6 6.5 11 1.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+}
+
+.lokali-phone-country:focus {
+  outline: none;
+  border-color: #6002EE;
+  box-shadow: 0 0 0 3px rgba(96, 2, 238, 0.15);
+}
+
 .lokali-phone-number {
+  flex: 1 1 auto;
+  min-width: 0;
   display: block;
-  width: 100%;
+  width: auto;
   max-width: 100%;
   padding: 8px 12px;
   border: 1px solid #ccc;
@@ -27,7 +62,11 @@
 
 /* iOS zoom floor: inputs stay >=16px below the tablet breakpoint */
 @media (max-width: 991px) {
+  .lokali-phone-country,
   .lokali-phone-number {
     font-size: 16px;
+  }
+  .lokali-phone-country {
+    width: 132px;
   }
 }
