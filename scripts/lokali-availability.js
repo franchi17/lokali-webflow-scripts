@@ -231,14 +231,18 @@
     return '<div class="av-card av-closed" style="margin-bottom:14px;">' +
       '<p style="margin:0 0 6px;font-size:15px;font-weight:600;color:#3E3A55;">Not taking new clients right now</p>' +
       '<p style="margin:0;font-size:13px;color:#6C6880;line-height:1.5;">' + (this.canWaitlist
-        ? 'Their books are full at the moment — join the waitlist and they’ll reach out when a spot opens up.'
+        // #121: name the LAYER. This is the vendor-level new-client queue (a
+        // date-less availability_waitlist row); the sold-out panel's slot
+        // waitlist says "for <date>". Both used to read "join the waitlist",
+        // so a customer on both had no way to tell them apart.
+        ? 'Their books are full at the moment — join their new-client waitlist and they’ll reach out when they’re taking clients again.'
         : 'Their books are full at the moment — check back soon.') + '</p>' +
       (this.canWaitlist
         ? '<div class="av-join" style="margin-top:12px;display:flex;flex-direction:column;gap:8px;max-width:340px;">' +
             '<input type="text" class="av-join-name" placeholder="Your name" style="' + inp + '">' +
             '<input type="email" class="av-join-email" placeholder="you@email.com" style="' + inp + '">' +
             '<input type="text" class="av-join-hp" tabindex="-1" autocomplete="off" style="display:none;">' +
-            '<button type="button" class="av-join-btn" style="font-family:inherit;font-size:14px;font-weight:600;color:#fff;background:#6002EE;border:none;border-radius:9px;padding:11px 16px;cursor:pointer;">Join the waitlist</button>' +
+            '<button type="button" class="av-join-btn" style="font-family:inherit;font-size:14px;font-weight:600;color:#fff;background:#6002EE;border:none;border-radius:9px;padding:11px 16px;cursor:pointer;">Join the new-client waitlist</button>' +
             '<p class="av-join-msg" style="margin:0;font-size:12px;color:#8B8798;"></p>' +
           '</div>'
         : '') +
@@ -261,7 +265,7 @@
           var res = (r && r.data) || {};
           if (res.ok) {
             var box = self.mount.querySelector('.av-join');
-            box.innerHTML = '<p style="margin:0;font-size:13.5px;font-weight:600;color:#3E7C5E;">You’re on the list ✓ They’ll reach out when a spot opens.</p>';
+            box.innerHTML = '<p style="margin:0;font-size:13.5px;font-weight:600;color:#3E7C5E;">You’re on the new-client waitlist ✓ They’ll reach out when they’re taking clients again.</p>';
           } else {
             btn.disabled = false; btn.style.opacity = '';
             msg.textContent = 'Couldn’t join right now — please try again.';
@@ -574,10 +578,13 @@
       '<div style="text-align:center;padding:8px 0;">' +
         '<div style="font-size:30px;color:' + (isWaitlist ? '#B5793B' : '#4E9B7A') + ';">' + (isWaitlist ? '&#9733;' : '&#10003;') + '</div>' +
         '<p style="margin:10px 0 3px;font-size:15px;font-weight:600;color:#3E3A55;">' +
-          (isWaitlist ? "You're on the waitlist" : 'Request sent') + '</p>' +
+          // #121: the waitlist branch here is always the SLOT layer (the
+          // date-less general join renders its own confirmation inline in
+          // closedHTML), so the headline can name the date it's tied to.
+          (isWaitlist ? "You're on the waitlist for " + esc(prettyDate(dISO)) : 'Request sent') + '</p>' +
         '<p style="margin:0;font-size:13px;color:#8B8798;">' +
           (isWaitlist
-            ? "We'll email you the moment a spot opens for " + esc(prettyDate(dISO)) + '.'
+            ? "We'll email you the moment a spot opens for that day."
             : "They'll confirm your request for " + esc(prettyDate(dISO)) + ' shortly.') +
         '</p>' +
       '</div>';
@@ -615,12 +622,15 @@
       '<div style="display:flex;align-items:center;gap:9px;margin-bottom:6px;">' +
         '<span style="font-size:19px;color:#C77B63;">&#9888;</span>' +
         '<p style="margin:0;font-size:15px;font-weight:600;color:#3E3A55;">' + esc(prettyDate(dISO)) + ' is sold out</p></div>' +
-      '<p style="margin:0 0 14px;font-size:13px;color:#8B8798;line-height:1.5;">Join the waitlist and you\'ll be first to know if a spot frees up.</p>' +
+      // #121: this is the SLOT waitlist — one specific date. Say so, so it
+      // can't be confused with the vendor-level new-client waitlist on the
+      // books-full banner (which is date-less and named accordingly).
+      '<p style="margin:0 0 14px;font-size:13px;color:#8B8798;line-height:1.5;">Join the waitlist for this date and you\'ll be first to know if a spot frees up.</p>' +
       '<div style="display:flex;gap:10px;margin-bottom:10px;">' +
         '<input class="av-name" maxlength="120" aria-label="Your name" placeholder="Your name" />' +
         '<input class="av-email" type="email" maxlength="200" aria-label="Email" placeholder="you@email.com" /></div>' +
       '<input class="av-hp" style="display:none;" tabindex="-1" autocomplete="off" aria-hidden="true" />' +
-      '<button class="av-cta2 av-join">Join the waitlist</button>';
+      '<button class="av-cta2 av-join">Join the waitlist for ' + esc(prettyDate(dISO)) + '</button>';
     this.panel.querySelector('.av-join').addEventListener('click', function () {
       var email = (self.panel.querySelector('.av-email') || {}).value || '';
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
