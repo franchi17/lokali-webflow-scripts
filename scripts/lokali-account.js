@@ -1549,6 +1549,32 @@
     return card;
   }
 
+  // #129: admin_submit_review and the /review route both answer in CODES, and
+  // this page used to toast them verbatim — a real customer saw "review_failed"
+  // with no idea what to do. (The old `res.error || 'Could not post review'`
+  // fallback could never fire: res.error is always truthy when there IS an
+  // error.) Two rules in this copy: tell a refused customer HOW to qualify, and
+  // when the failure is OURS, say so plainly instead of implying they did
+  // something wrong. Anything unmapped falls through to the our-fault line —
+  // never to the raw code.
+  var REVIEW_OUR_FAULT = 'Something went wrong on our end — your review wasn’t saved. Please try again.';
+  var REVIEW_ERRORS = {
+    // Refusals the customer can act on.
+    not_eligible:     'You can review a vendor once you’ve contacted them through Lokali — use Call, Text, WhatsApp or “Send a message” on their page, then come back in about an hour.',
+    already_reviewed: 'You’ve already reviewed this vendor — you can change it under “Your reviews” below.',
+    self_review:      'You can’t review your own storefront.',
+    comment_too_long: 'That review is a little long — please trim it to 2,000 characters or fewer.',
+    unauthorized:     'Your session expired — please log in again and repost.',
+    not_found:        'That vendor isn’t available right now.',
+    // Ours, not theirs.
+    review_failed:    REVIEW_OUR_FAULT,
+    not_enabled:      REVIEW_OUR_FAULT,
+    Forbidden:        REVIEW_OUR_FAULT
+  };
+  function reviewErrorMessage(code) {
+    return REVIEW_ERRORS[code] || REVIEW_OUR_FAULT;
+  }
+
   function awaitRow(row) {
     var v = vendorOf(row);
     var vid = v.id != null ? v.id : row.vendors_id;
@@ -1585,7 +1611,7 @@
       submit.disabled = true;
       api().reviews.create({ vendors_id: vid, is_recommended: rec.val, comment: ta.value || '' }).then(function (res) {
         submit.disabled = false;
-        if (res && res.error) { toast(res.error || 'Could not post review'); return; }
+        if (res && res.error) { toast(reviewErrorMessage(res.error)); return; }
         state.awaiting = state.awaiting.filter(function (x) { return (vendorOf(x).id != null ? vendorOf(x).id : x.vendors_id) != vid; });
         // optimistic local add so it shows under "Your reviews"
         state.mine.unshift({ id: (res.data && res.data.id), vendors_id: vid, vendor: v, is_recommended: rec.val, comment: ta.value || '', created_at: Date.now() });
@@ -1747,7 +1773,8 @@
         notif_review_reminders: tgRemind.get()
       }).then(function (res) {
         saveBtn.disabled = false;
-        if (res && res.error) { toast(res.error || 'Could not save'); return; }
+        // #129 (same defect, one line away): this toasted the raw server code too.
+        if (res && res.error) { toast('Couldn’t save your changes — please try again.'); return; }
         state.account.first_name = firstIn.input.value.trim();
         state.account.last_name = lastIn.input.value.trim();
         state.account.avatar = avatarSel;
