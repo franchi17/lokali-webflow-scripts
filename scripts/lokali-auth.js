@@ -736,7 +736,13 @@
             frag.appendChild(document.createTextNode('Please confirm your email first — check your inbox. '));
             var resend = linkBtn('Resend confirmation');
             resend.addEventListener('click', function () {
-              _client.auth.resend({ type: 'signup', email: em }).then(function (r) {
+              // /resend is captcha-gated like every auth endpoint — reuse the
+              // login form's widget (the reset above minted a fresh token).
+              var ro = { type: 'signup', email: em };
+              var rct = captcha.token();
+              if (rct) ro.options = { captchaToken: rct };
+              _client.auth.resend(ro).then(function (r) {
+                captcha.reset(); // single-use — a retry needs a fresh token
                 if (r && r.error) showMsg(err, friendlyAuthError(r.error));
                 else { hideMsg(err); showMsg(info, 'Confirmation email sent to ' + em + '. Check your inbox.'); }
               });
@@ -889,6 +895,9 @@
     chk.appendChild(sub);
     var info = infoBox(); var err = errorBox();
     chk.appendChild(info); chk.appendChild(err);
+    // /resend is captcha-gated and the signup form's token was consumed by
+    // signUp — attach a fresh widget so the resend link can pass one.
+    var captcha = attachTurnstile(chk);
     var links = el('div', 'lok-auth-links');
     links.appendChild(document.createTextNode('Didn’t get it? '));
     var resend = linkBtn('Resend email');
@@ -896,7 +905,11 @@
       hideMsg(info); hideMsg(err);
       readyP.then(function () {
         if (!_client) return;
-        _client.auth.resend({ type: 'signup', email: emailAddr }).then(function (r) {
+        var o = { type: 'signup', email: emailAddr, options: { emailRedirectTo: window.location.origin + SIGN_IN_PATH } };
+        var ct = captcha.token();
+        if (ct) o.options.captchaToken = ct;
+        _client.auth.resend(o).then(function (r) {
+          captcha.reset(); // single-use — a retry needs a fresh token
           if (r && r.error) showMsg(err, friendlyAuthError(r.error));
           else showMsg(info, 'Confirmation email re-sent. Give it a minute (and check spam).');
         });
