@@ -1247,10 +1247,12 @@
     var count = document.createElement('div'); count.className = 'lok-lb-count';
     ov.appendChild(img); ov.appendChild(close); ov.appendChild(prev); ov.appendChild(next); ov.appendChild(count);
     document.body.appendChild(ov);
-    var urls = [], idx = 0;
+    var urls = [], idx = 0, lbLabel = '';
     var render = function () {
       img.src = urls[idx] || '';
       var multi = urls.length > 1;
+      // #97: alt mirrors the gallery's ("Label — photo N"); count is separate UI.
+      img.alt = lbLabel ? (multi ? lbLabel + ' — photo ' + (idx + 1) : lbLabel) : '';
       count.textContent = (idx + 1) + ' / ' + urls.length;
       prev.style.display = next.style.display = count.style.display = multi ? '' : 'none';
     };
@@ -1267,14 +1269,15 @@
       else if (e.key === 'ArrowLeft') go(-1);
       else if (e.key === 'ArrowRight') go(1);
     });
-    _lbApi = { open: function (list, start) {
+    _lbApi = { open: function (list, start, label) {
       urls = (list || []).filter(Boolean); if (!urls.length) return;
       idx = Math.max(0, Math.min(start || 0, urls.length - 1));
+      lbLabel = label || '';
       render(); ov.classList.add('lok-lb-open'); document.body.style.overflow = 'hidden';
     } };
     return _lbApi;
   }
-  function openLightbox(urls, start) { ensureLightbox().open(urls, start); }
+  function openLightbox(urls, start, label) { ensureLightbox().open(urls, start, label); }
 
   // ---- portfolio gallery (Pro/Featured only) -----------------------------
   // Ceiling = the TOP tier's entitlement (plan.max_vendor_photos: Free 0 / Pro
@@ -1328,15 +1331,20 @@
       if (!strip) return;
       strip.innerHTML = ''; if (pips) pips.innerHTML = '';
       var urls = photos.map(function (p) { return imgUrl(p.image_url || p.image); });
+      // #97 alt text: vendor_photos has no caption column, so the business name
+      // + index is the best truthful alt — better than the empty string that
+      // hid a paid feature's photos from search and screen readers.
+      var lbl = (vendor && vendor.business_name ? vendor.business_name + ' — portfolio' : 'Portfolio');
       photos.forEach(function (p, i) {
         var f = document.createElement('div');
         f.className = 'vd-frame ' + (i === 0 ? 'vd-frame-main' : 'vd-frame-peek');
-        var img = document.createElement('img'); img.src = imgUrl(p.image_url || p.image); img.alt = '';
+        var img = document.createElement('img'); img.src = imgUrl(p.image_url || p.image);
+        img.alt = photos.length > 1 ? lbl + ' photo ' + (i + 1) : lbl + ' photo';
         img.style.cursor = 'zoom-in';
         // Click to enlarge — but ignore the click that ends a drag-scroll (#63).
         f.addEventListener('click', function () {
           if (strip.__lokDragged) { strip.__lokDragged = false; return; }
-          openLightbox(urls, i);
+          openLightbox(urls, i, lbl);
         });
         f.appendChild(img); strip.appendChild(f);
         if (pips) { var pip = document.createElement('span'); pip.className = 'vd-pip' + (i === 0 ? ' vd-pip-active' : ''); pips.appendChild(pip); }
@@ -1730,7 +1738,9 @@
       var el;
       if (photo) {
         el = ce('img');
-        el.src = photo; el.alt = '';
+        // #97: a photo of a person — their name is the alt (matches the
+        // initials fallback below, which "reads" the same way).
+        el.src = photo; el.alt = name || v.business_name || '';
         el.style.cssText = 'width:' + size + 'px;height:' + size + 'px;border-radius:50%;object-fit:cover;flex:none;box-shadow:0 3px 10px rgba(26,24,41,.12);';
       } else {
         el = ce('div');

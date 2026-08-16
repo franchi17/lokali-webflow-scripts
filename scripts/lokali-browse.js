@@ -1161,6 +1161,9 @@
       avatar.textContent = initials(vName(v));
     };
     if (photo) {
+      // #97: alt DELIBERATELY empty — the business name is the card's visible
+      // title right next to this avatar, so a non-empty alt would make screen
+      // readers announce every vendor twice. Decorative-adjacent-text rule.
       var img = ce('img', 'vcard-avatar-img'); img.src = photo; img.alt = '';
       img.addEventListener('error', function () { if (img.parentNode) avatar.removeChild(img); fillInitials(); });
       avatar.appendChild(img);

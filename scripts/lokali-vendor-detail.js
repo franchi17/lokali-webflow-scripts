@@ -169,10 +169,12 @@
     var count = document.createElement('div'); count.className = 'lok-lb-count';
     ov.appendChild(img); ov.appendChild(close); ov.appendChild(prev); ov.appendChild(next); ov.appendChild(count);
     document.body.appendChild(ov);
-    var urls = [], idx = 0;
+    var urls = [], idx = 0, lbLabel = '';
     var render = function () {
       img.src = urls[idx] || '';
       var multi = urls.length > 1;
+      // #97: alt mirrors the gallery's ("Label — photo N"); count is separate UI.
+      img.alt = lbLabel ? (multi ? lbLabel + ' — photo ' + (idx + 1) : lbLabel) : '';
       count.textContent = (idx + 1) + ' / ' + urls.length;
       prev.style.display = next.style.display = count.style.display = multi ? '' : 'none';
     };
@@ -189,17 +191,22 @@
       else if (e.key === 'ArrowLeft') go(-1);
       else if (e.key === 'ArrowRight') go(1);
     });
-    _lbApi = { open: function (list, start) {
+    _lbApi = { open: function (list, start, label) {
       urls = (list || []).filter(Boolean); if (!urls.length) return;
       idx = Math.max(0, Math.min(start || 0, urls.length - 1));
+      lbLabel = label || '';
       render(); ov.classList.add('lok-lb-open'); document.body.style.overflow = 'hidden';
     } };
     return _lbApi;
   }
-  function openLightbox(urls, start) { ensureLightbox().open(urls, start); }
+  function openLightbox(urls, start, label) { ensureLightbox().open(urls, start, label); }
 
   // ---- gallery ----------------------------------------------------------
-  function buildGallery(images) {
+  // #97 alt text: `label` = the item name. vendor_photos rows carry no caption
+  // column, so the item name (+ photo index when there are several) is the best
+  // truthful alt available — derived, set via property (never interpolated
+  // into markup), and photo N numbering matches the visible pips.
+  function buildGallery(images, label) {
     var gallery = $('vd-gallery');
     var pips = $('vd-pips');
     if (!gallery) return;
@@ -207,16 +214,20 @@
     if (!list.length) return; // keep placeholder frame
     gallery.innerHTML = '';
     if (pips) pips.innerHTML = '';
+    var altFor = function (i) {
+      if (!label) return '';
+      return list.length > 1 ? label + ' — photo ' + (i + 1) : label;
+    };
     list.forEach(function (src, i) {
       var f = document.createElement('div');
       f.className = 'vd-frame ' + (i === 0 ? 'vd-frame-main' : 'vd-frame-peek');
       var img = document.createElement('img');
-      img.src = src; img.alt = '';
+      img.src = src; img.alt = altFor(i);
       img.style.cursor = 'zoom-in';
       // Click to enlarge — but ignore the click that ends a drag-scroll (#63).
       f.addEventListener('click', function () {
         if (gallery.__lokDragged) { gallery.__lokDragged = false; return; }
-        openLightbox(list, i);
+        openLightbox(list, i, label);
       });
       f.appendChild(img);
       gallery.appendChild(f);
@@ -428,7 +439,8 @@
         hideMetaRow('vd-meta-k1');
       }
       var v2 = $('vd-meta-v2'); if (v2 && priceEl) v2.textContent = priceEl.textContent;
-      fetchPhotos('services', SERVICE_PHOTOS_PATH, (s.id != null ? s.id : id), imgUrl(s.image_url || s.image)).then(buildGallery);
+      fetchPhotos('services', SERVICE_PHOTOS_PATH, (s.id != null ? s.id : id), imgUrl(s.image_url || s.image))
+        .then(function (imgs) { buildGallery(imgs, name); }); // #97: item name = alt
       renderVideo(s.video_url);
       var vid = vendorParam || s.vendors_id || s.vendor_id;
       emitItemView(vid, 'service', s.id != null ? s.id : id);
@@ -491,7 +503,8 @@
       var fulfil = p.shipping_offered && p.pickup_only ? 'Shipping & local pickup' : (p.shipping_offered ? 'Shipping' : (p.pickup_only ? 'Local pickup' : '—'));
       setText('vd-meta-v2', fulfil);
       setText('vd-meta-v3', p.is_custom ? 'Made to order' : 'Standard');
-      fetchPhotos('products', PRODUCT_PHOTOS_PATH, (p.id != null ? p.id : id), imgUrl(p.image_url || p.image)).then(buildGallery);
+      fetchPhotos('products', PRODUCT_PHOTOS_PATH, (p.id != null ? p.id : id), imgUrl(p.image_url || p.image))
+        .then(function (imgs) { buildGallery(imgs, name); }); // #97: item name = alt
       renderVideo(p.video_url);
       var vid = vendorParam || p.vendors_id || p.vendor_id;
       emitItemView(vid, 'product', p.id != null ? p.id : id);
