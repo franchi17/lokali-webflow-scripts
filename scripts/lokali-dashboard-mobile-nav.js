@@ -184,6 +184,22 @@
       // the bare class can't leak to public pages. inline-block is required for the
       // vertical padding to actually grow the hit area on an inline <a>.
       '.link-block-6{display:inline-block !important;padding-top:9px !important;padding-bottom:9px !important;}',
+      '}',
+      // #140 2026-08-16 (caught live on a vendor onboarding call): at DESKTOP
+      // widths the service/product form card (.form-view, max-width:860px,
+      // overflow:hidden) clipped fields on its right edge — grid content
+      // widened past the card and the overflow bisected inputs/pills. The
+      // static markup never reproduces it (script-injected widgets + live
+      // state are involved), so this pins every track-growth mechanism:
+      // minmax(0,*) hard-floors the known form grids, min-width:0 kills the
+      // auto-minimum on every grid child (the same guard the ≤991 block above
+      // already applies), and form controls can never exceed their cell.
+      // Inert when layout is sane — tracks compute identically.
+      '@media (min-width:992px){',
+      '.form-view ._2-columns,.form-view ._2-c-1-r-grid,.form-view .starting-at,.form-view .product-form-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr) !important;}',
+      '.form-view ._3-c-1-r-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) !important;}',
+      '.form-view .w-layout-grid > *{min-width:0;max-width:100%;}',
+      '.form-view input,.form-view textarea,.form-view select,.form-view img{max-width:100%;box-sizing:border-box;}',
       '}'
     ].join('');
     document.head.appendChild(s);

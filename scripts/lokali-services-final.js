@@ -1969,7 +1969,7 @@ const LokaliServicesPage = (() => {
     wrap.innerHTML =
       '<div style="font-size:13px;font-weight:600;color:#33254E;margin-bottom:2px;">Specialty</div>' +
       '<p style="font-size:12.5px;color:#5A5570;margin:0 0 10px;">Pick the one that fits this service best — customers filter The Market by these. Optional.</p>' +
-      '<div data-subcat-pills role="radiogroup" aria-label="Specialty" style="display:flex;flex-wrap:wrap;gap:7px;"></div>' +
+      '<select data-subcat-select aria-label="Specialty" style="display:block;width:100%;max-width:420px;font-family:inherit;font-size:16px;padding:9px 12px;border:1px solid #C9BDE8;border-radius:8px;background:#fff;color:#1A1829;cursor:pointer;box-sizing:border-box;"></select>' +
       '<div style="border-top:1px dashed #DCD2F2;margin-top:12px;padding-top:10px;">' +
         '<p style="font-size:12.5px;color:#5A5570;margin:0 0 8px;">Don’t see the right specialty?</p>' +
         '<div style="display:flex;gap:6px;">' +
@@ -1981,6 +1981,8 @@ const LokaliServicesPage = (() => {
         '<div data-subcat-pending style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>' +
       '</div>';
     host.appendChild(wrap);
+    const sel = wrap.querySelector('[data-subcat-select]');
+    sel.addEventListener('change', () => { _selectedSubcat = sel.value || null; });
     wrap.querySelector('[data-subcat-suggest-btn]').addEventListener('click', submitSubcatSuggestion);
     const inp = wrap.querySelector('[data-subcat-suggest]');
     inp.addEventListener('input', subcatTypeahead);
@@ -1988,34 +1990,26 @@ const LokaliServicesPage = (() => {
     _subcatUiMounted = true;
   };
 
+  // Fills the Specialty <select> (was a pill radiogroup until v1.4.297 —
+  // long categories overflowed the form; a dropdown stays compact). Options
+  // are alphabetical; the function keeps its old name so every call site
+  // (typeahead, exists-branch, showFormView) works unchanged.
   const renderSubcatPills = () => {
-    const row = document.querySelector('#lok-service-subcat [data-subcat-pills]');
-    if (!row || !_subcatList) return;
-    row.innerHTML = '';
+    const sel = document.querySelector('#lok-service-subcat [data-subcat-select]');
+    if (!sel || !_subcatList) return;
+    sel.innerHTML = '';
     const mk = (label, slug) => {
-      const on = slug === _selectedSubcat;
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.textContent = label;
-      b.setAttribute('role', 'radio');
-      b.setAttribute('aria-checked', on ? 'true' : 'false');
-      b.setAttribute('data-subcat-slug', slug == null ? '' : slug);
-      b.style.cssText = 'font-family:inherit;font-size:14px;padding:8px 14px;border-radius:999px;cursor:pointer;line-height:1.3;transition:all .12s;' +
-        (on ? 'background:#6002EE;border:1px solid #6002EE;color:#fff;font-weight:600;'
-            : 'background:#fff;border:1px solid #C9BDE8;color:#5A5570;');
-      b.addEventListener('click', () => {
-        _selectedSubcat = slug;
-        renderSubcatPills();
-        const nb = row.querySelector('[data-subcat-slug="' + (slug == null ? '' : slug) + '"]');
-        if (nb) nb.focus(); // re-render replaced the node — keep keyboard focus alive
-      });
-      row.appendChild(b);
+      const o = document.createElement('option');
+      o.value = slug == null ? '' : slug;
+      o.textContent = label;
+      sel.appendChild(o);
     };
     mk('None', null);
     // A saved tag missing from the category's current list still renders —
     // visible + deselectable, never a silently-invisible current value.
     if (_selectedSubcat && !_subcatList.some(s => s.slug === _selectedSubcat)) mk(_selectedSubcat, _selectedSubcat);
-    _subcatList.forEach(s => mk(s.label, s.slug));
+    _subcatList.slice().sort((a, b) => a.label.localeCompare(b.label)).forEach(s => mk(s.label, s.slug));
+    sel.value = _selectedSubcat == null ? '' : _selectedSubcat;
     renderSubcatPending();
   };
 
