@@ -860,6 +860,20 @@
           reviewId: reviewId,
           reason: reason || null
         }, true);
+      },
+      // #131 — admin resolves a report (upheld|dismissed). is_admin()-gated
+      // server-side; non-admins get { ok:false, reason:'not_admin' }.
+      //
+      // ⚠️ MERGED INTO THIS BLOCK, not declared as a second `reports:` key. The
+      // first ship of #131 added a NEW `reports: { adminResolve }` object lower
+      // in this file — and in an object literal the LAST duplicate key wins, so
+      // it silently REPLACED this block and storefront report-filing broke with
+      // "SAPI(...).reports.vendor is not a function". Caught by the live
+      // end-to-end test on 2026-08-16. One object per key, ever.
+      adminResolve: function (kind, id, status) {
+        return withClient(function (c) {
+          return c.rpc('admin_resolve_report', { p_kind: kind, p_id: id, p_status: status });
+        });
       }
     },
     // --- Image storage (Supabase Storage) --------------------------------
@@ -1128,15 +1142,6 @@
           return c.rpc('review_subcategory_suggestion', {
             p_id: id, p_approve: !!approve, p_final_label: finalLabel || null
           });
-        });
-      }
-    },
-    // #131 — the abuse-report queues. Reads ride in admin_overview(); this is
-    // the resolve half. is_admin()-gated server-side.
-    reports: {
-      adminResolve: function (kind, id, status) {
-        return withClient(function (c) {
-          return c.rpc('admin_resolve_report', { p_kind: kind, p_id: id, p_status: status });
         });
       }
     },
