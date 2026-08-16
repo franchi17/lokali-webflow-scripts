@@ -679,11 +679,21 @@
           return { data: { moved: false, vendor: vendorAliases(normalizeTs(out.data)) }, error: null, status: 200 };
         }
         // Xano resolved renamed slugs via the 301 alias table — mirror that.
+        // SEC-040 (2026-08-16): was a direct `slug_aliases` read, which needed
+        // an anon SELECT grant on the whole table (anyone could `?select=*` it
+        // and enumerate every retired slug + vendors_id, including for vendors
+        // that RLS hides). Now a security-definer RPC does the keyed lookup and
+        // the is_approved+is_active check server-side.
+        // ⚠️ It also fixes a latent bug this path always had: the old select
+        // asked for `new_slug`, a column that DOES NOT EXIST on slug_aliases
+        // (schema.sql:597 — id, created_at, old_slug, vendors_id). It would
+        // have thrown PGRST204 on the first real alias row. Nobody noticed
+        // because the table has never held one.
         return rawClient().then(function (c) {
-          return c.from('slug_aliases').select('vendors_id,new_slug').eq('old_slug', slug).maybeSingle();
+          return c.rpc('resolve_slug_alias', { p_old_slug: slug });
         }).then(function (aRes) {
           var alias = aRes && aRes.data;
-          if (!alias) return fail('Not found', 404);
+          if (!alias || alias.vendors_id == null) return fail('Not found', 404);
           return SAPI().vendors.getById(alias.vendors_id).then(function (vRes) {
             var v = vRes && vRes.data;
             if (!v) return fail('Not found', 404);
@@ -698,33 +708,43 @@
     // Custom profile URL (Pro/Featured) — the settings page always guarded on
     // these existing; the change_vendor_slug RPC finally provides them.
     slugAvailable: function (slug) {
-      // #132: the alias half must ignore MY OWN retired slugs. change_vendor_slug
+      // Both halves are now security-definer RPCs, for the same reason.
+      //
+      // #103: the vendors half goes through slug_taken() — a direct read is
+      // RLS-limited to approved+active rows, so a slug owned by a hidden
+      // (deactivated/unapproved) vendor looked FREE and the rename then failed
+      // downstream. The definer RPC sees every row.
+      //
+      // SEC-040 (2026-08-16): the alias half was still a direct `slug_aliases`
+      // read, justified in the old comment by "its policy is public (using
+      // (true))" — which was true, and was exactly the finding: that public
+      // policy let anyone enumerate every retired slug + vendors_id, including
+      // for vendors RLS hides. slug_alias_taken() replaces it. It returns a
+      // BOOLEAN and deliberately has NO visibility gate — a uniqueness check
+      // must see hidden vendors' aliases or it reports "available" for a slug
+      // change_vendor_slug() will refuse (the #103 blind spot again), and a
+      // boolean leaks nothing.
+      //
+      // #132: the alias half must ignore MY OWN retired slugs — change_vendor_slug
       // excludes self on both uniqueness checks (`id <> v_vendor.id`,
       // `vendors_id <> v_vendor.id`), so a slug you used to own is still yours to
-      // reclaim — but this check counted your own alias row and reported
-      // "unavailable", so the UI refused a rename the RPC would have granted.
-      // myVendorId() is memoized (vendorMe), so this costs no extra round-trip
-      // in practice. If the id can't be resolved we fall back to counting ALL
-      // aliases — the conservative direction: a false "taken" is a worse UX than
-      // a wrong grant, but a false "available" would hand you a dead-end save.
-      return myVendorId().catch(function () { return null; }).then(function (myId) {
-        return rawClient().then(function (c) {
-          // #103: the vendors half goes through slug_taken() — a direct read is
-          // RLS-limited to approved+active rows, so a slug owned by a hidden
-          // (deactivated/unapproved) vendor looked FREE and the rename then
-          // failed downstream. The security-definer RPC sees every row.
-          // slug_aliases stays a direct read: its policy is public (using
-          // (true)), so it has no such blind spot.
-          var aliasQ = c.from('slug_aliases').select('id', { count: 'exact', head: true }).eq('old_slug', slug);
-          if (myId != null) aliasQ = aliasQ.neq('vendors_id', myId);
-          return Promise.all([c.rpc('slug_taken', { p_slug: slug }), aliasQ]);
-        });
+      // reclaim, but this check counted your own alias row and reported
+      // "unavailable", refusing a rename the RPC would have granted. That
+      // exclusion now happens SERVER-SIDE off current_app_user_id(), so the
+      // myVendorId() round-trip and its "if the id can't be resolved, count ALL
+      // aliases" fallback are both gone — the server always knows who you are.
+      return rawClient().then(function (c) {
+        return Promise.all([
+          c.rpc('slug_taken', { p_slug: slug }),
+          c.rpc('slug_alias_taken', { p_slug: slug })
+        ]);
       }).then(function (rs) {
-        // Neither half may fail silently: a null count reads as 0 = "free",
-        // which is the exact false-available this check exists to prevent.
+        // Neither half may fail silently: a null/false-y result reads as
+        // "free", which is the exact false-available this check exists to
+        // prevent.
         if (rs[0] && rs[0].error) return fail(errText(rs[0].error));
         if (rs[1] && rs[1].error) return fail(errText(rs[1].error));
-        var taken = (rs[0] && rs[0].data === true) || ((rs[1] && rs[1].count) || 0) > 0;
+        var taken = (rs[0] && rs[0].data === true) || (rs[1] && rs[1].data === true);
         var out = { data: { available: !taken }, error: null, status: 200 };
         out.available = !taken; // some callers read it off the envelope
         return out;
