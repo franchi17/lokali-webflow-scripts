@@ -1072,6 +1072,14 @@
         return withClient(function (c) {
           return c.rpc('mark_notifications_read', { p_ids: (ids && ids.length) ? ids : null });
         });
+      },
+      // Deletes the caller's own rows. Passing no ids clears the ones already
+      // READ — never the unread ones, so a mis-click cannot wipe a lead the
+      // person has not seen yet.
+      dismiss: function (ids) {
+        return withClient(function (c) {
+          return c.rpc('dismiss_notifications', { p_ids: (ids && ids.length) ? ids : null });
+        });
       }
     },
     admin: {

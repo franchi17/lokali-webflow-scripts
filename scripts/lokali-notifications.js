@@ -74,10 +74,19 @@
       '.lok-notif-it-title{font-size:13.5px;font-weight:700;color:#1A1829;line-height:1.35;}',
       '.lok-notif-it-body{font-size:12.5px;color:#4A4761;line-height:1.45;margin-top:2px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}',
       '.lok-notif-it-when{font-size:11px;color:#8E8BA6;margin-top:3px;}',
+      // Dismiss (×). Hidden until hover on a pointer device so the panel stays
+      // calm; ALWAYS visible on touch, where there is no hover to reveal it.
+      '.lok-notif-x{flex:0 0 auto;border:none;background:none;color:#B3B1C6;font-family:inherit;font-size:15px;line-height:1;cursor:pointer;padding:4px 6px;border-radius:6px;opacity:0;transition:opacity .12s;}',
+      '.lok-notif-item:hover .lok-notif-x,.lok-notif-x:focus{opacity:1;}',
+      '.lok-notif-x:hover{background:#FEF3F2;color:#C0392B;}',
+      '@media (hover:none){.lok-notif-x{opacity:1;}}',
       '.lok-notif-empty{padding:22px 16px 26px;text-align:center;color:#8E8BA6;font-size:13px;line-height:1.5;}',
       '.lok-notif-empty strong{display:block;color:#4A4761;font-weight:700;margin-bottom:2px;}',
+      '.lok-notif-foot{border-top:.5px solid #EEEDF6;padding:8px 10px;text-align:center;}',
+      '.lok-notif-clearread{border:none;background:none;color:#8E8BA6;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;padding:6px 10px;border-radius:8px;}',
+      '.lok-notif-clearread:hover{background:#F7F6FC;color:#6002EE;}',
       // #98 house rule: ≥44px tap targets under 991px.
-      '@media (max-width:991px){.lok-notif-btn{width:44px;height:44px;}.lok-notif-item{min-height:44px;}.lok-notif-clear{min-height:44px;display:inline-flex;align-items:center;}}',
+      '@media (max-width:991px){.lok-notif-btn{width:44px;height:44px;}.lok-notif-item{min-height:44px;}.lok-notif-clear,.lok-notif-clearread{min-height:44px;display:inline-flex;align-items:center;justify-content:center;}.lok-notif-x{min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;}}',
       // In the mobile drawer the panel is not a floating popover — it stacks.
       '#lok-mnav-panel .lok-notif{display:block;width:100%;}',
       '#lok-mnav-panel .lok-notif-panel{position:static;width:100%;max-width:none;box-shadow:none;border:none;border-top:.5px solid #EEEDF6;border-radius:0;margin-top:4px;}',
@@ -136,6 +145,29 @@
     state.items = state.items.map(function (i) { i.read = true; return i; });
     render();
     n.markRead(null).catch(function () { load(); });
+  }
+
+  // Optimistic removal — the row disappearing instantly is what makes dismiss
+  // feel like dismiss. load() puts it back if the delete actually failed.
+  function dismiss(ids) {
+    var n = api();
+    if (!n) return;
+    var set = {}; (ids || []).forEach(function (i) { set[i] = 1; });
+    var removedUnread = state.items.filter(function (i) { return set[i.id] && !i.read; }).length;
+    state.items = state.items.filter(function (i) { return !set[i.id]; });
+    state.unread = Math.max(0, state.unread - removedUnread);
+    render();
+    n.dismiss(ids).catch(function () { load(); });
+  }
+
+  function dismissRead() {
+    var n = api();
+    if (!n) return;
+    var had = state.items.some(function (i) { return i.read; });
+    if (!had) return;
+    state.items = state.items.filter(function (i) { return !i.read; });
+    render();
+    n.dismiss(null).catch(function () { load(); });   // null = read ones only
   }
 
   function openItem(item) {
@@ -209,7 +241,17 @@
         w.textContent = ago(item.created_at);
         col.appendChild(w);
 
-        top.appendChild(dotEl); top.appendChild(col);
+        var x = document.createElement('button');
+        x.type = 'button'; x.className = 'lok-notif-x';
+        x.setAttribute('aria-label', 'Dismiss this notification');
+        x.textContent = '\u00d7';
+        x.addEventListener('click', function (ev) {
+          ev.preventDefault(); ev.stopPropagation();   // must not open the item
+          dismiss([item.id]);
+        });
+
+        top.appendChild(dotEl); top.appendChild(col); top.appendChild(x);
+        top.style.justifyContent = 'space-between';
         row.appendChild(top);
         row.addEventListener('click', function (ev) {
           if (item.link_url) { ev.preventDefault(); }
@@ -233,6 +275,7 @@
           '<span class="lok-notif-title">Notifications</span>' +
           '<button type="button" class="lok-notif-clear">Mark all read</button>' +
         '</div><div class="lok-notif-list"></div>' +
+        '<div class="lok-notif-foot"><button type="button" class="lok-notif-clearread">Clear read notifications</button></div>' +
       '</div>';
 
     var btn = wrap.querySelector('.lok-notif-btn');
@@ -250,6 +293,9 @@
     });
     wrap.querySelector('.lok-notif-clear').addEventListener('click', function (e) {
       e.stopPropagation(); markAll();
+    });
+    wrap.querySelector('.lok-notif-clearread').addEventListener('click', function (e) {
+      e.stopPropagation(); dismissRead();
     });
     wrap.querySelector('.lok-notif-panel').addEventListener('click', function (e) {
       e.stopPropagation();            // clicks inside must not close it
