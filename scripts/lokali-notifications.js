@@ -288,6 +288,21 @@
       if (willOpen) {
         wrap.classList.add('open');
         btn.setAttribute('aria-expanded', 'true');
+        // #141: clamp the panel on-screen. It is right-anchored to the bell
+        // (absolute right:0, width up to 340px), so a mount that isn't flush
+        // with the right screen edge pushed it off the LEFT side on phones
+        // (reported live 2026-08-16). The drawer mount's static full-width
+        // panel measures in-viewport, computes shift 0, and stays untouched.
+        var panel = wrap.querySelector('.lok-notif-panel');
+        if (panel) {
+          panel.style.transform = '';   // reset the previous open's shift
+          var pr = panel.getBoundingClientRect();
+          var pad = 8;
+          var shift = pr.left < pad ? (pad - pr.left)
+                    : pr.right > (window.innerWidth - pad) ? (window.innerWidth - pad) - pr.right
+                    : 0;
+          if (shift) panel.style.transform = 'translateX(' + shift + 'px)';
+        }
         load();                       // always fetch fresh on open
       }
     });
