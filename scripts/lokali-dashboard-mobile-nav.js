@@ -184,6 +184,12 @@
       // the bare class can't leak to public pages. inline-block is required for the
       // vertical padding to actually grow the hit area on an inline <a>.
       '.link-block-6{display:inline-block !important;padding-top:9px !important;padding-bottom:9px !important;}',
+      // #142 2026-08-16: the list header row (.div-block-68, "Your services" +
+      // Add button) carries a fixed 385px width — wider than the 343px content
+      // box at 375px, so the Add Service button ran 16px past the viewport
+      // and clipped. Collapse to the parent box; wrap if ever too tight.
+      '.div-block-68{width:100% !important;max-width:100% !important;min-width:0 !important;box-sizing:border-box !important;flex-wrap:wrap;row-gap:8px;}',
+      '.div-block-68 > *{min-width:0;}',
       '}',
       // #140 2026-08-16 (caught live on a vendor onboarding call): at DESKTOP
       // widths the service/product form card (.form-view, max-width:860px,
@@ -200,7 +206,11 @@
       '.form-view ._3-c-1-r-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) !important;}',
       '.form-view .w-layout-grid > *{min-width:0;max-width:100%;}',
       '.form-view input,.form-view textarea,.form-view select,.form-view img{max-width:100%;box-sizing:border-box;}',
-      '}'
+      '}',
+      // #142: the form action row (Save/Cancel/Delete) rendered in the
+      // template's legacy font — force the site font at every width. The Save
+      // button itself is painted by the *-final scripts (FA icon + caps).
+      '.div-block-97 .icon-button,.div-block-97 .text-block-53{font-family:"Plus Jakarta Sans",system-ui,sans-serif;}'
     ].join('');
     document.head.appendChild(s);
   }

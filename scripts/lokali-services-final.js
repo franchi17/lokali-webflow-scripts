@@ -1396,6 +1396,22 @@ const LokaliServicesPage = (() => {
     return null;
   };
 
+  // #142: deterministic save-button content — Font Awesome Free floppy-disk
+  // (CC BY 4.0) inline SVG + Plus Jakarta Sans ALL-CAPS label. Painted at
+  // init AND from handleSave's finally: the "Saving…" swap wipes the button's
+  // children, so the old static <img> icon never survived the first save.
+  const SAVE_ICON_SVG =
+    '<svg viewBox="0 0 448 512" aria-hidden="true" style="width:15px;height:15px;fill:currentColor;display:block;flex:0 0 auto;">' +
+    '<path d="M64 32C28.7 32 0 60.7 0 96V416c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V173.3c0-17-6.7-33.3-18.7-45.3L352 50.7C340 38.7 323.7 32 306.7 32H64zm0 96c0-17.7 14.3-32 32-32H288c17.7 0 32 14.3 32 32v64c0 17.7-14.3 32-32 32H96c-17.7 0-32-14.3-32-32V128zM224 288a64 64 0 1 1 0 128 64 64 0 1 1 0-128z"/></svg>';
+  const paintSaveBtn = (btn) => {
+    if (!btn) return;
+    btn.innerHTML = SAVE_ICON_SVG + '<span style="text-transform:uppercase;letter-spacing:.05em;">Save</span>';
+    btn.style.fontFamily = "'Plus Jakarta Sans',system-ui,sans-serif";
+    btn.style.display = 'flex';
+    btn.style.alignItems = 'center';
+    btn.style.gap = '8px';
+  };
+
   const handleSave = async () => {
     if (saveInProgress) return;
     saveInProgress = true;
@@ -1496,7 +1512,6 @@ const LokaliServicesPage = (() => {
       saveInProgress = false;
       if (saveBtn) {
         saveBtn.removeAttribute('aria-busy');
-        saveBtn.textContent = 'Save service';
         saveBtn.style.fontSize = '';
         saveBtn.style.fontWeight = '';
         saveBtn.style.fontFamily = '';
@@ -1505,6 +1520,7 @@ const LokaliServicesPage = (() => {
         saveBtn.style.pointerEvents = '';
         saveBtn.style.cursor = '';
         saveBtn.style.backgroundColor = '';
+        paintSaveBtn(saveBtn); // restore icon + SAVE label (see #142 above)
       }
     }
   };
@@ -1803,6 +1819,7 @@ const LokaliServicesPage = (() => {
     el.backBtn()?.addEventListener('click',   showListView);
     el.cancelBtn()?.addEventListener('click', showListView);
     el.saveBtn()?.addEventListener('click',   handleSave);
+    paintSaveBtn(el.saveBtn()); // #142 FA icon + ALL-CAPS label from first paint
     el.deleteBtn()?.addEventListener('click', () => handleDeactivate(editingId));
 
     const onPriceTypeChange = () => syncPriceWrapsFromSelect();
