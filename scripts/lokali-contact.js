@@ -69,6 +69,30 @@
   // a Maps-standardized city into the waitlist table + Brevo CITY instead.
   var EXPANSION_TOPIC = 'bring lokali to my city';
 
+  // #133 — bug reports ride the contact form rather than a new system. The
+  // topic <select> options are static Webflow markup (API-immutable, the #108
+  // lesson), but ADDING one at boot is fine — this script already owns the
+  // form. Why here and not a separate feature: /contact-us already has
+  // delivery, an autoresponder and a reader; a second report table with no
+  // reader would be #131 all over again.
+  var BUG_TOPIC = "Something's broken";
+  function injectBugTopic() {
+    var topicEl = $('cf-topic');
+    if (!topicEl || !topicEl.options) return;
+    for (var i = 0; i < topicEl.options.length; i++) {
+      if (topicEl.options[i].value === BUG_TOPIC) return; // idempotent
+    }
+    var opt = document.createElement('option');
+    opt.value = BUG_TOPIC;
+    opt.textContent = BUG_TOPIC;
+    // After "Feedback or suggestion", before "Bring Lokali to my city".
+    var before = null;
+    for (var k = 0; k < topicEl.options.length; k++) {
+      if (topicEl.options[k].value.trim().toLowerCase() === EXPANSION_TOPIC) { before = topicEl.options[k]; break; }
+    }
+    if (before) topicEl.insertBefore(opt, before); else topicEl.appendChild(opt);
+  }
+
   function $(id) { return document.getElementById(id); }
 
   // Small always-visible pointer under the topic field.
@@ -121,6 +145,7 @@
 
     // #46 — route "request a new city" through the structured waitlist flow.
     injectWaitlistHint(form);
+    injectBugTopic();
     var topicEl = $('cf-topic');
     if (topicEl) topicEl.addEventListener('change', function () { toggleWaitlistCallout(form); });
 
@@ -167,6 +192,18 @@
       message:  val('cf-message'),
       page_url: window.location.href
     };
+
+    // #133 — a bug report is only actionable with context the reporter won't
+    // think to include. The form lives on /contact-us, so the page the bug
+    // happened on is the REFERRER, not page_url; the browser matters because
+    // most front-end bugs are browser-specific. Appended to the message so it
+    // rides the existing pipeline untouched — no endpoint or template change.
+    if (data.topic === BUG_TOPIC) {
+      data.message += '\n\n\u2014 auto-attached \u2014' +
+        (document.referrer ? '\ncame from: ' + document.referrer : '') +
+        '\nbrowser: ' + navigator.userAgent +
+        '\nviewport: ' + window.innerWidth + '\u00d7' + window.innerHeight;
+    }
 
     // Validation
     if (!data.topic)   return fail('Please choose a topic.');

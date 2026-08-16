@@ -1106,6 +1106,15 @@
         });
       }
     },
+    // #131 — the abuse-report queues. Reads ride in admin_overview(); this is
+    // the resolve half. is_admin()-gated server-side.
+    reports: {
+      adminResolve: function (kind, id, status) {
+        return withClient(function (c) {
+          return c.rpc('admin_resolve_report', { p_kind: kind, p_id: id, p_status: status });
+        });
+      }
+    },
     data: {
       // Active subscription plans (pricing page). RLS plan_public_read gates it.
       plans: function () {

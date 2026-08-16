@@ -941,9 +941,120 @@
       wrap.appendChild(row);
     });
 
+    appendReportsSection(wrap, ov);
     appendSpotlightSection(wrap, ov);
     appendExitSurveySection(wrap, ov);
     return wrap;
+  }
+
+  // ── #131: abuse reports in the admin panel ─────────────────
+  // The filing half shipped long ago (storefront "Report" → vendor_reports;
+  // vendor "flag review" → review_reports) but NOTHING ever read the queues —
+  // admin_overview() didn't return them, this file never mentioned them, so a
+  // scam report landed in a table only the SQL editor could see. Reports come
+  // first in the panel on purpose: trust/safety outranks bookings and surveys.
+  // Data ships in admin_overview(); resolve = admin_resolve_report() (both
+  // is_admin()-gated server-side — this UI is convenience, not the gate).
+  function appendReportsSection(wrap, ov) {
+    var vRows = Array.isArray(ov.vendor_reports) ? ov.vendor_reports : [];
+    var rRows = Array.isArray(ov.review_reports) ? ov.review_reports : [];
+    var total = vRows.length + rRows.length;
+
+    var t = el('div', 'lk-admin-qtitle');
+    t.style.marginTop = '18px';
+    t.appendChild(document.createTextNode('Reports'));
+    t.appendChild(el('span', 'lk-admin-qcount', String(total)));
+    wrap.appendChild(t);
+    wrap.appendChild(el('p', 'lk-admin-sub',
+      'Customer reports of vendors, and vendor flags on reviews. Resolving here only clears the queue — deactivating a storefront stays a separate, deliberate step.'));
+
+    if (!total) {
+      wrap.appendChild(el('div', 'lk-admin-empty', 'No open reports. New ones land here the moment they\u2019re filed.'));
+      return;
+    }
+
+    var CAT_LABELS = { scam: 'Scam / fraud', not_real: 'Not a real business', misleading: 'Misleading', inappropriate: 'Inappropriate', other: 'Other' };
+
+    function reportRow(kind, r) {
+      var row = el('div', 'lk-admin-row');
+      var meta = el('div', 'lk-admin-row-meta');
+      var l1 = el('div', 'lk-admin-row-l1');
+      l1.textContent = (kind === 'vendor')
+        ? ((CAT_LABELS[r.category] || r.category || 'Report') + ' \u2014 ' + (r.business_name || 'Unknown vendor'))
+        : ('Review flagged \u2014 ' + (r.business_name || 'Unknown vendor') + (r.review_rating != null ? (' (' + r.review_rating + '\u2605 review)') : ''));
+      var l2 = el('div', 'lk-admin-row-l2');
+      l2.textContent = 'from ' + (r.reporter_email || 'unknown') + ' \u00b7 ' + fmtSpotDay(r.created_at);
+      meta.appendChild(l1); meta.appendChild(l2);
+      // The substance, textContent only (user free text, never markup). For a
+      // review report BOTH halves matter — the flagged review is the evidence,
+      // the reporter's reason is the accusation — so they render as separate
+      // lines rather than one shadowing the other (harness catch 2026-08-16).
+      if (r.review_comment) {
+        var rq = el('div', 'lk-admin-row-l2');
+        rq.style.cssText = 'margin-top:4px;color:#4A4761;font-style:italic;white-space:normal;';
+        rq.textContent = 'review: \u201c' + r.review_comment + '\u201d';
+        meta.appendChild(rq);
+      }
+      if (r.reason) {
+        var q = el('div', 'lk-admin-row-l2');
+        q.style.cssText = 'margin-top:4px;color:#4A4761;white-space:normal;';
+        q.textContent = (r.review_comment ? 'their reason: ' : '') + '\u201c' + r.reason + '\u201d';
+        if (!r.review_comment) q.style.fontStyle = 'italic';
+        meta.appendChild(q);
+      }
+      row.appendChild(meta);
+
+      if (r.slug) {
+        var view = document.createElement('a');
+        view.className = 'lk-admin-decline';
+        view.textContent = 'View';
+        view.href = '/' + encodeURIComponent(r.slug);
+        view.target = '_blank'; view.rel = 'noopener';
+        row.appendChild(view);
+      }
+      var up = document.createElement('button');
+      up.type = 'button'; up.className = 'lk-admin-approve'; up.textContent = 'Uphold';
+      var dis = document.createElement('button');
+      dis.type = 'button'; dis.className = 'lk-admin-decline'; dis.textContent = 'Dismiss';
+      var act = function (status) {
+        up.disabled = true; dis.disabled = true;
+        window.LokaliSupabaseAPI.reports.adminResolve(kind, r.id, status).then(function (res) {
+          var rd = res && res.data;
+          if (rd && rd.ok) {
+            row.style.opacity = '.45';
+            row.style.pointerEvents = 'none';
+            l2.textContent = status === 'upheld'
+              ? 'Upheld \u2014 if action is needed, deactivate the vendor from their row in Supabase or the storefront tools.'
+              : 'Dismissed';
+            l2.style.color = status === 'upheld' ? '#1A6640' : '#8E8BA6';
+            var left = Math.max(0, parseInt(t.querySelector('.lk-admin-qcount').textContent, 10) - 1);
+            t.querySelector('.lk-admin-qcount').textContent = String(left);
+            setTimeout(function () {
+              row.style.transition = 'opacity .4s';
+              row.style.opacity = '0';
+              setTimeout(function () { if (row.parentNode) row.parentNode.removeChild(row); }, 420);
+            }, 2400);
+          } else {
+            up.disabled = false; dis.disabled = false;
+            l2.textContent = (rd && rd.reason === 'not_found_or_closed')
+              ? 'Already resolved (another tab?) \u2014 refresh to update the list.'
+              : 'Couldn\u2019t save \u2014 try again.';
+            l2.style.color = '#B3400F';
+          }
+        }).catch(function () {
+          up.disabled = false; dis.disabled = false;
+          l2.textContent = 'Couldn\u2019t save \u2014 try again.';
+          l2.style.color = '#B3400F';
+        });
+      };
+      up.addEventListener('click', function () { act('upheld'); });
+      dis.addEventListener('click', function () { act('dismissed'); });
+      row.appendChild(up); row.appendChild(dis);
+      return row;
+    }
+
+    vRows.forEach(function (r) { wrap.appendChild(reportRow('vendor', r)); });
+    rRows.forEach(function (r) { wrap.appendChild(reportRow('review', r)); });
   }
 
   // ── #88: Spotlight bookings in the admin panel ─────────────
