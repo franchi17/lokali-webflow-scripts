@@ -230,6 +230,24 @@
     var status = $('lok-slug-status');
     var checkTimer = null;
 
+    // #132 (same defect as #129, different surface): change_vendor_slug answers
+    // in CODES and this page toasted them verbatim — a vendor hitting the
+    // 30-day limit read "rate_limited". Every refusal the RPC can return gets a
+    // sentence; anything unmapped falls through to the our-fault line, never the
+    // raw code. Note "your old link keeps working" in the hint above is now
+    // true — the Worker 301s retired slugs as of 2026-08-16 (#130).
+    var SLUG_OUR_FAULT = 'Something went wrong on our end — your URL wasn’t changed. Please try again.';
+    var SLUG_ERRORS = {
+      rate_limited:  'You can change your URL once every 30 days — this one was changed recently, so it’s not available yet.',
+      slug_taken:    'That URL is already taken. Try another.',
+      slug_reserved: 'That URL is reserved by Lokali. Try another.',
+      invalid_slug:  'Use 2–30 characters: lowercase letters, numbers and hyphens only.',
+      plan_required: 'A custom URL is a Pro and Featured feature — upgrade to claim yours.',
+      not_found:     'We couldn’t find your storefront. Try reloading the page.',
+      unauthorized:  'Your session expired — please log in again.'
+    };
+    function slugErrorMessage(code) { return SLUG_ERRORS[code] || SLUG_OUR_FAULT; }
+
     function setStatus(msg, color) { if (status) { status.textContent = msg || ''; status.style.color = color || '#8E8BA6'; } }
 
     input.addEventListener('input', function () {
@@ -261,8 +279,9 @@
       saveBtn.textContent = 'Saving…';
       window.LokaliAPI.vendors.updateSlug(v).then(function (res) {
         if (res.error) {
-          setStatus(res.error, '#B1006A');
-          toast('error', res.error);
+          var msg = slugErrorMessage(res.error);
+          setStatus(msg, '#B1006A');
+          toast('error', msg);
         } else {
           currentSlug = (res.data && (res.data.slug || (res.data.value && res.data.value.slug))) || v;
           if (_vendor) _vendor.slug = currentSlug;

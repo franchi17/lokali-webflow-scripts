@@ -698,17 +698,27 @@
     // Custom profile URL (Pro/Featured) — the settings page always guarded on
     // these existing; the change_vendor_slug RPC finally provides them.
     slugAvailable: function (slug) {
-      return rawClient().then(function (c) {
-        return Promise.all([
+      // #132: the alias half must ignore MY OWN retired slugs. change_vendor_slug
+      // excludes self on both uniqueness checks (`id <> v_vendor.id`,
+      // `vendors_id <> v_vendor.id`), so a slug you used to own is still yours to
+      // reclaim — but this check counted your own alias row and reported
+      // "unavailable", so the UI refused a rename the RPC would have granted.
+      // myVendorId() is memoized (vendorMe), so this costs no extra round-trip
+      // in practice. If the id can't be resolved we fall back to counting ALL
+      // aliases — the conservative direction: a false "taken" is a worse UX than
+      // a wrong grant, but a false "available" would hand you a dead-end save.
+      return myVendorId().catch(function () { return null; }).then(function (myId) {
+        return rawClient().then(function (c) {
           // #103: the vendors half goes through slug_taken() — a direct read is
           // RLS-limited to approved+active rows, so a slug owned by a hidden
           // (deactivated/unapproved) vendor looked FREE and the rename then
           // failed downstream. The security-definer RPC sees every row.
           // slug_aliases stays a direct read: its policy is public (using
           // (true)), so it has no such blind spot.
-          c.rpc('slug_taken', { p_slug: slug }),
-          c.from('slug_aliases').select('id', { count: 'exact', head: true }).eq('old_slug', slug)
-        ]);
+          var aliasQ = c.from('slug_aliases').select('id', { count: 'exact', head: true }).eq('old_slug', slug);
+          if (myId != null) aliasQ = aliasQ.neq('vendors_id', myId);
+          return Promise.all([c.rpc('slug_taken', { p_slug: slug }), aliasQ]);
+        });
       }).then(function (rs) {
         // Neither half may fail silently: a null count reads as 0 = "free",
         // which is the exact false-available this check exists to prevent.
