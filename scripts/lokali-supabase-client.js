@@ -1057,6 +1057,23 @@
     capabilities: { listingSubcategory: true, itemLeadTime: true }, // itemLeadTime = #78 (lead_time in both EDITABLE lists)
     // #96-SUGGEST — admin surface (is_admin()-gated server-side; non-admins
     // get { ok:false } — safe to call from any session).
+    // #137 — the notification feed behind the header bell. All three RPCs are
+    // security-definer and scoped to the caller server-side, so a signed-out
+    // call just returns { ok:false, reason:'not_signed_in' } rather than
+    // leaking anything. There is deliberately NO insert wrapper: notifications
+    // are produced by database triggers only, never by the browser.
+    notifications: {
+      mine: function (limit) {
+        return withClient(function (c) {
+          return c.rpc('my_notifications', { p_limit: limit || 15 });
+        });
+      },
+      markRead: function (ids) {
+        return withClient(function (c) {
+          return c.rpc('mark_notifications_read', { p_ids: (ids && ids.length) ? ids : null });
+        });
+      }
+    },
     admin: {
       overview: function () {
         return withClient(function (c) { return c.rpc('admin_overview'); });
