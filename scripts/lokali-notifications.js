@@ -28,6 +28,14 @@
   if (window.__lokaliNotifBooted) return;      // idempotent: the tag ships site-wide
   window.__lokaliNotifBooted = true;
 
+  // Font Awesome Free 6.5.2 `bell` (regular), uploaded to the site's own assets
+  // — the same convention every other icon here follows (crown-solid,
+  // heart-regular, bullhorn-solid …), rather than pulling in the FA library.
+  // ⚠️ Rendered as a CSS MASK, not an <img>: a mask takes its colour from
+  // `background-color`, so the bell inherits the button's currentColor and
+  // still turns violet on hover. An <img> would be stuck at the file's own
+  // colour and would need a second asset for the hover state.
+  var BELL_URL = 'https://cdn.prod.website-files.com/6989095758ae17edfc424d30/6a81fd94dd848a6c178f429e_bell-regular-full.svg';
   var POLL_MS   = 90000;   // gentle background refresh while the tab is open
   var LIMIT     = 15;
   var state     = { items: [], unread: 0, open: false, loading: false };
@@ -44,7 +52,9 @@
       '.lok-notif{position:relative;display:inline-flex;align-items:center;font-family:"Plus Jakarta Sans",sans-serif;}',
       '.lok-notif-btn{position:relative;display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border:none;background:none;border-radius:10px;cursor:pointer;color:#4A4761;padding:0;}',
       '.lok-notif-btn:hover{background:#F7F6FC;color:#6002EE;}',
-      '.lok-notif-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}',
+      '.lok-notif-ico{display:block;width:19px;height:19px;background-color:currentColor;'+
+        '-webkit-mask:url("' + BELL_URL + '") center/contain no-repeat;'+
+        'mask:url("' + BELL_URL + '") center/contain no-repeat;}',
       // The badge is the whole point of a bell — peach/orange so it reads as
       // "new" against the violet chrome without shouting.
       '.lok-notif-dot{position:absolute;top:5px;right:5px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:#FF8D00;color:#fff;font-size:10.5px;font-weight:800;line-height:17px;text-align:center;box-shadow:0 0 0 2px #fff;}',
@@ -80,9 +90,7 @@
 
   // ── helpers ───────────────────────────────────────────────────────────────
   function bellSVG() {
-    return '<svg viewBox="0 0 24 24" aria-hidden="true">' +
-      '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>' +
-      '<path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>';
+    return '<span class="lok-notif-ico" aria-hidden="true"></span>';
   }
 
   // "just now / 5m / 3h / 2d / Aug 14" — short enough for a 340px panel.
