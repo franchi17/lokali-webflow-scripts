@@ -783,7 +783,7 @@
       opAddHighlight({ key: 'founding', url: ICON_CROWN, tint: '#9A6B00', t: 'Founding vendor', s: 'Part of the Lokali community' + (yr ? ' since ' + yr : '') });
     }
     if (v.is_verified || v.identity_status === 'verified') {
-      opAddHighlight({ key: 'verified', svg: OP_CHECK_SVG, t: 'Identity verified', s: 'Business identity confirmed by Lokali' });
+      opAddHighlight({ key: 'verified', svg: OP_CHECK_SVG, t: 'Identity verified', s: 'Identity confirmed by Lokali' });
     }
     // "New this week" — same bullhorn + green + 7-day window as The Market's
     // card badge / sidebar toggle (lokali-browse.js NEW_WINDOW_MS).
@@ -1638,7 +1638,10 @@
 
     // badges
     show(document.getElementById('vl-badge-founding'), !!v.is_founding_member);
-    // "Verified" = completed identity/business verification (a Pro/Featured perk),
+    // "Verified" = the OWNER completed Stripe Identity (gov ID + selfie) — a
+    // Pro/Featured perk. It is NOT a business/licensing check: Stripe Identity
+    // verifies individuals only (no standalone KYB API), and /pricing's FAQ says
+    // so publicly. Never word this as "business verified" (#144-COPY 2026-08-17).
     // NOT mere address geocoding. address_verified must not trigger this badge.
     show(document.getElementById('vl-badge-verified'), !!(v.is_verified || v.identity_status === 'verified'));
     // #86 (2026-07-18): the ★ Featured badge is REMOVED by decision — it read
