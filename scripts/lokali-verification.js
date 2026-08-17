@@ -178,14 +178,25 @@
           : STATUS_LABELS[status]);
     });
 
-    // The button: shown when actionable (not verified/pending) AND the vendor is not
-    // confirmed Free or trial-locked. 'unknown' still shows it — optimistic, so a
-    // cold-start billing miss never hides the button from a paying vendor (#48: the
-    // server enforces payment anyway).
+    // The button: shown whenever the vendor can act AND is not confirmed Free or
+    // trial-locked. 'unknown' still shows it — optimistic, so a cold-start billing
+    // miss never hides the button from a paying vendor (#48: the server enforces
+    // payment anyway).
+    //
+    // #146: 'pending' IS actionable. A vendor who starts verification and abandons
+    // the Stripe flow stays 'pending' forever (only a completed session writes a
+    // terminal status), and the old rule hid the button in that state — stranding
+    // them with no way back. Now pending shows "Continue verification", which
+    // simply starts a fresh session (free until completed; #48 gate still applies).
+    // The one pending we DO hide for is the return-from-Stripe window (?status=done)
+    // — the webhook is landing any second and a button there would invite a
+    // pointless restart while handleReturnFromStripe() polls.
+    var returningFromStripe = new URLSearchParams(window.location.search).get('status') === 'done';
     $all('[data-lokali-verify]').forEach(function (btn) {
-      var actionable = !(status === 'pending' || isVerified);
+      var actionable = !isVerified && !(status === 'pending' && returningFromStripe);
       btn.style.display = (actionable && !confirmedFree && !trialLocked) ? '' : 'none';
       if (status === 'failed') btn.textContent = 'Try again';
+      else if (status === 'pending') btn.textContent = 'Continue verification';
     });
 
     // Upsell: Free not-yet-verified vendors ("get verified"), and lapsed-verified
