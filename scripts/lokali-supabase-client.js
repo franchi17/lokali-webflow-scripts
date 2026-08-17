@@ -179,6 +179,11 @@
     'notify_inquiry', 'notify_announcements', 'notify_promotional',
     'notify_review', 'show_public_reviews'
   ];
+  // Marketing queue fields the owner may edit (mirror patch_marketing.sql's
+  // column-scoped update grant; updated_at is stamped by the guard trigger).
+  var MARKETING_EDITABLE = [
+    'title', 'body', 'url', 'image_url', 'is_active', 'is_pinned', 'sort_order'
+  ];
   // Customer account fields the person may edit (mirror rls.sql app_user grant).
   var APP_USER_EDITABLE = [
     'first_name', 'last_name', 'phone_number', 'preferred_language', 'region',
@@ -768,6 +773,78 @@
       // MARKETING_OPTIN attribute. Best-effort; never blocks the save.
       syncMarketing: function () {
         return postRoute('/preferences/marketing-sync', {}, true);
+      }
+    },
+    // --- Marketing tools (/vendor-dashboard/marketing) -----------------------
+    // Rotating storefront entries, kind 'cta' | 'showcase'. Writes are
+    // owner-RLS'd; the tier gate (cta = Pro+Featured, showcase = Featured) and
+    // the 20/10 queue caps live in a DB trigger (LOKALI_LIMIT_REACHED errors).
+    // The PUBLIC read is ONLY the definer RPC marketing_current() — it
+    // self-hides for non-entitled/unpublished vendors, so the storefront needs
+    // no client-side plan check and the queue itself never leaks.
+    marketing: {
+      hasPlan: function (vendorId) {
+        return withClient(function (c) {
+          return c.rpc('has_marketing_plan', { p_vendors_id: vendorId });
+        });
+      },
+      hasPremium: function (vendorId) {
+        return withClient(function (c) {
+          return c.rpc('has_marketing_premium', { p_vendors_id: vendorId });
+        });
+      },
+      list: function (vendorId) {
+        return withClient(function (c) {
+          return c.from('marketing_entries').select('*')
+            .eq('vendors_id', vendorId)
+            .order('kind').order('sort_order').order('id');
+        });
+      },
+      add: function (row) {
+        var clean = pick(row, MARKETING_EDITABLE);
+        clean.vendors_id = row && row.vendors_id;
+        clean.kind = row && row.kind;
+        return withClient(function (c) {
+          return c.from('marketing_entries').insert(clean).select().maybeSingle();
+        });
+      },
+      update: function (id, patch) {
+        return withClient(function (c) {
+          return c.from('marketing_entries')
+            .update(pick(patch, MARKETING_EDITABLE))
+            .eq('id', id).select().maybeSingle();
+        });
+      },
+      remove: function (id) {
+        return withClient(function (c) {
+          return c.from('marketing_entries').delete().eq('id', id);
+        });
+      },
+      // "Pin one" mode: clear the (vendor, kind) pin, then set one — or none
+      // (idOrNull = null returns the kind to weekly rotation). Two steps
+      // because the partial unique index (one pin per vendor+kind) would
+      // reject set-before-clear.
+      setPin: function (vendorId, kind, idOrNull) {
+        return withClient(function (c) {
+          return c.from('marketing_entries').update({ is_pinned: false })
+            .eq('vendors_id', vendorId).eq('kind', kind).eq('is_pinned', true)
+            .then(function (res) {
+              if ((res && res.error) || idOrNull == null) return res;
+              return c.from('marketing_entries').update({ is_pinned: true })
+                .eq('id', idOrNull);
+            });
+        });
+      },
+      // Public current-entry read (anon-callable). weekOffset 0 = this week,
+      // 1 = next week; the dashboard preview calls the SAME selection the
+      // storefront serves, so preview and reality cannot drift.
+      current: function (vendorId, weekOffset) {
+        return withClient(function (c) {
+          return c.rpc('marketing_current', {
+            p_vendors_id: vendorId,
+            p_week_offset: weekOffset || 0
+          });
+        });
       }
     },
     leads: {

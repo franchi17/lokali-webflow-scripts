@@ -330,6 +330,16 @@
     'html.vl-op .vl-tabs{display:none !important;}',
     'html.vl-op #vl-ig{display:none !important;}',        // vendors funnel via Lokali, not IG
     'html.vl-op #vl-ch-email{display:none !important;}',  // "Send a message" replaces mailto
+    // marketing tools: rotating promo CTA (in the contact card) + Showcase of
+    // the week (first stacked section). Rendered only when marketing_current()
+    // returns entries — the RPC self-hides for non-entitled vendors.
+    '.vl-mkt-cta{display:flex;align-items:center;justify-content:center;width:100%;background:#F3EBFF;color:#6002EE;border:1px solid #E4D6FB;border-radius:12px;min-height:46px;padding:12px 16px;margin:0 0 12px;font:600 14.5px/1.3 "Plus Jakarta Sans",sans-serif;text-decoration:none;cursor:pointer;text-align:center;}',
+    '.vl-mkt-cta:hover{background:#EBDFFE;}',
+    '.vl-mkt-show{background:#fff;border:1px solid #EEEDF6;border-radius:14px;padding:18px;}',
+    '.vl-mkt-show-img{width:100%;max-height:340px;object-fit:cover;border-radius:10px;margin:0 0 14px;display:block;}',
+    '.vl-mkt-show-t{margin:0 0 6px;font:700 17px/1.3 "Plus Jakarta Sans",sans-serif;color:#1A1829;}',
+    '.vl-mkt-show-b{margin:0;font:400 14.5px/1.6 "Plus Jakarta Sans",sans-serif;color:#4A4761;white-space:pre-line;}',
+    '.vl-mkt-show-link{display:inline-block;margin-top:12px;background:#6002EE;color:#fff;border-radius:10px;padding:10px 18px;font:600 13.5px/1.2 "Plus Jakarta Sans",sans-serif;text-decoration:none;}',
     // sticky section nav — hidden while the top of the page (hero/header) is
     // in view, fades in once you scroll past it (Airbnb behavior; sentinel
     // observer in onepageLayout toggles .vl-op-nav-on).
@@ -833,6 +843,103 @@
         clearInterval(iv); // ~20s — vendor isn't on the availability feature
       }
     }, 500);
+  }
+
+  // ---- marketing tools: rotating promo CTA + Showcase of the week ---------
+  // Fed by the anon RPC marketing_current() (server-side weekly rotation,
+  // Monday/Central). The RPC returns {} unless the vendor is live AND entitled
+  // (cta = Pro+Featured, showcase = Featured), so there is deliberately NO
+  // client-side plan check here. Onepage mode only; the vendor manages the
+  // queues on /vendor-dashboard/marketing.
+  function loadMarketing(vid) {
+    if (!ONEPAGE || vid == null) return;
+    if (!(window.LokaliAPI && window.LokaliAPI.marketing)) return;
+    window.LokaliAPI.marketing.current(vid).then(function (res) {
+      var d = (res && res.data) || {};
+      if (d.cta && d.cta.title) renderMarketingCta(d.cta);
+      if (d.showcase && d.showcase.title) renderShowcase(d.showcase);
+    }).catch(function () {});
+  }
+
+  function renderMarketingCta(cta) {
+    var card = document.querySelector('.vl-op-card');
+    if (!card || document.getElementById('vl-mkt-cta')) return;
+    var el;
+    if (cta.url) {
+      el = ce('a', 'vl-mkt-cta');
+      el.href = cta.url;
+      el.target = '_blank';
+      el.rel = 'noopener';
+    } else {
+      // No link -> the button is a conversation starter: open the inquiry
+      // modal (same proxy the mobile op-bar uses).
+      el = ce('button', 'vl-mkt-cta');
+      el.type = 'button';
+      el.addEventListener('click', function () {
+        var b = document.getElementById('lok-inq-btn');
+        if (b) b.click();
+      });
+    }
+    el.id = 'vl-mkt-cta';
+    el.textContent = cta.title;
+    trackChannel(el, 'cta');
+    var lead = card.querySelector('.vl-op-card-lead');
+    if (lead && lead.nextSibling) card.insertBefore(el, lead.nextSibling);
+    else card.insertBefore(el, card.firstChild);
+  }
+
+  function renderShowcase(s) {
+    var main = document.querySelector('.vl-op-main');
+    var nav = document.getElementById('vl-op-nav');
+    if (!main || document.getElementById('vl-op-sec-showcase')) return;
+    var sec = ce('section', 'vl-op-sec');
+    sec.id = 'vl-op-sec-showcase';
+    var h = ce('h2', 'vl-op-h');
+    h.textContent = 'Showcase of the week';
+    sec.appendChild(h);
+    var wrap = ce('div', 'vl-mkt-show');
+    if (s.image_url) {
+      var img = ce('img', 'vl-mkt-show-img');
+      img.src = s.image_url;
+      img.alt = ((window.LOKALI_LOADED_VENDOR && window.LOKALI_LOADED_VENDOR.name) || 'Vendor') + ' — showcase of the week';
+      img.loading = 'lazy';
+      wrap.appendChild(img);
+    }
+    var t = ce('p', 'vl-mkt-show-t');
+    t.textContent = s.title;
+    wrap.appendChild(t);
+    if (s.body) {
+      var b = ce('p', 'vl-mkt-show-b');
+      b.textContent = s.body;
+      wrap.appendChild(b);
+    }
+    if (s.url) {
+      var a = ce('a', 'vl-mkt-show-link');
+      a.href = s.url;
+      a.target = '_blank';
+      a.rel = 'noopener';
+      a.textContent = 'Take a look';
+      trackChannel(a, 'showcase');
+      wrap.appendChild(a);
+    }
+    sec.appendChild(wrap);
+    // Lead the page: first stacked section, ahead of Services (the requesting
+    // vendor's use case — this week's listing should open the storefront).
+    var first = main.querySelector('.vl-op-sec');
+    if (first) main.insertBefore(sec, first);
+    else main.appendChild(sec);
+    if (nav) {
+      var link = ce('a');
+      link.id = 'vl-op-nav-showcase';
+      link.href = '#vl-op-sec-showcase';
+      link.textContent = 'This week';
+      link.addEventListener('click', function (ev) {
+        ev.preventDefault();
+        sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+      nav.insertBefore(link, nav.firstChild);
+      opNavFadeSync(nav);
+    }
   }
 
   // ---- save / favorites: wire the designed #vl-save button to the Favorites API.
@@ -2125,6 +2232,9 @@
       // load-order race; the event covers scripts already listening.
       window.LOKALI_LOADED_VENDOR = { id: vid, name: v.business_name || '' };
       try { document.dispatchEvent(new CustomEvent('lokali:vendor-loaded', { detail: window.LOKALI_LOADED_VENDOR })); } catch (e) {}
+      // Marketing tools: rotating promo CTA + Showcase of the week (self-hides
+      // server-side for non-entitled vendors; fire-and-forget).
+      loadMarketing(vid);
       // Log a listing view, deduped per browser session so one visit = one row
       // (the analytics page needs impressions for the views→contacts→inquiries
       // funnel). Fire-and-forget; never blocks render.

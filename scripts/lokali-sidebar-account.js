@@ -198,6 +198,21 @@
     // Hide the upgrade row for top-tier vendors.
     var up = wrap.querySelector('.lok-acct-upgrade');
     if (up) up.style.display = plan.top ? 'none' : '';
+
+    // Marketing tab is paid-only (Francesca 2026-08-17: "Free don't get it").
+    // The sidebar rows are static Webflow markup on every dashboard page, so
+    // the hide lives here, next to the plan facts. Hide ONLY on a positively
+    // known free plan — when billing is missing (transient fetch failure) the
+    // tab stays, per the services-final doctrine of never downgrading a paid
+    // vendor mid-session; a Free vendor who clicks through just meets the
+    // upsell card. Defensive: no-op until the Designer adds the
+    // /vendor-dashboard/marketing row.
+    var knownFree = !!billing && !plan.top && plan.label !== 'Pro plan' &&
+                    plan.label !== 'Founding member';
+    document.querySelectorAll('.section-11 a[href*="/vendor-dashboard/marketing"]').forEach(function (a) {
+      var row = a.closest('.dashboard-btn') || a;
+      row.style.display = knownFree ? 'none' : '';
+    });
   }
 
   // The person-shopping label for the switch row: "Francesca — shopping" when we

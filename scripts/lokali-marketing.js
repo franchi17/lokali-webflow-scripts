@@ -1,0 +1,433 @@
+/*
+ * lokali-marketing.js — /vendor-dashboard/marketing (Marketing tools).
+ *
+ * Two rotating-content queues the vendor feeds herself, rendered on her PUBLIC
+ * storefront by lokali-vendor-listing.js via the anon RPC marketing_current():
+ *
+ *   · "Promo button" (kind 'cta')       — Pro + Featured
+ *   · "Showcase of the week" ('showcase') — Featured only
+ *
+ * Rotation modes per queue (derived, not stored): a pinned active entry means
+ * "Pin one" (that entry always shows); no pin means "Rotate weekly" — the
+ * server picks round-robin by Monday-anchored week number (America/Chicago).
+ * The preview chips call the SAME RPC with week offsets 0/1, so what the
+ * vendor previews here is by construction what the storefront serves.
+ *
+ * Plan gates + queue caps (20 cta / 10 showcase) are DB-trigger enforced
+ * (LOKALI_LIMIT_REACHED) — this page is honest UI, not the enforcement.
+ * Free vendors never see the sidebar tab (lokali-sidebar-account.js hides it);
+ * a direct URL lands on the upsell card below.
+ *
+ * Mount: <div id="lok-marketing-page"></div> (Webflow HTML embed). No-ops
+ * when absent. Boot pattern cloned from lokali-availability-admin.js.
+ *
+ * Two mirrored copies (repo rule — edit BOTH, byte-identical):
+ *   scripts/lokali-marketing.js
+ *   lokali-webflow-scripts/scripts/lokali-marketing.js
+ */
+(function () {
+  'use strict';
+
+  if (!window.LokaliSupabaseReady || !window.LokaliSupabaseAPI) return;
+  var API = window.LokaliSupabaseAPI.marketing;
+  var VENDORS = window.LokaliSupabaseAPI.vendors;
+  var STORAGE = window.LokaliSupabaseAPI.storage;
+  if (!API || !VENDORS) return;
+
+  var FONT = "'Plus Jakarta Sans', sans-serif";
+  var BRAND = '#6002ee';
+  var CAPS = { cta: 20, showcase: 10 };
+  var KIND_LABEL = { cta: 'Promo button', showcase: 'Showcase of the week' };
+
+  function esc(s) { return String(s == null ? '' : s).replace(/[<>&"]/g, function (c) {
+    return ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' })[c];
+  }); }
+
+  // DB guard errors arrive raw from PostgREST: "LOKALI_LIMIT_REACHED: <human>".
+  function humanError(err) {
+    var m = (err && (err.message || err.error_description)) || 'Something went wrong — try again.';
+    var i = m.indexOf('LOKALI_LIMIT_REACHED:');
+    return i >= 0 ? m.slice(i + 'LOKALI_LIMIT_REACHED:'.length).trim() : m;
+  }
+
+  // ---- styles ----------------------------------------------------------------
+  function injectStyles() {
+    if (document.getElementById('lok-mkt-css')) return;
+    var st = document.createElement('style');
+    st.id = 'lok-mkt-css';
+    st.textContent =
+      '.lok-mkt{font-family:' + FONT + ';max-width:860px;color:#231D3F;}' +
+      '.lok-mkt *{font-family:inherit;box-sizing:border-box;}' +
+      '.mkt-card{background:#fff;border:1px solid #ECE8F8;border-radius:14px;padding:22px 24px;margin:0 0 18px;}' +
+      '.mkt-h{margin:0 0 2px;font-size:17px;font-weight:700;color:#3E3A55;}' +
+      '.mkt-sub{margin:0 0 14px;font-size:13px;color:#8E8BA6;}' +
+      '.mkt-preview{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px;}' +
+      '.mkt-chip{display:inline-flex;align-items:center;gap:6px;background:#F7F6FC;border:1px solid #ECE8F8;' +
+        'border-radius:999px;padding:6px 12px;font-size:12.5px;color:#4A4761;}' +
+      '.mkt-chip b{color:#3E3A55;font-weight:600;}' +
+      '.mkt-chip .mkt-now{color:' + BRAND + ';font-weight:700;}' +
+      '.mkt-seg{display:inline-flex;border:1px solid #ECE8F8;border-radius:10px;overflow:hidden;margin:0 0 14px;}' +
+      '.mkt-seg button{border:0;background:#fff;color:#8E8BA6;font-size:12.5px;font-weight:600;padding:7px 14px;cursor:pointer;}' +
+      '.mkt-seg button.on{background:#F3EBFF;color:' + BRAND + ';}' +
+      '.mkt-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid #F1EEF9;}' +
+      '.mkt-row:first-of-type{border-top:0;}' +
+      '.mkt-row.off .mkt-t{color:#B7B4C7;text-decoration:line-through;}' +
+      '.mkt-thumb{width:44px;height:44px;border-radius:8px;object-fit:cover;background:#F3EBFF;flex:none;}' +
+      '.mkt-main{flex:1;min-width:0;}' +
+      '.mkt-t{font-size:14px;font-weight:600;color:#3E3A55;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}' +
+      '.mkt-u{font-size:12px;color:#8E8BA6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}' +
+      '.mkt-b{font-size:12.5px;color:#6B6880;margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}' +
+      '.mkt-acts{display:flex;align-items:center;gap:4px;flex:none;}' +
+      '.mkt-ib{border:0;background:none;color:#8E8BA6;cursor:pointer;font-size:15px;padding:5px 6px;border-radius:7px;line-height:1;}' +
+      '.mkt-ib:hover{background:#F7F6FC;color:#3E3A55;}' +
+      '.mkt-ib[disabled]{opacity:.3;cursor:default;}' +
+      '.mkt-pin{accent-color:' + BRAND + ';cursor:pointer;margin:0 4px 0 0;}' +
+      '.mkt-add{display:inline-block;border:0;background:#F3EBFF;color:' + BRAND + ';font-weight:600;font-size:13px;' +
+        'border-radius:10px;padding:9px 16px;cursor:pointer;margin-top:12px;}' +
+      '.mkt-count{font-size:12px;color:#8E8BA6;margin-left:8px;}' +
+      '.mkt-form{background:#F7F6FC;border:1px solid #ECE8F8;border-radius:12px;padding:14px;margin-top:12px;}' +
+      '.mkt-form label{display:block;font-size:12px;font-weight:600;color:#6B6880;margin:10px 0 4px;}' +
+      '.mkt-form label:first-child{margin-top:0;}' +
+      '.mkt-in{width:100%;border:1px solid #ECE8F8;border-radius:9px;background:#fff;padding:9px 12px;font-size:14px;color:#231D3F;}' +
+      '.mkt-in:focus{outline:none;border-color:#C9B4F5;}' +
+      'textarea.mkt-in{min-height:74px;resize:vertical;}' +
+      '.mkt-fbtns{display:flex;gap:8px;margin-top:12px;}' +
+      '.mkt-save{border:0;background:' + BRAND + ';color:#fff;font-weight:600;font-size:13px;border-radius:9px;padding:9px 18px;cursor:pointer;}' +
+      '.mkt-cancel{border:0;background:none;color:#8E8BA6;font-size:13px;cursor:pointer;}' +
+      '.mkt-upbtn{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px dashed #C9B4F5;color:' + BRAND + ';' +
+        'font-size:12.5px;font-weight:600;border-radius:9px;padding:8px 12px;cursor:pointer;}' +
+      '.mkt-upthumb{width:56px;height:56px;border-radius:9px;object-fit:cover;margin-right:10px;vertical-align:middle;}' +
+      '.mkt-note{font-size:12px;color:#8E8BA6;margin-top:8px;}' +
+      '.mkt-lock{text-align:center;padding:26px 18px;}' +
+      '.mkt-lock p{margin:0 auto 14px;max-width:430px;font-size:13.5px;color:#8E8BA6;}' +
+      '.mkt-lock .mkt-lockh{font-size:16px;font-weight:700;color:#3E3A55;margin-bottom:6px;}' +
+      '.mkt-cta-demo{display:inline-block;background:' + BRAND + ';color:#fff;border-radius:10px;padding:10px 20px;' +
+        'font-size:13.5px;font-weight:600;margin-bottom:12px;}' +
+      '.mkt-up{display:inline-block;background:' + BRAND + ';color:#fff;border-radius:10px;padding:11px 24px;' +
+        'font-size:13.5px;font-weight:600;text-decoration:none;}' +
+      '.mkt-toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:#3E3A55;color:#fff;' +
+        'font-family:' + FONT + ';font-size:13.5px;border-radius:10px;padding:11px 18px;z-index:9999;max-width:82vw;}' +
+      '@media (max-width:600px){.mkt-card{padding:16px;}.mkt-acts{gap:0;}}';
+    document.head.appendChild(st);
+  }
+
+  var toastTimer = null;
+  function toast(msg) {
+    var t = document.querySelector('.mkt-toast');
+    if (!t) { t = document.createElement('div'); t.className = 'mkt-toast'; document.body.appendChild(t); }
+    t.textContent = msg;
+    t.style.display = 'block';
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.style.display = 'none'; }, 3400);
+  }
+
+  // ---- page -------------------------------------------------------------------
+  function Page(mount, vendor, premium) {
+    this.mount = mount;
+    this.vendor = vendor;
+    this.premium = premium;            // Featured? (showcase entitlement)
+    this.entries = { cta: [], showcase: [] };
+    this.editing = null;               // entry id being edited, or 'new:<kind>'
+    this.load();
+  }
+
+  Page.prototype.load = function () {
+    var self = this;
+    Promise.all([
+      API.list(this.vendor.id),
+      API.current(this.vendor.id, 0),
+      API.current(this.vendor.id, 1)
+    ]).then(function (rs) {
+      var rows = (rs[0] && rs[0].data) || [];
+      self.entries = { cta: [], showcase: [] };
+      rows.forEach(function (e) { if (self.entries[e.kind]) self.entries[e.kind].push(e); });
+      self.now = (rs[1] && rs[1].data) || {};
+      self.next = (rs[2] && rs[2].data) || {};
+      self.render();
+    });
+  };
+
+  Page.prototype.render = function () {
+    this.mount.className = 'lok-mkt';
+    this.mount.innerHTML =
+      this.cardHtml('cta') +
+      (this.premium ? this.cardHtml('showcase') : this.lockedShowcaseHtml());
+    this.bind();
+  };
+
+  Page.prototype.pinnedId = function (kind) {
+    var p = this.entries[kind].filter(function (e) { return e.is_pinned && e.is_active; })[0];
+    return p ? p.id : null;
+  };
+
+  Page.prototype.cardHtml = function (kind) {
+    var list = this.entries[kind];
+    var pinned = this.pinnedId(kind);
+    var nowE = this.now[kind], nextE = this.next[kind];
+    var sub = kind === 'cta'
+      ? 'A button on your storefront that changes weekly — a question, an invite, a link. You feed the list; we rotate it.'
+      : 'A section at the top of your storefront for what’s new this week — a listing, an event, a favorite.';
+    var html =
+      '<div class="mkt-card" data-kind="' + kind + '">' +
+        '<p class="mkt-h">' + KIND_LABEL[kind] +
+          '<span class="mkt-count">' + list.length + ' / ' + CAPS[kind] + '</span></p>' +
+        '<p class="mkt-sub">' + sub + '</p>' +
+        '<div class="mkt-preview">' +
+          '<span class="mkt-chip"><span class="mkt-now">This week</span>' +
+            (nowE ? '<b>' + esc(nowE.title) + '</b>' : 'nothing yet') + '</span>' +
+          (pinned == null
+            ? '<span class="mkt-chip">Next week' + (nextE ? '<b>' + esc(nextE.title) + '</b>' : 'nothing yet') + '</span>'
+            : '<span class="mkt-chip">Pinned — it stays until you unpin it</span>') +
+        '</div>' +
+        '<div class="mkt-seg">' +
+          '<button type="button" data-mode="rotate" class="' + (pinned == null ? 'on' : '') + '">Rotate weekly</button>' +
+          '<button type="button" data-mode="pin" class="' + (pinned != null ? 'on' : '') + '">Pin one</button>' +
+        '</div>';
+    var self = this;
+    list.forEach(function (e, i) {
+      if (self.editing === e.id) { html += self.formHtml(kind, e); return; }
+      html +=
+        '<div class="mkt-row' + (e.is_active ? '' : ' off') + '" data-id="' + e.id + '">' +
+          (pinned != null
+            ? '<input type="radio" class="mkt-pin" name="pin-' + kind + '" ' +
+              (e.is_pinned ? 'checked' : '') + (e.is_active ? '' : ' disabled') + '>'
+            : '') +
+          (kind === 'showcase' && e.image_url
+            ? '<img class="mkt-thumb" src="' + esc(e.image_url) + '" alt="">' : '') +
+          '<div class="mkt-main">' +
+            '<div class="mkt-t">' + esc(e.title) + '</div>' +
+            (e.url ? '<div class="mkt-u">' + esc(e.url) + '</div>' : '') +
+            (kind === 'showcase' && e.body ? '<div class="mkt-b">' + esc(e.body) + '</div>' : '') +
+          '</div>' +
+          '<div class="mkt-acts">' +
+            '<button class="mkt-ib" data-act="up" title="Move up"' + (i === 0 ? ' disabled' : '') + '>&#8593;</button>' +
+            '<button class="mkt-ib" data-act="down" title="Move down"' + (i === list.length - 1 ? ' disabled' : '') + '>&#8595;</button>' +
+            '<button class="mkt-ib" data-act="toggle" title="' + (e.is_active ? 'Hide' : 'Show') + '">' +
+              (e.is_active ? '&#128065;' : '&#8722;') + '</button>' +
+            '<button class="mkt-ib" data-act="edit" title="Edit">&#9998;</button>' +
+            '<button class="mkt-ib" data-act="del" title="Delete">&#215;</button>' +
+          '</div>' +
+        '</div>';
+    });
+    if (this.editing === 'new:' + kind) html += this.formHtml(kind, null);
+    else if (list.length < CAPS[kind]) {
+      html += '<button class="mkt-add" data-act="add">+ Add ' + (kind === 'cta' ? 'a button' : 'a showcase') + '</button>';
+    }
+    html += '<p class="mkt-note">Rotates every Monday. Weekly mode shows each visible entry in order, top to bottom.</p>';
+    html += '</div>';
+    return html;
+  };
+
+  Page.prototype.formHtml = function (kind, e) {
+    var t = e ? e.title : '', u = e ? (e.url || '') : '', b = e ? (e.body || '') : '';
+    var img = e ? (e.image_url || '') : '';
+    return '<div class="mkt-form" data-kind="' + kind + '">' +
+      '<label>' + (kind === 'cta' ? 'Button text' : 'Heading') + '</label>' +
+      '<input class="mkt-in" data-f="title" maxlength="120" value="' + esc(t) + '" placeholder="' +
+        (kind === 'cta' ? 'What’s your favorite part of a house?' : 'Showcase of the week') + '">' +
+      (kind === 'showcase'
+        ? '<label>Text</label><textarea class="mkt-in" data-f="body" maxlength="600" placeholder="A few sentences about it…">' + esc(b) + '</textarea>' +
+          '<label>Photo</label>' +
+          (img ? '<img class="mkt-upthumb" data-f="imgprev" src="' + esc(img) + '" alt="">' : '') +
+          '<button type="button" class="mkt-upbtn" data-act="upload">' + (img ? 'Replace photo' : 'Add a photo') + '</button>' +
+          '<input type="file" accept="image/*" data-f="file" style="display:none;">' +
+          '<input type="hidden" data-f="image_url" value="' + esc(img) + '">'
+        : '') +
+      '<label>Link (optional)</label>' +
+      '<input class="mkt-in" data-f="url" maxlength="500" value="' + esc(u) + '" placeholder="https://… (leave empty to open your contact form)">' +
+      '<div class="mkt-fbtns">' +
+        '<button class="mkt-save" data-act="save">Save</button>' +
+        '<button class="mkt-cancel" data-act="cancel">Cancel</button>' +
+      '</div>' +
+    '</div>';
+  };
+
+  Page.prototype.lockedShowcaseHtml = function () {
+    return '<div class="mkt-card mkt-lock">' +
+      '<p class="mkt-lockh">Showcase of the week</p>' +
+      '<p>Lead your storefront with a rotating feature — this week’s listing, an open house, a seasonal special. Available on the Featured plan.</p>' +
+      '<a class="mkt-up" href="/pricing">Upgrade to unlock</a>' +
+    '</div>';
+  };
+
+  // ---- events -----------------------------------------------------------------
+  Page.prototype.bind = function () {
+    var self = this;
+    this.mount.onclick = function (ev) {
+      var btn = ev.target.closest('[data-act]');
+      if (!btn || !self.mount.contains(btn)) return;
+      var card = btn.closest('[data-kind]');
+      var kind = card && card.getAttribute('data-kind');
+      var row = btn.closest('.mkt-row');
+      var id = row && +row.getAttribute('data-id');
+      var act = btn.getAttribute('data-act');
+
+      if (act === 'add') { self.editing = 'new:' + kind; self.render(); }
+      else if (act === 'edit') { self.editing = id; self.render(); }
+      else if (act === 'cancel') { self.editing = null; self.render(); }
+      else if (act === 'save') self.save(kind, btn.closest('.mkt-form'), id);
+      else if (act === 'del') self.remove(id);
+      else if (act === 'toggle') self.toggleActive(kind, id);
+      else if (act === 'up' || act === 'down') self.move(kind, id, act === 'up' ? -1 : 1);
+      else if (act === 'upload') {
+        var f = btn.parentElement.querySelector('[data-f="file"]');
+        if (f) f.click();
+      }
+    };
+    this.mount.onchange = function (ev) {
+      var inp = ev.target;
+      if (inp.getAttribute && inp.getAttribute('data-f') === 'file' && inp.files && inp.files[0]) {
+        self.upload(inp);
+      }
+      if (inp.classList && inp.classList.contains('mkt-pin') && inp.checked) {
+        var row = inp.closest('.mkt-row');
+        var card = inp.closest('[data-kind]');
+        if (row && card) self.pin(card.getAttribute('data-kind'), +row.getAttribute('data-id'));
+      }
+    };
+    // Mode toggle
+    this.mount.querySelectorAll('.mkt-seg button').forEach(function (b) {
+      b.onclick = function () {
+        var card = b.closest('[data-kind]');
+        var kind = card.getAttribute('data-kind');
+        if (b.getAttribute('data-mode') === 'rotate') {
+          if (self.pinnedId(kind) != null) {
+            API.setPin(self.vendor.id, kind, null).then(function () { self.load(); });
+          }
+        } else {
+          // Pin mode needs a pinned entry: default to the first active one.
+          if (self.pinnedId(kind) == null) {
+            var first = self.entries[kind].filter(function (e) { return e.is_active; })[0];
+            if (!first) { toast('Add an entry first, then pin it.'); return; }
+            API.setPin(self.vendor.id, kind, first.id).then(function () { self.load(); });
+          }
+        }
+      };
+    });
+  };
+
+  Page.prototype.save = function (kind, form, id) {
+    var self = this;
+    var get = function (f) {
+      var el = form.querySelector('[data-f="' + f + '"]');
+      return el ? el.value.trim() : '';
+    };
+    var payload = { title: get('title'), url: get('url') || null };
+    if (kind === 'showcase') {
+      payload.body = get('body') || null;
+      payload.image_url = get('image_url') || null;
+    }
+    if (!payload.title) { toast('Give it a title first.'); return; }
+    var done = function (res) {
+      if (res && res.error) { toast(humanError(res.error)); return; }
+      self.editing = null;
+      self.load();
+    };
+    if (id) API.update(id, payload).then(done);
+    else {
+      payload.vendors_id = this.vendor.id;
+      payload.kind = kind;
+      payload.sort_order = this.entries[kind].length + 1;
+      API.add(payload).then(done);
+    }
+  };
+
+  Page.prototype.upload = function (inp) {
+    var self = this;
+    var form = inp.closest('.mkt-form');
+    var btn = form.querySelector('[data-act="upload"]');
+    btn.textContent = 'Uploading…';
+    STORAGE.uploadImage(this.vendor.id, 'showcase', inp.files[0]).then(function (res) {
+      if (res && res.error) { btn.textContent = 'Add a photo'; toast(humanError(res.error)); return; }
+      var url = res.data.url;
+      form.querySelector('[data-f="image_url"]').value = url;
+      var prev = form.querySelector('[data-f="imgprev"]');
+      if (!prev) {
+        prev = document.createElement('img');
+        prev.className = 'mkt-upthumb';
+        prev.setAttribute('data-f', 'imgprev');
+        prev.alt = '';
+        btn.parentElement.insertBefore(prev, btn);
+      }
+      prev.src = url;
+      btn.textContent = 'Replace photo';
+    });
+  };
+
+  Page.prototype.remove = function (id) {
+    var self = this;
+    API.remove(id).then(function (res) {
+      if (res && res.error) { toast(humanError(res.error)); return; }
+      self.load();
+    });
+  };
+
+  Page.prototype.toggleActive = function (kind, id) {
+    var self = this;
+    var e = this.entries[kind].filter(function (x) { return x.id === id; })[0];
+    if (!e) return;
+    // Hiding a pinned entry also unpins it (a hidden pin would silently
+    // freeze the rotation with nothing shown).
+    var patch = e.is_active ? { is_active: false, is_pinned: false } : { is_active: true };
+    API.update(id, patch).then(function (res) {
+      if (res && res.error) { toast(humanError(res.error)); return; }
+      self.load();
+    });
+  };
+
+  Page.prototype.move = function (kind, id, dir) {
+    var list = this.entries[kind];
+    var i = list.findIndex(function (x) { return x.id === id; });
+    var j = i + dir;
+    if (i < 0 || j < 0 || j >= list.length) return;
+    var self = this;
+    // Swap sort_order; re-number to i+1-style to heal any historic ties.
+    Promise.all([
+      API.update(list[i].id, { sort_order: j + 1 }),
+      API.update(list[j].id, { sort_order: i + 1 })
+    ]).then(function () { self.load(); });
+  };
+
+  Page.prototype.pin = function (kind, id) {
+    var self = this;
+    API.setPin(this.vendor.id, kind, id).then(function (res) {
+      if (res && res.error) { toast(humanError(res.error)); return; }
+      self.load();
+    });
+  };
+
+  // ---- upsell (free plan, direct URL) -----------------------------------------
+  function renderUpsell(mount) {
+    mount.className = 'lok-mkt';
+    mount.innerHTML =
+      '<div class="mkt-card mkt-lock">' +
+        '<span class="mkt-cta-demo">What’s your favorite part of a house?</span>' +
+        '<p class="mkt-lockh">Marketing tools</p>' +
+        '<p>Rotate a weekly promo button and a Showcase of the week on your storefront — you feed the list, we keep it fresh. Available on paid plans.</p>' +
+        '<a class="mkt-up" href="/pricing">See plans</a>' +
+      '</div>';
+  }
+
+  // ---- boot -------------------------------------------------------------------
+  function boot() {
+    var mount = document.getElementById('lok-marketing-page');
+    if (!mount) return;
+    injectStyles();
+    VENDORS.me().then(function (r) {
+      var vendor = r && r.data;
+      if (!vendor || !vendor.id) return;               // not a vendor / not signed in
+      Promise.all([API.hasPlan(vendor.id), API.hasPremium(vendor.id)]).then(function (rs) {
+        var paid = rs[0] && rs[0].data === true;
+        var premium = rs[1] && rs[1].data === true;
+        if (paid) new Page(mount, vendor, premium);
+        else renderUpsell(mount);
+      });
+    });
+  }
+
+  window.LokaliSupabaseReady.then(function () {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', boot);
+    } else { boot(); }
+  });
+})();

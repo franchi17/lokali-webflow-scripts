@@ -1302,6 +1302,18 @@
     }
   };
 
+  // Marketing tools: the storefront's read of the current CTA/showcase entry.
+  // The dashboard page (lokali-marketing.js) talks to LokaliSupabaseAPI
+  // directly, availability-admin style — only the public read lives here.
+  var marketing = {
+    current: function (vendorId, weekOffset) {
+      return SAPI().marketing.current(vendorId, weekOffset).then(function (res) {
+        if (res && res.error) return envelope(res);
+        return { data: (res && res.data) || {}, error: null, status: 200 };
+      });
+    }
+  };
+
   var adapter = {
     request: requestShim,
     auth: auth,
@@ -1314,6 +1326,7 @@
     account: account,
     reviews: reviews,
     gamification: gamification,
+    marketing: marketing,
     data: data,
     getToken: auth.getToken,
     setToken: auth.setToken,
