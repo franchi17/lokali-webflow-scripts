@@ -212,6 +212,87 @@
   };
   var MEDIA_BUCKET = 'vendor-media';
 
+  // --- Upload downscale + re-encode (CLEAN-P9) -------------------------------
+  // Vendors upload straight off a phone. Before this existed the raw File went
+  // to Storage untouched, and a real vendor landed a 2000x2000 / 2.88 MB PNG
+  // profile photo that renders at ~150 px — ~99% waste, on every view of that
+  // storefront. Downscale to the largest size the UI can actually use and
+  // re-encode to WebP in the browser, so the fix applies to every caller
+  // (profile, owner, portfolio, showcase, service, product) at once.
+  //
+  // Deliberately silent: the callers only console.error the envelope, so this
+  // must succeed by doing nothing visible. Anything it can't handle falls
+  // through and uploads the original rather than failing the vendor's upload.
+  var MAX_UPLOAD_BYTES = 25 * 1024 * 1024; // refuse before attempting a decode
+  var MAX_STORED_BYTES = 5 * 1024 * 1024;  // refuse to store more than this
+  // Long-edge cap by kind. Avatars render small; gallery shots open in the
+  // #63 lightbox, so they keep more detail.
+  var EDGE_CAP = { profile: 800, owner: 800, showcase: 1200 };
+  var EDGE_CAP_DEFAULT = 1600;
+  var WEBP_QUALITY = 0.82;
+  // Never rasterise these: an animated GIF would be flattened to one frame and
+  // SVG is vector (canvas would freeze it at one size).
+  var NO_RECODE = /^image\/(gif|svg\+xml)$/i;
+
+  function _extOf(file) {
+    var name = (file && file.name) || 'image';
+    return (name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+  }
+
+  function _decodeImage(file) {
+    // createImageBitmap applies EXIF orientation with imageOrientation:'from-image'
+    // — phone photos are routinely stored rotated, and without this a portrait
+    // shot would be re-encoded sideways. Older browsers ignore the options bag
+    // (or reject), so fall back to <img>, which orients by default.
+    if (window.createImageBitmap) {
+      try {
+        return window.createImageBitmap(file, { imageOrientation: 'from-image' })
+          .catch(function () { return window.createImageBitmap(file); });
+      } catch (e) { /* no options-arg support — use the <img> path */ }
+    }
+    return new Promise(function (resolve, reject) {
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function () { URL.revokeObjectURL(url); resolve(img); };
+      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error('decode failed')); };
+      img.src = url;
+    });
+  }
+
+  // Resolves { blob, ext, type } — always. Never rejects.
+  function _prepareImage(file, kind) {
+    var asIs = { blob: file, ext: _extOf(file), type: (file && file.type) || 'application/octet-stream' };
+    var type = (file && file.type) || '';
+    if (!file || !/^image\//i.test(type) || NO_RECODE.test(type)) return Promise.resolve(asIs);
+    var canvas = document.createElement('canvas');
+    if (!canvas.toBlob) return Promise.resolve(asIs); // ancient browser: ship as-is
+    var cap = EDGE_CAP[kind] || EDGE_CAP_DEFAULT;
+    return _decodeImage(file).then(function (src) {
+      var w = src.width, h = src.height;
+      if (!w || !h) return asIs;
+      var scale = Math.min(1, cap / Math.max(w, h)); // never upscale
+      canvas.width = Math.max(1, Math.round(w * scale));
+      canvas.height = Math.max(1, Math.round(h * scale));
+      canvas.getContext('2d').drawImage(src, 0, 0, canvas.width, canvas.height);
+      if (src.close) src.close(); // release the ImageBitmap
+      return new Promise(function (resolve) {
+        canvas.toBlob(function (blob) {
+          // Keep the original when the encode failed or genuinely didn't help —
+          // an already-lean JPEG/WebP can beat a fresh encode at these settings.
+          if (!blob || blob.size >= file.size) return resolve(asIs);
+          // toBlob silently falls back to PNG where WebP isn't supported, so
+          // trust the blob's own type rather than what we asked for.
+          var t = blob.type || 'image/webp';
+          var e = t === 'image/webp' ? 'webp' : (t === 'image/jpeg' ? 'jpg' : 'png');
+          resolve({ blob: blob, ext: e, type: t });
+        }, 'image/webp', WEBP_QUALITY);
+      });
+    }).catch(function () {
+      // HEIC and other formats this browser can't decode: upload untouched.
+      return asIs;
+    });
+  }
+
   window.LokaliSupabaseAPI = {
     vendors: {
       // RLS returns the row only if it's approved + active (or owned).
@@ -959,20 +1040,33 @@
     // {vendorId}/ prefix (bucket is public-read). uploadImage returns the public
     // URL to store in image_url / profile_photo / a *_photos row.
     storage: {
-      // kind: 'service' | 'product' | 'vendor' | 'profile'
+      // kind: 'service' | 'product' | 'vendor' | 'profile' | 'owner'
+      //     | 'portfolio' | 'showcase'  (the kind picks the long-edge cap)
+      // The file is downscaled + re-encoded to WebP before upload (CLEAN-P9);
+      // see _prepareImage. Falls back to the original file whenever that isn't
+      // possible, so an odd format can never block a vendor's upload.
       uploadImage: function (vendorId, kind, file) {
         return withClient(function (c) {
-          var name = (file && file.name) || 'image';
-          var ext = (name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
-          var rand = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-          var path = vendorId + '/' + (kind || 'misc') + '/' + rand + '.' + ext;
-          return c.storage.from(MEDIA_BUCKET)
-            .upload(path, file, { cacheControl: '3600', upsert: false, contentType: file && file.type })
-            .then(function (res) {
-              if (res.error) return { data: null, error: res.error };
-              var pub = c.storage.from(MEDIA_BUCKET).getPublicUrl(path);
-              return { data: { path: path, url: pub.data.publicUrl }, error: null };
-            });
+          if (file && file.size > MAX_UPLOAD_BYTES) {
+            return { data: null, error: { message: 'That image is too large to upload (max 25 MB). Please pick a smaller file.' } };
+          }
+          return _prepareImage(file, kind).then(function (out) {
+            if (out.blob && out.blob.size > MAX_STORED_BYTES) {
+              return { data: null, error: { message: 'That image is still too large after processing (max 5 MB). Please pick a smaller file.' } };
+            }
+            var rand = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+            var path = vendorId + '/' + (kind || 'misc') + '/' + rand + '.' + out.ext;
+            return c.storage.from(MEDIA_BUCKET)
+              // CLEAN-P12: the filename is random and an object is never
+              // overwritten, so these are immutable — cache them for a year
+              // instead of re-validating hourly.
+              .upload(path, out.blob, { cacheControl: '31536000', upsert: false, contentType: out.type })
+              .then(function (res) {
+                if (res.error) return { data: null, error: res.error };
+                var pub = c.storage.from(MEDIA_BUCKET).getPublicUrl(path);
+                return { data: { path: path, url: pub.data.publicUrl }, error: null };
+              });
+          });
         });
       },
       // Remove one or more objects by their storage path(s).
