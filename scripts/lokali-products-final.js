@@ -813,6 +813,7 @@ const LokaliProductsPage = (() => {
     updatePriceVisibility();
     resetImagePreview();
     _pendingGalleryPhotos = [];
+    _pendingSubcatLabels = [];
     renderGallery(null);
     setVideoUrl('');
   };
@@ -940,6 +941,10 @@ const LokaliProductsPage = (() => {
   // of these is attached to its id — so vendors add photos while creating an item
   // exactly like when editing, with no "save first, then reopen" step.
   let _pendingGalleryPhotos = [];
+  // #136: labels suggested while CREATING this product. There is no product id
+  // yet at suggest time, so the suggestion row is stored with none — and
+  // approval then has nothing to tag. Held here until the save gives us an id.
+  let _pendingSubcatLabels = [];
 
   const renderGallery = async (productId) => {
     const host = galleryHost();
@@ -1357,18 +1362,46 @@ const LokaliProductsPage = (() => {
         throw new Error(result.error);
       }
 
-      // Add-mode staging: the product now exists, so attach the photos we staged
-      // while it had no id. First staged photo is already the cover (set above).
-      if (!editingId && _isProPlan && _pendingGalleryPhotos.length) {
-        const newId = result.data?.id ?? result.data?.product?.id
-          ?? (Array.isArray(result.data?.records) ? result.data.records[0]?.id : null) ?? null;
-        if (newId != null) {
-          for (let i = 0; i < _pendingGalleryPhotos.length; i++) {
-            try { await window.LokaliAPI.products.addPhoto(newId, _pendingGalleryPhotos[i].url, i); } catch (e) {}
-          }
+      // Add-mode staging: the product now exists, so everything we staged while
+      // it had no id gets attached to it here.
+      const newId = editingId ? null
+        : (result.data?.id ?? result.data?.product?.id
+           ?? (Array.isArray(result.data?.records) ? result.data.records[0]?.id : null) ?? null);
+
+      // Photos. First staged photo is already the cover (set above).
+      if (newId != null && _isProPlan && _pendingGalleryPhotos.length) {
+        for (let i = 0; i < _pendingGalleryPhotos.length; i++) {
+          try { await window.LokaliAPI.products.addPhoto(newId, _pendingGalleryPhotos[i].url, i); } catch (e) {}
         }
       }
       _pendingGalleryPhotos = [];
+
+      // #136: link any specialty suggested during creation to the product that
+      // now exists, so approval tags it like any other. Without this the
+      // suggestion keeps both listing ids NULL forever and an approved
+      // specialty never reaches the profile — indistinguishable, from the
+      // vendor's side, from being ignored (Nolasko, 2026-08-16).
+      // Best-effort and swallowed: the save already succeeded, and the #137
+      // bell tells them what to do if the tag does not land.
+      if (newId != null && _pendingSubcatLabels.length) {
+        // ⚠️ Deliberately does NOT require a bumped lokali-supabase-client.js.
+        // That file's shipped pin is held back (its newer build also carries an
+        // unshipped uploadImage rewrite), so this prefers the wrapper when it
+        // exists and otherwise calls the RPC on the raw client — which
+        // window.LokaliSupabase has exposed since well before the current pin.
+        const sapi = window.LokaliSupabaseAPI;
+        for (const lbl of _pendingSubcatLabels) {
+          try {
+            if (sapi?.subcategories?.attachSuggestion) {
+              await sapi.subcategories.attachSuggestion(lbl, { products_id: newId });
+            } else if (window.LokaliSupabase) {
+              await window.LokaliSupabase.rpc('attach_subcategory_suggestion',
+                { p_label: lbl, p_products_id: newId });
+            }
+          } catch (e) {}
+        }
+      }
+      _pendingSubcatLabels = [];
 
       await loadData();
       showListView();
@@ -1992,9 +2025,12 @@ const LokaliProductsPage = (() => {
         _subcatPendingSuggs.unshift({ category_id: _subcatCategoryId, suggested_label: label, status: 'pending' });
         renderSubcatPending();
         inp.value = '';
+        // #136: no product id exists yet in add mode, so remember the label and
+        // link it once the save produces one.
+        if (!editingId) _pendingSubcatLabels.push(label);
         setSubcatHint(editingId
           ? 'Thanks! Once approved, this product gets the specialty automatically.'
-          : 'Thanks! We review suggestions so filters stay consistent — once approved it appears right here.', 'ok');
+          : 'Thanks! Save this product and it gets the specialty automatically once approved.', 'ok');
       } else if (d.reason === 'exists' && d.slug) {
         // Select the returned slug directly — even if this page's taxonomy is
         // stale, the unknown-slug pill renders it (never "reload" advice that
