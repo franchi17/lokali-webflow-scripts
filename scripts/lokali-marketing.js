@@ -268,7 +268,7 @@
         '<input type="file" accept="image/*" data-f="sc-file" style="display:none;">' +
         '<input type="hidden" data-f="sc-image-url" value="' + esc(c ? c.image_url : '') + '">' +
         '<label>Headline (optional)</label>' +
-        '<input class="mkt-in" data-f="sc-headline" maxlength="90" value="' + esc(c ? (c.headline || '') : '') + '" placeholder="Spring open house — this Saturday">' +
+        '<input class="mkt-in" data-f="sc-headline" maxlength="90" value="' + esc(c ? (c.headline || '') : '') + '" placeholder="Fresh this week — come say hi Saturday">' +
         '<div class="mkt-fbtns"><button class="mkt-save" data-act="sc-save">' +
           (c ? 'Resubmit for review' : 'Submit for review') + '</button></div>' +
         '<p class="mkt-note">Any change goes back into review; your card shows your profile until it&rsquo;s approved.</p>' +
