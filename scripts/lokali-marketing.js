@@ -13,6 +13,14 @@
  * The preview chips call the SAME RPC with week offsets 0/1, so what the
  * vendor previews here is by construction what the storefront serves.
  *
+ * Empty/first-run state (2026-08-18 redesign): with zero entries there is
+ * nothing to preview, count, or toggle, so none of that renders — instead a
+ * static mock of the live element (exampleHtml) shows what it becomes. The
+ * rotate/pin toggle itself only renders once there are 2+ ACTIVE entries:
+ * with 0 or 1 active, the two modes are behaviourally identical (the RPC
+ * always returns the same single entry), so showing the toggle would be a
+ * control with no effect.
+ *
  * Plan gates + queue caps (20 cta / 10 showcase) are DB-trigger enforced
  * (LOKALI_LIMIT_REACHED) — this page is honest UI, not the enforcement.
  * Free vendors never see the sidebar tab (lokali-sidebar-account.js hides it);
@@ -38,6 +46,11 @@
   var BRAND = '#6002ee';
   var CAPS = { cta: 20, showcase: 10 };
   var KIND_LABEL = { cta: 'Promo button', showcase: 'Showcase of the week' };
+  // The one example used everywhere a placeholder/demo is needed (form
+  // placeholder, empty-state mock, locked-plan teaser) — category-neutral,
+  // unlike an earlier realtor-specific line that leaked into every vendor's
+  // page as if it were universal advice.
+  var CTA_EXAMPLE = 'Looking for something specific?';
 
   function esc(s) { return String(s == null ? '' : s).replace(/[<>&"]/g, function (c) {
     return ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' })[c];
@@ -61,11 +74,24 @@
       '.mkt-card{background:#fff;border:1px solid #ECE8F8;border-radius:14px;padding:22px 24px;margin:0 0 18px;}' +
       '.mkt-h{margin:0 0 2px;font-size:17px;font-weight:700;color:#3E3A55;}' +
       '.mkt-sub{margin:0 0 14px;font-size:13px;color:#8E8BA6;}' +
-      '.mkt-preview{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px;}' +
+      '.mkt-preview{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 14px;}' +
       '.mkt-chip{display:inline-flex;align-items:center;gap:6px;background:#F7F6FC;border:1px solid #ECE8F8;' +
         'border-radius:999px;padding:6px 12px;font-size:12.5px;color:#4A4761;}' +
       '.mkt-chip b{color:#3E3A55;font-weight:600;}' +
       '.mkt-chip .mkt-now{color:' + BRAND + ';font-weight:700;}' +
+      '.mkt-chip-link{color:' + BRAND + ';font-weight:600;text-decoration:none;background:#fff;border-color:#E4D6FB;cursor:pointer;}' +
+      '.mkt-chip-link:hover{text-decoration:underline;}' +
+      // First-run example: a dashed frame around a scaled mock of the actual
+      // storefront element (same colors/shape as .vl-mkt-cta / .vl-mkt-show
+      // in lokali-vendor-listing.js), so "what it looks like" is not a lie.
+      '.mkt-example{border:1.5px dashed #DCCFFA;border-radius:13px;padding:16px;background:#FBFAFE;margin:0 0 14px;}' +
+      '.mkt-example-lbl{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#9490AC;margin:0 0 10px;}' +
+      '.mkt-demo-cta{display:flex;align-items:center;justify-content:center;background:#F3EBFF;color:' + BRAND + ';' +
+        'border:1px solid #E4D6FB;border-radius:10px;min-height:44px;padding:10px 14px;font:600 14px/1.3 ' + FONT + ';text-align:center;}' +
+      '.mkt-demo-show{background:#fff;border:1px solid #EEEDF6;border-radius:12px;padding:14px;}' +
+      '.mkt-demo-show-img{width:100%;height:92px;border-radius:8px;background:linear-gradient(135deg,#F3EBFF,#FDF1E7);margin:0 0 10px;}' +
+      '.mkt-demo-show-t{font-size:15px;font-weight:700;color:#1A1829;margin:0 0 4px;}' +
+      '.mkt-demo-show-b{font-size:13px;color:#6B6880;line-height:1.5;margin:0;}' +
       '.mkt-seg{display:inline-flex;border:1px solid #ECE8F8;border-radius:10px;overflow:hidden;margin:0 0 14px;}' +
       '.mkt-seg button{border:0;background:#fff;color:#8E8BA6;font-size:12.5px;font-weight:600;padding:7px 14px;cursor:pointer;}' +
       '.mkt-seg button.on{background:#F3EBFF;color:' + BRAND + ';}' +
@@ -84,7 +110,7 @@
       '.mkt-pin{accent-color:' + BRAND + ';cursor:pointer;margin:0 4px 0 0;}' +
       '.mkt-add{display:inline-block;border:0;background:#F3EBFF;color:' + BRAND + ';font-weight:600;font-size:13px;' +
         'border-radius:10px;padding:9px 16px;cursor:pointer;margin-top:12px;}' +
-      '.mkt-count{font-size:12px;color:#8E8BA6;margin-left:8px;}' +
+      '.mkt-count{font-size:12px;color:#8E8BA6;margin-left:8px;font-weight:500;}' +
       '.mkt-form{background:#F7F6FC;border:1px solid #ECE8F8;border-radius:12px;padding:14px;margin-top:12px;}' +
       '.mkt-form label{display:block;font-size:12px;font-weight:600;color:#6B6880;margin:10px 0 4px;}' +
       '.mkt-form label:first-child{margin-top:0;}' +
@@ -176,8 +202,8 @@
     }
     bookings.forEach(function (b) {
       var c = byBooking[b.id];
-      var win = new Date(b.starts_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) +
-        ' – ' + new Date(b.ends_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+      var win = new Date(b.starts_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', timeZone: 'UTC' }) +
+        ' – ' + new Date(b.ends_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', timeZone: 'UTC' });
       var pill = '';
       if (c) {
         var pillBg = c.status === 'approved' ? '#E7F3EC' : (c.status === 'rejected' ? '#FDE8E8' : '#FDF1E7');
@@ -230,29 +256,64 @@
     return p ? p.id : null;
   };
 
+  // First-run state: a static mock of the real storefront element, so a
+  // vendor with zero entries sees what she's building toward instead of a
+  // blank counter and a toggle with nothing to toggle.
+  Page.prototype.exampleHtml = function (kind) {
+    var demo = kind === 'cta'
+      ? '<div class="mkt-demo-cta">' + esc(CTA_EXAMPLE) + '</div>'
+      : '<div class="mkt-demo-show">' +
+          '<div class="mkt-demo-show-img"></div>' +
+          '<div class="mkt-demo-show-t">Showcase of the week</div>' +
+          '<div class="mkt-demo-show-b">A sentence or two about what’s new — a listing, an event, a favorite.</div>' +
+        '</div>';
+    return '<div class="mkt-example">' +
+      '<p class="mkt-example-lbl">What it looks like on your storefront</p>' +
+      demo +
+    '</div>';
+  };
+
   Page.prototype.cardHtml = function (kind) {
     var list = this.entries[kind];
+    var activeList = list.filter(function (e) { return e.is_active; });
     var pinned = this.pinnedId(kind);
     var nowE = this.now[kind], nextE = this.next[kind];
     var sub = kind === 'cta'
-      ? 'A button on your storefront that changes weekly — a question, an invite, a link. You feed the list; we rotate it.'
-      : 'A section at the top of your storefront for what’s new this week — a listing, an event, a favorite.';
+      ? 'A button at the top of your contact card — a question, an invite, a link. You feed the list; we show a different one each week.'
+      : 'A section at the top of your storefront for what’s new — a listing, an event, a favorite.';
+    var storeUrl = (this.vendor && this.vendor.slug) ? ('/' + this.vendor.slug) : null;
+
     var html =
       '<div class="mkt-card" data-kind="' + kind + '">' +
         '<p class="mkt-h">' + KIND_LABEL[kind] +
-          '<span class="mkt-count">' + list.length + ' / ' + CAPS[kind] + '</span></p>' +
-        '<p class="mkt-sub">' + sub + '</p>' +
-        '<div class="mkt-preview">' +
-          '<span class="mkt-chip"><span class="mkt-now">This week</span>' +
-            (nowE ? '<b>' + esc(nowE.title) + '</b>' : 'nothing yet') + '</span>' +
-          (pinned == null
-            ? '<span class="mkt-chip">Next week' + (nextE ? '<b>' + esc(nextE.title) + '</b>' : 'nothing yet') + '</span>'
-            : '<span class="mkt-chip">Pinned — it stays until you unpin it</span>') +
-        '</div>' +
-        '<div class="mkt-seg">' +
+          (list.length ? '<span class="mkt-count">' + list.length + ' / ' + CAPS[kind] + '</span>' : '') +
+          '</p>' +
+        '<p class="mkt-sub">' + sub + '</p>';
+
+    if (!list.length) {
+      html += this.exampleHtml(kind);
+    } else if (!activeList.length) {
+      html += '<p class="mkt-note" style="margin:0 0 14px;">Nothing is visible right now — turn one back on below.</p>';
+    } else {
+      var chips = '<span class="mkt-chip"><span class="mkt-now">This week</span> <b>' + esc(nowE ? nowE.title : '') + '</b></span>';
+      if (pinned != null) {
+        chips += '<span class="mkt-chip">Pinned — stays until you unpin it</span>';
+      } else if (activeList.length >= 2 && nextE) {
+        chips += '<span class="mkt-chip">Next week <b>' + esc(nextE.title) + '</b></span>';
+      }
+      if (storeUrl) {
+        chips += '<a class="mkt-chip mkt-chip-link" href="' + storeUrl + '" target="_blank" rel="noopener">See it live &#8599;</a>';
+      }
+      html += '<div class="mkt-preview">' + chips + '</div>';
+
+      if (activeList.length >= 2) {
+        html += '<div class="mkt-seg">' +
           '<button type="button" data-mode="rotate" class="' + (pinned == null ? 'on' : '') + '">Rotate weekly</button>' +
           '<button type="button" data-mode="pin" class="' + (pinned != null ? 'on' : '') + '">Pin one</button>' +
         '</div>';
+      }
+    }
+
     var self = this;
     list.forEach(function (e, i) {
       if (self.editing === e.id) { html += self.formHtml(kind, e); return; }
@@ -279,11 +340,25 @@
           '</div>' +
         '</div>';
     });
+
     if (this.editing === 'new:' + kind) html += this.formHtml(kind, null);
     else if (list.length < CAPS[kind]) {
-      html += '<button class="mkt-add" data-act="add">+ Add ' + (kind === 'cta' ? 'a button' : 'a showcase') + '</button>';
+      html += '<button class="mkt-add" data-act="add">' +
+        (list.length ? '+ Add ' + (kind === 'cta' ? 'a button' : 'a showcase')
+                     : (kind === 'cta' ? 'Write your first one' : 'Add your first showcase')) +
+      '</button>';
     }
-    html += '<p class="mkt-note">Rotates every Monday. Weekly mode shows each visible entry in order, top to bottom.</p>';
+
+    if (activeList.length >= 2) {
+      html += '<p class="mkt-note">' +
+        (pinned == null
+          ? 'Rotating weekly — each visible entry shows in turn, changing every Monday.'
+          : 'This one stays until you switch back to rotating or pin a different entry.') +
+      '</p>';
+    } else if (list.length && activeList.length === 1 && list.length < CAPS[kind]) {
+      html += '<p class="mkt-note">Add a second one and we’ll start rotating them weekly.</p>';
+    }
+
     html += '</div>';
     return html;
   };
@@ -294,7 +369,7 @@
     return '<div class="mkt-form" data-kind="' + kind + '">' +
       '<label>' + (kind === 'cta' ? 'Button text' : 'Heading') + '</label>' +
       '<input class="mkt-in" data-f="title" maxlength="120" value="' + esc(t) + '" placeholder="' +
-        (kind === 'cta' ? 'What’s your favorite part of a house?' : 'Showcase of the week') + '">' +
+        (kind === 'cta' ? esc(CTA_EXAMPLE) : 'Showcase of the week') + '">' +
       (kind === 'showcase'
         ? '<label>Text</label><textarea class="mkt-in" data-f="body" maxlength="600" placeholder="A few sentences about it…">' + esc(b) + '</textarea>' +
           '<label>Photo</label>' +
@@ -486,7 +561,7 @@
     mount.className = 'lok-mkt';
     mount.innerHTML =
       '<div class="mkt-card mkt-lock">' +
-        '<span class="mkt-cta-demo">What’s your favorite part of a house?</span>' +
+        '<span class="mkt-cta-demo">' + esc(CTA_EXAMPLE) + '</span>' +
         '<p class="mkt-lockh">Marketing tools</p>' +
         '<p>Rotate a weekly promo button and a Showcase of the week on your storefront — you feed the list, we keep it fresh. Available on paid plans.</p>' +
         '<a class="mkt-up" href="/pricing">See plans</a>' +
