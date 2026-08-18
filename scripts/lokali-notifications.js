@@ -80,6 +80,29 @@
       '.lok-notif-item:hover .lok-notif-x,.lok-notif-x:focus{opacity:1;}',
       '.lok-notif-x:hover{background:#FEF3F2;color:#C0392B;}',
       '@media (hover:none){.lok-notif-x{opacity:1;}}',
+      // #146 dashboard mounts.
+      // Desktop: the logo row becomes a flex line so the bell sits at its right
+      // edge instead of stacking under it. The wrapper is a Webflow div with no
+      // layout of its own, so this is additive, not an override.
+      '.lok-notif-logorow{display:flex;align-items:center;}',
+      '.lok-notif-logorow > a{flex:0 0 auto;}',
+      '.lok-notif--sidebar{margin-left:auto;}',
+      // The sidebar sits at the LEFT screen edge, so a right-anchored 340px
+      // panel would open leftward and hang off-screen. Anchor it to the left of
+      // the bell instead — it then opens INTO the content area. The #141 runtime
+      // clamp still runs as a backstop, but this means it has nothing to correct.
+      '.lok-notif--sidebar .lok-notif-panel{left:0;right:auto;}',
+      // ≤991px the sidebar becomes a slide-in drawer and .div-block-27 picks up
+      // `overflow:clip` (+ a translate), which would trap the panel inside a
+      // 260px drawer. That is exactly the breakpoint where #lok-topbar appears,
+      // so hand the job over: sidebar bell on desktop, topbar bell on mobile,
+      // never both.
+      '@media (max-width:991px){.lok-notif--sidebar{display:none !important;}}',
+      // Mobile topbar: bell is already near the right edge next to the burger,
+      // so the default right-anchoring is correct — but cap the width to the
+      // viewport so a 340px panel can never overflow a narrow phone.
+      '.lok-notif--topbar{margin-right:2px;}',
+      '.lok-notif--topbar .lok-notif-panel{max-width:calc(100vw - 24px);}',
       '.lok-notif-empty{padding:22px 16px 26px;text-align:center;color:#8E8BA6;font-size:13px;line-height:1.5;}',
       '.lok-notif-empty strong{display:block;color:#4A4761;font-weight:700;margin-bottom:2px;}',
       '.lok-notif-foot{border-top:.5px solid #EEEDF6;padding:8px 10px;text-align:center;}',
@@ -330,22 +353,36 @@
     // .header-wrapper nor #lok-mnav-panel — lokali-auth-nav.js scopes to those
     // same two selectors, which is exactly why the account chip is absent there
     // too and the dashboard runs lokali-sidebar-account.js instead. So this
-    // script was LOADED on every dashboard page and silently mounted nothing:
-    // mount() returned false and the retry loop just gave up. A vendor reading
-    // their notifications had to leave the dashboard to see them.
+    // script was LOADED on every dashboard page and silently mounted nothing.
     //
-    // Anchored off the first .dashboard-btn and its parentNode rather than the
-    // Webflow container class (div-block-28) — generated names renumber when
-    // the Designer tree changes, and this one has no semantic meaning to hold
-    // onto. Inserted BEFORE it, so the bell is the first row of the sidebar nav.
-    // The panel's own on-screen clamp (#141, in the click handler) keeps the
-    // 340px dropdown inside the viewport from a narrow sidebar.
-    var dashBtn = document.querySelector('.section-11 .dashboard-btn');
-    if (dashBtn && dashBtn.parentNode) hosts.push({ parent: dashBtn.parentNode, before: dashBtn });
+    // DESKTOP: beside the LOGO, not in the nav list. A first attempt put it
+    // above "Dashboard" as its own row and it read as a stray badge floating in
+    // the menu (Francesca, 2026-08-17). Anchored off the logo LINK (a[href="/"])
+    // rather than Webflow's generated wrapper class (div-block-181), which
+    // renumbers whenever the Designer tree changes.
+    var logo = document.querySelector('.section-11 a[href="/"]');
+    if (logo && logo.parentNode) {
+      // The wrapper is a plain block div, so `margin-left:auto` on the bell
+      // would do nothing and it would wrap under the logo. Tag the wrapper from
+      // JS and lay it out as a flex row — tagging here rather than writing
+      // `.div-block-181` into the stylesheet keeps us off the generated name.
+      logo.parentNode.classList.add('lok-notif-logorow');
+      hosts.push({ parent: logo.parentNode, before: null, cls: 'lok-notif--sidebar' });
+    }
+    // MOBILE: beside the hamburger in the dashboard topbar (#lok-topbar, built
+    // by lokali-dashboard-mobile-nav.js). That bar is `justify-content:flex-end`
+    // so inserting BEFORE #lok-ham puts the bell immediately left of it.
+    // ⚠️ That script is `defer`red and this one is not, so the topbar usually
+    // does NOT exist on the first mount() call — see the re-mount in boot().
+    var ham = document.getElementById('lok-ham');
+    if (ham && ham.parentNode) {
+      hosts.push({ parent: ham.parentNode, before: ham, cls: 'lok-notif--topbar' });
+    }
 
     hosts.forEach(function (h) {
       if (h.parent.querySelector(':scope > [data-lok-notif]')) return;  // already there
       var el = build();
+      if (h.cls) el.classList.add(h.cls);   // per-mount panel anchoring, see css()
       h.parent.insertBefore(el, h.before || null);
       mounts.push(el);
     });
@@ -373,6 +410,13 @@
       var signedIn = A && typeof A.isSignedIn === 'function' && A.isSignedIn();
       if (signedIn && mount()) {
         clearInterval(iv);
+        // #146: the desktop sidebar mount succeeds immediately, which used to
+        // stop this loop before lokali-dashboard-mobile-nav.js (deferred) had
+        // built #lok-topbar — so the mobile bell never appeared. mount() is
+        // idempotent per host, so simply run it again shortly after. Same
+        // 1.2s/3s retry shape used for the dashboard button upgrades in #104.
+        setTimeout(mount, 1200);
+        setTimeout(mount, 3000);
         load();
         // Refresh when the tab comes back — cheaper and less surprising than a
         // fast timer, and covers the "left it open all afternoon" case.
