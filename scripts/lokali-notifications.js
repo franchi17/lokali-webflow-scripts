@@ -326,6 +326,23 @@
     var panel = document.querySelector('#lok-mnav-panel');
     if (panel) hosts.push({ parent: panel, before: panel.firstChild });
 
+    // #146: the VENDOR DASHBOARD had no bell at all. Its shell carries neither
+    // .header-wrapper nor #lok-mnav-panel — lokali-auth-nav.js scopes to those
+    // same two selectors, which is exactly why the account chip is absent there
+    // too and the dashboard runs lokali-sidebar-account.js instead. So this
+    // script was LOADED on every dashboard page and silently mounted nothing:
+    // mount() returned false and the retry loop just gave up. A vendor reading
+    // their notifications had to leave the dashboard to see them.
+    //
+    // Anchored off the first .dashboard-btn and its parentNode rather than the
+    // Webflow container class (div-block-28) — generated names renumber when
+    // the Designer tree changes, and this one has no semantic meaning to hold
+    // onto. Inserted BEFORE it, so the bell is the first row of the sidebar nav.
+    // The panel's own on-screen clamp (#141, in the click handler) keeps the
+    // 340px dropdown inside the viewport from a narrow sidebar.
+    var dashBtn = document.querySelector('.section-11 .dashboard-btn');
+    if (dashBtn && dashBtn.parentNode) hosts.push({ parent: dashBtn.parentNode, before: dashBtn });
+
     hosts.forEach(function (h) {
       if (h.parent.querySelector(':scope > [data-lok-notif]')) return;  // already there
       var el = build();
