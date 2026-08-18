@@ -136,13 +136,17 @@
     Promise.all([
       API.list(this.vendor.id),
       API.current(this.vendor.id, 0),
-      API.current(this.vendor.id, 1)
+      API.current(this.vendor.id, 1),
+      // Spotlight creative is Featured-only (and needs myCreatives support in
+      // the shipped client — absent until the phase-2 tag, hence the guard).
+      (this.premium && API.myCreatives) ? API.myCreatives(this.vendor.id) : Promise.resolve(null)
     ]).then(function (rs) {
       var rows = (rs[0] && rs[0].data) || [];
       self.entries = { cta: [], showcase: [] };
       rows.forEach(function (e) { if (self.entries[e.kind]) self.entries[e.kind].push(e); });
       self.now = (rs[1] && rs[1].data) || {};
       self.next = (rs[2] && rs[2].data) || {};
+      self.spot = (rs[3] && rs[3].data) || null;   // {bookings, creatives} | null
       self.render();
     });
   };
@@ -151,8 +155,74 @@
     this.mount.className = 'lok-mkt';
     this.mount.innerHTML =
       this.cardHtml('cta') +
-      (this.premium ? this.cardHtml('showcase') : this.lockedShowcaseHtml());
+      (this.premium ? this.cardHtml('showcase') : this.lockedShowcaseHtml()) +
+      (this.premium && this.spot ? this.spotlightCardHtml() : '');
     this.bind();
+  };
+
+  // ---- Spotlight ad creative (phase 2) --------------------------------------
+  Page.prototype.spotlightCardHtml = function () {
+    var self = this;
+    var bookings = this.spot.bookings || [];
+    var byBooking = {};
+    (this.spot.creatives || []).forEach(function (c) { byBooking[c.spotlight_bookings_id] = c; });
+    var html = '<div class="mkt-card" data-kind="spotlight">' +
+      '<p class="mkt-h">Spotlight ad creative</p>' +
+      '<p class="mkt-sub">Booked a homepage Spotlight? Upload a custom image and headline for your card. We review every creative before it goes live — usually within a day.</p>';
+    if (!bookings.length) {
+      html += '<p class="mkt-note">No upcoming homepage Spotlight. Book one from ' +
+        '<a href="/vendor-dashboard/settings" style="color:' + BRAND + ';">Settings &rarr; Spotlight</a>' +
+        ' and the uploader appears here.</p>';
+    }
+    bookings.forEach(function (b) {
+      var c = byBooking[b.id];
+      var win = new Date(b.starts_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) +
+        ' – ' + new Date(b.ends_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+      var pill = '';
+      if (c) {
+        var pillBg = c.status === 'approved' ? '#E7F3EC' : (c.status === 'rejected' ? '#FDE8E8' : '#FDF1E7');
+        var pillFg = c.status === 'approved' ? '#3E7C5E' : (c.status === 'rejected' ? '#B1006A' : '#8A4B14');
+        var pillTxt = c.status === 'approved' ? 'Approved — live on the homepage'
+          : (c.status === 'rejected' ? 'Not approved' : 'In review');
+        pill = '<span style="display:inline-block;background:' + pillBg + ';color:' + pillFg + ';' +
+          'border-radius:999px;padding:4px 12px;font-size:12px;font-weight:600;">' + pillTxt + '</span>' +
+          (c.status === 'rejected' && c.review_note
+            ? '<div class="mkt-note">&ldquo;' + esc(c.review_note) + '&rdquo; — fix it and resubmit below.</div>' : '');
+      }
+      html += '<div class="mkt-form" data-booking="' + b.id + '">' +
+        '<div style="font-size:13px;font-weight:600;color:#3E3A55;">Homepage Spotlight · ' + esc(win) +
+          (b.status === 'active' ? ' · <span style="color:#3E7C5E;">LIVE NOW</span>' : '') + '</div>' +
+        (pill ? '<div style="margin-top:8px;">' + pill + '</div>' : '') +
+        '<label>Creative image</label>' +
+        (c ? '<img class="mkt-upthumb" data-f="imgprev" src="' + esc(c.image_url) + '" alt="">' : '') +
+        '<button type="button" class="mkt-upbtn" data-act="sc-upload">' + (c ? 'Replace image' : 'Upload an image') + '</button>' +
+        '<input type="file" accept="image/*" data-f="sc-file" style="display:none;">' +
+        '<input type="hidden" data-f="sc-image-url" value="' + esc(c ? c.image_url : '') + '">' +
+        '<label>Headline (optional)</label>' +
+        '<input class="mkt-in" data-f="sc-headline" maxlength="90" value="' + esc(c ? (c.headline || '') : '') + '" placeholder="Spring open house — this Saturday">' +
+        '<div class="mkt-fbtns"><button class="mkt-save" data-act="sc-save">' +
+          (c ? 'Resubmit for review' : 'Submit for review') + '</button></div>' +
+        '<p class="mkt-note">Any change goes back into review; your card shows your profile until it&rsquo;s approved.</p>' +
+      '</div>';
+    });
+    html += '</div>';
+    return html;
+  };
+
+  Page.prototype.saveCreative = function (form) {
+    var self = this;
+    var url = form.querySelector('[data-f="sc-image-url"]').value.trim();
+    var headline = form.querySelector('[data-f="sc-headline"]').value.trim();
+    if (!url) { toast('Upload an image first.'); return; }
+    API.attachCreative(+form.getAttribute('data-booking'), url, headline || null).then(function (res) {
+      var d = res && res.data;
+      if ((res && res.error) || !d || d.ok !== true) {
+        toast(d && d.reason === 'bad_status' ? 'That Spotlight window can no longer be changed.' : humanError(res && res.error));
+        return;
+      }
+      toast('Submitted — we’ll review it shortly.');
+      self.load();
+    });
   };
 
   Page.prototype.pinnedId = function (kind) {
@@ -273,11 +343,20 @@
         var f = btn.parentElement.querySelector('[data-f="file"]');
         if (f) f.click();
       }
+      // Spotlight creative (phase 2)
+      else if (act === 'sc-upload') {
+        var sf = btn.parentElement.querySelector('[data-f="sc-file"]');
+        if (sf) sf.click();
+      }
+      else if (act === 'sc-save') self.saveCreative(btn.closest('[data-booking]'));
     };
     this.mount.onchange = function (ev) {
       var inp = ev.target;
       if (inp.getAttribute && inp.getAttribute('data-f') === 'file' && inp.files && inp.files[0]) {
         self.upload(inp);
+      }
+      if (inp.getAttribute && inp.getAttribute('data-f') === 'sc-file' && inp.files && inp.files[0]) {
+        self.upload(inp, 'spotlight', 'sc-image-url');
       }
       if (inp.classList && inp.classList.contains('mkt-pin') && inp.checked) {
         var row = inp.closest('.mkt-row');
@@ -332,15 +411,21 @@
     }
   };
 
-  Page.prototype.upload = function (inp) {
-    var self = this;
+  // Shared by the showcase photo and the Spotlight creative — `kind` is the
+  // vendor-media folder segment (the storage policy only gates segment 1 =
+  // the vendor id, so any kind is fine) and `field` is the hidden input the
+  // resulting URL is written into.
+  Page.prototype.upload = function (inp, kind, field) {
+    kind = kind || 'showcase';
+    field = field || 'image_url';
     var form = inp.closest('.mkt-form');
-    var btn = form.querySelector('[data-act="upload"]');
+    var btn = form.querySelector('[data-act="' + (kind === 'spotlight' ? 'sc-upload' : 'upload') + '"]');
+    var label = btn.textContent;
     btn.textContent = 'Uploading…';
-    STORAGE.uploadImage(this.vendor.id, 'showcase', inp.files[0]).then(function (res) {
-      if (res && res.error) { btn.textContent = 'Add a photo'; toast(humanError(res.error)); return; }
+    STORAGE.uploadImage(this.vendor.id, kind, inp.files[0]).then(function (res) {
+      if (res && res.error) { btn.textContent = label; toast(humanError(res.error)); return; }
       var url = res.data.url;
-      form.querySelector('[data-f="image_url"]').value = url;
+      form.querySelector('[data-f="' + field + '"]').value = url;
       var prev = form.querySelector('[data-f="imgprev"]');
       if (!prev) {
         prev = document.createElement('img');
@@ -350,7 +435,7 @@
         btn.parentElement.insertBefore(prev, btn);
       }
       prev.src = url;
-      btn.textContent = 'Replace photo';
+      btn.textContent = kind === 'spotlight' ? 'Replace image' : 'Replace photo';
     });
   };
 

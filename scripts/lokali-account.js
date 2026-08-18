@@ -943,6 +943,7 @@
 
     appendReportsSection(wrap, ov);
     appendSpotlightSection(wrap, ov);
+    appendSpotlightCreativesSection(wrap);
     appendExitSurveySection(wrap, ov);
     return wrap;
   }
@@ -1202,6 +1203,110 @@
       }
       wrap.appendChild(row);
     });
+  }
+
+  // ── Spotlight ad creative review (patch_spotlight_creative.sql) ───────────
+  // Vendor-uploaded homepage-Spotlight creative renders on OUR front page, so
+  // it ships only after approval here. Deliberately fed by its OWN RPC
+  // (admin_spotlight_creatives) rather than admin_overview() — that function
+  // is read by the whole panel and redefining it to add keys is how the
+  // exit-survey section went blank in production (2026-08-16).
+  function appendSpotlightCreativesSection(wrap) {
+    var API = window.LokaliSupabaseAPI && window.LokaliSupabaseAPI.marketing;
+    if (!API || !API.adminCreatives) return;      // pre-phase-2 client: no-op
+    var host = el('div');
+    wrap.appendChild(host);
+
+    function draw(rows) {
+      host.innerHTML = '';
+      var pending = rows.filter(function (r) { return r.status === 'pending'; }).length;
+      var t = el('div', 'lk-admin-qtitle');
+      t.style.marginTop = '18px';
+      t.appendChild(document.createTextNode('Spotlight ad creative'));
+      t.appendChild(el('span', 'lk-admin-qcount', String(pending)));
+      host.appendChild(t);
+      host.appendChild(el('p', 'lk-admin-sub',
+        'Custom images vendors submitted for their homepage Spotlight card. Until one is approved, their card shows their “Meet the vendor” profile instead.'));
+      if (!rows.length) {
+        host.appendChild(el('div', 'lk-admin-empty', 'Nothing submitted yet.'));
+        return;
+      }
+      rows.forEach(function (c) {
+        var row = el('div', 'lk-admin-row');
+        if (c.image_url) {
+          var thumb = document.createElement('img');
+          thumb.src = c.image_url;
+          thumb.alt = '';
+          thumb.style.cssText = 'width:64px;height:64px;border-radius:8px;object-fit:cover;margin-right:12px;flex:none;';
+          row.appendChild(thumb);
+        }
+        var meta = el('div', 'lk-admin-row-meta');
+        var l1 = el('div', 'lk-admin-row-l1');
+        l1.textContent = c.business_name || 'Unknown vendor';
+        if (c.headline) {
+          var h = document.createElement('span');
+          h.textContent = ' — “' + c.headline + '”';
+          l1.appendChild(h);
+        }
+        var l2 = el('div', 'lk-admin-row-l2');
+        l2.textContent = fmtSpotDay(c.starts_at) + ' – ' + fmtSpotDay(c.ends_at) +
+          ' · ' + (c.status === 'pending' ? 'awaiting review'
+                 : c.status === 'approved' ? 'APPROVED' : 'rejected') +
+          (c.status === 'rejected' && c.review_note ? ' · ' + c.review_note : '');
+        if (c.status === 'approved') l2.style.color = '#1A6640';
+        meta.appendChild(l1); meta.appendChild(l2);
+        row.appendChild(meta);
+
+        if (c.status === 'pending') {
+          var ok = document.createElement('button');
+          ok.type = 'button'; ok.className = 'lk-admin-approve'; ok.textContent = 'Approve';
+          ok.onclick = function () { review(c.id, 'approved', null, ok); };
+          row.appendChild(ok);
+          var no = document.createElement('button');
+          no.type = 'button'; no.className = 'lk-admin-decline'; no.textContent = 'Reject';
+          no.onclick = function () {
+            var note = window.prompt('Why? (the vendor sees this)', '');
+            if (note === null) return;              // cancelled
+            review(c.id, 'rejected', note, no);
+          };
+          row.appendChild(no);
+        }
+        if (c.slug) {
+          var view = document.createElement('a');
+          view.className = 'lk-admin-decline';
+          view.style.textDecoration = 'none';
+          view.textContent = 'View';
+          view.href = '/' + encodeURIComponent(c.slug);
+          view.target = '_blank';
+          view.rel = 'noopener';
+          row.appendChild(view);
+        }
+        host.appendChild(row);
+      });
+    }
+
+    function review(id, status, note, btn) {
+      btn.disabled = true;
+      btn.textContent = '…';
+      API.adminReview(id, status, note).then(function (res) {
+        var d = res && res.data;
+        if ((res && res.error) || !d || d.ok !== true) {
+          btn.disabled = false;
+          btn.textContent = status === 'approved' ? 'Approve' : 'Reject';
+          return;
+        }
+        load();
+      });
+    }
+
+    function load() {
+      API.adminCreatives().then(function (res) {
+        var d = (res && res.data) || {};
+        if (d.ok !== true) return;                 // not admin / RPC missing
+        draw(Array.isArray(d.creatives) ? d.creatives : []);
+      });
+    }
+    load();
   }
 
   // ── #66 Phase 1: "Open your storefront" card ───────────────

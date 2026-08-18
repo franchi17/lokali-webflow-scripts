@@ -49,7 +49,12 @@
         'font-size:14px;font-weight:600;color:#fff;background:var(--system--primary-700,#3d00e0);text-decoration:none;line-height:1.2;}' +
       '.lok-sh-cta:hover{background:var(--system--primary-900,#0000d6);}' +
       '.lok-sh-badge{font-size:11px;font-weight:700;color:var(--system--orange-500,#ff8d00);letter-spacing:.08em;' +
-        'text-transform:uppercase;margin-bottom:10px;}';
+        'text-transform:uppercase;margin-bottom:10px;}' +
+      // Approved ad creative (spotlight_creatives) — the image replaces the
+      // portrait/bio block; badge, frame and storefront CTA stay Lokali's.
+      '.lok-sh-adimg{width:calc(100% + 48px);margin:-4px -24px 12px;display:block;' +
+        'max-height:230px;object-fit:cover;border-radius:12px;}' +
+      '.lok-sh-adline{font-size:16px;font-weight:700;color:#231D3F;line-height:1.35;margin:0 0 14px;}';
     var el = document.createElement('style');
     el.id = STYLE_ID;
     el.textContent = css;
@@ -71,6 +76,31 @@
   function buildCard(v) {
     var card = el('div', 'lok-sh-card');
     card.appendChild(el('div', 'lok-sh-badge', '✦ Spotlight'));
+
+    // Admin-APPROVED custom creative (spotlight_creatives): image + optional
+    // headline replace the portrait/name/bio; business name, category pill and
+    // the storefront CTA keep the card recognisably Lokali. The RPC only emits
+    // creative_image when status='approved', so pending/rejected/edited
+    // creatives automatically fall back to the profile card below.
+    if (v.creative_image) {
+      var ad = el('img', 'lok-sh-adimg');
+      ad.src = v.creative_image;
+      ad.alt = v.creative_headline ||
+        ((v.business_name || 'Vendor') + ' — Spotlight');
+      ad.loading = 'lazy';
+      card.appendChild(ad);
+      if (v.creative_headline) card.appendChild(el('p', 'lok-sh-adline', v.creative_headline));
+      card.appendChild(el('div', 'lok-sh-biz', v.business_name || ''));
+      if (v.category) card.appendChild(el('span', 'lok-sh-cat', v.category));
+      if (v.slug) {
+        var adCta = el('a', 'lok-sh-cta',
+          firstName(v.owner_name) ? ('Meet ' + firstName(v.owner_name)) : 'Visit their storefront');
+        adCta.href = '/' + encodeURIComponent(v.slug);
+        adCta.style.marginTop = '16px';
+        card.appendChild(adCta);
+      }
+      return card;
+    }
 
     if (v.owner_photo) {
       var img = el('img', 'lok-sh-photo');

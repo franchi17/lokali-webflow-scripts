@@ -916,6 +916,45 @@
             });
         });
       },
+      // --- Spotlight ad creative (phase 2, patch_spotlight_creative.sql) ----
+      // Own homepage bookings (booked/active) + own creatives; joined by the
+      // caller. Both reads are owner-RLS'd; writes are definer-RPC-only.
+      myCreatives: function (vendorId) {
+        return withClient(function (c) {
+          return Promise.all([
+            c.from('spotlight_bookings').select('*')
+              .eq('vendors_id', vendorId).eq('tier', 'homepage')
+              .in('status', ['booked', 'active'])
+              .order('starts_at'),
+            c.from('spotlight_creatives').select('*').eq('vendors_id', vendorId)
+          ]).then(function (rs) {
+            var err = (rs[0] && rs[0].error) || (rs[1] && rs[1].error);
+            if (err) return { data: null, error: err };
+            return { data: { bookings: rs[0].data || [], creatives: rs[1].data || [] }, error: null };
+          });
+        });
+      },
+      // Upsert; server resets status to 'pending' on every edit.
+      attachCreative: function (bookingId, imageUrl, headline) {
+        return withClient(function (c) {
+          return c.rpc('marketing_attach_spotlight_creative', {
+            p_booking_id: bookingId,
+            p_image_url: imageUrl,
+            p_headline: headline || null
+          });
+        });
+      },
+      // Admin console (is_admin()-gated inside the RPCs).
+      adminCreatives: function () {
+        return withClient(function (c) { return c.rpc('admin_spotlight_creatives'); });
+      },
+      adminReview: function (creativeId, status, note) {
+        return withClient(function (c) {
+          return c.rpc('admin_review_spotlight_creative', {
+            p_id: creativeId, p_status: status, p_note: note || null
+          });
+        });
+      },
       // Public current-entry read (anon-callable). weekOffset 0 = this week,
       // 1 = next week; the dashboard preview calls the SAME selection the
       // storefront serves, so preview and reality cannot drift.
