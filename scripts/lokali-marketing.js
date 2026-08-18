@@ -125,7 +125,7 @@
       '.mkt-entry-top{display:flex;align-items:center;gap:8px;margin:0 0 7px;}' +
       '.mkt-when{display:inline-block;background:#F7F6FC;border:1px solid #ECE8F8;border-radius:999px;' +
         'padding:3px 10px;font-size:11.5px;font-weight:600;color:#6B6880;white-space:nowrap;}' +
-      '.mkt-when.live{background:#F3EBFF;border-color:#E4D6FB;color:' + BRAND + ';}' +
+      '.mkt-when.live{background:#E7F3EC;border-color:#B9DEC9;color:#3E7C5E;}' +
       '.mkt-when.hid{color:#B7B4C7;background:#FAFAFC;}' +
       '.mkt-spacer{flex:1;}' +
       '.mkt-t{font-size:14.5px;font-weight:600;color:#3E3A55;}' +
