@@ -83,13 +83,10 @@
       '.mkt-card{background:#fff;border:1px solid #ECE8F8;border-radius:14px;padding:22px 24px;margin:0 0 18px;}' +
       '.mkt-h{margin:0 0 2px;font-size:17px;font-weight:700;color:#3E3A55;}' +
       '.mkt-sub{margin:0 0 14px;font-size:13px;color:#8E8BA6;}' +
-      '.mkt-preview{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 14px;}' +
-      '.mkt-chip{display:inline-flex;align-items:center;gap:6px;background:#F7F6FC;border:1px solid #ECE8F8;' +
-        'border-radius:999px;padding:6px 12px;font-size:12.5px;color:#4A4761;}' +
-      '.mkt-chip b{color:#3E3A55;font-weight:600;}' +
-      '.mkt-chip .mkt-now{color:' + BRAND + ';font-weight:700;}' +
-      '.mkt-chip-link{color:' + BRAND + ';font-weight:600;text-decoration:none;background:#fff;border-color:#E4D6FB;cursor:pointer;}' +
-      '.mkt-chip-link:hover{text-decoration:underline;}' +
+      '.mkt-head{display:flex;align-items:baseline;gap:12px;}' +
+      '.mkt-head .mkt-h{flex:1;}' +
+      '.mkt-live-link{font-size:12.5px;font-weight:600;color:' + BRAND + ';text-decoration:none;white-space:nowrap;}' +
+      '.mkt-live-link:hover{text-decoration:underline;}' +
       // First-run example: a dashed frame around a scaled mock of the actual
       // storefront element (same colors/shape as .vl-mkt-cta / .vl-mkt-show
       // in lokali-vendor-listing.js), so "what it looks like" is not a lie.
@@ -119,15 +116,37 @@
       '.mkt-seg{display:inline-flex;border:1px solid #ECE8F8;border-radius:10px;overflow:hidden;margin:0 0 14px;}' +
       '.mkt-seg button{border:0;background:#fff;color:#8E8BA6;font-size:12.5px;font-weight:600;padding:7px 14px;cursor:pointer;}' +
       '.mkt-seg button.on{background:#F3EBFF;color:' + BRAND + ';}' +
-      '.mkt-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid #F1EEF9;}' +
-      '.mkt-row:first-of-type{border-top:0;}' +
-      '.mkt-row.off .mkt-t{color:#B7B4C7;text-decoration:line-through;}' +
-      '.mkt-thumb{width:44px;height:44px;border-radius:8px;object-fit:cover;background:#F3EBFF;flex:none;}' +
-      '.mkt-main{flex:1;min-width:0;}' +
-      '.mkt-t{font-size:14px;font-weight:600;color:#3E3A55;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}' +
-      '.mkt-u{font-size:12px;color:#8E8BA6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}' +
-      '.mkt-b{font-size:12.5px;color:#6B6880;margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}' +
-      '.mkt-acts{display:flex;align-items:center;gap:4px;flex:none;}' +
+      // Entry cards: every queued item is its own card with a WHEN chip (the
+      // week it goes live, derived from the same rotation the server runs).
+      '.mkt-entries{display:flex;flex-direction:column;gap:10px;}' +
+      '.mkt-entry{border:1px solid #ECE8F8;border-radius:12px;background:#FDFCFF;padding:12px 14px;}' +
+      '.mkt-entry.off{background:#FAFAFC;}' +
+      '.mkt-entry.off .mkt-t,.mkt-scard.off .mkt-scard-t{color:#B7B4C7;}' +
+      '.mkt-entry-top{display:flex;align-items:center;gap:8px;margin:0 0 7px;}' +
+      '.mkt-when{display:inline-block;background:#F7F6FC;border:1px solid #ECE8F8;border-radius:999px;' +
+        'padding:3px 10px;font-size:11.5px;font-weight:600;color:#6B6880;white-space:nowrap;}' +
+      '.mkt-when.live{background:#F3EBFF;border-color:#E4D6FB;color:' + BRAND + ';}' +
+      '.mkt-when.hid{color:#B7B4C7;background:#FAFAFC;}' +
+      '.mkt-spacer{flex:1;}' +
+      '.mkt-t{font-size:14.5px;font-weight:600;color:#3E3A55;}' +
+      '.mkt-u{font-size:12px;color:#8E8BA6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px;}' +
+      '.mkt-b{font-size:12.5px;color:#6B6880;margin-top:3px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}' +
+      '.mkt-links{display:flex;align-items:center;gap:7px;margin-top:9px;}' +
+      '.mkt-tb{border:0;background:none;color:#8E8BA6;font-size:12.5px;font-weight:600;cursor:pointer;padding:0;}' +
+      '.mkt-tb:hover{color:' + BRAND + ';}' +
+      '.mkt-dot{color:#D8D5E6;}' +
+      // Showcase queue: product-card style — image on TOP, text under it,
+      // matching how the section renders on the storefront.
+      '.mkt-sgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}' +
+      '@media (max-width:640px){.mkt-sgrid{grid-template-columns:1fr;}}' +
+      '.mkt-sgrid .mkt-form{grid-column:1 / -1;}' +
+      '.mkt-scard{border:1px solid #ECE8F8;border-radius:12px;background:#FDFCFF;overflow:hidden;display:flex;flex-direction:column;}' +
+      '.mkt-scard.off{background:#FAFAFC;}' +
+      '.mkt-scard-img{width:100%;height:140px;object-fit:cover;display:block;background:linear-gradient(135deg,#F3EBFF,#FDF1E7);border:0;}' +
+      '.mkt-scard-noimg{display:flex;align-items:center;justify-content:center;color:#8E76C9;}' +
+      '.mkt-scard-noimg svg{width:24px;height:24px;fill:currentColor;}' +
+      '.mkt-scard-body{padding:10px 12px 12px;}' +
+      '.mkt-scard-t{font-size:14px;font-weight:600;color:#3E3A55;}' +
       '.mkt-ib{border:0;background:none;color:#8E8BA6;cursor:pointer;font-size:15px;padding:5px 6px;border-radius:7px;line-height:1;}' +
       '.mkt-ib:hover{background:#F7F6FC;color:#3E3A55;}' +
       '.mkt-ib[disabled]{opacity:.3;cursor:default;}' +
@@ -308,11 +327,55 @@
     '</div>';
   };
 
+  // Monday of the current week, local time — every live community is Central,
+  // matching the server's Monday/Central rotation boundary.
+  function mondayOf(d) {
+    var x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    x.setDate(x.getDate() - ((x.getDay() + 6) % 7));
+    return x;
+  }
+  function fmtDay(d) {
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  }
+
+  // Which week each ACTIVE entry goes live: anchor on the server's answer for
+  // this week (marketing_current(0) -> this.now), then walk the same
+  // round-robin order the server uses. Hidden entries get no schedule.
+  Page.prototype.schedule = function (kind) {
+    var out = {};
+    var active = this.entries[kind].filter(function (e) { return e.is_active; });
+    var pinned = this.pinnedId(kind);
+    var i;
+    if (pinned != null) {
+      for (i = 0; i < active.length; i++) {
+        out[active[i].id] = active[i].id === pinned
+          ? { txt: 'Live now — pinned', cls: 'live' }
+          : { txt: 'Paused while one is pinned', cls: '' };
+      }
+      return out;
+    }
+    var n = active.length;
+    if (!n) return out;
+    var curId = this.now[kind] && this.now[kind].id;
+    var c = 0;
+    for (i = 0; i < n; i++) if (active[i].id === curId) { c = i; break; }
+    var mon = mondayOf(new Date());
+    for (i = 0; i < n; i++) {
+      var off = (i - c + n) % n;
+      var st = new Date(mon.getTime()); st.setDate(st.getDate() + off * 7);
+      var en = new Date(st.getTime()); en.setDate(en.getDate() + 6);
+      var range = fmtDay(st) + ' \u2013 ' + fmtDay(en);
+      out[active[i].id] = off === 0
+        ? { txt: 'Live this week \u00b7 ' + range, cls: 'live' }
+        : { txt: (off === 1 ? 'Next \u00b7 ' : '') + range, cls: '' };
+    }
+    return out;
+  };
+
   Page.prototype.cardHtml = function (kind) {
     var list = this.entries[kind];
     var activeList = list.filter(function (e) { return e.is_active; });
     var pinned = this.pinnedId(kind);
-    var nowE = this.now[kind], nextE = this.next[kind];
     var sub = kind === 'cta'
       ? 'A button at the top of your contact card — a question, an invite, a link. You feed the list; we show a different one each week.'
       : 'A section at the top of your storefront for what’s new — a listing, an event, a favorite.';
@@ -320,61 +383,84 @@
 
     var html =
       '<div class="mkt-card" data-kind="' + kind + '">' +
-        '<p class="mkt-h">' + KIND_LABEL[kind] +
+        '<div class="mkt-head"><p class="mkt-h">' + KIND_LABEL[kind] +
           (list.length ? '<span class="mkt-count">' + list.length + ' / ' + CAPS[kind] + '</span>' : '') +
           '</p>' +
+          (list.length && storeUrl
+            ? '<a class="mkt-live-link" href="' + storeUrl + '" target="_blank" rel="noopener">See it on your page &#8599;</a>' : '') +
+        '</div>' +
         '<p class="mkt-sub">' + sub + '</p>';
 
     if (!list.length) {
       html += this.exampleHtml(kind);
     } else if (!activeList.length) {
       html += '<p class="mkt-note" style="margin:0 0 14px;">Nothing is visible right now — turn one back on below.</p>';
-    } else {
-      var chips = '<span class="mkt-chip"><span class="mkt-now">This week</span> <b>' + esc(nowE ? nowE.title : '') + '</b></span>';
-      if (pinned != null) {
-        chips += '<span class="mkt-chip">Pinned — stays until you unpin it</span>';
-      } else if (activeList.length >= 2 && nextE) {
-        chips += '<span class="mkt-chip">Next week <b>' + esc(nextE.title) + '</b></span>';
-      }
-      if (storeUrl) {
-        chips += '<a class="mkt-chip mkt-chip-link" href="' + storeUrl + '" target="_blank" rel="noopener">See it live &#8599;</a>';
-      }
-      html += '<div class="mkt-preview">' + chips + '</div>';
-
-      if (activeList.length >= 2) {
-        html += '<div class="mkt-seg">' +
-          '<button type="button" data-mode="rotate" class="' + (pinned == null ? 'on' : '') + '">Rotate weekly</button>' +
-          '<button type="button" data-mode="pin" class="' + (pinned != null ? 'on' : '') + '">Pin one</button>' +
-        '</div>';
-      }
+    } else if (activeList.length >= 2) {
+      html += '<div class="mkt-seg">' +
+        '<button type="button" data-mode="rotate" class="' + (pinned == null ? 'on' : '') + '">Rotate weekly</button>' +
+        '<button type="button" data-mode="pin" class="' + (pinned != null ? 'on' : '') + '">Pin one</button>' +
+      '</div>';
     }
 
     var self = this;
-    list.forEach(function (e, i) {
-      if (self.editing === e.id) { html += self.formHtml(kind, e); return; }
-      html +=
-        '<div class="mkt-row' + (e.is_active ? '' : ' off') + '" data-id="' + e.id + '">' +
-          (pinned != null
-            ? '<input type="radio" class="mkt-pin" name="pin-' + kind + '" ' +
-              (e.is_pinned ? 'checked' : '') + (e.is_active ? '' : ' disabled') + '>'
-            : '') +
-          (kind === 'showcase' && e.image_url
-            ? '<img class="mkt-thumb" src="' + esc(e.image_url) + '" alt="">' : '') +
-          '<div class="mkt-main">' +
+    var sched = this.schedule(kind);
+    // Shared per-entry pieces: the WHEN chip + reorder arrows + text actions.
+    function whenChip(e) {
+      var sc = e.is_active ? (sched[e.id] || { txt: '', cls: '' }) : { txt: 'Hidden', cls: 'hid' };
+      return sc.txt ? '<span class="mkt-when ' + sc.cls + '">' + esc(sc.txt) + '</span>' : '';
+    }
+    function topRow(e, i) {
+      return '<div class="mkt-entry-top">' +
+        (pinned != null
+          ? '<input type="radio" class="mkt-pin" name="pin-' + kind + '" ' +
+            (e.is_pinned ? 'checked' : '') + (e.is_active ? '' : ' disabled') + '>'
+          : '') +
+        whenChip(e) +
+        '<span class="mkt-spacer"></span>' +
+        '<button class="mkt-ib" data-act="up" title="Show a week earlier"' + (i === 0 ? ' disabled' : '') + '>&#8593;</button>' +
+        '<button class="mkt-ib" data-act="down" title="Show a week later"' + (i === list.length - 1 ? ' disabled' : '') + '>&#8595;</button>' +
+      '</div>';
+    }
+    function linksRow(e) {
+      return '<div class="mkt-links">' +
+        '<button class="mkt-tb" data-act="edit">Edit</button><span class="mkt-dot">&middot;</span>' +
+        '<button class="mkt-tb" data-act="toggle">' + (e.is_active ? 'Hide' : 'Show') + '</button><span class="mkt-dot">&middot;</span>' +
+        '<button class="mkt-tb" data-act="del">Delete</button>' +
+      '</div>';
+    }
+
+    if (kind === 'showcase' && list.length) {
+      html += '<div class="mkt-sgrid">';
+      list.forEach(function (e, i) {
+        if (self.editing === e.id) { html += self.formHtml(kind, e); return; }
+        html +=
+          '<div class="mkt-scard' + (e.is_active ? '' : ' off') + '" data-id="' + e.id + '">' +
+            (e.image_url
+              ? '<img class="mkt-scard-img" src="' + esc(e.image_url) + '" alt="">'
+              : '<div class="mkt-scard-img mkt-scard-noimg">' + IMG_ICON + '</div>') +
+            '<div class="mkt-scard-body">' +
+              topRow(e, i) +
+              '<div class="mkt-scard-t">' + esc(e.title) + '</div>' +
+              (e.body ? '<div class="mkt-b">' + esc(e.body) + '</div>' : '') +
+              linksRow(e) +
+            '</div>' +
+          '</div>';
+      });
+      html += '</div>';
+    } else if (list.length) {
+      html += '<div class="mkt-entries">';
+      list.forEach(function (e, i) {
+        if (self.editing === e.id) { html += self.formHtml(kind, e); return; }
+        html +=
+          '<div class="mkt-entry' + (e.is_active ? '' : ' off') + '" data-id="' + e.id + '">' +
+            topRow(e, i) +
             '<div class="mkt-t">' + esc(e.title) + '</div>' +
             (e.url ? '<div class="mkt-u">' + esc(e.url) + '</div>' : '') +
-            (kind === 'showcase' && e.body ? '<div class="mkt-b">' + esc(e.body) + '</div>' : '') +
-          '</div>' +
-          '<div class="mkt-acts">' +
-            '<button class="mkt-ib" data-act="up" title="Move up"' + (i === 0 ? ' disabled' : '') + '>&#8593;</button>' +
-            '<button class="mkt-ib" data-act="down" title="Move down"' + (i === list.length - 1 ? ' disabled' : '') + '>&#8595;</button>' +
-            '<button class="mkt-ib" data-act="toggle" title="' + (e.is_active ? 'Hide' : 'Show') + '">' +
-              (e.is_active ? '&#128065;' : '&#8722;') + '</button>' +
-            '<button class="mkt-ib" data-act="edit" title="Edit">&#9998;</button>' +
-            '<button class="mkt-ib" data-act="del" title="Delete">&#215;</button>' +
-          '</div>' +
-        '</div>';
-    });
+            linksRow(e) +
+          '</div>';
+      });
+      html += '</div>';
+    }
 
     if (this.editing === 'new:' + kind) html += this.formHtml(kind, null);
     else if (list.length < CAPS[kind]) {
@@ -404,14 +490,15 @@
     return '<div class="mkt-form" data-kind="' + kind + '">' +
       '<label>' + (kind === 'cta' ? 'Button text' : 'Heading') + '</label>' +
       '<input class="mkt-in" data-f="title" maxlength="120" value="' + esc(t) + '" placeholder="' +
-        (kind === 'cta' ? esc(CTA_EXAMPLE) : 'Showcase of the week') + '">' +
+        (kind === 'cta' ? esc(CTA_EXAMPLE) : 'This week: your headline') + '">' +
       (kind === 'showcase'
         ? '<label>Text</label><textarea class="mkt-in" data-f="body" maxlength="600" placeholder="A few sentences about it…">' + esc(b) + '</textarea>' +
           '<label>Photo</label>' +
           (img ? '<img class="mkt-upthumb" data-f="imgprev" src="' + esc(img) + '" alt="">' : '') +
           '<button type="button" class="mkt-upbtn" data-act="upload">' + (img ? 'Replace photo' : 'Add a photo') + '</button>' +
           '<input type="file" accept="image/*" data-f="file" style="display:none;">' +
-          '<input type="hidden" data-f="image_url" value="' + esc(img) + '">'
+          '<input type="hidden" data-f="image_url" value="' + esc(img) + '">' +
+          '<p class="mkt-note" style="margin-top:6px;">Landscape works best — about twice as wide as tall, at least 1200&thinsp;px wide. JPG or PNG, up to 10&thinsp;MB.</p>'
         : '') +
       '<label>Link (optional)</label>' +
       '<input class="mkt-in" data-f="url" maxlength="500" value="' + esc(u) + '" placeholder="https://… (leave empty to open your contact form)">' +
@@ -438,7 +525,7 @@
       if (!btn || !self.mount.contains(btn)) return;
       var card = btn.closest('[data-kind]');
       var kind = card && card.getAttribute('data-kind');
-      var row = btn.closest('.mkt-row');
+      var row = btn.closest('[data-id]');
       var id = row && +row.getAttribute('data-id');
       var act = btn.getAttribute('data-act');
 
@@ -469,7 +556,7 @@
         self.upload(inp, 'spotlight', 'sc-image-url');
       }
       if (inp.classList && inp.classList.contains('mkt-pin') && inp.checked) {
-        var row = inp.closest('.mkt-row');
+        var row = inp.closest('[data-id]');
         var card = inp.closest('[data-kind]');
         if (row && card) self.pin(card.getAttribute('data-kind'), +row.getAttribute('data-id'));
       }
