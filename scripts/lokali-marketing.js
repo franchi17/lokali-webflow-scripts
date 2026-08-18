@@ -502,6 +502,11 @@
         : '') +
       '<label>Link (optional)</label>' +
       '<input class="mkt-in" data-f="url" maxlength="500" value="' + esc(u) + '" placeholder="https://… (leave empty to open your contact form)">' +
+      (kind === 'showcase'
+        ? '<label>Link button label (optional)</label>' +
+          '<input class="mkt-in" data-f="link_label" maxlength="40" value="' + esc(e ? (e.link_label || '') : '') + '" placeholder="Take a look">' +
+          '<p class="mkt-note" style="margin-top:4px;">Only shows when there&rsquo;s a link. Leave empty for &ldquo;Take a look&rdquo;.</p>'
+        : '') +
       '<div class="mkt-fbtns">' +
         '<button class="mkt-save" data-act="save">Save</button>' +
         '<button class="mkt-cancel" data-act="cancel">Cancel</button>' +
@@ -592,8 +597,15 @@
     if (kind === 'showcase') {
       payload.body = get('body') || null;
       payload.image_url = get('image_url') || null;
+      payload.link_label = get('link_label') || null;
     }
     if (!payload.title) { toast('Give it a title first.'); return; }
+    // Mirrors the DB constraint (marketing_entries_url_https) with a friendlier
+    // message than a raw check_violation.
+    if (payload.url && !/^https:\/\//i.test(payload.url)) {
+      toast('Links need to start with https:// — copy the full address from your browser.');
+      return;
+    }
     var done = function (res) {
       if (res && res.error) { toast(humanError(res.error)); return; }
       self.editing = null;

@@ -861,10 +861,17 @@
     }).catch(function () {});
   }
 
+  // Belt to the DB's braces (marketing_entries_url_https): never let a
+  // non-https value become an href, whatever the row history.
+  function mktSafeUrl(u) {
+    return (typeof u === 'string' && /^https:\/\//i.test(u)) ? u : null;
+  }
+
   function renderMarketingCta(cta) {
     var card = document.querySelector('.vl-op-card');
     if (!card || document.getElementById('vl-mkt-cta')) return;
     var el;
+    cta.url = mktSafeUrl(cta.url);
     if (cta.url) {
       el = ce('a', 'vl-mkt-cta');
       el.href = cta.url;
@@ -913,12 +920,13 @@
       b.textContent = s.body;
       wrap.appendChild(b);
     }
+    s.url = mktSafeUrl(s.url);
     if (s.url) {
       var a = ce('a', 'vl-mkt-show-link');
       a.href = s.url;
       a.target = '_blank';
       a.rel = 'noopener';
-      a.textContent = 'Take a look';
+      a.textContent = s.link_label || 'Take a look';
       trackChannel(a, 'showcase');
       wrap.appendChild(a);
     }
