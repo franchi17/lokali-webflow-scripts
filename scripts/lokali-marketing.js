@@ -45,6 +45,11 @@
   var FONT = "'Plus Jakarta Sans', sans-serif";
   var BRAND = '#6002ee';
   var CAPS = { cta: 20, showcase: 10 };
+  // Spotlight ad creative (phase 2): backend is live and grid-proven, but the
+  // vendor-facing flow is undesigned — Francesca 2026-08-18: keep it hidden
+  // 'until we know what that's going to look like and how it's going to work.'
+  // Flip to true only alongside that design pass.
+  var SPOTLIGHT_CREATIVE_ENABLED = false;
   var KIND_LABEL = { cta: 'Promo button', showcase: 'Showcase of the week' };
   // The one example used everywhere a placeholder/demo is needed (form
   // placeholder, empty-state mock, locked-plan teaser) — category-neutral,
@@ -184,7 +189,7 @@
       API.current(this.vendor.id, 1),
       // Spotlight creative is Featured-only (and needs myCreatives support in
       // the shipped client — absent until the phase-2 tag, hence the guard).
-      (this.premium && API.myCreatives) ? API.myCreatives(this.vendor.id) : Promise.resolve(null)
+      (SPOTLIGHT_CREATIVE_ENABLED && this.premium && API.myCreatives) ? API.myCreatives(this.vendor.id) : Promise.resolve(null)
     ]).then(function (rs) {
       var rows = (rs[0] && rs[0].data) || [];
       self.entries = { cta: [], showcase: [] };
@@ -201,7 +206,7 @@
     this.mount.innerHTML =
       this.cardHtml('cta') +
       (this.premium ? this.cardHtml('showcase') : this.lockedShowcaseHtml()) +
-      (this.premium && this.spot ? this.spotlightCardHtml() : '');
+      (SPOTLIGHT_CREATIVE_ENABLED && this.premium && this.spot ? this.spotlightCardHtml() : '');
     this.bind();
   };
 
