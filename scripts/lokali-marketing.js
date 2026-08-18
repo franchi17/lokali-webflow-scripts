@@ -498,7 +498,7 @@
           '<button type="button" class="mkt-upbtn" data-act="upload">' + (img ? 'Replace photo' : 'Add a photo') + '</button>' +
           '<input type="file" accept="image/*" data-f="file" style="display:none;">' +
           '<input type="hidden" data-f="image_url" value="' + esc(img) + '">' +
-          '<p class="mkt-note" style="margin-top:6px;">Landscape works best — about twice as wide as tall, at least 1200&thinsp;px wide. JPG or PNG, up to 10&thinsp;MB.</p>'
+          '<p class="mkt-note" style="margin-top:6px;">Landscape works best — about twice as wide as tall, at least 1200&thinsp;px wide. JPG or PNG; stored photos stay under 1&thinsp;MB (we compress automatically, so most are fine as-is).</p>'
         : '') +
       '<label>Link (optional)</label>' +
       '<input class="mkt-in" data-f="url" maxlength="500" value="' + esc(u) + '" placeholder="https://… (leave empty to open your contact form)">' +
@@ -634,6 +634,23 @@
     STORAGE.uploadImage(this.vendor.id, kind, inp.files[0]).then(function (res) {
       if (res && res.error) { btn.textContent = label; toast(humanError(res.error)); return; }
       var url = res.data.url;
+      var path = res.data.path;
+      // Francesca 2026-08-18: stored marketing photos must be <= 1 MB. Uploads
+      // are auto-compressed client-side first (CLEAN-P9), so nearly everything
+      // lands far under this; the check measures what was actually STORED and
+      // removes offenders (gif/svg pass-throughs, pathological images).
+      return fetch(url, { method: 'HEAD' }).then(function (h) {
+        var bytes = +(h.headers.get('content-length') || 0);
+        if (bytes > 1048576) {
+          if (path && STORAGE.remove) { try { STORAGE.remove(path); } catch (e) {} }
+          btn.textContent = label;
+          toast('That photo is over 1 MB even after compression — try a smaller or simpler image.');
+          return;
+        }
+        finishUpload(url);
+      }).catch(function () { finishUpload(url); });  // HEAD hiccup: keep the upload
+    });
+    function finishUpload(url) {
       form.querySelector('[data-f="' + field + '"]').value = url;
       var prev = form.querySelector('[data-f="imgprev"]');
       if (!prev) {
@@ -645,7 +662,7 @@
       }
       prev.src = url;
       btn.textContent = kind === 'spotlight' ? 'Replace image' : 'Replace photo';
-    });
+    }
   };
 
   Page.prototype.remove = function (id) {
