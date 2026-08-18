@@ -92,6 +92,14 @@
       // the bell instead — it then opens INTO the content area. The #141 runtime
       // clamp still runs as a backstop, but this means it has nothing to correct.
       '.lok-notif--sidebar .lok-notif-panel{left:0;right:auto;}',
+      // The sidebar (.section-11) is position:fixed with NO z-index, so the
+      // panel's own z-index:1100 only counts INSIDE it — page content later in
+      // the DOM (the profile section chips, sticky bars) painted straight over
+      // the open panel (Francesca's screenshot, 2026-08-18). Raise the sidebar
+      // only WHILE a panel inside it is open: a permanent z-index would change
+      // how modals/overlays layer over the sidebar the rest of the time.
+      // :has() is safe here — unsupported browsers just keep today's behavior.
+      '.section-11:has(.lok-notif.open){z-index:1200;}',
       // ≤991px the sidebar becomes a slide-in drawer and .div-block-27 picks up
       // `overflow:clip` (+ a translate), which would trap the panel inside a
       // 260px drawer. That is exactly the breakpoint where #lok-topbar appears,
