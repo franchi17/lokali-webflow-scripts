@@ -51,6 +51,10 @@
   // unlike an earlier realtor-specific line that leaked into every vendor's
   // page as if it were universal advice.
   var CTA_EXAMPLE = 'Looking for something specific?';
+  // Font Awesome Free 6 'image' (regular), inlined — the dashboard doesn't load
+  // the FA font, and one glyph doesn't justify it. License: CC BY 4.0.
+  var IMG_ICON = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true">' +
+    '<path d="M448 80c8.8 0 16 7.2 16 16V415.8l-5-6.5-136-176c-4.5-5.9-11.6-9.3-19-9.3s-14.4 3.4-19 9.3L202 340.7l-30.5-42.7C167 291.7 159.8 288 152 288s-15 3.7-19.5 10.1l-80 112L48 416.3l0-.3V96c0-8.8 7.2-16 16-16H448zM64 32C28.7 32 0 60.7 0 96V416c0 35.3 28.7 64 64 64H448c35.3 0 64-28.7 64-64V96c0-35.3-28.7-64-64-64H64zm80 192a48 48 0 1 0 0-96 48 48 0 1 0 0 96z"/></svg>';
 
   function esc(s) { return String(s == null ? '' : s).replace(/[<>&"]/g, function (c) {
     return ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' })[c];
@@ -88,8 +92,13 @@
       '.mkt-example-lbl{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#9490AC;margin:0 0 10px;}' +
       '.mkt-demo-cta{display:flex;align-items:center;justify-content:center;background:#F3EBFF;color:' + BRAND + ';' +
         'border:1px solid #E4D6FB;border-radius:10px;min-height:44px;padding:10px 14px;font:600 14px/1.3 ' + FONT + ';text-align:center;}' +
+      '.mkt-demo-sec{font-size:12.5px;font-weight:700;color:#3E3A55;margin:0 0 8px;}' +
       '.mkt-demo-show{background:#fff;border:1px solid #EEEDF6;border-radius:12px;padding:14px;}' +
-      '.mkt-demo-show-img{width:100%;height:92px;border-radius:8px;background:linear-gradient(135deg,#F3EBFF,#FDF1E7);margin:0 0 10px;}' +
+      '.mkt-demo-show-img{width:100%;height:92px;border-radius:8px;background:linear-gradient(135deg,#F3EBFF,#FDF1E7);margin:0 0 10px;' +
+        'display:flex;align-items:center;justify-content:center;gap:8px;color:#8E76C9;}' +
+      '.mkt-demo-show-img svg{width:24px;height:24px;fill:currentColor;}' +
+      '.mkt-demo-show-img span{font-size:12px;font-weight:600;}' +
+      '.mkt-example-note{font-size:11.5px;color:#9490AC;margin:10px 0 0;}' +
       '.mkt-demo-show-t{font-size:15px;font-weight:700;color:#1A1829;margin:0 0 4px;}' +
       '.mkt-demo-show-b{font-size:13px;color:#6B6880;line-height:1.5;margin:0;}' +
       '.mkt-seg{display:inline-flex;border:1px solid #ECE8F8;border-radius:10px;overflow:hidden;margin:0 0 14px;}' +
@@ -262,11 +271,13 @@
   Page.prototype.exampleHtml = function (kind) {
     var demo = kind === 'cta'
       ? '<div class="mkt-demo-cta">' + esc(CTA_EXAMPLE) + '</div>'
-      : '<div class="mkt-demo-show">' +
-          '<div class="mkt-demo-show-img"></div>' +
-          '<div class="mkt-demo-show-t">Showcase of the week</div>' +
-          '<div class="mkt-demo-show-b">A sentence or two about what’s new — a listing, an event, a favorite.</div>' +
-        '</div>';
+      : '<div class="mkt-demo-sec">Showcase of the week</div>' +
+        '<div class="mkt-demo-show">' +
+          '<div class="mkt-demo-show-img">' + IMG_ICON + '<span>Your photo</span></div>' +
+          '<div class="mkt-demo-show-t">Your headline — what’s new this week</div>' +
+          '<div class="mkt-demo-show-b">A sentence or two about it. Add a photo and a link if you like.</div>' +
+        '</div>' +
+        '<p class="mkt-example-note">“Showcase of the week” is the section heading — everything on the card is yours: the photo, the headline, the text.</p>';
     return '<div class="mkt-example">' +
       '<p class="mkt-example-lbl">What it looks like on your storefront</p>' +
       demo +
