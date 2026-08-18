@@ -118,8 +118,8 @@
       '.mkt-seg button.on{background:#F3EBFF;color:' + BRAND + ';}' +
       // Entry cards: every queued item is its own card with a WHEN chip (the
       // week it goes live, derived from the same rotation the server runs).
-      '.mkt-entries{display:flex;flex-direction:column;gap:10px;}' +
-      '.mkt-entry{border:1px solid #ECE8F8;border-radius:12px;background:#FDFCFF;padding:12px 14px;}' +
+      '.mkt-entries{display:flex;flex-direction:column;gap:12px;}' +
+      '.mkt-entry{border:1px solid #ECE8F8;border-radius:12px;background:#FDFCFF;padding:16px 18px;}' +
       '.mkt-entry.off{background:#FAFAFC;}' +
       '.mkt-entry.off .mkt-t,.mkt-scard.off .mkt-scard-t{color:#B7B4C7;}' +
       '.mkt-entry-top{display:flex;align-items:center;gap:8px;margin:0 0 7px;}' +
@@ -137,7 +137,7 @@
       '.mkt-dot{color:#D8D5E6;}' +
       // Showcase queue: product-card style — image on TOP, text under it,
       // matching how the section renders on the storefront.
-      '.mkt-sgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}' +
+      '.mkt-sgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}' +
       '@media (max-width:640px){.mkt-sgrid{grid-template-columns:1fr;}}' +
       '.mkt-sgrid .mkt-form{grid-column:1 / -1;}' +
       '.mkt-scard{border:1px solid #ECE8F8;border-radius:12px;background:#FDFCFF;overflow:hidden;display:flex;flex-direction:column;}' +
@@ -145,7 +145,7 @@
       '.mkt-scard-img{width:100%;height:140px;object-fit:cover;display:block;background:linear-gradient(135deg,#F3EBFF,#FDF1E7);border:0;}' +
       '.mkt-scard-noimg{display:flex;align-items:center;justify-content:center;color:#8E76C9;}' +
       '.mkt-scard-noimg svg{width:24px;height:24px;fill:currentColor;}' +
-      '.mkt-scard-body{padding:10px 12px 12px;}' +
+      '.mkt-scard-body{padding:14px 16px 16px;}' +
       '.mkt-scard-t{font-size:14px;font-weight:600;color:#3E3A55;}' +
       '.mkt-ib{border:0;background:none;color:#8E8BA6;cursor:pointer;font-size:15px;padding:5px 6px;border-radius:7px;line-height:1;}' +
       '.mkt-ib:hover{background:#F7F6FC;color:#3E3A55;}' +
