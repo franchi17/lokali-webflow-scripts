@@ -92,6 +92,16 @@
       '.mkt-example-lbl{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#9490AC;margin:0 0 10px;}' +
       '.mkt-demo-cta{display:flex;align-items:center;justify-content:center;background:#F3EBFF;color:' + BRAND + ';' +
         'border:1px solid #E4D6FB;border-radius:10px;min-height:44px;padding:10px 14px;font:600 14px/1.3 ' + FONT + ';text-align:center;}' +
+      // Mini contact card: the promo button shown IN PLACE — vivid among
+      // ghosted copies of the card's real neighbors (labels match the live
+      // storefront: 'Get in touch' lead, 'Send a message', Call/Text).
+      '.mkt-demo-card{background:#fff;border:1px solid #EEEDF6;border-radius:12px;padding:14px;max-width:340px;margin:0 auto;}' +
+      '.mkt-demo-card-lead{font-size:13.5px;font-weight:700;color:#1A1829;margin:0 0 10px;}' +
+      '.mkt-demo-card .mkt-demo-cta{margin:0 0 8px;min-height:40px;}' +
+      '.mkt-demo-ghost{display:flex;align-items:center;justify-content:center;min-height:36px;border-radius:9px;' +
+        'background:#F1EFF8;color:#B7B4C7;font-size:12.5px;font-weight:600;margin:0 0 8px;}' +
+      '.mkt-demo-ghost-row{display:flex;gap:8px;}' +
+      '.mkt-demo-ghost-row .mkt-demo-ghost{flex:1;margin:0;}' +
       '.mkt-demo-sec{font-size:12.5px;font-weight:700;color:#3E3A55;margin:0 0 8px;}' +
       '.mkt-demo-show{background:#fff;border:1px solid #EEEDF6;border-radius:12px;padding:14px;}' +
       '.mkt-demo-show-img{width:100%;height:92px;border-radius:8px;background:linear-gradient(135deg,#F3EBFF,#FDF1E7);margin:0 0 10px;' +
@@ -270,7 +280,16 @@
   // blank counter and a toggle with nothing to toggle.
   Page.prototype.exampleHtml = function (kind) {
     var demo = kind === 'cta'
-      ? '<div class="mkt-demo-cta">' + esc(CTA_EXAMPLE) + '</div>'
+      ? '<div class="mkt-demo-card">' +
+          '<div class="mkt-demo-card-lead">Get in touch</div>' +
+          '<div class="mkt-demo-cta">' + esc(CTA_EXAMPLE) + '</div>' +
+          '<div class="mkt-demo-ghost">Send a message</div>' +
+          '<div class="mkt-demo-ghost-row">' +
+            '<div class="mkt-demo-ghost">Call</div>' +
+            '<div class="mkt-demo-ghost">Text</div>' +
+          '</div>' +
+        '</div>' +
+        '<p class="mkt-example-note">It sits at the top of your contact card, right above &ldquo;Send a message&rdquo; &mdash; the first thing a visitor can tap.</p>'
       : '<div class="mkt-demo-sec">Showcase of the week</div>' +
         '<div class="mkt-demo-show">' +
           '<div class="mkt-demo-show-img">' + IMG_ICON + '<span>Your photo</span></div>' +
