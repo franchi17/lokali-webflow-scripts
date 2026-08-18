@@ -386,6 +386,8 @@
         '<div class="mkt-head"><p class="mkt-h">' + KIND_LABEL[kind] +
           (list.length ? '<span class="mkt-count">' + list.length + ' / ' + CAPS[kind] + '</span>' : '') +
           '</p>' +
+          (kind === 'cta'
+            ? '<a class="mkt-live-link" style="color:#8E8BA6;" href="/vendor-resources/marketing-tools-guide" target="_blank" rel="noopener">How it works</a>' : '') +
           (list.length && storeUrl
             ? '<a class="mkt-live-link" href="' + storeUrl + '" target="_blank" rel="noopener">See it on your page &#8599;</a>' : '') +
         '</div>' +
