@@ -980,7 +980,7 @@ const LokaliServicesPage = (() => {
     if (!anchorEl) return null;
     host = document.createElement('div');
     host.id = 'lok-service-video';
-    host.style.cssText = 'margin-top:16px;font-family:"Plus Jakarta Sans",system-ui,sans-serif;';
+    host.style.cssText = 'margin-top:16px;font-family:"Plus Jakarta Sans",system-ui,sans-serif;white-space:normal;';
     host.innerHTML =
       '<div style="font-size:13px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;color:#4A4761;margin-bottom:8px;">Showcase video <span style="font-weight:500;text-transform:none;color:#8E8BA6;">· optional</span></div>' +
       '<input id="lok-service-video-input" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="Paste a YouTube or Vimeo link" style="width:100%;box-sizing:border-box;padding:11px 13px;border:1px solid #E6E4F0;border-radius:10px;font-size:14px;font-family:inherit;color:#1A1829;background:#fff;" />' +
@@ -1040,8 +1040,14 @@ const LokaliServicesPage = (() => {
     if (!wrap) wrap = anchorEl.closest('.w-layout-grid') || anchorEl.closest('[class*="grid"]') ||
       anchorEl.closest('.w-form, .form-field, [class*="image"], [class*="upload"]') || anchorEl.parentElement;
     host = document.createElement('div');
+    // white-space:normal is load-bearing: the dashboard container
+    // (.container-11) sets white-space:nowrap page-wide. Native Webflow
+    // blocks carry their own styles, but injected divs INHERIT it — the
+    // free-plan gallery hint rendered as one long unwrapped line and
+    // .form-view's overflow:hidden clipped it mid-sentence (vendor
+    // onboarding, 2026-08-18). Same guard on the video host above.
     host.id = 'lok-service-gallery';
-    host.style.cssText = 'margin-top:16px;font-family:"Plus Jakarta Sans",system-ui,sans-serif;';
+    host.style.cssText = 'margin-top:16px;font-family:"Plus Jakarta Sans",system-ui,sans-serif;white-space:normal;';
     const fileInput = document.createElement('input');
     fileInput.type = 'file';
     fileInput.accept = 'image/*';
