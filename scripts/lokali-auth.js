@@ -1510,8 +1510,26 @@
   // while the code is exchanged — and if nothing signs us in within ~12s (link
   // opened in a different browser than sign-up so the PKCE verifier is missing,
   // or it expired), show a clear, actionable error instead of a stuck spinner.
+  // SEC-046: the OTP link carries a LIVE single-use token in the query string,
+  // and /login runs GA4 — whose automatic page_view sends page_location, i.e.
+  // the token, to Analytics. Webflow injects the GA4 snippet ABOVE everything
+  // of ours and this file is a FOOTER script, so it can never strip the URL in
+  // time by itself. A synchronous snippet in the SITE HEAD (above the async
+  // GA4 library, which reads document.location only when it finally executes)
+  // moves the token into window.__LOKALI_AUTH_OTP and cleans the URL first.
+  // Everything below therefore reads the STASH, falling back to the URL so the
+  // flow still works if that snippet is ever missing.
+  function otpFromUrlOrStash() {
+    var st = window.__LOKALI_AUTH_OTP;
+    if (st && st.token_hash) return { token_hash: st.token_hash, type: st.type || null };
+    var q = new URLSearchParams(window.location.search);
+    var th = q.get('token_hash');
+    return th ? { token_hash: th, type: q.get('type') } : null;
+  }
+
   (function primeConfirming() {
-    var hasCode = /[?&#](code|token_hash|type)=/.test(window.location.search + window.location.hash);
+    var hasCode = !!otpFromUrlOrStash() ||
+      /[?&#](code|token_hash|type)=/.test(window.location.search + window.location.hash);
     if (!hasCode || !isAuthPage()) return;
     _confirming = true;
     function go() { showConfirmingUI(); }
@@ -1541,13 +1559,24 @@
         // the sign-up browser). supabase-js auto-handles `?code=` but NOT
         // `token_hash` — verify it explicitly here. The Supabase email templates
         // point confirmation links at `/login?token_hash=…&type=email`.
+        var _thSeen = false;
         if (!_session) {
-          var _q = new URLSearchParams(window.location.search);
-          var _th = _q.get('token_hash');
-          var _ty = _q.get('type');
+          var _otp = otpFromUrlOrStash();
+          var _th = _otp && _otp.token_hash;
+          var _ty = _otp && _otp.type;
+          _thSeen = !!_th;
           if (_th && _ty) {
             var _isRecovery = /recovery/i.test(_ty);
             if (_isRecovery) _recoveryMode = true;
+            // Clean up-front: drop the stash and (belt and braces) the URL before
+            // verifyOtp is even called, so a failed verify cannot leave an
+            // unspent token sitting in history — the SEC-046 failure case.
+            try { delete window.__LOKALI_AUTH_OTP; } catch (e0) { window.__LOKALI_AUTH_OTP = null; }
+            try {
+              if (/[?&]token_hash=/.test(window.location.search)) {
+                history.replaceState(null, '', window.location.pathname);
+              }
+            } catch (e1) {}
             var _verify = function (t) { return c.auth.verifyOtp({ token_hash: _th, type: t }); };
             _verify(_ty).then(function (res) {
               // Signup confirm tokens are minted as 'email' in some Supabase configs
@@ -1556,6 +1585,8 @@
               if (res && res.error && !_isRecovery && _ty !== 'signup') return _verify('signup');
               return res;
             }).then(function (res) {
+              // Normally a no-op now (cleaned before verify, above); kept for the
+              // ?code= PKCE path, which lands here with its own query string.
               try { history.replaceState(null, '', window.location.pathname); } catch (e) {}
               if (res && res.error) { _confirming = false; _recoveryMode = false; showConfirmError(); return; }
               // success: setSession (via onAuthStateChange SIGNED_IN) clears _confirming
@@ -1596,7 +1627,9 @@
         // If the URL carries an auth code (email confirm / OAuth return /
         // recovery link, PKCE flow), hold routing briefly so a trailing
         // PASSWORD_RECOVERY event can flip _recoveryMode before we redirect.
-        var urlHasCode = /[?&#](code|token_hash|type)=/.test(window.location.search + window.location.hash);
+        // `_th` covers the stashed case, where the URL is already clean.
+        var urlHasCode = !!_thSeen ||
+          /[?&#](code|token_hash|type)=/.test(window.location.search + window.location.hash);
         var lastUserId = _user ? _user.id : null;
 
         function initialKick() {
