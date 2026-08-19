@@ -852,7 +852,7 @@
     var stats = el('div', 'lk-admin-stats');
     var _pendingStatNum = null;
     [[ov.vendors_active, 'Active vendors'], [ov.vendors_public, 'On The Market'],
-     [ov.users_total, 'Accounts'], [ov.subcategories_live, 'Specialties live'],
+     [ov.users_total, 'Accounts'], [ov.subcategories_live, 'Tags live'],
      [ov.pending_suggestions, 'Suggestions pending']].forEach(function (t) {
       var tile = el('div', 'lk-admin-stat');
       var num = el('div', 'lk-admin-stat-num', esc(String(t[0] != null ? t[0] : '—')));
@@ -864,7 +864,7 @@
     wrap.appendChild(stats);
 
     var qt = el('div', 'lk-admin-qtitle');
-    qt.appendChild(document.createTextNode('Specialty suggestions'));
+    qt.appendChild(document.createTextNode('Tag suggestions'));
     var qc = el('span', 'lk-admin-qcount', String(a.queue.length));
     qt.appendChild(qc);
     wrap.appendChild(qt);

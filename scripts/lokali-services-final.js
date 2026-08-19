@@ -2085,16 +2085,16 @@ const LokaliServicesPage = (() => {
     // first ship). Inside the cell = normal flow in SERVICE DETAILS.
     wrap.style.cssText = "margin:14px 0 0;width:100%;box-sizing:border-box;background:#eee6ff;border-radius:8px;padding:12px 14px;font-family:'Plus Jakarta Sans',system-ui,sans-serif;";
     wrap.innerHTML =
-      '<div style="font-size:13px;font-weight:600;color:#33254E;margin-bottom:2px;">Specialty</div>' +
-      '<p style="font-size:12.5px;color:#5A5570;margin:0 0 10px;">Pick the one that fits this service best — customers filter The Market by these. Optional.</p>' +
-      '<select data-subcat-select aria-label="Specialty" style="display:block;width:100%;max-width:420px;font-family:inherit;font-size:16px;padding:9px 12px;border:1px solid #C9BDE8;border-radius:8px;background:#fff;color:#1A1829;cursor:pointer;box-sizing:border-box;"></select>' +
+      '<div style="font-size:13px;font-weight:600;color:#33254E;margin-bottom:2px;">Tag</div>' +
+      '<p style="font-size:12.5px;color:#5A5570;margin:0 0 10px;">Pick one tag that fits this service best — customers filter The Market by these. Optional.</p>' +
+      '<select data-subcat-select aria-label="Tag" style="display:block;width:100%;max-width:420px;font-family:inherit;font-size:16px;padding:9px 12px;border:1px solid #C9BDE8;border-radius:8px;background:#fff;color:#1A1829;cursor:pointer;box-sizing:border-box;"></select>' +
       '<div style="border-top:1px dashed #DCD2F2;margin-top:12px;padding-top:10px;">' +
-        '<p style="font-size:12.5px;color:#5A5570;margin:0 0 8px;">Don’t see the right specialty?</p>' +
+        '<p style="font-size:12.5px;color:#5A5570;margin:0 0 8px;">Don’t see the right tag?</p>' +
         '<div style="display:flex;gap:6px;">' +
           '<input data-subcat-suggest maxlength="40" placeholder="e.g. Power washing" style="flex:1;min-width:0;font-family:inherit;font-size:16px;padding:8px 12px;border:1px solid #C9BDE8;border-radius:8px;background:#fff;color:#1A1829;">' +
           '<button type="button" data-subcat-suggest-btn style="font-family:inherit;font-size:13px;font-weight:600;padding:8px 16px;border-radius:8px;border:1px solid #6002EE;background:#6002EE;color:#fff;cursor:pointer;">Suggest</button>' +
         '</div>' +
-        '<p style="font-size:12px;color:#8E8BA6;margin:8px 0 0;line-height:1.45;">New specialties are reviewed first, so filters stay consistent — once approved, yours appears here for everyone.</p>' +
+        '<p style="font-size:12px;color:#8E8BA6;margin:8px 0 0;line-height:1.45;">New tags are reviewed first, so filters stay consistent — once approved, yours appears here for everyone.</p>' +
         '<p data-subcat-hint style="font-size:12px;color:#6B6787;margin:8px 0 0;line-height:1.45;"></p>' +
         '<div data-subcat-pending style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>' +
       '</div>';
@@ -2207,8 +2207,8 @@ const LokaliServicesPage = (() => {
         // link it once the save produces one.
         if (!editingId) _pendingSubcatLabels.push(label);
         setSubcatHint(editingId
-          ? 'Thanks! Once approved, this service gets the specialty automatically.'
-          : 'Thanks! Save this service and it gets the specialty automatically once approved.', 'ok');
+          ? 'Thanks! Once approved, this service gets the tag automatically.'
+          : 'Thanks! Save this service and it gets the tag automatically once approved.', 'ok');
       } else if (d.reason === 'exists' && d.slug) {
         // Select the returned slug directly — even if this page's taxonomy is
         // stale, the unknown-slug pill renders it (never "reload" advice that
