@@ -230,6 +230,50 @@ const LokaliProductsPage = (() => {
     thumb.addEventListener('pointercancel', () => { dragging = false; });
   };
 
+  // #149 cover-thumb drag (Pro/Featured path). persistNow=true on the SAVED
+  // gallery (edit mode: write immediately on release, like the cover autosave,
+  // so a vendor who drags and walks away still gets the fix); false on the
+  // PENDING gallery (no row yet — Save carries _imgFocus in its payload).
+  const wireCoverFocusDrag = (imEl, persistNow) => {
+    if (!imEl || imEl.dataset.lokFocusWired) return;
+    imEl.dataset.lokFocusWired = '1';
+    imEl.style.touchAction = 'none';
+    imEl.style.cursor = 'grab';
+    imEl.title = 'Drag to choose which part of the photo stays in view';
+    if (_imgFocus) imEl.style.objectPosition = _imgFocus.x + '% ' + _imgFocus.y + '%';
+    let dragging = false;
+    const setFrom = (e) => {
+      const r = imEl.getBoundingClientRect();
+      if (!r.width || !r.height) return;
+      _imgFocus = {
+        x: Math.max(0, Math.min(100, Math.round(((e.clientX - r.left) / r.width) * 100))),
+        y: Math.max(0, Math.min(100, Math.round(((e.clientY - r.top) / r.height) * 100)))
+      };
+      imEl.style.objectPosition = _imgFocus.x + '% ' + _imgFocus.y + '%';
+    };
+    imEl.addEventListener('pointerdown', (e) => {
+      dragging = true;
+      try { imEl.setPointerCapture(e.pointerId); } catch (err) {}
+      setFrom(e); e.preventDefault();
+    });
+    imEl.addEventListener('pointermove', (e) => { if (dragging) setFrom(e); });
+    const done = async () => {
+      if (!dragging) return;
+      dragging = false;
+      if (!persistNow || !editingId || !_imgFocus) return;
+      // One write per drag, on release — the cover-autosave shape: full
+      // payload minus the fields only an explicit Save may commit.
+      const row = products.find(x => x.id === editingId);
+      const payload = buildPayload(row ? row.image_url : null);
+      if (validate(payload)) return;   // silent: focus is cosmetic, never nag here
+      delete payload.subcategory;
+      delete payload.lead_time;
+      try { await window.LokaliAPI.products.update(editingId, payload); } catch (e) {}
+    };
+    imEl.addEventListener('pointerup', done);
+    imEl.addEventListener('pointercancel', () => { dragging = false; });
+  };
+
   const clearThumbPreview = (thumb) => {
     if (!thumb) return;
     if (String(thumb.tagName).toUpperCase() === 'IMG') {
@@ -1053,7 +1097,7 @@ const LokaliProductsPage = (() => {
     const count = _galleryPhotos.length;
 
     let html = title +
-      '<div style="font-size:12px;color:#8E8BA6;margin-bottom:8px;">' + count + ' of ' + cap + ' photos · the first photo is your cover' +
+      '<div style="font-size:12px;color:#8E8BA6;margin-bottom:8px;">' + count + ' of ' + cap + ' photos · the first photo is your cover — drag it to choose what stays in view' +
       (count > 1 ? ' · use ‹ › to reorder' : '') + '</div>' +
       '<div style="display:flex;flex-wrap:wrap;gap:10px;">';
 
@@ -1083,6 +1127,13 @@ const LokaliProductsPage = (() => {
       const gp = _galleryPhotos[parseInt(im.getAttribute('data-photo-idx'), 10)];
       if (gp) im.src = photoUrl(gp.image_url);
     });
+    // #149: Pro/Featured never see the standalone image section (the gallery's
+    // first photo IS the cover), so the focal-point drag lives on the COVER
+    // THUMB here. It writes the LISTING's image_focus — the value the public
+    // cards read. Other thumbs stay non-draggable: no public surface crops
+    // per-gallery-photo today, and a drag that changes nothing teaches vendors
+    // the feature is broken.
+    wireCoverFocusDrag(body.querySelector('img[data-photo-idx="0"]'), true);
 
     const addBtn = document.getElementById('lok-gallery-add');
     if (addBtn) addBtn.addEventListener('click', () => { const gi = galleryInput(); if (gi) gi.click(); });
@@ -1102,7 +1153,7 @@ const LokaliProductsPage = (() => {
     const count = _pendingGalleryPhotos.length;
     const arrowStyle = 'position:absolute;bottom:4px;width:22px;height:22px;border:none;border-radius:50%;background:rgba(26,24,41,.72);color:#fff;font-size:13px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;';
     let html = title +
-      '<div style="font-size:12px;color:#8E8BA6;margin-bottom:8px;">' + count + ' of ' + cap + ' photos · the first photo is your cover' +
+      '<div style="font-size:12px;color:#8E8BA6;margin-bottom:8px;">' + count + ' of ' + cap + ' photos · the first photo is your cover — drag it to choose what stays in view' +
       (count > 1 ? ' · use ‹ › to reorder' : '') + '</div>' +
       '<div style="display:flex;flex-wrap:wrap;gap:10px;">';
     _pendingGalleryPhotos.forEach((p, i) => {
@@ -1122,6 +1173,7 @@ const LokaliProductsPage = (() => {
     html += '<div style="font-size:12px;color:#8E8BA6;margin-top:8px;">' +
       (count ? 'These photos are added to your product when you hit Save.' : 'Add up to ' + cap + ' photos — they’re saved with your product.') + '</div>';
     body.innerHTML = html;
+    wireCoverFocusDrag(body.querySelector('img[data-pending-idx="0"]'), false);
     body.querySelectorAll('img[data-pending-idx]').forEach((im) => {
       const gp = _pendingGalleryPhotos[parseInt(im.getAttribute('data-pending-idx'), 10)];
       if (gp) im.src = photoUrl(gp.url);
@@ -1258,6 +1310,10 @@ const LokaliProductsPage = (() => {
     const prod = products.find(p => p.id === editingId);
     const desired = _galleryPhotos.length ? _galleryPhotos[0].image_url : null;
     if (prod && prod.image_url === desired) return;
+    // #149: a DIFFERENT photo is becoming the cover — the old focal point was
+    // chosen for the old photo, so reset to centered. buildPayload() below
+    // reads _imgFocus, so the null rides the same autosave write.
+    _imgFocus = null;
     const payload = buildPayload(desired);
     // Same checks as the Save button: a form Save would block (cleared price
     // with quote unchecked) must not be committed live by a photo action. The
