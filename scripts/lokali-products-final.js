@@ -175,6 +175,17 @@ const LokaliProductsPage = (() => {
       thumb.style.backgroundPosition = 'center';
     }
     thumb.style.display = 'block';
+    _mainImageUrl = url;
+    // Free plan: the card preview lives under the locked-gallery note and must
+    // follow a newly picked file immediately (the lock branch does not
+    // re-render). In add mode the preview may not exist yet — the vendor picks
+    // the image AFTER the lock note rendered with no URL — so create it then.
+    const pv = document.getElementById('lok-product-cover-preview');
+    if (pv) { pv.src = url; }
+    else if (!_isProPlan) {
+      const gbody = document.getElementById('lok-product-gallery-body');
+      if (gbody) { _coverViews = []; renderCoverPreview(gbody, url, true); }
+    }
     initFocusDrag(thumb);   // #149: idempotent — wires once
     applyFocusPreview();
   };
@@ -186,7 +197,9 @@ const LokaliProductsPage = (() => {
   // patch_image_focus.sql, and every save names them, so the SQL must be live
   // before this file's pin moves (#101 ship order).
   let _imgFocus = null;
+  let _mainImageUrl = null;   // #149: current main-image URL, for the card preview
   const applyFocusPreview = () => {
+    paintCoverViews();               // gallery thumb + card preview stay in sync
     const thumb = el.imgThumb();
     if (!thumb) return;
     const pos = _imgFocus ? (_imgFocus.x + '% ' + _imgFocus.y + '%') : 'center';
@@ -234,9 +247,18 @@ const LokaliProductsPage = (() => {
   // gallery (edit mode: write immediately on release, like the cover autosave,
   // so a vendor who drags and walks away still gets the fix); false on the
   // PENDING gallery (no row yet — Save carries _imgFocus in its payload).
+  // Every element currently displaying the cover crop (the gallery thumb and
+  // the WYSIWYG card preview). A drag on any of them repaints all of them.
+  // Rebuilt on every gallery render — the old nodes are gone with innerHTML.
+  let _coverViews = [];
+  const paintCoverViews = () => {
+    const pos = _imgFocus ? (_imgFocus.x + '% ' + _imgFocus.y + '%') : 'center';
+    _coverViews.forEach((el2) => { el2.style.objectPosition = pos; });
+  };
   const wireCoverFocusDrag = (imEl, persistNow) => {
     if (!imEl || imEl.dataset.lokFocusWired) return;
     imEl.dataset.lokFocusWired = '1';
+    _coverViews.push(imEl);
     imEl.style.touchAction = 'none';
     imEl.style.cursor = 'grab';
     imEl.title = 'Drag to choose which part of the photo stays in view';
@@ -249,7 +271,7 @@ const LokaliProductsPage = (() => {
         x: Math.max(0, Math.min(100, Math.round(((e.clientX - r.left) / r.width) * 100))),
         y: Math.max(0, Math.min(100, Math.round(((e.clientY - r.top) / r.height) * 100)))
       };
-      imEl.style.objectPosition = _imgFocus.x + '% ' + _imgFocus.y + '%';
+      applyFocusPreview();             // one painter: thumb, hint, and all cover views
     };
     imEl.addEventListener('pointerdown', (e) => {
       dragging = true;
@@ -272,6 +294,30 @@ const LokaliProductsPage = (() => {
     };
     imEl.addEventListener('pointerup', done);
     imEl.addEventListener('pointercancel', () => { dragging = false; });
+  };
+
+  // #149 WYSIWYG: "it is not intuitive that we can drag... we also have no
+  // idea on how it will be seen" (Francesca, live feedback 2026-08-19). A
+  // card-shaped frame under the gallery shows EXACTLY what the crop keeps —
+  // same aspect as the storefront card imgs (~230x150) — and is itself the
+  // drag surface, so the affordance is stated in words AND demonstrated.
+  const renderCoverPreview = (body, coverUrl, persistNow) => {
+    if (!coverUrl) return;
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'margin-top:14px;white-space:normal;';
+    const lab = document.createElement('div');
+    lab.style.cssText = 'font-size:12px;font-weight:600;color:#4A4761;margin-bottom:6px;';
+    lab.textContent = 'How your cover photo will appear on your card — drag it to adjust';
+    const frame = document.createElement('div');
+    frame.style.cssText = 'width:230px;max-width:100%;height:150px;border-radius:12px;overflow:hidden;border:1px solid #EEEDF6;background:#F7F6FC;box-shadow:0 2px 8px rgba(26,24,41,.08);';
+    const im = document.createElement('img');
+    im.id = 'lok-product-cover-preview';
+    im.src = coverUrl; im.alt = 'Card crop preview';
+    im.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';
+    frame.appendChild(im);
+    wrap.appendChild(lab); wrap.appendChild(frame);
+    body.appendChild(wrap);
+    wireCoverFocusDrag(im, persistNow);
   };
 
   const clearThumbPreview = (thumb) => {
@@ -929,6 +975,7 @@ const LokaliProductsPage = (() => {
   const resetImagePreview = () => {
     revokeImagePreviewUrl();
     _imgFocus = null;             // #149: no image, no focal point
+    _mainImageUrl = null;
     applyFocusPreview();
     const input = el.imgInput();
     const thumb = el.imgThumb();
@@ -1073,6 +1120,10 @@ const LokaliProductsPage = (() => {
         '<div style="color:#4A4761;font-size:14px;line-height:1.5;">' +
         '🔒 Add a <strong>photo gallery</strong> with Pro &amp; Featured — 3 photos per' +
         ' product on Pro, 5 on Featured, so customers see more before they buy.</div>';
+      // #149: Free vendors still have a card crop to control (their standalone
+      // image). Same WYSIWYG preview; drag persists on release in edit mode.
+      _coverViews = [];
+      renderCoverPreview(body, _mainImageUrl, true);
       return;
     }
     // New product (no id yet): stage photos in the browser — they attach to the
@@ -1133,7 +1184,9 @@ const LokaliProductsPage = (() => {
     // cards read. Other thumbs stay non-draggable: no public surface crops
     // per-gallery-photo today, and a drag that changes nothing teaches vendors
     // the feature is broken.
+    _coverViews = [];
     wireCoverFocusDrag(body.querySelector('img[data-photo-idx="0"]'), true);
+    renderCoverPreview(body, _galleryPhotos.length ? photoUrl(_galleryPhotos[0].image_url) : null, true);
 
     const addBtn = document.getElementById('lok-gallery-add');
     if (addBtn) addBtn.addEventListener('click', () => { const gi = galleryInput(); if (gi) gi.click(); });
@@ -1173,7 +1226,9 @@ const LokaliProductsPage = (() => {
     html += '<div style="font-size:12px;color:#8E8BA6;margin-top:8px;">' +
       (count ? 'These photos are added to your product when you hit Save.' : 'Add up to ' + cap + ' photos — they’re saved with your product.') + '</div>';
     body.innerHTML = html;
+    _coverViews = [];
     wireCoverFocusDrag(body.querySelector('img[data-pending-idx="0"]'), false);
+    renderCoverPreview(body, _pendingGalleryPhotos.length ? _pendingGalleryPhotos[0].url : null, false);
     body.querySelectorAll('img[data-pending-idx]').forEach((im) => {
       const gp = _pendingGalleryPhotos[parseInt(im.getAttribute('data-pending-idx'), 10)];
       if (gp) im.src = photoUrl(gp.url);
