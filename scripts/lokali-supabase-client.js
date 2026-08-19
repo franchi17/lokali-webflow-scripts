@@ -163,7 +163,8 @@
     'price_max_cents', 'price_note', 'image_url', 'video_url', 'slug',
     'subcategory', // #96-LISTING: one optional taxonomy slug per listing
     'lead_time',   // #78: free-text per-item lead time (display only)
-    'is_featured_pick' // FEAT-PICKS: Featured-plan shop window (cap+plan gate = DB trigger)
+    'is_featured_pick', // FEAT-PICKS: Featured-plan shop window (cap+plan gate = DB trigger)
+    'image_focus_x', 'image_focus_y' // #149: main-image focal point (0-100 %, null = center)
   ];
   var PRODUCT_EDITABLE = [
     'product_name', 'product_description', 'price', 'stock_quantity', 'image_url',
@@ -171,7 +172,8 @@
     'shipping_offered', 'pickup_only', 'sort_order', 'slug',
     'subcategory', // #96-LISTING
     'lead_time',   // #78: free-text per-item lead time (supersedes turnaround_days for display)
-    'is_featured_pick' // FEAT-PICKS: Featured-plan shop window (cap+plan gate = DB trigger)
+    'is_featured_pick', // FEAT-PICKS: Featured-plan shop window (cap+plan gate = DB trigger)
+    'image_focus_x', 'image_focus_y' // #149: main-image focal point (0-100 %, null = center)
   ];
   // Author may edit only these (vendor_reply is stamped by the guard trigger).
   var REVIEW_EDITABLE = ['comment', 'is_recommended', 'rating'];
@@ -1335,6 +1337,20 @@
           if (listing && listing.services_id != null) params.p_services_id = listing.services_id;
           if (listing && listing.products_id != null) params.p_products_id = listing.products_id;
           return c.rpc('submit_subcategory_suggestion', params);
+        });
+      },
+      // #136: link a suggestion typed while CREATING a listing to the listing
+      // that now exists. During creation there is no id yet, so `suggest` above
+      // stores both ids NULL — and approval then tags nothing, which is how
+      // Nolasko's approved specialty never reached their profile. Called right
+      // after a successful create, naming the label just submitted. Idempotent
+      // and label-scoped: unknown label returns ok:true, attached:false.
+      attachSuggestion: function (label, listing) {
+        return withClient(function (c) {
+          var params = { p_label: label };
+          if (listing && listing.services_id != null) params.p_services_id = listing.services_id;
+          if (listing && listing.products_id != null) params.p_products_id = listing.products_id;
+          return c.rpc('attach_subcategory_suggestion', params);
         });
       },
       mySuggestions: function () {

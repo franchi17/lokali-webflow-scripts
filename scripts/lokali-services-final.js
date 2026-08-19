@@ -268,6 +268,59 @@ const LokaliServicesPage = (() => {
       thumb.style.backgroundPosition = 'center';
     }
     thumb.style.display = 'block';
+    initFocusDrag(thumb);   // #149: idempotent — wires once
+    applyFocusPreview();
+  };
+
+  // #149: focal point of the MAIN image (percentages, null = centered).
+  // The vendor drags the 100px preview to say which part of the photo must
+  // stay in view; renderers turn it into `object-position: X% Y%` on every
+  // cropped surface. Saved as image_focus_x/y — ⚠️ the columns come from
+  // patch_image_focus.sql, and every save names them, so the SQL must be live
+  // before this file's pin moves (#101 ship order).
+  let _imgFocus = null;
+  const applyFocusPreview = () => {
+    const thumb = el.imgThumb();
+    if (!thumb) return;
+    const pos = _imgFocus ? (_imgFocus.x + '% ' + _imgFocus.y + '%') : 'center';
+    if (String(thumb.tagName).toUpperCase() === 'IMG') thumb.style.objectPosition = pos;
+    else thumb.style.backgroundPosition = pos;
+    const hint = document.getElementById('lok-service-focus-hint');
+    if (hint) hint.style.display = (thumb.style.display !== 'none') ? 'block' : 'none';
+  };
+  const initFocusDrag = (thumb) => {
+    if (!thumb || thumb.dataset.lokFocusWired) return;
+    thumb.dataset.lokFocusWired = '1';
+    thumb.style.touchAction = 'none';   // phones: drag must not scroll the page
+    thumb.style.cursor = 'grab';
+    if (!document.getElementById('lok-service-focus-hint')) {
+      const hint = document.createElement('div');
+      hint.id = 'lok-service-focus-hint';
+      // white-space:normal — .container-11 sets nowrap page-wide (see gallery hosts)
+      hint.style.cssText = 'font-size:12px;color:#8E8BA6;margin-top:6px;line-height:1.5;white-space:normal;max-width:220px;font-family:"Plus Jakarta Sans",system-ui,sans-serif;';
+      hint.textContent = 'Drag the photo to choose which part stays in view on your cards.';
+      (thumb.closest('div') || thumb).insertAdjacentElement('afterend', hint);
+    }
+    let dragging = false;
+    const setFromEvent = (e) => {
+      const r = thumb.getBoundingClientRect();
+      if (!r.width || !r.height) return;
+      _imgFocus = {
+        x: Math.max(0, Math.min(100, Math.round(((e.clientX - r.left) / r.width) * 100))),
+        y: Math.max(0, Math.min(100, Math.round(((e.clientY - r.top) / r.height) * 100)))
+      };
+      applyFocusPreview();
+    };
+    thumb.addEventListener('pointerdown', (e) => {
+      if (thumb.style.display === 'none') return;
+      dragging = true;
+      try { thumb.setPointerCapture(e.pointerId); } catch (err) {}
+      setFromEvent(e);
+      e.preventDefault();
+    });
+    thumb.addEventListener('pointermove', (e) => { if (dragging) setFromEvent(e); });
+    thumb.addEventListener('pointerup',   () => { dragging = false; });
+    thumb.addEventListener('pointercancel', () => { dragging = false; });
   };
 
   const clearThumbPreview = (thumb) => {
@@ -904,6 +957,10 @@ const LokaliServicesPage = (() => {
       applyThumbPreview(thumb, service.image_url);
       if (ph)  ph.style.display = 'none';
       if (rem) rem.style.display = 'block';
+      // #149: AFTER applyThumbPreview — it repaints the position from _imgFocus.
+      _imgFocus = (service.image_focus_x != null && service.image_focus_y != null)
+        ? { x: service.image_focus_x, y: service.image_focus_y } : null;
+      applyFocusPreview();
     }
     renderGallery(service.id);
     setVideoUrl(service.video_url);
@@ -941,6 +998,8 @@ const LokaliServicesPage = (() => {
 
   const resetImagePreview = () => {
     revokeImagePreviewUrl();
+    _imgFocus = null;             // #149: no image, no focal point
+    applyFocusPreview();
     const input = el.imgInput();
     const thumb = el.imgThumb();
     const ph    = el.imgPlaceholder();
@@ -1342,6 +1401,8 @@ const LokaliServicesPage = (() => {
       price_min_cents:     null,
       price_max_cents:     null,
       image_url:           imageUrl,
+      image_focus_x:       _imgFocus ? _imgFocus.x : null,   // #149
+      image_focus_y:       _imgFocus ? _imgFocus.y : null,
       sort_order:          null,
     };
 
@@ -1873,6 +1934,7 @@ const LokaliServicesPage = (() => {
       const thumb = el.imgThumb();
       const ph    = el.imgPlaceholder();
       const rem   = el.imgRemoveBtn();
+      _imgFocus = null;           // #149: a new photo starts centered
       applyThumbPreview(thumb, _imagePreviewObjectUrl);
       if (ph)    ph.style.display  = 'none';
       if (rem)   rem.style.display = 'block';

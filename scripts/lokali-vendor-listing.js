@@ -1194,6 +1194,11 @@
       imgEl.loading = 'lazy';
       imgEl.src = opts.image;
       imgEl.alt = opts.name || '';
+      // #149: vendor-chosen focal point — which part of the photo survives the
+      // object-fit:cover crop. Absent (older rows) = the browser default, center.
+      if (opts.focusX != null && opts.focusY != null) {
+        imgEl.style.objectPosition = opts.focusX + '% ' + opts.focusY + '%';
+      }
       a.querySelector('.vl-card-img').appendChild(imgEl);
     }
     a.querySelector('.vl-card-name').textContent = opts.name || 'Untitled';
@@ -1286,6 +1291,7 @@
         desc: s.service_description || s.description || '',
         price: p.text, quote: p.quote,
         image: imgUrl(s.image_url || s.image),
+        focusX: s.image_focus_x, focusY: s.image_focus_y,   // #149
         tint: IMG_TINTS[i % IMG_TINTS.length],
         pick: s.is_featured_pick === true, // FEAT-PICKS
         cta: p.quote ? 'Request quote' : 'Inquire',
@@ -1318,6 +1324,7 @@
         desc: p.product_description || p.description || '',
         price: pr.text, quote: pr.quote,
         image: imgUrl(p.image_url || p.image),
+        focusX: p.image_focus_x, focusY: p.image_focus_y,   // #149
         tint: IMG_TINTS[(i + 1) % IMG_TINTS.length],
         pick: p.is_featured_pick === true, // FEAT-PICKS
         cta: 'Order', orange: true,
