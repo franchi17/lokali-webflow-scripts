@@ -100,7 +100,9 @@
       { slug: 'woodworking',          label: 'Woodworking' },
       { slug: 'custom-embroidery',    label: 'Custom embroidery' },
       { slug: 'floral-arrangements',  label: 'Floral arrangements' },
-      { slug: 'sewn-goods',           label: 'Sewn & stitched goods' }
+      // 2026-08-19 (F): 'sewn-goods' retired — nobody searches the craft, they
+      // search the product. 'clothing' takes its slot (patch_retire_dresses_fashion.sql).
+      { slug: 'clothing',             label: 'Clothing' }
     ],
     2: [ // Business
       { slug: 'bookkeeping',          label: 'Bookkeeping & accounting' },
