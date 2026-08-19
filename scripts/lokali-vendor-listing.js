@@ -908,6 +908,11 @@
     if (s.image_url) {
       var img = ce('img', 'vl-mkt-show-img');
       img.src = s.image_url;
+      // #149c: vendor-chosen focal point from marketing_current(); absent =
+      // center (older entries, or the SQL not applied — either way safe).
+      if (s.image_focus_x != null && s.image_focus_y != null) {
+        img.style.objectPosition = s.image_focus_x + '% ' + s.image_focus_y + '%';
+      }
       img.alt = ((window.LOKALI_LOADED_VENDOR && window.LOKALI_LOADED_VENDOR.name) || 'Vendor') + ' — showcase of the week';
       img.loading = 'lazy';
       wrap.appendChild(img);

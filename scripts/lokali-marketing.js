@@ -166,6 +166,8 @@
       '.mkt-upbtn{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px dashed #C9B4F5;color:' + BRAND + ';' +
         'font-size:12.5px;font-weight:600;border-radius:9px;padding:8px 12px;cursor:pointer;}' +
       '.mkt-upthumb{width:56px;height:56px;border-radius:9px;object-fit:cover;margin-right:10px;vertical-align:middle;}' +
+      '.mkt-focusframe{width:320px;max-width:100%;height:150px;border-radius:12px;overflow:hidden;border:1px solid #EEEDF6;background:#F7F6FC;box-shadow:0 2px 8px rgba(26,24,41,.08);margin-top:6px;}' +
+      '.mkt-focusframe img{width:100%;height:100%;object-fit:cover;display:block;touch-action:none;cursor:grab;}' +
       '.mkt-note{font-size:12px;color:#8E8BA6;margin-top:8px;}' +
       '.mkt-lock{text-align:center;padding:26px 18px;}' +
       '.mkt-lock p{margin:0 auto 14px;max-width:430px;font-size:13.5px;color:#8E8BA6;}' +
@@ -500,6 +502,17 @@
           '<button type="button" class="mkt-upbtn" data-act="upload">' + (img ? 'Replace photo' : 'Add a photo') + '</button>' +
           '<input type="file" accept="image/*" data-f="file" style="display:none;">' +
           '<input type="hidden" data-f="image_url" value="' + esc(img) + '">' +
+          '<input type="hidden" data-f="image_focus_x" value="' + (e && e.image_focus_x != null ? e.image_focus_x : '') + '">' +
+          '<input type="hidden" data-f="image_focus_y" value="' + (e && e.image_focus_y != null ? e.image_focus_y : '') + '">' +
+          // #149c WYSIWYG: same treatment as the listing forms — the frame is
+          // the storefront crop, and the frame itself is the drag surface.
+          (img
+            ? '<p class="mkt-note" style="margin:8px 0 0;">How it will appear on your storefront \u2014 drag the photo to adjust.</p>' +
+              '<div class="mkt-focusframe"><img data-f="focusprev" src="' + esc(img) + '" alt="Crop preview"' +
+              (e && e.image_focus_x != null && e.image_focus_y != null
+                ? ' style="object-position:' + (+e.image_focus_x) + '% ' + (+e.image_focus_y) + '%;"' : '') +
+              '></div>'
+            : '') +
           '<p class="mkt-note" style="margin-top:6px;">Landscape works best — about twice as wide as tall, at least 1200&thinsp;px wide. JPG or PNG; stored photos stay under 1&thinsp;MB (we compress automatically, so most are fine as-is).</p>'
         : '') +
       '<label>Link (optional)</label>' +
@@ -554,6 +567,38 @@
       }
       else if (act === 'sc-save') self.saveCreative(btn.closest('[data-booking]'));
     };
+    // #149c: drag on the showcase crop preview. Delegated pointerdown (the
+    // form is re-rendered innerHTML, so per-node wiring would not survive);
+    // move/up attach to the img itself, which pointer capture routes to.
+    this.mount.addEventListener('pointerdown', function (e) {
+      var im = e.target && e.target.closest ? e.target.closest('[data-f="focusprev"]') : null;
+      if (!im) return;
+      var form = im.closest('.mkt-form'); if (!form) return;
+      var fx = form.querySelector('[data-f="image_focus_x"]');
+      var fy = form.querySelector('[data-f="image_focus_y"]');
+      if (!fx || !fy) return;
+      var dragging = true;
+      function setFrom(ev2) {
+        var r = im.getBoundingClientRect();
+        if (!r.width || !r.height) return;
+        var x = Math.max(0, Math.min(100, Math.round(((ev2.clientX - r.left) / r.width) * 100)));
+        var y = Math.max(0, Math.min(100, Math.round(((ev2.clientY - r.top) / r.height) * 100)));
+        fx.value = String(x); fy.value = String(y);
+        im.style.objectPosition = x + '% ' + y + '%';
+      }
+      function move(ev2) { if (dragging) setFrom(ev2); }
+      function up() {
+        dragging = false;
+        im.removeEventListener('pointermove', move);
+        im.removeEventListener('pointerup', up);
+        im.removeEventListener('pointercancel', up);
+      }
+      try { im.setPointerCapture(e.pointerId); } catch (err) {}
+      im.addEventListener('pointermove', move);
+      im.addEventListener('pointerup', up);
+      im.addEventListener('pointercancel', up);
+      setFrom(e); e.preventDefault();
+    });
     this.mount.onchange = function (ev) {
       var inp = ev.target;
       if (inp.getAttribute && inp.getAttribute('data-f') === 'file' && inp.files && inp.files[0]) {
@@ -600,6 +645,9 @@
       payload.body = get('body') || null;
       payload.image_url = get('image_url') || null;
       payload.link_label = get('link_label') || null;
+      // #149c: '' = untouched/cleared -> null (centered)
+      payload.image_focus_x = get('image_focus_x') !== '' ? parseInt(get('image_focus_x'), 10) : null;
+      payload.image_focus_y = get('image_focus_y') !== '' ? parseInt(get('image_focus_y'), 10) : null;
     }
     if (!payload.title) { toast('Give it a title first.'); return; }
     // Mirrors the DB constraint (marketing_entries_url_https) with a friendlier
@@ -654,6 +702,15 @@
     });
     function finishUpload(url) {
       form.querySelector('[data-f="' + field + '"]').value = url;
+      // #149c: a new photo starts centered; refresh the crop preview if shown
+      // (it renders with the form, so a first-ever upload gets it on Save).
+      if (field === 'image_url') {
+        var ffx = form.querySelector('[data-f="image_focus_x"]');
+        var ffy = form.querySelector('[data-f="image_focus_y"]');
+        if (ffx) ffx.value = ''; if (ffy) ffy.value = '';
+        var fprev = form.querySelector('[data-f="focusprev"]');
+        if (fprev) { fprev.src = url; fprev.style.objectPosition = 'center'; }
+      }
       var prev = form.querySelector('[data-f="imgprev"]');
       if (!prev) {
         prev = document.createElement('img');

@@ -184,7 +184,8 @@
   // Marketing queue fields the owner may edit (mirror patch_marketing.sql's
   // column-scoped update grant; updated_at is stamped by the guard trigger).
   var MARKETING_EDITABLE = [
-    'title', 'body', 'url', 'image_url', 'link_label', 'is_active', 'is_pinned', 'sort_order'
+    'title', 'body', 'url', 'image_url', 'link_label', 'is_active', 'is_pinned', 'sort_order',
+    'image_focus_x', 'image_focus_y' // #149c: showcase photo focal point
   ];
   // Customer account fields the person may edit (mirror rls.sql app_user grant).
   var APP_USER_EDITABLE = [
