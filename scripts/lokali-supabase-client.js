@@ -1143,6 +1143,17 @@
         var m = PHOTO_TABLES[kind];
         return withClient(function (c) { return c.from(m.table).delete().eq('id', photoId); });
       },
+      // #149b: focal point on a gallery/portfolio photo — which part of the
+      // image survives the object-fit:cover crop on public frames. x/y are
+      // 0-100 percentages; null/null clears back to centered. Columns come
+      // from patch_portfolio_focus.sql (vendor) / patch_image_focus.sql-style
+      // patches per table; RLS owner_all scopes the write to own rows.
+      setFocus: function (kind, photoId, x, y) {
+        var m = PHOTO_TABLES[kind];
+        return withClient(function (c) {
+          return c.from(m.table).update({ image_focus_x: x, image_focus_y: y }).eq('id', photoId);
+        });
+      },
       // #76d portfolio manager reorder — RLS owner_all limits to own rows.
       setSort: function (kind, photoId, sortOrder) {
         var m = PHOTO_TABLES[kind];

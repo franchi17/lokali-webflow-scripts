@@ -1461,6 +1461,11 @@
         var f = document.createElement('div');
         f.className = 'vd-frame ' + (i === 0 ? 'vd-frame-main' : 'vd-frame-peek');
         var img = document.createElement('img'); img.src = imgUrl(p.image_url || p.image);
+        // #149b: vendor-chosen focal point (dragged in the portfolio manager);
+        // absent = browser default, center. The lightbox shows the full image.
+        if (p.image_focus_x != null && p.image_focus_y != null) {
+          img.style.objectPosition = p.image_focus_x + '% ' + p.image_focus_y + '%';
+        }
         img.alt = photos.length > 1 ? lbl + ' photo ' + (i + 1) : lbl + ' photo';
         img.style.cursor = 'zoom-in';
         // Click to enlarge — but ignore the click that ends a drag-scroll (#63).

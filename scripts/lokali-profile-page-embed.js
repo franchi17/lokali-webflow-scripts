@@ -1136,7 +1136,42 @@ var LokaliProfilePage = (function () {
         cell.style.cssText = 'position:relative;width:104px;';
         var img = document.createElement('img');
         img.src = p.image_url; img.alt = '';
-        img.style.cssText = 'width:104px;height:78px;object-fit:cover;border-radius:8px;border:1px solid #EEEDF6;display:block;';
+        img.style.cssText = 'width:104px;height:78px;object-fit:cover;border-radius:8px;border:1px solid #EEEDF6;display:block;touch-action:none;cursor:grab;';
+        // #149b: drag the thumb to set the focal point — the part of the photo
+        // that stays in view inside the storefront's cropped portfolio frames.
+        // Persisted on RELEASE (one write per drag, not per pixel); reorder is
+        // unaffected, it lives on the ‹ › buttons below.
+        if (p.image_focus_x != null && p.image_focus_y != null) {
+          img.style.objectPosition = p.image_focus_x + '% ' + p.image_focus_y + '%';
+        }
+        img.title = 'Drag to choose which part of the photo stays in view';
+        (function (photo, imEl) {
+          var dragging = false, fx = null, fy = null;
+          function setFrom(e) {
+            var r = imEl.getBoundingClientRect();
+            if (!r.width || !r.height) return;
+            fx = Math.max(0, Math.min(100, Math.round(((e.clientX - r.left) / r.width) * 100)));
+            fy = Math.max(0, Math.min(100, Math.round(((e.clientY - r.top) / r.height) * 100)));
+            imEl.style.objectPosition = fx + '% ' + fy + '%';
+          }
+          imEl.addEventListener('pointerdown', function (e) {
+            dragging = true;
+            try { imEl.setPointerCapture(e.pointerId); } catch (err) {}
+            setFrom(e); e.preventDefault();
+          });
+          imEl.addEventListener('pointermove', function (e) { if (dragging) setFrom(e); });
+          function done() {
+            if (!dragging) return;
+            dragging = false;
+            if (fx == null) return;
+            window.LokaliSupabaseAPI.photos.setFocus('vendor', photo.id, fx, fy).then(function (res) {
+              if (res && res.error) { _showToast('error', 'Couldn\u2019t save the crop \u2014 try again.'); return; }
+              _showToast('success', 'Crop saved \u2014 your storefront uses it right away.');
+            });
+          }
+          imEl.addEventListener('pointerup', done);
+          imEl.addEventListener('pointercancel', function () { dragging = false; });
+        })(p, img);
         cell.appendChild(img);
         if (i === 0) {
           var lead = document.createElement('div');
