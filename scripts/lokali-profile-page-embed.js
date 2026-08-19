@@ -1064,6 +1064,68 @@ var LokaliProfilePage = (function () {
   var _PF_MAX = null;
   var _PF_CACHE_KEY = 'lok_plan_portfolio_v1';
   var _pfPhotos = [];
+  // #149b WYSIWYG (Francesca 2026-08-19: the listing forms' preview "makes it
+  // clear now" — same treatment here). One shared card-shaped preview under
+  // the thumbs shows how the ACTIVE photo crops inside the storefront's
+  // portfolio frames; pressing any thumb makes it active; dragging the thumb
+  // or the preview moves both, and the row saves once on release.
+  var _pfActive = 0;
+  function _pfPaintPreview() {
+    var im = document.getElementById('lok-pf-cover-preview');
+    var lab = document.getElementById('lok-pf-preview-label');
+    var ph = _pfPhotos[_pfActive];
+    if (!im || !ph) return;
+    if (im.src !== ph.image_url) im.src = ph.image_url;
+    im.style.objectPosition = (ph.image_focus_x != null && ph.image_focus_y != null)
+      ? (ph.image_focus_x + '% ' + ph.image_focus_y + '%') : 'center';
+    if (lab) lab.textContent = 'How photo ' + (_pfActive + 1) + ' of ' + _pfPhotos.length +
+      ' will appear on your storefront \u2014 drag it to adjust';
+    // the active thumb mirrors the same position
+    var thumbs = document.querySelectorAll('img[data-pf-idx]');
+    thumbs.forEach(function (t) {
+      var idx = parseInt(t.getAttribute('data-pf-idx'), 10);
+      var row = _pfPhotos[idx];
+      if (row) t.style.objectPosition = (row.image_focus_x != null && row.image_focus_y != null)
+        ? (row.image_focus_x + '% ' + row.image_focus_y + '%') : 'center';
+      t.style.outline = idx === _pfActive ? '2px solid #6002EE' : 'none';
+    });
+  }
+  function _pfWireDrag(imEl, idx) {
+    imEl.setAttribute('data-pf-idx', String(idx));
+    imEl.style.touchAction = 'none';
+    imEl.style.cursor = 'grab';
+    imEl.title = 'Drag to choose which part of the photo stays in view';
+    var dragging = false, moved = false;
+    function row() { return _pfPhotos[typeof idx === 'number' ? (idx === -1 ? _pfActive : idx) : _pfActive]; }
+    function setFrom(e) {
+      var r = imEl.getBoundingClientRect();
+      var ph = row();
+      if (!r.width || !r.height || !ph) return;
+      ph.image_focus_x = Math.max(0, Math.min(100, Math.round(((e.clientX - r.left) / r.width) * 100)));
+      ph.image_focus_y = Math.max(0, Math.min(100, Math.round(((e.clientY - r.top) / r.height) * 100)));
+      moved = true;
+      _pfPaintPreview();
+    }
+    imEl.addEventListener('pointerdown', function (e) {
+      if (idx !== -1) _pfActive = idx;   // pressing a thumb selects it
+      dragging = true; moved = false;
+      try { imEl.setPointerCapture(e.pointerId); } catch (err) {}
+      setFrom(e); e.preventDefault();
+    });
+    imEl.addEventListener('pointermove', function (e) { if (dragging) setFrom(e); });
+    function done() {
+      if (!dragging) return;
+      dragging = false;
+      var ph = row();
+      if (!moved || !ph) { _pfPaintPreview(); return; }
+      window.LokaliSupabaseAPI.photos.setFocus('vendor', ph.id, ph.image_focus_x, ph.image_focus_y).then(function (res2) {
+        if (res2 && res2.error) { _showToast('error', 'Couldn\u2019t save the crop \u2014 try again.'); return; }
+        _showToast('success', 'Crop saved \u2014 your storefront uses it right away.');
+      });
+    }
+    imEl.addEventListener('pointerup', done);
+    imEl.addEventListener('pointercancel', function () { dragging = false; });
+  }
   function _injectPortfolioCard() {
     if (document.getElementById('lok-portfolio-card')) return;
     var anchorSection = document.getElementById('lok-about-you') || document.getElementById('lok-pay-card');
@@ -1130,6 +1192,7 @@ var LokaliProfilePage = (function () {
     S.photos.list('vendor', _vendor.id).then(function (res) {
       var rows = (res && res.data) || [];
       _pfPhotos = rows.filter(function (r) { return r && r.is_active !== false; });
+      _pfActive = 0;
       strip.innerHTML = '';
       _pfPhotos.forEach(function (p, i) {
         var cell = document.createElement('div');
@@ -1145,33 +1208,10 @@ var LokaliProfilePage = (function () {
           img.style.objectPosition = p.image_focus_x + '% ' + p.image_focus_y + '%';
         }
         img.title = 'Drag to choose which part of the photo stays in view';
-        (function (photo, imEl) {
-          var dragging = false, fx = null, fy = null;
-          function setFrom(e) {
-            var r = imEl.getBoundingClientRect();
-            if (!r.width || !r.height) return;
-            fx = Math.max(0, Math.min(100, Math.round(((e.clientX - r.left) / r.width) * 100)));
-            fy = Math.max(0, Math.min(100, Math.round(((e.clientY - r.top) / r.height) * 100)));
-            imEl.style.objectPosition = fx + '% ' + fy + '%';
-          }
-          imEl.addEventListener('pointerdown', function (e) {
-            dragging = true;
-            try { imEl.setPointerCapture(e.pointerId); } catch (err) {}
-            setFrom(e); e.preventDefault();
-          });
-          imEl.addEventListener('pointermove', function (e) { if (dragging) setFrom(e); });
-          function done() {
-            if (!dragging) return;
-            dragging = false;
-            if (fx == null) return;
-            window.LokaliSupabaseAPI.photos.setFocus('vendor', photo.id, fx, fy).then(function (res) {
-              if (res && res.error) { _showToast('error', 'Couldn\u2019t save the crop \u2014 try again.'); return; }
-              _showToast('success', 'Crop saved \u2014 your storefront uses it right away.');
-            });
-          }
-          imEl.addEventListener('pointerup', done);
-          imEl.addEventListener('pointercancel', function () { dragging = false; });
-        })(p, img);
+        // The drag lives on the thumb AND on the big WYSIWYG preview below; a
+        // press on either makes this photo the active one, both repaint from
+        // the row, and the write happens once on release (_pfWireDrag).
+        _pfWireDrag(img, i);
         cell.appendChild(img);
         if (i === 0) {
           var lead = document.createElement('div');
@@ -1199,6 +1239,28 @@ var LokaliProfilePage = (function () {
         cell.appendChild(bar);
         strip.appendChild(cell);
       });
+      // #149b: the shared WYSIWYG preview (see _pfPaintPreview)
+      var oldPrev = document.getElementById('lok-pf-preview-wrap');
+      if (oldPrev) oldPrev.remove();
+      if (_pfPhotos.length) {
+        var pw = document.createElement('div');
+        pw.id = 'lok-pf-preview-wrap';
+        pw.style.cssText = 'margin-top:14px;white-space:normal;';
+        var plab = document.createElement('div');
+        plab.id = 'lok-pf-preview-label';
+        plab.style.cssText = 'font-size:12px;font-weight:600;color:#4A4761;margin-bottom:6px;';
+        var pframe = document.createElement('div');
+        pframe.style.cssText = 'width:300px;max-width:100%;height:180px;border-radius:12px;overflow:hidden;border:1px solid #EEEDF6;background:#F7F6FC;box-shadow:0 2px 8px rgba(26,24,41,.08);';
+        var pimg = document.createElement('img');
+        pimg.id = 'lok-pf-cover-preview';
+        pimg.alt = 'Portfolio crop preview';
+        pimg.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';
+        pframe.appendChild(pimg);
+        pw.appendChild(plab); pw.appendChild(pframe);
+        strip.parentNode.insertBefore(pw, strip.nextSibling);
+        _pfWireDrag(pimg, -1);            // -1 = "the active photo"
+        _pfPaintPreview();
+      }
       var add = document.getElementById('lok-pf-add');
       if (add) add.style.display = _pfPhotos.length >= _PF_MAX ? 'none' : '';
     });
