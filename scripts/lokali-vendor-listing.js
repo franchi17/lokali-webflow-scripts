@@ -1346,6 +1346,7 @@
   // (arrows + ← → keys) when there's more than one photo. The <img> src is always
   // set via the property from a known photo URL (never innerHTML) — SEC-001 safe.
   var _lbApi = null;
+  var _lbHintSeen = false;   // swipe hint: once per page session, not per open
   function ensureLightbox() {
     if (_lbApi) return _lbApi;
     var FONT = '"Plus Jakarta Sans",system-ui,sans-serif';
@@ -1359,7 +1360,20 @@
       '.lok-lb-close{top:18px;right:18px;}',
       '.lok-lb-prev{left:18px;top:50%;transform:translateY(-50%);}',
       '.lok-lb-next{right:18px;top:50%;transform:translateY(-50%);}',
-      '.lok-lb-count{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);color:#fff;font:600 13px/1 ' + FONT + ';background:rgba(255,255,255,.16);border-radius:100px;padding:7px 14px;}'
+      '.lok-lb-count{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);color:#fff;font:600 13px/1 ' + FONT + ';background:rgba(255,255,255,.16);border-radius:100px;padding:7px 14px;}',
+      // Mobile: a 92vw photo leaves ~15px of margin, so the 44px arrows sat ON
+      // the picture — the reason the gallery read as "one photo at a time, open
+      // and close each one" (Francesca, 2026-08-19). Give the photo room, drop
+      // the arrows to the bottom corners beside the counter, and let SWIPE be
+      // the primary gesture (wired below).
+      '@media (max-width:767px){',
+      '.lok-lb-img{max-width:100vw;max-height:76vh;border-radius:0;}',
+      '.lok-lb-prev,.lok-lb-next{top:auto;bottom:14px;transform:none;}',
+      '.lok-lb-prev{left:10px;} .lok-lb-next{right:10px;}',
+      '.lok-lb-count{bottom:24px;}',
+      '.lok-lb-hint{position:absolute;bottom:70px;left:50%;transform:translateX(-50%);color:#fff;opacity:.82;font:600 12px/1 ' + FONT + ';background:rgba(255,255,255,.16);border-radius:100px;padding:6px 12px;pointer-events:none;transition:opacity .4s;}',
+      '}',
+      '@media (min-width:768px){.lok-lb-hint{display:none;}}'
     ].join('');
     (document.head || document.documentElement).appendChild(st);
     var mkBtn = function (cls, txt, label) {
@@ -1372,7 +1386,11 @@
     var prev = mkBtn('lok-lb-prev', '‹', 'Previous photo');
     var next = mkBtn('lok-lb-next', '›', 'Next photo');
     var count = document.createElement('div'); count.className = 'lok-lb-count';
-    ov.appendChild(img); ov.appendChild(close); ov.appendChild(prev); ov.appendChild(next); ov.appendChild(count);
+    // Shown once per session on touch devices, then faded — a swipe affordance
+    // is invisible otherwise, which is exactly how this gallery went unnoticed.
+    var hint = document.createElement('div'); hint.className = 'lok-lb-hint';
+    hint.textContent = 'Swipe to see more';
+    ov.appendChild(img); ov.appendChild(close); ov.appendChild(prev); ov.appendChild(next); ov.appendChild(count); ov.appendChild(hint);
     document.body.appendChild(ov);
     var urls = [], idx = 0, lbLabel = '';
     var render = function () {
@@ -1385,6 +1403,40 @@
     };
     var go = function (d) { if (!urls.length) return; idx = (idx + d + urls.length) % urls.length; render(); };
     var closeIt = function () { ov.classList.remove('lok-lb-open'); img.removeAttribute('src'); document.body.style.overflow = ''; };
+
+    // ---- swipe (the mobile-primary gesture) ---------------------------------
+    // Horizontal drag past a threshold changes photo; a mostly-VERTICAL drag is
+    // left alone so the browser's own dismiss/scroll gestures still feel normal.
+    // Bound on the overlay, not the img, so the whole dark area is swipeable —
+    // on a phone the photo does not fill the screen vertically.
+    var tX = 0, tY = 0, tActive = false;
+    ov.addEventListener('touchstart', function (e) {
+      if (urls.length < 2 || !e.touches || e.touches.length !== 1) { tActive = false; return; }
+      tActive = true; tX = e.touches[0].clientX; tY = e.touches[0].clientY;
+      hideHint();
+    }, { passive: true });
+    ov.addEventListener('touchend', function (e) {
+      if (!tActive) return;
+      tActive = false;
+      var t = (e.changedTouches && e.changedTouches[0]); if (!t) return;
+      var dx = t.clientX - tX, dy = t.clientY - tY;
+      if (Math.abs(dx) < 45 || Math.abs(dx) < Math.abs(dy)) return;  // not a horizontal swipe
+      go(dx < 0 ? 1 : -1);
+    }, { passive: true });
+
+    var hintTimer = null;
+    function hideHint() {
+      hint.style.opacity = '0';
+      if (hintTimer) { clearTimeout(hintTimer); hintTimer = null; }
+    }
+    function showHintOnce() {
+      // Multi-photo only, and only where a swipe is possible at all.
+      var touch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+      if (!touch || urls.length < 2 || _lbHintSeen) { hint.style.display = 'none'; return; }
+      hint.style.display = ''; hint.style.opacity = '.82';
+      if (hintTimer) clearTimeout(hintTimer);
+      hintTimer = setTimeout(function () { hideHint(); _lbHintSeen = true; }, 2600);
+    }
     close.addEventListener('click', closeIt);
     prev.addEventListener('click', function (e) { e.stopPropagation(); go(-1); });
     next.addEventListener('click', function (e) { e.stopPropagation(); go(1); });
@@ -1401,6 +1453,7 @@
       idx = Math.max(0, Math.min(start || 0, urls.length - 1));
       lbLabel = label || '';
       render(); ov.classList.add('lok-lb-open'); document.body.style.overflow = 'hidden';
+      showHintOnce();
     } };
     return _lbApi;
   }

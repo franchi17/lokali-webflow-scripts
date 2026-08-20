@@ -285,6 +285,14 @@
     var url = form.querySelector('[data-f="sc-image-url"]').value.trim();
     var headline = form.querySelector('[data-f="sc-headline"]').value.trim();
     if (!url) { toast('Upload an image first.'); return; }
+    // SEC-045: mirrors the spotlight_creatives_image_https CHECK so a bad
+    // scheme reads as a sentence instead of a raw check_violation. The DB is
+    // the control — uploads land on our own https CDN, so this only fires if
+    // the hidden field is tampered with.
+    if (!/^https:\/\//i.test(url)) {
+      toast('That image link isn\u2019t secure (https). Upload the photo again.');
+      return;
+    }
     API.attachCreative(+form.getAttribute('data-booking'), url, headline || null).then(function (res) {
       var d = res && res.data;
       if ((res && res.error) || !d || d.ok !== true) {
