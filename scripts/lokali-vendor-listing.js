@@ -1346,6 +1346,47 @@
   // (arrows + ← → keys) when there's more than one photo. The <img> src is always
   // set via the property from a known photo URL (never innerHTML) — SEC-001 safe.
   var _lbApi = null;
+  // #117-MIN: strict video parsing (copied from lokali-vendor-detail.js) —
+  // only the reconstructed id is ever embedded, never the stored URL.
+  function vlParseVideo(url) {
+    var u;
+    try { u = new URL(String(url || '').trim()); } catch (e) { return null; }
+    if (u.protocol !== 'https:') return null;
+    var host = u.hostname.replace(/^www\./, '').toLowerCase();
+    var YT = /^[A-Za-z0-9_-]{11}$/;
+    if (host === 'youtube.com' || host === 'm.youtube.com' || host === 'youtube-nocookie.com') {
+      var v = u.searchParams.get('v');
+      if (v && YT.test(v)) return { host: 'youtube', id: v };
+      var m = u.pathname.match(/^\/(?:embed|shorts|v)\/([A-Za-z0-9_-]{11})/);
+      return m ? { host: 'youtube', id: m[1] } : null;
+    }
+    if (host === 'youtu.be') {
+      var m2 = u.pathname.match(/^\/([A-Za-z0-9_-]{11})/);
+      return m2 ? { host: 'youtube', id: m2[1] } : null;
+    }
+    if (host === 'vimeo.com' || host === 'player.vimeo.com') {
+      var m3 = u.pathname.match(/\/(?:video\/)?(\d{6,12})(?:$|[/?#])/);
+      return m3 ? { host: 'vimeo', id: m3[1] } : null;
+    }
+    return null;
+  }
+  // Muted looping in-strip tile ("movement", Francesca 2026-08-20) vs. the
+  // lightbox slide (sound available, controls on).
+  function vlEmbedSrc(v, ambient) {
+    if (!v) return null;
+    if (v.host === 'youtube') {
+      return 'https://www.youtube-nocookie.com/embed/' + v.id + (ambient
+        ? '?autoplay=1&mute=1&loop=1&playlist=' + v.id + '&controls=0&playsinline=1&rel=0&modestbranding=1'
+        : '?autoplay=1&playsinline=1&rel=0');
+    }
+    if (v.host === 'vimeo') {
+      return 'https://player.vimeo.com/video/' + v.id + (ambient
+        ? '?autoplay=1&muted=1&loop=1&controls=0&dnt=1'
+        : '?autoplay=1&dnt=1');
+    }
+    return null;
+  }
+
   var _lbHintSeen = false;   // swipe hint: once per page session, not per open
   function ensureLightbox() {
     if (_lbApi) return _lbApi;
@@ -1393,16 +1434,39 @@
     ov.appendChild(img); ov.appendChild(close); ov.appendChild(prev); ov.appendChild(next); ov.appendChild(count); ov.appendChild(hint);
     document.body.appendChild(ov);
     var urls = [], idx = 0, lbLabel = '';
+    // #117-MIN: a slide is either a URL string (photo) or {video: parsed}.
+    // The iframe is created per-show and REMOVED on navigation/close — an
+    // off-screen player must not keep downloading or playing audio.
+    var vidFrame = null;
+    var dropVideo = function () {
+      if (vidFrame) { try { vidFrame.remove(); } catch (e) {} vidFrame = null; }
+    };
     var render = function () {
-      img.src = urls[idx] || '';
+      dropVideo();
+      var it = urls[idx];
       var multi = urls.length > 1;
-      // #97: alt mirrors the gallery's ("Label — photo N"); count is separate UI.
-      img.alt = lbLabel ? (multi ? lbLabel + ' — photo ' + (idx + 1) : lbLabel) : '';
+      if (it && typeof it === 'object' && it.video) {
+        img.style.display = 'none';
+        img.removeAttribute('src');
+        vidFrame = document.createElement('iframe');
+        vidFrame.className = 'lok-lb-img';
+        vidFrame.style.cssText = 'width:min(92vw,860px);height:min(52vw,484px);border:0;background:#000;';
+        vidFrame.allow = 'autoplay; fullscreen; picture-in-picture';
+        vidFrame.setAttribute('allowfullscreen', '');
+        vidFrame.src = vlEmbedSrc(it.video, false);
+        vidFrame.title = lbLabel ? lbLabel + ' — video' : 'Video';
+        ov.insertBefore(vidFrame, close);
+      } else {
+        img.style.display = '';
+        img.src = it || '';
+        // #97: alt mirrors the gallery's ("Label — photo N"); count is separate UI.
+        img.alt = lbLabel ? (multi ? lbLabel + ' — photo ' + (idx + 1) : lbLabel) : '';
+      }
       count.textContent = (idx + 1) + ' / ' + urls.length;
       prev.style.display = next.style.display = count.style.display = multi ? '' : 'none';
     };
     var go = function (d) { if (!urls.length) return; idx = (idx + d + urls.length) % urls.length; render(); };
-    var closeIt = function () { ov.classList.remove('lok-lb-open'); img.removeAttribute('src'); document.body.style.overflow = ''; };
+    var closeIt = function () { dropVideo(); ov.classList.remove('lok-lb-open'); img.removeAttribute('src'); document.body.style.overflow = ''; };
 
     // ---- swipe (the mobile-primary gesture) ---------------------------------
     // Horizontal drag past a threshold changes photo; a mostly-VERTICAL drag is
@@ -1502,7 +1566,11 @@
       'vendor/id/' + encodeURIComponent(vendorId) + '/portfolio/photos/list', null, false
     ).then(function (res) {
       var photos = asArray(unwrap(res))
-        .filter(function (p) { return p && p.is_active !== false && imgUrl(p.image_url || p.image); })
+        .filter(function (p) {
+          if (!p || p.is_active === false) return false;
+          // #117-MIN: a row is renderable with an image OR a parseable video.
+          return !!imgUrl(p.image_url || p.image) || !!vlParseVideo(p.video_url);
+        })
         .sort(function (a, b) { return (a.sort_order || 0) - (b.sort_order || 0); })
         .slice(0, PORTFOLIO_MAX);
       if (!photos.length) return; // nothing to show (free vendors are capped at 0)
@@ -1510,14 +1578,60 @@
       var pips = document.getElementById('vl-portfolio-pips');
       if (!strip) return;
       strip.innerHTML = ''; if (pips) pips.innerHTML = '';
-      var urls = photos.map(function (p) { return imgUrl(p.image_url || p.image); });
+      // Lightbox slides: strings for photos, {video:} for videos (see render).
+      var urls = photos.map(function (p) {
+        var pv = vlParseVideo(p.video_url);
+        return (pv && !imgUrl(p.image_url || p.image)) ? { video: pv } : imgUrl(p.image_url || p.image);
+      });
       // #97 alt text: vendor_photos has no caption column, so the business name
       // + index is the best truthful alt — better than the empty string that
       // hid a paid feature's photos from search and screen readers.
       var lbl = (vendor && vendor.business_name ? vendor.business_name + ' — portfolio' : 'Portfolio');
+      var ambientUsed = false;   // ONE muted looping player per strip — motion
+                                 // is a spotlight; three flickering tiles are chaos.
       photos.forEach(function (p, i) {
         var f = document.createElement('div');
         f.className = 'vd-frame ' + (i === 0 ? 'vd-frame-main' : 'vd-frame-peek');
+        var pv = vlParseVideo(p.video_url);
+        if (pv && !imgUrl(p.image_url || p.image)) {
+          // #117-MIN video tile. First video = muted looping player (the
+          // requested "movement"); later videos = thumbnail + play badge so
+          // the strip stays calm and the page stays light.
+          f.style.position = 'relative';
+          if (!ambientUsed) {
+            ambientUsed = true;
+            var fr = document.createElement('iframe');
+            fr.style.cssText = 'width:100%;height:100%;border:0;background:#000;pointer-events:none;';
+            fr.loading = 'lazy';
+            fr.allow = 'autoplay';
+            fr.tabIndex = -1;
+            fr.setAttribute('aria-hidden', 'true');
+            fr.src = vlEmbedSrc(pv, true);
+            f.appendChild(fr);
+          } else if (pv.host === 'youtube') {
+            var th = document.createElement('img');
+            th.src = 'https://i.ytimg.com/vi/' + pv.id + '/hqdefault.jpg';
+            th.alt = '';
+            th.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';
+            f.appendChild(th);
+          } else {
+            f.style.background = '#2B1A4A';
+          }
+          var badge = document.createElement('div');
+          badge.textContent = '\u25B6';
+          badge.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:34px;text-shadow:0 2px 10px rgba(0,0,0,.6);pointer-events:none;';
+          f.appendChild(badge);
+          f.style.cursor = 'pointer';
+          f.setAttribute('role', 'button');
+          f.setAttribute('aria-label', 'Play video');
+          f.addEventListener('click', function () {
+            if (strip.__lokDragged) { strip.__lokDragged = false; return; }
+            openLightbox(urls, i, lbl);
+          });
+          strip.appendChild(f);
+          if (pips) { var pip0 = document.createElement('span'); pip0.className = 'vd-pip' + (i === 0 ? ' vd-pip-active' : ''); pips.appendChild(pip0); }
+          return;
+        }
         var img = document.createElement('img'); img.src = imgUrl(p.image_url || p.image);
         // #149b: vendor-chosen focal point (dragged in the portfolio manager);
         // absent = browser default, center. The lightbox shows the full image.

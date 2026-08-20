@@ -1063,6 +1063,31 @@ var LokaliProfilePage = (function () {
   // resolved; loadData() fills it from billing.
   var _PF_MAX = null;
   var _PF_CACHE_KEY = 'lok_plan_portfolio_v1';
+  // #117-MIN: the SAME strict parser listings use (copied from
+  // lokali-vendor-detail.js) — renderers embed only the reconstructed id,
+  // never the stored URL.
+  function _pfParseVideo(url) {
+    var u;
+    try { u = new URL(String(url || '').trim()); } catch (e) { return null; }
+    if (u.protocol !== 'https:') return null;
+    var host = u.hostname.replace(/^www\./, '').toLowerCase();
+    var YT = /^[A-Za-z0-9_-]{11}$/;
+    if (host === 'youtube.com' || host === 'm.youtube.com' || host === 'youtube-nocookie.com') {
+      var v = u.searchParams.get('v');
+      if (v && YT.test(v)) return { host: 'youtube', id: v };
+      var m = u.pathname.match(/^\/(?:embed|shorts|v)\/([A-Za-z0-9_-]{11})/);
+      return m ? { host: 'youtube', id: m[1] } : null;
+    }
+    if (host === 'youtu.be') {
+      var m2 = u.pathname.match(/^\/([A-Za-z0-9_-]{11})/);
+      return m2 ? { host: 'youtube', id: m2[1] } : null;
+    }
+    if (host === 'vimeo.com' || host === 'player.vimeo.com') {
+      var m3 = u.pathname.match(/\/(?:video\/)?(\d{6,12})(?:$|[/?#])/);
+      return m3 ? { host: 'vimeo', id: m3[1] } : null;
+    }
+    return null;
+  }
   var _pfPhotos = [];
   // #149b WYSIWYG (Francesca 2026-08-19: the listing forms' preview "makes it
   // clear now" — same treatment here). One shared card-shaped preview under
@@ -1074,6 +1099,11 @@ var LokaliProfilePage = (function () {
     var im = document.getElementById('lok-pf-cover-preview');
     var lab = document.getElementById('lok-pf-preview-label');
     var ph = _pfPhotos[_pfActive];
+    var wrap0 = document.getElementById('lok-pf-preview-wrap');
+    // #117-MIN: a VIDEO row has no crop to choose — the embed player is not
+    // object-fit-cropped. Hide the preview while a video is the active tile.
+    if (ph && ph.video_url && !ph.image_url) { if (wrap0) wrap0.style.display = 'none'; return; }
+    if (wrap0) wrap0.style.display = '';
     if (!im || !ph) return;
     if (im.src !== ph.image_url) im.src = ph.image_url;
     im.style.objectPosition = (ph.image_focus_x != null && ph.image_focus_y != null)
@@ -1159,6 +1189,55 @@ var LokaliProfilePage = (function () {
     file.style.display = 'none';
     pick.addEventListener('click', function (e) { e.preventDefault(); file.click(); });
     card.col.appendChild(pick);
+    // #117-MIN: video joins the gallery — paste a YouTube/Vimeo link. Renders
+    // in the storefront strip as a muted looping tile; a video uses one of the
+    // same photo slots, so the cap needs no new machinery.
+    var vidBtn = _brandBtn('Add video');
+    vidBtn.id = 'lok-pf-addvideo';
+    vidBtn.style.marginLeft = '8px';
+    var vidRow = document.createElement('div');
+    vidRow.id = 'lok-pf-vidrow';
+    vidRow.style.cssText = 'display:none;gap:6px;margin-top:8px;white-space:normal;';
+    vidRow.innerHTML =
+      '<input id="lok-pf-vidurl" type="url" inputmode="url" autocomplete="off" spellcheck="false" ' +
+        'placeholder="Paste a YouTube or Vimeo link" ' +
+        'style="flex:1;min-width:0;font-family:\'Plus Jakarta Sans\',sans-serif;font-size:16px;padding:9px 12px;border:1px solid #E6E4F0;border-radius:10px;color:#1A1829;background:#fff;">' +
+      '<button type="button" id="lok-pf-vidsave" style="font:600 13px/1 \'Plus Jakarta Sans\',sans-serif;padding:9px 16px;border-radius:10px;border:1px solid #6002EE;background:#6002EE;color:#fff;cursor:pointer;">Add</button>';
+    vidBtn.addEventListener('click', function (e) {
+      e.preventDefault();
+      vidRow.style.display = vidRow.style.display === 'none' ? 'flex' : 'none';
+      var inp0 = document.getElementById('lok-pf-vidurl');
+      if (vidRow.style.display === 'flex' && inp0) inp0.focus();
+    });
+    card.col.appendChild(vidBtn);
+    card.col.appendChild(vidRow);
+    var vidHint = document.createElement('p');
+    vidHint.id = 'lok-pf-vidhint';
+    vidHint.style.cssText = 'font:400 12px/1.5 "Plus Jakarta Sans",sans-serif;color:#8E8BA6;margin:6px 0 0;white-space:normal;display:none;';
+    card.col.appendChild(vidHint);
+    function vidSay(msg, bad) {
+      vidHint.textContent = msg; vidHint.style.display = msg ? 'block' : 'none';
+      vidHint.style.color = bad ? '#B1006A' : '#8E8BA6';
+    }
+    vidRow.addEventListener('click', function (ev) {
+      if (!ev.target || ev.target.id !== 'lok-pf-vidsave') return;
+      var inp = document.getElementById('lok-pf-vidurl');
+      var url = inp ? String(inp.value || '').trim() : '';
+      if (!_pfParseVideo(url)) { vidSay('That link doesn\u2019t look like YouTube or Vimeo \u2014 copy the full video address from your browser.', true); return; }
+      if (_pfPhotos.length >= _PF_MAX) { vidSay('Your gallery is full \u2014 a video uses one of your ' + _PF_MAX + ' slots.', true); return; }
+      var S = window.LokaliSupabaseAPI;
+      if (!S || !S.photos || !S.photos.addVideo || !_vendor) return;
+      var nextSort = _pfPhotos.length ? (Number(_pfPhotos[_pfPhotos.length - 1].sort_order) || _pfPhotos.length) + 1 : 1;
+      vidSay('Adding\u2026', false);
+      S.photos.addVideo('vendor', _vendor.id, url, nextSort).then(function (res) {
+        if (res && res.error) { vidSay('Couldn\u2019t add that video \u2014 try again.', true); return; }
+        if (inp) inp.value = '';
+        vidRow.style.display = 'none';
+        vidSay('', false);
+        _renderPortfolio();
+        _showToast('success', 'Video added \u2014 it plays silently in your gallery.');
+      });
+    });
     card.col.appendChild(file);
     anchorSection.parentNode.insertBefore(card.section, anchorSection.nextSibling);
 
@@ -1197,6 +1276,52 @@ var LokaliProfilePage = (function () {
       _pfPhotos.forEach(function (p, i) {
         var cell = document.createElement('div');
         cell.style.cssText = 'position:relative;width:104px;';
+        if (p.video_url && !p.image_url) {
+          // #117-MIN: video tile. YouTube ids get a real thumbnail (public,
+          // predictable URL); Vimeo gets a branded dark tile — its thumbnails
+          // need an API call this card does not make.
+          var pv = _pfParseVideo(p.video_url);
+          var vtile = document.createElement('div');
+          vtile.style.cssText = 'position:relative;width:104px;height:78px;border-radius:8px;border:1px solid #EEEDF6;background:#2B1A4A;overflow:hidden;';
+          if (pv && pv.host === 'youtube') {
+            var vimg = document.createElement('img');
+            vimg.src = 'https://i.ytimg.com/vi/' + pv.id + '/hqdefault.jpg';
+            vimg.alt = '';
+            vimg.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;opacity:.85;';
+            vtile.appendChild(vimg);
+          }
+          var badge = document.createElement('div');
+          badge.textContent = '\u25B6';
+          badge.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;text-shadow:0 1px 6px rgba(0,0,0,.6);';
+          vtile.appendChild(badge);
+          cell.appendChild(vtile);
+          if (i === 0) {
+            var lead0 = document.createElement('div');
+            lead0.textContent = 'Lead';
+            lead0.style.cssText = 'position:absolute;top:4px;left:4px;background:#6002EE;color:#fff;font:600 9px/1 "Plus Jakarta Sans",sans-serif;border-radius:5px;padding:3px 6px;';
+            cell.appendChild(lead0);
+          }
+          var bar0 = document.createElement('div');
+          bar0.style.cssText = 'display:flex;justify-content:space-between;margin-top:4px;';
+          function mkB(txt, title, fn, disabled) {
+            var b = document.createElement('button');
+            b.type = 'button'; b.textContent = txt; b.title = title;
+            b.style.cssText = 'border:1px solid #EEEDF6;background:#fff;border-radius:6px;font:600 11px/1 "Plus Jakarta Sans",sans-serif;color:#1A1829;padding:4px 7px;cursor:pointer;' + (disabled ? 'opacity:.3;pointer-events:none;' : '');
+            b.addEventListener('click', fn);
+            return b;
+          }
+          bar0.appendChild(mkB('\u2039', 'Move left', function () { _pfSwap(i, i - 1); }, i === 0));
+          bar0.appendChild(mkB('\u2715', 'Remove video', function () {
+            window.LokaliSupabaseAPI.photos.remove('vendor', p.id).then(function () {
+              _renderPortfolio();
+              _showToast('success', 'Video removed \u2014 saved automatically.');
+            });
+          }, false));
+          bar0.appendChild(mkB('\u203A', 'Move right', function () { _pfSwap(i, i + 1); }, i === _pfPhotos.length - 1));
+          cell.appendChild(bar0);
+          strip.appendChild(cell);
+          return;   // photo path below does not apply
+        }
         var img = document.createElement('img');
         img.src = p.image_url; img.alt = '';
         img.style.cssText = 'width:104px;height:78px;object-fit:cover;border-radius:8px;border:1px solid #EEEDF6;display:block;touch-action:none;cursor:grab;';

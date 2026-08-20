@@ -1131,6 +1131,18 @@
             .order('id', { ascending: true });
         });
       },
+      // #117-MIN: a portfolio VIDEO row (video_url only, no image). The DB CHECK
+      // pins the host allowlist; callers should pre-validate for a friendly
+      // message, but the constraint is the control.
+      addVideo: function (kind, parentId, videoUrl, sortOrder) {
+        var m = PHOTO_TABLES[kind];
+        var row = { video_url: videoUrl, is_active: true };
+        row[m.parent] = parentId;
+        if (sortOrder != null) row.sort_order = sortOrder;
+        return withClient(function (c) {
+          return c.from(m.table).insert(row).select().maybeSingle();
+        });
+      },
       add: function (kind, parentId, imageUrl, sortOrder) {
         var m = PHOTO_TABLES[kind];
         var row = { image_url: imageUrl, is_active: true };
