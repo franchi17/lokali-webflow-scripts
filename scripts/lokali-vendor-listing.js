@@ -1598,17 +1598,10 @@
           // requested "movement"); later videos = thumbnail + play badge so
           // the strip stays calm and the page stays light.
           f.style.position = 'relative';
-          if (!ambientUsed) {
-            ambientUsed = true;
-            var fr = document.createElement('iframe');
-            fr.style.cssText = 'width:100%;height:100%;border:0;background:#000;pointer-events:none;';
-            fr.loading = 'lazy';
-            fr.allow = 'autoplay';
-            fr.tabIndex = -1;
-            fr.setAttribute('aria-hidden', 'true');
-            fr.src = vlEmbedSrc(pv, true);
-            f.appendChild(fr);
-          } else if (pv.host === 'youtube') {
+          // A clean poster ALWAYS renders first (YouTube thumbnails have
+          // predictable URLs; Vimeo gets the brand tile). The player, when it
+          // comes, fades in OVER it — so no YouTube chrome is ever the tile.
+          if (pv.host === 'youtube') {
             var th = document.createElement('img');
             th.src = 'https://i.ytimg.com/vi/' + pv.id + '/hqdefault.jpg';
             th.alt = '';
@@ -1617,9 +1610,74 @@
           } else {
             f.style.background = '#2B1A4A';
           }
+          if (!ambientUsed) {
+            ambientUsed = true;
+            // "Remove all the overlay from the thumbnail" (Francesca 2026-08-21).
+            // Two tricks, because YouTube's embed cannot be made chromeless by
+            // parameters alone (controls=0 hides only the bottom bar; the title
+            // overlay and the paused "More videos" tray are contractual):
+            //  1. CROP-ZOOM: the iframe is oversized ~42% and centered, so the
+            //     top title bar and bottom watermark land OUTSIDE the tile.
+            //  2. PLAY-GATED REVEAL: the iframe stays invisible (opacity 0,
+            //     UNDER the poster) until YouTube's postMessage API reports
+            //     playerState PLAYING — if autoplay is blocked or the video
+            //     forbids embedding (music-label uploads often do), customers
+            //     see the clean poster, never the tray.
+            var fr = document.createElement('iframe');
+            fr.style.cssText = 'position:absolute;left:50%;top:50%;width:142%;height:142%;transform:translate(-50%,-50%);border:0;background:transparent;pointer-events:none;opacity:0;transition:opacity .5s;';
+            fr.loading = 'lazy';
+            fr.allow = 'autoplay';
+            fr.tabIndex = -1;
+            fr.setAttribute('aria-hidden', 'true');
+            // `origin` is REQUIRED for the state stream: with enablejsapi the
+            // widget only posts infoDelivery to the origin named in the URL —
+            // without it the handshake answers 'alreadyInitialized' and then
+            // goes silent (found empirically; the reveal never fired).
+            fr.src = vlEmbedSrc(pv, true) + '&enablejsapi=1&origin=' + encodeURIComponent(window.location.origin) + '&widgetid=1';
+            if (pv.host === 'youtube') {
+              // Handshake: after load, ask the player to stream state events;
+              // reveal only on PLAYING (state 1). Messages are filtered by
+              // SOURCE WINDOW, not just origin, so another embed cannot spoof.
+              window.addEventListener('message', function (ev) {
+                if (ev.source !== fr.contentWindow) return;
+                var d = ev.data;
+                if (typeof d === 'string') { try { d = JSON.parse(d); } catch (e) { return; } }
+                if (d && d.info && d.info.playerState === 1) {
+                  fr.style.opacity = '1';
+                  var b1 = f.querySelector('[data-vl-badge]');
+                  if (b1) b1.style.opacity = '0';
+                }
+              });
+              fr.addEventListener('load', function () {
+                try {
+                  fr.contentWindow.postMessage(JSON.stringify({ event: 'listening', id: 'lok-amb', channel: 'widget' }), '*');
+                } catch (e) {}
+              });
+            } else {
+              // Vimeo: same play-gated reveal, via Vimeo's player events.
+              window.addEventListener('message', function (ev) {
+                if (ev.source !== fr.contentWindow) return;
+                var d = ev.data;
+                if (typeof d === 'string') { try { d = JSON.parse(d); } catch (e) { return; } }
+                if (d && (d.event === 'play' || d.event === 'playing' || d.event === 'timeupdate')) {
+                  fr.style.opacity = '1';
+                  var b2 = f.querySelector('[data-vl-badge]');
+                  if (b2) b2.style.opacity = '0';
+                }
+              });
+              fr.addEventListener('load', function () {
+                try {
+                  fr.contentWindow.postMessage(JSON.stringify({ method: 'addEventListener', value: 'playing' }), '*');
+                  fr.contentWindow.postMessage(JSON.stringify({ method: 'addEventListener', value: 'timeupdate' }), '*');
+                } catch (e) {}
+              });
+            }
+            f.appendChild(fr);
+          }
           var badge = document.createElement('div');
           badge.textContent = '\u25B6';
-          badge.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:34px;text-shadow:0 2px 10px rgba(0,0,0,.6);pointer-events:none;';
+          badge.setAttribute('data-vl-badge', '1');
+          badge.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:34px;text-shadow:0 2px 10px rgba(0,0,0,.6);pointer-events:none;transition:opacity .5s;';
           f.appendChild(badge);
           f.style.cursor = 'pointer';
           f.setAttribute('role', 'button');
