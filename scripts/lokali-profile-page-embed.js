@@ -1010,7 +1010,7 @@ var LokaliProfilePage = (function () {
     // quiet neutral pill button that doesn't compete with the cards.
     nav.style.cssText = 'position:sticky;top:0;z-index:40;background:#F7F6FC;display:flex;gap:8px;overflow-x:auto;padding:10px 2px;margin-bottom:8px;font-family:"Plus Jakarta Sans",sans-serif;-webkit-overflow-scrolling:touch;';
     [
-      ['lok-portfolio-card', 'Photos', portfolio],
+      ['lok-portfolio-card', 'Gallery', portfolio],
       ['lok-sec-logo', 'Logo', logo],
       ['lok-sec-business', 'Business info', biz],
       ['lok-about-you', 'Meet the vendor', aboutYou],
