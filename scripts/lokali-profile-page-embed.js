@@ -1165,8 +1165,8 @@ var LokaliProfilePage = (function () {
     // UI whose every insert the SQL trigger would reject. Same shape as the
     // services/products gallery lockout.
     if (!(_PF_MAX > 0)) {
-      var locked = _mkCard('lok-portfolio-card', _PF_ICON, 'Portfolio Photos',
-        '🔒 The photo gallery at the top of your public page is a Pro & Featured feature — 5 photos on Pro, 15 on Featured. It is the first thing a customer sees.');
+      var locked = _mkCard('lok-portfolio-card', _PF_ICON, 'Portfolio Gallery',
+        '🔒 The gallery at the top of your public page is a Pro & Featured feature — 5 items on Pro, 15 on Featured. It is the first thing a customer sees.');
       var seePlans = document.createElement('a');
       seePlans.href = '/pricing';
       seePlans.textContent = 'See plans →';
@@ -1176,8 +1176,8 @@ var LokaliProfilePage = (function () {
       return;
     }
 
-    var card = _mkCard('lok-portfolio-card', _PF_ICON, 'Portfolio Photos',
-      'Up to ' + _PF_MAX + ' photos — they become the big photo gallery at the top of your public page. First photo = the lead image.');
+    var card = _mkCard('lok-portfolio-card', _PF_ICON, 'Portfolio Gallery',
+      'Up to ' + _PF_MAX + ' photos and videos — they become the big gallery at the top of your public page. First item = the lead.');
     var strip = document.createElement('div');
     strip.id = 'lok-pf-strip';
     strip.style.cssText = 'display:flex;flex-wrap:wrap;gap:10px;margin:10px 0;';
@@ -1188,13 +1188,22 @@ var LokaliProfilePage = (function () {
     file.type = 'file'; file.accept = 'image/*'; file.id = 'lok-pf-file';
     file.style.display = 'none';
     pick.addEventListener('click', function (e) { e.preventDefault(); file.click(); });
-    card.col.appendChild(pick);
+    // "line up the add photo and add video" (Francesca 2026-08-21): one flex
+    // row, equal halves — the card column stretches lone children full-width,
+    // which is why they stacked with a stray indent before.
+    var btnRow = document.createElement('div');
+    btnRow.style.cssText = 'display:flex;gap:8px;';
+    pick.style.flex = '1';
+    pick.style.textAlign = 'center';
+    btnRow.appendChild(pick);
+    card.col.appendChild(btnRow);
     // #117-MIN: video joins the gallery — paste a YouTube/Vimeo link. Renders
     // in the storefront strip as a muted looping tile; a video uses one of the
     // same photo slots, so the cap needs no new machinery.
     var vidBtn = _brandBtn('Add video');
     vidBtn.id = 'lok-pf-addvideo';
-    vidBtn.style.marginLeft = '8px';
+    vidBtn.style.flex = '1';
+    vidBtn.style.textAlign = 'center';
     var vidRow = document.createElement('div');
     vidRow.id = 'lok-pf-vidrow';
     vidRow.style.cssText = 'display:none;gap:6px;margin-top:8px;white-space:normal;';
@@ -1209,7 +1218,7 @@ var LokaliProfilePage = (function () {
       var inp0 = document.getElementById('lok-pf-vidurl');
       if (vidRow.style.display === 'flex' && inp0) inp0.focus();
     });
-    card.col.appendChild(vidBtn);
+    btnRow.appendChild(vidBtn);
     card.col.appendChild(vidRow);
     var vidHint = document.createElement('p');
     vidHint.id = 'lok-pf-vidhint';
