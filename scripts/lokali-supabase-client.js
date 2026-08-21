@@ -1335,6 +1335,13 @@
     admin: {
       overview: function () {
         return withClient(function (c) { return c.rpc('admin_overview'); });
+      },
+      // Printed-QR scan stats (sql/patch_qr_scans.sql). Its OWN RPC, not more
+      // keys on admin_overview — redefining that function is how the exit-
+      // survey section went blank in production (2026-08-16). is_admin()-gated
+      // server-side; non-admins get { ok:false, reason:'not_admin' }.
+      qrScans: function () {
+        return withClient(function (c) { return c.rpc('admin_qr_scans'); });
       }
     },
     // #96-SUGGEST — subcategory taxonomy + the vendor suggestion pipeline.

@@ -945,6 +945,7 @@
     appendSpotlightSection(wrap, ov);
     appendSpotlightCreativesSection(wrap);
     appendExitSurveySection(wrap, ov);
+    appendQrScansSection(wrap);
     return wrap;
   }
 
@@ -1147,6 +1148,61 @@
       row.appendChild(meta);
       wrap.appendChild(row);
     });
+  }
+
+  // ── QR code scans (sql/patch_qr_scans.sql) ─────────────────
+  // Scans of the printed codes (assets/golokali-qr-*.png — the square business
+  // flyer first). lokali-qr-tracker.js records a row when a visitor lands with
+  // utm_source=qr; this reads the is_admin()-gated admin_qr_scans() RPC.
+  // Deliberately its OWN RPC + self-fetching section (same shape as
+  // appendSpotlightCreativesSection): admin_overview() stays untouched.
+  function appendQrScansSection(wrap) {
+    var API = window.LokaliSupabaseAPI && window.LokaliSupabaseAPI.admin;
+    if (!API || typeof API.qrScans !== 'function') return; // stale client cache: no-op
+    var host = el('div');
+    wrap.appendChild(host);
+
+    API.qrScans().then(function (res) {
+      var d = (res && res.data) || {};
+      if (d.ok !== true) return;                  // not admin / patch not run yet
+
+      var t = el('div', 'lk-admin-qtitle');
+      t.style.marginTop = '18px';
+      t.appendChild(document.createTextNode('QR code scans'));
+      t.appendChild(el('span', 'lk-admin-qcount', String(d.last_30d != null ? d.last_30d : 0)));
+      host.appendChild(t);
+      host.appendChild(el('p', 'lk-admin-sub',
+        'Visits from your printed QR codes — counted once per visit when someone scans and lands on the site. The badge is the last 30 days.'));
+
+      var stats = el('div', 'lk-admin-stats');
+      [[d.today, 'Today'], [d.last_7d, 'Last 7 days'],
+       [d.last_30d, 'Last 30 days'], [d.total, 'All time']].forEach(function (s) {
+        var tile = el('div', 'lk-admin-stat');
+        tile.appendChild(el('div', 'lk-admin-stat-num', esc(String(s[0] != null ? s[0] : '—'))));
+        tile.appendChild(el('div', 'lk-admin-stat-lbl', esc(s[1])));
+        stats.appendChild(tile);
+      });
+      host.appendChild(stats);
+
+      var camps = Array.isArray(d.campaigns) ? d.campaigns : [];
+      if (!camps.length) {
+        host.appendChild(el('div', 'lk-admin-empty',
+          'No scans yet — the first flyer scan lands here.'));
+        return;
+      }
+      camps.forEach(function (c) {
+        var row = el('div', 'lk-admin-row');
+        var meta = el('div', 'lk-admin-row-meta');
+        var l1 = el('div', 'lk-admin-row-l1');
+        l1.textContent = c.campaign === 'flyer' ? 'Square business flyer' : (c.campaign || 'unknown');
+        var l2 = el('div', 'lk-admin-row-l2');
+        l2.textContent = String(c.total || 0) + ' total · ' + String(c.last_30d || 0) + ' in 30d' +
+          (c.last_scan ? ' · last ' + fmtSpotDay(c.last_scan) : '');
+        meta.appendChild(l1); meta.appendChild(l2);
+        row.appendChild(meta);
+        host.appendChild(row);
+      });
+    }).catch(function () {});
   }
 
   function appendSpotlightSection(wrap, ov) {
