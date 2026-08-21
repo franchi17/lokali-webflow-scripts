@@ -825,9 +825,10 @@
       ".lk-admin-stat{background:#F7F6FC;border-radius:12px;padding:10px 12px;}" +
       ".lk-admin-stat-num{font-size:20px;font-weight:700;color:#1A1829;}" +
       ".lk-admin-stat-lbl{font-size:11px;color:#8E8BA6;margin-top:2px;}" +
-      ".lk-admin-section{background:#FBFAFE;border:1px solid #EEEDF6;border-radius:12px;padding:16px 18px;margin-bottom:14px;}" +
-      ".lk-admin-section:last-child{margin-bottom:0;}" +
-      ".lk-admin-qtitle{font-size:13px;font-weight:600;color:#4A4761;margin:0 0 4px;display:flex;align-items:center;gap:8px;}" +
+      ".lk-admin-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px;}" +
+      ".lk-admin-section{background:#FBFAFE;border:1px solid #EEEDF6;border-radius:12px;padding:16px 18px;}" +
+      ".lk-admin-section-wide{grid-column:1/-1;}" +
+      ".lk-admin-qtitle{font-size:14px;font-weight:700;color:#1A1829;margin:0 0 4px;display:flex;align-items:center;gap:8px;}" +
       ".lk-admin-qcount{font-size:10.5px;font-weight:600;background:#F3EBFF;color:#6002EE;border-radius:100px;padding:1px 8px;}" +
       ".lk-admin-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 0;border-top:.5px solid #EEEDF6;}" +
       ".lk-admin-row-meta{flex:1;min-width:170px;}" +
@@ -865,7 +866,13 @@
     });
     wrap.appendChild(stats);
 
-    var sugSec = el('div', 'lk-admin-section');
+    // Sections live in a responsive 2-col grid: quiet sections sit side by side
+    // as compact cards; sections with queue rows span the full width (the rows
+    // carry inputs/buttons and need the horizontal room).
+    var grid = el('div', 'lk-admin-grid');
+    wrap.appendChild(grid);
+
+    var sugSec = el('div', 'lk-admin-section' + (a.queue.length ? ' lk-admin-section-wide' : ''));
     var qt = el('div', 'lk-admin-qtitle');
     qt.appendChild(document.createTextNode('Tag suggestions'));
     var qc = el('span', 'lk-admin-qcount', String(a.queue.length));
@@ -943,13 +950,13 @@
       row.appendChild(meta); row.appendChild(input); row.appendChild(ok); row.appendChild(no);
       sugSec.appendChild(row);
     });
-    wrap.appendChild(sugSec);
+    grid.appendChild(sugSec);
 
-    appendReportsSection(wrap, ov);
-    appendSpotlightSection(wrap, ov);
-    appendSpotlightCreativesSection(wrap);
-    appendExitSurveySection(wrap, ov);
-    appendQrScansSection(wrap);
+    appendReportsSection(grid, ov);
+    appendSpotlightSection(grid, ov);
+    appendSpotlightCreativesSection(grid);
+    appendExitSurveySection(grid, ov);
+    appendQrScansSection(grid);
     return wrap;
   }
 
@@ -966,7 +973,7 @@
     var rRows = Array.isArray(ov.review_reports) ? ov.review_reports : [];
     var total = vRows.length + rRows.length;
 
-    var sec = el('div', 'lk-admin-section');
+    var sec = el('div', 'lk-admin-section' + (total ? ' lk-admin-section-wide' : ''));
     wrap.appendChild(sec);
     var t = el('div', 'lk-admin-qtitle');
     t.appendChild(document.createTextNode('Reports'));
@@ -1102,7 +1109,7 @@
     var tallies = (ov.exit_reasons && typeof ov.exit_reasons === 'object') ? ov.exit_reasons : {};
     var keys = Object.keys(tallies).sort(function (a, b) { return tallies[b] - tallies[a]; });
 
-    var sec = el('div', 'lk-admin-section');
+    var sec = el('div', 'lk-admin-section' + (rows.length ? ' lk-admin-section-wide' : ''));
     wrap.appendChild(sec);
     var t = el('div', 'lk-admin-qtitle');
     t.appendChild(document.createTextNode('Why people left'));
@@ -1190,6 +1197,7 @@
       host.appendChild(stats);
 
       var camps = Array.isArray(d.campaigns) ? d.campaigns : [];
+      if (camps.length) host.className += ' lk-admin-section-wide';
       if (!camps.length) {
         host.appendChild(el('div', 'lk-admin-empty',
           'No scans yet — the first flyer scan lands here.'));
@@ -1214,7 +1222,7 @@
     var rows = Array.isArray(ov.spotlights) ? ov.spotlights : [];
     var waiting = ov.spotlight_waitlist_open;
 
-    var sec = el('div', 'lk-admin-section');
+    var sec = el('div', 'lk-admin-section' + (rows.length ? ' lk-admin-section-wide' : ''));
     wrap.appendChild(sec);
     var t = el('div', 'lk-admin-qtitle');
     t.appendChild(document.createTextNode('Spotlight bookings'));
@@ -1281,6 +1289,7 @@
 
     function draw(rows) {
       host.innerHTML = '';
+      host.className = 'lk-admin-section' + (rows.length ? ' lk-admin-section-wide' : '');
       var pending = rows.filter(function (r) { return r.status === 'pending'; }).length;
       var t = el('div', 'lk-admin-qtitle');
       t.appendChild(document.createTextNode('Spotlight ad creative'));
