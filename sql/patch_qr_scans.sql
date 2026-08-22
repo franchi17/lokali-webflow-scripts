@@ -1,3 +1,4 @@
+-- ✅ FOLDED INTO BASE FILES 2026-08-22 (DR drill — found missing from the rebuilt sandbox: schema.sql §13, rls.sql, fn_admin.sql). Canonical copy now lives in docs/supabase/patch_qr_scans.sql — this folder is the wrong home for SQL.
 -- patch_qr_scans.sql — QR-code scan tracking for printed marketing (#flyer)
 -- ---------------------------------------------------------------------------
 -- Run once in the Supabase SQL editor (api.golokali.com project).
