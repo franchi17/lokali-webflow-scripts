@@ -1275,6 +1275,14 @@
   // PAGE MOUNTS (same element ids the Clerk widgets mounted into)
   // ──────────────────────────────────────────────────────────────────────────
   function mountAuthUI() {
+    // Recovery owns the mount: verifyOtp on a recovery link creates a SESSION
+    // before the new password is set, so the `_session` branch below would
+    // overwrite the set-password form with the "Signing you in…" card (#150
+    // regression test, 2026-08-21 — the form flashed and the user was signed
+    // in without ever entering a password). showRecoveryUI/renderRecovery
+    // paint this mount themselves; leave it alone until the form clears
+    // _recoveryMode and routes away.
+    if (_recoveryMode) return;
     var signInEl = document.getElementById('clerk-sign-in');
     var signUpEl = document.getElementById('clerk-sign-up');
     var userBtnEl = document.getElementById('clerk-user-button');
