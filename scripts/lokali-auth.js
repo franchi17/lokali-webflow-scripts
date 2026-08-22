@@ -1568,8 +1568,17 @@
         // `token_hash` — verify it explicitly here. The Supabase email templates
         // point confirmation links at `/login?token_hash=…&type=email`.
         var _thSeen = false;
-        if (!_session) {
-          var _otp = otpFromUrlOrStash();
+        // #150 (2026-08-22, F's re-test): a RECOVERY link must be honoured even
+        // when this browser already holds a session — previously the whole
+        // block was skipped on `_session`, so a signed-in user clicking "reset
+        // password" was routed straight to the dashboard with the token unspent
+        // and no chance to choose a new password. Detect recovery FIRST and flip
+        // _recoveryMode before anything (initialKick / routeAfterAuth) can route.
+        var _otp0 = otpFromUrlOrStash();
+        var _isRecoveryLink = !!(_otp0 && _otp0.token_hash && /recovery/i.test(_otp0.type || ''));
+        if (_isRecoveryLink) _recoveryMode = true;
+        if (!_session || _isRecoveryLink) {
+          var _otp = _otp0;
           var _th = _otp && _otp.token_hash;
           var _ty = _otp && _otp.type;
           _thSeen = !!_th;
