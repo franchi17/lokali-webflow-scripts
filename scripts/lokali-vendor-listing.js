@@ -90,7 +90,7 @@
     6: { bg: '#FFF3EA', text: '#FF6B00', url: ASSET + '6a186b067365d964abee8918_utensils-solid.png' },  // Food
     7: { bg: '#EAFAF2', text: '#1D6A45', url: ASSET + '6a186b06cfcb6c4d6d1e1cf7_heart-regular.png' },    // Wellness
     8: { bg: '#F7F6FC', text: '#4A4761', url: ASSET + '6a186b06a37dcea6514f15f9_house-regular.png' },    // Home
-    9: { bg: '#EEF3F8', text: '#2C5470', url: ASSET + '6a89a528aefdfff15864c410_building-columns-solid.svg' } // Professional Services (#152, FA building-columns)
+    9: { bg: '#EEF3F8', text: '#2C5470', url: ASSET + '6a89a66cb52c25150db94d06_user-tie-solid.svg' } // Professional Services (#152, FA user-tie)
   };
 
   // Self-contained masked icon: recolors any silhouette PNG/SVG to `color`.

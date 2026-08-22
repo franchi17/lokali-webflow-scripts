@@ -262,7 +262,7 @@
     { slug: 'food',        label: 'Food',              url: ASSET + '6a186b067365d964abee8918_utensils-solid.png' },
     { slug: 'handcrafted', label: 'Handcrafted Goods', url: ASSET + '6a186b061a80eb9ba75f0d0a_scissors-solid.png' },
     { slug: 'home',        label: 'Home & Property',              url: ASSET + '6a186b06a37dcea6514f15f9_house-regular.png' },
-    { slug: 'professional', label: 'Professional Services', url: ASSET + '6a89a528aefdfff15864c410_building-columns-solid.svg' }, // #152 Font Awesome building-columns
+    { slug: 'professional', label: 'Professional Services', url: ASSET + '6a89a66cb52c25150db94d06_user-tie-solid.svg' }, // #152 Font Awesome user-tie
     { slug: 'wellness',    label: 'Wellness',          url: ASSET + '6a186b06cfcb6c4d6d1e1cf7_heart-regular.png' }
   ];
   var TOGGLE_LIST = [
