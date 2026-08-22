@@ -1574,7 +1574,8 @@ var LokaliProfilePage = (function () {
     food:        _CAT_ICON_ASSET + '6a186b067365d964abee8918_utensils-solid.png',
     handcrafted: _CAT_ICON_ASSET + '6a186b061a80eb9ba75f0d0a_scissors-solid.png',
     home:        _CAT_ICON_ASSET + '6a186b06a37dcea6514f15f9_house-regular.png',
-    wellness:    _CAT_ICON_ASSET + '6a186b06cfcb6c4d6d1e1cf7_heart-regular.png'
+    wellness:    _CAT_ICON_ASSET + '6a186b06cfcb6c4d6d1e1cf7_heart-regular.png',
+    professional: 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2 2 7v2h20V7L12 2zM4 11h2v7H4zm5 0h2v7H9zm4 0h2v7h-2zm5 0h2v7h-2zM2 20h20v2H2z"/></svg>') // #152 inline silhouette
   };
   var _categoryPillRowEl = null;
 

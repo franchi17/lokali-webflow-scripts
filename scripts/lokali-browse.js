@@ -80,7 +80,9 @@
     5: { slug: 'events',      label: 'Events & Entertainment',            bg: '#F3EBFF', text: '#6002EE' },
     6: { slug: 'food',        label: 'Food',              bg: '#FFF3EA', text: '#FF6B00' },
     7: { slug: 'wellness',    label: 'Wellness',          bg: '#EAFAF2', text: '#1D6A45' },
-    8: { slug: 'home',        label: 'Home & Property',              bg: '#F7F6FC', text: '#4A4761' }
+    8: { slug: 'home',        label: 'Home & Property',              bg: '#F7F6FC', text: '#4A4761' },
+    // #152 2026-08-22 — legal / tax / insurance / financial planning (patch_professional_services_category.sql)
+    9: { slug: 'professional', label: 'Professional Services', bg: '#EEF3F8', text: '#2C5470' }
   };
 
   // #96 — curated subcategory taxonomy, keyed by category id. Source of truth
@@ -109,7 +111,7 @@
       { slug: 'marketing',            label: 'Marketing & social media' },
       { slug: 'graphic-design',       label: 'Graphic design' },
       { slug: 'virtual-assistance',   label: 'Virtual assistance' },
-      { slug: 'notary',               label: 'Notary services' },
+      { slug: 'web-design',           label: 'Web design & development' }, // #152: notary moved to 9
       { slug: 'consulting',           label: 'Consulting' },
       { slug: 'it-support',           label: 'IT & tech support' },
       { slug: 'copywriting',          label: 'Copywriting' }
@@ -174,6 +176,16 @@
       { slug: 'pool-maintenance',     label: 'Pool maintenance' },
       { slug: 'interior-decorating',  label: 'Interior decorating & staging' },
       { slug: 'pest-control',         label: 'Pest control' }
+    ],
+    9: [ // Professional Services (#152)
+      { slug: 'family-law',           label: 'Family law' },
+      { slug: 'estate-planning',      label: 'Estate planning & wills' },
+      { slug: 'tax-preparation',      label: 'Tax preparation & CPAs' },
+      { slug: 'financial-planning',   label: 'Financial planning' },
+      { slug: 'insurance',            label: 'Insurance agents' },
+      { slug: 'notary',               label: 'Notary services' },
+      { slug: 'immigration-law',      label: 'Immigration law' },
+      { slug: 'real-estate-law',      label: 'Real-estate attorneys' }
     ]
   };
   var SUBCAT_BY_SLUG = {}; // slug -> { label, catId }
@@ -241,6 +253,9 @@
   // via CSS mask (so PNG/SVG and any source color all render in the brand color).
   var ICON_VIOLET = '#6002EE';
   var ASSET = 'https://cdn.prod.website-files.com/6989095758ae17edfc424d30/';
+  // #152: inline silhouette (a data: URL masks exactly like the hosted ones) —
+  // no Webflow asset upload needed for the 9th category.
+  var ICON_PROFESSIONAL = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2 2 7v2h20V7L12 2zM4 11h2v7H4zm5 0h2v7H9zm4 0h2v7h-2zm5 0h2v7h-2zM2 20h20v2H2z"/></svg>');
   var CATEGORY_LIST = [
     { slug: 'all',         label: 'All categories',    url: ASSET + '6a1af18050966f1b31aac321_star-regular.png' },
     { slug: 'beauty',      label: 'Beauty',            url: ASSET + '6a18f2524e31974a75003735_hair%20dryer.svg' },
@@ -250,6 +265,7 @@
     { slug: 'food',        label: 'Food',              url: ASSET + '6a186b067365d964abee8918_utensils-solid.png' },
     { slug: 'handcrafted', label: 'Handcrafted Goods', url: ASSET + '6a186b061a80eb9ba75f0d0a_scissors-solid.png' },
     { slug: 'home',        label: 'Home & Property',              url: ASSET + '6a186b06a37dcea6514f15f9_house-regular.png' },
+    { slug: 'professional', label: 'Professional Services', url: ICON_PROFESSIONAL },
     { slug: 'wellness',    label: 'Wellness',          url: ASSET + '6a186b06cfcb6c4d6d1e1cf7_heart-regular.png' }
   ];
   var TOGGLE_LIST = [

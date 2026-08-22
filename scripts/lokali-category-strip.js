@@ -22,6 +22,8 @@
  *   <=767px  158px chip + 10px horizontal margin = 168 x 8 = 1344px
  * One track scrolls exactly its own width, so the 2 clones make the seam
  * invisible. If the chip width/margin changes in Webflow, change it here too.
+ * The chip COUNT is read from the DOM at start() (#152 added a 9th category),
+ * so only the per-chip metrics are hardcoded.
  *
  * Accessibility: the real track keeps its list semantics; the clones are
  * aria-hidden (they carry no links, so there is no tab-order duplication).
@@ -36,8 +38,14 @@
   'use strict';
 
   var STYLE_ID = 'lcs-motion-style';
-  var DESKTOP_TRACK = 1632; // px — one full track, desktop metrics
-  var MOBILE_TRACK = 1344;  // px — one full track, <=767px metrics
+  // #152: per-chip metrics; the track length is chip-count × these, counted
+  // from the live Webflow markup at start() so adding/removing a chip in the
+  // Designer needs no script change (8 chips = 1632 / 1344 px as before).
+  var DESKTOP_CHIP = 204;   // px — 190 chip + 14 horizontal margin
+  var MOBILE_CHIP = 168;    // px — 158 chip + 10 horizontal margin
+  var DEFAULT_CHIPS = 8;
+  var DESKTOP_TRACK = DESKTOP_CHIP * DEFAULT_CHIPS; // recomputed in start()
+  var MOBILE_TRACK = MOBILE_CHIP * DEFAULT_CHIPS;
   var DURATION = 36;        // s  — ~45px/s, the readable band for a logo marquee
 
   var ICON_PAUSE =
@@ -111,6 +119,10 @@
   function start() {
     var section = document.querySelector('.lcs-section');
     if (!section) return; // not the homepage, or the section was removed
+
+    var realTrack = section.querySelector('.lcs-track:not(.lcs-clone)');
+    var n = realTrack ? realTrack.children.length : 0;
+    if (n > 0) { DESKTOP_TRACK = DESKTOP_CHIP * n; MOBILE_TRACK = MOBILE_CHIP * n; }
 
     injectStyle();
 
