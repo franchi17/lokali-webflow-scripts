@@ -151,6 +151,9 @@
     'text_messages', 'whatsapp_messages', 'phone_calls', // phone_calls = #76c call preference
     'phone_number', 'phone_visible',
     'contact_email', 'address',
+    // #147 private address geo (written by the profile page after the address
+    // resolves through Google Places; never in the public column grant)
+    'address_place_id', 'address_lat', 'address_lng', 'address_city', 'address_state', 'address_country',
     // P2P payment handles (stored bare; URL built at render time).
     'venmo_username', 'cashapp_cashtag', 'paypalme_slug',
     'other_pay_url', 'other_pay_label', 'zelle_contact'
@@ -366,6 +369,11 @@
         return withClient(function (c) {
           return c.rpc('change_vendor_slug', { p_slug: slug });
         });
+      },
+      // #147 admin: vendors whose address resolved OUTSIDE every area they list
+      // (> 50 mi). is_admin()-gated server-side; { data: { ok, flags:[…] } }.
+      adminAddressFlags: function () {
+        return withClient(function (c) { return c.rpc('admin_address_flags'); });
       },
       // Hide / restore the caller's own listing (is_active isn't column-granted;
       // set_vendor_active is the only path). Returns { data: { ok, is_active } }.

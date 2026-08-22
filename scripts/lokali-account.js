@@ -953,6 +953,7 @@
     grid.appendChild(sugSec);
 
     appendReportsSection(grid, ov);
+    appendAddressFlagsSection(grid);   // #147
     appendSpotlightSection(grid, ov);
     appendSpotlightCreativesSection(grid);
     appendExitSurveySection(grid, ov);
@@ -968,6 +969,51 @@
   // first in the panel on purpose: trust/safety outranks bookings and surveys.
   // Data ships in admin_overview(); resolve = admin_resolve_report() (both
   // is_admin()-gated server-side — this UI is convenience, not the gate).
+
+  // #147 — vendors whose address resolved OUTSIDE every area they list (> 50 mi).
+  // Its own RPC (admin_address_flags) — admin_overview() stays untouched.
+  function appendAddressFlagsSection(wrap) {
+    var API = window.LokaliSupabaseAPI && window.LokaliSupabaseAPI.vendors;
+    if (!API || !API.adminAddressFlags) return;
+    var host = el('div', 'lk-admin-section');
+    wrap.appendChild(host);
+    function draw(rows) {
+      host.innerHTML = '';
+      host.className = 'lk-admin-section' + (rows.length ? ' lk-admin-section-wide' : '');
+      var t = el('div', 'lk-admin-qtitle');
+      t.appendChild(document.createTextNode('Address flags'));
+      t.appendChild(el('span', 'lk-admin-qcount', String(rows.length)));
+      host.appendChild(t);
+      host.appendChild(el('p', 'lk-admin-sub',
+        'Vendors whose business address is more than 50 miles from every area they list. Nothing is blocked — this is your cue to reach out. Fixes itself when they update the address or their areas.'));
+      if (!rows.length) { host.appendChild(el('div', 'lk-admin-empty', 'No out-of-area addresses right now.')); return; }
+      rows.forEach(function (r) {
+        var row = el('div', 'lk-admin-row');
+        var meta = el('div', 'lk-admin-row-meta');
+        var l1 = el('div', 'lk-admin-row-l1');
+        l1.textContent = (r.business_name || 'Unknown vendor') + ' — ' + [r.city, r.state].filter(Boolean).join(', ');
+        var l2 = el('div', 'lk-admin-row-l2');
+        l2.textContent = (r.nearest_miles != null ? ('~' + r.nearest_miles + ' mi from the nearest listed area') : 'distance unknown') +
+          ' · lists: ' + (r.areas || '—') + (r.is_publish_ready ? ' · LIVE on The Market' : ' · not public yet') +
+          (r.checked_at ? ' · ' + fmtSpotDay(r.checked_at) : '');
+        meta.appendChild(l1); meta.appendChild(l2);
+        row.appendChild(meta);
+        if (r.slug) {
+          var view = document.createElement('a'); view.className = 'lk-admin-btn'; view.textContent = 'View';
+          view.href = '/' + encodeURIComponent(r.slug); view.target = '_blank'; view.rel = 'noopener';
+          row.appendChild(view);
+        }
+        host.appendChild(row);
+      });
+    }
+    host.appendChild(el('div', 'lk-admin-empty', 'Loading…'));
+    API.adminAddressFlags().then(function (res) {
+      var d = res && res.data;
+      if (!d || d.ok === false) { host.innerHTML = ''; host.appendChild(el('div', 'lk-admin-empty', 'Address flags unavailable (apply patch_vendor_address_geo.sql).')); return; }
+      draw(d.flags || []);
+    }).catch(function () { host.innerHTML = ''; host.appendChild(el('div', 'lk-admin-empty', 'Address flags unavailable.')); });
+  }
+
   function appendReportsSection(wrap, ov) {
     var vRows = Array.isArray(ov.vendor_reports) ? ov.vendor_reports : [];
     var rRows = Array.isArray(ov.review_reports) ? ov.review_reports : [];

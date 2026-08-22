@@ -530,6 +530,14 @@
         profile_photo: payload.profile_photo != null ? String(payload.profile_photo)
           : (payload.profilePhoto != null ? String(payload.profilePhoto) : ''),
         address: payload.address != null ? String(payload.address) : '',
+        // #147 private address geo — present only when the profile page resolved
+        // the address through Places this save; absent key = leave the columns alone.
+        address_place_id: payload.address_place_id === undefined ? undefined : (payload.address_place_id == null ? null : String(payload.address_place_id)),
+        address_lat:      payload.address_lat      === undefined ? undefined : (payload.address_lat == null || isNaN(Number(payload.address_lat)) ? null : Number(payload.address_lat)),
+        address_lng:      payload.address_lng      === undefined ? undefined : (payload.address_lng == null || isNaN(Number(payload.address_lng)) ? null : Number(payload.address_lng)),
+        address_city:     payload.address_city     === undefined ? undefined : (payload.address_city == null ? null : String(payload.address_city).slice(0, 80)),
+        address_state:    payload.address_state    === undefined ? undefined : (payload.address_state == null ? null : String(payload.address_state).slice(0, 40)),
+        address_country:  payload.address_country  === undefined ? undefined : (payload.address_country == null ? null : String(payload.address_country).slice(0, 2).toUpperCase()),
         contact_email: payload.contact_email != null ? String(payload.contact_email) : '',
         phone_number: payload.phone_number != null ? String(payload.phone_number) : '',
         text_messages: !!payload.text_messages,

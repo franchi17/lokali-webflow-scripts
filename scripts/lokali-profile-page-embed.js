@@ -429,6 +429,7 @@ var LokaliProfilePage = (function () {
         populateUI();
         _dbg('[ProfilePage] populateUI done, #business-name value:', (document.getElementById('business-name') || {}).value);
         bindEvents();
+        try { _injectAddressInfo(); } catch (e0) {}
         setTimeout(function () {
           populateUI();
           _dbg('[ProfilePage] 2nd populateUI done, #business-name value:', (document.getElementById('business-name') || {}).value);
@@ -1897,6 +1898,7 @@ var LokaliProfilePage = (function () {
       contact_email:        _getValueByAnyId(['input-contact-email', 'contact-email', 'contact_email', 'public_email']),
       phone_number:         phoneNumber,
       address:              addressValue,
+      // #147: geo keys are attached in save() after the Places resolution
       profile_photo:        profilePhoto,
       // #76e Meet the Vendor (owner photo: freshly uploaded URL wins, else keep saved)
       owner_name:           _getValueByAnyId(['input-owner-name']),
@@ -1925,6 +1927,9 @@ var LokaliProfilePage = (function () {
 
   function _validate(payload) {
     if (!payload.business_name || !payload.business_name.trim()) return 'Business name is required.';
+    // #147 (F 2026-08-22): address is required — never public, used to confirm the
+    // vendor is in the neighborhood they list under.
+    if (!payload.address || !String(payload.address).trim()) return 'Your business address is required. It’s never shown publicly — we use it only to confirm you’re in the neighborhood you list under.';
     if (payload.contact_email && payload.contact_email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.contact_email)) return 'Please enter a valid email address.';
     if (_phone) {
       var phoneEl = _phone.input || document.getElementById('input-phone') || document.getElementById('phone');
@@ -1962,6 +1967,8 @@ var LokaliProfilePage = (function () {
       contact_email:        payload.contact_email != null ? String(payload.contact_email) : '',
       phone_number:         payload.phone_number != null ? String(payload.phone_number) : '',
       address:              payload.address != null ? String(payload.address) : '',
+      address_place_id:     payload.address_place_id, address_lat: payload.address_lat, address_lng: payload.address_lng,
+      address_city:         payload.address_city, address_state: payload.address_state, address_country: payload.address_country,
       profile_photo:        (payload.profile_photo != null ? String(payload.profile_photo) : (payload.profilePhoto != null ? String(payload.profilePhoto) : '')),
       owner_name:           payload.owner_name != null ? String(payload.owner_name) : '',
       owner_bio:            payload.owner_bio != null ? String(payload.owner_bio) : '',
@@ -1978,6 +1985,109 @@ var LokaliProfilePage = (function () {
 
   // The save buttons are Webflow DIVs, so element.disabled alone doesn't stop
   // clicks — gate re-entry with a flag and dim both buttons (top + bottom).
+
+  // ── #147 address: required · resolved through Google Places · US-only ─────
+  // Francesca 2026-08-22: the address is never public; it exists so Lokali can
+  // confirm a vendor is actually in the neighborhood they list under. The
+  // typed address is resolved through Places at save time (Text Search (New) —
+  // works even if the vendor typed by hand instead of picking a suggestion);
+  // non-US is refused here AND by a DB CHECK; coordinates are saved privately
+  // and a DB trigger flags anything > 50 miles from every listed area for the
+  // admin queue (never a block — see patch_vendor_address_geo.sql).
+  var _addrGeo = null;          // last resolved geo for the address in the field
+  var _addrGeoFor = '';         // the address string _addrGeo belongs to
+  var ADDR_WHY = 'Your address is never public. We use it only to confirm you’re actually in the neighborhood you list under — Lokali is local, so it should be within about 50 miles of an area you serve. US addresses only.';
+
+  function _addrComponent(comps, type, short) {
+    if (!comps) return null;
+    for (var i = 0; i < comps.length; i++) {
+      var c = comps[i]; var types = c.types || [];
+      if (types.indexOf(type) !== -1) return short ? (c.shortText || c.short_name || null) : (c.longText || c.long_name || null);
+    }
+    return null;
+  }
+
+  // Resolves {ok:true, geo|null} or {ok:false, message}. geo:null = Google not
+  // reachable (save proceeds without coordinates; nothing is flagged).
+  function _resolveAddress(addr) {
+    addr = String(addr || '').trim();
+    if (!addr) return Promise.resolve({ ok: true, geo: null });
+    if (_addrGeo && _addrGeoFor === addr) return Promise.resolve({ ok: true, geo: _addrGeo });
+    var g = window.google;
+    if (!g || !g.maps || !g.maps.places || !g.maps.places.Place || !g.maps.places.Place.searchByText) {
+      return Promise.resolve({ ok: true, geo: null });
+    }
+    var timeout = new Promise(function (res) { setTimeout(function () { res({ ok: true, geo: null }); }, 8000); });
+    var lookup = g.maps.places.Place.searchByText({
+      textQuery: addr, fields: ['id', 'location', 'formattedAddress', 'addressComponents'], maxResultCount: 1
+    }).then(function (r) {
+      var p = r && r.places && r.places[0];
+      if (!p || !p.location) {
+        return { ok: false, message: 'We couldn’t find that address — please start typing and pick it from the suggestions.' };
+      }
+      var country = _addrComponent(p.addressComponents, 'country', true);
+      if (country && country !== 'US') {
+        return { ok: false, message: 'Lokali is US-only right now — please enter a US business address.' };
+      }
+      var lat = typeof p.location.lat === 'function' ? p.location.lat() : p.location.lat;
+      var lng = typeof p.location.lng === 'function' ? p.location.lng() : p.location.lng;
+      var geo = {
+        address_place_id: p.id || null,
+        address_lat: lat, address_lng: lng,
+        address_city: _addrComponent(p.addressComponents, 'locality') || _addrComponent(p.addressComponents, 'sublocality') || _addrComponent(p.addressComponents, 'postal_town') || null,
+        address_state: _addrComponent(p.addressComponents, 'administrative_area_level_1', true) || null,
+        address_country: country || 'US',
+        formatted: p.formattedAddress || addr
+      };
+      _addrGeo = geo; _addrGeoFor = geo.formatted;
+      return { ok: true, geo: geo };
+    }).catch(function () { return { ok: true, geo: null }; });
+    return Promise.race([lookup, timeout]);
+  }
+
+  function _injectAddressInfo() {
+    var input = _getAddressEl();
+    if (!input || input.getAttribute('data-lok-addr-info') === '1') return;
+    input.setAttribute('data-lok-addr-info', '1');
+    input.setAttribute('required', 'required');
+    input.setAttribute('aria-required', 'true');
+    if (!document.getElementById('lok-addr-info-css')) {
+      var st = document.createElement('style'); st.id = 'lok-addr-info-css';
+      st.textContent =
+        '.lok-addr-info{font-family:"Plus Jakarta Sans",sans-serif;font-size:12px;color:#6C6880;margin:6px 0 0;display:flex;align-items:center;gap:6px;position:relative;}' +
+        '.lok-addr-info-btn{display:inline-flex;align-items:center;gap:5px;background:none;border:none;padding:0;font:inherit;color:#6002EE;cursor:pointer;}' +
+        '.lok-addr-info-btn svg{flex:none;}' +
+        '.lok-addr-pop{display:none;position:absolute;left:0;top:calc(100% + 8px);z-index:50;max-width:360px;background:#fff;border:1px solid #E4DEF4;border-radius:12px;box-shadow:0 8px 28px rgba(26,24,41,.12);padding:12px 14px;font-size:12.5px;line-height:1.5;color:#3E3A55;}' +
+        '.lok-addr-info.open .lok-addr-pop,.lok-addr-info:hover .lok-addr-pop{display:block;}' +
+        '.lok-addr-note{font-family:"Plus Jakarta Sans",sans-serif;font-size:12px;color:#9A5B00;background:#FFF6E5;border:1px solid #FFE2A8;border-radius:8px;padding:8px 10px;margin-top:8px;display:none;}';
+      document.head.appendChild(st);
+    }
+    var row = document.createElement('div'); row.className = 'lok-addr-info';
+    var btn = document.createElement('button'); btn.type = 'button'; btn.className = 'lok-addr-info-btn';
+    btn.setAttribute('aria-expanded', 'false');
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 16v-5M12 8h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+    btn.appendChild(document.createTextNode('Required — why we ask for this'));
+    var pop = document.createElement('div'); pop.className = 'lok-addr-pop'; pop.setAttribute('role', 'tooltip');
+    pop.innerHTML = '<strong style="color:#1A1829;">Your address is never public.</strong> ' + ADDR_WHY.replace('Your address is never public. ', '');
+    btn.addEventListener('click', function () {
+      var open = !row.classList.contains('open');
+      row.classList.toggle('open', open); btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+    document.addEventListener('click', function (e) { if (!row.contains(e.target)) row.classList.remove('open'); });
+    row.appendChild(btn); row.appendChild(pop);
+    var note = document.createElement('div'); note.className = 'lok-addr-note'; note.id = 'lok-addr-note';
+    var host = input.parentNode;
+    if (host) { host.insertBefore(row, input.nextSibling); host.insertBefore(note, row.nextSibling); }
+    input.addEventListener('input', function () { _addrGeo = null; _addrGeoFor = ''; });
+  }
+
+  function _showAddressNote(text) {
+    var n = document.getElementById('lok-addr-note');
+    if (!n) return;
+    if (!text) { n.style.display = 'none'; n.textContent = ''; return; }
+    n.textContent = text; n.style.display = 'block';
+  }
+
   var _saving = false;
   function _setSaving(on) {
     _saving = on;
@@ -2005,27 +2115,48 @@ var LokaliProfilePage = (function () {
       _setSaving(false);
       return;
     }
-    var body = _normalizePayload(payload);
-    if (typeof console !== 'undefined' && console.log) {
-      _dbg('[ProfilePage] Save payload profile_photo:', body.profile_photo ? body.profile_photo.substring(0, 60) + (body.profile_photo.length > 60 ? '...' : '') : '(empty)');
-    }
-    window.LokaliAPI.vendors.updateMe(body)
-      .then(function (res) {
-        if (res.error) {
-          console.error('[ProfilePage] save error from API:', res.error);
-          _showErrorPopup(res.error || 'Failed to save profile. Please try again.');
-        } else {
-          _vendor = res.data;
-          if (_vendor && _vendor.profile_photo) _uploadedProfilePhotoUrl = null;
-          _dirty = false; // saved — clear the leave-page warning
-          _showSuccessPopup();
-        }
-      })
-      .catch(function (err) {
-        console.error('[ProfilePage] save network error:', err);
-        _showErrorPopup('Network error. Please check your connection and try again.');
-      })
-      .then(function () { _setSaving(false); });
+    // #147: resolve the typed address through Places before anything is written.
+    _resolveAddress(payload.address).then(function (r) {
+      if (!r.ok) { _showErrorPopup(r.message); _setSaving(false); return null; }
+      var geo = r.geo;
+      if (geo) {
+        var addressEl = _getAddressEl();
+        if (addressEl && geo.formatted) { addressEl.value = geo.formatted; payload.address = geo.formatted; }
+        payload.address_place_id = geo.address_place_id; payload.address_lat = geo.address_lat; payload.address_lng = geo.address_lng;
+        payload.address_city = geo.address_city; payload.address_state = geo.address_state; payload.address_country = geo.address_country;
+      }
+      var body = _normalizePayload(payload);
+      if (typeof console !== 'undefined' && console.log) {
+        _dbg('[ProfilePage] Save payload profile_photo:', body.profile_photo ? body.profile_photo.substring(0, 60) + (body.profile_photo.length > 60 ? '...' : '') : '(empty)');
+      }
+      return window.LokaliAPI.vendors.updateMe(body)
+        .then(function (res) {
+          if (res.error) {
+            console.error('[ProfilePage] save error from API:', res.error);
+            _showErrorPopup(res.error || 'Failed to save profile. Please try again.');
+          } else {
+            _vendor = res.data;
+            if (_vendor && _vendor.profile_photo) _uploadedProfilePhotoUrl = null;
+            _dirty = false; // saved — clear the leave-page warning
+            _showSuccessPopup();
+            // Out-of-area? The DB trigger decided (address_verified); read it back
+            // from the owner's full row and tell the vendor plainly.
+            if (geo && window.LokaliAPI.vendors.me) {
+              window.LokaliAPI.vendors.me().then(function (vm) {
+                var v = (vm && vm.data) || null; if (v && v.vendor) v = v.vendor;
+                if (v && v.address_verified === false) {
+                  _showAddressNote('Heads-up: this address is more than 50 miles from the areas you listed, so the Lokali team may reach out to confirm. If that’s a mistake, update the address or your areas.');
+                } else { _showAddressNote(''); }
+              }).catch(function () {});
+            }
+          }
+        })
+        .catch(function (err) {
+          console.error('[ProfilePage] save network error:', err);
+          _showErrorPopup('Network error. Please check your connection and try again.');
+        })
+        .then(function () { _setSaving(false); });
+    });
   }
 
   return { init: init, loadData: loadData, populateUI: populateUI, bindEvents: bindEvents, save: save };
