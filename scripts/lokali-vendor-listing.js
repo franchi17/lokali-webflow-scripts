@@ -2591,6 +2591,8 @@
       '.vl-vreport-link:hover{color:#EE0290;}',
       '.vl-vreport-box{margin-top:10px;padding:12px;background:#FBF7FF;border:.5px solid #E4DCF7;border-radius:10px;max-width:480px;}',
       '.vl-vreport-box select{display:block;width:100%;font:500 12.5px/1.4 ' + FONT + ';color:#1A1829;border:.5px solid #C8C6D8;border-radius:6px;padding:8px;background:#fff;margin-bottom:8px;}',
+      '.vl-vreport-area input{display:block;width:100%;font:400 12.5px/1.4 ' + FONT + ';color:#1A1829;border:.5px solid #C8C6D8;border-radius:6px;padding:8px;background:#fff;margin-bottom:8px;box-sizing:border-box;}',
+      '.vl-vreport-area textarea{margin-bottom:8px;}',
       '.vl-vreport-box textarea{width:100%;min-height:64px;font:400 12.5px/1.5 ' + FONT + ';color:#1A1829;border:.5px solid #C8C6D8;border-radius:6px;padding:8px;box-sizing:border-box;resize:vertical;background:#fff;}',
       '.vl-vreport-note{font:400 11px/1.5 ' + FONT + ';color:#8E8BA6;margin-top:6px;}',
       '.vl-rev-pill{display:inline-flex;align-items:center;gap:5px;font:600 11px/1 ' + FONT + ';color:#2BB673;background:#E4F7EE;border-radius:100px;padding:4px 10px;margin-bottom:8px;}',
@@ -2706,6 +2708,9 @@
     ['not_real', 'Not a real business'],
     ['misleading', 'Misleading listing or photos'],
     ['inappropriate', 'Inappropriate content'],
+    // #135 (F 2026-08-22): a data-quality signal that rides the report queue —
+    // the box asks WHERE the vendor really is and HOW the reporter knows.
+    ['wrong_area', 'Not actually in this neighborhood'],
     ['other', 'Something else']
   ];
 
@@ -2755,13 +2760,36 @@
     var ta = document.createElement('textarea');
     ta.placeholder = 'Tell us what happened — the more detail, the faster we can act.';
     ta.maxLength = 1000;
+    // #135 wrong_area details (shown only for that category). Both answers are
+    // folded into the reason text so the existing queue/email/DB need no
+    // schema change: "Where they really are: … / How I know: … / Notes: …".
+    var areaWrap = ce('div', 'vl-vreport-area');
+    areaWrap.style.display = 'none';
+    var whereIn = document.createElement('input');
+    whereIn.type = 'text'; whereIn.maxLength = 200;
+    whereIn.placeholder = 'Where are they actually based or serving? (city / area)';
+    var howTa = document.createElement('textarea');
+    howTa.maxLength = 600;
+    howTa.placeholder = 'How do you know? (e.g. their website lists another city, they told you they don’t serve here)';
+    areaWrap.appendChild(whereIn); areaWrap.appendChild(howTa);
+    function syncArea() {
+      var on = sel.value === 'wrong_area';
+      areaWrap.style.display = on ? '' : 'none';
+      ta.placeholder = on ? 'Anything else? (optional)' : 'Tell us what happened — the more detail, the faster we can act.';
+    }
+    sel.addEventListener('change', syncArea);
     var actions = ce('div', 'vl-rev-report-actions');
     var send = ce('button', 'vl-rev-report-send'); send.type = 'button'; send.textContent = 'Send report';
     var cancel = ce('button', 'vl-rev-report-cancel'); cancel.type = 'button'; cancel.textContent = 'Cancel';
     cancel.addEventListener('click', function () { box.remove(); link.style.display = ''; });
     send.addEventListener('click', function () {
       var reason = String(ta.value || '').trim();
-      if (reason.length < 5) { ta.focus(); return; }
+      if (sel.value === 'wrong_area') {
+        var wh = String(whereIn.value || '').trim(), hw = String(howTa.value || '').trim();
+        if (wh.length < 2) { whereIn.focus(); return; }
+        if (hw.length < 5) { howTa.focus(); return; }
+        reason = 'Where they really are: ' + wh + '\nHow I know: ' + hw + (reason ? '\nNotes: ' + reason : '');
+      } else if (reason.length < 5) { ta.focus(); return; }
       send.disabled = true; send.textContent = 'Sending…';
       window.LokaliAPI.reviews.reportVendor(vendorId, sel.value, reason).then(function (res) {
         if (res && res.error) { send.disabled = false; send.textContent = 'Send report'; return; }
@@ -2773,8 +2801,9 @@
     actions.appendChild(send); actions.appendChild(cancel);
     var note = ce('div', 'vl-vreport-note');
     note.textContent = 'Reports are reviewed by a person — we may follow up at your account email. The listing stays visible while we check.';
-    box.appendChild(sel); box.appendChild(ta); box.appendChild(actions); box.appendChild(note);
+    box.appendChild(sel); box.appendChild(areaWrap); box.appendChild(ta); box.appendChild(actions); box.appendChild(note);
     wrap.appendChild(box);
+    syncArea();
     ta.focus();
   }
 

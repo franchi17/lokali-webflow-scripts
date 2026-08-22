@@ -987,7 +987,7 @@
       return;
     }
 
-    var CAT_LABELS = { scam: 'Scam / fraud', not_real: 'Not a real business', misleading: 'Misleading', inappropriate: 'Inappropriate', other: 'Other' };
+    var CAT_LABELS = { scam: 'Scam / fraud', not_real: 'Not a real business', misleading: 'Misleading', inappropriate: 'Inappropriate', wrong_area: 'Wrong area \u2014 not in this neighborhood', other: 'Other' };
 
     function reportRow(kind, r) {
       var row = el('div', 'lk-admin-row');

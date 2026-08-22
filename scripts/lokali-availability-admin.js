@@ -218,12 +218,15 @@
     //                     opens it (moved here out of Settings, where it sat
     //                     under the calendar config and read as a booking knob)
     //   .ava-waitlist   = per-date queues for sold-out days
+    // F 2026-08-22: "Accepting new clients" card moved to the TOP, directly under
+    // the requests inbox (all screen sizes) — it is the vendor's primary open/
+    // closed switch and was buried below hours.
     this.mount.innerHTML =
       '<div class="ava-inbox"></div>' +
+      '<div class="ava-newclients"></div>' +
       '<div class="ava-daysoff"></div>' +
       '<div class="ava-settings"></div>' +
       '<div class="ava-hours"></div>' +
-      '<div class="ava-newclients"></div>' +
       '<div class="ava-waitlist"></div>';
     this.$inbox = this.mount.querySelector('.ava-inbox');
     this.$settings = this.mount.querySelector('.ava-settings');
