@@ -866,6 +866,29 @@
     });
     wrap.appendChild(stats);
 
+    // F 2026-08-22: one line that answers "do I need to approve anything?" —
+    // counts from admin_overview() now, plus the two own-RPC queues (creatives,
+    // address flags) filled in as they load. Each count jumps to its section.
+    var attn = el('div', 'lk-admin-attn');
+    attn.setAttribute('data-lk-attn', '');
+    attn.style.cssText = 'display:flex;flex-wrap:wrap;align-items:center;gap:8px;background:#FFF6E5;border:1px solid #FFE2A8;border-radius:12px;padding:10px 14px;margin:0 0 16px;font-size:13px;color:#6B4A00;';
+    wrap.appendChild(attn);
+    window.__lokAttn = { suggestions: a.queue.length, reports: (Number(ov.open_vendor_reports) || 0) + (Number(ov.open_review_reports) || 0), creatives: null, addresses: null };
+    function paintAttn() {
+      var c = window.__lokAttn; var parts = [];
+      if (c.reports) parts.push(c.reports + (c.reports === 1 ? ' report' : ' reports'));
+      if (c.suggestions) parts.push(c.suggestions + (c.suggestions === 1 ? ' tag suggestion' : ' tag suggestions'));
+      if (c.creatives) parts.push(c.creatives + (c.creatives === 1 ? ' ad creative' : ' ad creatives'));
+      if (c.addresses) parts.push(c.addresses + (c.addresses === 1 ? ' address flag' : ' address flags'));
+      attn.innerHTML = '';
+      if (!parts.length) { attn.style.background = '#EAFAF2'; attn.style.borderColor = '#BFE9D2'; attn.style.color = '#1A6640'; attn.appendChild(document.createTextNode('✅ Nothing needs your approval right now.')); return; }
+      attn.style.background = '#FFF6E5'; attn.style.borderColor = '#FFE2A8'; attn.style.color = '#6B4A00';
+      var s = document.createElement('strong'); s.textContent = 'Needs your attention: '; attn.appendChild(s);
+      attn.appendChild(document.createTextNode(parts.join(' · ') + ' — all below. You also get an email within 5 minutes of anything new.'));
+    }
+    window.__lokPaintAttn = paintAttn;
+    paintAttn();
+
     // Sections live in a responsive 2-col grid: quiet sections sit side by side
     // as compact cards; sections with queue rows span the full width (the rows
     // carry inputs/buttons and need the horizontal room).
@@ -980,6 +1003,7 @@
     function draw(rows) {
       host.innerHTML = '';
       host.className = 'lk-admin-section' + (rows.length ? ' lk-admin-section-wide' : '');
+      if (window.__lokAttn) { window.__lokAttn.addresses = rows.length; if (window.__lokPaintAttn) window.__lokPaintAttn(); }
       var t = el('div', 'lk-admin-qtitle');
       t.appendChild(document.createTextNode('Address flags'));
       t.appendChild(el('span', 'lk-admin-qcount', String(rows.length)));
@@ -1014,6 +1038,7 @@
               if (!d || d.ok !== true) { acc.disabled = false; acc.textContent = 'Accept'; l2.textContent += ' · could not accept (' + ((d && d.reason) || (res && res.error && res.error.message) || 'error') + ')'; return; }
               row.remove();
               var cnt = t.querySelector('.lk-admin-qcount'); if (cnt) cnt.textContent = String(Math.max(0, parseInt(cnt.textContent, 10) - 1));
+              if (window.__lokAttn && window.__lokAttn.addresses) { window.__lokAttn.addresses -= 1; if (window.__lokPaintAttn) window.__lokPaintAttn(); }
               if (!host.querySelector('.lk-admin-row')) host.appendChild(el('div', 'lk-admin-empty', 'No out-of-area addresses right now.'));
             }).catch(function () { acc.disabled = false; acc.textContent = 'Accept'; });
           });
@@ -1353,6 +1378,7 @@
       host.innerHTML = '';
       host.className = 'lk-admin-section' + (rows.length ? ' lk-admin-section-wide' : '');
       var pending = rows.filter(function (r) { return r.status === 'pending'; }).length;
+      if (window.__lokAttn) { window.__lokAttn.creatives = pending; if (window.__lokPaintAttn) window.__lokPaintAttn(); }
       var t = el('div', 'lk-admin-qtitle');
       t.appendChild(document.createTextNode('Spotlight ad creative'));
       t.appendChild(el('span', 'lk-admin-qcount', String(pending)));
