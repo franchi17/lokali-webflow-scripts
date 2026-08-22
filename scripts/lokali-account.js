@@ -1003,6 +1003,22 @@
           view.href = '/' + encodeURIComponent(r.slug); view.target = '_blank'; view.rel = 'noopener';
           row.appendChild(view);
         }
+        // #147b Accept — "I checked, they're fine": sticks to THIS address; a new
+        // address goes back through the distance rule. Needs patch_address_accept.sql.
+        if (API.adminAcceptAddress) {
+          var acc = document.createElement('button'); acc.type = 'button'; acc.className = 'lk-admin-btn'; acc.textContent = 'Accept';
+          acc.addEventListener('click', function () {
+            acc.disabled = true; acc.textContent = 'Accepting…';
+            API.adminAcceptAddress(r.id).then(function (res) {
+              var d = res && res.data;
+              if (!d || d.ok !== true) { acc.disabled = false; acc.textContent = 'Accept'; l2.textContent += ' · could not accept (' + ((d && d.reason) || (res && res.error && res.error.message) || 'error') + ')'; return; }
+              row.remove();
+              var cnt = t.querySelector('.lk-admin-qcount'); if (cnt) cnt.textContent = String(Math.max(0, parseInt(cnt.textContent, 10) - 1));
+              if (!host.querySelector('.lk-admin-row')) host.appendChild(el('div', 'lk-admin-empty', 'No out-of-area addresses right now.'));
+            }).catch(function () { acc.disabled = false; acc.textContent = 'Accept'; });
+          });
+          row.appendChild(acc);
+        }
         host.appendChild(row);
       });
     }

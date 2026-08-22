@@ -375,6 +375,10 @@
       adminAddressFlags: function () {
         return withClient(function (c) { return c.rpc('admin_address_flags'); });
       },
+      // #147b admin: accept THIS address (sticks until the address changes).
+      adminAcceptAddress: function (vendorId) {
+        return withClient(function (c) { return c.rpc('admin_accept_address', { p_vendors_id: vendorId }); });
+      },
       // Hide / restore the caller's own listing (is_active isn't column-granted;
       // set_vendor_active is the only path). Returns { data: { ok, is_active } }.
       deactivate: function () {
