@@ -2584,6 +2584,8 @@
       '.vl-rev-report-done{margin-top:10px;font:600 11.5px/1.4 ' + FONT + ';color:#6002EE;}',
       '.vl-rev-reply-btn{display:inline-block;margin-top:10px;margin-right:14px;font:600 11.5px/1 ' + FONT + ';color:#6002EE;background:#F3EBFF;border:none;border-radius:100px;padding:6px 14px;cursor:pointer;}',
       '.vl-rev-reply-btn:hover{background:#E9DCFF;}',
+      '.vl-rev-reply-upsell{display:inline-block;margin-top:10px;margin-right:14px;font:600 11.5px/1.3 ' + FONT + ';color:#6002EE;text-decoration:none;}',
+      '.vl-rev-reply-upsell:hover{text-decoration:underline;}',
       '.vl-vreport{margin-top:28px;padding-top:14px;border-top:.5px solid #EEEDF6;}',
       '.vl-vreport-link{font:500 11.5px/1 ' + FONT + ';color:#8E8BA6;background:none;border:none;padding:0;cursor:pointer;text-decoration:underline;}',
       '.vl-vreport-link:hover{color:#EE0290;}',
@@ -2792,23 +2794,49 @@
       if (v && v.vendor) v = v.vendor; // unwrap if nested
       if (!v || String(v.id) !== String(vendorId)) return; // not the owner
       var canReply = !!API.reviews.reply;
-      $all('[data-rev-id]', panel).forEach(function (card) {
-        // Reply — only when this review has no owner response yet.
-        if (canReply && !card.querySelector('.vl-rev-reply') && !card.querySelector('.vl-rev-reply-btn')) {
-          var rbtn = ce('button', 'vl-rev-reply-btn');
-          rbtn.type = 'button';
-          rbtn.textContent = 'Reply';
-          rbtn.addEventListener('click', function () { openReplyBox(card, rbtn); });
-          card.appendChild(rbtn);
-        }
-        if (card.querySelector('.vl-rev-report')) return;
-        var btn = ce('button', 'vl-rev-report');
-        btn.type = 'button';
-        btn.textContent = 'Report as fraudulent';
-        btn.addEventListener('click', function () { openReportBox(card, btn); });
-        card.appendChild(btn);
+      // Replying is a Pro/Featured perk (F 2026-08-22, patch_review_reply_gate.sql
+      // enforces it server-side via trg_reviews_reply_plan). Free owners get a
+      // soft /pricing nudge instead of the Reply button; the Report button stays
+      // on every plan. If the billing lookup fails we default to SHOWING Reply —
+      // the trigger still refuses and openReplyBox() renders the same nudge.
+      var planP = (API.plans && API.plans.getMyBilling)
+        ? API.plans.getMyBilling().then(function (b) {
+            var f = b && b.data && b.data.features;
+            return !f || f.review_responses_allowed !== false;
+          }).catch(function () { return true; })
+        : Promise.resolve(true);
+      return planP.then(function (planOk) {
+        $all('[data-rev-id]', panel).forEach(function (card) {
+          // Reply — only when this review has no owner response yet.
+          if (canReply && !card.querySelector('.vl-rev-reply') && !card.querySelector('.vl-rev-reply-btn') && !card.querySelector('.vl-rev-reply-upsell')) {
+            if (planOk) {
+              var rbtn = ce('button', 'vl-rev-reply-btn');
+              rbtn.type = 'button';
+              rbtn.textContent = 'Reply';
+              rbtn.addEventListener('click', function () { openReplyBox(card, rbtn); });
+              card.appendChild(rbtn);
+            } else {
+              card.appendChild(replyUpsell());
+            }
+          }
+          if (card.querySelector('.vl-rev-report')) return;
+          var btn = ce('button', 'vl-rev-report');
+          btn.type = 'button';
+          btn.textContent = 'Report as fraudulent';
+          btn.addEventListener('click', function () { openReportBox(card, btn); });
+          card.appendChild(btn);
+        });
       });
     }).catch(function () {});
+  }
+
+  // The Free-plan nudge shown where the Reply button would be.
+  function replyUpsell() {
+    var a = document.createElement('a');
+    a.className = 'vl-rev-reply-upsell';
+    a.href = '/pricing';
+    a.textContent = 'Reply to reviews with Pro \u2192';
+    return a;
   }
 
   // Owner-only inline reply composer on a review card. On success it drops the
@@ -2830,7 +2858,15 @@
       if (reply.length < 1) { ta.focus(); return; }
       send.disabled = true; send.textContent = 'Posting…';
       window.LokaliAPI.reviews.reply(card.getAttribute('data-rev-id'), reply).then(function (res) {
-        if (res && res.error) { send.disabled = false; send.textContent = 'Post reply'; return; }
+        if (res && res.error) {
+          // Server-side plan gate (trg_reviews_reply_plan) — swap the composer
+          // for the same nudge the Free path renders up front.
+          if (/plan_required/.test(String(res.error.message || res.error.details || ''))) {
+            box.replaceWith(replyUpsell());
+            return;
+          }
+          send.disabled = false; send.textContent = 'Post reply'; return;
+        }
         var rep = ce('div', 'vl-rev-reply');
         var rl = ce('div', 'vl-rev-reply-label'); rl.textContent = 'Response from the owner';
         var rb = ce('div', 'vl-rev-reply-body'); rb.textContent = reply;
