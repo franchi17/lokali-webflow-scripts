@@ -915,9 +915,46 @@
     }
   }
 
+  // ── #151 search matching ──
+  // Tokenized: "business insurance" → ['business','insurance'], every token must
+  // hit the haystack somewhere (any order, any field). Stop-words and stray
+  // punctuation are dropped only when something meaningful remains, so
+  // "bakery near me" searches for "bakery", not for "near" and "me".
+  var SEARCH_STOP = { 'a':1, 'an':1, 'and':1, 'the':1, 'for':1, 'of':1, 'in':1, 'to':1, 'with':1, 'or':1, 'near':1, 'me':1, 'my':1, 'local':1, '&':1, '-':1, '+':1 };
+  function searchTokens(q) {
+    if (!q) return [];
+    var raw = q.split(/\s+/).filter(Boolean);
+    var kept = raw.filter(function (t) { return !SEARCH_STOP[t]; });
+    return kept.length ? kept : raw;
+  }
+  // Light stem: "baking"/"bakers"/"bakeries" → "bak"/"baker" so a product word
+  // finds the craft word and vice versa. Stems shorter than 3 chars are ignored
+  // (too noisy). indexOf gives prefix tolerance for free ("insur" → "insurance").
+  function stemToken(t) {
+    var st = t.replace(/(ing|ies|ers|er|es|s)$/, '');
+    return st.length >= 3 ? st : t;
+  }
+  function hayHasToken(hay, t) {
+    if (hay.indexOf(t) !== -1) return true;
+    var st = stemToken(t);
+    return st !== t && hay.indexOf(st) !== -1;
+  }
+  // 0 = no match; 1 = every token matched; 2 = the whole phrase matched
+  // verbatim (ranks first under the default sort).
+  function searchScore(hay, q, toks) {
+    // Phrase = the query as typed, or the kept tokens re-joined ("insurance
+    // near me" → "insurance") so stop-words don't demote an exact hit.
+    if (hay.indexOf(q) !== -1 || hay.indexOf(toks.join(' ')) !== -1) return 2;
+    for (var i = 0; i < toks.length; i++) { if (!hayHasToken(hay, toks[i])) return 0; }
+    return 1;
+  }
+  var _searchScores = {};
+
   // ── filter + sort + render cards ──
   function applyFilters() {
     var q = searchTerm.toLowerCase().trim();
+    var toks = searchTokens(q);
+    _searchScores = {};
     var catId = activeCategory === 'all' ? null : SLUG_TO_ID[activeCategory];
     var locId = activeLocationId === 'all' ? null : String(activeLocationId);
     var visible = _allVendors.filter(function (v) {
@@ -942,7 +979,13 @@
         // boundary of two adjacent fields/names.
         var hay = [vName(v), vTagline(v), vDescription(v), vCategoryStyle(v).label]
           .concat(vSubcatLabels(v)).concat(vListingNames(v)).join('\n').toLowerCase();
-        if (hay.indexOf(q) === -1) return false;
+        // #151: people search by PRODUCT ("business insurance"), and the old
+        // whole-phrase indexOf only matched those two words ADJACENT and in
+        // order. Now every token must appear somewhere (any order, any field,
+        // light stem/prefix tolerance); the exact phrase still ranks first.
+        var sc = searchScore(hay, q, toks);
+        if (!sc) return false;
+        _searchScores[String(v.id)] = sc;
       }
       return true;
     });
@@ -1045,8 +1088,12 @@
   function sortVendors(list) {
     if (activeSort === 'a_z') list.sort(function (a, b) { return vName(a).localeCompare(vName(b)); });
     else if (activeSort === 'newest') list.sort(function (a, b) { return vCreated(b) - vCreated(a); });
-    else list.sort(function (a, b) { return rank(b) - rank(a) || (vCreated(b) - vCreated(a)); });
+    // #151: under the default sort an exact-phrase hit outranks an all-tokens
+    // hit; tier rank still orders everything within each band. A-Z / Newest
+    // are the visitor's explicit choice and stay literal.
+    else list.sort(function (a, b) { return sscore(b) - sscore(a) || rank(b) - rank(a) || (vCreated(b) - vCreated(a)); });
   }
+  function sscore(v) { return _searchScores[String(v.id)] || 0; }
   // Paid tier is the dominant band — Featured > Pro > Free outright (×8 clears
   // the max 4+2+1=7 of the signals below, which break ties within a band).
   function rank(v) { return vTier(v) * 8 + (vIsSpotlight(v) ? 4 : 0) + (vIsFounding(v) ? 2 : 0) + (vIsVerified(v) ? 1 : 0); }
@@ -1227,8 +1274,14 @@
       var q = searchTerm.toLowerCase().trim();
       var matchIdx = -1;
       if (q) {
-        for (var ni = 0; ni < subLabels.length; ni++) {
-          if (subLabels[ni].toLowerCase().indexOf(q) !== -1) { matchIdx = ni; break; }
+        // #151: phrase hit preferred, else any token hit (same tolerance as the filter).
+        var qt = searchTokens(q);
+        for (var ni = 0; ni < subLabels.length && matchIdx === -1; ni++) {
+          if (subLabels[ni].toLowerCase().indexOf(q) !== -1) matchIdx = ni;
+        }
+        for (ni = 0; ni < subLabels.length && matchIdx === -1; ni++) {
+          var lab = subLabels[ni].toLowerCase();
+          for (var ti = 0; ti < qt.length; ti++) { if (hayHasToken(lab, qt[ti])) { matchIdx = ni; break; } }
         }
       }
       var ordered = subLabels.slice();
