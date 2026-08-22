@@ -200,6 +200,9 @@
     if (!bits.cats) missing.push('pick your category');
     if (!bits.locs) missing.push('set your service area');
     if (!bits.listing) missing.push('add a service or product');
+    // #147 (2026-08-22): vendors created after the rollout need a resolved US
+    // business address (never public) before The Market lists them.
+    if (bits.address === false) missing.push('add your business address');
     var msg = 'Your storefront isn’t public yet — customers can’t find it on The Market until you ' +
       (missing.length ? missing.join(' · ') : 'finish setup') + '.';
     if (!el) {
@@ -245,9 +248,13 @@
     // client-side math (matches the trigger's rule) pre-patch.
     var gCats = !!(v.categories_id && v.categories_id.length);
     var gLocs = !!(v.locations_id && v.locations_id.length);
+    // #147 address rule mirrors set_vendor_publish_ready(): grandfathered if the
+    // vendor row predates 2026-08-23 UTC; else needs a resolved (geocoded) address.
+    var gOld = !!(v.created_at && new Date(v.created_at).getTime() < Date.UTC(2026, 7, 23));
+    var gAddr = gOld || (!!(v.address && String(v.address).trim()) && v.address_lat != null && v.address_lng != null);
     var gateReady = (v.is_publish_ready != null) ? !!v.is_publish_ready
-                    : (!!v.business_name && gCats && gLocs && !!hasListing);
-    renderGateBanner(root, gateReady, { name: !!v.business_name, cats: gCats, locs: gLocs, listing: !!hasListing });
+                    : (!!v.business_name && gCats && gLocs && !!hasListing && gAddr);
+    renderGateBanner(root, gateReady, { name: !!v.business_name, cats: gCats, locs: gLocs, listing: !!hasListing, address: gAddr });
     if (root) {
       if (score >= MAX_SCORE) { root.classList.add('is-complete'); }
       // Score = donut ring with the % centered (Francesca 2026-07-30, replaces
