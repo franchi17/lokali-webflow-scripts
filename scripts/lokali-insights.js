@@ -39,7 +39,7 @@
     '@media(max-width:1100px) and (min-width:721px){#lok-analytics-section .an-grid{grid-template-columns:1fr 1fr 1fr;}}',
     '#lok-analytics-section .an-card{background:#fff;border:.5px solid ' + BORDER + ';border-radius:10px;padding:1.25rem;}',
     '#lok-analytics-section .an-kpi{display:flex;flex-direction:column;gap:6px;}',
-    '#lok-analytics-section .an-klabel{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:' + SLATE + ';}',
+    '#lok-analytics-section .an-klabel{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:' + SLATE + ';white-space:nowrap;}',
     '#lok-analytics-section .an-kvalue{font-size:28px;font-weight:600;line-height:1;}',
     '#lok-analytics-section .an-kvalue small{font-size:14px;font-weight:400;}',
     '#lok-analytics-section .an-delta{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;border-radius:100px;padding:2px 8px;width:fit-content;}',
@@ -273,7 +273,10 @@
 
     // KPIs
     var grid = el('div', 'an-grid');
-    grid.appendChild(kpiCard('Storefront views', String(views30), deltaChip(views30, viewsPrev), 'vs. previous 30 days'));
+    // Label shortened 2026-08-22 (F): at five-across 'Storefront views' wrapped
+    // to two lines and pushed its number below the neighbours'. The chart card
+    // below is still titled 'Storefront views'.
+    grid.appendChild(kpiCard('Views', String(views30), deltaChip(views30, viewsPrev), 'vs. previous 30 days'));
     grid.appendChild(kpiCard('View → Lead rate', rate.toFixed(1) + '<small>%</small>', deltaChip(rate, ratePrev, 'pts'), 'Views that became leads'));
     var leadsLink = el('a', 'an-klink', 'See all in Leads →'); leadsLink.href = '/vendor-dashboard/leads';
     grid.appendChild(kpiCard('Leads', String(leads30), null, leadsLink));
