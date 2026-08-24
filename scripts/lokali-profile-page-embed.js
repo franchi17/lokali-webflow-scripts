@@ -1986,62 +1986,55 @@ var LokaliProfilePage = (function () {
   // The save buttons are Webflow DIVs, so element.disabled alone doesn't stop
   // clicks — gate re-entry with a flag and dim both buttons (top + bottom).
 
-  // ── #147 address: required · resolved through Google Places · US-only ─────
+  // ── #147 address: required · resolved server-side · US-only ───────────────
   // Francesca 2026-08-22: the address is never public; it exists so Lokali can
-  // confirm a vendor is actually in the neighborhood they list under. The
-  // typed address is resolved through Places at save time (Text Search (New) —
-  // works even if the vendor typed by hand instead of picking a suggestion);
-  // non-US is refused here AND by a DB CHECK; coordinates are saved privately
-  // and a DB trigger flags anything > 50 miles from every listed area for the
-  // admin queue (never a block — see patch_vendor_address_geo.sql).
+  // confirm a vendor is actually in the neighborhood they list under.
+  // SEC-050 (2026-08-24): resolution moved SERVER-SIDE — the typed address goes
+  // to /api/lokali/address/resolve, which resolves it through Places with a
+  // server key and writes the geo columns with the service role; the browser
+  // can no longer write a coordinate (columns revoked from `authenticated`).
+  // Non-US is refused by the route AND by a DB CHECK; a DB trigger flags
+  // anything > 50 miles from every listed area for the admin queue (never a
+  // block — see patch_vendor_address_geo.sql / patch_sec050_address_geo_revoke).
   var _addrGeo = null;          // last resolved geo for the address in the field
   var _addrGeoFor = '';         // the address string _addrGeo belongs to
   var ADDR_WHY = 'Your address is never public. We use it only to confirm you’re actually in the neighborhood you list under — Lokali is local, so it should be within about 50 miles of an area you serve. US addresses only.';
 
-  function _addrComponent(comps, type, short) {
-    if (!comps) return null;
-    for (var i = 0; i < comps.length; i++) {
-      var c = comps[i]; var types = c.types || [];
-      if (types.indexOf(type) !== -1) return short ? (c.shortText || c.short_name || null) : (c.longText || c.long_name || null);
-    }
-    return null;
-  }
+  // SEC-050 (2026-08-24): the address is resolved SERVER-SIDE. The browser
+  // sends only the typed text to /address/resolve (Supabase JWT); the route
+  // resolves it through Places with a server key and writes the geo columns
+  // with the service role — the six columns are revoked from `authenticated`,
+  // so the coordinates in the DB are Google's answer by construction.
+  // Resolves {ok:true, formatted?, address_verified?} or {ok:false, message}.
+  // A network/route failure resolves {ok:true} with nothing else — the save
+  // proceeds text-only, same graceful path as the old in-browser 8s timeout.
+  var _ADDR_API = ((typeof window.LOKALI_BILLING_BASE === 'string' && window.LOKALI_BILLING_BASE)
+      ? window.LOKALI_BILLING_BASE
+      : 'https://lokali-api.vercel.app/api/lokali').replace(/\/$/, '') + '/address/resolve';
 
-  // Resolves {ok:true, geo|null} or {ok:false, message}. geo:null = Google not
-  // reachable (save proceeds without coordinates; nothing is flagged).
   function _resolveAddress(addr) {
     addr = String(addr || '').trim();
-    if (!addr) return Promise.resolve({ ok: true, geo: null });
-    if (_addrGeo && _addrGeoFor === addr) return Promise.resolve({ ok: true, geo: _addrGeo });
-    var g = window.google;
-    if (!g || !g.maps || !g.maps.places || !g.maps.places.Place || !g.maps.places.Place.searchByText) {
-      return Promise.resolve({ ok: true, geo: null });
-    }
-    var timeout = new Promise(function (res) { setTimeout(function () { res({ ok: true, geo: null }); }, 8000); });
-    var lookup = g.maps.places.Place.searchByText({
-      textQuery: addr, fields: ['id', 'location', 'formattedAddress', 'addressComponents'], maxResultCount: 1
-    }).then(function (r) {
-      var p = r && r.places && r.places[0];
-      if (!p || !p.location) {
-        return { ok: false, message: 'We couldn’t find that address — please start typing and pick it from the suggestions.' };
-      }
-      var country = _addrComponent(p.addressComponents, 'country', true);
-      if (country && country !== 'US') {
-        return { ok: false, message: 'Lokali is US-only right now — please enter a US business address.' };
-      }
-      var lat = typeof p.location.lat === 'function' ? p.location.lat() : p.location.lat;
-      var lng = typeof p.location.lng === 'function' ? p.location.lng() : p.location.lng;
-      var geo = {
-        address_place_id: p.id || null,
-        address_lat: lat, address_lng: lng,
-        address_city: _addrComponent(p.addressComponents, 'locality') || _addrComponent(p.addressComponents, 'sublocality') || _addrComponent(p.addressComponents, 'postal_town') || null,
-        address_state: _addrComponent(p.addressComponents, 'administrative_area_level_1', true) || null,
-        address_country: country || 'US',
-        formatted: p.formattedAddress || addr
-      };
-      _addrGeo = geo; _addrGeoFor = geo.formatted;
-      return { ok: true, geo: geo };
-    }).catch(function () { return { ok: true, geo: null }; });
+    if (_addrGeo && _addrGeoFor === addr) return Promise.resolve(_addrGeo);
+    var A = window.LokaliAuth;
+    if (!A || typeof A.token !== 'function') return Promise.resolve({ ok: true });
+    var timeout = new Promise(function (res) { setTimeout(function () { res({ ok: true }); }, 10000); });
+    var lookup = A.token().then(function (jwt) {
+      if (!jwt) return { ok: true };
+      return fetch(_ADDR_API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + jwt },
+        body: JSON.stringify({ address: addr })
+      }).then(function (res) {
+        if (!res.ok) return { ok: true };          // route down -> text-only save
+        return res.json().then(function (d) {
+          if (!d || typeof d.ok !== 'boolean') return { ok: true };
+          if (!d.ok) return { ok: false, message: d.message || 'We couldn\u2019t verify that address \u2014 please check it and try again.' };
+          var out = { ok: true, formatted: d.formatted || null, address_verified: ('address_verified' in d) ? d.address_verified : undefined, geo_written: !!d.geo_written };
+          _addrGeo = out; _addrGeoFor = addr;
+          return out;
+        });
+      });
+    }).catch(function () { return { ok: true }; });
     return Promise.race([lookup, timeout]);
   }
 
@@ -2115,15 +2108,15 @@ var LokaliProfilePage = (function () {
       _setSaving(false);
       return;
     }
-    // #147: resolve the typed address through Places before anything is written.
+    // #147/SEC-050: resolve the typed address SERVER-SIDE before anything else
+    // is written. The route writes the geo columns itself (service role) and
+    // returns the trigger's verdict; the browser never touches a coordinate.
     _resolveAddress(payload.address).then(function (r) {
       if (!r.ok) { _showErrorPopup(r.message); _setSaving(false); return null; }
-      var geo = r.geo;
-      if (geo) {
+      if (r.formatted) {
         var addressEl = _getAddressEl();
-        if (addressEl && geo.formatted) { addressEl.value = geo.formatted; payload.address = geo.formatted; }
-        payload.address_place_id = geo.address_place_id; payload.address_lat = geo.address_lat; payload.address_lng = geo.address_lng;
-        payload.address_city = geo.address_city; payload.address_state = geo.address_state; payload.address_country = geo.address_country;
+        if (addressEl) addressEl.value = r.formatted;
+        payload.address = r.formatted;
       }
       var body = _normalizePayload(payload);
       if (typeof console !== 'undefined' && console.log) {
@@ -2139,15 +2132,12 @@ var LokaliProfilePage = (function () {
             if (_vendor && _vendor.profile_photo) _uploadedProfilePhotoUrl = null;
             _dirty = false; // saved — clear the leave-page warning
             _showSuccessPopup();
-            // Out-of-area? The DB trigger decided (address_verified); read it back
-            // from the owner's full row and tell the vendor plainly.
-            if (geo && window.LokaliAPI.vendors.me) {
-              window.LokaliAPI.vendors.me().then(function (vm) {
-                var v = (vm && vm.data) || null; if (v && v.vendor) v = v.vendor;
-                if (v && v.address_verified === false) {
-                  _showAddressNote('Heads-up: this address is more than 50 miles from the areas you listed, so the Lokali team may reach out to confirm. If that’s a mistake, update the address or your areas.');
-                } else { _showAddressNote(''); }
-              }).catch(function () {});
+            // Out-of-area? The resolve route already returned the trigger's
+            // verdict — no second query needed when the geo was written.
+            if (r.geo_written) {
+              if (r.address_verified === false) {
+                _showAddressNote('Heads-up: this address is more than 50 miles from the areas you listed, so the Lokali team may reach out to confirm. If that’s a mistake, update the address or your areas.');
+              } else { _showAddressNote(''); }
             }
           }
         })

@@ -151,9 +151,9 @@
     'text_messages', 'whatsapp_messages', 'phone_calls', // phone_calls = #76c call preference
     'phone_number', 'phone_visible',
     'contact_email', 'address',
-    // #147 private address geo (written by the profile page after the address
-    // resolves through Google Places; never in the public column grant)
-    'address_place_id', 'address_lat', 'address_lng', 'address_city', 'address_state', 'address_country',
+    // #147/SEC-050: the six address geo columns were REMOVED 2026-08-24 —
+    // written server-side by /address/resolve (service role) and REVOKED from
+    // `authenticated`; a straggler key here would fail the whole PATCH (42501).
     // P2P payment handles (stored bare; URL built at render time).
     'venmo_username', 'cashapp_cashtag', 'paypalme_slug',
     'other_pay_url', 'other_pay_label', 'zelle_contact'
