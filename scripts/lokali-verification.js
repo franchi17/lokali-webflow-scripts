@@ -3,7 +3,7 @@
  *
  * Pairs with the Vercel endpoint in my-clerk-app/app/api/lokali/verification/*:
  *   POST /verification/start -> { url }   (hosted Stripe Identity: gov ID + selfie)
- * Auth = the Supabase access token (via LokaliAuth.token()), NOT the Xano token.
+ * Auth = the Supabase access token (via LokaliAuth.token()).
  *
  * Reads identity_status via LokaliAPI.vendors.me() AND the plan via
  * LokaliAPI.plans.getMyBilling() to render UI state. Verification is a PRO/FEATURED
@@ -219,7 +219,7 @@
   }
 
   // A real billing response always carries a plan indicator; an empty/errored one
-  // (Xano free-tier cold start) does not. Only trust a response that has one.
+  // (cold start / transient error) does not. Only trust a response that has one.
   function hasPlanInfo(d) {
     return !!(d && (d.plan || d.plan_code || d.plan_name ||
       (d.subscription && d.subscription.plan_code)));
@@ -228,7 +228,7 @@
   function delay(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
 
   // Resolve the vendor's plan → 'pro' | 'free' | 'unknown'. Retries a definitive
-  // billing read (cold starts 401/empty until Xano wakes). Returns 'unknown' only if
+  // billing read (cold starts can 401/return empty). Returns 'unknown' only if
   // every attempt fails — and 'unknown' keeps the button shown, so a paying vendor is
   // never downgraded to the upsell by a transient miss.
   function fetchPlanState(attempt) {
@@ -277,7 +277,7 @@
   // that doesn't bust the cache re-reads the same pre-webhook snapshot forever.
   // Mirrors plans.invalidateBilling in lokali-billing.js; until the adapter
   // exports vendors.invalidateMe, its no-arg setToken() is a pure cache
-  // invalidator (Xano mode has no memo, so no bypass is needed there).
+  // invalidator (the legacy client had no memo, so no bypass was needed there).
   function invalidateMeCache() {
     var api = window.LokaliAPI;
     if (!api) return;

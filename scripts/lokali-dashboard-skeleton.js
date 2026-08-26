@@ -1,7 +1,7 @@
 /*
   Lokali — Dashboard skeleton loader.
   The vendor dashboard home (/vendor-dashboard/dashboard) renders its stat values only
-  after lokali-dashboard-home.js finishes its Xano calls (vendors.me / services /
+  after lokali-dashboard-home.js finishes its API calls (vendors.me / services /
   products / billing). Until then the stat slots are empty/placeholder. This script
   shows a shimmer placeholder over those slots on load and clears it the moment real
   data lands — so the page reads as "loading" instead of "empty", with no full-screen

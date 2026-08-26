@@ -7,7 +7,7 @@
  * autocomplete constrained to cities — so picks resolve to a canonical
  * { city, state, country, place_id } (neighborhoods like "Alden Bridge" never
  * appear; "Montrose" won't match a city → nudges to "Houston"). On submit it
- * POSTs to the public Xano endpoint POST /waitlist (Contact group), which dedupes
+ * POSTs to the public waitlist endpoint (/api/lokali/waitlist Vercel route), which dedupes
  * by (email, place_id). No secrets here — the Maps key is referrer-restricted.
  *
  * The Google Maps key is NEVER committed here — set it as a global in Webflow

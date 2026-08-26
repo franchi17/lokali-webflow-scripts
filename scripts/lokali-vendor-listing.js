@@ -7,12 +7,12 @@
  * Responsibilities:
  *   1. Tab switching (data-vl-tab -> data-vl-panel) + Save-vendor toggle.
  *   2. Resolve the vendor id from the URL (?id= / ?v= / /vendor(s)/{id} / [data-lokali-vendor-id]).
- *   3. Fetch vendor + services + products (+ categories/locations for labels) from Xano.
+ *   3. Fetch vendor + services + products (+ categories/locations for labels) from the API.
  *   4. Populate hero, badges, area pills, contact channels, Instagram, avatar, About, card grids.
  *
- * Routing note: Xano currently exposes only `vendor/id/{id}` (no get-by-slug),
- * so this resolves a numeric id. When a `vendor/slug/{slug}` endpoint exists,
- * extend resolveVendorId() + fetchVendor() to accept a slug.
+ * Routing note: legacy — the original API exposed only `vendor/id/{id}`, so
+ * this resolves a numeric id (pretty slug URLs are handled by the Cloudflare
+ * Worker before this script runs).
  */
 (function () {
   'use strict';
@@ -62,7 +62,7 @@
     if (p.length === 1) return p[0].slice(0, 2).toUpperCase();
     return (p[0].charAt(0) + p[1].charAt(0)).toUpperCase();
   }
-  // profile_photo from Xano is often a relative /vault/... path — prepend the Xano file base.
+  // profile_photo: live rows store full URLs; legacy /vault/... paths resolve to no image.
   function photoUrl(p) {
     if (!p || typeof p !== 'string') return '';
     p = p.trim();
@@ -79,7 +79,7 @@
 
   // ---- category pill styling (mirrors The Market vendor card) -----------
   // bg/text = pill colors; url = the same masked category icon used on the card.
-  // Keyed by Xano category id (matches lokali-browse.js CAT_BY_ID).
+  // Keyed by category id (matches lokali-browse.js CAT_BY_ID).
   var ASSET = 'https://cdn.prod.website-files.com/6989095758ae17edfc424d30/';
   var CAT_BY_ID = {
     1: { bg: '#FFF8E6', text: '#8A5A00', url: ASSET + '6a186b061a80eb9ba75f0d0a_scissors-solid.png' }, // Handcrafted
@@ -2380,8 +2380,8 @@
     return map;
   }
 
-  // Retry wrapper for the per-vendor service/product fetches. Xano can cold-start or drop
-  // the first request right after a (back-)navigation; the old code called these once with
+  // Retry wrapper for the per-vendor service/product fetches. The first request right
+  // after a (back-)navigation can transiently fail; the old code called these once with
   // no retry and no .catch, so any miss left the Webflow template's placeholder cards on
   // screen. This retries resolved-errors AND network rejections a few times with backoff,
   // then resolves to {error} so renderServices/renderProducts fall through cleanly.
@@ -2420,8 +2420,8 @@
     // resolve via GET vendor/slug/{slug} (falls back to id-lookup if the client
     // build doesn't yet have getBySlug).
     var isNumericId = /^[0-9]+$/.test(String(id));
-    // Vendor identity is the critical fetch — retry it (Xano can cold-start or drop the
-    // first request right after a navigation). Categories/locations are label data only:
+    // Vendor identity is the critical fetch — retry it (the first request after a
+    // navigation can transiently fail). Categories/locations are label data only:
     // wrap them so a reject can never abort the whole Promise.all and strand the hero on its
     // Webflow template placeholder ("Maria's Sweet Studio").
     var vendorFetch = fetchListWithRetry(function () {

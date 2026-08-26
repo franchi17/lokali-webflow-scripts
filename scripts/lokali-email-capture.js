@@ -2,16 +2,16 @@
  * Lokali — Homepage email capture ("Sign up to be a Vendor" / newsletter box).
  *
  * Hooks the Webflow form #wf-form-Newsletter on golokali.com and POSTs the
- * email to the Xano /email/interest endpoint, which upserts the person into
+ * email to the /api/lokali/interest Vercel route, which upserts the person into
  * the Brevo "Vendor Interest" list. No secret ever lives in this browser file —
- * the Brevo API key stays server-side in Xano (per the Brevo brief).
+ * the Brevo API key stays server-side (per the Brevo brief).
  *
  * Why this exists even though the form is a Webflow form:
  *   - The Webflow form is method="get" + has Cloudflare Turnstile, i.e. it would
  *     otherwise submit to Webflow Forms (and could put the email in a query
  *     string). We intercept in the CAPTURE phase and stopImmediatePropagation,
  *     so Webflow's own handler never runs and the email is POSTed as JSON to
- *     Xano instead — never a query string.
+ *     the server route instead — never a query string.
  *
  * Self-contained: no dependency on lokali-api-client.js (the homepage is a
  * marketing page that doesn't load it). Mirrors the shipped lokali-contact.js
@@ -24,7 +24,7 @@
   'use strict';
 
   // ─── CONFIG ──────────────────────────────────────────────────────────────
-  // Xano Contact group (api:oYK_cDmG) → POST /email/interest.
+  // Historical target: Xano Contact group POST /email/interest (retired).
   // Supabase-backend mode (dormant until cutover): same field names, POSTed to
   // the Vercel route (/api/lokali/interest) instead of Xano. Base derived from
   // LOKALI_AUTH_SYNC_URL (canonical) or the legacy LOKALI_CLERK_SYNC_URL,

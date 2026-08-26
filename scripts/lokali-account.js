@@ -14,7 +14,7 @@
  *     /account/delete → Stripe cancel + backend purge + auth-user delete → sign-out).
  *
  * Depends on lokali-api-client.js (window.LokaliAPI with the account / reviews /
- * favorites namespaces). Auth via the Xano token; shows a sign-in prompt when
+ * favorites namespaces). Auth via the Supabase session; shows a sign-in prompt when
  * signed out. Keeps the Webflow page to just an empty <div id="lokali-account">.
  */
 (function () {
@@ -603,7 +603,7 @@
   // ── #96-SUGGEST: admin data (Francesca's admin home lives on /account — no
   // vendor account needed). Server-enforced: admin_overview() and
   // list_subcategory_suggestions() are is_admin()-gated, so for every
-  // non-admin session (and on stale clients / Xano rollback) this resolves
+  // non-admin session (and on stale cached clients) this resolves
   // null and the panel simply never exists.
   function fetchAdminData() {
     var sapi = window.LokaliSupabaseAPI;

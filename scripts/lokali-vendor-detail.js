@@ -23,11 +23,11 @@
   function digits(s) { return String(s || '').replace(/[^0-9]/g, ''); }
   function unwrap(res) { return (res && res.data != null) ? res.data : res; }
 
-  // Retry a request on a transient error (Xano free-tier 429 / cold start /
+  // Retry a request on a transient error (rate limit / cold start /
   // network). Without this, a rate-limited fetch left the page showing the
   // Webflow TEMPLATE PLACEHOLDERS (a different demo vendor's name/category/
   // item), because the hydrators only overwrite the markup on a successful
-  // response. Real fix for the underlying limit is the paid Xano tier.
+  // response.
   function reqRetry(makeReq, tries) {
     tries = tries || 4;
     return makeReq().then(function (res) {

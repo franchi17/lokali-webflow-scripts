@@ -45,7 +45,7 @@
     var TOKEN_KEY = 'LOKALI_AUTH_TOKEN', CACHE_KEY = 'LOKALI_ACCT_CACHE';
 
     if (window.LOKALI_BACKEND === 'supabase') {
-      // No Xano token exists — instant bounce off the cached role (written by
+      // No legacy token exists — instant bounce off the cached role (written by
       // lokali-auth.js on sync), then confirm via LokaliAuth (cache →
       // get_my_role() RPC, DB truth).
       try {
@@ -296,7 +296,7 @@
 
   function retry() {
     // The template href is a dead 404 until this rewrite lands, so don't give
-    // up on one failed fetch (usually the Xano free-tier rate limit).
+    // up on one failed fetch (usually a transient rate limit).
     if (attempts < 3) setTimeout(run, 3000 * attempts);
   }
 

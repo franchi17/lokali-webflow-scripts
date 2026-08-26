@@ -13,7 +13,7 @@
   Fixes baked in:
    - services.getMine() returns {items:[...]}, products returns a bare array → coerce both (toArr).
    - vendors.me() returns {data:{vendor:{...}}} → unwrap once (no double-nesting).
-   - Real Xano vendor fields: business_description (bio), categories_id[], profile_photo.
+   - Real vendor fields: business_description (bio), categories_id[], profile_photo.
    - Stat/heading text written with textContent (elements are H2/DIV, not inputs).
    - Top "Listing Strength" stat card mirrors the listing-strength card score.
    - Share / preview links use clean root URL golokali.com/{slug} (Cloudflare Worker
@@ -971,8 +971,8 @@
     ]).then(function (r) {
       var vendorRes = r[0];
       if (vendorRes.error || !vendorRes.data) {
-        // Only a genuine auth failure goes to /login. Transient errors (the
-        // Xano free-tier rate limit, cold starts, network blips) retry instead
+        // Only a genuine auth failure goes to /login. Transient errors (rate
+        // limits, cold starts, network blips) retry instead
         // — bouncing a signed-in vendor to /login on a 429 looked like a
         // forced logout.
         if (vendorRes.status === 401 || vendorRes.status === 403) {

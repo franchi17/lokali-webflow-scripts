@@ -23,8 +23,9 @@
  *           window.LOKALI_AUTH_SYNC_URL = 'https://lokali-api.vercel.app/api/lokali/auth-sync';</script>
  *   …then load lokali-supabase-client.js + this file AFTER lokali-api-client.js.
  *   Flag off/absent → this file only exposes window.LokaliSupabaseAdapter for
- *   testing and touches nothing (the Xano client keeps window.LokaliAPI).
- *   Rollback = remove the flag line (+ purge). Xano stays warm.
+ *   testing and touches nothing.
+ *   (The legacy-client rollback path is GONE: Xano was decommissioned
+ *   2026-07-24 and verified dark 2026-08-05 — this adapter is the only provider.)
  *
  * FIDELITY SOURCES (2026-07-07 audit): the .xs response shapes in xano/api/**
  * and the per-script field-consumption map — see docs/supabase/CUTOVER.md
@@ -1347,7 +1348,7 @@
       if (window.LOKALI_BACKEND === 'supabase') window.LokaliAPI = adapter;
     };
     activate();
-    // Re-assert after DOM ready in case a later-loading Xano client clobbers it.
+    // Re-assert after DOM ready in case a later-loading script clobbers it.
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', activate);
     }

@@ -8,7 +8,7 @@
  * ── How to connect Brevo ────────────────────────────────────────────────
  * Point ENDPOINT at ONE of these (both keep the Brevo API key server-side):
  *
- *   A) Xano (recommended — matches the rest of Lokali).
+ *   A) A server-side JSON endpoint (today: the Vercel route below).
  *      Build a public POST endpoint (e.g. /contact) that:
  *        - receives { topic, name, email, city, message, page_url }
  *        - sends a Brevo transactional email to hello@golokali.com
@@ -16,7 +16,7 @@
  *        - (optional) upserts the person as a Brevo contact / list
  *      Set TRANSPORT = 'json'.
  *
- *   B) Brevo hosted form (no Xano, no key in browser).
+ *   B) Brevo hosted form (no server code, no key in browser).
  *      In Brevo, create a form, copy its "serve" URL
  *      (https://<sub>.sibforms.com/serve/<id>) into ENDPOINT, set
  *      TRANSPORT = 'form', and map our fields to your Brevo field names in
@@ -255,7 +255,7 @@
       });
       opts = { method: 'POST', body: body };
     } else {
-      // Xano / custom — JSON.
+      // Custom endpoint — JSON.
       opts = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

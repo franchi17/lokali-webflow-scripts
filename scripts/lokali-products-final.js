@@ -1357,7 +1357,7 @@ const LokaliProductsPage = (() => {
 
   // After a user gallery action, the first photo becomes the cover. Persist it
   // immediately so the card/listing thumbnail updates without waiting for Save,
-  // reusing the SAME full payload Save sends (Xano's PATCH requires all fields,
+  // reusing the SAME full payload Save sends (the legacy API's PATCH required all fields,
   // and this matches existing save behavior — no field is dropped). Only runs
   // after add/delete/reorder, never on initial open, so a legacy cover is safe.
   const syncCoverFromGallery = async () => {
@@ -1758,7 +1758,7 @@ const LokaliProductsPage = (() => {
   };
 
   const loadData = async () => {
-    // Both calls can transiently 429 on Xano's free tier (10 req/20s). If the
+    // Both calls can transiently fail (429 / cold start). If the
     // BILLING call loses that race, plan detection falls back to "free" and the
     // photo gallery wrongly locks for Pro/Featured vendors — so retry a few
     // times on a transient error before giving up. (vendors.me + billing are
@@ -1783,7 +1783,7 @@ const LokaliProductsPage = (() => {
     if (loadErrBox) loadErrBox.remove();
 
     // Only trust the billing response when the call actually succeeded. On a
-    // transient Xano free-tier 429/cold-start the call errors, and we must NOT
+    // transient 429/cold-start the call errors, and we must NOT
     // downgrade a paid vendor to "free" (that wrongly locks the photo gallery
     // mid-session). Cache the last-known-good plan and fall back to it instead.
     const PLAN_CACHE_KEY = 'lok_plan_products_v1';
@@ -1865,7 +1865,7 @@ const LokaliProductsPage = (() => {
   };
 
   // #61 required-field markers. Product name AND description are both required by
-  // the Xano schema (validate() enforces both). Mark the static Webflow labels.
+  // the schema (validate() enforces both). Mark the static Webflow labels.
   const markRequiredFields = () => {
     ['product-name', 'product-description'].forEach((id) => {
       const inp = document.getElementById(id);

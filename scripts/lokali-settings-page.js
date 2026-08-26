@@ -405,8 +405,8 @@
 
     // Email + password are both auth-managed (Supabase owns identity). Both the
     // "Change" email link and the "Update" password link open the LokaliAuth
-    // account panel, where email and password changes are handled. No Xano
-    // email/password is stored to write.
+    // account panel, where email and password changes are handled. No separate
+    // app-side email/password is stored to write.
     var openAuthAccount = function (e) {
       if (e) e.preventDefault();
       if (window.LokaliAuth && typeof window.LokaliAuth.openAccountPanel === 'function') {

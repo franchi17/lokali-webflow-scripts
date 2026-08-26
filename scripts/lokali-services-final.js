@@ -1469,7 +1469,7 @@ const LokaliServicesPage = (() => {
 
   // After a user gallery action, the first photo becomes the cover. Persist it
   // immediately so the card/listing thumbnail updates without waiting for Save,
-  // reusing the SAME full payload Save sends (Xano's PATCH requires all fields,
+  // reusing the SAME full payload Save sends (the legacy API's PATCH required all fields,
   // and this matches existing save behavior — no field is dropped). Only runs
   // after add/delete/reorder, never on initial open, so a legacy cover is safe.
   const syncCoverFromGallery = async () => {
@@ -1880,7 +1880,7 @@ const LokaliServicesPage = (() => {
   };
 
   const loadData = async () => {
-    // Both calls can transiently 429 on Xano's free tier (10 req/20s). If the
+    // Both calls can transiently fail (429 / cold start). If the
     // BILLING call loses that race, plan detection falls back to "free" and the
     // photo gallery wrongly locks for Pro/Featured vendors — so retry a few
     // times on a transient error before giving up. (vendors.me + billing are
@@ -1905,7 +1905,7 @@ const LokaliServicesPage = (() => {
     if (loadErrBox) loadErrBox.remove();
 
     // Only trust the billing response when the call actually succeeded. On a
-    // transient Xano free-tier 429/cold-start the call errors, and we must NOT
+    // transient 429/cold-start the call errors, and we must NOT
     // downgrade a paid vendor to "free" (that wrongly locks the photo gallery
     // mid-session). Cache the last-known-good plan and fall back to it instead.
     const PLAN_CACHE_KEY = 'lok_plan_services_v1';
@@ -1988,7 +1988,7 @@ const LokaliServicesPage = (() => {
 
   // #61 required-field markers. The Webflow field labels are static, so mark the
   // genuinely-required ones once (Service = service name only; everything else is
-  // optional per the Xano schema). validate() already blocks an empty name.
+  // optional per the schema). validate() already blocks an empty name.
   const markRequiredFields = () => {
     ['service-name'].forEach((id) => {
       const inp = document.getElementById(id);

@@ -5,7 +5,7 @@
  *   POST /billing/checkout         -> { url }  (hosted Stripe Checkout; #88 adds spotlight_start)
  *   POST /billing/portal           -> { url }  (Stripe Customer Portal: manage/cancel/switch)
  *   POST /billing/spotlight-cancel -> { ok, refunded }  (#88 self-cancel ≥7d before start)
- * Auth = the Supabase access token (via LokaliAuth.token()), NOT the Xano token.
+ * Auth = the Supabase access token (via LokaliAuth.token()).
  *
  * #88 Spotlight (injected UI, no Webflow work): a "Spotlight" card on
  * /vendor-dashboard/settings (tier picker + date availability + own bookings/
@@ -194,7 +194,7 @@
     var isFree = plan === 'free' || !plan;
     var cancelPending = b.cancel_at_period_end === true; // 41g — portal cancel scheduled
 
-    // Xano returns epoch ms; tolerate seconds too (values < ~2001 in ms terms).
+    // Legacy rows carried epoch ms; tolerate seconds too (values < ~2001 in ms terms).
     var ts = b.current_period_end;
     if (ts && ts < 1e12) ts = ts * 1000;
     var when = ts ? new Date(ts) : null;

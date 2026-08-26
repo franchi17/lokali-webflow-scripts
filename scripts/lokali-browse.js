@@ -18,7 +18,7 @@
  * - Search haystack = name/tagline/description/category + subcategory labels
  *   + ACTIVE listing names (invisible recall layer, via
  *   LokaliSupabaseAPI.data.listingIndex). If the Supabase surface is absent
- *   (Xano rollback), the listing-name layer silently drops out.
+ *   (stale cached client), the listing-name layer silently drops out.
  *
  * Load AFTER lokali-api-client.js. No auth required (public list endpoints).
  *
@@ -202,7 +202,7 @@
   // #96-SUGGEST — the live taxonomy comes from the `subcategory` TABLE (so an
   // approved vendor suggestion is a pill everywhere on next load, no script
   // ship); the baked-in SUBCATS_BY_CAT above is the fallback when the fetch
-  // fails or the Supabase surface is absent (Xano rollback). Restored session
+  // fails or the Supabase surface is absent (stale cached client). Restored session
   // picks are re-sanitized once the live list lands — a DB-only slug (approved
   // after this script shipped) must survive the restore.
   var _taxonomyLoaded = false;
@@ -558,7 +558,7 @@
   function populateLocationSelect() {
     var sel = locSelectEl();
     if (!sel) return;
-    if (!Object.keys(_locationsById).length) return; // keep existing options if Xano locations didn't load
+    if (!Object.keys(_locationsById).length) return; // keep existing options if locations didn't load
     sel.innerHTML = '';
     var all = ce('option'); all.value = 'all'; all.textContent = 'All neighborhoods'; sel.appendChild(all);
     Object.keys(_locationsById).forEach(function (id) {
@@ -660,9 +660,9 @@
     try { byUrl = new URLSearchParams(window.location.search).get('location_id'); } catch (e) {}
     try { byStore = localStorage.getItem(AREA_KEY); } catch (e) {}
     if (byUrl != null || byStore != null) return; // explicit choice exists somewhere
-    // Signed-in detection: Supabase-era pages carry no Xano token — mirror
-    // auth-nav and treat a parseable LOKALI_ACCT_CACHE as the signal; the
-    // legacy token key stays as the Xano-rollback fallback only.
+    // Signed-in detection: Supabase-era pages carry no legacy token — mirror
+    // auth-nav and treat a parseable LOKALI_ACCT_CACHE as the signal (the
+    // old token key is checked only for ancient still-cached sessions).
     var signedIn = false;
     try { signedIn = !!JSON.parse(localStorage.getItem('LOKALI_ACCT_CACHE') || 'null'); } catch (e) {}
     if (!signedIn) { try { signedIn = !!localStorage.getItem('LOKALI_AUTH_TOKEN'); } catch (e) {} }
@@ -694,7 +694,7 @@
   // ── fetch ──
   // The vendor list is the page's core payload. LokaliAPI never rejects: a transient
   // network/connection failure (common when a freshly-navigated page fires the fetch
-  // before the Xano connection is warm — e.g. clicking "Back to The Market") resolves
+  // before the backend connection is warm — e.g. clicking "Back to The Market") resolves
   // with { data:null, error, status:0 }, which would silently render a blank grid
   // showing "0" until the visitor refreshed. So retry a FAILED call a few times before
   // giving up, and only fall through to an empty grid when the request truly succeeds.
@@ -703,11 +703,11 @@
     attempt = attempt || 0;
     var loading = el('browse-loading');
     showEl(loading, 'block');
-    // Location is filtered client-side (Xano's ?location_id= currently returns nothing), so
+    // Location is filtered client-side (historical: the legacy ?location_id= filter returned nothing), so
     // always load the full active set and let applyFilters() narrow by neighborhood.
     var params = { page: 1, per_page: PER_PAGE };
-    // Retry both resolved-errors AND network rejections with backoff: Xano can cold-start
-    // for several seconds at launch, and the old code only retried resolved-errors (a thrown
+    // Retry both resolved-errors AND network rejections with backoff: the first fetch
+    // after a navigation can transiently fail, and the old code only retried resolved-errors (a thrown
     // fetch fell straight through to a silent "0 vendors" that survived a manual refresh).
     function retryOrGiveUp() {
       if (attempt < FETCH_MAX_ATTEMPTS) {
@@ -727,7 +727,7 @@
       // only an explicit false is excluded. #74 three-place gotcha applies.
       _allVendors = extractList(out && out.data).filter(function (v) { return v && v.is_active !== false; });
       // #96 — if the payload has no subcategories key (stale cached adapter /
-      // Xano rollback), drop any restored picks (INCLUDING the raw restore
+      // stale cached client), drop any restored picks (INCLUDING the raw restore
       // list — a late taxonomy fetch must not resurrect them) and remove the
       // pill row so the filter can't silently blank the grid.
       if (!subcatDataPresent()) { activeSubcats = []; _rawRestoredSubcats = null; }
@@ -745,7 +745,7 @@
   // layer of search — nothing renders from it; it just lets "charcuterie
   // board" find the vendor whose product is named that even when no
   // subcategory says so. Non-critical by design: if the Supabase surface is
-  // absent (Xano rollback) or the fetch fails, search degrades to
+  // absent (stale cached client) or the fetch fails, search degrades to
   // name/tagline/description/subcategories. Re-applies filters when it lands
   // so a search typed before the index arrived picks up listing matches.
   function fetchListingIndex() {
@@ -848,7 +848,7 @@
 
   // #96 — feature-detect: does the loaded vendor payload actually CARRY the
   // subcategories column? A stale cached adapter (old VENDOR_LIST_COLS, up to
-  // 7 days of @v1.4 browser cache) or a Xano rollback delivers rows WITHOUT
+  // 7 days of @v1.4 browser cache) delivers rows WITHOUT
   // the key — rendering selectable pills then would filter every vendor out
   // ("0 vendors found" with no explanation). Key-present-but-null still counts
   // as supported (vendors who just haven't picked yet).

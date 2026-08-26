@@ -11,7 +11,7 @@
  *   - hides the "Upgrade" row for top-tier vendors
  *   - appends a "My Customer Account" row -> /account (bug #37: there was no
  *     way back from the vendor dashboard to the customer side)
- *   - retries once if the first fetch fails (Xano free-tier rate limit)
+ *   - retries once if the first fetch fails (transient rate limit)
  *
  * Native element hooks (classes, set in Webflow):
  *   .lok-acct (wrapper, gets .open) · .lok-acct-chip (click target)

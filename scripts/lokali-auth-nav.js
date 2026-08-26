@@ -8,10 +8,9 @@
     - customer → My Account, Sign out
   On the mobile panel (#lok-mnav-panel) the same items render as a stacked list.
 
-  Role/name come from GET {AUTH_BASE}/account using the Xano token in
-  localStorage['LOKALI_AUTH_TOKEN'] (Xano mode; shared across the origin so it
-  works on every page — no dependency on api-client being loaded here), or from
-  window.LokaliAuth in Supabase mode. The last result is cached in
+  Role/name come from window.LokaliAuth (Supabase). A retired pre-cutover mode
+  read GET {AUTH_BASE}/account with the localStorage['LOKALI_AUTH_TOKEN'] token;
+  that backend is gone (XANO-DECOMM 2026-07-24). The last result is cached in
   localStorage['LOKALI_ACCT_CACHE'] so the menu paints instantly on the next
   page, before the network call returns.
 
@@ -91,10 +90,10 @@
   var SCOPES   = '.header-wrapper, #lok-mnav-panel';
   var HIDE_CSS = '.header-wrapper a[href$="/login"], #lok-mnav-panel a[href$="/login"]';
 
-  // Supabase-backend mode (dormant until cutover): there is no Xano token —
-  // supabase-js owns the session. "Signed in" at parse time = the acct cache
-  // that lokali-auth.js writes after each auth-sync (same instant-paint
-  // behavior the Xano token gave us; the cache was already the paint source).
+  // Supabase-backend mode (live since the 2026-07-07 cutover): supabase-js
+  // owns the session. "Signed in" at parse time = the acct cache that
+  // lokali-auth.js writes after each auth-sync (same instant-paint behavior
+  // the legacy token gave us; the cache was already the paint source).
   var SUPA_MODE = (typeof window !== 'undefined' && window.LOKALI_BACKEND === 'supabase');
 
   function token() {
