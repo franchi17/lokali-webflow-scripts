@@ -234,8 +234,38 @@
     var self = this;
     this.mount.addEventListener('click', function (e) {
       var btn = e.target.closest('button[data-offer]');
-      if (!btn) return;
-      self.offerSpot(Number(btn.getAttribute('data-offer')));
+      if (btn) { self.offerSpot(Number(btn.getAttribute('data-offer'))); return; }
+      // Remove / Withdraw links, two-tap: the first tap arms the link
+      // ("Sure? Tap again"), the second executes. Delegated once here, so
+      // re-renders never stack listeners (the offerSpot lesson above).
+      var act = e.target.closest('u[data-wremove], u[data-wwithdraw]');
+      if (!act) return;
+      if (act.getAttribute('data-armed') !== '1') {
+        act.setAttribute('data-armed', '1');
+        act.textContent = act.hasAttribute('data-wremove') ? 'Sure? Remove' : 'Sure? Withdraw';
+        act.style.color = '#9E5F44';
+        return;
+      }
+      act.textContent = 'Working…';
+      var isRemove = act.hasAttribute('data-wremove');
+      var id = Number(act.getAttribute(isRemove ? 'data-wremove' : 'data-wwithdraw'));
+      (isRemove ? API.removeWaitlist(id) : API.withdrawOffer(id)).then(function (r) {
+        if (r && r.error) {
+          act.textContent = 'Couldn’t ' + (isRemove ? 'remove' : 'withdraw');
+          console.warn('[availability] waitlist action failed', r.error);
+          return;
+        }
+        self.refreshQueue();
+      });
+    });
+  };
+
+  // Re-read the queue and re-render the cards that show it.
+  Page.prototype.refreshQueue = function () {
+    var self = this;
+    return API.listWaitlist(this.vendorId).then(function (r) {
+      self.waitlist = (r && r.data) || [];
+      self.renderNewClients();
     });
   };
 
@@ -1102,9 +1132,19 @@
   function waitlistRows(list) {
     var out = '';
     list.forEach(function (w, idx) {
-      var right = w.status === 'offered'
+      // Every row gets "Remove" (= dealt with outside Lokali; drops the row —
+      // they can rejoin later). An offered row also gets "Withdraw": the offer
+      // email can't be unsent, but the row returns to waiting and the sent
+      // expiry no longer applies. Both are two-tap (first tap arms a confirm).
+      var links =
+        (w.status === 'offered'
+          ? '<u class="ava-sub" data-wwithdraw="' + w.id + '" style="cursor:pointer;">Withdraw</u>'
+          : '') +
+        '<u class="ava-sub" data-wremove="' + w.id + '" style="cursor:pointer;">Remove</u>';
+      var right = (w.status === 'offered'
         ? '<span class="ava-chip" style="background:#E7F3EC;color:#3E7C5E;">Offer sent</span>'
-        : '<button class="ava-btn" data-offer="' + w.id + '">Offer spot</button>';
+        : '<button class="ava-btn" data-offer="' + w.id + '">Offer spot</button>') +
+        '<span style="display:inline-flex;gap:10px;margin-left:10px;">' + links + '</span>';
       out += '<div class="ava-row">' +
         '<span style="font-size:12px;font-weight:600;color:#B0ACBC;width:14px;">' + (idx + 1) + '</span>' +
         '<div class="ava-avatar" style="background:#F5EFE4;color:#B5793B;">' + esc(initials(w.customer_name || w.customer_email)) + '</div>' +
@@ -1119,6 +1159,7 @@
 
   // Offer flow, shared by both cards (delegated from the mount in shell()).
   Page.prototype.offerSpot = function (id) {
+    var self = this;
     var cellEl = this.mount.querySelector('[data-wrow="' + id + '"]');
     if (!cellEl) return;
     cellEl.innerHTML = '<span class="ava-sub">Working…</span>';
@@ -1131,6 +1172,9 @@
       if (res.ok && API.notifyOffered) {
         try { API.notifyOffered(id); } catch (e) {}
       }
+      // Re-render shortly so the offered row gains its Withdraw/Remove links
+      // (the pause lets the vendor read the "6h to claim" note first).
+      if (res.ok) setTimeout(function () { self.refreshQueue(); }, 1800);
     });
   };
 

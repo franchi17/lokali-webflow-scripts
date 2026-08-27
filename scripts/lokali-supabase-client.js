@@ -577,6 +577,22 @@
           return c.rpc('offer_waitlist_spot', { p_waitlist_id: waitlistId, p_hours: hours || 6 });
         });
       },
+      // Vendor housekeeping on their own queue (owner RLS; delete/update are
+      // already granted). Remove = "dealt with", drops the row entirely (the
+      // person can rejoin later). Withdraw = cancel a sent offer: back to
+      // 'waiting' with the expiry cleared, so the row regains "Offer spot".
+      removeWaitlist: function (waitlistId) {
+        return withClient(function (c) {
+          return c.from('availability_waitlist').delete().eq('id', waitlistId);
+        });
+      },
+      withdrawOffer: function (waitlistId) {
+        return withClient(function (c) {
+          return c.from('availability_waitlist')
+            .update({ status: 'waiting', offer_expires_at: null })
+            .eq('id', waitlistId).eq('status', 'offered');
+        });
+      },
       // Customer-facing emails, fired best-effort by the dashboard right after a
       // successful confirm/offer. These go through the Vercel route (Brevo needs
       // the server key + the confirm/offer RPCs never return the customer email);
