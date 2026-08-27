@@ -44,7 +44,7 @@
         note.style.cssText = 'margin:0 18px 18px;background:#F3EBFF;border:1px solid #D4AAFD;color:#3C1D66;' +
           'border-radius:12px;padding:12px 18px;font:600 15px/1.5 "Plus Jakarta Sans",sans-serif;text-align:center;' +
           'opacity:0;transition:opacity .35s;';
-        note.textContent = 'You’re claiming a founding spot — pick Pro or Featured below to lock in your founding rate (first 3 months free).';
+        note.textContent = 'You’re claiming a founding spot. Pick Pro or Featured below to lock in your founding rate (first 3 months free).';
         plansSec.insertBefore(note, plansSec.firstChild);
       }
       requestAnimationFrame(function () { note.style.opacity = '1'; });
@@ -108,7 +108,7 @@
               // yet" notice) are user-facing; only network/5xx get the generic.
               var msg = err && err.message && !/^Request failed/.test(err.message)
                 ? err.message
-                : 'Sorry — could not start checkout. Please try again.';
+                : 'Sorry, we could not start checkout. Please try again.';
               alert(msg);
             });
             return;

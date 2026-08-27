@@ -128,7 +128,7 @@
 
     setText($('settings-email'), (_user && _user.email) || '');
     setText($('settings-account-type'), _titlecase((_user && _user.role) || 'vendor'));
-    setText($('settings-current-plan'), _titlecase(_plan || 'free') + (_planEnds ? ' — ends ' + _planEnds : ''));
+    setText($('settings-current-plan'), _titlecase(_plan || 'free') + (_planEnds ? ' · ends ' + _planEnds : ''));
 
     // Listing visibility = vendor.is_active
     var vis = $('toggle-visibility-public');
@@ -211,7 +211,7 @@
     if (!slugAllowed()) {
       host.innerHTML = label +
         '<div style="border:1px dashed #c8c6d8;border-radius:10px;padding:14px;background:#F7F6FC;color:#4A4761;font-size:14px;line-height:1.5;">' +
-        '🔒 Claim your own link — like <strong>golokali.com/' + escapeHtml(currentSlug || 'your-name') + '</strong> — with Pro &amp; Featured.</div>';
+        '🔒 Claim your own link, like <strong>golokali.com/' + escapeHtml(currentSlug || 'your-name') + '</strong>, with Pro &amp; Featured.</div>';
       return;
     }
 
@@ -236,15 +236,15 @@
     // sentence; anything unmapped falls through to the our-fault line, never the
     // raw code. Note "your old link keeps working" in the hint above is now
     // true — the Worker 301s retired slugs as of 2026-08-16 (#130).
-    var SLUG_OUR_FAULT = 'Something went wrong on our end — your URL wasn’t changed. Please try again.';
+    var SLUG_OUR_FAULT = 'Something went wrong on our end. Your URL wasn’t changed. Please try again.';
     var SLUG_ERRORS = {
-      rate_limited:  'You can change your URL once every 30 days — this one was changed recently, so it’s not available yet.',
+      rate_limited:  'You can change your URL once every 30 days, and this one was changed recently, so it’s not available yet.',
       slug_taken:    'That URL is already taken. Try another.',
       slug_reserved: 'That URL is reserved by Lokali. Try another.',
       invalid_slug:  'Use 2–30 characters: lowercase letters, numbers and hyphens only.',
-      plan_required: 'A custom URL is a Pro and Featured feature — upgrade to claim yours.',
+      plan_required: 'A custom URL is a Pro and Featured feature. Upgrade to claim yours.',
       not_found:     'We couldn’t find your storefront. Try reloading the page.',
-      unauthorized:  'Your session expired — please log in again.'
+      unauthorized:  'Your session expired. Please log in again.'
     };
     function slugErrorMessage(code) { return SLUG_ERRORS[code] || SLUG_OUR_FAULT; }
 
@@ -265,7 +265,7 @@
           if (input.value.trim() !== v) return; // stale
           // A failed check resolves an { error } envelope with no `available`
           // key — don't report that as "taken".
-          if (!r || r.error) { setStatus('Couldn’t check availability — try again.'); return; }
+          if (!r || r.error) { setStatus('Couldn’t check availability. Try again.'); return; }
           if (r.available) setStatus('✓ golokali.com/' + v + ' is available', '#047857');
           else setStatus('That URL is already taken.', '#B1006A');
         });
@@ -329,7 +329,7 @@
     h.textContent = 'The Neighborhood Edit';
     var p = document.createElement('div');
     p.className = 'settings-lokali-text';
-    p.textContent = 'Our bi-monthly newsletter — vendor spotlights and what’s new on Lokali. Rare by design.';
+    p.textContent = 'Our bi-monthly newsletter: vendor spotlights and what’s new on Lokali. Rare by design.';
     label.appendChild(h); label.appendChild(p);
 
     var embed = document.createElement('div');
@@ -462,7 +462,7 @@
         var foundWarn = document.createElement('div');
         foundWarn.style.cssText = 'margin:0 0 10px;padding:8px 10px;border-radius:8px;' +
           "background:#FBEFD6;color:#9A6B00;font-size:13px;font-weight:600;font-family:'Plus Jakarta Sans',sans-serif;";
-        foundWarn.textContent = 'Heads up — you’re a founding member. Deleting permanently retires your founding spot and its lifetime pricing. It can’t be undone or reclaimed.';
+        foundWarn.textContent = 'Heads up: you’re a founding member. Deleting permanently retires your founding spot and its lifetime pricing. It can’t be undone or reclaimed.';
         delCard.appendChild(foundWarn);
       }
       // #100 exit survey — vendor list (this page is vendor-only). One optional,
@@ -483,7 +483,7 @@
       surveyWrap.style.cssText = 'margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #F3D6D6;';
       var sTitle = document.createElement('div');
       sTitle.style.cssText = 'font-size:13px;font-weight:600;color:#4A4761;margin-bottom:8px;';
-      sTitle.textContent = 'Before you go — why are you leaving? (optional)';
+      sTitle.textContent = 'Before you go: why are you leaving? (optional)';
       surveyWrap.appendChild(sTitle);
       var pillRow = document.createElement('div');
       pillRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;';
@@ -562,8 +562,8 @@
         }).catch(function (err) {
           delGo.disabled = false; delGo.textContent = 'Permanently delete';
           toast('error', (err && err.message) === 'billing_cleanup_failed'
-            ? "We couldn't close your subscription — try again in a minute or contact us."
-            : "Couldn't delete your account — please try again or contact us.");
+            ? "We couldn't close your subscription. Try again in a minute or contact us."
+            : "Couldn't delete your account. Please try again or contact us.");
         });
       });
     }
@@ -600,7 +600,7 @@
     // no-oping (both blank) or claiming a clean save (one blank).
     var kept = (fn && !fnVal) || (ln && !lnVal);
     if (!fnVal && !lnVal) {
-      toast('error', 'Name fields can’t be blank — your saved name was kept.');
+      toast('error', 'Name fields can’t be blank, so your saved name was kept.');
       if (fn && _user.first_name) fn.value = _user.first_name;
       if (ln && _user.last_name) ln.value = _user.last_name;
       return;
@@ -616,7 +616,7 @@
         if (fn && !fnVal && _user.first_name) fn.value = _user.first_name;
         if (ln && !lnVal && _user.last_name) ln.value = _user.last_name;
       }
-      toast('success', kept ? 'Saved — blank fields kept their previous value.' : 'Settings saved.');
+      toast('success', kept ? 'Saved. Blank fields kept their previous value.' : 'Settings saved.');
     }).catch(function () {
       toast('error', 'Network error. Please try again.');
     }).then(function () { if (btn) btn.removeAttribute('disabled'); });

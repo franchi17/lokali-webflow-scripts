@@ -59,6 +59,7 @@
   var TURNSTILE_KEY = window.LOKALI_TURNSTILE_SITE_KEY || null;
 
   var _syncing = false;
+  var _lastSyncNew = false; // #156: last successful auth-sync created the account
 
   // Two cooldown windows (ported from the Clerk controller):
   //  - SUCCESS cooldown (long): once provisioned, don't resync on every nav.
@@ -125,6 +126,46 @@
   }
   function clearSignupIntent() {
     try { sessionStorage.removeItem(SIGNUP_INTENT_KEY); } catch (e) {}
+  }
+
+  // ── #156 acquisition attribution stashes ──────────────────────────────────
+  // lokali_first_touch is written (write-once) by lokali-auth-nav.js on the
+  // visitor's first pageview; lokali_heard_about holds the post-signup
+  // interstitial answer until the first successful auth-sync delivers it.
+  // Server side is set-once + sanitized, so resending either is harmless.
+  function readFirstTouch() {
+    try {
+      var o = JSON.parse(localStorage.getItem('lokali_first_touch') || 'null');
+      if (!o || !o.exp || o.exp < Date.now()) return null;
+      return { v: o.v, ts: o.ts, landing: o.landing, referrer: o.referrer, params: o.params };
+    } catch (e) { return null; }
+  }
+  function readHeardStash() {
+    try {
+      var o = JSON.parse(localStorage.getItem('lokali_heard_about') || 'null');
+      if (!o || !o.choice || (o.exp && o.exp < Date.now())) return null;
+      return o;
+    } catch (e) { return null; }
+  }
+  function writeHeardStash(choice, detail) {
+    try {
+      localStorage.setItem('lokali_heard_about', JSON.stringify({
+        v: 1, choice: choice, detail: detail || '', ts: Date.now(),
+        exp: Date.now() + 90 * 24 * 60 * 60 * 1000
+      }));
+      localStorage.setItem('lokali_heard_done', '1');
+    } catch (e) {}
+  }
+  function clearHeardStash() {
+    try { localStorage.removeItem('lokali_heard_about'); } catch (e) {}
+  }
+  function heardAlreadyHandled() {
+    try {
+      return localStorage.getItem('lokali_heard_done') === '1' || !!readHeardStash();
+    } catch (e) { return true; }
+  }
+  function markHeardDone() {
+    try { localStorage.setItem('lokali_heard_done', '1'); } catch (e) {}
   }
 
   // ── acct cache (the synchronous signed-in/role signal) ────────────────────
@@ -271,13 +312,24 @@
     var intent = getSignupIntent();
     return getAccessToken().then(function (token) {
       if (!token) return null;
+      // #156: attribution rides the sync body. first_touch is idempotent
+      // (server set-once); the heard stash is cleared once a sync succeeds.
+      var body = {};
+      if (intent) body.intended_role = intent;
+      var ft = readFirstTouch();
+      if (ft) body.first_touch = ft;
+      var heard = readHeardStash();
+      if (heard) {
+        body.heard_about = heard.choice;
+        if (heard.detail) body.heard_about_detail = heard.detail;
+      }
       return fetch(syncUrl(), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ' + token
         },
-        body: JSON.stringify(intent ? { intended_role: intent } : {})
+        body: JSON.stringify(body)
       }).then(function (res) {
         // Surface non-2xx in the console — a 403/5xx here used to fail with
         // no trace at all (#101), which made provisioning bugs undebuggable.
@@ -289,6 +341,8 @@
       if (data && data.ok === true) {
         markSynced();
         clearSignupIntent();
+        clearHeardStash();                               // #156 delivered
+        _lastSyncNew = data.is_new_signup === true;      // #156 interstitial gate
         writeAcctCache(data.role || null);
         _syncRetryArmed = false; // #101 — a later failure gets its own retry
         return data.role || null;
@@ -324,11 +378,120 @@
     });
   }
 
+  // #156 — "How did you hear about us?" (shared by the check-email state and
+  // the post-signup interstitial). One optional select + Skip; choosing
+  // "Other" reveals a short text input. onDone(choice, detail) fires for BOTH
+  // answer and skip (choice = '' on skip); the caller decides what to persist.
+  var HEARD_OPTIONS = [
+    ['friend_word_of_mouth', 'A friend or word of mouth'],
+    ['google_search',        'Google search'],
+    ['facebook_group',       'A Facebook group'],
+    ['nextdoor',             'Nextdoor'],
+    ['instagram',            'Instagram'],
+    ['qr_flyer',             'A QR code or flyer'],
+    ['local_event',          'A local event or market'],
+    ['another_vendor',       'Another Lokali vendor'],
+    ['other',                'Other']
+  ];
+  function heardAboutBlock(onDone) {
+    var wrap = el('div', 'lok-heard');
+    wrap.appendChild(el('h4', null, 'How did you hear about Lokali?'));
+    wrap.appendChild(el('p', 'lok-heard-sub', 'Totally optional, but it helps us reach more neighbors like you.'));
+    var sel = document.createElement('select');
+    var ph = document.createElement('option');
+    ph.value = ''; ph.textContent = 'Select one…';
+    sel.appendChild(ph);
+    HEARD_OPTIONS.forEach(function (o) {
+      var op = document.createElement('option');
+      op.value = o[0]; op.textContent = o[1];
+      sel.appendChild(op);
+    });
+    wrap.appendChild(sel);
+    var detailWrap = el('div', 'lok-heard-detail');
+    var detail = document.createElement('input');
+    detail.type = 'text'; detail.maxLength = 200;
+    detail.placeholder = 'Tell us more (optional)';
+    detailWrap.appendChild(detail);
+    wrap.appendChild(detailWrap);
+    sel.addEventListener('change', function () {
+      detailWrap.className = 'lok-heard-detail' + (sel.value === 'other' ? ' show' : '');
+    });
+    var actions = el('div', 'lok-heard-actions');
+    var done = primaryBtn('Done');
+    done.type = 'button';
+    var skip = document.createElement('button');
+    skip.type = 'button'; skip.className = 'lok-heard-skip'; skip.textContent = 'Skip';
+    actions.appendChild(done); actions.appendChild(skip);
+    wrap.appendChild(actions);
+    var fired = false;
+    function finish(choice) {
+      if (fired) return; fired = true;
+      var thanks = el('p', 'lok-heard-thanks', choice ? 'Thanks, good to know!' : 'No problem!');
+      wrap.innerHTML = '';
+      wrap.appendChild(thanks);
+      try { onDone(choice, choice === 'other' ? (detail.value || '').trim() : ''); } catch (e) {}
+    }
+    done.addEventListener('click', function () { finish(sel.value || ''); });
+    skip.addEventListener('click', function () { finish(''); });
+    return wrap;
+  }
+
+  // #156 — OAuth / auto-confirm interstitial: shown ONCE, only right after a
+  // sync that CREATED the account, as an overlay before routing. It must never
+  // block routing — skip and every error path fall straight through to next().
+  function maybeShowHeardInterstitial(next) {
+    try {
+      if (!_lastSyncNew || heardAlreadyHandled()) { next(); return; }
+      _lastSyncNew = false;
+      injectStyles();
+      var overlay = el('div', 'lok-auth-overlay');
+      var modal = el('div', 'lok-auth-modal');
+      var card = el('div', 'lok-auth-card');
+      card.appendChild(el('h2', null, 'Welcome to Lokali!'));
+      card.appendChild(heardAboutBlock(function (choice, detail) {
+        if (choice) {
+          writeHeardStash(choice, detail);
+          // Direct one-shot send (bypasses the sync cooldown): provisioning is
+          // idempotent + set-once server-side, so a double call is harmless.
+          getAccessToken().then(function (token) {
+            if (!token) return null;
+            var body = { heard_about: choice };
+            if (detail) body.heard_about_detail = detail;
+            var ft = readFirstTouch();
+            if (ft) body.first_touch = ft;
+            return fetch(syncUrl(), {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+              body: JSON.stringify(body)
+            });
+          }).then(function (res) {
+            if (res && res.ok) clearHeardStash(); // delivered; else next sync retries
+          }).catch(function () {});
+        } else {
+          markHeardDone();
+        }
+        setTimeout(function () {
+          if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+          next();
+        }, choice ? 700 : 0);
+      }));
+      modal.appendChild(card);
+      overlay.appendChild(modal);
+      document.body.appendChild(overlay);
+    } catch (e) {
+      try { next(); } catch (e2) {}
+    }
+  }
+
   // Route after a confirmed auth. Vendors go to the dashboard; customers are
   // never forced there. Emits 'lokali:authed' with the role so page scripts
   // (favorites, share, reviews) can react to inline sign-up-to-save.
   // A null role (signed in, provisioning incomplete) routes NOWHERE.
+  // #156: a brand-new account first gets the one-question interstitial.
   function routeAfterAuth() {
+    maybeShowHeardInterstitial(routeAfterAuthCore);
+  }
+  function routeAfterAuthCore() {
     fetchRole().then(function (role) {
       if (!role) return; // unprovisioned — never push into guarded pages
       if (_recoveryMode) return; // setting a new password — stay on the form
@@ -478,6 +641,23 @@
       '.lok-auth-overlay .lok-auth-close:focus-visible{outline:2px solid #6002EE;outline-offset:2px;}',
       '.lok-auth-overlay .lok-auth{max-width:100%;}',
       '.lok-auth-overlay .lok-auth-card{border:none;box-shadow:none;padding:0;}',
+      // #156 "How did you hear about us?" block (check-email state + interstitial)
+      '.lok-heard{margin-top:20px;padding-top:18px;border-top:1px solid #ECE8F8;text-align:left;}',
+      '.lok-heard h4{margin:0 0 4px;font-size:15px;font-weight:700;color:#231D3F;text-align:center;}',
+      '.lok-heard .lok-heard-sub{margin:0 0 14px;font-size:12.5px;color:#6B6580;line-height:1.5;text-align:center;}',
+      '.lok-heard select{display:block;width:100%;min-height:46px;padding:11px 40px 11px 14px;font-size:15px;color:#231D3F;' +
+        'font-family:inherit;background:#FDFCFF;border:1.5px solid #ECE8F8;border-radius:12px;outline:none;cursor:pointer;' +
+        '-webkit-appearance:none;appearance:none;' +
+        'background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%278%27%3E%3Cpath d=%27M1 1l5 5 5-5%27 stroke=%27%236B6580%27 stroke-width=%272%27 fill=%27none%27 stroke-linecap=%27round%27/%3E%3C/svg%3E");' +
+        'background-repeat:no-repeat;background-position:right 16px center;transition:border-color .15s,box-shadow .15s;}',
+      '.lok-heard select:focus{border-color:#6002EE;box-shadow:0 0 0 3px rgba(96,2,238,.12);}',
+      '.lok-heard .lok-heard-detail{margin-top:10px;display:none;}',
+      '.lok-heard .lok-heard-detail.show{display:block;}',
+      '.lok-heard .lok-heard-actions{display:flex;align-items:center;gap:14px;margin-top:14px;}',
+      '.lok-heard .lok-heard-actions .lok-auth-btn{flex:1;}',
+      '.lok-heard .lok-heard-skip{background:none;border:none;padding:8px 10px;font-family:inherit;font-size:13px;font-weight:600;color:#6B6580;cursor:pointer;}',
+      '.lok-heard .lok-heard-skip:hover{color:#6002EE;text-decoration:underline;}',
+      '.lok-heard .lok-heard-thanks{margin:0;padding:10px 0 2px;font-size:14px;font-weight:600;color:#3D2E7C;text-align:center;}',
       // account panel section split
       '.lok-auth-section{padding:18px 0;border-top:1px solid #ECE8F8;}',
       '.lok-auth-section:first-of-type{border-top:none;padding-top:0;}',
@@ -607,7 +787,7 @@
     if (low.indexOf('password should') >= 0 || low.indexOf('password must') >= 0) {
       return 'Password needs at least 8 characters, with an uppercase letter, a lowercase letter, a number, and a symbol.';
     }
-    if (low.indexOf('rate limit') >= 0 || low.indexOf('too many') >= 0) return 'Too many attempts — please wait a minute and try again.';
+    if (low.indexOf('rate limit') >= 0 || low.indexOf('too many') >= 0) return 'Too many attempts. Please wait a minute and try again.';
     if (low.indexOf('captcha') >= 0) return 'Please complete the verification challenge and try again.';
     return msg;
   }
@@ -722,7 +902,7 @@
       if (!em || !pw) { showMsg(err, 'Please enter your email and password.'); return; }
       setBusy(submit, true);
       readyP.then(function () {
-        if (!_client) throw new Error('Auth is still loading — please try again.');
+        if (!_client) throw new Error('Auth is still loading. Please try again.');
         var creds = { email: em, password: pw };
         var ct = captcha.token();
         if (ct) creds.options = { captchaToken: ct };
@@ -733,7 +913,7 @@
           captcha.reset();
           if (isUnconfirmedError(res.error)) {
             var frag = document.createDocumentFragment();
-            frag.appendChild(document.createTextNode('Please confirm your email first — check your inbox. '));
+            frag.appendChild(document.createTextNode('Please confirm your email first. Check your inbox. '));
             var resend = linkBtn('Resend confirmation');
             resend.addEventListener('click', function () {
               // /resend is captcha-gated like every auth endpoint — reuse the
@@ -812,7 +992,7 @@
       if (!em) { showMsg(err, 'Please enter your email.'); return; }
       setBusy(submit, true);
       readyP.then(function () {
-        if (!_client) throw new Error('Auth is still loading — please try again.');
+        if (!_client) throw new Error('Auth is still loading. Please try again.');
         var o = { redirectTo: window.location.origin + SIGN_IN_PATH };
         var ct = captcha.token();
         if (ct) o.captchaToken = ct;
@@ -820,7 +1000,7 @@
       }).then(function (res) {
         setBusy(submit, false);
         if (res && res.error) { captcha.reset(); showMsg(err, friendlyAuthError(res.error)); return; }
-        showMsg(info, 'Check your email — if an account exists for ' + em + ', a reset link is on its way.');
+        showMsg(info, 'Check your email. If an account exists for ' + em + ', a reset link is on its way.');
       }).catch(function (ex) { setBusy(submit, false); captcha.reset(); showMsg(err, friendlyAuthError(ex)); });
     });
     card.appendChild(form);
@@ -859,13 +1039,13 @@
       if (!val) { showMsg(err, 'Please enter a new password.'); return; }
       setBusy(submit, true);
       readyP.then(function () {
-        if (!_client) throw new Error('Auth is still loading — please try again.');
+        if (!_client) throw new Error('Auth is still loading. Please try again.');
         return _client.auth.updateUser({ password: val });
       }).then(function (res) {
         setBusy(submit, false);
         if (res && res.error) { showMsg(err, friendlyAuthError(res.error)); return; }
         _recoveryMode = false;
-        showMsg(info, 'Password updated — taking you back in…');
+        showMsg(info, 'Password updated! Taking you back in…');
         setTimeout(function () { syncUser().then(function () { routeAfterAuth(); }); }, 900);
       }).catch(function (ex) { setBusy(submit, false); showMsg(err, friendlyAuthError(ex)); });
     });
@@ -917,6 +1097,16 @@
     });
     links.appendChild(resend);
     chk.appendChild(links);
+    // #156: ask "how did you hear about us?" while they wait for the email.
+    // The account already exists (signUp succeeded) but there's no session yet,
+    // so the answer is stashed and rides the FIRST successful auth-sync after
+    // they confirm and log in (syncUser body). One-shot: skip also marks done.
+    if (!heardAlreadyHandled()) {
+      chk.appendChild(heardAboutBlock(function (choice, detail) {
+        if (choice) writeHeardStash(choice, detail);
+        else markHeardDone();
+      }));
+    }
     card.appendChild(chk);
     box.appendChild(card);
     root.appendChild(box);
@@ -932,7 +1122,7 @@
   function renderRoleChooser(root, opts) {
     var wrap = el('div', 'lok-role-gate');
     var h = el('h3', null, 'How will you use Lokali?');
-    var sub = el('p', null, 'Just your starting point — every account can shop, and you can open a storefront anytime.');
+    var sub = el('p', null, 'Just your starting point. Every account can shop, and you can open a storefront anytime.');
     var cards = el('div', 'lok-role-cards');
 
     // Font Awesome 6 solid icons, inlined as SVG (no FA dependency on the
@@ -970,7 +1160,7 @@
     }
 
     cards.appendChild(card(faIcon('0 0 448 512', FA_BAG, '#FF8D00'), "I'm here to shop", 'Discover local makers, save favorites, and message the businesses near you.', 'customer'));
-    cards.appendChild(card(faIcon('0 0 640 512', FA_SHOP, '#6002EE'), "I want to sell", 'Open a storefront to list your business and get found by locals. Free to start — you can still shop, too.', 'vendor'));
+    cards.appendChild(card(faIcon('0 0 640 512', FA_SHOP, '#6002EE'), "I want to sell", 'Open a storefront to list your business and get found by locals. Free to start, and you can still shop, too.', 'vendor'));
 
     var login = el('div', 'lok-role-login');
     login.appendChild(document.createTextNode('Already have an account? '));
@@ -1062,7 +1252,7 @@
       if (!em || !pw) { showMsg(err, 'Please fill in your email and a password.'); return; }
       setBusy(submit, true);
       readyP.then(function () {
-        if (!_client) throw new Error('Auth is still loading — please try again.');
+        if (!_client) throw new Error('Auth is still loading. Please try again.');
         var o = {
           data: {
             first_name: (first.input.value || '').trim(),
@@ -1073,6 +1263,10 @@
           },
           emailRedirectTo: window.location.origin + SIGN_IN_PATH
         };
+        // #156: first-touch rides user_metadata so ensure_app_user can store it
+        // even when this browser's auth-sync never fires (server sanitizes).
+        var _ft = readFirstTouch();
+        if (_ft) o.data.signup_source = _ft;
         var ct = captcha.token();
         if (ct) o.captchaToken = ct;
         return _client.auth.signUp({ email: em, password: pw, options: o });
@@ -1138,7 +1332,7 @@
     var secE = el('div', 'lok-auth-section');
     secE.appendChild(el('h4', null, 'Change email'));
     secE.appendChild(el('p', 'lok-auth-section-sub',
-      'For security, we’ll send confirmation links to BOTH your current and new address — click both to finish the change.'));
+      'For security, we’ll send confirmation links to BOTH your current and new address. Click both to finish the change.'));
     var errE = errorBox(); var infoE = infoBox();
     secE.appendChild(errE); secE.appendChild(infoE);
     var formE = document.createElement('form');
@@ -1154,12 +1348,12 @@
       if (!em) { showMsg(errE, 'Please enter your new email.'); return; }
       setBusy(subE, true);
       readyP.then(function () {
-        if (!_client) throw new Error('Auth is still loading — please try again.');
+        if (!_client) throw new Error('Auth is still loading. Please try again.');
         return _client.auth.updateUser({ email: em });
       }).then(function (res) {
         setBusy(subE, false);
         if (res && res.error) { showMsg(errE, friendlyAuthError(res.error)); return; }
-        showMsg(infoE, 'Confirmation links sent to both inboxes — click both to complete the change.');
+        showMsg(infoE, 'Confirmation links sent to both inboxes. Click both to complete the change.');
       }).catch(function (ex) { setBusy(subE, false); showMsg(errE, friendlyAuthError(ex)); });
     });
     secE.appendChild(formE);
@@ -1186,7 +1380,7 @@
       if (!pw) { showMsg(errP, 'Please enter a new password.'); return; }
       setBusy(subP, true);
       readyP.then(function () {
-        if (!_client) throw new Error('Auth is still loading — please try again.');
+        if (!_client) throw new Error('Auth is still loading. Please try again.');
         return _client.auth.updateUser({ password: pw });
       }).then(function (res) {
         setBusy(subP, false);
@@ -1401,7 +1595,7 @@
     icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="#6002EE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16.5" x2="12" y2="16.5"/></svg>';
     chk.appendChild(icon);
     chk.appendChild(el('h2', null, 'Almost there'));
-    chk.appendChild(el('p', 'lok-auth-sub', 'You’re signed in, but we couldn’t finish setting up your account. Give it another try — it usually works right away.'));
+    chk.appendChild(el('p', 'lok-auth-sub', 'You’re signed in, but we couldn’t finish setting up your account. Give it another try. It usually works right away.'));
     var btn = primaryBtn('Try again'); btn.type = 'button';
     btn.addEventListener('click', function () {
       setBusy(btn, true);

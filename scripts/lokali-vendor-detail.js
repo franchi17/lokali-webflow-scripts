@@ -105,7 +105,7 @@
       'padding:12px 26px;border-radius:999px;text-decoration:none;font-family:inherit;';
     card.appendChild(h); card.appendChild(p); card.appendChild(a);
     root.appendChild(card);
-    document.title = 'Not found — Lokali';
+    document.title = 'Not found | Lokali';
   }
   // Best back-link for the id-based hydrators (?vendor= is the only context).
   function vendorBackHref(vendorParam) {
@@ -192,7 +192,7 @@
       img.src = urls[idx] || '';
       var multi = urls.length > 1;
       // #97: alt mirrors the gallery's ("Label — photo N"); count is separate UI.
-      img.alt = lbLabel ? (multi ? lbLabel + ' — photo ' + (idx + 1) : lbLabel) : '';
+      img.alt = lbLabel ? (multi ? lbLabel + ', photo ' + (idx + 1) : lbLabel) : '';
       count.textContent = (idx + 1) + ' / ' + urls.length;
       prev.style.display = next.style.display = count.style.display = multi ? '' : 'none';
     };
@@ -269,7 +269,7 @@
     if (pips) pips.innerHTML = '';
     var altFor = function (i) {
       if (!label) return '';
-      return list.length > 1 ? label + ' — photo ' + (i + 1) : label;
+      return list.length > 1 ? label + ', photo ' + (i + 1) : label;
     };
     list.forEach(function (src, i) {
       var f = document.createElement('div');
@@ -425,7 +425,7 @@
       // CTA -> mailto
       var cta = $('vd-cta-btn');
       if (cta && v.contact_email) {
-        var subj = 'I found you on Lokali — inquiry about ' + (itemName || (isProduct ? 'your product' : 'your service'));
+        var subj = 'I found you on Lokali: inquiry about ' + (itemName || (isProduct ? 'your product' : 'your service'));
         var body = "Hi " + (v.business_name || 'there') + ", I found your listing on Lokali and I'm interested in " +
           (itemName ? ('"' + itemName + '"') : (isProduct ? 'ordering this product' : 'this service')) + '.';
         cta.href = 'mailto:' + v.contact_email + '?subject=' + encodeURIComponent(subj) + '&body=' + encodeURIComponent(body);
@@ -459,7 +459,7 @@
       var s = unwrap(res); if (!s || s.error != null) { console.warn('[vd] service not found'); renderNotFound('This service isn’t available', vendorBackHref(vendorParam), vendorParam ? 'Back to the vendor' : null); return; }
       var name = s.service_name || s.name || '';
       setText('vd-name', name);
-      document.title = name + ' — Lokali';
+      document.title = name + ' | Lokali';
       setText('vd-desc', s.service_description || s.description || '');
       // price
       var priceEl = $('vd-price');
@@ -534,7 +534,7 @@
       if (!p) { console.warn('[vd] product not found'); renderNotFound('This product isn’t available', vendorBackHref(vendorParam), vendorParam ? 'Back to the vendor' : null); return; }
       var name = p.product_name || p.name || '';
       setText('vd-name', name);
-      document.title = name + ' — Lokali';
+      document.title = name + ' | Lokali';
       setText('vd-desc', p.product_description || p.description || '');
       var priceEl = $('vd-price');
       if (priceEl) {

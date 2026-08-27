@@ -792,7 +792,7 @@
       // a note (never the shopping UI) so it isn't a blank page.
       var note = el('div', 'lk-admin');
       note.appendChild(el('p', 'lk-admin-sub',
-        'Admin tools aren’t loading right now. Refresh the page — if it keeps happening, your admin access may need to be re-granted in Supabase.'));
+        'Admin tools aren’t loading right now. Refresh the page. If it keeps happening, your admin access may need to be re-granted in Supabase.'));
       mount.appendChild(note);
     }
 
@@ -884,7 +884,7 @@
       if (!parts.length) { attn.style.background = '#EAFAF2'; attn.style.borderColor = '#BFE9D2'; attn.style.color = '#1A6640'; attn.appendChild(document.createTextNode('✅ Nothing needs your approval right now.')); return; }
       attn.style.background = '#FFF6E5'; attn.style.borderColor = '#FFE2A8'; attn.style.color = '#6B4A00';
       var s = document.createElement('strong'); s.textContent = 'Needs your attention: '; attn.appendChild(s);
-      attn.appendChild(document.createTextNode(parts.join(' · ') + ' — all below. You also get an email within 5 minutes of anything new.'));
+      attn.appendChild(document.createTextNode(parts.join(' · ') + '. Details below. You also get an email within 5 minutes of anything new.'));
     }
     window.__lokPaintAttn = paintAttn;
     paintAttn();
@@ -901,7 +901,7 @@
     var qc = el('span', 'lk-admin-qcount', String(a.queue.length));
     qt.appendChild(qc);
     sugSec.appendChild(qt);
-    sugSec.appendChild(el('p', 'lk-admin-sub', 'Approve with the wording customers should see — it goes live for everyone instantly; the vendor then tags the matching service or product with it.'));
+    sugSec.appendChild(el('p', 'lk-admin-sub', 'Approve with the wording customers should see. It goes live for everyone instantly; the vendor then tags the matching service or product with it.'));
 
     if (!a.queue.length) {
       sugSec.appendChild(el('div', 'lk-admin-empty', 'No suggestions waiting. New ones from vendors land here.'));
@@ -913,7 +913,7 @@
       var l1 = el('div', 'lk-admin-row-l1');
       l1.textContent = '“' + item.label + '”';
       var l1cat = document.createElement('span');
-      l1cat.textContent = ' — ' + (item.category_name || '');
+      l1cat.textContent = ' · ' + (item.category_name || '');
       l1.appendChild(l1cat);
       var l2 = el('div', 'lk-admin-row-l2');
       l2.textContent = 'from ' + (item.vendor_name || 'a vendor') +
@@ -930,7 +930,7 @@
         var wording = String(input.value || '').replace(/\s+/g, ' ').trim();
         if (approve && (wording.length < 3 || wording.length > 40 ||
             !SUGG_LABEL_RE.test(wording) || !/[A-Za-z0-9]/.test(wording))) {
-          l2.textContent = '3–40 characters — letters, numbers and simple punctuation.';
+          l2.textContent = '3–40 characters: letters, numbers and simple punctuation.';
           l2.style.color = '#B3400F';
           return;
         }
@@ -954,17 +954,17 @@
               row.style.opacity = '0';
               setTimeout(function () {
                 if (row.parentNode) row.parentNode.removeChild(row);
-                if (left === 0) sugSec.appendChild(el('div', 'lk-admin-empty', 'All caught up — new suggestions from vendors land here.'));
+                if (left === 0) sugSec.appendChild(el('div', 'lk-admin-empty', 'All caught up. New suggestions from vendors land here.'));
               }, 420);
             }, 1800);
           } else {
             ok.disabled = false; no.disabled = false;
-            l2.textContent = 'Couldn’t save — try again.';
+            l2.textContent = 'Couldn’t save. Try again.';
             l2.style.color = '#B3400F';
           }
         }).catch(function () {
           ok.disabled = false; no.disabled = false;
-          l2.textContent = 'Couldn’t save — try again.';
+          l2.textContent = 'Couldn’t save. Try again.';
           l2.style.color = '#B3400F';
         });
       };
@@ -981,6 +981,7 @@
     appendSpotlightCreativesSection(grid);
     appendExitSurveySection(grid, ov);
     appendQrScansSection(grid);
+    appendAcquisitionSection(grid);  // #156
     return wrap;
   }
 
@@ -1009,13 +1010,13 @@
       t.appendChild(el('span', 'lk-admin-qcount', String(rows.length)));
       host.appendChild(t);
       host.appendChild(el('p', 'lk-admin-sub',
-        'Vendors whose business address is more than 50 miles from every area they list. Nothing is blocked — this is your cue to reach out. Fixes itself when they update the address or their areas.'));
+        'Vendors whose business address is more than 50 miles from every area they list. Nothing is blocked. This is your cue to reach out. Fixes itself when they update the address or their areas.'));
       if (!rows.length) { host.appendChild(el('div', 'lk-admin-empty', 'No out-of-area addresses right now.')); return; }
       rows.forEach(function (r) {
         var row = el('div', 'lk-admin-row');
         var meta = el('div', 'lk-admin-row-meta');
         var l1 = el('div', 'lk-admin-row-l1');
-        l1.textContent = (r.business_name || 'Unknown vendor') + ' — ' + [r.city, r.state].filter(Boolean).join(', ');
+        l1.textContent = (r.business_name || 'Unknown vendor') + ' · ' + [r.city, r.state].filter(Boolean).join(', ');
         var l2 = el('div', 'lk-admin-row-l2');
         l2.textContent = (r.nearest_miles != null ? ('~' + r.nearest_miles + ' mi from the nearest listed area') : 'distance unknown') +
           ' · lists: ' + (r.areas || '—') + (r.is_publish_ready ? ' · LIVE on The Market' : ' · not public yet') +
@@ -1067,7 +1068,7 @@
     t.appendChild(el('span', 'lk-admin-qcount', String(total)));
     sec.appendChild(t);
     sec.appendChild(el('p', 'lk-admin-sub',
-      'Customer reports of vendors, and vendor flags on reviews. Resolving here only clears the queue — deactivating a storefront stays a separate, deliberate step.'));
+      'Customer reports of vendors, and vendor flags on reviews. Resolving here only clears the queue. Deactivating a storefront stays a separate, deliberate step.'));
 
     if (!total) {
       sec.appendChild(el('div', 'lk-admin-empty', 'No open reports. New ones land here the moment they\u2019re filed.'));
@@ -1203,7 +1204,7 @@
     t.appendChild(el('span', 'lk-admin-qcount', String(rows.length)));
     sec.appendChild(t);
     sec.appendChild(el('p', 'lk-admin-sub',
-      'Answers from the delete-account survey — optional, so treat counts as a floor. ' +
+      'Answers from the delete-account survey. It’s optional, so treat counts as a floor. ' +
       'Cancellations (dropping to Free) are surveyed by Stripe instead: Billing → Subscriptions → the subscription.'));
 
     if (!keys.length && !rows.length) {
@@ -1271,7 +1272,7 @@
       t.appendChild(el('span', 'lk-admin-qcount', String(d.last_30d != null ? d.last_30d : 0)));
       host.appendChild(t);
       host.appendChild(el('p', 'lk-admin-sub',
-        'Visits from your printed QR codes — counted once per visit when someone scans and lands on the site. The badge is the last 30 days.'));
+        'Visits from your printed QR codes, counted once per visit when someone scans and lands on the site. The badge is the last 30 days.'));
 
       var stats = el('div', 'lk-admin-stats');
       [[d.today, 'Today'], [d.last_7d, 'Last 7 days'],
@@ -1287,7 +1288,7 @@
       if (camps.length) host.className += ' lk-admin-section-wide';
       if (!camps.length) {
         host.appendChild(el('div', 'lk-admin-empty',
-          'No scans yet — the first flyer scan lands here.'));
+          'No scans yet. The first flyer scan lands here.'));
         return;
       }
       camps.forEach(function (c) {
@@ -1298,6 +1299,110 @@
         var l2 = el('div', 'lk-admin-row-l2');
         l2.textContent = String(c.total || 0) + ' total · ' + String(c.last_30d || 0) + ' in 30d' +
           (c.last_scan ? ' · last ' + fmtSpotDay(c.last_scan) : '');
+        meta.appendChild(l1); meta.appendChild(l2);
+        row.appendChild(meta);
+        host.appendChild(row);
+      });
+    }).catch(function () { if (host.parentNode) host.parentNode.removeChild(host); });
+  }
+
+  // #156 — "How people found us": acquisition attribution for every signup.
+  // Its OWN RPC (admin_signup_sources) — admin_overview() stays untouched.
+  // Informational only: never registers in the needs-attention strip.
+  function appendAcquisitionSection(wrap) {
+    var API = window.LokaliSupabaseAPI && window.LokaliSupabaseAPI.admin;
+    if (!API || typeof API.signupSources !== 'function') return; // stale client cache: no-op
+    var HEARD_LBL = {
+      friend_word_of_mouth: 'Friend / word of mouth', google_search: 'Google search',
+      facebook_group: 'Facebook group', nextdoor: 'Nextdoor', instagram: 'Instagram',
+      qr_flyer: 'QR code / flyer', local_event: 'Local event or market',
+      another_vendor: 'Another vendor', other: 'Other'
+    };
+    var CHAN_LBL = {
+      paid_google: 'Google ads (gclid)', vendor_referral: 'Vendor referral link',
+      shared_link: 'Shared link', organic_search: 'Search engine', facebook: 'Facebook',
+      instagram: 'Instagram', nextdoor: 'Nextdoor', direct: 'Direct / typed in',
+      other_referrer: 'Other site', unknown: 'Unknown (pre-tracking)'
+    };
+    var host = el('div', 'lk-admin-section');
+    wrap.appendChild(host);
+
+    API.signupSources().then(function (res) {
+      var d = (res && res.data) || {};
+      if (d.ok !== true) { if (host.parentNode) host.parentNode.removeChild(host); return; }  // not admin / patch not run yet
+
+      var t = el('div', 'lk-admin-qtitle');
+      t.appendChild(document.createTextNode('How people found us'));
+      t.appendChild(el('span', 'lk-admin-qcount', String(d.signups_30d != null ? d.signups_30d : 0)));
+      host.appendChild(t);
+      host.appendChild(el('p', 'lk-admin-sub',
+        'Where signups come from: their own answer to “How did you hear about us?” plus the referrer/campaign we saw on their first visit. The badge is signups in the last 30 days.'));
+
+      function topOf(obj) {
+        var best = null, n = -1;
+        Object.keys(obj || {}).forEach(function (k) {
+          var v = Number(obj[k]) || 0;
+          if (v > n) { n = v; best = k; }
+        });
+        return best;
+      }
+      var topHeard = topOf(d.heard_counts);
+      var topChan = topOf(d.channel_counts);
+      var stats = el('div', 'lk-admin-stats');
+      [[d.signups_30d, 'Signups 30d'], [d.signups_total, 'All time'],
+       [topHeard ? (HEARD_LBL[topHeard] || topHeard) : '—', 'Top answer'],
+       [topChan ? (CHAN_LBL[topChan] || topChan) : '—', 'Top channel']].forEach(function (s) {
+        var tile = el('div', 'lk-admin-stat');
+        tile.appendChild(el('div', 'lk-admin-stat-num', esc(String(s[0] != null ? s[0] : '—'))));
+        tile.appendChild(el('div', 'lk-admin-stat-lbl', esc(s[1])));
+        stats.appendChild(tile);
+      });
+      host.appendChild(stats);
+
+      function breakdown(title, obj, lbls) {
+        var keys = Object.keys(obj || {});
+        if (!keys.length) return;
+        keys.sort(function (a, b) { return (Number(obj[b]) || 0) - (Number(obj[a]) || 0); });
+        var row = el('div', 'lk-admin-row');
+        var meta = el('div', 'lk-admin-row-meta');
+        var l1 = el('div', 'lk-admin-row-l1');
+        l1.textContent = title;
+        var l2 = el('div', 'lk-admin-row-l2');
+        l2.textContent = keys.map(function (k) {
+          return (lbls[k] || k) + ' ' + String(obj[k]);
+        }).join(' · ');
+        meta.appendChild(l1); meta.appendChild(l2);
+        row.appendChild(meta);
+        host.appendChild(row);
+      }
+      breakdown('Their answer', d.heard_counts, HEARD_LBL);
+      breakdown('First-visit channel', d.channel_counts, CHAN_LBL);
+
+      var recent = Array.isArray(d.recent) ? d.recent : [];
+      if (recent.length) host.className += ' lk-admin-section-wide';
+      if (!recent.length) {
+        host.appendChild(el('div', 'lk-admin-empty',
+          'No signups recorded yet. New accounts land here with their source.'));
+        return;
+      }
+      recent.forEach(function (r) {
+        var row = el('div', 'lk-admin-row');
+        var meta = el('div', 'lk-admin-row-meta');
+        var l1 = el('div', 'lk-admin-row-l1');
+        // vendor text lands via textContent (heard_about_detail is free text)
+        l1.textContent = (r.first_name || 'Someone') +
+          (r.business_name ? ' · ' + r.business_name : '') +
+          (r.role ? ' (' + r.role + ')' : '');
+        var l2 = el('div', 'lk-admin-row-l2');
+        var bits = [];
+        if (r.heard_about) {
+          bits.push((HEARD_LBL[r.heard_about] || r.heard_about) +
+            (r.heard_about_detail ? ': ' + r.heard_about_detail : ''));
+        }
+        if (r.channel && r.channel !== 'unknown') bits.push(CHAN_LBL[r.channel] || r.channel);
+        if (!bits.length) bits.push('no source recorded');
+        if (r.created_at) bits.push(fmtSpotDay(r.created_at));
+        l2.textContent = bits.join(' · ');
         meta.appendChild(l1); meta.appendChild(l2);
         row.appendChild(meta);
         host.appendChild(row);
@@ -1316,7 +1421,7 @@
     t.appendChild(el('span', 'lk-admin-qcount', String(rows.length)));
     sec.appendChild(t);
     sec.appendChild(el('p', 'lk-admin-sub',
-      'Upcoming and live Spotlights — reach out to homepage vendors about their “Meet the vendor” feature and The Neighborhood Edit shoutout.' +
+      'Upcoming and live Spotlights. Reach out to homepage vendors about their “Meet the vendor” feature and The Neighborhood Edit shoutout.' +
       (waiting ? (' ' + waiting + ' vendor' + (waiting === 1 ? ' is' : 's are') + ' on window waitlists.') : '')));
 
     if (!rows.length) {
@@ -1330,7 +1435,7 @@
       var l1 = el('div', 'lk-admin-row-l1');
       l1.textContent = b.business_name || 'Unknown vendor';
       var tierSpan = document.createElement('span');
-      tierSpan.textContent = ' — ' + (b.tier === 'homepage' ? 'Homepage ($150)' : 'Category ($75)');
+      tierSpan.textContent = ' · ' + (b.tier === 'homepage' ? 'Homepage ($150)' : 'Category ($75)');
       l1.appendChild(tierSpan);
       var l2 = el('div', 'lk-admin-row-l2');
       l2.textContent = fmtSpotDay(b.starts_at) + ' – ' + fmtSpotDay(b.ends_at) +
@@ -1403,7 +1508,7 @@
         l1.textContent = c.business_name || 'Unknown vendor';
         if (c.headline) {
           var h = document.createElement('span');
-          h.textContent = ' — “' + c.headline + '”';
+          h.textContent = ': “' + c.headline + '”';
           l1.appendChild(h);
         }
         var l2 = el('div', 'lk-admin-row-l2');
@@ -1483,9 +1588,9 @@
       '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.5-5h15L21 9"/><path d="M4 9v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9"/><path d="M3 9a2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 3 0"/><path d="M9 20v-6h6v6"/></svg>'));
     var body = el('div', 'lk-sf-body');
     body.appendChild(el('div', 'lk-sf-title', 'Open your storefront'));
-    body.appendChild(el('div', 'lk-sf-sub', "You're all set up to shop. Selling on Lokali too? Open a storefront — it's free to start, and locals can find, contact, and review you."));
+    body.appendChild(el('div', 'lk-sf-sub', "You're all set up to shop. Selling on Lokali too? Open a storefront. It's free to start, and locals can find, contact, and review you."));
     card.appendChild(body);
-    var cta = el('button', 'lk-sf-cta', 'Open your storefront — free');
+    var cta = el('button', 'lk-sf-cta', 'Open your storefront for free');
     card.appendChild(cta);
 
     // Inline confirm form (business name).
@@ -1517,10 +1622,10 @@
       create.disabled = true; create.textContent = 'Creating…';
       api().account.openStorefront(name).then(function (res) {
         var d = res && res.data;
-        if (res && res.error) { resetCreate(); toast('Couldn’t open your storefront — please try again.'); return; }
+        if (res && res.error) { resetCreate(); toast('Couldn’t open your storefront. Please try again.'); return; }
         if (!d || d.ok !== true) {
           resetCreate();
-          toast(SF_REASONS[d && d.reason] || 'Couldn’t open your storefront — please try again.');
+          toast(SF_REASONS[d && d.reason] || 'Couldn’t open your storefront. Please try again.');
           return;
         }
         // Keep the synchronous role cache honest so the header/menu paint as a
@@ -1529,14 +1634,14 @@
           var c = JSON.parse(localStorage.getItem('LOKALI_ACCT_CACHE') || 'null') || {};
           c.role = 'vendor'; localStorage.setItem('LOKALI_ACCT_CACHE', JSON.stringify(c));
         } catch (e) {}
-        toast('Storefront created — taking you to your dashboard…');
+        toast('Storefront created! Taking you to your dashboard…');
         // #90 — arm the one-shot first-run setup wizard on the dashboard
         // (lokali-dashboard-page.js consumes + clears this flag).
         try { sessionStorage.setItem('lokali_sf_wizard', '1'); } catch (e) {}
         setTimeout(function () { window.location.href = '/vendor-dashboard/dashboard'; }, 700);
       }).catch(function () {
         resetCreate();
-        toast('Couldn’t open your storefront — please try again.');
+        toast('Couldn’t open your storefront. Please try again.');
       });
     }
     create.addEventListener('click', submit);
@@ -1624,7 +1729,7 @@
     if (state.awaiting.length) {
       var ag = el('div', 'lk-group');
       ag.appendChild(el('div', 'lk-group-label', 'Awaiting your review'));
-      ag.appendChild(el('p', 'lk-intro', 'You contacted these vendors. Sharing how it went helps other locals — and helps the vendor.'));
+      ag.appendChild(el('p', 'lk-intro', 'You contacted these vendors. Sharing how it went helps other locals, and it helps the vendor too.'));
       state.awaiting.forEach(function (row) { ag.appendChild(awaitRow(row)); });
       pane.appendChild(ag);
     }
@@ -1746,7 +1851,7 @@
     }
 
     var card = gCard('Your neighborhood', 'Explore ' + market, earned
-      ? 'Every category explored. New vendors join weekly — there’s always something new on the block.'
+      ? 'Every category explored. New vendors join weekly, so there’s always something new on the block.'
       : 'You’ve discovered ' + n + ' of ' + total + ' corners of your local marketplace.',
       gIco(GI_COMPASS, 20), earned, 'violet');
 
@@ -1804,10 +1909,10 @@
   // ── pane: Badges — the customer's badge home (all four cards) ──
   function renderBadges() {
     var pane = el('div', 'lk-pane'); pane.setAttribute('data-pane', 'badges');
-    pane.appendChild(el('p', 'lk-intro', "Badges you earn by being part of the neighborhood — exploring, reviewing, and spreading the word. Status only: they show on your profile and next to your reviews, nothing more."));
+    pane.appendChild(el('p', 'lk-intro', "Badges you earn by being part of the neighborhood: exploring, reviewing, and spreading the word. Status only: they show on your profile and next to your reviews, nothing more."));
     var b = state.badges;
     if (!b) {
-      pane.appendChild(emptyState('Badges couldn’t load', 'Give it a refresh — your progress is safe.', 'Browse vendors', '/the-market'));
+      pane.appendChild(emptyState('Badges couldn’t load', 'Give it a refresh. Your progress is safe.', 'Browse vendors', '/the-market'));
       return pane;
     }
     appendExplorerCard(pane);
@@ -1822,7 +1927,7 @@
     var sub;
     if (n === 0) sub = 'Reviews come from vendors you’ve contacted through Lokali. After your next inquiry, share how it went.';
     else if (n < 5) sub = n + ' review' + (n === 1 ? '' : 's') + ' shared. ' + (5 - n) + ' more and you’re a Neighborhood Regular.';
-    else sub = '5 reviews shared — you’re a Neighborhood Regular. Your badge now shows on every review you write.';
+    else sub = '5 reviews shared. You’re a Neighborhood Regular. Your badge now shows on every review you write.';
     var card = gCard('Your voice', 'Review milestones', sub, gIco(GI_STAR, 18), n >= 1, 'peach');
 
     var track = el('div', 'lkg-track');
@@ -1865,7 +1970,7 @@
     var rows = (b.scout && b.scout.rows) || [];
     var n = (b.scout && b.scout.count) || 0;
     var sub;
-    if (n === 0) sub = 'Be among the first 3 reviews on any vendor and you’re a Scout. New businesses join every week — someone has to go first.';
+    if (n === 0) sub = 'Be among the first 3 reviews on any vendor and you’re a Scout. New businesses join every week, and someone has to go first.';
     else if (n === 1) sub = 'You’re officially a Neighborhood Scout. Your early review helps a brand-new business get its footing.';
     else sub = n + ' businesses got their start with your help. Your Scout badge shows on your profile and every review.';
     var card = gCard('Your discoveries', 'Neighborhood Scout', sub, gIco(GI_FLAG, 20), n >= 1, 'green');
@@ -1897,7 +2002,7 @@
     var sub;
     if (n === 0) sub = 'Share a vendor you love. When 5 people visit through your links, you’re a Connector.';
     else if (!earned) sub = 'Your shares have brought ' + n + ' visitor' + (n === 1 ? '' : 's') + ' to local businesses. ' + (5 - n) + ' more and you’re a Neighborhood Connector.';
-    else sub = n + ' visitors and counting — you’re a Neighborhood Connector. Word of mouth is how neighborhoods grow.';
+    else sub = n + ' visitors and counting. You’re a Neighborhood Connector. Word of mouth is how neighborhoods grow.';
     var card = gCard('Your reach', 'Neighborhood Connector', sub, gIco(GI_SHARE, 20), earned, 'violet');
 
     card.appendChild(gBar(5, Math.min(n, 5), false));
@@ -1918,7 +2023,7 @@
 
     var foot = el('div', 'lkg-foot');
     foot.appendChild(el('div', 'lkg-foot-text', earned
-      ? 'Earned — the <strong>Neighborhood Connector</strong> badge now shows on your profile.'
+      ? 'Earned! The <strong>Neighborhood Connector</strong> badge now shows on your profile.'
       : 'Bring 5 visitors to local businesses through your shared links to earn the <strong>Neighborhood Connector</strong> badge.'));
     card.appendChild(foot);
     return card;
@@ -1932,14 +2037,14 @@
   // when the failure is OURS, say so plainly instead of implying they did
   // something wrong. Anything unmapped falls through to the our-fault line —
   // never to the raw code.
-  var REVIEW_OUR_FAULT = 'Something went wrong on our end — your review wasn’t saved. Please try again.';
+  var REVIEW_OUR_FAULT = 'Something went wrong on our end and your review wasn’t saved. Please try again.';
   var REVIEW_ERRORS = {
     // Refusals the customer can act on.
-    not_eligible:     'You can review a vendor once you’ve contacted them through Lokali — use Call, Text, WhatsApp or “Send a message” on their page, then come back in about an hour.',
-    already_reviewed: 'You’ve already reviewed this vendor — you can change it under “Your reviews” below.',
+    not_eligible:     'You can review a vendor once you’ve contacted them through Lokali. Use Call, Text, WhatsApp or “Send a message” on their page, then come back in about an hour.',
+    already_reviewed: 'You’ve already reviewed this vendor. You can change it under “Your reviews” below.',
     self_review:      'You can’t review your own storefront.',
-    comment_too_long: 'That review is a little long — please trim it to 2,000 characters or fewer.',
-    unauthorized:     'Your session expired — please log in again and repost.',
+    comment_too_long: 'That review is a little long. Please trim it to 2,000 characters or fewer.',
+    unauthorized:     'Your session expired. Please log in again and repost.',
     not_found:        'That vendor isn’t available right now.',
     // Ours, not theirs.
     review_failed:    REVIEW_OUR_FAULT,
@@ -1990,7 +2095,7 @@
         state.awaiting = state.awaiting.filter(function (x) { return (vendorOf(x).id != null ? vendorOf(x).id : x.vendors_id) != vid; });
         // optimistic local add so it shows under "Your reviews"
         state.mine.unshift({ id: (res.data && res.data.id), vendors_id: vid, vendor: v, is_recommended: rec.val, comment: ta.value || '', created_at: Date.now() });
-        rerender(); toast('Thanks — your review is live');
+        rerender(); toast('Thanks! Your review is live');
       });
     });
     foot.appendChild(cancel); foot.appendChild(submit);
@@ -2073,7 +2178,7 @@
     var avRow = el('div', 'lk-set-row');
     avRow.style.display = 'block';
     avRow.appendChild(el('div', 'lk-set-label', 'Avatar'));
-    avRow.appendChild(el('div', 'lk-set-help', 'Pick one for your dashboard — or stay with your initials.'));
+    avRow.appendChild(el('div', 'lk-set-help', 'Pick one for your dashboard, or stay with your initials.'));
     var avGrid = el('div');
     avGrid.style.cssText = 'display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;';
     function avCircle(id) {
@@ -2128,7 +2233,7 @@
     // Notifications
     pane.appendChild(el('div', 'lk-group-label', 'Notifications'));
     var nc = el('div', 'lk-card');
-    var tgLetter = toggleRow('The Neighborhood Edit', 'Our bi-monthly newsletter — vendor spotlights and what’s new on Lokali. Rare by design.', acc.notif_letter !== false);
+    var tgLetter = toggleRow('The Neighborhood Edit', 'Our bi-monthly newsletter: vendor spotlights and what’s new on Lokali. Rare by design.', acc.notif_letter !== false);
     var tgReplies = toggleRow('Vendor replies', 'Get an email when a vendor responds to an inquiry you sent.', acc.notif_vendor_replies !== false);
     var tgRemind = toggleRow('Review reminders', 'A gentle nudge to review a vendor a few days after you contact them.', acc.notif_review_reminders === true);
     nc.appendChild(tgLetter.row); nc.appendChild(tgReplies.row); nc.appendChild(tgRemind.row);
@@ -2149,7 +2254,7 @@
       }).then(function (res) {
         saveBtn.disabled = false;
         // #129 (same defect, one line away): this toasted the raw server code too.
-        if (res && res.error) { toast('Couldn’t save your changes — please try again.'); return; }
+        if (res && res.error) { toast('Couldn’t save your changes. Please try again.'); return; }
         state.account.first_name = firstIn.input.value.trim();
         state.account.last_name = lastIn.input.value.trim();
         state.account.avatar = avatarSel;
@@ -2201,7 +2306,7 @@
     if (state.isFounding) {
       var foundWarn = el('div', 'lk-set-help');
       foundWarn.style.cssText = 'margin:-4px 0 10px;padding:8px 10px;border-radius:8px;background:#FBEFD6;color:#9A6B00;font-weight:600;';
-      foundWarn.textContent = 'Heads up — you’re a founding member. Deleting permanently retires your founding spot and its lifetime pricing. It can’t be undone or reclaimed.';
+      foundWarn.textContent = 'Heads up: you’re a founding member. Deleting permanently retires your founding spot and its lifetime pricing. It can’t be undone or reclaimed.';
       confirmBox.appendChild(foundWarn);
     }
     // #100 exit survey — one optional question, asked before the point of no
@@ -2221,7 +2326,7 @@
       ['not_enough_vendors',       'Not enough vendors near me'],
       ['didnt_find_what_i_needed', 'Didn’t find what I was looking for'],
       ['too_many_emails',          'Too many emails'],
-      ['privacy',                  'Privacy — I don’t want an account'],
+      ['privacy',                  'Privacy: I don’t want an account'],
       ['other',                    'Something else']
     ];
     var exitReason = '';
@@ -2229,7 +2334,7 @@
     surveyWrap.style.cssText = 'margin:2px 0 14px;padding-bottom:12px;border-bottom:1px solid #F3D6D6;';
     var sTitle = el('div', 'lk-set-help');
     sTitle.style.cssText = 'margin-bottom:8px;color:#4A4761;font-weight:600;';
-    sTitle.textContent = 'Before you go — why are you leaving? (optional)';
+    sTitle.textContent = 'Before you go: why are you leaving? (optional)';
     surveyWrap.appendChild(sTitle);
     var pillRow = el('div');
     pillRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;';
@@ -2306,8 +2411,8 @@
         confirmBtn.disabled = false; confirmBtn.textContent = 'Permanently delete';
         var msg = (err && err.message) || '';
         toast(msg === 'billing_cleanup_failed'
-          ? 'We couldn\'t close your subscription — try again in a minute or contact us.'
-          : 'Couldn\'t delete your account — please try again or contact us.');
+          ? 'We couldn\'t close your subscription. Try again in a minute or contact us.'
+          : 'Couldn\'t delete your account. Please try again or contact us.');
       });
     });
     pane.appendChild(ac);

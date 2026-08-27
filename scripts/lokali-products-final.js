@@ -307,7 +307,7 @@ const LokaliProductsPage = (() => {
     wrap.style.cssText = 'margin-top:14px;white-space:normal;';
     const lab = document.createElement('div');
     lab.style.cssText = 'font-size:12px;font-weight:600;color:#4A4761;margin-bottom:6px;';
-    lab.textContent = 'How your cover photo will appear on your card — drag it to adjust';
+    lab.textContent = 'How your cover photo will appear on your card. Drag it to adjust';
     const frame = document.createElement('div');
     frame.style.cssText = 'width:230px;max-width:100%;height:150px;border-radius:12px;overflow:hidden;border:1px solid #EEEDF6;background:#F7F6FC;box-shadow:0 2px 8px rgba(26,24,41,.08);';
     const im = document.createElement('img');
@@ -615,7 +615,7 @@ const LokaliProductsPage = (() => {
           'font-family:"Plus Jakarta Sans",sans-serif;font-size:13px;color:#6B6580;' +
           'margin:2px 0 10px;line-height:1.5;';
         orderHint.textContent =
-          'Drag cards to reorder — your first 6 lead your public page. New products start at the top.';
+          'Drag cards to reorder. Your first 6 lead your public page. New products start at the top.';
         stack.parentNode.insertBefore(orderHint, stack);
       }
       if (orderHint) orderHint.style.display = '';
@@ -696,9 +696,9 @@ const LokaliProductsPage = (() => {
           starBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
           starBtn.setAttribute('aria-label', on ? 'Un-feature this product' : 'Feature this product');
           starBtn.title = _isFeaturedPlan
-            ? (on ? 'Featured pick — shows first on your public page. Click to un-feature.'
-                  : 'Feature this product — up to 6 lead your public page.')
-            : 'Featured picks are a Featured-plan perk — upgrade to hand-pick what leads your page.';
+            ? (on ? 'Featured pick: shows first on your public page. Click to un-feature.'
+                  : 'Feature this product. Up to 6 lead your public page.')
+            : 'Featured picks are a Featured-plan perk. Upgrade to hand-pick what leads your page.';
         };
         paint(item.is_featured_pick === true);
         if (!_isFeaturedPlan && item.is_featured_pick !== true) {
@@ -707,7 +707,7 @@ const LokaliProductsPage = (() => {
         starBtn.addEventListener('click', async (e) => {
           e.stopPropagation();
           if (!_isFeaturedPlan && item.is_featured_pick !== true) {
-            alert('Featured picks are a Featured-plan perk — upgrade to hand-pick what leads your public page.');
+            alert('Featured picks are a Featured-plan perk. Upgrade to hand-pick what leads your public page.');
             return;
           }
           const next = item.is_featured_pick !== true;
@@ -1118,7 +1118,7 @@ const LokaliProductsPage = (() => {
     if (!_isProPlan) {
       body.innerHTML = title +
         '<div style="color:#4A4761;font-size:14px;line-height:1.5;">' +
-        '🔒 Add a <strong>photo gallery</strong> with Pro &amp; Featured — 3 photos per' +
+        '🔒 Add a <strong>photo gallery</strong> with Pro &amp; Featured: 3 photos per' +
         ' product on Pro, 5 on Featured, so customers see more before they buy.</div>';
       // #149: Free vendors still have a card crop to control (their standalone
       // image). Same WYSIWYG preview; drag persists on release in edit mode.
@@ -1148,7 +1148,7 @@ const LokaliProductsPage = (() => {
     const count = _galleryPhotos.length;
 
     let html = title +
-      '<div style="font-size:12px;color:#8E8BA6;margin-bottom:8px;">' + count + ' of ' + cap + ' photos · the first photo is your cover — drag it to choose what stays in view' +
+      '<div style="font-size:12px;color:#8E8BA6;margin-bottom:8px;">' + count + ' of ' + cap + ' photos · the first photo is your cover. Drag it to choose what stays in view' +
       (count > 1 ? ' · use ‹ › to reorder' : '') + '</div>' +
       '<div style="display:flex;flex-wrap:wrap;gap:10px;">';
 
@@ -1206,7 +1206,7 @@ const LokaliProductsPage = (() => {
     const count = _pendingGalleryPhotos.length;
     const arrowStyle = 'position:absolute;bottom:4px;width:22px;height:22px;border:none;border-radius:50%;background:rgba(26,24,41,.72);color:#fff;font-size:13px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;';
     let html = title +
-      '<div style="font-size:12px;color:#8E8BA6;margin-bottom:8px;">' + count + ' of ' + cap + ' photos · the first photo is your cover — drag it to choose what stays in view' +
+      '<div style="font-size:12px;color:#8E8BA6;margin-bottom:8px;">' + count + ' of ' + cap + ' photos · the first photo is your cover. Drag it to choose what stays in view' +
       (count > 1 ? ' · use ‹ › to reorder' : '') + '</div>' +
       '<div style="display:flex;flex-wrap:wrap;gap:10px;">';
     _pendingGalleryPhotos.forEach((p, i) => {
@@ -1224,7 +1224,7 @@ const LokaliProductsPage = (() => {
     }
     html += '</div>';
     html += '<div style="font-size:12px;color:#8E8BA6;margin-top:8px;">' +
-      (count ? 'These photos are added to your product when you hit Save.' : 'Add up to ' + cap + ' photos — they’re saved with your product.') + '</div>';
+      (count ? 'These photos are added to your product when you hit Save.' : 'Add up to ' + cap + ' photos. They’re saved with your product.') + '</div>';
     body.innerHTML = html;
     _coverViews = [];
     wireCoverFocusDrag(body.querySelector('img[data-pending-idx="0"]'), false);
@@ -1622,9 +1622,9 @@ const LokaliProductsPage = (() => {
       var btnBase = 'display:flex;align-items:center;justify-content:center;width:100%;min-height:44px;border-radius:10px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;';
       card.innerHTML =
         '<div id="lok-trash-title" style="font-size:16px;font-weight:700;color:#1A1829;margin-bottom:6px;"></div>' +
-        '<p style="font-size:13.5px;color:#5A5570;line-height:1.5;margin:0 0 16px;">Deactivating hides it from your public page — it moves to your Inactive list and you can bring it back anytime.</p>' +
+        '<p style="font-size:13.5px;color:#5A5570;line-height:1.5;margin:0 0 16px;">Deactivating hides it from your public page. It moves to your Inactive list and you can bring it back anytime.</p>' +
         '<button type="button" data-trash-deactivate style="' + btnBase + 'border:1px solid #6002EE;background:#6002EE;color:#fff;margin-bottom:10px;">Deactivate (hide it, keep it)</button>' +
-        '<button type="button" data-trash-delete style="' + btnBase + 'border:1px solid #F2C4CB;background:#fff;color:#C0152F;margin-bottom:10px;">Delete permanently — can’t be undone</button>' +
+        '<button type="button" data-trash-delete style="' + btnBase + 'border:1px solid #F2C4CB;background:#fff;color:#C0152F;margin-bottom:10px;">Delete permanently (can’t be undone)</button>' +
         '<button type="button" data-trash-cancel style="' + btnBase + 'border:1px solid #E6E4F0;background:#fff;color:#5A5570;">Cancel</button>';
       overlay.appendChild(card);
       // The name goes in as text, never markup.
@@ -1752,7 +1752,7 @@ const LokaliProductsPage = (() => {
       }
     } catch (err) {
       console.error('[ProductsPage] Reorder error:', err);
-      alert('Couldn’t save your new order — please try again.');
+      alert('Couldn’t save your new order. Please try again.');
       try { await loadData(); } catch (e) {}
     }
   };
@@ -1978,7 +1978,7 @@ const LokaliProductsPage = (() => {
       '<p style="font-size:12.5px;color:#8E8BA6;margin:0 0 8px;">How long until this is ready for the customer? Shown on your listing so people know what to expect.</p>' +
       '<div data-lead-presets style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:9px;"></div>' +
       '<input data-lead-input class="w-input" maxlength="' + LEAD_MAXLEN + '" placeholder="e.g. Ready in ~2 weeks" style="width:100%;box-sizing:border-box;font-family:inherit;">' +
-      '<p style="font-size:12px;color:#8E8BA6;margin:8px 0 0;line-height:1.45;">Tap a suggestion or write your own. This is a heads-up for customers — it doesn’t block anyone from ordering.</p>';
+      '<p style="font-size:12px;color:#8E8BA6;margin:8px 0 0;line-height:1.45;">Tap a suggestion or write your own. This is a heads-up for customers. It doesn’t block anyone from ordering.</p>';
     host.appendChild(wrap);
     const inp = wrap.querySelector('[data-lead-input]');
     inp.addEventListener('input', () => {
@@ -2087,7 +2087,7 @@ const LokaliProductsPage = (() => {
     wrap.style.cssText = "margin:14px 0 0;width:100%;box-sizing:border-box;background:#eee6ff;border-radius:8px;padding:12px 14px;font-family:'Plus Jakarta Sans',system-ui,sans-serif;";
     wrap.innerHTML =
       '<div style="font-size:13px;font-weight:600;color:#33254E;margin-bottom:2px;">Tag</div>' +
-      '<p style="font-size:12.5px;color:#5A5570;margin:0 0 10px;">Pick one tag that fits this product best — customers filter The Market by these. Optional.</p>' +
+      '<p style="font-size:12.5px;color:#5A5570;margin:0 0 10px;">Pick one tag that fits this product best. Customers filter The Market by these. Optional.</p>' +
       '<select data-subcat-select aria-label="Tag" style="display:block;width:100%;max-width:420px;font-family:inherit;font-size:16px;padding:9px 12px;border:1px solid #C9BDE8;border-radius:8px;background:#fff;color:#1A1829;cursor:pointer;box-sizing:border-box;"></select>' +
       '<div style="border-top:1px dashed #DCD2F2;margin-top:12px;padding-top:10px;">' +
         '<p style="font-size:12.5px;color:#5A5570;margin:0 0 8px;">Don’t see the right tag?</p>' +
@@ -2095,7 +2095,7 @@ const LokaliProductsPage = (() => {
           '<input data-subcat-suggest maxlength="40" placeholder="e.g. Power washing" style="flex:1;min-width:0;font-family:inherit;font-size:16px;padding:8px 12px;border:1px solid #C9BDE8;border-radius:8px;background:#fff;color:#1A1829;">' +
           '<button type="button" data-subcat-suggest-btn style="font-family:inherit;font-size:13px;font-weight:600;padding:8px 16px;border-radius:8px;border:1px solid #6002EE;background:#6002EE;color:#fff;cursor:pointer;">Suggest</button>' +
         '</div>' +
-        '<p style="font-size:12px;color:#8E8BA6;margin:8px 0 0;line-height:1.45;">New tags are reviewed first, so filters stay consistent — once approved, yours appears here for everyone.</p>' +
+        '<p style="font-size:12px;color:#8E8BA6;margin:8px 0 0;line-height:1.45;">New tags are reviewed first, so filters stay consistent. Once approved, yours appears here for everyone.</p>' +
         '<p data-subcat-hint style="font-size:12px;color:#6B6787;margin:8px 0 0;line-height:1.45;"></p>' +
         '<div data-subcat-pending style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>' +
       '</div>';
@@ -2140,8 +2140,8 @@ const LokaliProductsPage = (() => {
       const chip = document.createElement('span');
       const approved = p.status === 'approved';
       chip.textContent = approved
-        ? ((p.final_label || p.suggested_label) + ' — approved ✓')
-        : (p.suggested_label + ' — under review');
+        ? ((p.final_label || p.suggested_label) + ' · approved ✓')
+        : (p.suggested_label + ' · under review');
       chip.style.cssText = approved
         ? 'font-size:12px;padding:4px 12px;border-radius:999px;background:#EDFAF3;color:#1A6640;border:1px solid #A8DFC4;'
         : 'font-size:12px;padding:4px 12px;border-radius:999px;background:#FBF3D9;color:#8A6A00;border:1px solid #E8D48A;';
@@ -2174,7 +2174,7 @@ const LokaliProductsPage = (() => {
         _selectedSubcat = match.slug;
         renderSubcatPills();
         inp.value = '';
-        setSubcatHint('Selected — it saves with this product.', 'ok');
+        setSubcatHint('Selected. It saves with this product.', 'ok');
       }
     });
     hint.appendChild(link);
@@ -2188,7 +2188,7 @@ const LokaliProductsPage = (() => {
     const label = String(inp.value || '').replace(/\s+/g, ' ').trim();
     if (_subcatCategoryId == null) { setSubcatHint('Pick your business category on the profile page first.', 'error'); return; }
     if (label.length < 3 || label.length > 40 || !SUBCAT_LABEL_RE.test(label) || !/[A-Za-z0-9]/.test(label)) {
-      setSubcatHint('3–40 characters — letters, numbers and simple punctuation.', 'error');
+      setSubcatHint('3–40 characters: letters, numbers and simple punctuation.', 'error');
       return;
     }
     const sapi = window.LokaliSupabaseAPI;
@@ -2199,7 +2199,7 @@ const LokaliProductsPage = (() => {
       const out = await sapi.subcategories.suggest(_subcatCategoryId, label,
         editingId ? { products_id: editingId } : null);
       const d = out?.data;
-      if (!d || out.error) { setSubcatHint('Hit a snag — try again in a moment.', 'error'); return; }
+      if (!d || out.error) { setSubcatHint('Hit a snag. Try again in a moment.', 'error'); return; }
       if (d.ok) {
         _subcatPendingSuggs.unshift({ category_id: _subcatCategoryId, suggested_label: label, status: 'pending' });
         renderSubcatPending();
@@ -2217,12 +2217,12 @@ const LokaliProductsPage = (() => {
         _selectedSubcat = d.slug;
         renderSubcatPills();
         inp.value = '';
-        setSubcatHint('That one already exists — selected it for you.', 'ok');
-      } else if (d.reason === 'already_suggested') setSubcatHint('You already suggested this one — it’s under review.', 'error');
-      else if (d.reason === 'pending_limit') setSubcatHint('You have 3 suggestions under review — hang tight.', 'error');
-      else if (d.reason === 'invalid_label') setSubcatHint('3–40 characters — letters, numbers and simple punctuation.', 'error');
-      else setSubcatHint('Couldn’t submit that — try different wording.', 'error');
-    } catch (e) { setSubcatHint('Hit a snag — try again in a moment.', 'error'); }
+        setSubcatHint('That one already exists, so we selected it for you.', 'ok');
+      } else if (d.reason === 'already_suggested') setSubcatHint('You already suggested this one. It’s under review.', 'error');
+      else if (d.reason === 'pending_limit') setSubcatHint('You have 3 suggestions under review. Hang tight!', 'error');
+      else if (d.reason === 'invalid_label') setSubcatHint('3–40 characters: letters, numbers and simple punctuation.', 'error');
+      else setSubcatHint('Couldn’t submit that. Try different wording.', 'error');
+    } catch (e) { setSubcatHint('Hit a snag. Try again in a moment.', 'error'); }
   };
 
   const init = async () => {

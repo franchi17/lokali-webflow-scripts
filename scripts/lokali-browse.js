@@ -1157,7 +1157,7 @@
       title.textContent = cat
         ? cat + ' in your neighborhood is still unclaimed'
         : 'This corner of the market is still unclaimed';
-      sub.textContent = 'Founding vendors are claiming their spots now — be the ' +
+      sub.textContent = 'Founding vendors are claiming their spots now. Be the ' +
         (cat ? 'first ' + cat + ' vendor' : 'one your neighbors find first') +
         (cat ? ' your neighbors find here.' : '.');
       if (!cta) {

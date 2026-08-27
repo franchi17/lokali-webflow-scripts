@@ -179,7 +179,7 @@
         lsItem('profile_photo', 'Add your logo', 'Vendors with photos get 3× more contacts', 15) +
         lsItem('bio', 'Write a bio <span style="color:#9A9AB0;font-weight:500;">(80+ characters)</span>', 'Your story is what makes a customer choose you over a directory', 20) +
         lsItem('tagline', 'Add a tagline', 'One sentence. What you do and who you do it for.', 10) +
-        lsItem('owner_photo', 'Add your photo', 'A real face builds trust — it tops the "Meet the vendor" section', 10) +
+        lsItem('owner_photo', 'Add your photo', 'A real face builds trust, and it tops the "Meet the vendor" section', 10) +
         lsItem('meet_vendor', 'Fill out Meet the Vendor', 'Your first name + a short personal intro on your public page', 10) +
         lsItem('has_listing', 'Add a service or product', "Customers can't book or buy without at least one listing", 20) +
       '</div>' +
@@ -203,7 +203,7 @@
     // #147 (2026-08-22): vendors created after the rollout need a resolved US
     // business address (never public) before The Market lists them.
     if (bits.address === false) missing.push('add your business address');
-    var msg = 'Your storefront isn’t public yet — customers can’t find it on The Market until you ' +
+    var msg = 'Your storefront isn’t public yet. Customers can’t find it on The Market until you ' +
       (missing.length ? missing.join(' · ') : 'finish setup') + '.';
     if (!el) {
       el = document.createElement('div');
@@ -353,19 +353,19 @@
   var GAM_MILESTONES = [
     { key: 'first_save', name: 'First save', locked: 'Unlocks when a shopper saves your listing',
       done: 'A shopper saved your listing',
-      moment: { title: 'Someone saved your listing', sub: 'Your first save is in — a shopper bookmarked your storefront to come back to. Saves often turn into inquiries.', cta: null } },
+      moment: { title: 'Someone saved your listing', sub: 'Your first save is in! A shopper bookmarked your storefront to come back to. Saves often turn into inquiries.', cta: null } },
     { key: 'first_inquiry', name: 'First inquiry', locked: 'Unlocks when a customer reaches out',
       done: 'A customer reached out about your services',
-      moment: { title: 'Someone just found you', sub: 'Your first inquiry is in — a reply within a day makes a great first impression.', cta: { label: 'View inquiry', href: '/vendor-dashboard/leads' } } },
+      moment: { title: 'Someone just found you', sub: 'Your first inquiry is in! A reply within a day makes a great first impression.', cta: { label: 'View inquiry', href: '/vendor-dashboard/leads' } } },
     { key: 'first_100_views', name: 'First 100 views', locked: 'Unlocks when your listing reaches 100 views',
       done: 'Your listing reached 100 views',
-      moment: { title: '100 views and counting', sub: 'Your listing just passed 100 views — shoppers are finding you.', cta: null } },
+      moment: { title: '100 views and counting', sub: 'Your listing just passed 100 views. Shoppers are finding you.', cta: null } },
     { key: 'first_review', name: 'First review', locked: 'Unlocks when a customer reviews you',
       done: 'A customer reviewed your business',
-      moment: { title: 'Your first review is in', sub: 'A customer took the time to write about your business — that’s the kind of proof no ad can buy.', cta: null } },
+      moment: { title: 'Your first review is in', sub: 'A customer took the time to write about your business. That’s the kind of proof no ad can buy.', cta: null } },
     { key: 'first_share', name: 'First customer share', locked: 'Unlocks when someone shares your listing',
       done: 'A customer shared your listing',
-      moment: { title: 'Someone passed your name along', sub: 'A customer liked your storefront enough to share it — word of mouth is officially working.', cta: null } }
+      moment: { title: 'Someone passed your name along', sub: 'A customer liked your storefront enough to share it. Word of mouth is officially working.', cta: null } }
   ];
 
   function gamStyles() {
@@ -445,10 +445,10 @@
 
     var COUNT_WORDS = ['', 'One', 'Two', 'Three', 'Four', 'Five'];
     var sub = earnedCount === 5
-      ? 'Five for five — every early milestone, reached. These are yours to see.'
+      ? 'Five for five: every early milestone, reached. These are yours to see.'
       : earnedCount === 0
-        ? 'Every business starts at zero. These unlock as customers find you — only you can see them.'
-        : COUNT_WORDS[earnedCount] + ' down. These are yours to see — a record of your business taking root on Lokali.';
+        ? 'Every business starts at zero. These unlock as customers find you. Only you can see them.'
+        : COUNT_WORDS[earnedCount] + ' down. These are yours to see, a record of your business taking root on Lokali.';
 
     var card = document.createElement('div');
     card.className = 'lok-gam-card';
@@ -482,12 +482,12 @@
 
     var sub;
     if (n >= 3) {
-      sub = n + ' neighbors and counting — you’re a Community Builder. The neighborhood is bigger because of you.';
+      sub = n + ' neighbors and counting. You’re a Community Builder. The neighborhood is bigger because of you.';
     } else if (n > 0) {
-      sub = (n === 1 ? '1 neighbor has' : n + ' neighbors have') + ' joined through your link — ' +
+      sub = (n === 1 ? '1 neighbor has' : n + ' neighbors have') + ' joined through your link, ' +
             (m === 1 ? '1 free month' : m + ' free months') + ' earned so far.';
     } else {
-      sub = 'Know another local business that belongs on Lokali? Send them your link — founding slots are limited.';
+      sub = 'Know another local business that belongs on Lokali? Send them your link. Founding slots are limited.';
     }
 
     var card = document.createElement('div');
@@ -505,7 +505,7 @@
         '<button type="button" class="lok-gam-copy" data-gam-copy>Copy link</button></div>' +
       '<div class="lok-gam-incentive">' +
         '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4h-4z"/></svg>' +
-        '<span>You get <strong>1 month free</strong> for each neighbor who joins a paid plan — up to 12 months a year.</span></div>';
+        '<span>You get <strong>1 month free</strong> for each neighbor who joins a paid plan, up to 12 months a year.</span></div>';
     if (n > 0) {
       html += '<div class="lok-gam-list">';
       refs.forEach(function (r) {
@@ -744,7 +744,7 @@
         '<div data-wz-err aria-live="polite" style="display:none;color:#C05621;font-size:13px;margin-top:10px;"></div>' +
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:18px;gap:12px;">' +
           '<div style="font-size:12.5px;line-height:1.45;color:#9A9AB0;max-width:55%;">' +
-            'You can skip — but your storefront <strong style="color:#8A4B14;">won’t go live</strong> until this is set.</div>' +
+            'You can skip, but your storefront <strong style="color:#8A4B14;">won’t go live</strong> until this is set.</div>' +
           '<div style="display:flex;align-items:center;gap:14px;white-space:nowrap;">' +
             '<button type="button" data-wz-skip style="background:none;border:none;padding:0;cursor:pointer;' +
               'font-family:inherit;font-size:14px;color:#9A9AB0;text-decoration:underline;">Skip for now</button>' +
@@ -802,7 +802,7 @@
       var m = document.createElement('div');
       m.style.cssText = 'font-size:14px;line-height:1.5;color:#8A4B14;background:#FDF1E7;' +
         'border:1px solid #F6D9BE;border-radius:12px;padding:12px 14px;';
-      m.textContent = 'Couldn’t load ' + what + ' — try again, or use Skip for now and set this later on your profile page.';
+      m.textContent = 'Couldn’t load ' + what + '. Try again, or use Skip for now and set this later on your profile page.';
       var b = document.createElement('button');
       b.type = 'button';
       b.textContent = 'Try again';
@@ -829,7 +829,7 @@
         var name = (input.value || '').trim();
         if (!name) { showErr('Enter a name (or use Skip for now).'); return; }
         SB.vendors.updateProfile(v.id, { business_name: name }).then(function (res) {
-          if (res && res.error) { showErr('Could not save — try again.'); return; }
+          if (res && res.error) { showErr('Could not save. Try again.'); return; }
           v.business_name = name;
           setId('vendor-name', name); // heading was 'Vendor' until now
           next();
@@ -846,7 +846,7 @@
         var ids = getSel ? getSel() : [];
         if (!ids.length) { showErr('Pick a category (or use Skip for now).'); return; }
         SB.vendors.updateProfile(v.id, { categories_id: ids }).then(function (res) {
-          if (res && res.error) { showErr('Could not save — try again.'); return; }
+          if (res && res.error) { showErr('Could not save. Try again.'); return; }
           next();
         });
       });
@@ -865,14 +865,14 @@
 
     // Step: service area (multi pick — a vendor can serve several communities)
     if (!(v.locations_id && v.locations_id.length)) steps.push(function () {
-      var body = shell('Where do you serve?', 'Choose your community — pick every area you serve.', '<div>Loading areas…</div>');
+      var body = shell('Where do you serve?', 'Choose your community: pick every area you serve.', '<div>Loading areas…</div>');
       var getSel = null;
       // Bound before the fetch so Continue always answers, even mid-load.
       card.querySelector('[data-wz-next]').addEventListener('click', function () {
         var ids = getSel ? getSel() : [];
         if (!ids.length) { showErr('Pick at least one area (or use Skip for now).'); return; }
         SB.vendors.updateProfile(v.id, { locations_id: ids }).then(function (res) {
-          if (res && res.error) { showErr('Could not save — try again.'); return; }
+          if (res && res.error) { showErr('Could not save. Try again.'); return; }
           next();
         });
       });
@@ -893,7 +893,7 @@
     // forms (decision: reuse them rather than duplicate a mini-form here).
     steps.push(function () {
       shell('Add your first service or product',
-        'This is what customers can actually book or buy — your storefront goes live the moment one is up.',
+        'This is what customers can actually book or buy. Your storefront goes live the moment one is up.',
         '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
           '<a href="/vendor-dashboard/services" style="flex:1;min-width:150px;text-align:center;background:#6E3CFF;color:#fff;' +
             'font-weight:700;font-size:14px;padding:12px 18px;border-radius:12px;text-decoration:none;font-family:inherit;">Add a service</a>' +

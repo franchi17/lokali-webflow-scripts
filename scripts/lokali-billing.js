@@ -164,7 +164,7 @@
             // yet" notice) are user-facing; only network/5xx get the generic.
             var msg = err && err.message && !/^Request failed/.test(err.message)
               ? err.message
-              : 'Sorry — could not start checkout. Please try again.';
+              : 'Sorry, we could not start checkout. Please try again.';
             alert(msg);
           });
       });
@@ -180,7 +180,7 @@
           .catch(function (err) {
             setButtonBusy(btn, false);
             console.error('[lokali-billing] portal failed', err);
-            alert('Sorry — could not open billing management. Please try again.');
+            alert('Sorry, we could not open billing management. Please try again.');
           });
       });
     });
@@ -395,11 +395,11 @@
   var SPOT_TIERS = {
     category: {
       plan: 'spotlight', price: '$75', name: 'Category Spotlight',
-      blurb: 'Two weeks at the top of your category on The Market — exclusive, one vendor per category at a time.'
+      blurb: 'Two weeks at the top of your category on The Market, exclusive to one vendor per category at a time.'
     },
     homepage: {
       plan: 'spotlight_home', price: '$150', name: 'Homepage Spotlight',
-      blurb: 'Two weeks as one of three “Meet the vendor” cards on the Lokali homepage — plus a shoutout in The Neighborhood Edit, our newsletter.'
+      blurb: 'Two weeks as one of three “Meet the vendor” cards on the Lokali homepage, plus a shoutout in The Neighborhood Edit, our newsletter.'
     }
   };
   // Windows may not START before public launch (decision 2026-07-20). String
@@ -590,7 +590,7 @@
           setButtonBusy(btn, false);
           var msg = err && err.message && !/^Request failed/.test(err.message)
             ? err.message
-            : 'Sorry — could not start checkout. Please try again.';
+            : 'Sorry, we could not start checkout. Please try again.';
           alert(msg);
         });
       });
@@ -614,7 +614,7 @@
       host.innerHTML = '<div class="lk-spot-intro">Loading availability…</div>';
       spotFetchBusy(tier).then(renderSpotCal).catch(function (err) {
         console.warn('[lokali-billing] spotlight availability failed', err);
-        host.innerHTML = '<div class="lk-spot-intro">Could not load availability — refresh to try again.</div>';
+        host.innerHTML = '<div class="lk-spot-intro">Could not load availability. Refresh to try again.</div>';
       });
       return;
     }
@@ -661,8 +661,8 @@
         var cls = 'lk-cal-day' + (open ? '' : ' busy') + (sel ? ' sel' : '');
         h += '<div class="' + cls + '" data-cal-day="' + str + '" data-cal-open="' + (open ? '1' : '0') + '"' +
           ' role="button" tabindex="0" aria-pressed="' + sel + '"' +
-          ' aria-label="Monday ' + spotDay(ms) + (open ? ' — available' : ' — taken, join the waitlist') + '"' +
-          ' title="' + (open ? 'Start here' : 'Taken — click to join the waitlist') + '">' + day + '</div>';
+          ' aria-label="Monday ' + spotDay(ms) + (open ? ', available' : ', taken (join the waitlist)') + '"' +
+          ' title="' + (open ? 'Start here' : 'Taken. Click to join the waitlist') + '">' + day + '</div>';
       }
     }
     h += '</div>' +
@@ -720,11 +720,11 @@
           alert('You’re already on the waitlist for that date.');
         } else {
           console.warn('[lokali-billing] waitlist join failed', res.error);
-          alert('Could not join the waitlist — please try again.');
+          alert('Could not join the waitlist. Please try again.');
         }
         return;
       }
-      btn.outerHTML = '<span class="ok">✓ On the waitlist — we’ll email you if those dates open up.</span>';
+      btn.outerHTML = '<span class="ok">✓ On the waitlist. We’ll email you if those dates open up.</span>';
       spotLoadLists();
     });
   }
@@ -735,17 +735,17 @@
     postJSON(SPOT_CANCEL_URL, { booking_id: bookingId }).then(function (r) {
       setButtonBusy(btn, false);
       if (!r.ok) {
-        alert((r.data && r.data.error) || 'Could not cancel — please try again.');
+        alert((r.data && r.data.error) || 'Could not cancel. Please try again.');
         return;
       }
       alert(r.data.refunded
-        ? 'Canceled — your refund is on its way (it can take a few business days to appear).'
-        : 'Canceled. The refund needs a manual check on our side — if it hasn’t appeared in a few days, contact us.');
+        ? 'Canceled. Your refund is on its way (it can take a few business days to appear).'
+        : 'Canceled. The refund needs a manual check on our side. If it hasn’t appeared in a few days, contact us.');
       spotLoadLists();
     }).catch(function (err) {
       setButtonBusy(btn, false);
       console.warn('[lokali-billing] spotlight cancel failed', err);
-      alert('Could not cancel — please try again.');
+      alert('Could not cancel. Please try again.');
     });
   }
 
@@ -842,9 +842,9 @@
         '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" style="flex:none"><path d="M12 2l2.2 6.2L20 10l-5.8 1.8L12 18l-2.2-6.2L4 10l5.8-1.8L12 2z" fill="#6d5bd0"/><path d="M18.5 15l1 2.7 2.5.8-2.5.8-1 2.7-1-2.7-2.5-.8 2.5-.8 1-2.7z" fill="#F1A33C"/></svg>' +
         '<div class="section-heading">Spotlight</div>' +
       '</div>' +
-      '<div class="lk-spot-intro">A one-time, two-week boost for Pro &amp; Featured vendors — windows ' +
+      '<div class="lk-spot-intro">A one-time, two-week boost for Pro &amp; Featured vendors. Windows ' +
         'start on Mondays; pick yours, pay once, done. The two tiers are separate placements with ' +
-        'their own calendars — booking one doesn’t include the other (want both? book both).</div>' +
+        'their own calendars, and booking one doesn’t include the other (want both? book both).</div>' +
       '<div id="lk-spot-mine"></div>' +
       '<div class="lk-spot-tiers">' +
         Object.keys(SPOT_TIERS).map(function (k) {
@@ -856,10 +856,10 @@
         }).join('') +
       '</div>' +
       '<div class="lk-spot-mtv" id="lk-spot-mtv" style="display:none">The Homepage Spotlight is all about ' +
-        'the person behind the business — fill in your Meet-the-Vendor info (name, photo, and a short bio) ' +
+        'the person behind the business, so fill in your Meet-the-Vendor info (name, photo, and a short bio) ' +
         'on <a href="/vendor-dashboard/profile">your profile</a> first.</div>' +
       (spotTodayStr() < SPOT_FLOOR
-        ? '<div class="lk-spot-prelaunch">Lokali launches <strong>October 1, 2026</strong> — Spotlight windows start ' +
+        ? '<div class="lk-spot-prelaunch">Lokali launches <strong>October 1, 2026</strong>. Spotlight windows start ' +
           'from launch day. You can scout dates now; booking opens at launch.</div>'
         : '') +
       '<div class="lk-cal" id="lk-spot-cal"></div>' +
@@ -912,8 +912,8 @@
         if (cal) {
           cal.innerHTML = '';
           cal.className = 'lk-spot-upsell';
-          cal.innerHTML = 'Spotlight is a <strong>Pro &amp; Featured</strong> perk — ' +
-            '<a href="/pricing">upgrade your plan</a> to book a two-week boost.';
+          cal.innerHTML = 'Spotlight is a <strong>Pro &amp; Featured</strong> perk. ' +
+            '<a href="/pricing">Upgrade your plan</a> to book a two-week boost.';
         }
         var tiers = sec.querySelector('.lk-spot-tiers');
         if (tiers) tiers.classList.add('locked');
@@ -941,25 +941,25 @@
     sec.id = 'lk-spot-pricing';
     sec.innerHTML =
       '<div class="sp-head">Spotlight add-ons</div>' +
-      '<div class="sp-sub">One-time, two-week boosts for Pro &amp; Featured vendors — two separate placements, book either or both.</div>' +
+      '<div class="sp-sub">One-time, two-week boosts for Pro &amp; Featured vendors: two separate placements, book either or both.</div>' +
       '<div class="lk-spotcards">' +
         '<div class="lk-spotcard">' +
           '<div class="c-name">✦ Category Spotlight</div>' +
           '<div class="c-price">$75</div><div class="c-per">one time · 14 days · Pro &amp; Featured plans</div>' +
           '<ul><li>Top of your category on The Market</li>' +
           '<li>✦ Spotlight badge on your card</li>' +
-          '<li>Exclusive — one vendor per category at a time</li>' +
-          '<li>Two-week window of your choice — starts on a Monday</li></ul>' +
+          '<li>Exclusive: one vendor per category at a time</li>' +
+          '<li>Two-week window of your choice, starting on a Monday</li></ul>' +
           '<a class="lk-spot-btn" href="/vendor-dashboard/settings#lokali-spotlight">Book a Spotlight</a>' +
         '</div>' +
         '<div class="lk-spotcard">' +
           '<div class="c-name">✦ Homepage Spotlight</div>' +
           '<div class="c-price">$150</div><div class="c-per">one time · 14 days · Pro &amp; Featured plans</div>' +
           '<ul><li>A “Meet the vendor” card on the Lokali homepage</li>' +
-          '<li>You and your story — front and center</li>' +
+          '<li>You and your story, front and center</li>' +
           '<li>A shoutout in <strong>The Neighborhood Edit</strong>, the Lokali newsletter</li>' +
           '<li>Only 3 vendors at a time, site-wide</li>' +
-          '<li>Two-week window of your choice — starts on a Monday</li></ul>' +
+          '<li>Two-week window of your choice, starting on a Monday</li></ul>' +
           '<a class="lk-spot-btn orange" href="/vendor-dashboard/settings#lokali-spotlight">Book a Spotlight</a>' +
         '</div>' +
       '</div>';

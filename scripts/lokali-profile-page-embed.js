@@ -188,7 +188,7 @@ var LokaliPhoneInput = (function () {
     // vendor types the full +number and we keep it verbatim.
     opt = document.createElement('option');
     opt.value = '';
-    opt.textContent = 'Other — type +code';
+    opt.textContent = 'Other (type +code)';
     select.appendChild(opt);
 
     var input = document.createElement('input');
@@ -619,7 +619,7 @@ var LokaliProfilePage = (function () {
 
     var sub = document.createElement('div');
     sub.className = 'input-heading';
-    sub.textContent = 'Let customers pay you directly — enter just your username and we build the link.';
+    sub.textContent = 'Let customers pay you directly. Enter just your username and we build the link.';
     sub.style.fontWeight = '400';
     sub.style.opacity = '.7';
     sub.style.marginBottom = '6px';
@@ -879,7 +879,7 @@ var LokaliProfilePage = (function () {
     ph.appendChild(prev); ph.appendChild(pick); ph.appendChild(file);
     card.col.appendChild(ph);
     _mkLabeledInput(card.col, 'input-owner-name', 'Your first name', 'eg. Francesca');
-    _mkLabeledInput(card.col, 'input-owner-bio', 'About you — a short personal intro', 'eg. Hi, I’m Francesca! I started this because…', true);
+    _mkLabeledInput(card.col, 'input-owner-bio', 'About you: a short personal intro', 'eg. Hi, I’m Francesca! I started this because…', true);
     _mkLabeledInput(card.col, 'input-owner-languages', 'Languages you speak', 'eg. English, Spanish');
     anchorSection.parentNode.insertBefore(card.section, anchorSection.nextSibling);
 
@@ -904,7 +904,7 @@ var LokaliProfilePage = (function () {
         // row via save() — flag it dirty (the guard skips file inputs) and
         // tell the vendor, or the photo is silently lost on leave.
         _dirty = true;
-        _showToast('success', 'Photo added — press SAVE to keep it.');
+        _showToast('success', 'Photo added. Press SAVE to keep it.');
       });
     });
   }
@@ -995,13 +995,13 @@ var LokaliProfilePage = (function () {
     head.appendChild(row);
     var sub = document.createElement('div');
     sub.style.cssText = 'font-size:13px;line-height:1.5;color:#6B6880;margin-bottom:6px;';
-    sub.textContent = 'Everything below builds your public page — in the same order customers see it.';
+    sub.textContent = 'Everything below builds your public page, in the same order customers see it.';
     head.appendChild(sub);
     // Feedback 2026-08-13: two save models coexist on this page (photos persist
     // instantly, text needs SAVE) and nothing said so — spell it out up front.
     var saveHint = document.createElement('div');
     saveHint.style.cssText = 'font-size:13px;line-height:1.5;color:#6B6880;margin-bottom:6px;';
-    saveHint.textContent = 'Photos save automatically the moment you add them — everything else saves when you press SAVE.';
+    saveHint.textContent = 'Photos save automatically the moment you add them. Everything else saves when you press SAVE.';
     head.appendChild(saveHint);
 
     var nav = document.createElement('div');
@@ -1167,7 +1167,7 @@ var LokaliProfilePage = (function () {
     // services/products gallery lockout.
     if (!(_PF_MAX > 0)) {
       var locked = _mkCard('lok-portfolio-card', _PF_ICON, 'Portfolio Gallery',
-        '🔒 The gallery at the top of your public page is a Pro & Featured feature — 5 items on Pro, 15 on Featured. It is the first thing a customer sees.');
+        '🔒 The gallery at the top of your public page is a Pro & Featured feature: 5 items on Pro, 15 on Featured. It is the first thing a customer sees.');
       var seePlans = document.createElement('a');
       seePlans.href = '/pricing';
       seePlans.textContent = 'See plans →';
@@ -1178,7 +1178,7 @@ var LokaliProfilePage = (function () {
     }
 
     var card = _mkCard('lok-portfolio-card', _PF_ICON, 'Portfolio Gallery',
-      'Up to ' + _PF_MAX + ' photos and videos — they become the big gallery at the top of your public page. First item = the lead.');
+      'Up to ' + _PF_MAX + ' photos and videos. They become the big gallery at the top of your public page. First item = the lead.');
     var strip = document.createElement('div');
     strip.id = 'lok-pf-strip';
     strip.style.cssText = 'display:flex;flex-wrap:wrap;gap:10px;margin:10px 0;';
@@ -1269,7 +1269,7 @@ var LokaliProfilePage = (function () {
         S.photos.add('vendor', _vendor.id, res.data.url, nextSort).then(function () {
           pick.textContent = 'Add photo';
           _renderPortfolio();
-          _showToast('success', 'Photo added to your gallery — saved automatically.');
+          _showToast('success', 'Photo added to your gallery and saved automatically.');
         });
       });
     });
@@ -1367,7 +1367,7 @@ var LokaliProfilePage = (function () {
         bar.appendChild(mkBtn('✕', 'Remove photo', function () {
           window.LokaliSupabaseAPI.photos.remove('vendor', p.id).then(function () {
             _renderPortfolio();
-            _showToast('success', 'Photo removed — saved automatically.');
+            _showToast('success', 'Photo removed and saved automatically.');
           });
         }, false));
         bar.appendChild(mkBtn('›', 'Move right', function () { _pfSwap(i, i + 1); }, i === _pfPhotos.length - 1));
@@ -1661,7 +1661,7 @@ var LokaliProfilePage = (function () {
 
     var hint = document.createElement('p');
     hint.className = 'location-hint';
-    hint.textContent = 'Tap every area you serve — pick as many as you like.';
+    hint.textContent = 'Tap every area you serve. Pick as many as you like.';
 
     var pills = document.createElement('div');
     pills.className = 'location-pills';
@@ -1796,7 +1796,7 @@ var LokaliProfilePage = (function () {
               if (objectUrl) URL.revokeObjectURL(objectUrl);
               // Feedback 2026-08-13: uploads persist server-side instantly, but
               // nothing said so — vendors went hunting for a save button.
-              _showToast('success', 'Logo uploaded — saved automatically.');
+              _showToast('success', 'Logo uploaded and saved automatically.');
             } else {
 
               window.LokaliAPI.vendors.me()
@@ -1811,7 +1811,7 @@ var LokaliProfilePage = (function () {
                       _uploadedProfilePhotoUrl = newUrl;
                       _setProfilePhotoPreviewSrc(newUrl);
                       _setPhotoUrlValue(newUrl);
-                      _showToast('success', 'Logo uploaded — saved automatically.');
+                      _showToast('success', 'Logo uploaded and saved automatically.');
                     }
                     if (typeof console !== 'undefined' && console.log) {
                       _dbg('[ProfilePage] After refetch, profile_photo:', newUrl || '(empty)');
@@ -1929,13 +1929,13 @@ var LokaliProfilePage = (function () {
     if (!payload.business_name || !payload.business_name.trim()) return 'Business name is required.';
     // #147 (F 2026-08-22): address is required — never public, used to confirm the
     // vendor is in the neighborhood they list under.
-    if (!payload.address || !String(payload.address).trim()) return 'Your business address is required. It’s never shown publicly — we use it only to confirm you’re in the neighborhood you list under.';
+    if (!payload.address || !String(payload.address).trim()) return 'Your business address is required. It’s never shown publicly. We use it only to confirm you’re in the neighborhood you list under.';
     if (payload.contact_email && payload.contact_email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.contact_email)) return 'Please enter a valid email address.';
     if (_phone) {
       var phoneEl = _phone.input || document.getElementById('input-phone') || document.getElementById('phone');
       if (phoneEl && phoneEl.value.trim() !== '') {
         if (!_phone.isValidNumber()) {
-          return 'Please check your phone number — pick your country from the dropdown, then enter just the local number (e.g. United States → 415 555 0123).';
+          return 'Please check your phone number. Pick your country from the dropdown, then enter just the local number (e.g. United States → 415 555 0123).';
         }
       }
     }
@@ -1943,11 +1943,11 @@ var LokaliProfilePage = (function () {
   }
 
   function _showSuccessPopup() {
-    _showToast('success', 'Your profile looks great — changes saved!');
+    _showToast('success', 'Your profile looks great. Changes saved!');
   }
 
   function _showErrorPopup(message) {
-    _showToast('error', message || 'Hit a snag — please check your info and try again.');
+    _showToast('error', message || 'Hit a snag. Please check your info and try again.');
   }
 
   function _normalizePayload(payload) {
@@ -1998,7 +1998,7 @@ var LokaliProfilePage = (function () {
   // block — see patch_vendor_address_geo.sql / patch_sec050_address_geo_revoke).
   var _addrGeo = null;          // last resolved geo for the address in the field
   var _addrGeoFor = '';         // the address string _addrGeo belongs to
-  var ADDR_WHY = 'Your address is never public. We use it only to confirm you’re actually in the neighborhood you list under — Lokali is local, so it should be within about 50 miles of an area you serve. US addresses only.';
+  var ADDR_WHY = 'Your address is never public. We use it only to confirm you’re actually in the neighborhood you list under. Lokali is local, so it should be within about 50 miles of an area you serve. US addresses only.';
 
   // SEC-050 (2026-08-24): the address is resolved SERVER-SIDE. The browser
   // sends only the typed text to /address/resolve (Supabase JWT); the route
@@ -2059,7 +2059,7 @@ var LokaliProfilePage = (function () {
     var btn = document.createElement('button'); btn.type = 'button'; btn.className = 'lok-addr-info-btn';
     btn.setAttribute('aria-expanded', 'false');
     btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 16v-5M12 8h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
-    btn.appendChild(document.createTextNode('Required — why we ask for this'));
+    btn.appendChild(document.createTextNode('Required: why we ask for this'));
     var pop = document.createElement('div'); pop.className = 'lok-addr-pop'; pop.setAttribute('role', 'tooltip');
     pop.innerHTML = '<strong style="color:#1A1829;">Your address is never public.</strong> ' + ADDR_WHY.replace('Your address is never public. ', '');
     btn.addEventListener('click', function () {

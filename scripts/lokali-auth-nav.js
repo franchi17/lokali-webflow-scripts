@@ -38,6 +38,34 @@
     }
   } catch (e) {}
 
+  // First-touch acquisition capture (#156): on a visitor's FIRST-ever pageview,
+  // stash where they came from; signup later attaches it (lokali-auth.js) and
+  // the server sanitizes it again (sanitize_signup_source). WRITE-ONCE — a
+  // later visit never overwrites the original touch. Head script = runs before
+  // any URL cleanup, so referrer + params are still intact.
+  // ⚠️ SEC-046: NEVER store the raw query string — allowlisted params only, so
+  // token_hash/code can never land in storage.
+  try {
+    var _ftRaw = localStorage.getItem('lokali_first_touch');
+    var _ftOld = _ftRaw ? JSON.parse(_ftRaw) : null;
+    if (!_ftOld || !_ftOld.exp || _ftOld.exp < Date.now()) {
+      var _ftQ = new URLSearchParams(window.location.search);
+      var _ftParams = {};
+      ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content',
+       'ref', 'via', 'gclid'].forEach(function (k) {
+        var v = (_ftQ.get(k) || '').trim().slice(0, 100);
+        if (v) _ftParams[k] = v;
+      });
+      var _ft = {
+        v: 1, ts: Date.now(), exp: Date.now() + 90 * 24 * 60 * 60 * 1000,
+        landing: (window.location.pathname || '/').slice(0, 200),
+        referrer: (document.referrer || '').slice(0, 300)
+      };
+      if (Object.keys(_ftParams).length) _ft.params = _ftParams;
+      localStorage.setItem('lokali_first_touch', JSON.stringify(_ft));
+    }
+  } catch (e) {}
+
   // Vendor signup intent (#57 QA find): since the role default flipped to
   // CUSTOMER (2026-07-01), any signup missing a stashed intent mints a
   // customer — but only pricing CTAs were stashing 'vendor'. Delegate here

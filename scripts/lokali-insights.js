@@ -129,7 +129,7 @@
   function rankCard(title, rows, barColor) {
     var c = el('div', 'an-card');
     c.appendChild(el('div', 'an-ctitle', title));
-    if (!rows.length) { c.appendChild(el('div', 'an-empty', 'No views yet — they’ll appear here as people open your pages.')); return c; }
+    if (!rows.length) { c.appendChild(el('div', 'an-empty', 'No views yet. They’ll appear here as people open your pages.')); return c; }
     var max = rows[0].count || 1;
     rows.forEach(function (r, i) {
       var row = el('div', 'an-row');
@@ -181,7 +181,7 @@
     var note = null, buttons = [];
 
     function draw(days, rangeTitle) {
-      title.textContent = 'Storefront views — ' + rangeTitle;
+      title.textContent = 'Storefront views · ' + rangeTitle;
       body.innerHTML = '';
       var perBar = days >= 360 ? 30 : (days > 30 ? 7 : 1);  // days/bar: daily / weekly / monthly
       var unit = days >= 360 ? 'mo' : (days > 30 ? 'wk' : 'd');

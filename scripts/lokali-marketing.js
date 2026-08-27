@@ -67,7 +67,7 @@
 
   // DB guard errors arrive raw from PostgREST: "LOKALI_LIMIT_REACHED: <human>".
   function humanError(err) {
-    var m = (err && (err.message || err.error_description)) || 'Something went wrong — try again.';
+    var m = (err && (err.message || err.error_description)) || 'Something went wrong. Try again.';
     var i = m.indexOf('LOKALI_LIMIT_REACHED:');
     return i >= 0 ? m.slice(i + 'LOKALI_LIMIT_REACHED:'.length).trim() : m;
   }
@@ -239,7 +239,7 @@
     (this.spot.creatives || []).forEach(function (c) { byBooking[c.spotlight_bookings_id] = c; });
     var html = '<div class="mkt-card" data-kind="spotlight">' +
       '<p class="mkt-h">Spotlight ad creative</p>' +
-      '<p class="mkt-sub">Booked a homepage Spotlight? Upload a custom image and headline for your card. We review every creative before it goes live — usually within a day.</p>';
+      '<p class="mkt-sub">Booked a homepage Spotlight? Upload a custom image and headline for your card. We review every creative before it goes live, usually within a day.</p>';
     if (!bookings.length) {
       html += '<p class="mkt-note">No upcoming homepage Spotlight. Book one from ' +
         '<a href="/vendor-dashboard/settings" style="color:' + BRAND + ';">Settings &rarr; Spotlight</a>' +
@@ -253,12 +253,12 @@
       if (c) {
         var pillBg = c.status === 'approved' ? '#E7F3EC' : (c.status === 'rejected' ? '#FDE8E8' : '#FDF1E7');
         var pillFg = c.status === 'approved' ? '#3E7C5E' : (c.status === 'rejected' ? '#B1006A' : '#8A4B14');
-        var pillTxt = c.status === 'approved' ? 'Approved — live on the homepage'
+        var pillTxt = c.status === 'approved' ? 'Approved and live on the homepage'
           : (c.status === 'rejected' ? 'Not approved' : 'In review');
         pill = '<span style="display:inline-block;background:' + pillBg + ';color:' + pillFg + ';' +
           'border-radius:999px;padding:4px 12px;font-size:12px;font-weight:600;">' + pillTxt + '</span>' +
           (c.status === 'rejected' && c.review_note
-            ? '<div class="mkt-note">&ldquo;' + esc(c.review_note) + '&rdquo; — fix it and resubmit below.</div>' : '');
+            ? '<div class="mkt-note">&ldquo;' + esc(c.review_note) + '&rdquo; Fix it and resubmit below.</div>' : '');
       }
       html += '<div class="mkt-form" data-booking="' + b.id + '">' +
         '<div style="font-size:13px;font-weight:600;color:#3E3A55;">Homepage Spotlight · ' + esc(win) +
@@ -270,7 +270,7 @@
         '<input type="file" accept="image/*" data-f="sc-file" style="display:none;">' +
         '<input type="hidden" data-f="sc-image-url" value="' + esc(c ? c.image_url : '') + '">' +
         '<label>Headline (optional)</label>' +
-        '<input class="mkt-in" data-f="sc-headline" maxlength="90" value="' + esc(c ? (c.headline || '') : '') + '" placeholder="Fresh this week — come say hi Saturday">' +
+        '<input class="mkt-in" data-f="sc-headline" maxlength="90" value="' + esc(c ? (c.headline || '') : '') + '" placeholder="Fresh this week, come say hi Saturday">' +
         '<div class="mkt-fbtns"><button class="mkt-save" data-act="sc-save">' +
           (c ? 'Resubmit for review' : 'Submit for review') + '</button></div>' +
         '<p class="mkt-note">Any change goes back into review; your card shows your profile until it&rsquo;s approved.</p>' +
@@ -299,7 +299,7 @@
         toast(d && d.reason === 'bad_status' ? 'That Spotlight window can no longer be changed.' : humanError(res && res.error));
         return;
       }
-      toast('Submitted — we’ll review it shortly.');
+      toast('Submitted! We’ll review it shortly.');
       self.load();
     });
   };
@@ -327,10 +327,10 @@
       : '<div class="mkt-demo-sec">Showcase of the week</div>' +
         '<div class="mkt-demo-show">' +
           '<div class="mkt-demo-show-img">' + IMG_ICON + '<span>Your photo</span></div>' +
-          '<div class="mkt-demo-show-t">Your headline — what’s new this week</div>' +
+          '<div class="mkt-demo-show-t">Your headline: what’s new this week</div>' +
           '<div class="mkt-demo-show-b">A sentence or two about it. Add a photo and a link if you like.</div>' +
         '</div>' +
-        '<p class="mkt-example-note">“Showcase of the week” is the section heading — everything on the card is yours: the photo, the headline, the text.</p>';
+        '<p class="mkt-example-note">“Showcase of the week” is the section heading. Everything on the card is yours: the photo, the headline, the text.</p>';
     return '<div class="mkt-example">' +
       '<p class="mkt-example-lbl">What it looks like on your storefront</p>' +
       demo +
@@ -359,7 +359,7 @@
     if (pinned != null) {
       for (i = 0; i < active.length; i++) {
         out[active[i].id] = active[i].id === pinned
-          ? { txt: 'Live now — pinned', cls: 'live' }
+          ? { txt: 'Live now · pinned', cls: 'live' }
           : { txt: 'Paused while one is pinned', cls: '' };
       }
       return out;
@@ -387,8 +387,8 @@
     var activeList = list.filter(function (e) { return e.is_active; });
     var pinned = this.pinnedId(kind);
     var sub = kind === 'cta'
-      ? 'A button at the top of your contact card — a question, an invite, a link. You feed the list; we show a different one each week.'
-      : 'A section at the top of your storefront for what’s new — a listing, an event, a favorite.';
+      ? 'A button at the top of your contact card: a question, an invite, a link. You feed the list; we show a different one each week.'
+      : 'A section at the top of your storefront for what’s new: a listing, an event, a favorite.';
     var storeUrl = (this.vendor && this.vendor.slug) ? ('/' + this.vendor.slug) : null;
 
     var html =
@@ -406,7 +406,7 @@
     if (!list.length) {
       html += this.exampleHtml(kind);
     } else if (!activeList.length) {
-      html += '<p class="mkt-note" style="margin:0 0 14px;">Nothing is visible right now — turn one back on below.</p>';
+      html += '<p class="mkt-note" style="margin:0 0 14px;">Nothing is visible right now. Turn one back on below.</p>';
     } else if (activeList.length >= 2) {
       html += '<div class="mkt-seg">' +
         '<button type="button" data-mode="rotate" class="' + (pinned == null ? 'on' : '') + '">Rotate weekly</button>' +
@@ -485,7 +485,7 @@
     if (activeList.length >= 2) {
       html += '<p class="mkt-note">' +
         (pinned == null
-          ? 'Rotating weekly — each visible entry shows in turn, changing every Monday.'
+          ? 'Rotating weekly: each visible entry shows in turn, changing every Monday.'
           : 'This one stays until you switch back to rotating or pin a different entry.') +
       '</p>';
     } else if (list.length && activeList.length === 1 && list.length < CAPS[kind]) {
@@ -521,7 +521,7 @@
                 ? ' style="object-position:' + (+e.image_focus_x) + '% ' + (+e.image_focus_y) + '%;"' : '') +
               '></div>'
             : '') +
-          '<p class="mkt-note" style="margin-top:6px;">Landscape works best — about twice as wide as tall, at least 1200&thinsp;px wide. JPG or PNG; stored photos stay under 1&thinsp;MB (we compress automatically, so most are fine as-is).</p>'
+          '<p class="mkt-note" style="margin-top:6px;">Landscape works best: about twice as wide as tall, at least 1200&thinsp;px wide. JPG or PNG; stored photos stay under 1&thinsp;MB (we compress automatically, so most are fine as-is).</p>'
         : '') +
       '<label>Link (optional)</label>' +
       '<input class="mkt-in" data-f="url" maxlength="500" value="' + esc(u) + '" placeholder="https://… (leave empty to open your contact form)">' +
@@ -540,7 +540,7 @@
   Page.prototype.lockedShowcaseHtml = function () {
     return '<div class="mkt-card mkt-lock">' +
       '<p class="mkt-lockh">Showcase of the week</p>' +
-      '<p>Lead your storefront with a rotating feature — this week’s listing, an open house, a seasonal special. Available on the Featured plan.</p>' +
+      '<p>Lead your storefront with a rotating feature: this week’s listing, an open house, a seasonal special. Available on the Featured plan.</p>' +
       '<a class="mkt-up" href="/pricing">Upgrade to unlock</a>' +
     '</div>';
   };
@@ -661,7 +661,7 @@
     // Mirrors the DB constraint (marketing_entries_url_https) with a friendlier
     // message than a raw check_violation.
     if (payload.url && !/^https:\/\//i.test(payload.url)) {
-      toast('Links need to start with https:// — copy the full address from your browser.');
+      toast('Links need to start with https:// (copy the full address from your browser).');
       return;
     }
     var done = function (res) {
@@ -702,7 +702,7 @@
         if (bytes > 1048576) {
           if (path && STORAGE.remove) { try { STORAGE.remove(path); } catch (e) {} }
           btn.textContent = label;
-          toast('That photo is over 1 MB even after compression — try a smaller or simpler image.');
+          toast('That photo is over 1 MB even after compression. Try a smaller or simpler image.');
           return;
         }
         finishUpload(url);
@@ -781,7 +781,7 @@
       '<div class="mkt-card mkt-lock">' +
         '<span class="mkt-cta-demo">' + esc(CTA_EXAMPLE) + '</span>' +
         '<p class="mkt-lockh">Marketing tools</p>' +
-        '<p>Rotate a weekly promo button and a Showcase of the week on your storefront — you feed the list, we keep it fresh. Available on paid plans.</p>' +
+        '<p>Rotate a weekly promo button and a Showcase of the week on your storefront. You feed the list, we keep it fresh. Available on paid plans.</p>' +
         '<a class="mkt-up" href="/pricing">See plans</a>' +
       '</div>';
   }

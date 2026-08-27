@@ -118,7 +118,7 @@
       +   '<div id="lok-wl-form-wrap">'
       +     '<p class="lok-wl-eyebrow">Where we go next</p>'
       +     '<h2 class="lok-wl-h">Request your city</h2>'
-      +     '<p class="lok-wl-sub">Tell us where you want Lokali next. We use every request to shape our expansion map — and we’ll let you know the moment we reach you.</p>'
+      +     '<p class="lok-wl-sub">Tell us where you want Lokali next. We use every request to shape our expansion map, and we’ll let you know the moment we reach you.</p>'
       +     '<form id="lokali-waitlist-form" novalidate autocomplete="off">'
       +       '<div class="lok-wl-field"><label for="wl-email">Email</label>'
       +         '<input id="wl-email" name="email" type="email" autocomplete="email" placeholder="you@example.com"></div>'

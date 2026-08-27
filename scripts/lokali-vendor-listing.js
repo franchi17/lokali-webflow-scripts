@@ -914,7 +914,7 @@
       if (s.image_focus_x != null && s.image_focus_y != null) {
         img.style.objectPosition = s.image_focus_x + '% ' + s.image_focus_y + '%';
       }
-      img.alt = ((window.LOKALI_LOADED_VENDOR && window.LOKALI_LOADED_VENDOR.name) || 'Vendor') + ' — showcase of the week';
+      img.alt = ((window.LOKALI_LOADED_VENDOR && window.LOKALI_LOADED_VENDOR.name) || 'Vendor') + ', showcase of the week';
       img.loading = 'lazy';
       wrap.appendChild(img);
     }
@@ -1265,7 +1265,7 @@
       append(OP_BATCH);
       var left = total - rendered;
       if (left <= 0) { if (btn.parentNode) btn.parentNode.removeChild(btn); }
-      else btn.textContent = 'Show more — ' + left + ' of ' + total + ' ' + kind + ' left';
+      else btn.textContent = 'Show more · ' + left + ' of ' + total + ' ' + kind + ' left';
     });
     grid.parentNode.insertBefore(btn, grid.nextSibling);
   }
@@ -1455,13 +1455,13 @@
         vidFrame.allow = 'autoplay; fullscreen; picture-in-picture';
         vidFrame.setAttribute('allowfullscreen', '');
         vidFrame.src = vlEmbedSrc(it.video, false);
-        vidFrame.title = lbLabel ? lbLabel + ' — video' : 'Video';
+        vidFrame.title = lbLabel ? lbLabel + ', video' : 'Video';
         ov.insertBefore(vidFrame, close);
       } else {
         img.style.display = '';
         img.src = it || '';
         // #97: alt mirrors the gallery's ("Label — photo N"); count is separate UI.
-        img.alt = lbLabel ? (multi ? lbLabel + ' — photo ' + (idx + 1) : lbLabel) : '';
+        img.alt = lbLabel ? (multi ? lbLabel + ', photo ' + (idx + 1) : lbLabel) : '';
       }
       count.textContent = (idx + 1) + ' / ' + urls.length;
       prev.style.display = next.style.display = count.style.display = multi ? '' : 'none';
@@ -1587,7 +1587,7 @@
       // #97 alt text: vendor_photos has no caption column, so the business name
       // + index is the best truthful alt — better than the empty string that
       // hid a paid feature's photos from search and screen readers.
-      var lbl = (vendor && vendor.business_name ? vendor.business_name + ' — portfolio' : 'Portfolio');
+      var lbl = (vendor && vendor.business_name ? vendor.business_name + ' portfolio' : 'Portfolio');
       var ambientUsed = false;   // ONE muted looping player per strip — motion
                                  // is a spotlight; three flickering tiles are chaos.
       photos.forEach(function (p, i) {
@@ -1746,7 +1746,7 @@
     if (emailEl) {
       if (email) {
         emailEl.href = 'mailto:' + email +
-          '?subject=' + encodeURIComponent('I found you on Lokali — inquiry') +
+          '?subject=' + encodeURIComponent('I found you on Lokali: inquiry') +
           '&body=' + encodeURIComponent(foundCopy);
       } else { show(emailEl, false); }
     }
@@ -1823,7 +1823,7 @@
     bar.innerHTML =
       '<span style="display:inline-flex;align-items:center;gap:8px;">' +
       '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E3CFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;"><path d="M3 9l1.5-5h15L21 9"/><path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"/><path d="M5 11.5V20h14v-8.5"/><path d="M9 20v-5h6v5"/></svg>' +
-      'You’re viewing your own storefront — this is what customers see.</span>' +
+      'You’re viewing your own storefront. This is what customers see.</span>' +
       '<a href="/vendor-dashboard/dashboard" style="background:#6E3CFF;color:#fff;font-weight:700;' +
       'font-size:13px;padding:7px 16px;border-radius:999px;text-decoration:none;font-family:inherit;' +
       'white-space:nowrap;">Back to my dashboard</a>';
@@ -1885,7 +1885,7 @@
       '<a class="vl-np-btn" href="/the-market">Browse local vendors</a>'
     ));
     page.appendChild(card);
-    document.title = 'Coming soon — Lokali';
+    document.title = 'Coming soon | Lokali';
 
     // Owner variant: checklist of what's missing + dashboard link.
     if (API && API.vendors && API.vendors.me) {
@@ -1938,7 +1938,7 @@
     card.innerHTML =
       '<div class="vl-np-emoji">⏳</div>' +
       '<h1>Having trouble loading this storefront</h1>' +
-      '<p>It’s us, not you — give it another try in a moment.</p>' +
+      '<p>It’s us, not you. Give it another try in a moment.</p>' +
       '<button type="button" class="vl-np-btn" data-vl-retry>Try again</button>';
     card.querySelector('[data-vl-retry]').addEventListener('click', function () { window.location.reload(); });
     page.appendChild(card);
@@ -1955,7 +1955,7 @@
       '<p>The storefront you’re looking for doesn’t exist, or the link is out of date.</p>' +
       '<a class="vl-np-btn" href="/the-market">Browse local vendors</a>';
     page.appendChild(card);
-    document.title = 'Vendor not found — Lokali';
+    document.title = 'Vendor not found | Lokali';
   }
 
   function populateVendor(v, labels) {
@@ -2347,7 +2347,7 @@
           ev.preventDefault();
           var flash = function () {
             if (!tip) return;
-            tip.textContent = 'Copied — pay in your bank app';
+            tip.textContent = 'Copied! Pay in your bank app';
             tip.style.opacity = '1';
             setTimeout(function () { if (tip) { tip.textContent = m.label; tip.style.opacity = '0'; } }, 1800);
           };
@@ -2467,7 +2467,7 @@
       // surfaces the Worker didn't decorate — e.g. the raw /vendor?id= template —
       // identified by Webflow's stock title still being in place.
       if (/^\s*Vendor Listing/i.test(document.title)) {
-        document.title = (v.business_name || 'Vendor') + ' — Lokali';
+        document.title = (v.business_name || 'Vendor') + ' | Lokali';
       }
 
       var vid = v.id != null ? v.id : id;
@@ -2704,7 +2704,7 @@
   // instead; anonymous visitors have the contact form). Reporting never hides
   // the listing — it queues a vendor_reports row for Lokali moderation.
   var VREPORT_CATEGORIES = [
-    ['scam', 'Scam — took money / never showed'],
+    ['scam', 'Scam: took money / never showed'],
     ['not_real', 'Not a real business'],
     ['misleading', 'Misleading listing or photos'],
     ['inappropriate', 'Inappropriate content'],
@@ -2758,7 +2758,7 @@
       var o = document.createElement('option'); o.value = c[0]; o.textContent = c[1]; sel.appendChild(o);
     });
     var ta = document.createElement('textarea');
-    ta.placeholder = 'Tell us what happened — the more detail, the faster we can act.';
+    ta.placeholder = 'Tell us what happened. The more detail, the faster we can act.';
     ta.maxLength = 1000;
     // #135 wrong_area details (shown only for that category). Both answers are
     // folded into the reason text so the existing queue/email/DB need no
@@ -2775,7 +2775,7 @@
     function syncArea() {
       var on = sel.value === 'wrong_area';
       areaWrap.style.display = on ? '' : 'none';
-      ta.placeholder = on ? 'Anything else? (optional)' : 'Tell us what happened — the more detail, the faster we can act.';
+      ta.placeholder = on ? 'Anything else? (optional)' : 'Tell us what happened. The more detail, the faster we can act.';
     }
     sel.addEventListener('change', syncArea);
     var actions = ce('div', 'vl-rev-report-actions');
@@ -2794,13 +2794,13 @@
       window.LokaliAPI.reviews.reportVendor(vendorId, sel.value, reason).then(function (res) {
         if (res && res.error) { send.disabled = false; send.textContent = 'Send report'; return; }
         var done = ce('div', 'vl-rev-report-done');
-        done.textContent = 'Thank you — the Lokali team will look into this.';
+        done.textContent = 'Thank you. The Lokali team will look into this.';
         box.replaceWith(done);
       }).catch(function () { send.disabled = false; send.textContent = 'Send report'; });
     });
     actions.appendChild(send); actions.appendChild(cancel);
     var note = ce('div', 'vl-vreport-note');
-    note.textContent = 'Reports are reviewed by a person — we may follow up at your account email. The listing stays visible while we check.';
+    note.textContent = 'Reports are reviewed by a person, and we may follow up at your account email. The listing stays visible while we check.';
     box.appendChild(sel); box.appendChild(areaWrap); box.appendChild(ta); box.appendChild(actions); box.appendChild(note);
     wrap.appendChild(box);
     syncArea();
@@ -2876,7 +2876,7 @@
     btn.style.display = 'none';
     var box = ce('div', 'vl-rev-report-box'); box.classList.add('vl-rev-reply-box');
     var ta = document.createElement('textarea');
-    ta.placeholder = 'Write a public reply — a quick thank-you goes a long way.';
+    ta.placeholder = 'Write a public reply. A quick thank-you goes a long way.';
     ta.maxLength = 1000;
     var actions = ce('div', 'vl-rev-report-actions');
     var send = ce('button', 'vl-rev-report-send'); send.type = 'button'; send.textContent = 'Post reply';
@@ -2929,7 +2929,7 @@
       window.LokaliAPI.reviews.report(card.getAttribute('data-rev-id'), reason).then(function (res) {
         if (res && res.error) { send.disabled = false; send.textContent = 'Send report'; return; }
         var done = ce('div', 'vl-rev-report-done');
-        done.textContent = 'Flagged for review — the Lokali team will take a look. The review stays visible while we check.';
+        done.textContent = 'Flagged for review. The Lokali team will take a look. The review stays visible while we check.';
         box.replaceWith(done);
       }).catch(function () { send.disabled = false; send.textContent = 'Send report'; });
     });

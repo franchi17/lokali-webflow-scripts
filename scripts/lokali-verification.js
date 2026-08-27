@@ -50,7 +50,7 @@
     unverified: 'Not verified',
     pending: 'Verification in progress…',
     verified: 'Verified',
-    failed: "We couldn't verify your ID — please try again"
+    failed: "We couldn't verify your ID. Please try again"
   };
 
   // ── helpers ──────────────────────────────────────────────────────────────────
@@ -116,7 +116,7 @@
           // #48: the server refuses unpaid/free plans with a human-readable
           // reason — surface it instead of the generic line.
           var m = err && err.message ? String(err.message) : '';
-          alert(/plan|payment/i.test(m) ? m : 'Sorry — could not start verification. Please try again.');
+          alert(/plan|payment/i.test(m) ? m : 'Sorry, we could not start verification. Please try again.');
         });
     });
   }
@@ -172,7 +172,7 @@
     // Status line. Trial-locked / lapsed vendors get the WHY.
     $all('[data-lokali-verify-status]').forEach(function (el) {
       el.textContent = lapsedVerified
-        ? 'Verified — your badge is hidden while your plan is inactive'
+        ? 'Verified. Your badge is hidden while your plan is inactive'
         : (trialLocked
           ? 'Unlocks after your first plan payment'
           : STATUS_LABELS[status]);

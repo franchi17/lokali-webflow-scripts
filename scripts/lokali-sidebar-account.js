@@ -223,7 +223,7 @@
   function personShoppingLabel() {
     var c = readCache();
     var f = (c && c.first_name || '').trim();
-    return f ? (f + ' — shopping') : 'Switch to shopping';
+    return f ? (f + ' · shopping') : 'Switch to shopping';
   }
   // Persist the storefront (business) name into the acct cache so the HEADER
   // identity switcher (lokali-auth-nav.js) can label the storefront row without
@@ -265,7 +265,7 @@
     // Retry budget spent (lokali-auth.js never loaded) — say so instead of a
     // silently dead control (mirrors the settings-page toast).
     var t = document.createElement('div');
-    t.textContent = 'Couldn’t open sign-in settings — please refresh the page.';
+    t.textContent = 'Couldn’t open sign-in settings. Please refresh the page.';
     t.style.cssText = 'position:fixed;top:24px;left:50%;transform:translateX(-50%);z-index:9999;' +
       'padding:12px 20px;border-radius:999px;background:#b91c1c;color:#fff;box-shadow:0 8px 20px rgba(15,23,42,.2);' +
       "font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:500;max-width:90vw;text-align:center;";

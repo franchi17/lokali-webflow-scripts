@@ -283,7 +283,7 @@
     mount.appendChild(listWrap);
 
     var explain = el('div', 'lp-explain',
-      'A lead is logged when someone taps to contact you — your conversation then happens directly by email, phone, or WhatsApp, never through Lokali. Set a status to track who you’ve followed up with. We never see the contents of your messages.');
+      'A lead is logged when someone taps to contact you. Your conversation then happens directly by email, phone, or WhatsApp, never through Lokali. Set a status to track who you’ve followed up with. We never see the contents of your messages.');
     mount.appendChild(explain);
   }
 

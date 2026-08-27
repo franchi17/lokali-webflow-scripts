@@ -127,7 +127,7 @@
         + '<a href="#" data-lokali-waitlist style="display:inline-block;padding:9px 16px;border-radius:10px;'
         + 'background:linear-gradient(90deg,#8B6CF0,#A45FE8);color:#fff;font-weight:700;font-size:14px;'
         + 'text-decoration:none;box-shadow:0 6px 16px rgba(139,108,240,.3);">Join the city waitlist &rarr;</a>'
-        + '<span style="margin-left:10px;color:#8a819d;font-size:12.5px;">(or send the form — we read both)</span>'
+        + '<span style="margin-left:10px;color:#8a819d;font-size:12.5px;">(or send the form, we read both)</span>'
         + '</div>';
       var field = topicEl.closest ? topicEl.closest('.lok-cf-field') : null;
       if (field && field.parentNode) field.parentNode.insertBefore(box, field.nextSibling);

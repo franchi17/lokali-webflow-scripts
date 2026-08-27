@@ -86,7 +86,7 @@
       var ad = el('img', 'lok-sh-adimg');
       ad.src = v.creative_image;
       ad.alt = v.creative_headline ||
-        ((v.business_name || 'Vendor') + ' — Spotlight');
+        ((v.business_name || 'Vendor') + ' Spotlight');
       ad.loading = 'lazy';
       card.appendChild(ad);
       if (v.creative_headline) card.appendChild(el('p', 'lok-sh-adline', v.creative_headline));

@@ -438,7 +438,7 @@
   // ═══════════════════════════════════════════════════════════════════════════
 
   var auth = {
-    login: function () { return Promise.resolve(fail('Password login moved — use the Lokali login form on /login.', 410)); },
+    login: function () { return Promise.resolve(fail('Password login moved. Use the Lokali login form on /login.', 410)); },
     googleLogin: function () { return Promise.resolve(fail('Google login goes through the /login page now.', 410)); },
     signup: function () { return Promise.resolve(fail('Signup goes through /sign-up now.', 410)); },
     // Xano /me returned the auth user; consumers read both `data.<field>` and
@@ -504,7 +504,7 @@
       function checkHandle(raw, label) {
         if (payErr || raw === undefined) return;
         if (String(raw == null ? '' : raw).trim() && !normalizePayHandle(raw)) {
-          payErr = label + ' looks invalid — letters, numbers, dots, dashes or underscores only (no spaces, max 30). It was not saved.';
+          payErr = label + ' looks invalid: letters, numbers, dots, dashes or underscores only (no spaces, max 30). It was not saved.';
         }
       }
       checkHandle(payload.venmo_username, 'Venmo username');
