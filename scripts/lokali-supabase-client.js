@@ -424,6 +424,16 @@
           return c.rpc('availability_accepting', { p_vendors_id: vendorId });
         });
       },
+      // Vendor's external scheduling link (Calendly/Acuity/etc.) for the
+      // storefront "Book an appointment" button. Anon text RPC; null when the
+      // vendor set none or the Pro/Featured plan lapsed (server-side gate).
+      // Defensive: until patch_booking_link.sql is applied the RPC doesn't
+      // exist — callers must treat an error as "no link".
+      bookingLink: function (vendorId) {
+        return withClient(function (c) {
+          return c.rpc('availability_booking_link', { p_vendors_id: vendorId });
+        });
+      },
       // Public date-aware inquiry -> /availability/submit (service-role RPC +
       // vendor notify). No auth (open to logged-out visitors). Returns
       // { data: { ok, inquiry_id } | { ok:false, reason }, error }.
@@ -1354,6 +1364,12 @@
       // server-side; non-admins get { ok:false, reason:'not_admin' }.
       qrScans: function () {
         return withClient(function (c) { return c.rpc('admin_qr_scans'); });
+      },
+      // #156 — "How people found us" acquisition stats. Its OWN RPC, same
+      // reasoning as qrScans (admin_overview stays untouched, 2026-08-16
+      // incident). is_admin()-gated server-side.
+      signupSources: function () {
+        return withClient(function (c) { return c.rpc('admin_signup_sources'); });
       }
     },
     // #96-SUGGEST — subcategory taxonomy + the vendor suggestion pipeline.

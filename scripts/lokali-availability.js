@@ -1,25 +1,24 @@
 /**
- * Lokali — storefront availability calendar (#71), CUSTOMER side.
+ * Lokali — storefront availability section (#71 → link redesign 2026-08-27),
+ * CUSTOMER side: "Book an appointment" (vendor's external scheduling link,
+ * Calendly/Acuity/etc.) + the weekly Hours card + the books-full banner.
+ * The NATIVE booking calendar/slot picker is retired (usage check 2026-08-27:
+ * zero real usage) — its render entry points are gone (hasCalendar is always
+ * false); the dormant calendar code below it awaits a cleanup sweep.
  *
  * Load AFTER scripts/lokali-supabase-client.js (needs window.LokaliSupabaseAPI +
- * window.LokaliSupabaseReady). Renders ONE storefront-level calendar on the
- * vendor detail page (/{slug}) — never per service/product. Capacity lives on
- * the vendor, so there is exactly one calendar per storefront.
+ * window.LokaliSupabaseReady). Renders ONE storefront-level section on the
+ * vendor detail page (/{slug}) — never per service/product.
  *
  * Mount: a <div id="lokali-availability"></div> placed in the Webflow Designer
  * where the section should appear (same convention as #lokali-share-detail). If
  * that element is absent it falls back to inserting before the services grid.
  *
- * Self-hiding: it probes availability_calendar() AND availability_hours_public()
- * — both return [] when the vendor isn't on the feature (disabled / not on a
- * Pro/Featured plan), so non-participating storefronts look exactly as today. A
- * vendor may publish Hours without turning the booking calendar on; in that case
- * only the "Hours" block renders (no date picker).
- *
- * Mode is inferred per date click: availability_slots(date) returns times for a
- * slot-mode vendor and [] for a quantity-mode vendor (a slot-mode date with no
- * template slots renders 'off' and isn't clickable) — so no extra config read,
- * and the customer never sees a raw count either way.
+ * Self-hiding: it probes availability_booking_link() AND
+ * availability_hours_public() — link null + hours [] when the vendor isn't on
+ * the feature (nothing set / not on a Pro/Featured plan), so non-participating
+ * storefronts look exactly as today. A vendor may publish Hours without a
+ * booking link, or the reverse; either alone renders its card.
  */
 (function () {
   'use strict';
@@ -218,6 +217,8 @@
     // replaced by a full-books note + (Featured) the general waitlist join.
     this.accepting = !opts || opts.accepting !== false;
     this.canWaitlist = !!(opts && opts.canWaitlist);
+    // External scheduling link (2026-08-27): replaces the native calendar.
+    this.bookingUrl = (opts && opts.bookingUrl) || null;
     this.viewMonth = firstOfMonth(new Date());
     this.statusByDate = {};
     this.selected = null;
@@ -235,8 +236,8 @@
         // date-less availability_waitlist row); the sold-out panel's slot
         // waitlist says "for <date>". Both used to read "join the waitlist",
         // so a customer on both had no way to tell them apart.
-        ? 'Their books are full at the moment — join their new-client waitlist and they’ll reach out when they’re taking clients again.'
-        : 'Their books are full at the moment — check back soon.') + '</p>' +
+        ? 'Their books are full at the moment. Join their new-client waitlist and they’ll reach out when they’re taking clients again.'
+        : 'Their books are full at the moment. Check back soon.') + '</p>' +
       (this.canWaitlist
         ? '<div class="av-join" style="margin-top:12px;display:flex;flex-direction:column;gap:8px;max-width:340px;">' +
             '<input type="text" class="av-join-name" placeholder="Your name" style="' + inp + '">' +
@@ -268,10 +269,10 @@
             box.innerHTML = '<p style="margin:0;font-size:13.5px;font-weight:600;color:#3E7C5E;">You’re on the new-client waitlist ✓ They’ll reach out when they’re taking clients again.</p>';
           } else {
             btn.disabled = false; btn.style.opacity = '';
-            msg.textContent = 'Couldn’t join right now — please try again.';
+            msg.textContent = 'Couldn’t join right now. Please try again.';
           }
         })
-        .catch(function () { btn.disabled = false; btn.style.opacity = ''; msg.textContent = 'Couldn’t join right now — please try again.'; });
+        .catch(function () { btn.disabled = false; btn.style.opacity = ''; msg.textContent = 'Couldn’t join right now. Please try again.'; });
     });
   };
 
@@ -292,6 +293,38 @@
     }).join('');
     return '<div class="av-card av-hours" style="margin-bottom:14px;">' +
       '<p style="margin:0 0 4px;font-size:15px;font-weight:600;color:#3E3A55;">Hours</p>' + rows + '</div>';
+  };
+
+  // "Book an appointment" card — the vendor's external scheduling link
+  // (Calendly/Acuity/Square etc.; https-only, enforced in the DB and re-checked
+  // in boot). Replaced the native booking calendar 2026-08-27. Empty string
+  // when the vendor set no link.
+  function schedulerName(url) {
+    try {
+      var h = new URL(url).hostname.replace(/^www\./i, '').toLowerCase();
+      if (h.indexOf('calendly.com') !== -1) return 'Calendly';
+      if (h.indexOf('acuityscheduling.com') !== -1 || h.indexOf('squarespacescheduling.com') !== -1) return 'Acuity Scheduling';
+      if (h.indexOf('square.site') !== -1 || h.indexOf('squareup.com') !== -1) return 'Square Appointments';
+      if (h.indexOf('setmore.com') !== -1) return 'Setmore';
+      if (h.indexOf('booksy.com') !== -1) return 'Booksy';
+      return h;
+    } catch (e) { return null; }
+  }
+  Widget.prototype.bookingHTML = function () {
+    if (!this.bookingUrl) return '';
+    var who = schedulerName(this.bookingUrl);
+    return '<div class="av-card av-booking" style="margin-bottom:14px;">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;">' +
+        '<p style="margin:0;font-size:15px;font-weight:600;color:#3E3A55;">Book an appointment</p>' +
+        '<span style="font-size:11px;font-weight:500;padding:4px 11px;border-radius:999px;background:#E9F4EE;color:#3E7C5E;white-space:nowrap;">Accepting new clients</span>' +
+      '</div>' +
+      '<p style="margin:0 0 12px;font-size:13px;color:#6C6880;line-height:1.5;">Pick a time that works for you. Booking opens the vendor&#8217;s scheduling page.</p>' +
+      '<a class="av-cta" href="' + esc(this.bookingUrl) + '" target="_blank" rel="noopener nofollow" ' +
+        'style="display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;">' +
+        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="3"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg>' +
+        '<span>Book an appointment</span></a>' +
+      (who ? '<p style="margin:9px 0 0;font-size:11px;color:#B0ACBC;text-align:center;">Opens the vendor&#8217;s ' + esc(who) + ' page</p>' : '') +
+      '</div>';
   };
 
   Widget.prototype.calendarHTML = function () {
@@ -326,9 +359,9 @@
       this.bindJoin();
       return;
     }
-    // Calendar leads, hours follow (Francesca 2026-07-20 — was hours-first).
-    this.mount.innerHTML = (this.hasCalendar ? this.calendarHTML() : '') + this.hoursHTML();
-    if (!this.hasCalendar) return;    // hours-only: nothing else to wire
+    // Booking leads, hours follow (same order the calendar used, F 2026-07-20).
+    this.mount.innerHTML = this.bookingHTML() + this.hoursHTML();
+    if (!this.hasCalendar) return;    // no native calendar: nothing else to wire
 
     var self = this;
     this.mount.querySelectorAll('.av-nav').forEach(function (n) {
@@ -403,7 +436,7 @@
         if (clickable) {
           cell.setAttribute('role', 'button');
           cell.setAttribute('tabindex', '0');
-          cell.setAttribute('aria-label', prettyDate(dISO) + ' — ' + s.tag);
+          cell.setAttribute('aria-label', prettyDate(dISO) + ', ' + s.tag);
           (function (dd) {
             function go() { self.selectDate(dd); }
             cell.addEventListener('click', go);
@@ -461,7 +494,7 @@
       '<p style="margin:0 0 4px;font-size:12px;color:#8B8798;">Anything they should know?</p>' +
       '<textarea class="av-msg" rows="2" maxlength="2000" aria-label="Anything they should know?" style="margin-bottom:14px;resize:none;"></textarea>' +
       '<button class="av-cta av-send">Send request</button>' +
-      '<p style="margin:9px 0 0;font-size:11px;color:#B0ACBC;text-align:center;">They confirm each order — you\'ll hear back before it\'s reserved.</p>';
+      '<p style="margin:9px 0 0;font-size:11px;color:#B0ACBC;text-align:center;">They confirm each order, so you\'ll hear back before it\'s reserved.</p>';
 
     var qtyEl = this.panel.querySelector('.av-qty');
     // Steppers are spans with role=button — wire Enter/Space alongside click.
@@ -560,9 +593,9 @@
   // errorState, whose retry re-fetches the date and genuinely can recover.
   Widget.prototype.rejectState = function (dISO, reason) {
     var copy = {
-      rate_limited: "You've sent a few requests recently — please wait a while before sending another.",
-      past_lead_time: 'This date needs more notice than they can take — please pick a later date above.',
-      day_off: "They're not taking requests for this day — please pick another date above.",
+      rate_limited: "You've sent a few requests recently. Please wait a while before sending another.",
+      past_lead_time: 'This date needs more notice than they can take. Please pick a later date above.',
+      day_off: "They're not taking requests for this day. Please pick another date above.",
       availability_off: "This storefront isn't taking requests right now."
     }[reason];
     if (!copy) { this.errorState(dISO); return; }
@@ -615,7 +648,7 @@
         '<div style="display:flex;align-items:center;gap:9px;margin-bottom:6px;">' +
           '<span style="font-size:19px;color:#C77B63;">&#9888;</span>' +
           '<p style="margin:0;font-size:15px;font-weight:600;color:#3E3A55;">' + esc(prettyDate(dISO)) + ' is sold out</p></div>' +
-        '<p style="margin:0;font-size:13px;color:#8B8798;line-height:1.5;">This day is fully booked — pick another date above.</p>';
+        '<p style="margin:0;font-size:13px;color:#8B8798;line-height:1.5;">This day is fully booked. Pick another date above.</p>';
       return;
     }
     this.panel.innerHTML =
@@ -656,29 +689,29 @@
   function boot() {
     getVendorId().then(function (vid) {
       if (!vid) return;
-      // Probe the booking calendar AND the published Hours together. Build the
-      // section if EITHER is present: a vendor may show hours without turning the
-      // booking calendar on. Both empty => not on the feature -> render nothing.
-      var from = firstOfMonth(new Date()), to = lastOfMonth(new Date());
+      // Probe the booking link AND the published Hours together. Build the
+      // section if EITHER is present. Both empty => not on the feature ->
+      // render nothing. (The native calendar probe is retired 2026-08-27 —
+      // the calendar was replaced by the vendor's external scheduling link.)
       Promise.all([
-        API.calendar(vid, iso(from), iso(to)),
+        API.bookingLink ? API.bookingLink(vid) : Promise.resolve(null),
         API.hoursPublic ? API.hoursPublic(vid) : Promise.resolve({ data: [] }),
-        // Defensive probes: until patch_accepting_new_clients.sql is applied
-        // the accepting RPC doesn't exist — any error reads as "accepting".
+        // Defensive probes: until the matching SQL patch is applied an RPC
+        // doesn't exist — any error reads as "accepting" / "no link".
         API.accepting ? API.accepting(vid) : Promise.resolve(null),
         API.waitlistOpen ? API.waitlistOpen(vid) : Promise.resolve(null)
       ]).then(function (res) {
-        var calRows = (res[0] && res[0].data) || [];
+        var bookingUrl = (res[0] && typeof res[0].data === 'string' && /^https:\/\//i.test(res[0].data)) ? res[0].data : null;
         var hours = (res[1] && res[1].data) || [];
         var accepting = !(res[2] && res[2].data === false);
         var canWaitlist = !!(res[3] && res[3].data === true);
-        // Books-full vendors render the closed banner even with no calendar
-        // or hours — the banner IS the content.
-        if (!calRows.length && !hours.length && accepting) return;
+        // Books-full vendors render the closed banner even with no link or
+        // hours — the banner IS the content.
+        if (!bookingUrl && !hours.length && accepting) return;
         var mount = findMount();
         if (!mount) return;
         injectStyles();
-        new Widget(mount, vid, hours, calRows.length > 0, { accepting: accepting, canWaitlist: canWaitlist });
+        new Widget(mount, vid, hours, false, { accepting: accepting, canWaitlist: canWaitlist, bookingUrl: bookingUrl });
       });
     });
   }

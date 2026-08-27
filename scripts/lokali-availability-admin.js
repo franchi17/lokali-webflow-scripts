@@ -1,27 +1,23 @@
 /**
- * Lokali — vendor dashboard "Availability" page (#71), OWNER side.
+ * Lokali — vendor dashboard "Availability" page (#71 → link redesign
+ * 2026-08-27), OWNER side.
  *
  * Load on /vendor-dashboard/availability AFTER scripts/lokali-supabase-client.js.
  * Self-mounting into <div id="lok-availability-page"></div> — no-op if absent.
  *
- * Surfaces (top to bottom, matching the locked mockups):
- *   1. Requests inbox — pending date-tagged inquiries grouped by date, each with
- *      Confirm (#6002ee) / Decline. Confirm is the ONLY capacity mover (the
- *      confirm_availability_inquiry RPC); the per-date "N of cap left" chip
- *      updates from the RPC's returned derived status + a re-read.
- *   2. Settings — enable toggle, capacity mode, daily cap, "Limited" threshold,
- *      Minimum notice (was "lead time"), booking length + buffer (slot mode),
- *      hold mode (+ window). Saved via availability_config upsert; RLS enforces
- *      owns_vendor + the Pro/Featured plan gate server-side.
+ * Surfaces (top to bottom):
+ *   1. New clients — "accepting new clients" toggle + the general (date-less)
+ *      new-client queue (#121). Off = storefront shows a books-full note.
+ *   2. Booking link — the vendor's external scheduling link (Calendly/Acuity/
+ *      Square etc.; https-only, DB-enforced by patch_booking_link.sql). Renders
+ *      the storefront "Book an appointment" button.
  *   3. Hours — one weekly open→close schedule (split days = two windows). Shown
- *      on the storefront as "Hours"; in slot mode the bookable appointments are
- *      GENERATED inside each window from the length + buffer (avail_expand_slots),
- *      with an optional per-window timing override. Saved to availability_hours.
- *   4. Days off — month calendar; tap a date to block/unblock. Owner-only raw
- *      numbers per date: confirmed/cap in quantity mode, booked/generated-slots
- *      in slot mode (customers never see either).
- *   5. Waitlist — waiting/offered people per sold-out date, "Offer spot" calls
- *      offer_waitlist_spot (the emailing of the customer is a tracked follow-up).
+ *      on the storefront as "Hours". Saved to availability_hours.
+ *
+ * The NATIVE booking calendar (requests inbox, days off, capacity settings,
+ * slot generation, sold-out-date waitlist) was retired 2026-08-27 after the
+ * usage check showed zero real usage. Its renderers below are no longer called
+ * (their mounts are gone) and await a cleanup sweep — do not re-wire them.
  *
  * Plan gate: has_availability_plan(vendorId) is checked up front; free vendors
  * get the upsell card (server enforces regardless — this is just honest UI).
@@ -74,10 +70,10 @@
   // Plain-English caption for the old "lead time" (renamed "Minimum notice").
   function leadHint(h) {
     h = +h || 0;
-    var human = h <= 0 ? 'no minimum — same-day requests are fine'
+    var human = h <= 0 ? 'no minimum (same-day requests are fine)'
       : h < 24 ? 'about ' + h + ' hour' + (h === 1 ? '' : 's') + ' ahead'
       : 'about ' + Math.round(h / 24) + ' day' + (Math.round(h / 24) === 1 ? '' : 's') + ' ahead';
-    return 'How far ahead customers must request — ' + human + '. Dates inside this window show as closed.';
+    return 'How far ahead customers must request: ' + human + '. Dates inside this window show as closed.';
   }
 
   function injectStyles() {
@@ -208,26 +204,21 @@
 
   Page.prototype.shell = function () {
     // No internal header — the Webflow page heading ("Availability" + subtitle)
-    // is the single source of truth, so the widget starts straight at the inbox.
+    // is the single source of truth.
     this.mount.className = 'lok-ava';
-    // #85 (Francesca 2026-07-18): calendar right after the pending requests —
-    // requests → calendar (days off) → settings → hours → waitlist.
-    // #121 (Francesca 2026-08-15): the two waitlists now get their OWN cards,
-    // adjacent so the difference is visible at a glance —
-    //   .ava-newclients = vendor-level "new clients" queue + the toggle that
-    //                     opens it (moved here out of Settings, where it sat
-    //                     under the calendar config and read as a booking knob)
-    //   .ava-waitlist   = per-date queues for sold-out days
-    // F 2026-08-22: "Accepting new clients" card moved to the TOP, directly under
-    // the requests inbox (all screen sizes) — it is the vendor's primary open/
-    // closed switch and was buried below hours.
+    // Link redesign 2026-08-27: the native calendar is retired (usage check:
+    // zero real usage), so the page is down to three cards —
+    //   .ava-newclients = accepting toggle + general new-client queue (#121;
+    //                     stays at the TOP per F 2026-08-22)
+    //   .ava-booking    = external scheduling link (Calendly/Acuity/etc.)
+    //   .ava-hours      = weekly hours (the storefront Hours card)
+    // The inbox/days-off/settings/sold-out-waitlist renderers below are no
+    // longer called (their mounts are gone) and await a cleanup sweep.
     this.mount.innerHTML =
-      '<div class="ava-inbox"></div>' +
       '<div class="ava-newclients"></div>' +
-      '<div class="ava-daysoff"></div>' +
-      '<div class="ava-settings"></div>' +
-      '<div class="ava-hours"></div>' +
-      '<div class="ava-waitlist"></div>';
+      '<div class="ava-booking"></div>' +
+      '<div class="ava-hours"></div>';
+    this.$booking = this.mount.querySelector('.ava-booking');
     this.$inbox = this.mount.querySelector('.ava-inbox');
     this.$settings = this.mount.querySelector('.ava-settings');
     this.$hours = this.mount.querySelector('.ava-hours');
@@ -250,15 +241,16 @@
 
   Page.prototype.loadAll = function () {
     var self = this;
-    var from = iso(firstOfMonth(this.viewMonth)), to = iso(lastOfMonth(this.viewMonth));
+    // Link redesign 2026-08-27: dates/pending/slots reads retired with the
+    // calendar; nulls keep r[] positions so the assignments below are unchanged.
     Promise.all([
       API.getConfig(this.vendorId),
-      API.listDates(this.vendorId, from, to),
-      API.pendingRequests(this.vendorId),
+      Promise.resolve(null),
+      Promise.resolve(null),
       API.listHours(this.vendorId),
-      API.listWaitlist(this.vendorId),
+      API.listWaitlist(this.vendorId),         // general new-client queue rows
       API.waitlistOpen(this.vendorId),         // waitlist = Featured-only perk
-      API.listSlots(this.vendorId, from, to)   // slot-mode booked counts for the calendar
+      Promise.resolve(null)
     ]).then(function (r) {
       self.cfg = (r[0] && r[0].data) || {
         vendors_id: self.vendorId, is_enabled: false, capacity_mode: 'quantity',
@@ -281,12 +273,9 @@
   };
 
   Page.prototype.renderAll = function () {
-    this.renderInbox();
-    this.renderSettings();
+    this.renderNewClients();   // #121: accepting toggle + general queue, on top
+    this.renderBooking();      // external scheduling link (2026-08-27)
     this.renderHours();
-    this.renderDaysOff();
-    this.renderNewClients();   // #121: own card, above the sold-out date queues
-    this.renderWaitlist();
   };
 
   // ---- 1. Requests inbox ----------------------------------------------------
@@ -394,7 +383,7 @@
         var panel = document.createElement('div');
         panel.className = 'ava-decline-panel';
         panel.innerHTML =
-          '<textarea class="ava-decline-note" maxlength="500" rows="2" placeholder="Optional: a short note for the customer — e.g. “booked up that week, the 24th is open”. It goes in their email."></textarea>' +
+          '<textarea class="ava-decline-note" maxlength="500" rows="2" placeholder="Optional: a short note for the customer, e.g. “booked up that week, the 24th is open”. It goes in their email."></textarea>' +
           '<div class="ava-decline-btns">' +
             '<button type="button" class="ava-btn2 ava-decline-send" data-a="decline-send">Send decline</button>' +
             '<button type="button" class="ava-btn2" data-a="decline-cancel">Keep request</button></div>';
@@ -431,7 +420,7 @@
             self.pending = self.pending.filter(function (p) { return p.id !== id; });
             self.refreshMonth();
           } else {
-            actions.innerHTML = '<span class="ava-chip" style="background:#FAE9E2;color:#9E5F44;">Couldn’t update — reload</span>';
+            actions.innerHTML = '<span class="ava-chip" style="background:#FAE9E2;color:#9E5F44;">Couldn’t update. Reload</span>';
           }
         });
         return;
@@ -453,7 +442,7 @@
           self.refreshMonth();
         } else {
           actions.innerHTML = '<span class="ava-chip" style="background:#FAE9E2;color:#9E5F44;">' +
-            (res.reason === 'would_oversell' ? 'Would oversell this date' : 'Couldn’t update — reload') + '</span>';
+            (res.reason === 'would_oversell' ? 'Would oversell this date' : 'Couldn’t update. Reload') + '</span>';
         }
       });
     });
@@ -606,7 +595,7 @@
       msg.textContent = 'Saving…';
       API.saveConfig(self.vendorId, fields).then(function (r) {
         if (r && r.error) {
-          msg.textContent = 'Couldn’t save — availability needs a Pro or Featured plan.';
+          msg.textContent = 'Couldn’t save. Availability needs a Pro or Featured plan.';
           msg.style.color = '#9E5F44';
         } else {
           msg.textContent = 'Saved';
@@ -637,8 +626,8 @@
         '</div></div>' +
       '<p class="ava-sub" style="margin:0 0 8px;">' +
         (isSlot
-          ? 'Tap a date to block it. Numbers show booked of that day’s slots — only you see these.'
-          : 'Tap a date to block it. Numbers show confirmed of cap — only you see these.') + '</p>' +
+          ? 'Tap a date to block it. Numbers show booked of that day’s slots. Only you see these.'
+          : 'Tap a date to block it. Numbers show confirmed of cap. Only you see these.') + '</p>' +
       '<div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;font-size:11px;color:#B0ACBC;text-align:center;margin-bottom:5px;">' +
       DOW_MON.map(function (d) { return '<div>' + d + '</div>'; }).join('') + '</div>' +
       '<div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;">';
@@ -662,7 +651,7 @@
       }
       html += '<div class="ava-cell' + (blocked ? ' off' : closed ? ' closed' : '') + '" data-date="' + dISO + '"' +
         ' role="button" tabindex="0" aria-pressed="' + (!!blocked) + '"' +
-        ' aria-label="' + esc(prettyDate(dISO)) + (blocked ? ' — blocked (day off)' : ' — tap to block') + '">' +
+        ' aria-label="' + esc(prettyDate(dISO)) + (blocked ? ', blocked (day off)' : ', tap to block') + '">' +
         '<span>' + i + '</span>' +
         (sub ? '<span style="font-size:9px;font-weight:400;">' + sub + '</span>' : '') +
         '</div>';
@@ -690,7 +679,7 @@
             cell.classList.add('err');
             var hintEl = self.$daysoff.querySelector('.ava-sub');
             if (hintEl) {
-              hintEl.textContent = 'Couldn’t save that change — check you’re signed in on a Pro or Featured plan, then reload.';
+              hintEl.textContent = 'Couldn’t save that change. Check you’re signed in on a Pro or Featured plan, then reload.';
               hintEl.style.color = '#9E5F44';
             }
             setTimeout(function () { cell.classList.remove('err'); }, 1600);
@@ -701,6 +690,94 @@
         });
       });
     });
+  };
+
+  // ---- Booking link (link redesign 2026-08-27) --------------------------------
+  // The vendor's external scheduling link (Calendly/Acuity/Square etc.), shown
+  // on the storefront as the "Book an appointment" button. https-only — the DB
+  // CHECK enforces it (patch_booking_link.sql); this mirrors it as honest UI.
+  // Saved via the same availability_config upsert as everything else, so RLS's
+  // owns_vendor + Pro/Featured plan gate applies server-side.
+  var KNOWN_SCHEDULERS = [
+    ['calendly.com', 'Calendly'], ['acuityscheduling.com', 'Acuity Scheduling'],
+    ['squarespacescheduling.com', 'Acuity Scheduling'], ['square.site', 'Square Appointments'],
+    ['squareup.com', 'Square Appointments'], ['setmore.com', 'Setmore'], ['booksy.com', 'Booksy']
+  ];
+  function schedulerFor(url) {
+    try {
+      var h = new URL(url).hostname.replace(/^www\./i, '').toLowerCase();
+      for (var i = 0; i < KNOWN_SCHEDULERS.length; i++) {
+        var d = KNOWN_SCHEDULERS[i][0];
+        if (h === d || h.slice(-(d.length + 1)) === '.' + d) return KNOWN_SCHEDULERS[i][1];
+      }
+    } catch (e) {}
+    return null;
+  }
+  Page.prototype.renderBooking = function () {
+    var self = this;
+    var cur = (this.cfg && this.cfg.booking_url) || '';
+    this.$booking.innerHTML =
+      '<div class="ava-card">' +
+        '<h3>Booking link</h3>' +
+        '<p class="ava-note" style="margin:6px 0 12px;">Paste your scheduling link and customers book straight from your storefront with a &#8220;Book an appointment&#8221; button. Works with Calendly, Acuity, Square Appointments and similar &#8212; any secure (https) link.</p>' +
+        '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">' +
+          '<input type="url" class="ava-booking-url" maxlength="300" placeholder="https://calendly.com/your-business" value="' + esc(cur) + '" ' +
+            'style="flex:1;min-width:220px;font-family:inherit;font-size:14px;color:#45415A;border:1px solid #E4DEF4;border-radius:9px;padding:11px 12px;background:#fff;">' +
+          '<button type="button" class="ava-btn ava-booking-save">Save</button>' +
+          (cur ? '<u class="ava-sub ava-booking-clear" style="cursor:pointer;">remove</u>' : '') +
+        '</div>' +
+        '<p class="ava-booking-msg" style="margin:8px 0 0;font-size:12px;color:#6C6880;"></p>' +
+      '</div>';
+
+    var input = this.$booking.querySelector('.ava-booking-url');
+    var msg = this.$booking.querySelector('.ava-booking-msg');
+    function hint() {
+      var v = (input.value || '').trim();
+      if (!v) { msg.textContent = ''; return; }
+      if (!/^https:\/\/.+/i.test(v)) {
+        msg.style.color = '#9E5F44';
+        msg.textContent = 'The link must start with https:// — copy it from your scheduler’s share button.';
+        return;
+      }
+      var who = schedulerFor(v);
+      msg.style.color = '#3E7C5E';
+      msg.textContent = who ? '✓ ' + who + ' link recognized.' : '✓ Link looks good.';
+    }
+    input.addEventListener('input', hint);
+    hint();
+
+    function save(value) {
+      msg.style.color = '#6C6880'; msg.textContent = 'Saving…';
+      API.saveConfig(self.vendorId, {
+        booking_url: value,
+        updated_at: new Date().toISOString()
+      }).then(function (r) {
+        if (r && r.error) {
+          msg.style.color = '#9E5F44';
+          msg.textContent = 'Couldn’t save — use a full https:// link (SQL patch applied?).';
+          console.warn('[availability] booking_url save failed', r.error);
+        } else {
+          self.cfg.booking_url = value;
+          self.renderBooking();
+          var m2 = self.$booking.querySelector('.ava-booking-msg');
+          m2.style.color = '#3E7C5E';
+          m2.textContent = value ? 'Saved ✓ The button is live on your storefront.' : 'Removed ✓ The button is off your storefront.';
+        }
+      });
+    }
+    this.$booking.querySelector('.ava-booking-save').addEventListener('click', function () {
+      var v = (input.value || '').trim();
+      if (!v) { save(null); return; }
+      if (!/^https:\/\/.+\..+/i.test(v)) {
+        msg.style.color = '#9E5F44';
+        msg.textContent = 'That doesn’t look like a link — it must start with https://';
+        input.focus();
+        return;
+      }
+      save(v);
+    });
+    var clear = this.$booking.querySelector('.ava-booking-clear');
+    if (clear) clear.addEventListener('click', function () { input.value = ''; save(null); });
   };
 
   // ---- 4. Weekly hours (unified: storefront hours + slot generation) ----------
@@ -717,7 +794,10 @@
 
   Page.prototype.renderHours = function () {
     var self = this;
-    var isSlot = this.cfg.capacity_mode === 'slot';
+    // Link redesign 2026-08-27: slot GENERATION is retired with the calendar,
+    // so the per-window length/buffer preview never renders — hours are purely
+    // the storefront Hours card now.
+    var isSlot = false;
     var def = this.curDefaults();
     var byDay = {};
     this.hours.forEach(function (h) { (byDay[h.weekday] = byDay[h.weekday] || []).push(h); });
@@ -744,7 +824,7 @@
             var slots = expandWindow(openM, closeM, eDur, eBuf);
             extra =
               '<span class="ava-hprev">' +
-                (slots.length ? slots.map(fmt12).join(' · ') : 'no slot fits — widen this window or lower the length') +
+                (slots.length ? slots.map(fmt12).join(' · ') : 'no slot fits: widen this window or lower the length') +
               '</span>' +
               '<span class="ava-hovr' + (custom ? ' cust' : '') + '" data-ovr="' + w.id + '">' +
                 eDur + ' min' + (eBuf ? ' · ' + eBuf + ' buffer' : '') + (custom ? ' (custom)' : '') +
@@ -765,7 +845,7 @@
       if (self._copyFrom === wd && wins.length) {
         copyPanel =
           '<div class="ava-copy">' +
-            '<span class="ava-copyto">Copy ' + WDAYS[wd] + '’s hours to — this replaces those days’ existing hours:</span>' +
+            '<span class="ava-copyto">Copy ' + WDAYS[wd] + '’s hours to (this replaces those days’ existing hours):</span>' +
             [1, 2, 3, 4, 5, 6, 0].filter(function (d) { return d !== wd; }).map(function (d) {
               return '<label><input type="checkbox" class="ava-copyday" value="' + d + '" />' + WDAYS[d] + '</label>';
             }).join('') +
@@ -890,7 +970,6 @@
     return API.listHours(this.vendorId).then(function (rr) {
       self.hours = (rr && rr.data) || [];
       self.renderHours();
-      self.renderDaysOff();     // slot-mode calendar totals derive from the hours
     });
   };
 
@@ -903,7 +982,7 @@
       this.$waitlist.innerHTML =
         '<div class="ava-card" style="display:flex;align-items:center;justify-content:space-between;gap:14px;">' +
           '<div><h3>Sold-out date waitlist <span class="ava-chip" style="background:#FBEEDD;color:#B5793B;margin-left:6px;">Featured</span></h3>' +
-          '<p class="ava-note" style="margin:6px 0 0;">When a date sells out, Featured storefronts capture the demand — customers join a queue for that day and you offer freed spots. Every cancellation becomes a warm lead.</p></div>' +
+          '<p class="ava-note" style="margin:6px 0 0;">When a date sells out, Featured storefronts capture the demand: customers join a queue for that day and you offer freed spots. Every cancellation becomes a warm lead.</p></div>' +
           '<a href="/pricing" style="flex-shrink:0;background:' + BRAND + ';color:#fff;border-radius:9px;padding:10px 16px;font-size:13px;font-weight:600;text-decoration:none;">Upgrade</a>' +
         '</div>';
       return;
@@ -942,7 +1021,7 @@
         '<h3>New clients</h3>' +
         (general.length ? '<span class="ava-sub">' + general.length + ' waiting to be taken on</span>' : '') +
       '</div>' +
-      '<p class="ava-note" style="margin:0 0 12px;">Whether you\'re open to taking anyone new at all — not tied to any one date.</p>' +
+      '<p class="ava-note" style="margin:0 0 12px;">Whether you\'re open to taking anyone new at all, not tied to any one date.</p>' +
       // divs/spans only in this block — an injected <p> would be auto-closed by
       // the parser around the popover's inner blocks and mangle the tree.
       '<div class="ava-acceptrow" style="display:flex;align-items:center;justify-content:space-between;gap:12px;background:#F6F2FD;border:1px solid #E9E3F7;border-radius:10px;padding:10px 14px;">' +
@@ -952,8 +1031,7 @@
               '<button type="button" class="ava-info-x" aria-label="Close">✕</button>' +
               '<span class="ava-ip-h">Accepting new clients</span>' +
               '<span class="ava-ip-p"><b>On</b> &mdash; customers book you normally from your storefront.</span>' +
-              '<span class="ava-ip-p"><b>Off</b> &mdash; your page says your books are full. Instead of the booking calendar, new customers join the queue on THIS card, and when you have room you tap <b>Offer spot</b> to invite one. Your hours stay visible either way.</span>' +
-              '<span class="ava-ip-p">This is separate from the <b>sold-out date waitlist</b> below, where people wait on one particular day.</span>' +
+              '<span class="ava-ip-p"><b>Off</b> &mdash; your page says your books are full. Instead of the booking button, new customers join the queue on THIS card, and when you have room you tap <b>Offer spot</b> to invite one. Your hours stay visible either way.</span>' +
             '</span></span></div>' +
           '<p class="ava-note" style="margin:2px 0 0;">Off = new clients see a books-full note and can join the queue below.</p></div>' +
         '<span style="display:flex;align-items:center;gap:8px;flex-shrink:0;"><span class="ava-accepting-msg" style="font-size:12px;color:#6C6880;"></span>' +
@@ -1061,8 +1139,8 @@
     mount.className = 'lok-ava';
     mount.innerHTML =
       '<div class="ava-card" style="text-align:center;padding:34px 24px;">' +
-        '<p style="margin:0 0 6px;font-size:17px;font-weight:600;color:#3E3A55;">Availability calendar</p>' +
-        '<p class="ava-note" style="margin:0 auto 18px;max-width:420px;">Show customers which dates are open, limited, or sold out — and confirm each order so you never oversell a day. Available on Pro and Featured plans.</p>' +
+        '<p style="margin:0 0 6px;font-size:17px;font-weight:600;color:#3E3A55;">Booking &amp; hours</p>' +
+        '<p class="ava-note" style="margin:0 auto 18px;max-width:420px;">Show your weekly hours on your storefront and let customers book you directly through your Calendly, Acuity or Square scheduling link. Available on Pro and Featured plans.</p>' +
         '<a href="/pricing" style="display:inline-block;background:' + BRAND + ';color:#fff;border-radius:10px;' +
           'padding:12px 26px;font-size:14px;font-weight:600;text-decoration:none;">Upgrade to unlock</a>' +
       '</div>';
