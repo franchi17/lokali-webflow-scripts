@@ -1854,8 +1854,9 @@ var LokaliProfilePage = (function () {
     if (t.id === 'lok-pf-vidurl') return;
     var sec = t.closest ? t.closest('section') : null;
     var h = sec && sec.querySelector ? sec.querySelector('.section-heading') : null;
-    _rfDirtySection = h ? (h.textContent || '').trim() : '';
-    setTimeout(_refreshSaveBar, 0); // after the dirty-guard's own listener sets _dirty
+    _rfDirtySection = h ? (h.textContent || '').trim().replace(/\s*✓$/, '') : '';
+    _dirty = true; // same semantics as the dirty-guard's mark() — belt and braces
+    setTimeout(_refreshSaveBar, 0);
   }
   function _rfMoveAddress() {
     var bizSec = _rfSectionByHeading(/business information/i);
