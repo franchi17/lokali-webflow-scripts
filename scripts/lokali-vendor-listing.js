@@ -83,13 +83,13 @@
   var ASSET = 'https://cdn.prod.website-files.com/6989095758ae17edfc424d30/';
   var CAT_BY_ID = {
     1: { bg: '#FFF8E6', text: '#8A5A00', url: ASSET + '6a186b061a80eb9ba75f0d0a_scissors-solid.png' }, // Handcrafted
-    2: { bg: '#F0F0F8', text: '#4A4761', url: ASSET + '6a18f6d4b01673d30ca9bcb8_briefcase.svg' },       // Business
+    2: { bg: '#F6EEF5', text: '#7A3B6D', url: ASSET + '6a18f6d4b01673d30ca9bcb8_briefcase.svg' },       // Business
     3: { bg: '#FEF3F2', text: '#C0392B', url: ASSET + '6a18f2524e31974a75003735_hair%20dryer.svg' },    // Beauty
     4: { bg: '#E6F1FB', text: '#1A5C9A', url: ASSET + '6a18f6d4f1bbd4795f5345bc_backpack.svg' },        // Children
     5: { bg: '#F3EBFF', text: '#6002EE', url: ASSET + '6a18f6d414c76bb968f180db_balloon.svg' },         // Events
     6: { bg: '#FFF3EA', text: '#FF6B00', url: ASSET + '6a186b067365d964abee8918_utensils-solid.png' },  // Food
     7: { bg: '#EAFAF2', text: '#1D6A45', url: ASSET + '6a186b06cfcb6c4d6d1e1cf7_heart-regular.png' },    // Wellness
-    8: { bg: '#F7F6FC', text: '#4A4761', url: ASSET + '6a186b06a37dcea6514f15f9_house-regular.png' },    // Home
+    8: { bg: '#E7F4F2', text: '#1F6E66', url: ASSET + '6a186b06a37dcea6514f15f9_house-regular.png' },    // Home
     9: { bg: '#EEF3F8', text: '#2C5470', url: ASSET + '6a89a66cb52c25150db94d06_user-tie-solid.svg' } // Professional Services (#152, FA user-tie)
   };
 

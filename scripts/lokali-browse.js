@@ -74,13 +74,13 @@
   // label = short sidebar label; bg/text = card pill colors (icon is masked to `text`).
   var CAT_BY_ID = {
     1: { slug: 'handcrafted', label: 'Handcrafted Goods', bg: '#FFF8E6', text: '#8A5A00' },
-    2: { slug: 'business',    label: 'Business',          bg: '#F0F0F8', text: '#4A4761' },
+    2: { slug: 'business',    label: 'Business',          bg: '#F6EEF5', text: '#7A3B6D' },
     3: { slug: 'beauty',      label: 'Beauty',            bg: '#FEF3F2', text: '#C0392B' },
     4: { slug: 'children',    label: 'Children',          bg: '#E6F1FB', text: '#1A5C9A' },
     5: { slug: 'events',      label: 'Events & Entertainment',            bg: '#F3EBFF', text: '#6002EE' },
     6: { slug: 'food',        label: 'Food',              bg: '#FFF3EA', text: '#FF6B00' },
     7: { slug: 'wellness',    label: 'Wellness',          bg: '#EAFAF2', text: '#1D6A45' },
-    8: { slug: 'home',        label: 'Home & Property',              bg: '#F7F6FC', text: '#4A4761' },
+    8: { slug: 'home',        label: 'Home & Property',              bg: '#E7F4F2', text: '#1F6E66' },
     // #152 2026-08-22 — legal / tax / insurance / financial planning (patch_professional_services_category.sql)
     9: { slug: 'professional', label: 'Professional Services', bg: '#EEF3F8', text: '#2C5470' }
   };
