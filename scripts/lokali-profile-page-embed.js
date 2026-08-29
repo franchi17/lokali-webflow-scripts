@@ -1592,7 +1592,10 @@ var LokaliProfilePage = (function () {
       // The heading + icon keep their normal-page margins, which read as a
       // "floating" title once the row is a centered flex line — zero the
       // vertical box so every piece truly centers (F 2026-08-29).
-      '.lok-collapsed .form-heading-div > *{margin-top:0 !important;margin-bottom:0 !important;padding-top:0 !important;padding-bottom:0 !important;}',
+      // align-self too: Webflow's .section-heading carries align-self:flex-start,
+      // which silently beat the row's align-items:center — the real cause of
+      // the "floating title" (F 2026-08-29; margins alone did not fix it).
+      '.lok-collapsed .form-heading-div > *{margin-top:0 !important;margin-bottom:0 !important;padding-top:0 !important;padding-bottom:0 !important;align-self:center !important;}',
       '.lok-collapsed .form-heading-div .section-heading{line-height:1.25;}',
       '.lok-collapsed{padding-top:6px;padding-bottom:6px;}',
       // completeness strip

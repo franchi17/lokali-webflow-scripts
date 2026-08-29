@@ -361,8 +361,30 @@
     }
   }
 
+  // F 2026-08-29: the read-only surfaces sink to the BOTTOM of the sidebar —
+  // My Storefront, Analytics and Leads ask nothing of the vendor, so the
+  // actionable pages (Profile/Services/Products/Availability/Marketing) stay
+  // together up top. Matched by menu LABEL, not href: the storefront link is
+  // runtime-rewritten to the vendor's live /{slug} URL. The mobile drawer
+  // slides this same DOM, so one reorder covers both surfaces.
+  function sinkReadOnlyMenuItems() {
+    var order = { 'My Storefront': 1, 'My Listing': 1, 'Analytics': 2, 'Leads': 3 };
+    var items = document.querySelectorAll('strong.dashboard-menu');
+    var found = [];
+    for (var i = 0; i < items.length; i++) {
+      var t = (items[i].textContent || '').trim();
+      if (order[t]) {
+        var a = items[i].closest ? items[i].closest('a') : null;
+        if (a && a.parentNode) found.push({ a: a, o: order[t] });
+      }
+    }
+    found.sort(function (x, y) { return x.o - y.o; });
+    found.forEach(function (f) { f.a.parentNode.appendChild(f.a); });
+  }
+
   function init() {
     renameMyListing(); // runs page-wide even when the chip below is absent
+    sinkReadOnlyMenuItems();
     // Target ONLY the native dashboard-sidebar chip. The header account menu
     // (lokali-auth-nav.js) reuses the same .lok-acct/.lok-acct-name classes but
     // marks its wrapper with data-lok-acct="1" — exclude it, or this would
