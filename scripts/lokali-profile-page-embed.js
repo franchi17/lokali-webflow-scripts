@@ -1596,7 +1596,14 @@ var LokaliProfilePage = (function () {
       // which silently beat the row's align-items:center — the real cause of
       // the "floating title" (F 2026-08-29; margins alone did not fix it).
       '.lok-collapsed .form-heading-div > *{margin-top:0 !important;margin-bottom:0 !important;padding-top:0 !important;padding-bottom:0 !important;align-self:center !important;}',
+      // Heading-icon imgs draw INSIDE their padding box — stripping only the
+      // vertical padding left them 0×5px and squashed the artwork (F: "wonky").
+      // Zero it uniformly so the glyph fills its box undistorted.
+      '.lok-collapsed .form-heading-div > img.heading-icon, .lok-collapsed .form-heading-div > svg{padding:0 !important;}',
       '.lok-collapsed .form-heading-div .section-heading{line-height:1.25;}',
+      // Collapse/Change/Edit pin to the row\'s RIGHT in both states (F: the
+      // expanded card\'s Collapse was hugging the title).
+      '.form-heading-div .lok-change-btn{margin-left:auto;}',
       '.lok-collapsed{padding-top:6px;padding-bottom:6px;}',
       // completeness strip
       '#lok-complete-strip{background:#fff;border:1px solid #E9E5F5;border-radius:14px;padding:12px 16px;display:flex;align-items:center;gap:14px;margin:0 0 10px;font-family:"Plus Jakarta Sans",sans-serif;flex-wrap:wrap;}',
