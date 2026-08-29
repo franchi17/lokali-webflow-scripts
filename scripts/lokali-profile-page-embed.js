@@ -1210,6 +1210,10 @@ var LokaliProfilePage = (function () {
   // portfolio frames; pressing any thumb makes it active; dragging the thumb
   // or the preview moves both, and the row saves once on release.
   var _pfActive = 0;
+  // UX refresh 2026-08-29: the big crop preview no longer sits permanently
+  // under the thumbs (it doubled the card's height with a copy of the lead
+  // photo). It opens when a thumb is pressed and closes from its ✕.
+  var _pfPreviewOpen = false;
   function _pfPaintPreview() {
     var im = document.getElementById('lok-pf-cover-preview');
     var lab = document.getElementById('lok-pf-preview-label');
@@ -1218,7 +1222,7 @@ var LokaliProfilePage = (function () {
     // #117-MIN: a VIDEO row has no crop to choose — the embed player is not
     // object-fit-cropped. Hide the preview while a video is the active tile.
     if (ph && ph.video_url && !ph.image_url) { if (wrap0) wrap0.style.display = 'none'; return; }
-    if (wrap0) wrap0.style.display = '';
+    if (wrap0) wrap0.style.display = _pfPreviewOpen ? '' : 'none';
     if (!im || !ph) return;
     if (im.src !== ph.image_url) im.src = ph.image_url;
     im.style.objectPosition = (ph.image_focus_x != null && ph.image_focus_y != null)
@@ -1495,9 +1499,18 @@ var LokaliProfilePage = (function () {
         var pw = document.createElement('div');
         pw.id = 'lok-pf-preview-wrap';
         pw.style.cssText = 'margin-top:14px;white-space:normal;';
+        // Refresh: closed until a thumb is pressed (see _pfPreviewOpen).
+        var plabRow = document.createElement('div');
+        plabRow.style.cssText = 'display:flex;align-items:flex-start;gap:8px;';
         var plab = document.createElement('div');
         plab.id = 'lok-pf-preview-label';
-        plab.style.cssText = 'font-size:12px;font-weight:600;color:#4A4761;margin-bottom:6px;';
+        plab.style.cssText = 'font-size:12px;font-weight:600;color:#4A4761;margin-bottom:6px;flex:1;';
+        var pclose = document.createElement('button');
+        pclose.type = 'button';
+        pclose.textContent = '✕';
+        pclose.title = 'Close the crop preview';
+        pclose.style.cssText = 'border:1px solid #EEEDF6;background:#fff;border-radius:6px;font:600 11px/1 "Plus Jakarta Sans",sans-serif;color:#1A1829;padding:6px 8px;cursor:pointer;flex-shrink:0;';
+        pclose.addEventListener('click', function () { _pfPreviewOpen = false; _pfPaintPreview(); });
         var pframe = document.createElement('div');
         pframe.style.cssText = 'width:300px;max-width:100%;height:180px;border-radius:12px;overflow:hidden;border:1px solid #EEEDF6;background:#F7F6FC;box-shadow:0 2px 8px rgba(26,24,41,.08);';
         var pimg = document.createElement('img');
@@ -1505,11 +1518,22 @@ var LokaliProfilePage = (function () {
         pimg.alt = 'Portfolio crop preview';
         pimg.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';
         pframe.appendChild(pimg);
-        pw.appendChild(plab); pw.appendChild(pframe);
+        plabRow.appendChild(plab); plabRow.appendChild(pclose);
+        pw.appendChild(plabRow); pw.appendChild(pframe);
         strip.parentNode.insertBefore(pw, strip.nextSibling);
         _pfWireDrag(pimg, -1);            // -1 = "the active photo"
+        // Pressing any thumb opens the preview for that photo (the drag wiring
+        // already sets _pfActive; this just reveals the frame).
+        if (!strip.dataset.lokPreviewOpener) {
+          strip.dataset.lokPreviewOpener = '1';
+          strip.addEventListener('pointerdown', function (ev) {
+            var t = ev.target;
+            if (t && t.tagName === 'IMG') { _pfPreviewOpen = true; setTimeout(_pfPaintPreview, 0); }
+          });
+        }
         _pfPaintPreview();
       }
+      if (typeof _refreshNavStates === 'function') _refreshNavStates();
       var add = document.getElementById('lok-pf-add');
       if (add) add.style.display = _pfPhotos.length >= _PF_MAX ? 'none' : '';
     });
@@ -1524,6 +1548,400 @@ var LokaliProfilePage = (function () {
       S.photos.setSort('vendor', a.id, j + 1),
       S.photos.setSort('vendor', b.id, i + 1)
     ]).then(_renderPortfolio);
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // UX REFRESH 2026-08-29 (F-approved mockup, artifact "Profile Page Refresh").
+  // The page was ~6.5 screens of scroll; these passes cut it roughly in half
+  // WITHOUT removing a single field:
+  //   1. Short fields go two-column (Payments, Meet-the-Vendor pairs).
+  //   2. The address moves from About-Your-Business into Business Information
+  //      (operational data with phone/email, not storytelling).
+  //   3. Filled set-once sections COLLAPSE to a one-line summary + Change
+  //      (Market card, Logo, Categories & Areas, Payments; Meet-the-Vendor
+  //      only once the intro is written). Inputs stay in the DOM hidden, so
+  //      _getFormValues/SAVE read them unchanged.
+  //   4. A completeness strip up top says what is done and the ONE next thing;
+  //      nav pills get ✓ marks and a scrollspy active state.
+  //   5. One sticky SAVE bar appears only while something is unsaved,
+  //      replacing the two buttons that scrolled away.
+  // Section headers keep their existing icons untouched (F 2026-08-29).
+  // Everything is idempotent (guards by id) and degrades to the old layout if
+  // a target element is missing.
+  // ═══════════════════════════════════════════════════════════════════════
+  function _rfSectionByHeading(re) {
+    var heads = document.querySelectorAll('.section-heading');
+    for (var i = 0; i < heads.length; i++) {
+      if (re.test(heads[i].textContent || '')) return heads[i].closest ? heads[i].closest('section') : null;
+    }
+    return null;
+  }
+  function _rfInjectCss() {
+    if (document.getElementById('lok-refresh-css')) return;
+    var s = document.createElement('style');
+    s.id = 'lok-refresh-css';
+    s.textContent = [
+      '.lok-2col{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 18px;align-items:start;}',
+      '.lok-2col > *{min-width:0;}',
+      '.lok-span2{grid-column:1 / -1;}',
+      '.lok-sec-summary{flex:1;min-width:0;font:500 13px/1.5 "Plus Jakarta Sans",sans-serif;color:#6B6880;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
+      '.lok-chip-done{display:inline-flex;align-items:center;font:700 10.5px/1.3 "Plus Jakarta Sans",sans-serif;border-radius:100px;padding:2px 8px;background:#C6F2DB;color:#11744A;margin-left:8px;flex-shrink:0;}',
+      '.lok-change-btn{font:700 13px/1 "Plus Jakarta Sans",sans-serif;color:#6002EE;background:none;border:none;cursor:pointer;padding:12px 8px;min-height:44px;flex-shrink:0;}',
+      '.lok-change-btn:hover{color:#4A00B8;}',
+      '.lok-collapsed .form-heading-div{display:flex;align-items:center;gap:10px;margin-bottom:0;cursor:pointer;}',
+      '.lok-collapsed{padding-top:6px;padding-bottom:6px;}',
+      // completeness strip
+      '#lok-complete-strip{background:#fff;border:1px solid #E9E5F5;border-radius:14px;padding:12px 16px;display:flex;align-items:center;gap:14px;margin:0 0 10px;font-family:"Plus Jakarta Sans",sans-serif;flex-wrap:wrap;}',
+      '#lok-complete-ring{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;}',
+      '#lok-complete-ring > div{width:32px;height:32px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font:800 10.5px/1 "Plus Jakarta Sans",sans-serif;color:#6002EE;}',
+      // save bar — sticky inside the form column, so no sidebar math needed
+      '#lok-savebar{position:sticky;bottom:10px;z-index:44;background:rgba(255,255,255,.97);border:1px solid #E9E5F5;border-radius:14px;box-shadow:0 6px 24px rgba(26,24,41,.12);padding:10px 16px;display:none;align-items:center;justify-content:space-between;gap:12px;margin-top:14px;font-family:"Plus Jakarta Sans",sans-serif;}',
+      '#lok-savebar.on{display:flex;}',
+      '#lok-savebar-note{font:600 13px/1.4 "Plus Jakarta Sans",sans-serif;color:#9A6B00;min-width:0;}',
+      // nav pill states (pills are <a> injected by _reorderProfileSections)
+      '#lok-profile-nav a.lok-nav-active{border-color:#6002EE !important;color:#6002EE !important;background:#F3EBFF !important;}',
+      '@media (max-width: 767px){',
+      '  .lok-2col{grid-template-columns:1fr;}',
+      '  #lok-savebar{bottom:0;border-radius:14px 14px 0 0;margin-left:-8px;margin-right:-8px;}',
+      '  .lok-sec-summary{white-space:normal;}',
+      '}'
+    ].join('\n');
+    document.head.appendChild(s);
+  }
+  // Pair up label+field nodes into a 2-col grid. ids = field ids in order;
+  // each field's label is its previous .input-heading sibling. fullWidthIds
+  // span both columns.
+  function _rfTwoCol(container, ids, fullWidthIds) {
+    if (!container || container.dataset.lok2col) return;
+    container.dataset.lok2col = '1';
+    var grid = document.createElement('div');
+    grid.className = 'lok-2col';
+    var moved = false;
+    ids.forEach(function (id) {
+      var f = document.getElementById(id);
+      if (!f || !container.contains(f)) return;
+      var label = f.previousElementSibling;
+      var cell = document.createElement('div');
+      if (fullWidthIds && fullWidthIds.indexOf(id) !== -1) cell.className = 'lok-span2';
+      container.insertBefore(grid, f); // keeps the grid at the first field's position (no-op after first)
+      if (label && /input-heading/.test(label.className || '')) cell.appendChild(label);
+      cell.appendChild(f);
+      grid.appendChild(cell);
+      moved = true;
+    });
+    if (!moved && grid.parentNode) grid.parentNode.removeChild(grid);
+  }
+  // Collapse a section card to its heading row + summary + Change.
+  function _rfCollapse(section, summaryText, changeLabel) {
+    if (!section || section.dataset.lokCollapsed) return;
+    var head = section.querySelector('.form-heading-div');
+    if (!head) return;
+    section.dataset.lokCollapsed = '1';
+    section.classList.add('lok-collapsed');
+    var hidden = [];
+    for (var i = 0; i < section.children.length; i++) {
+      var ch = section.children[i];
+      if (ch === head) continue;
+      if (ch.style.display !== 'none') { hidden.push([ch, ch.style.display]); ch.style.display = 'none'; }
+    }
+    var sum = document.createElement('span');
+    sum.className = 'lok-sec-summary';
+    sum.textContent = summaryText || '';
+    var chip = document.createElement('span');
+    chip.className = 'lok-chip-done';
+    chip.textContent = '✓';
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'lok-change-btn';
+    btn.textContent = changeLabel || 'Change';
+    head.appendChild(chip);
+    head.appendChild(sum);
+    head.appendChild(btn);
+    function expand() {
+      if (!section.dataset.lokCollapsed) return;
+      delete section.dataset.lokCollapsed;
+      section.classList.remove('lok-collapsed');
+      hidden.forEach(function (p) { p[0].style.display = p[1]; });
+      [chip, sum, btn].forEach(function (n) { if (n.parentNode) n.parentNode.removeChild(n); });
+    }
+    btn.addEventListener('click', function (ev) { ev.stopPropagation(); expand(); });
+    head.addEventListener('click', expand);
+    section._lokExpand = expand;
+  }
+  function _rfExpandAndGo(section) {
+    if (!section) return;
+    if (section._lokExpand) section._lokExpand();
+    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  function _rfCategoryName() {
+    var sel = _getCategorySelect();
+    var id = sel && sel.value !== '' ? sel.value : (_vendor && _vendor.categories_id && _vendor.categories_id[0]);
+    if (id == null || !_categories) return '';
+    for (var i = 0; i < _categories.length; i++) {
+      var c = _categories[i];
+      if (String(c.id != null ? c.id : c.category_id) === String(id)) return c.name || c.category_name || '';
+    }
+    return '';
+  }
+  function _rfPayFilled() {
+    var vals = [];
+    ['venmo_username', 'cashapp_cashtag', 'paypalme_slug', 'zelle_contact', 'other_pay_url'].forEach(function (k) {
+      if (_vendor && _vendor[k]) vals.push(k);
+    });
+    return vals;
+  }
+  function _rfEssentials() {
+    var v = _vendor || {};
+    var locs = (_selectedLocationIds && _selectedLocationIds.length) || (Array.isArray(v.locations_id) && v.locations_id.length);
+    return [
+      { key: 'name',     done: !!v.business_name,        label: 'business name',      sec: _rfSectionByHeading(/business information/i) },
+      { key: 'category', done: !!(v.categories_id && v.categories_id.length) && !!locs, label: 'category and areas', sec: _rfSectionByHeading(/categories\s*&\s*locations/i) },
+      { key: 'address',  done: !!v.address,              label: 'business address',   sec: _rfSectionByHeading(/business information/i) },
+      { key: 'desc',     done: !!v.business_description, label: 'business description', sec: _rfSectionByHeading(/about your business/i) },
+      { key: 'tagline',  done: !!(v.business_tagline || v.tagline), label: 'tagline', sec: _rfSectionByHeading(/about your business/i) },
+      { key: 'logo',     done: !!v.profile_photo,        label: 'logo',               sec: _rfSectionByHeading(/upload your logo|profile photo/i) }
+    ];
+  }
+  function _rfInjectCompleteness() {
+    var old = document.getElementById('lok-complete-strip');
+    if (old) old.remove();
+    var head = document.getElementById('lok-profile-head');
+    if (!head || !head.parentNode) return;
+    var es = _rfEssentials();
+    var done = es.filter(function (e) { return e.done; }).length;
+    var strip = document.createElement('div');
+    strip.id = 'lok-complete-strip';
+    var pct = Math.round((done / es.length) * 360);
+    var ring = document.createElement('div');
+    ring.id = 'lok-complete-ring';
+    ring.style.background = 'conic-gradient(#6002EE 0 ' + pct + 'deg, #EDE9F8 ' + pct + 'deg 360deg)';
+    var inner = document.createElement('div');
+    inner.textContent = done + '/' + es.length;
+    ring.appendChild(inner);
+    strip.appendChild(ring);
+    var txt = document.createElement('div');
+    txt.style.cssText = 'min-width:0;flex:1;';
+    var line1 = document.createElement('div');
+    line1.style.cssText = 'font:700 13.5px/1.4 "Plus Jakarta Sans",sans-serif;color:#1A1829;';
+    var line2 = document.createElement('div');
+    line2.style.cssText = 'font:500 12.5px/1.5 "Plus Jakarta Sans",sans-serif;color:#6B6880;';
+    var next = null;
+    for (var i = 0; i < es.length; i++) { if (!es[i].done) { next = es[i]; break; } }
+    if (next) {
+      line1.textContent = 'Your storefront basics: ' + done + ' of ' + es.length + ' done.';
+      line2.textContent = 'Next: add your ' + next.label + '. ';
+      var go = document.createElement('a');
+      go.href = '#';
+      go.textContent = 'Take me there →';
+      go.style.cssText = 'color:#6002EE;font-weight:700;text-decoration:none;';
+      (function (sec) {
+        go.addEventListener('click', function (ev) { ev.preventDefault(); _rfExpandAndGo(sec); });
+      })(next.sec);
+      line2.appendChild(go);
+    } else if (_vendor && !_vendor.owner_bio) {
+      line1.textContent = 'Your storefront basics are all set.';
+      line2.textContent = 'One idea: a short personal intro. Personal sells. ';
+      var go2 = document.createElement('a');
+      go2.href = '#';
+      go2.textContent = 'Add it →';
+      go2.style.cssText = 'color:#6002EE;font-weight:700;text-decoration:none;';
+      go2.addEventListener('click', function (ev) { ev.preventDefault(); _rfExpandAndGo(document.getElementById('lok-about-you')); });
+      line2.appendChild(go2);
+    } else {
+      line1.textContent = 'Your storefront profile is complete.';
+      line2.textContent = 'Everything below is live on your public page.';
+    }
+    txt.appendChild(line1); txt.appendChild(line2);
+    strip.appendChild(txt);
+    head.parentNode.insertBefore(strip, head.nextSibling);
+  }
+  function _refreshNavStates() {
+    var nav = document.getElementById('lok-profile-nav');
+    if (!nav) return;
+    var v = _vendor || {};
+    var doneBySec = {
+      'lok-portfolio-card': _pfPhotos && _pfPhotos.length > 0,
+      'lok-card-photo': !!v.card_photo_url,
+      'lok-sec-logo': !!v.profile_photo,
+      'lok-sec-business': !!(v.business_name && v.address),
+      'lok-about-you': !!v.owner_bio,
+      'lok-pay-card': _rfPayFilled().length > 0
+    };
+    var links = nav.querySelectorAll('a');
+    links.forEach(function (a) {
+      var id = (a.getAttribute('href') || '').replace('#', '');
+      var base = a.textContent.replace(/\s*✓$/, '');
+      a.textContent = doneBySec[id] ? base + ' ✓' : base;
+    });
+  }
+  function _rfScrollspy() {
+    if (window.__lokScrollspy || !('IntersectionObserver' in window)) return;
+    var nav = document.getElementById('lok-profile-nav');
+    if (!nav) return;
+    window.__lokScrollspy = true;
+    var links = nav.querySelectorAll('a');
+    var byId = {};
+    links.forEach(function (a) { byId[(a.getAttribute('href') || '').replace('#', '')] = a; });
+    var obs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        links.forEach(function (a) { a.classList.remove('lok-nav-active'); });
+        var a = byId[en.target.id];
+        if (a) a.classList.add('lok-nav-active');
+      });
+    }, { rootMargin: '-15% 0px -70% 0px' });
+    Object.keys(byId).forEach(function (id) {
+      var sec = document.getElementById(id);
+      if (sec) obs.observe(sec);
+    });
+  }
+  var _rfDirtySection = '';
+  function _refreshSaveBar() {
+    var bar = document.getElementById('lok-savebar');
+    if (!bar) return;
+    bar.classList.toggle('on', !!_dirty);
+    var note = document.getElementById('lok-savebar-note');
+    if (note) note.textContent = _rfDirtySection ? '● Unsaved changes in ' + _rfDirtySection : '● Unsaved changes';
+  }
+  function _rfInjectSaveBar() {
+    // The old buttons hide on EVERY pass — the bottom clone is injected by
+    // bindEvents BETWEEN the two populateUI runs, so the first pass can't see it.
+    var oldRow0 = document.getElementById('lok-save-row');
+    if (oldRow0) oldRow0.style.display = 'none';
+    var bottom0 = document.getElementById(SAVE_BTN_BOTTOM);
+    if (bottom0 && bottom0.parentNode) bottom0.parentNode.style.display = 'none';
+    if (document.getElementById('lok-savebar')) return;
+    var topBtn = document.getElementById(SAVE_BTN);
+    if (!topBtn) return;
+    var container = document.getElementById('lok-profile-head') && document.getElementById('lok-profile-head').parentNode;
+    if (!container) return;
+    var bar = document.createElement('div');
+    bar.id = 'lok-savebar';
+    var note = document.createElement('span');
+    note.id = 'lok-savebar-note';
+    note.textContent = '● Unsaved changes';
+    bar.appendChild(note);
+    // Move the REAL save button in (same node — bindEvents' click handler and
+    // _setSaving's id lookups keep working untouched).
+    topBtn.style.margin = '0';
+    bar.appendChild(topBtn);
+    container.appendChild(bar);
+    var oldRow = document.getElementById('lok-save-row');
+    if (oldRow) oldRow.style.display = 'none';
+    var bottom = document.getElementById(SAVE_BTN_BOTTOM);
+    if (bottom && bottom.parentNode) bottom.parentNode.style.display = 'none';
+    // Mirror the dirty-guard's triggers to show the bar and name the section.
+    document.addEventListener('input', _rfDirtyPing, true);
+    document.addEventListener('change', _rfDirtyPing, true);
+  }
+  function _rfDirtyPing(e) {
+    if (_populating) return;
+    var t = e.target;
+    if (!t || t.type === 'file') return;
+    var tag = t.tagName;
+    if (tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT') return;
+    // Photo-adjacent inputs autosave (video url field) — no bar for those.
+    if (t.id === 'lok-pf-vidurl') return;
+    var sec = t.closest ? t.closest('section') : null;
+    var h = sec && sec.querySelector ? sec.querySelector('.section-heading') : null;
+    _rfDirtySection = h ? (h.textContent || '').trim() : '';
+    setTimeout(_refreshSaveBar, 0); // after the dirty-guard's own listener sets _dirty
+  }
+  function _rfMoveAddress() {
+    var bizSec = _rfSectionByHeading(/business information/i);
+    var addrInput = _getAddressEl();
+    if (!bizSec || !addrInput || bizSec.dataset.lokAddr) return;
+    var aboutSec = addrInput.closest('section');
+    if (!aboutSec || aboutSec === bizSec) return; // already there / unknown layout
+    // Collect the address block: its heading, the explainer line(s) before the
+    // input, the input, and everything after it up to the next input-heading
+    // (the "Required: why we ask" note) — moved as one wrapper.
+    var col = addrInput.parentNode;
+    var nodes = [];
+    var start = null;
+    var cur = addrInput;
+    while (cur && cur.previousElementSibling) {
+      var p = cur.previousElementSibling;
+      if (/input-heading/.test(p.className || '') && /address/i.test(p.textContent || '')) { start = p; break; }
+      if (/input-heading/.test(p.className || '')) break; // some other field's label — stop
+      cur = p;
+    }
+    if (!start) return;
+    var n = start;
+    while (n) {
+      var nx = n.nextElementSibling;
+      nodes.push(n);
+      if (n === addrInput) {
+        // include trailing non-heading notes (required/why-we-ask, error slots)
+        while (nx && !/input-heading/.test(nx.className || '') && nx.tagName !== 'SECTION') {
+          nodes.push(nx);
+          var nx2 = nx.nextElementSibling;
+          nx = nx2;
+        }
+        break;
+      }
+      n = nx;
+    }
+    if (!nodes.length) return;
+    bizSec.dataset.lokAddr = '1';
+    var wrap = document.createElement('div');
+    wrap.id = 'lok-addr-block';
+    wrap.style.cssText = 'grid-column:1 / -1;margin-top:10px;min-width:0;';
+    nodes.forEach(function (nd) { wrap.appendChild(nd); });
+    var grid = bizSec.querySelector('.w-layout-grid') || bizSec;
+    grid.appendChild(wrap);
+  }
+  function _applyProfileRefresh() {
+    try {
+      _rfInjectCss();
+      // 2-col passes
+      var pay = document.getElementById('lok-pay-card');
+      if (pay) {
+        _rfTwoCol(pay.querySelector('.div-block-47') || pay, ['input-venmo', 'input-cashapp', 'input-paypal', 'input-zelle', 'input-otherpay-url', 'input-otherpay-label']);
+      }
+      var about = document.getElementById('lok-about-you');
+      if (about) {
+        _rfTwoCol(about.querySelector('.div-block-47') || about, ['input-owner-name', 'input-owner-languages', 'input-owner-bio'], ['input-owner-bio']);
+      }
+      _rfMoveAddress();
+      // collapse passes (filled set-once sections only)
+      var v = _vendor || {};
+      if (v.card_photo_url) {
+        _rfCollapse(document.getElementById('lok-card-photo'), 'Chosen. Shoppers see it on your card in The Market.');
+      }
+      var logoSec = _rfSectionByHeading(/upload your logo|profile photo/i);
+      if (logoSec && !logoSec.id) logoSec.id = 'lok-sec-logo';
+      if (v.profile_photo) _rfCollapse(logoSec, 'Uploaded. Shown beside your name everywhere.');
+      var catSec = _rfSectionByHeading(/categories\s*&\s*locations/i);
+      var locCount = (_selectedLocationIds && _selectedLocationIds.length) || (Array.isArray(v.locations_id) ? v.locations_id.length : 0);
+      if (catSec && v.categories_id && v.categories_id.length && locCount) {
+        var catName = _rfCategoryName();
+        _rfCollapse(catSec, (catName ? catName + ' · ' : '') + 'Serving ' + locCount + ' area' + (locCount === 1 ? '' : 's'));
+      }
+      var payFilled = _rfPayFilled();
+      if (pay && payFilled.length) {
+        var payLabel = { venmo_username: 'Venmo', cashapp_cashtag: 'Cash App', paypalme_slug: 'PayPal', zelle_contact: 'Zelle', other_pay_url: 'Link' };
+        _rfCollapse(pay, payFilled.map(function (k) { return payLabel[k]; }).join(' · ') + ' linked', 'Edit');
+      }
+      if (about && v.owner_bio) {
+        _rfCollapse(about, (v.owner_name ? v.owner_name : 'Filled') + (v.owner_languages ? ' · ' + v.owner_languages : ''), 'Edit');
+      }
+      // Free-plan locked gallery shrinks to one line (never the first thing a
+      // Free vendor scrolls into).
+      if (!(_PF_MAX > 0)) {
+        var pf = document.getElementById('lok-portfolio-card');
+        _rfCollapse(pf, 'A Pro & Featured feature: the photo gallery at the top of your page.', 'See plans');
+        if (pf && pf._lokExpand) {
+          // "See plans" should go to pricing, not expand the lock card.
+          var b = pf.querySelector('.lok-change-btn');
+          if (b) { var nb = b.cloneNode(true); b.parentNode.replaceChild(nb, b); nb.addEventListener('click', function () { window.location.href = '/pricing'; }); }
+        }
+      }
+      _rfInjectCompleteness();
+      _refreshNavStates();
+      _rfScrollspy();
+      _rfInjectSaveBar();
+    } catch (e) { console.warn('[ProfilePage] refresh layer skipped:', e); }
   }
 
   function populateUI() {
@@ -1597,6 +2015,7 @@ var LokaliProfilePage = (function () {
       if (categorySelect) categorySelect.value = String(primaryCategory);
     }
     _initCategoryPills();
+    _applyProfileRefresh();
   }
 
   function _parseLocationsArray(data) {
@@ -2246,6 +2665,7 @@ var LokaliProfilePage = (function () {
             _vendor = res.data;
             if (_vendor && _vendor.profile_photo) _uploadedProfilePhotoUrl = null;
             _dirty = false; // saved — clear the leave-page warning
+            if (typeof _refreshSaveBar === 'function') _refreshSaveBar();
             _showSuccessPopup();
             // Out-of-area? The resolve route already returned the trigger's
             // verdict — no second query needed when the geo was written.
