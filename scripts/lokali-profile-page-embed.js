@@ -1641,6 +1641,12 @@ var LokaliProfilePage = (function () {
       // margins inflate the gap) — pin the head 12px above its first field,
       // measured, and keep collapsed heads flush so the summary tucks 2px
       // under the title line instead of drifting.
+      // Webflow's phone breakpoint gives the Business Information grid a FIXED
+      // 362px column track (Designer artifact) — wider than a phone card's
+      // content box, so every field ran off the right edge (F 2026-08-29,
+      // measured: track 362px vs 334px box). Force the track fluid.
+      '  .w-layout-grid{grid-template-columns:minmax(0,1fr) !important;}',
+      '  .w-layout-grid > *{min-width:0;}',
       '  .form-heading-div{margin-bottom:12px !important;}',
       '  .lok-collapsed .form-heading-div{flex-wrap:wrap;margin-bottom:0 !important;row-gap:0 !important;}',
       '  .lok-collapsed .form-heading-div .section-heading{flex:1 1 auto;min-width:0;white-space:normal;}',
