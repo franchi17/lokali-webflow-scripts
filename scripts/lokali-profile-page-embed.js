@@ -1534,6 +1534,10 @@ var LokaliProfilePage = (function () {
         _pfPaintPreview();
       }
       if (typeof _refreshNavStates === 'function') _refreshNavStates();
+      // A gallery restored collapsed painted its summary before the photos
+      // loaded — recompute it now that the count is real.
+      var pfSec = document.getElementById('lok-portfolio-card');
+      if (pfSec && pfSec._lokRefreshSummary) pfSec._lokRefreshSummary();
       var add = document.getElementById('lok-pf-add');
       if (add) add.style.display = _pfPhotos.length >= _PF_MAX ? 'none' : '';
     });
@@ -1619,10 +1623,14 @@ var LokaliProfilePage = (function () {
       '@media (max-width: 767px){',
       '  .lok-2col{grid-template-columns:1fr;}',
       '  #lok-savebar{bottom:0;border-radius:14px 14px 0 0;margin-left:-8px;margin-right:-8px;}',
-      // Collapsed rows: the summary drops to its own full-width line under the
-      // heading instead of cramping between title and the Change button.
-      '  .lok-collapsed .form-heading-div{flex-wrap:wrap;}',
-      '  .lok-sec-summary{white-space:normal;flex:1 1 100%;order:9;margin-top:2px;}',
+      // Collapsed rows on phones (F 2026-08-29: they looked wonky): line 1 is
+      // icon + title (title flexes, wraps cleanly) + ✓ chip + the button pinned
+      // right; the summary drops to its own full-width second line, indented
+      // to the title''s start so it reads as part of the row.
+      '  .lok-collapsed .form-heading-div{flex-wrap:wrap;row-gap:0;}',
+      '  .lok-collapsed .form-heading-div .section-heading{flex:1 1 auto;min-width:0;white-space:normal;}',
+      '  .lok-collapsed .lok-sec-summary{white-space:normal;flex:1 1 100%;order:9;margin:2px 0 2px 35px;line-height:1.45;}',
+      '  .lok-collapsed .lok-change-btn{padding:10px 4px;}',
       '}'
     ].join('\n');
     document.head.appendChild(s);
@@ -1650,15 +1658,30 @@ var LokaliProfilePage = (function () {
     });
     if (!moved && grid.parentNode) grid.parentNode.removeChild(grid);
   }
+  // Remembered collapse state (F 2026-08-29: "the system should remember it").
+  // Per-vendor, per-section, localStorage; absent key = the section's default.
+  function _rfStateKey() { return 'lok_profile_collapse_v1:' + (_vendor && _vendor.id != null ? _vendor.id : '0'); }
+  function _rfReadStates() {
+    try { return JSON.parse(localStorage.getItem(_rfStateKey())) || {}; } catch (e) { return {}; }
+  }
+  function _rfWriteState(key, on) {
+    try {
+      var s = _rfReadStates();
+      s[key] = !!on;
+      localStorage.setItem(_rfStateKey(), JSON.stringify(s));
+    } catch (e) {}
+  }
   // Collapse a section card to its heading row + summary + Change. The button
   // TOGGLES (Change ⇄ Collapse, F 2026-08-29): expanding shows the full card,
   // collapsing hides it again and recomputes the summary (summaryFn), so an
   // edit made while open is reflected the moment the card closes.
-  function _rfCollapse(section, summaryFn, changeLabel) {
+  // opts: { key: persistence id, initial: boolean } — toggles are remembered.
+  function _rfCollapse(section, summaryFn, changeLabel, opts) {
     if (!section || section.dataset.lokCollapsible) return;
     var head = section.querySelector('.form-heading-div');
     if (!head) return;
     section.dataset.lokCollapsible = '1';
+    opts = opts || {};
     if (typeof summaryFn === 'string') { var s0 = summaryFn; summaryFn = function () { return s0; }; }
     var sum = document.createElement('span');
     sum.className = 'lok-sec-summary';
@@ -1704,10 +1727,23 @@ var LokaliProfilePage = (function () {
       sum.style.display = on ? '' : 'none';
       btn.textContent = on ? (changeLabel || 'Change') : 'Collapse';
     }
-    btn.addEventListener('click', function (ev) { ev.stopPropagation(); setCollapsed(!section.dataset.lokCollapsed); });
-    head.addEventListener('click', function () { if (section.dataset.lokCollapsed) setCollapsed(false); });
-    section._lokExpand = function () { setCollapsed(false); };
-    setCollapsed(true);
+    btn.addEventListener('click', function (ev) {
+      ev.stopPropagation();
+      var on = !section.dataset.lokCollapsed;
+      setCollapsed(on);
+      if (opts.key) _rfWriteState(opts.key, on);
+    });
+    head.addEventListener('click', function () {
+      if (!section.dataset.lokCollapsed) return;
+      setCollapsed(false);
+      if (opts.key) _rfWriteState(opts.key, false);
+    });
+    section._lokExpand = function () { setCollapsed(false); if (opts.key) _rfWriteState(opts.key, false); };
+    section._lokRefreshSummary = function () {
+      if (!section.dataset.lokCollapsed) return;
+      try { sum.textContent = summaryFn() || ''; } catch (e) {}
+    };
+    setCollapsed(opts.initial !== false);
   }
   function _rfExpandAndGo(section) {
     if (!section) return;
@@ -1967,54 +2003,69 @@ var LokaliProfilePage = (function () {
       }
       _rfMoveAddress();
       // collapse passes (filled set-once sections only)
+      // EVERY card is collapsible (F 2026-08-29) and toggles are REMEMBERED
+      // per vendor (localStorage). Absent memory = the default: filled
+      // set-once sections start collapsed, working sections start open.
       var v = _vendor || {};
-      if (v.card_photo_url) {
-        _rfCollapse(document.getElementById('lok-card-photo'), 'Chosen. Shoppers see it on your card in The Market.');
+      var states = _rfReadStates();
+      function coll(section, key, summaryFn, changeLabel, defaultCollapsed) {
+        if (!section) return;
+        var initial = (key in states) ? !!states[key] : !!defaultCollapsed;
+        _rfCollapse(section, summaryFn, changeLabel, { key: key, initial: initial });
       }
       var logoSec = _rfSectionByHeading(/upload your logo|profile photo/i);
       if (logoSec && !logoSec.id) logoSec.id = 'lok-sec-logo';
-      if (v.profile_photo) _rfCollapse(logoSec, 'Uploaded. Shown beside your name everywhere.');
       var catSec = _rfSectionByHeading(/categories\s*&\s*locations/i);
+      var bizSec = _rfSectionByHeading(/business information/i);
+      var aboutBizSec = _rfSectionByHeading(/about your business/i);
       var locCount = (_selectedLocationIds && _selectedLocationIds.length) || (Array.isArray(v.locations_id) ? v.locations_id.length : 0);
-      if (catSec && v.categories_id && v.categories_id.length && locCount) {
-        // Live summary: re-collapsing after an edit reads the CURRENT picks.
-        _rfCollapse(catSec, function () {
-          var n = (_selectedLocationIds && _selectedLocationIds.length) || 0;
-          var catName = _rfCategoryName();
-          return (catName ? catName + ' · ' : '') + 'Serving ' + n + ' area' + (n === 1 ? '' : 's');
-        });
-      }
-      var payFilled = _rfPayFilled();
-      if (pay && payFilled.length) {
-        _rfCollapse(pay, function () {
-          var labels = [];
-          [['input-venmo', 'Venmo'], ['input-cashapp', 'Cash App'], ['input-paypal', 'PayPal'], ['input-zelle', 'Zelle'], ['input-otherpay-url', 'Link']].forEach(function (p) {
-            var el = document.getElementById(p[0]);
-            if (el && el.value && el.value.trim()) labels.push(p[1]);
-          });
-          return labels.length ? labels.join(' · ') + ' linked' : 'Let customers pay you directly';
-        }, 'Edit');
-      }
-      if (about && v.owner_bio) {
-        _rfCollapse(about, function () {
-          var nm = document.getElementById('input-owner-name');
-          var lg = document.getElementById('input-owner-languages');
-          var a = nm && nm.value.trim() ? nm.value.trim() : 'Filled';
-          var b = lg && lg.value.trim() ? ' · ' + lg.value.trim() : '';
-          return a + b;
-        }, 'Edit');
-      }
-      // Free-plan locked gallery shrinks to one line (never the first thing a
-      // Free vendor scrolls into).
-      if (!(_PF_MAX > 0)) {
+      if (_PF_MAX > 0) {
+        coll(document.getElementById('lok-portfolio-card'), 'gallery', function () {
+          var n = _pfPhotos ? _pfPhotos.length : 0;
+          return n ? n + ' of ' + _PF_MAX + ' items in your public gallery' : 'Add photos and video to the top of your public page';
+        }, 'Edit', false);
+      } else {
+        // Free-plan locked gallery: one line, See plans goes to pricing —
+        // never the first thing a Free vendor scrolls into, and not toggleable.
         var pf = document.getElementById('lok-portfolio-card');
-        _rfCollapse(pf, 'A Pro & Featured feature: the photo gallery at the top of your page.', 'See plans');
-        if (pf && pf._lokExpand) {
-          // "See plans" should go to pricing, not expand the lock card.
+        _rfCollapse(pf, 'A Pro & Featured feature: the photo gallery at the top of your page.', 'See plans', { initial: true });
+        if (pf) {
           var b = pf.querySelector('.lok-change-btn');
           if (b) { var nb = b.cloneNode(true); b.parentNode.replaceChild(nb, b); nb.addEventListener('click', function () { window.location.href = '/pricing'; }); }
         }
       }
+      coll(document.getElementById('lok-card-photo'), 'card_photo',
+        'Chosen. Shoppers see it on your card in The Market.', 'Change', !!v.card_photo_url);
+      coll(logoSec, 'logo', 'Uploaded. Shown beside your name everywhere.', 'Change', !!v.profile_photo);
+      coll(bizSec, 'business', function () {
+        var nm = _getValueByAnyId(['input-business-name', 'business-name', 'business_name']) || v.business_name || '';
+        var em = _getValueByAnyId(['contact-email', 'input-contact-email']) || v.contact_email || '';
+        return nm + (em ? ' · ' + em : '');
+      }, 'Edit', false);
+      coll(aboutBizSec, 'about_business', function () {
+        var tg = _getValueByAnyId(['input-tagline', 'tagline', 'business-tagline', 'business_tagline']) || v.business_tagline || v.tagline || '';
+        return tg || 'Your description and tagline';
+      }, 'Edit', false);
+      coll(catSec, 'categories', function () {
+        var n = (_selectedLocationIds && _selectedLocationIds.length) || 0;
+        var catName = _rfCategoryName();
+        return (catName ? catName + ' · ' : '') + 'Serving ' + n + ' area' + (n === 1 ? '' : 's');
+      }, 'Change', !!(v.categories_id && v.categories_id.length && locCount));
+      coll(about, 'meet_vendor', function () {
+        var nm = document.getElementById('input-owner-name');
+        var lg = document.getElementById('input-owner-languages');
+        var a = nm && nm.value.trim() ? nm.value.trim() : 'Introduce the person behind the business';
+        var b2 = lg && lg.value.trim() ? ' · ' + lg.value.trim() : '';
+        return a + b2;
+      }, 'Edit', !!v.owner_bio);
+      coll(pay, 'payments', function () {
+        var labels = [];
+        [['input-venmo', 'Venmo'], ['input-cashapp', 'Cash App'], ['input-paypal', 'PayPal'], ['input-zelle', 'Zelle'], ['input-otherpay-url', 'Link']].forEach(function (p) {
+          var el = document.getElementById(p[0]);
+          if (el && el.value && el.value.trim()) labels.push(p[1]);
+        });
+        return labels.length ? labels.join(' · ') + ' linked' : 'Let customers pay you directly';
+      }, 'Edit', _rfPayFilled().length > 0);
       _rfInjectCompleteness();
       _refreshNavStates();
       _rfScrollspy();
