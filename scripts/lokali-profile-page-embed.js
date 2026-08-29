@@ -1589,6 +1589,11 @@ var LokaliProfilePage = (function () {
       '.lok-change-btn{font:700 13px/1 "Plus Jakarta Sans",sans-serif;color:#6002EE;background:none;border:none;cursor:pointer;padding:12px 8px;min-height:44px;flex-shrink:0;}',
       '.lok-change-btn:hover{color:#4A00B8;}',
       '.lok-collapsed .form-heading-div{display:flex;align-items:center;gap:10px;margin-bottom:0;cursor:pointer;}',
+      // The heading + icon keep their normal-page margins, which read as a
+      // "floating" title once the row is a centered flex line — zero the
+      // vertical box so every piece truly centers (F 2026-08-29).
+      '.lok-collapsed .form-heading-div > *{margin-top:0 !important;margin-bottom:0 !important;padding-top:0 !important;padding-bottom:0 !important;}',
+      '.lok-collapsed .form-heading-div .section-heading{line-height:1.25;}',
       '.lok-collapsed{padding-top:6px;padding-bottom:6px;}',
       // completeness strip
       '#lok-complete-strip{background:#fff;border:1px solid #E9E5F5;border-radius:14px;padding:12px 16px;display:flex;align-items:center;gap:14px;margin:0 0 10px;font-family:"Plus Jakarta Sans",sans-serif;flex-wrap:wrap;}',
@@ -1634,52 +1639,64 @@ var LokaliProfilePage = (function () {
     });
     if (!moved && grid.parentNode) grid.parentNode.removeChild(grid);
   }
-  // Collapse a section card to its heading row + summary + Change.
-  function _rfCollapse(section, summaryText, changeLabel) {
-    if (!section || section.dataset.lokCollapsed) return;
+  // Collapse a section card to its heading row + summary + Change. The button
+  // TOGGLES (Change ⇄ Collapse, F 2026-08-29): expanding shows the full card,
+  // collapsing hides it again and recomputes the summary (summaryFn), so an
+  // edit made while open is reflected the moment the card closes.
+  function _rfCollapse(section, summaryFn, changeLabel) {
+    if (!section || section.dataset.lokCollapsible) return;
     var head = section.querySelector('.form-heading-div');
     if (!head) return;
-    section.dataset.lokCollapsed = '1';
-    section.classList.add('lok-collapsed');
-    // Hide everything except the heading — which may be NESTED in a wrapper
-    // (the static Webflow sections wrap it), so hide along the ancestor chain:
-    // at each level, hide the siblings of the chain link, never the link itself.
-    var chain = [];
-    var walk = head;
-    while (walk && walk !== section) { chain.push(walk); walk = walk.parentNode; }
-    var hidden = [];
-    chain.forEach(function (link) {
-      var parent = link.parentNode;
-      if (!parent) return;
-      for (var i = 0; i < parent.children.length; i++) {
-        var ch = parent.children[i];
-        if (ch === link) continue;
-        if (ch.style.display !== 'none') { hidden.push([ch, ch.style.display]); ch.style.display = 'none'; }
-      }
-    });
+    section.dataset.lokCollapsible = '1';
+    if (typeof summaryFn === 'string') { var s0 = summaryFn; summaryFn = function () { return s0; }; }
     var sum = document.createElement('span');
     sum.className = 'lok-sec-summary';
-    sum.textContent = summaryText || '';
     var chip = document.createElement('span');
     chip.className = 'lok-chip-done';
     chip.textContent = '✓';
     var btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'lok-change-btn';
-    btn.textContent = changeLabel || 'Change';
     head.appendChild(chip);
     head.appendChild(sum);
     head.appendChild(btn);
-    function expand() {
-      if (!section.dataset.lokCollapsed) return;
-      delete section.dataset.lokCollapsed;
-      section.classList.remove('lok-collapsed');
-      hidden.forEach(function (p) { p[0].style.display = p[1]; });
-      [chip, sum, btn].forEach(function (n) { if (n.parentNode) n.parentNode.removeChild(n); });
+    var hidden = [];
+    function setCollapsed(on) {
+      if (on) {
+        // Hide everything except the heading — which may be NESTED in a wrapper
+        // (the static Webflow sections wrap it), so hide along the ancestor
+        // chain: at each level, hide the link's siblings, never the link itself.
+        // Recomputed each time — the card's content can change while open.
+        hidden = [];
+        var chain = [];
+        var walk = head;
+        while (walk && walk !== section) { chain.push(walk); walk = walk.parentNode; }
+        chain.forEach(function (link) {
+          var parent = link.parentNode;
+          if (!parent) return;
+          for (var i = 0; i < parent.children.length; i++) {
+            var ch = parent.children[i];
+            if (ch === link) continue;
+            if (ch.style.display !== 'none') { hidden.push([ch, ch.style.display]); ch.style.display = 'none'; }
+          }
+        });
+        var t = '';
+        try { t = summaryFn() || ''; } catch (e) {}
+        sum.textContent = t;
+      } else {
+        hidden.forEach(function (p) { p[0].style.display = p[1]; });
+        hidden = [];
+      }
+      section.dataset.lokCollapsed = on ? '1' : '';
+      section.classList.toggle('lok-collapsed', on);
+      chip.style.display = on ? '' : 'none';
+      sum.style.display = on ? '' : 'none';
+      btn.textContent = on ? (changeLabel || 'Change') : 'Collapse';
     }
-    btn.addEventListener('click', function (ev) { ev.stopPropagation(); expand(); });
-    head.addEventListener('click', expand);
-    section._lokExpand = expand;
+    btn.addEventListener('click', function (ev) { ev.stopPropagation(); setCollapsed(!section.dataset.lokCollapsed); });
+    head.addEventListener('click', function () { if (section.dataset.lokCollapsed) setCollapsed(false); });
+    section._lokExpand = function () { setCollapsed(false); };
+    setCollapsed(true);
   }
   function _rfExpandAndGo(section) {
     if (!section) return;
@@ -1809,12 +1826,25 @@ var LokaliProfilePage = (function () {
     });
   }
   var _rfDirtySection = '';
+  // Two-state bar, ALWAYS visible (F 2026-08-29: an appearing-only bar reads
+  // as a missing SAVE button): resting = quiet "All changes saved" with the
+  // button dimmed; dirty = amber note naming the section + active SAVE.
   function _refreshSaveBar() {
     var bar = document.getElementById('lok-savebar');
     if (!bar) return;
-    bar.classList.toggle('on', !!_dirty);
+    bar.classList.add('on');
     var note = document.getElementById('lok-savebar-note');
-    if (note) note.textContent = _rfDirtySection ? '● Unsaved changes in ' + _rfDirtySection : '● Unsaved changes';
+    if (note) {
+      note.textContent = _dirty
+        ? (_rfDirtySection ? '● Unsaved changes in ' + _rfDirtySection : '● Unsaved changes')
+        : '✓ All changes saved';
+      note.style.color = _dirty ? '#9A6B00' : '#11744A';
+    }
+    var btn = document.getElementById(SAVE_BTN);
+    if (btn && !_saving) {
+      btn.style.opacity = _dirty ? '' : '0.45';
+      btn.style.pointerEvents = _dirty ? '' : 'none';
+    }
   }
   function _rfInjectSaveBar() {
     // The old buttons hide on EVERY pass — the bottom clone is injected by
@@ -1843,9 +1873,10 @@ var LokaliProfilePage = (function () {
     if (oldRow) oldRow.style.display = 'none';
     var bottom = document.getElementById(SAVE_BTN_BOTTOM);
     if (bottom && bottom.parentNode) bottom.parentNode.style.display = 'none';
-    // Mirror the dirty-guard's triggers to show the bar and name the section.
+    // Mirror the dirty-guard's triggers to update the bar and name the section.
     document.addEventListener('input', _rfDirtyPing, true);
     document.addEventListener('change', _rfDirtyPing, true);
+    _refreshSaveBar(); // paint the resting "All changes saved" state right away
   }
   function _rfDirtyPing(e) {
     if (_populating) return;
@@ -1932,16 +1963,32 @@ var LokaliProfilePage = (function () {
       var catSec = _rfSectionByHeading(/categories\s*&\s*locations/i);
       var locCount = (_selectedLocationIds && _selectedLocationIds.length) || (Array.isArray(v.locations_id) ? v.locations_id.length : 0);
       if (catSec && v.categories_id && v.categories_id.length && locCount) {
-        var catName = _rfCategoryName();
-        _rfCollapse(catSec, (catName ? catName + ' · ' : '') + 'Serving ' + locCount + ' area' + (locCount === 1 ? '' : 's'));
+        // Live summary: re-collapsing after an edit reads the CURRENT picks.
+        _rfCollapse(catSec, function () {
+          var n = (_selectedLocationIds && _selectedLocationIds.length) || 0;
+          var catName = _rfCategoryName();
+          return (catName ? catName + ' · ' : '') + 'Serving ' + n + ' area' + (n === 1 ? '' : 's');
+        });
       }
       var payFilled = _rfPayFilled();
       if (pay && payFilled.length) {
-        var payLabel = { venmo_username: 'Venmo', cashapp_cashtag: 'Cash App', paypalme_slug: 'PayPal', zelle_contact: 'Zelle', other_pay_url: 'Link' };
-        _rfCollapse(pay, payFilled.map(function (k) { return payLabel[k]; }).join(' · ') + ' linked', 'Edit');
+        _rfCollapse(pay, function () {
+          var labels = [];
+          [['input-venmo', 'Venmo'], ['input-cashapp', 'Cash App'], ['input-paypal', 'PayPal'], ['input-zelle', 'Zelle'], ['input-otherpay-url', 'Link']].forEach(function (p) {
+            var el = document.getElementById(p[0]);
+            if (el && el.value && el.value.trim()) labels.push(p[1]);
+          });
+          return labels.length ? labels.join(' · ') + ' linked' : 'Let customers pay you directly';
+        }, 'Edit');
       }
       if (about && v.owner_bio) {
-        _rfCollapse(about, (v.owner_name ? v.owner_name : 'Filled') + (v.owner_languages ? ' · ' + v.owner_languages : ''), 'Edit');
+        _rfCollapse(about, function () {
+          var nm = document.getElementById('input-owner-name');
+          var lg = document.getElementById('input-owner-languages');
+          var a = nm && nm.value.trim() ? nm.value.trim() : 'Filled';
+          var b = lg && lg.value.trim() ? ' · ' + lg.value.trim() : '';
+          return a + b;
+        }, 'Edit');
       }
       // Free-plan locked gallery shrinks to one line (never the first thing a
       // Free vendor scrolls into).
@@ -2642,6 +2689,8 @@ var LokaliProfilePage = (function () {
       b.style.pointerEvents = on ? 'none' : '';
     });
     window.LokaliDashboard.disableButton(SAVE_BTN, on);
+    // Refresh layer: re-dim the button when the form is clean again.
+    if (!on && typeof _refreshSaveBar === 'function') _refreshSaveBar();
   }
 
   function save() {
