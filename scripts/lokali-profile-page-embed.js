@@ -1623,13 +1623,16 @@ var LokaliProfilePage = (function () {
       '@media (max-width: 767px){',
       '  .lok-2col{grid-template-columns:1fr;}',
       '  #lok-savebar{bottom:0;border-radius:14px 14px 0 0;margin-left:-8px;margin-right:-8px;}',
-      // Collapsed rows on phones (F 2026-08-29: they looked wonky): line 1 is
-      // icon + title (title flexes, wraps cleanly) + ✓ chip + the button pinned
-      // right; the summary drops to its own full-width second line, indented
-      // to the title''s start so it reads as part of the row.
-      '  .lok-collapsed .form-heading-div{flex-wrap:wrap;row-gap:0;}',
+      // Collapsed rows on phones, DETERMINISTIC two lines (F 2026-08-29: the
+      // wrap-based layout let the button fall under the checkmark and left the
+      // summary hanging at the card edge): the ✓ chip hides (the summary
+      // already says the section is filled), so line 1 is always icon + title +
+      // button pinned right, and the summary is a spaced, indented second line.
+      '  .lok-collapsed .form-heading-div{flex-wrap:wrap;}',
       '  .lok-collapsed .form-heading-div .section-heading{flex:1 1 auto;min-width:0;white-space:normal;}',
-      '  .lok-collapsed .lok-sec-summary{white-space:normal;flex:1 1 100%;order:9;margin:2px 0 2px 35px;line-height:1.45;}',
+      '  .lok-collapsed .lok-chip-done{display:none !important;}',
+      '  .lok-collapsed .lok-sec-summary{white-space:normal;flex:1 1 100%;order:9;margin:4px 0 2px 35px;line-height:1.5;}',
+      '  .lok-collapsed{padding-bottom:10px;}',
       '  .lok-collapsed .lok-change-btn{padding:10px 4px;}',
       '}'
     ].join('\n');
