@@ -1592,6 +1592,11 @@ var LokaliProfilePage = (function () {
       '.lok-chip-done{display:inline-flex;align-items:center;font:700 10.5px/1.3 "Plus Jakarta Sans",sans-serif;border-radius:100px;padding:2px 8px;background:#C6F2DB;color:#11744A;margin-left:8px;flex-shrink:0;}',
       '.lok-change-btn{font:700 13px/1 "Plus Jakarta Sans",sans-serif;color:#6002EE;background:none;border:none;cursor:pointer;padding:12px 8px;min-height:44px;flex-shrink:0;}',
       '.lok-change-btn:hover{color:#4A00B8;}',
+      // Every heading row spans its card — the logo section's head lived in a
+      // 288px flex wrapper, so its (i)/Collapse floated mid-card with content
+      // flowing beside it (F 2026-08-29; the head is also DOM-promoted to a
+      // direct section child in _applyProfileRefresh).
+      '.form-heading-div{width:100%;box-sizing:border-box;}',
       '.lok-collapsed .form-heading-div{display:flex;align-items:center;gap:10px;margin-bottom:0;cursor:pointer;}',
       // The heading + icon keep their normal-page margins, which read as a
       // "floating" title once the row is a centered flex line — zero the
@@ -1654,6 +1659,10 @@ var LokaliProfilePage = (function () {
       '  .lok-collapsed .lok-sec-summary{white-space:normal;flex:1 1 100%;order:9;margin:2px 0 0 35px !important;line-height:1.5;}',
       '  .lok-collapsed{padding-bottom:12px;}',
       '  .lok-collapsed .lok-change-btn{padding:10px 4px;}',
+      // Phone number on phones (F 2026-08-29): country selector stacks ABOVE
+      // the number input, both full width, 8px apart.
+      '  .lokali-phone{flex-direction:column !important;gap:8px !important;align-items:stretch !important;}',
+      '  .lokali-phone-country{width:100% !important;max-width:100% !important;}',
       '}'
     ].join('\n');
     document.head.appendChild(s);
@@ -2015,6 +2024,14 @@ var LokaliProfilePage = (function () {
   function _applyProfileRefresh() {
     try {
       _rfInjectCss();
+      // Promote any NESTED heading row to a direct child of its section (the
+      // static logo card wraps its head in a 288px flex div, which floated the
+      // (i)/Collapse mid-card and let content flow beside it). Direct-child
+      // heads also make the collapse chain trivial. Idempotent by nature.
+      document.querySelectorAll('section .form-heading-div').forEach(function (h) {
+        var sec = h.closest('section');
+        if (sec && h.parentNode !== sec) sec.insertBefore(h, sec.firstChild);
+      });
       // 2-col passes
       var pay = document.getElementById('lok-pay-card');
       if (pay) {
