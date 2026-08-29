@@ -368,18 +368,29 @@
   // runtime-rewritten to the vendor's live /{slug} URL. The mobile drawer
   // slides this same DOM, so one reorder covers both surfaces.
   function sinkReadOnlyMenuItems() {
-    var order = { 'My Storefront': 1, 'My Listing': 1, 'Analytics': 2, 'Leads': 3 };
-    var items = document.querySelectorAll('strong.dashboard-menu');
+    // Anchor on the Dashboard link's parent (all menu items share it). Match by
+    // HREF where stable, by LABEL where the href is runtime-rewritten (the
+    // storefront link becomes the vendor's live /{slug} URL). NOT by
+    // strong.dashboard-menu — the Leads/Availability items carry no such
+    // element (that miss shipped in v1.4.345 and left Leads un-sunk).
+    var dash = document.querySelector('a[href="/vendor-dashboard/dashboard"]');
+    if (!dash || !dash.parentNode) return;
+    var parent = dash.parentNode;
+    var anchors = parent.querySelectorAll('a');
     var found = [];
-    for (var i = 0; i < items.length; i++) {
-      var t = (items[i].textContent || '').trim();
-      if (order[t]) {
-        var a = items[i].closest ? items[i].closest('a') : null;
-        if (a && a.parentNode) found.push({ a: a, o: order[t] });
-      }
+    for (var i = 0; i < anchors.length; i++) {
+      var a = anchors[i];
+      if (a.parentNode !== parent) continue;
+      var t = (a.textContent || '').trim();
+      var href = a.getAttribute('href') || '';
+      var o = 0;
+      if (t === 'My Storefront' || t === 'My Listing') o = 1;
+      else if (href.indexOf('/vendor-dashboard/analytics') === 0 || t === 'Analytics') o = 2;
+      else if (href.indexOf('/vendor-dashboard/leads') === 0 || t === 'Leads') o = 3;
+      if (o) found.push({ a: a, o: o });
     }
     found.sort(function (x, y) { return x.o - y.o; });
-    found.forEach(function (f) { f.a.parentNode.appendChild(f.a); });
+    found.forEach(function (f) { parent.appendChild(f.a); });
   }
 
   function init() {
