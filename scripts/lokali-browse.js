@@ -278,13 +278,10 @@
 
   // Card icons (Webflow assets).
   var ICON_PIN      = ASSET + '6a1d9d9c67a9d9957b19c578_map-pin-solid.png';
-  var ICON_EMAIL    = ASSET + '6a1f445d6fda20928afcb0fd_envelope-regular.png';
-  var ICON_CALL     = ASSET + '6a21e2bf163c5945a1c0e919_phone-solid.png';
-  var ICON_WHATSAPP = ASSET + '6a1f445dfb11386d2e5502cf_whatsapp-brands-solid.png';
-  var ICON_TEXT     = ASSET + '6a1f445d06bc9a07f37fb0d9_comments-regular.png';
+  // (Envelope/phone/WhatsApp/comments icon constants removed 2026-08-29 with the
+  // card contact buttons — the storefront owns direct-contact UI now.)
   var ICON_CROWN    = ASSET + '69f4dbb3533f0ee2046ab0fb_crown-solid.png';     // founding badge (matches sidebar)
   var ICON_BULLHORN = ASSET + '6a1af53c6b8fa6046c223ce9_bullhorn-solid.png';  // new badge (matches sidebar)
-  var AREA_GREY     = '#6B6880'; // location text — a touch darker than slate for legibility
 
   // category slug -> sidebar icon URL (reused on the card pill)
   var SLUG_TO_URL = {};
@@ -293,40 +290,44 @@
   /* Card + filter-panel CSS — injected once so the script's UI is fully styled. */
   var CSS = [
     // ── card ──
-    ".vcard{background:#fff;border:.5px solid #EEEDF6;border-radius:12px;padding:1.1rem 1.15rem 1rem;cursor:pointer;transition:all .15s;position:relative;overflow:hidden;font-family:'Plus Jakarta Sans',sans-serif;}",
-    ".vcard:hover{border-color:#D4AAFD;box-shadow:0 4px 16px rgba(96,2,238,.08);transform:translateY(-1px);}",
-    ".vcard-spotlight{border-color:rgba(96,2,238,.2);background:linear-gradient(160deg,rgba(96,2,238,.02) 0%,#fff 60%);}",
-    ".vcard-header{display:flex;align-items:flex-start;gap:12px;margin-bottom:10px;}",
+    // Card redesign 2026-08-29 (Francesca's Direction A): image-led cover (the
+    // vendor's WORK, never the logo — the avatar carries identity), tagline in
+    // the vendor's voice, need-first offerings line, one Visit-storefront CTA.
+    // Contact buttons moved to the storefront; the card's job is earning the click.
+    ".vcard{background:#fff;border:.5px solid #EEEDF6;border-radius:14px;padding:0;cursor:pointer;transition:all .15s;position:relative;overflow:hidden;font-family:'Plus Jakarta Sans',sans-serif;box-shadow:0 2px 10px rgba(96,2,238,.05);}",
+    ".vcard:hover{border-color:#D4AAFD;box-shadow:0 4px 16px rgba(96,2,238,.10);transform:translateY(-1px);}",
+    ".vcard-spotlight{border-color:rgba(96,2,238,.2);}",
+    // Cover: real photo when the vendor has one (gallery -> service -> product,
+    // resolved by the adapter), else the branded gradient + initials mark.
+    ".vcard-cover{height:116px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#E9E1FA 0%,#F9E7DC 55%,#FDF3EC 100%);}",
+    ".vcard-cover-img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;display:block;}",
+    ".vcard-cover-mark{font-size:32px;font-weight:800;color:rgba(96,2,238,.16);letter-spacing:2px;user-select:none;}",
+    // Category pill rides the cover — solid category tint + icon so it reads over photos.
+    ".vcard .cat-pill{position:absolute;top:10px;left:10px;z-index:2;display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:600;border-radius:100px;padding:3.5px 11px;box-shadow:0 1px 4px rgba(0,0,0,.08);}",
+    ".vcard-body{padding:14px 16px 15px;}",
+    ".vcard-name-row{display:flex;align-items:center;gap:7px;margin-bottom:5px;flex-wrap:wrap;}",
     // Circle, not rounded square — the profile page promises vendors a round
     // logo, and the storefront renders it round (Francesca 2026-08-13).
-    ".vcard-avatar{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;flex-shrink:0;border:.5px solid rgba(0,0,0,.06);overflow:hidden;}",
+    ".vcard-avatar{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:700;flex-shrink:0;border:1.5px solid #F0E9FB;overflow:hidden;}",
     ".vcard-avatar-initials{background:#F3EBFF;color:#6002EE;letter-spacing:.5px;}",
     ".vcard-avatar-img{width:100%;height:100%;object-fit:cover;display:block;}",
-    ".vcard-meta{flex:1;min-width:0;}",
-    ".vcard-name-row{display:flex;align-items:center;gap:6px;margin-bottom:3px;flex-wrap:wrap;}",
     // .vcard-name is a real <a> (keyboard/SR path into the profile) — kill link chrome.
-    ".vcard-name{font-size:14px;font-weight:600;color:#1A1829;letter-spacing:-.2px;line-height:1.2;text-decoration:none;}",
-    ".vcard-area{font-size:11px;color:#6B6880;display:flex;align-items:center;gap:4px;}",
-    // Badges live on their own row under the location (out of the way of the top-right heart),
-    // icon-only — a brighter/cleaner tint background with a darker icon on top.
-    ".vcard-badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px;}",
-    ".vcard .badge{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:100px;font-size:12px;line-height:1;flex-shrink:0;font-weight:700;}",
-    ".vcard .badge-founding{background:#FBE7A0;color:#9A6B00;border:1px solid rgba(154,107,0,.32);}",
-    ".vcard .badge-new{background:#C6F2DB;color:#11744A;border:1px solid rgba(17,116,74,.3);}",
-    ".vcard .badge-spotlight{background:#E2D2FF;color:#5A00E0;border:1px solid rgba(90,0,224,.3);}",
-    ".vcard .badge-verified{background:#D2DEFF;color:#1730C9;border:1px solid rgba(23,48,201,.3);}",
-    // Featured = the paid TIER (always-on). Solid brand violet so the top tier
-    // stands out from the light status pills; distinct from the Spotlight rotation.
-    ".vcard .badge-featured{background:#FAE4FC;color:#D602EE;border:1px solid rgba(214,2,238,.28);}",
-    ".vcard .cat-pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:500;border-radius:100px;padding:3px 10px;margin-bottom:8px;}",
-    ".vcard-tagline{font-size:12.5px;color:#4A4761;line-height:1.5;margin-bottom:12px;}",
-    // #96 subcategory pills on the card — the vendor's curated specialties, so
-    // a visitor can tell the painter from the plumber without opening the
-    // profile. `.match` = the pill that made this card a search hit (promoted
-    // to front, violet highlight).
-    ".vcard-offerings{display:flex;flex-wrap:wrap;gap:4px;margin:-4px 0 12px;}",
-    ".vcard .offer-chip{font-size:10.5px;font-weight:500;background:#F7F6FC;border:.5px solid #EEEDF6;color:#6B6880;border-radius:100px;padding:2px 9px;max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}",
-    ".vcard .offer-chip.match{background:#F3EBFF;border-color:#D4AAFD;color:#6002EE;font-weight:600;}",
+    ".vcard-name{font-size:15.5px;font-weight:700;color:#1A1829;letter-spacing:-.3px;line-height:1.2;text-decoration:none;}",
+    // Status chips sit inline after the name, labeled (an unlabeled 22px icon
+    // circle was undecodable for first-time visitors). Same palette as the old badges.
+    ".vcard .name-chip{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;border-radius:100px;padding:2px 7px;line-height:1.3;flex-shrink:0;}",
+    ".vcard .chip-verified{background:#D2DEFF;color:#1730C9;}",
+    ".vcard .chip-new{background:#C6F2DB;color:#11744A;}",
+    ".vcard .chip-spotlight{background:#E2D2FF;color:#5A00E0;}",
+    // #96 offerings — need-first: shoppers search for a service, not a business,
+    // so this is the strongest text after the name. `.match` = the label that
+    // made this card a search hit (promoted to front, violet).
+    ".vcard-offerline{font-size:12.5px;font-weight:600;color:#33304A;line-height:1.45;margin-bottom:5px;}",
+    ".vcard-offerline .match{color:#6002EE;}",
+    ".vcard-tagline{font-size:12px;color:#6B6880;line-height:1.5;margin-bottom:12px;}",
+    ".vcard-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;}",
+    ".vcard-foot-meta{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:600;color:#8B8599;min-width:0;flex-wrap:wrap;}",
+    ".vcard-visit{font-size:12px;font-weight:700;color:#6002EE;text-decoration:none;white-space:nowrap;display:inline-flex;align-items:center;gap:4px;}",
     // #96 sidebar subcategory pills — unfold under the ACTIVE category row
     // (expand-in-place accordion; other categories stay visible/clickable).
     "#browse-filter-panel .lk-subcat-row{display:flex;flex-wrap:wrap;gap:5px;padding:8px 4px 10px 14px;}",
@@ -335,14 +336,6 @@
     "#browse-filter-panel .subcat-pill{font-family:inherit;-webkit-appearance:none;appearance:none;font-size:11.5px;font-weight:500;background:#fff;border:1px solid #E4E2F0;color:#6B6880;border-radius:100px;padding:4px 11px;cursor:pointer;user-select:none;transition:all .12s;line-height:1.3;text-align:left;}",
     "#browse-filter-panel .subcat-pill:hover{border-color:#6002EE;color:#6002EE;}",
     "#browse-filter-panel .subcat-pill.on{background:#6002EE;border-color:#6002EE;color:#fff;font-weight:600;}",
-    ".vcard-actions{display:flex;gap:6px;flex-wrap:wrap;}",
-    // Channel-branded contact buttons (colors mirror the vendor listing page).
-    ".vcard .contact-btn{font-size:11px;font-weight:500;font-family:inherit;padding:5px 10px;border-radius:6px;border:.5px solid #EEEDF6;background:#F7F6FC;color:#4A4761;cursor:pointer;transition:all .1s;display:inline-flex;align-items:center;gap:4px;}",
-    ".vcard .contact-btn:hover{filter:brightness(.96);}",
-    ".vcard .contact-btn.cb-email{background:#6002EE;border-color:#6002EE;color:#fff;}",
-    ".vcard .contact-btn.cb-call{background:#F0F4FF;border-color:#BDC8F5;color:#1A3099;}",
-    ".vcard .contact-btn.cb-text{background:#fff;border-color:#C8C6D8;color:#1A1829;}",
-    ".vcard .contact-btn.cb-whatsapp{background:#EDFAF3;border-color:#A8DFC4;color:#1A6640;}",
     // ── filter panel ──
     "#browse-filter-panel{font-family:'Plus Jakarta Sans',sans-serif;}",
     "#browse-filter-panel .lk-filter-section{margin-bottom:1.5rem;}",
@@ -404,6 +397,7 @@
   var _emptyState = null;
   var _renderedCards = [];
   var _listingsByVendor = {}; // #96: vendor id -> active listing names (services first)
+  var _coversByVendor = {};   // card redesign: vendor id -> {url, fx, fy} (adapter vendors.covers)
 
   var activeLocationId = 'all';
   var activeCategory = 'all';
@@ -431,10 +425,6 @@
   function setText(node, txt) { if (node) node.textContent = txt; }
   function showEl(node, disp) { if (node) { node.style.display = disp || ''; node.classList.remove('w-condition-invisible'); } }
   function hideEl(node) { if (node) node.style.display = 'none'; }
-  function digits(s) { return String(s || '').replace(/[^0-9]/g, ''); }
-  // Vendors stored both '+14155550123' and bare 10-digit values — normalize to
-  // the 11-digit US form so tel/sms/wa links agree with the listing page.
-  function phoneDigits(s) { var d = digits(s); return d.length === 10 ? '1' + d : d; }
   function debounce(fn, ms) { var t; return function () { clearTimeout(t); t = setTimeout(fn, ms); }; }
 
   function extractList(d) {
@@ -493,19 +483,18 @@
     if (p.length === 1) return p[0].slice(0, 2).toUpperCase();
     return (p[0].charAt(0) + p[1].charAt(0)).toUpperCase();
   }
-  function vPhotoUrl(v) {
-    var p = v.profile_photo;
+  function safeImgUrl(p) {
     if (!p || typeof p !== 'string') return '';
     p = p.trim();
     // Block javascript:/data: schemes, protocol-relative //host, breakout chars.
     if (!p || /[\s"'<>`\\]/.test(p) || /^(?:javascript|data|vbscript):/i.test(p)) return '';
     if (/^https?:\/\//.test(p)) return p; // full URL (Supabase Storage / Webflow CDN) — the only live shape
-    if (p.indexOf('//') === 0) return '';
-    // A non-absolute value is a legacy Xano-era /vault path. Xano is retired
-    // (XANO-DECOMM 2026-07-24) so it can no longer resolve — return no image
-    // rather than a broken-host URL. Live rows store full URLs (handled above).
+    // A non-absolute value is a legacy Xano-era /vault path (or //host). Xano is
+    // retired (XANO-DECOMM 2026-07-24) so it can no longer resolve — return no
+    // image rather than a broken-host URL. Live rows store full URLs (handled above).
     return '';
   }
+  function vPhotoUrl(v) { return safeImgUrl(v.profile_photo); }
   function vAreaLabel(v) {
     var ids = Array.isArray(v.locations_id) ? v.locations_id : (v.locations_id != null ? [v.locations_id] : []);
     for (var i = 0; i < ids.length; i++) if (_locationsById[ids[i]]) return _locationsById[ids[i]].label;
@@ -734,10 +723,33 @@
       renderSubcatRow();
       updateCategoryCounts();
       applyFilters();
+      fetchCovers();
     }, function (err) {
       console.warn('[lokali-browse] vendors fetch rejected (attempt ' + attempt + '):', err);
       return retryOrGiveUp();
     });
+  }
+
+  // Card covers (redesign 2026-08-29): one batched adapter call resolving each
+  // vendor's cover image (first gallery photo -> first service photo -> first
+  // product photo; never the logo). Non-critical by design: a stale cached
+  // adapter (no vendors.covers yet) or a failed fetch leaves every card on the
+  // branded gradient fallback. First paint renders immediately with fallbacks;
+  // the grid re-renders once covers land.
+  function fetchCovers() {
+    try {
+      var api = window.LokaliAPI && window.LokaliAPI.vendors;
+      if (!api || typeof api.covers !== 'function') return;
+      var ids = _allVendors.map(function (v) { return v.id; }).filter(function (x) { return x != null; });
+      if (!ids.length) return;
+      api.covers(ids).then(function (out) {
+        var map = out && out.data && out.data.covers;
+        if (out && out.error || !map || typeof map !== 'object') return;
+        if (!Object.keys(map).length) return; // nothing to show — skip the re-render
+        _coversByVendor = map;
+        if (_allVendors.length) applyFilters();
+      }).catch(function () {});
+    } catch (e) {}
   }
 
   // #96 — load the public listing-name index (active service/product names for
@@ -1177,43 +1189,19 @@
     showEl(_emptyState, 'block');
   }
 
-  // opts: { title, url+color (masked icon) | glyph (text, colored by CSS) }
-  function badge(cls, opts) {
-    var b = ce('span', 'badge ' + cls); b.title = opts.title;
-    if (opts.url) b.appendChild(maskIcon(opts.url, opts.color, 12));
-    else b.textContent = opts.glyph;
-    return b;
+  // Labeled inline status chip (name row). Replaced the old icon-only 22px
+  // badge circles 2026-08-29 — unlabeled crown/check were undecodable for
+  // first-time visitors, so trust signals went unread.
+  function nameChip(cls, label, iconUrl, iconColor, title) {
+    var c = ce('span', 'name-chip ' + cls); c.title = title || label;
+    if (iconUrl) c.appendChild(maskIcon(iconUrl, iconColor, 10));
+    c.appendChild(document.createTextNode(iconUrl ? ' ' + label : label));
+    return c;
   }
-  // Mirror of the storefront's trackChannel() (lokali-vendor-listing.js): a
-  // direct-contact click is a lead event, and the write must carry the signed-in
-  // user so the DB trigger stamps user_id — that column IS the review gate.
-  // Until this existed, every Call/Text/WhatsApp tap from The Market was
-  // invisible: no vendor lead, no GA4, no gate credit. Fire-and-forget, so the
-  // tel:/sms:/wa.me navigation on the next line proceeds untouched.
-  // source stays 'listing' (the documented vocabulary is listing|service|product,
-  // and lokali-leads.js renders anything else as "listing" anyway).
-  function trackContact(vendorId, eventType) {
-    if (vendorId == null || !eventType) return;
-    try {
-      if (window.LokaliAPI && window.LokaliAPI.leads && window.LokaliAPI.leads.trackEvent) {
-        window.LokaliAPI.leads.trackEvent(vendorId, eventType, 'listing');
-      }
-    } catch (e) {}
-    // #110 GA4: mirror of the first-party lead event. No contact values, ids only.
-    try { if (typeof window.gtag === 'function') window.gtag('event', 'lead_click', { channel: eventType, vendor_id: String(vendorId) }); } catch (e) {}
-  }
-  function addContact(parent, href, label, iconUrl, cls, vendorId, eventType) {
-    if (!href) return;
-    var b = ce('button', 'contact-btn' + (cls ? ' ' + cls : '')); b.type = 'button';
-    b.appendChild(maskIcon(iconUrl, 'currentColor', 13)); // icon follows button text color (incl. hover)
-    b.appendChild(document.createTextNode(label));
-    b.addEventListener('click', function (ev) {
-      ev.stopPropagation(); ev.preventDefault();
-      trackContact(vendorId, eventType);
-      if (href.indexOf('http') === 0) window.open(href, '_blank'); else window.location.href = href;
-    });
-    parent.appendChild(b);
-  }
+  // NOTE 2026-08-29: the card's Email/Call/Text/WhatsApp buttons (and their
+  // trackContact lead events) moved to the storefront with the redesign — the
+  // card's one job is earning the storefront click. The storefront's own
+  // trackChannel() keeps logging lead events / review-gate credit as before.
 
   function buildAvatar(v) {
     var avatar = ce('div', 'vcard-avatar');
@@ -1240,48 +1228,60 @@
     var href = vProfileHref(v);
     var card = ce('div', 'vcard' + (vIsSpotlight(v) ? ' vcard-spotlight' : ''));
     // Expose the vendor id so lokali-favorites.js can attach a save/heart control
-    // without coupling favorites logic into this renderer.
+    // without coupling favorites logic into this renderer (its absolute top-right
+    // heart lands on the cover).
     if (v.id != null) card.dataset.vendorId = v.id;
-    var header = ce('div', 'vcard-header');
-    var meta = ce('div', 'vcard-meta');
+
+    // ── cover: the vendor's WORK (adapter-resolved gallery/service/product
+    // photo), never the logo — the avatar next to the name carries identity.
+    // No cover yet (or stale cached adapter) = branded gradient + initials mark,
+    // so no card ever looks broken.
+    var cover = ce('div', 'vcard-cover');
+    var cov = v.id != null ? _coversByVendor[v.id] : null;
+    var covUrl = cov ? safeImgUrl(cov.url) : '';
+    var mark = ce('span', 'vcard-cover-mark'); mark.textContent = initials(vName(v));
+    cover.appendChild(mark);
+    if (covUrl) {
+      // alt deliberately empty (#97 rule): decorative-adjacent to the visible name.
+      var cimg = ce('img', 'vcard-cover-img'); cimg.src = covUrl; cimg.alt = ''; cimg.loading = 'lazy';
+      // #149b: gallery covers reuse the vendor's drag-set focal point.
+      if (typeof cov.fx === 'number' && typeof cov.fy === 'number') cimg.style.objectPosition = cov.fx + '% ' + cov.fy + '%';
+      // Broken image -> the gradient + mark underneath simply shows through.
+      cimg.addEventListener('error', function () { if (cimg.parentNode) cover.removeChild(cimg); });
+      cover.appendChild(cimg);
+    }
+    if (style.known) {
+      var pill = ce('span', 'cat-pill');
+      pill.style.background = style.bg;
+      pill.style.color = style.text;
+      if (style.url) pill.appendChild(maskIcon(style.url, style.text, 12));
+      pill.appendChild(document.createTextNode(' ' + style.label));
+      cover.appendChild(pill);
+    }
+    card.appendChild(cover);
+
+    var body = ce('div', 'vcard-body');
+
+    // ── name row: small avatar (identity), name link, labeled status chips.
     var nameRow = ce('div', 'vcard-name-row');
+    nameRow.appendChild(buildAvatar(v));
     // Real link = the keyboard/screen-reader path into the profile (the
     // whole-card click below is a pointer convenience on top of it).
     var name = ce('a', 'vcard-name'); name.textContent = vName(v); name.href = href;
     name.addEventListener('click', function (ev) { ev.stopPropagation(); }); // native link wins (incl. cmd-click)
     nameRow.appendChild(name);
-    var area = ce('div', 'vcard-area');
-    area.appendChild(maskIcon(ICON_PIN, AREA_GREY, 11));
-    area.appendChild(document.createTextNode(' ' + vAreaLabel(v)));
-    meta.appendChild(nameRow); meta.appendChild(area);
-    // Trust/status badges sit on their own row under the location — clear of the top-right
-    // heart — as bright filled pills (icon + label) instead of dull pale dots.
-    var badges = ce('div', 'vcard-badges');
     // #86 (2026-07-18): ★ Featured badge REMOVED by decision — it mostly
-    // signaled "pays more" and clashed with the founding badge. Placement
-    // ranking (#75 plan_rank) is untouched; is_featured stays server-synced.
-    if (vIsFounding(v))  badges.appendChild(badge('badge-founding',  { url: ICON_CROWN,    color: '#9A6B00', title: 'Founding vendor' }));
-    if (vIsNew(v))       badges.appendChild(badge('badge-new',       { url: ICON_BULLHORN, color: '#11744A', title: 'New this week' }));
-    if (vIsVerified(v))  badges.appendChild(badge('badge-verified',  { glyph: '✓', title: 'Verified' }));
-    if (vIsSpotlight(v)) badges.appendChild(badge('badge-spotlight', { glyph: '✦', title: 'Spotlight' }));
-    if (badges.children.length) meta.appendChild(badges);
-    header.appendChild(buildAvatar(v)); header.appendChild(meta);
-    card.appendChild(header);
+    // signaled "pays more". Placement ranking (#75 plan_rank) is untouched.
+    // Founding moved to the quiet foot line; Verified/New/Spotlight stay here.
+    if (vIsVerified(v))  nameRow.appendChild(nameChip('chip-verified', '✓ Verified', null, null, 'Verified'));
+    if (vIsNew(v))       nameRow.appendChild(nameChip('chip-new', 'New', ICON_BULLHORN, '#11744A', 'New this week'));
+    if (vIsSpotlight(v)) nameRow.appendChild(nameChip('chip-spotlight', '✦ Spotlight', null, null, 'Spotlight'));
+    body.appendChild(nameRow);
 
-    if (style.known) {
-      var pill = ce('span', 'cat-pill');
-      pill.style.background = style.bg;
-      pill.style.color = style.text;
-      if (style.url) pill.appendChild(maskIcon(style.url, style.text, 13));
-      pill.appendChild(document.createTextNode(' ' + style.label));
-      card.appendChild(pill);
-    }
-
-    var tag = ce('div', 'vcard-tagline'); tag.textContent = vTagline(v); card.appendChild(tag);
-
-    // #96 subcategory pills (max 3 by the picker's own cap). When the current
-    // search matched a subcategory label, promote that pill to the front and
-    // highlight it so the visitor sees WHY the card is in the results.
+    // ── #96 offerings line — need-first: shoppers search for a service, not a
+    // business, so this is the strongest text after the name. When the current
+    // search matched a subcategory label, promote it to the front and highlight
+    // it so the visitor sees WHY the card is in the results.
     var subLabels = vSubcatLabels(v);
     if (subLabels.length) {
       var q = searchTerm.toLowerCase().trim();
@@ -1299,36 +1299,42 @@
       }
       var ordered = subLabels.slice();
       if (matchIdx > 0) { ordered.splice(matchIdx, 1); ordered.unshift(subLabels[matchIdx]); }
-      var offerings = ce('div', 'vcard-offerings');
+      var offerLine = ce('div', 'vcard-offerline');
       ordered.slice(0, 3).forEach(function (nm, i) {
-        var chip = ce('span', 'offer-chip' + (matchIdx !== -1 && i === 0 ? ' match' : ''));
-        chip.textContent = nm; chip.title = nm;
-        offerings.appendChild(chip);
+        if (i > 0) offerLine.appendChild(document.createTextNode(' · '));
+        var piece = ce('span', matchIdx !== -1 && i === 0 ? 'match' : '');
+        piece.textContent = nm;
+        offerLine.appendChild(piece);
       });
-      card.appendChild(offerings);
+      body.appendChild(offerLine);
     }
 
-    // Gate on the NORMALIZED digits, not the raw value — a stored "n/a" must
-    // hide the buttons, not render a dead tel:+ link.
-    var phone = phoneDigits(v.phone_number);
-    var actions = ce('div', 'vcard-actions');
-    // Email opens the on-platform inquiry form, not a mailto — same decision the
-    // storefront took on 07-17 (vendor-listing hides #vl-ch-email and lets
-    // "Send a message" replace it); the card had been left behind on raw mailto.
-    // The modal lives on the storefront, so deep-link there and let
-    // lokali-inquiry.js open it on arrival. Still gated on contact_email: no
-    // address means the /inquiry route has nowhere to deliver it.
-    // No lead event here — the inquiry row itself is the record (and it's the
-    // path that earns the "Contacted through Lokali" badge), exactly as on the
-    // storefront, where "Send a message" logs no channel click either.
-    addContact(actions, v.contact_email ? (href + (href.indexOf('?') === -1 ? '?' : '&') + 'inquiry=1') : null,
-      'Email', ICON_EMAIL, 'cb-email', v.id, null);
-    // #76c: hide Call when the vendor unticked "Customers can call me"
-    // (missing/null = legacy rows -> keep showing).
-    addContact(actions, (phone && v.phone_calls !== false) ? 'tel:+' + phone : null, 'Call', ICON_CALL, 'cb-call', v.id, 'call');
-    addContact(actions, (v.text_messages && phone) ? 'sms:+' + phone : null, 'Text', ICON_TEXT, 'cb-text', v.id, 'sms');
-    addContact(actions, (v.whatsapp_messages && phone) ? 'https://wa.me/' + phone : null, 'WhatsApp', ICON_WHATSAPP, 'cb-whatsapp', v.id, 'whatsapp');
-    card.appendChild(actions);
+    var tag = ce('div', 'vcard-tagline'); tag.textContent = vTagline(v); body.appendChild(tag);
+
+    // ── foot: quiet metadata left (founding + town), single CTA right.
+    // Contact buttons moved to the storefront with the redesign — see nameChip's
+    // sibling note above.
+    var foot = ce('div', 'vcard-foot');
+    var footMeta = ce('span', 'vcard-foot-meta');
+    if (vIsFounding(v)) {
+      footMeta.appendChild(maskIcon(ICON_CROWN, '#C99A1F', 11));
+      footMeta.appendChild(document.createTextNode(' Founding'));
+    }
+    // Town only ("The Woodlands", not "The Woodlands, Texas") — every open city
+    // is Texas today, and the shorter label keeps the foot line quiet.
+    var town = vAreaLabel(v).split(',')[0].trim();
+    if (town) {
+      if (footMeta.childNodes.length) footMeta.appendChild(document.createTextNode(' · '));
+      footMeta.appendChild(maskIcon(ICON_PIN, '#8B8599', 10));
+      footMeta.appendChild(document.createTextNode(' ' + town));
+    }
+    foot.appendChild(footMeta);
+    var visit = ce('a', 'vcard-visit'); visit.href = href;
+    visit.textContent = 'Visit storefront →';
+    visit.addEventListener('click', function (ev) { ev.stopPropagation(); }); // native link wins
+    foot.appendChild(visit);
+    body.appendChild(foot);
+    card.appendChild(body);
 
     card.addEventListener('click', function () { window.location.href = href; });
     return card;

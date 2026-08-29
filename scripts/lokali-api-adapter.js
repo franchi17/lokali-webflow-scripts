@@ -669,6 +669,55 @@
         return { data: { items: rows }, error: null, status: 200 };
       }, function (e) { return fail(errText(e)); }); // envelope contract: never reject
     },
+    // Card cover images for the browse grid (the-market redesign, 2026-08-29).
+    // Chain per vendor: first gallery photo -> first service photo -> first
+    // product photo. All three tables are anon-readable (rls.sql grants +
+    // public-read policies already gate on parent visibility), so RLS does the
+    // filtering — no new SQL. The vendor's LOGO (profile_photo) is deliberately
+    // never used here: the card shows it as the small avatar, and the cover's
+    // job is their WORK. Returns { data: { covers: { [vendors_id]: {url, fx, fy} } } }.
+    covers: function (ids) {
+      if (!Array.isArray(ids) || !ids.length) return Promise.resolve({ data: { covers: {} }, error: null, status: 200 });
+      var idNums = ids.map(Number).filter(function (n) { return !isNaN(n); });
+      return rawClient().then(function (c) {
+        return Promise.all([
+          c.from('vendor_photos')
+            .select('vendors_id,image_url,image_focus_x,image_focus_y,sort_order,id')
+            .in('vendors_id', idNums).eq('is_active', true).not('image_url', 'is', null)
+            .order('sort_order', { ascending: true, nullsFirst: false }).order('id', { ascending: true }),
+          // !inner join = the vendors_id filter runs server-side (a bare embed
+          // would fetch every listing photo on the site and filter here).
+          c.from('service_photos')
+            .select('image_url,sort_order,id,services!inner(vendors_id)')
+            .in('services.vendors_id', idNums)
+            .eq('is_active', true).not('image_url', 'is', null)
+            .order('sort_order', { ascending: true, nullsFirst: false }).order('id', { ascending: true }),
+          c.from('product_photos')
+            .select('image_url,sort_order,id,products!inner(vendors_id)')
+            .in('products.vendors_id', idNums)
+            .eq('is_active', true).not('image_url', 'is', null)
+            .order('sort_order', { ascending: true, nullsFirst: false }).order('id', { ascending: true })
+        ]);
+      }).then(function (res) {
+        var covers = {};
+        // Gallery first (carries the vendor-set focal point), then listing photos.
+        (res[0] && res[0].data || []).forEach(function (r) {
+          if (r.vendors_id != null && covers[r.vendors_id] == null && r.image_url) {
+            covers[r.vendors_id] = { url: r.image_url, fx: r.image_focus_x, fy: r.image_focus_y };
+          }
+        });
+        [res[1], res[2]].forEach(function (out) {
+          (out && out.data || []).forEach(function (r) {
+            var parent = r.services || r.products;
+            var vid = parent && parent.vendors_id;
+            if (vid != null && covers[vid] == null && r.image_url) {
+              covers[vid] = { url: r.image_url, fx: null, fy: null };
+            }
+          });
+        });
+        return { data: { covers: covers }, error: null, status: 200 };
+      }, function (e) { return fail(errText(e)); }); // never reject — browse falls back to gradient covers
+    },
     getById: function (id) {
       return SAPI().vendors.getById(id).then(function (res) {
         var out = envelope(res);

@@ -145,12 +145,10 @@
       // F2 — the hamburger's tap area was just its 30x18 icon; grow the hit area, not the icon.
       '.hamburger-menu-wrapper{min-width:44px;min-height:44px;}',
       // F3 — sub-40px tap targets on the conversion actions (Market cards + vendor page).
-      // NOTE: the card CSS pins .contact-btn at height:37px with !important, which silently
-      // ate the original padding/font-size directive (verified live 2026-07-24 — even a
-      // max-specificity !important padding was inert, but min-height overrides a smaller fixed
-      // height). The buttons already sit in a 44px .vcard-actions flex row, so min-height:44px
-      // fills the row without shifting card layout — this is what actually grows the target.
-      '.vcard .contact-btn{min-height:44px!important;box-sizing:border-box;}',
+      // 2026-08-29 card redesign: the contact buttons left the card (storefront owns
+      // direct contact now); the card's one link CTA gets the 44px floor instead.
+      // The whole card is also clickable, so this only protects the precise tap.
+      '.vcard .vcard-visit{min-height:44px;display:inline-flex;align-items:center;}',
       // :not(.lk-fav-inline) — the favorites script also has an inline "Save" PILL variant
       // (auto width/height + text label); forcing that to 40x40 would clip the label.
       '.lk-fav:not(.lk-fav-inline){width:40px!important;height:40px!important;}',
