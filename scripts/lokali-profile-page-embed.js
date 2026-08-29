@@ -1638,12 +1638,22 @@ var LokaliProfilePage = (function () {
     if (!head) return;
     section.dataset.lokCollapsed = '1';
     section.classList.add('lok-collapsed');
+    // Hide everything except the heading — which may be NESTED in a wrapper
+    // (the static Webflow sections wrap it), so hide along the ancestor chain:
+    // at each level, hide the siblings of the chain link, never the link itself.
+    var chain = [];
+    var walk = head;
+    while (walk && walk !== section) { chain.push(walk); walk = walk.parentNode; }
     var hidden = [];
-    for (var i = 0; i < section.children.length; i++) {
-      var ch = section.children[i];
-      if (ch === head) continue;
-      if (ch.style.display !== 'none') { hidden.push([ch, ch.style.display]); ch.style.display = 'none'; }
-    }
+    chain.forEach(function (link) {
+      var parent = link.parentNode;
+      if (!parent) return;
+      for (var i = 0; i < parent.children.length; i++) {
+        var ch = parent.children[i];
+        if (ch === link) continue;
+        if (ch.style.display !== 'none') { hidden.push([ch, ch.style.display]); ch.style.display = 'none'; }
+      }
+    });
     var sum = document.createElement('span');
     sum.className = 'lok-sec-summary';
     sum.textContent = summaryText || '';
@@ -1886,10 +1896,13 @@ var LokaliProfilePage = (function () {
     bizSec.dataset.lokAddr = '1';
     var wrap = document.createElement('div');
     wrap.id = 'lok-addr-block';
-    wrap.style.cssText = 'grid-column:1 / -1;margin-top:10px;min-width:0;';
+    wrap.style.cssText = 'margin-top:12px;min-width:0;';
     nodes.forEach(function (nd) { wrap.appendChild(nd); });
-    var grid = bizSec.querySelector('.w-layout-grid') || bizSec;
-    grid.appendChild(wrap);
+    // AFTER the Webflow grid, never inside it — its cells carry explicit
+    // per-node placement, so a foreign child displaces every column.
+    var grid = bizSec.querySelector('.w-layout-grid');
+    if (grid && grid.parentNode) grid.parentNode.insertBefore(wrap, grid.nextSibling);
+    else bizSec.appendChild(wrap);
   }
   function _applyProfileRefresh() {
     try {
