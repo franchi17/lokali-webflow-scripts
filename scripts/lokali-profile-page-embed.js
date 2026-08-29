@@ -1620,6 +1620,15 @@ var LokaliProfilePage = (function () {
       '#lok-savebar-note{font:600 13px/1.4 "Plus Jakarta Sans",sans-serif;color:#9A6B00;min-width:0;}',
       // nav pill states (pills are <a> injected by _reorderProfileSections)
       '#lok-profile-nav a.lok-nav-active{border-color:#6002EE !important;color:#6002EE !important;background:#F3EBFF !important;}',
+      // Address block rhythm (F 2026-08-29, values MEASURED not eyeballed:
+      // the relocated block had 0px between every piece). 4/10/8 on the
+      // 4px scale: heading -> explainer 4, explainer -> input 10, input ->
+      // required-note 8. Structure-matched (heading + its next sibling) so a
+      // Webflow class rename degrades to no-margin, never a broken selector.
+      '#lok-addr-block .input-heading{margin:0 0 4px !important;}',
+      '#lok-addr-block .input-heading + div{margin:0 0 10px !important;line-height:1.5;}',
+      '#lok-addr-block input{margin:0 !important;}',
+      '#lok-addr-block .lok-addr-info{margin-top:8px !important;}',
       '@media (max-width: 767px){',
       '  .lok-2col{grid-template-columns:1fr;}',
       '  #lok-savebar{bottom:0;border-radius:14px 14px 0 0;margin-left:-8px;margin-right:-8px;}',
@@ -1628,11 +1637,16 @@ var LokaliProfilePage = (function () {
       // summary hanging at the card edge): the ✓ chip hides (the summary
       // already says the section is filled), so line 1 is always icon + title +
       // button pinned right, and the summary is a spaced, indented second line.
-      '  .lok-collapsed .form-heading-div{flex-wrap:wrap;}',
+      // Expanded section headers were FLOATING on phones (Webflow's mobile
+      // margins inflate the gap) — pin the head 12px above its first field,
+      // measured, and keep collapsed heads flush so the summary tucks 2px
+      // under the title line instead of drifting.
+      '  .form-heading-div{margin-bottom:12px !important;}',
+      '  .lok-collapsed .form-heading-div{flex-wrap:wrap;margin-bottom:0 !important;row-gap:0 !important;}',
       '  .lok-collapsed .form-heading-div .section-heading{flex:1 1 auto;min-width:0;white-space:normal;}',
       '  .lok-collapsed .lok-chip-done{display:none !important;}',
-      '  .lok-collapsed .lok-sec-summary{white-space:normal;flex:1 1 100%;order:9;margin:4px 0 2px 35px;line-height:1.5;}',
-      '  .lok-collapsed{padding-bottom:10px;}',
+      '  .lok-collapsed .lok-sec-summary{white-space:normal;flex:1 1 100%;order:9;margin:2px 0 0 35px !important;line-height:1.5;}',
+      '  .lok-collapsed{padding-bottom:12px;}',
       '  .lok-collapsed .lok-change-btn{padding:10px 4px;}',
       '}'
     ].join('\n');
