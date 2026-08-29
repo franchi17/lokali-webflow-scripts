@@ -1596,10 +1596,11 @@ var LokaliProfilePage = (function () {
       // which silently beat the row's align-items:center — the real cause of
       // the "floating title" (F 2026-08-29; margins alone did not fix it).
       '.lok-collapsed .form-heading-div > *{margin-top:0 !important;margin-bottom:0 !important;padding-top:0 !important;padding-bottom:0 !important;align-self:center !important;}',
-      // Heading-icon imgs draw INSIDE their padding box — stripping only the
-      // vertical padding left them 0×5px and squashed the artwork (F: "wonky").
-      // Zero it uniformly so the glyph fills its box undistorted.
-      '.lok-collapsed .form-heading-div > img.heading-icon, .lok-collapsed .form-heading-div > svg{padding:0 !important;}',
+      // Heading-icon glyphs draw INSIDE their padding box, and the ORIGINAL
+      // design insets them 5px within the 25px chip (F: padding:0 made the
+      // glyphs oversized vs the expanded sections). Restore the uniform inset —
+      // the only bug was the vertical-only strip that squashed the artwork.
+      '.lok-collapsed .form-heading-div > img.heading-icon, .lok-collapsed .form-heading-div > svg{padding:5px !important;box-sizing:border-box !important;width:25px !important;height:25px !important;}',
       '.lok-collapsed .form-heading-div .section-heading{line-height:1.25;}',
       // Collapse/Change/Edit pin to the row\'s RIGHT in both states (F: the
       // expanded card\'s Collapse was hugging the title).
@@ -1836,9 +1837,12 @@ var LokaliProfilePage = (function () {
     });
   }
   var _rfDirtySection = '';
-  // Two-state bar, ALWAYS visible (F 2026-08-29: an appearing-only bar reads
-  // as a missing SAVE button): resting = quiet "All changes saved" with the
-  // button dimmed; dirty = amber note naming the section + active SAVE.
+  // "✓ All changes saved" appears only AFTER a save this visit (F 2026-08-29:
+  // it should confirm an action, not greet you on load).
+  var _rfHasSaved = false;
+  // Bar ALWAYS visible (F: an appearing-only bar reads as a missing SAVE
+  // button): resting = no note + dimmed button (or the saved confirmation
+  // after a save); dirty = amber note naming the section + active SAVE.
   function _refreshSaveBar() {
     var bar = document.getElementById('lok-savebar');
     if (!bar) return;
@@ -1847,7 +1851,7 @@ var LokaliProfilePage = (function () {
     if (note) {
       note.textContent = _dirty
         ? (_rfDirtySection ? '● Unsaved changes in ' + _rfDirtySection : '● Unsaved changes')
-        : '✓ All changes saved';
+        : (_rfHasSaved ? '✓ All changes saved' : '');
       note.style.color = _dirty ? '#9A6B00' : '#11744A';
     }
     var btn = document.getElementById(SAVE_BTN);
@@ -2741,6 +2745,7 @@ var LokaliProfilePage = (function () {
             _vendor = res.data;
             if (_vendor && _vendor.profile_photo) _uploadedProfilePhotoUrl = null;
             _dirty = false; // saved — clear the leave-page warning
+            _rfHasSaved = true; // unlocks the "All changes saved" confirmation
             if (typeof _refreshSaveBar === 'function') _refreshSaveBar();
             _showSuccessPopup();
             // Out-of-area? The resolve route already returned the trigger's
