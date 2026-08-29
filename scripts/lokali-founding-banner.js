@@ -25,9 +25,12 @@
  * reader), so this constant now only drives which location id the RPC call
  * echoes back — cosmetic, no behavior change.
  *
- * Also updates the /pricing founding block's big remaining-count stat
- * (`.f-n` next to a "Founding spots left" label) from the same RPC response,
- * so the Designer-typed number there is only a static fallback.
+ * Also updates the /pricing founding block's big stats, so the Designer-typed
+ * numbers there are only static fallbacks:
+ *   - "Founding spots left" (`.f-n` next to that label) ← the same RPC response
+ *   - "Service categories" (`.f-n` next to that label) ← count of rows from
+ *     `data.categories()` (the anon-readable ACTIVE-category list; a category
+ *     addition like #152 professional-services updates it with no code change)
  *
  * Graceful: if the banner element, the API, or the community can't be resolved,
  * it leaves the existing static markup untouched and no-ops. Loaded site-wide;
@@ -54,19 +57,22 @@
     return null;
   }
 
-  // ─── locate the /pricing founding stat ─────────────────────────────────────
+  // ─── locate the /pricing founding stats ────────────────────────────────────
   // <span class="f-n f-n1">47</span><span class="f-l">Founding spots left</span>
-  // Match by the sibling label text, not the class alone — `.f-n` is reused for
-  // the neighboring "Service categories" stat in the same block.
-  function findStatEl() {
+  // <span class="f-n f-n2">9</span><span class="f-l">Service categories</span>
+  // Match by the sibling label text, not the class alone — `.f-n` is shared by
+  // both stats in the block.
+  function findStatByLabel(labelFragment) {
     var nodes = document.querySelectorAll('.f-n');
     for (var i = 0; i < nodes.length; i++) {
       var wrap = nodes[i].parentNode;
       var t = ((wrap && wrap.textContent) || '').toLowerCase();
-      if (t.indexOf('founding spot') !== -1) return nodes[i];
+      if (t.indexOf(labelFragment) !== -1) return nodes[i];
     }
     return null;
   }
+  function findStatEl()    { return findStatByLabel('founding spot'); }
+  function findCatStatEl() { return findStatByLabel('categor'); }
 
   // ─── styles (Plus Jakarta Sans; soft muted violet→peach, no ink) ───────────
   function injectStyle() {
@@ -181,19 +187,29 @@
   function start() {
     var countEl = findCountEl();
     var statEl  = findStatEl();
-    if (!countEl && !statEl) return; // neither surface on this page
+    var catEl   = findCatStatEl();
+    if (!countEl && !statEl && !catEl) return; // no live surface on this page
     var API = window.LokaliSupabaseAPI;
     if (!API || !API.founding || !API.data) return;
 
-    resolveLocationId(API).then(function (locId) {
-      if (locId == null) return; // community not found → leave static text
-      return API.founding.status(locId).then(function (res) {
-        var s = res && res.data;
-        if (!s || s.ok === false || typeof s.cap === 'undefined') return;
-        if (countEl) render(countEl, s);
-        if (statEl) renderStat(statEl, s);
-      });
-    }).catch(function () { /* leave static markup untouched */ });
+    if (countEl || statEl) {
+      resolveLocationId(API).then(function (locId) {
+        if (locId == null) return; // community not found → leave static text
+        return API.founding.status(locId).then(function (res) {
+          var s = res && res.data;
+          if (!s || s.ok === false || typeof s.cap === 'undefined') return;
+          if (countEl) render(countEl, s);
+          if (statEl) renderStat(statEl, s);
+        });
+      }).catch(function () { /* leave static markup untouched */ });
+    }
+
+    if (catEl) {
+      API.data.categories().then(function (res) {
+        var n = ((res && res.data) || []).length;
+        if (n > 0) catEl.textContent = String(n); // 0/error → keep static fallback
+      }).catch(function () { /* leave static markup untouched */ });
+    }
   }
 
   // The Supabase client sets window.LokaliSupabaseReady; wait for it if present.
