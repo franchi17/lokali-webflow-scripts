@@ -25,9 +25,13 @@
  * reader), so this constant now only drives which location id the RPC call
  * echoes back — cosmetic, no behavior change.
  *
+ * Also updates the /pricing founding block's big remaining-count stat
+ * (`.f-n` next to a "Founding spots left" label) from the same RPC response,
+ * so the Designer-typed number there is only a static fallback.
+ *
  * Graceful: if the banner element, the API, or the community can't be resolved,
  * it leaves the existing static markup untouched and no-ops. Loaded site-wide;
- * self-guards to the homepage hero via the banner lookup.
+ * self-guards via the element lookups (homepage hero + pricing stat).
  *
  * Keep this file byte-identical in scripts/ and lokali-webflow-scripts/scripts/.
  * Deploy: jsDelivr @v1.4 (commit + tag + purge), same as the other hero scripts.
@@ -45,6 +49,20 @@
     var nodes = document.querySelectorAll('.div-block-180 .text-block-107, .text-block-107');
     for (var i = 0; i < nodes.length; i++) {
       var t = (nodes[i].textContent || '').toLowerCase();
+      if (t.indexOf('founding spot') !== -1) return nodes[i];
+    }
+    return null;
+  }
+
+  // ─── locate the /pricing founding stat ─────────────────────────────────────
+  // <span class="f-n f-n1">47</span><span class="f-l">Founding spots left</span>
+  // Match by the sibling label text, not the class alone — `.f-n` is reused for
+  // the neighboring "Service categories" stat in the same block.
+  function findStatEl() {
+    var nodes = document.querySelectorAll('.f-n');
+    for (var i = 0; i < nodes.length; i++) {
+      var wrap = nodes[i].parentNode;
+      var t = ((wrap && wrap.textContent) || '').toLowerCase();
       if (t.indexOf('founding spot') !== -1) return nodes[i];
     }
     return null;
@@ -137,6 +155,16 @@
     fill.style.width = pct + '%';
   }
 
+  // ─── render: /pricing stat ─────────────────────────────────────────────────
+  function renderStat(statEl, status) {
+    var cap      = Math.max(0, status.cap | 0);
+    var claimed  = Math.max(0, Math.min(status.claimed | 0, cap || (status.claimed | 0)));
+    var remaining = (typeof status.remaining === 'number')
+      ? Math.max(0, status.remaining | 0)
+      : Math.max(0, cap - claimed);
+    statEl.textContent = String(remaining);
+  }
+
   // ─── data ──────────────────────────────────────────────────────────────────
   function resolveLocationId(API) {
     return API.data.locations().then(function (res) {
@@ -152,7 +180,8 @@
 
   function start() {
     var countEl = findCountEl();
-    if (!countEl) return; // not on the homepage hero
+    var statEl  = findStatEl();
+    if (!countEl && !statEl) return; // neither surface on this page
     var API = window.LokaliSupabaseAPI;
     if (!API || !API.founding || !API.data) return;
 
@@ -161,7 +190,8 @@
       return API.founding.status(locId).then(function (res) {
         var s = res && res.data;
         if (!s || s.ok === false || typeof s.cap === 'undefined') return;
-        render(countEl, s);
+        if (countEl) render(countEl, s);
+        if (statEl) renderStat(statEl, s);
       });
     }).catch(function () { /* leave static markup untouched */ });
   }
