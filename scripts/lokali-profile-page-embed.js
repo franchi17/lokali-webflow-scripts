@@ -1603,7 +1603,10 @@ var LokaliProfilePage = (function () {
       '@media (max-width: 767px){',
       '  .lok-2col{grid-template-columns:1fr;}',
       '  #lok-savebar{bottom:0;border-radius:14px 14px 0 0;margin-left:-8px;margin-right:-8px;}',
-      '  .lok-sec-summary{white-space:normal;}',
+      // Collapsed rows: the summary drops to its own full-width line under the
+      // heading instead of cramping between title and the Change button.
+      '  .lok-collapsed .form-heading-div{flex-wrap:wrap;}',
+      '  .lok-sec-summary{white-space:normal;flex:1 1 100%;order:9;margin-top:2px;}',
       '}'
     ].join('\n');
     document.head.appendChild(s);
