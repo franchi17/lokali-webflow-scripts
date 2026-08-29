@@ -151,6 +151,7 @@
     'text_messages', 'whatsapp_messages', 'phone_calls', // phone_calls = #76c call preference
     'phone_number', 'phone_visible',
     'contact_email', 'address',
+    'card_photo_url', // market-card cover pin (patch_card_photo.sql) — picker on the profile page
     // #147/SEC-050: the six address geo columns were REMOVED 2026-08-24 —
     // written server-side by /address/resolve (service role) and REVOKED from
     // `authenticated`; a straggler key here would fail the whole PATCH (42501).

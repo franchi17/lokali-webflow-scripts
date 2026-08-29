@@ -646,6 +646,118 @@ var LokaliProfilePage = (function () {
     else anchorSection.parentNode.appendChild(section);
   }
 
+  // ---- Market card photo picker (card redesign follow-up, 2026-08-29) -----
+  // One compact card, zero standing preview: a thumbnail strip of the vendor's
+  // EXISTING photos (portfolio + listing images, via the adapter's
+  // coverCandidates — the same chain the Market card resolves) plus an
+  // "Automatic" tile. Clicking saves instantly (photo model, like uploads),
+  // writing vendors.card_photo_url (patch_card_photo.sql). Focal points are
+  // NOT edited here — the card reuses the chosen photo's own drag-to-reposition.
+  var _CARDPHOTO_ICON = '<svg class="heading-icon purple" width="25" height="25" viewBox="0 0 640 640" fill="#6002EE" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M64 160C64 124.7 92.7 96 128 96L512 96C547.3 96 576 124.7 576 160L576 480C576 515.3 547.3 544 512 544L128 544C92.7 544 64 515.3 64 480L64 160zM128 160L128 352L512 352L512 160L128 160zM128 416L128 480L328 480L328 416L128 416zM392 416L392 480L512 480L512 416L392 416zM224 208A44 44 0 1 1 224 296A44 44 0 1 1 224 208z"/></svg>';
+  var _cardPhotoCands = null;   // [{url, fx, fy}] once loaded
+  var _cardPhotoSaving = false;
+  function _cardPhotoPinned() { return (_vendor && _vendor.card_photo_url) || null; }
+  function _injectCardPhotoCard() {
+    if (document.getElementById('lok-card-photo')) return;
+    if (!_vendor || _vendor.id == null) return;
+    var api = window.LokaliAPI && window.LokaliAPI.vendors;
+    if (!api || typeof api.coverCandidates !== 'function') return; // stale cached adapter — feature simply absent
+    var mk = _mkCard('lok-card-photo', _CARDPHOTO_ICON, 'Market Card Photo',
+      'Pick the photo shoppers see on your card in The Market. Automatic uses your first portfolio or listing photo.');
+    var strip = document.createElement('div');
+    strip.id = 'lok-card-photo-strip';
+    strip.style.cssText = 'display:flex;flex-wrap:wrap;gap:10px;margin-top:4px;';
+    mk.col.appendChild(strip);
+    var hint = document.createElement('div');
+    hint.style.cssText = 'font-size:12px;color:#6B6880;margin-top:10px;line-height:1.5;';
+    hint.textContent = 'The card shows a wide crop of the photo. To change what part shows, reposition the photo where you uploaded it and the card follows.';
+    mk.col.appendChild(hint);
+    var pf = document.getElementById('lok-portfolio-card');
+    var pay = document.getElementById('lok-pay-card');
+    if (pf && pf.parentNode) pf.parentNode.insertBefore(mk.section, pf.nextSibling);
+    else if (pay && pay.parentNode) pay.parentNode.insertBefore(mk.section, pay);
+    else return;
+    api.coverCandidates(_vendor.id).then(function (out) {
+      if (!out || out.error || !out.data) { _renderCardPhotoStrip(); return; }
+      // Dedupe by URL (a photo can theoretically appear in two legs).
+      var seen = {}, list = [];
+      (out.data.candidates || []).forEach(function (c) {
+        if (c && c.url && !seen[c.url]) { seen[c.url] = true; list.push(c); }
+      });
+      _cardPhotoCands = list;
+      // The pin from the adapter is fresher than the cached _vendor row.
+      if (out.data.pinned && _vendor) _vendor.card_photo_url = out.data.pinned;
+      _renderCardPhotoStrip();
+    }).catch(function () { _renderCardPhotoStrip(); });
+  }
+  function _renderCardPhotoStrip() {
+    var strip = document.getElementById('lok-card-photo-strip');
+    if (!strip) return;
+    strip.innerHTML = '';
+    var cands = _cardPhotoCands || [];
+    if (!cands.length) {
+      var none = document.createElement('div');
+      none.style.cssText = 'font-size:13px;color:#6B6880;line-height:1.5;';
+      none.textContent = 'Add a portfolio photo, or a photo on a service or product, and you can pick your card photo here.';
+      strip.appendChild(none);
+      return;
+    }
+    var pinned = _cardPhotoPinned();
+    // A pin whose photo no longer exists behaves as Automatic (same rule the card uses).
+    var pinValid = false;
+    for (var i = 0; i < cands.length; i++) { if (cands[i].url === pinned) { pinValid = true; break; } }
+    function tile(selected) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.style.cssText = 'position:relative;width:124px;height:80px;padding:0;border-radius:10px;overflow:hidden;cursor:pointer;background:#F7F6FC;border:2px solid ' + (selected ? '#6002EE' : '#E4DFF6') + ';' + (selected ? 'box-shadow:0 0 0 3px rgba(96,2,238,.15);' : '');
+      return b;
+    }
+    function choose(url) {
+      if (_cardPhotoSaving) return;
+      _cardPhotoSaving = true;
+      var S = window.LokaliSupabaseAPI;
+      S.vendors.updateProfile(_vendor.id, { card_photo_url: url }).then(function (res) {
+        _cardPhotoSaving = false;
+        if (res && res.error) { _showToast('error', 'Could not save your card photo. Please try again.'); return; }
+        _vendor.card_photo_url = url;
+        _showToast('success', url ? 'Market card photo updated.' : 'Card photo set to automatic.');
+        _renderCardPhotoStrip();
+      }).catch(function () {
+        _cardPhotoSaving = false;
+        _showToast('error', 'Could not save your card photo. Please try again.');
+      });
+    }
+    // Automatic tile first — the Market-card gradient with a label.
+    var auto = tile(!pinValid);
+    auto.setAttribute('aria-label', 'Automatic (first portfolio or listing photo)');
+    auto.style.background = 'linear-gradient(135deg,#E9E1FA 0%,#F9E7DC 55%,#FDF3EC 100%)';
+    var al = document.createElement('span');
+    al.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:600 12px "Plus Jakarta Sans",sans-serif;color:#5A5570;';
+    al.textContent = 'Automatic';
+    auto.appendChild(al);
+    auto.addEventListener('click', function () { if (_cardPhotoPinned()) choose(null); });
+    strip.appendChild(auto);
+    cands.forEach(function (c) {
+      var selected = pinValid && c.url === pinned;
+      var b = tile(selected);
+      b.setAttribute('aria-label', selected ? 'Current card photo' : 'Use this photo on your Market card');
+      var img = document.createElement('img');
+      img.src = c.url; img.alt = '';
+      img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';
+      if (typeof c.fx === 'number' && typeof c.fy === 'number') img.style.objectPosition = c.fx + '% ' + c.fy + '%';
+      img.addEventListener('error', function () { if (b.parentNode) strip.removeChild(b); });
+      b.appendChild(img);
+      if (selected) {
+        var check = document.createElement('span');
+        check.style.cssText = 'position:absolute;top:6px;right:6px;width:20px;height:20px;border-radius:50%;background:#6002EE;color:#fff;display:flex;align-items:center;justify-content:center;font:700 12px "Plus Jakarta Sans",sans-serif;';
+        check.textContent = '✓';
+        b.appendChild(check);
+      }
+      b.addEventListener('click', function () { if (!selected) choose(c.url); });
+      strip.appendChild(b);
+    });
+  }
+
   // ---- unsaved-changes guard ----------------------------------------------
   // Portfolio photos and photo uploads persist INSTANTLY, but every text
   // field/checkbox needs the SAVE button — an easy trap (typed a bio, uploaded
@@ -968,6 +1080,7 @@ var LokaliProfilePage = (function () {
     var aboutBiz = sectionByHeading(/about your business/i);
     var catsLocs = sectionByHeading(/categories\s*&\s*locations/i);
     var portfolio = document.getElementById('lok-portfolio-card');
+    var cardPhoto = document.getElementById('lok-card-photo');
     var aboutYou = document.getElementById('lok-about-you');
     var pay = document.getElementById('lok-pay-card');
 
@@ -1012,6 +1125,7 @@ var LokaliProfilePage = (function () {
     nav.style.cssText = 'position:sticky;top:0;z-index:40;background:#F7F6FC;display:flex;gap:8px;overflow-x:auto;padding:10px 2px;margin-bottom:8px;font-family:"Plus Jakarta Sans",sans-serif;-webkit-overflow-scrolling:touch;';
     [
       ['lok-portfolio-card', 'Gallery', portfolio],
+      ['lok-card-photo', 'Market card', cardPhoto],
       ['lok-sec-logo', 'Logo', logo],
       ['lok-sec-business', 'Business info', biz],
       ['lok-about-you', 'Meet the vendor', aboutYou],
@@ -1037,7 +1151,7 @@ var LokaliProfilePage = (function () {
     // Mirror the public page: photos -> logo -> the business (info, story,
     // where) -> the person -> payments. About-Your-Business and
     // Categories & Locations ride under the "Business info" nav stop.
-    [portfolio, logo, biz, aboutBiz, catsLocs, aboutYou, pay].forEach(function (sec) {
+    [portfolio, cardPhoto, logo, biz, aboutBiz, catsLocs, aboutYou, pay].forEach(function (sec) {
       if (!sec) return;
       container.insertBefore(sec, cursor.nextSibling);
       cursor = sec;
@@ -1422,6 +1536,7 @@ var LokaliProfilePage = (function () {
     _injectPaymentFields();
     _injectAboutYouCard();
     _injectPortfolioCard();
+    _injectCardPhotoCard();
     _injectPhoneCallsCheckbox();
     _hideInstagramField();
     _polishLogoSection();

@@ -485,6 +485,68 @@
     clearToken: function () { invalidateMe(); invalidateBilling(); _appUserP = null; }
   };
 
+  // Shared cover-image data for the browse cards (redesign 2026-08-29) — used
+  // by vendors.covers (the grid) and vendors.coverCandidates (the dashboard
+  // picker). Resolves every candidate photo per vendor in priority order
+  // (gallery -> service MAIN image -> product MAIN image -> extra service
+  // photo -> extra product photo) plus the vendors.card_photo_url pin.
+  function coverData(idNums) {
+    function pushCands(cands, rows, getVid) {
+      (rows || []).forEach(function (r) {
+        var vid = getVid(r);
+        if (vid != null && r.image_url) {
+          (cands[vid] = cands[vid] || []).push({ url: r.image_url, fx: r.image_focus_x != null ? r.image_focus_x : null, fy: r.image_focus_y != null ? r.image_focus_y : null });
+        }
+      });
+    }
+    return rawClient().then(function (c) {
+      return Promise.all([
+        c.from('vendor_photos')
+          .select('vendors_id,image_url,image_focus_x,image_focus_y,sort_order,id')
+          .in('vendors_id', idNums).eq('is_active', true).not('image_url', 'is', null)
+          .order('sort_order', { ascending: true, nullsFirst: false }).order('id', { ascending: true }),
+        // is_active eq true mirrors the PUBLIC read policy so a signed-in
+        // owner's hidden listings can't become their own card's cover.
+        c.from('services')
+          .select('vendors_id,image_url,image_focus_x,image_focus_y,sort_order,id')
+          .in('vendors_id', idNums).eq('is_active', true).not('image_url', 'is', null)
+          .order('sort_order', { ascending: true, nullsFirst: false }).order('id', { ascending: true }),
+        c.from('products')
+          .select('vendors_id,image_url,image_focus_x,image_focus_y,sort_order,id')
+          .in('vendors_id', idNums).eq('is_active', true).not('image_url', 'is', null)
+          .order('sort_order', { ascending: true, nullsFirst: false }).order('id', { ascending: true }),
+        // !inner join = the vendors_id filter runs server-side (a bare embed
+        // would fetch every listing photo on the site and filter here).
+        c.from('service_photos')
+          .select('image_url,sort_order,id,services!inner(vendors_id)')
+          .in('services.vendors_id', idNums)
+          .eq('is_active', true).not('image_url', 'is', null)
+          .order('sort_order', { ascending: true, nullsFirst: false }).order('id', { ascending: true }),
+        c.from('product_photos')
+          .select('image_url,sort_order,id,products!inner(vendors_id)')
+          .in('products.vendors_id', idNums)
+          .eq('is_active', true).not('image_url', 'is', null)
+          .order('sort_order', { ascending: true, nullsFirst: false }).order('id', { ascending: true }),
+        // Pins. Before patch_card_photo.sql is applied this leg errors (column
+        // not granted) — supabase-js resolves with {error}, so the batch
+        // survives and pins are simply empty.
+        c.from('vendors')
+          .select('id,card_photo_url')
+          .in('id', idNums).not('card_photo_url', 'is', null)
+      ]);
+    }).then(function (res) {
+      var cands = {};
+      pushCands(cands, res[0] && res[0].data, function (r) { return r.vendors_id; });
+      pushCands(cands, res[1] && res[1].data, function (r) { return r.vendors_id; });
+      pushCands(cands, res[2] && res[2].data, function (r) { return r.vendors_id; });
+      pushCands(cands, res[3] && res[3].data, function (r) { return r.services && r.services.vendors_id; });
+      pushCands(cands, res[4] && res[4].data, function (r) { return r.products && r.products.vendors_id; });
+      var pins = {};
+      (res[5] && res[5].data || []).forEach(function (r) { if (r.card_photo_url) pins[r.id] = r.card_photo_url; });
+      return { cands: cands, pins: pins };
+    });
+  }
+
   var vendors = {
     me: vendorMe,
     // Me-cache buster (mirrors plans.invalidateBilling) — the verification
@@ -678,60 +740,35 @@
     // photos live on the listing row itself, e.g. Nolasko + Echoed.)
     // All five tables are anon-readable (rls.sql grants + public-read policies
     // gate on parent visibility), so RLS does the filtering — no new SQL.
+    // vendors.card_photo_url (patch_card_photo.sql) PINS one of the candidate
+    // URLs to the front: a matching candidate wins WITH its own row's focal
+    // point (drag-to-reposition stays the source of truth); a pin that matches
+    // nothing (photo deleted/deactivated, or the column not yet granted) falls
+    // back to the automatic chain untouched.
     // The vendor's LOGO (profile_photo) is deliberately never used here: the
     // card shows it as the small avatar, and the cover's job is their WORK.
     // Returns { data: { covers: { [vendors_id]: {url, fx, fy} } } }.
     covers: function (ids) {
       if (!Array.isArray(ids) || !ids.length) return Promise.resolve({ data: { covers: {} }, error: null, status: 200 });
       var idNums = ids.map(Number).filter(function (n) { return !isNaN(n); });
-      function firstBy(covers, rows, getVid) {
-        (rows || []).forEach(function (r) {
-          var vid = getVid(r);
-          if (vid != null && covers[vid] == null && r.image_url) {
-            covers[vid] = { url: r.image_url, fx: r.image_focus_x != null ? r.image_focus_x : null, fy: r.image_focus_y != null ? r.image_focus_y : null };
-          }
-        });
-      }
-      return rawClient().then(function (c) {
-        return Promise.all([
-          c.from('vendor_photos')
-            .select('vendors_id,image_url,image_focus_x,image_focus_y,sort_order,id')
-            .in('vendors_id', idNums).eq('is_active', true).not('image_url', 'is', null)
-            .order('sort_order', { ascending: true, nullsFirst: false }).order('id', { ascending: true }),
-          // is_active eq true mirrors the PUBLIC read policy so a signed-in
-          // owner's hidden listings can't become their own card's cover.
-          c.from('services')
-            .select('vendors_id,image_url,image_focus_x,image_focus_y,sort_order,id')
-            .in('vendors_id', idNums).eq('is_active', true).not('image_url', 'is', null)
-            .order('sort_order', { ascending: true, nullsFirst: false }).order('id', { ascending: true }),
-          c.from('products')
-            .select('vendors_id,image_url,image_focus_x,image_focus_y,sort_order,id')
-            .in('vendors_id', idNums).eq('is_active', true).not('image_url', 'is', null)
-            .order('sort_order', { ascending: true, nullsFirst: false }).order('id', { ascending: true }),
-          // !inner join = the vendors_id filter runs server-side (a bare embed
-          // would fetch every listing photo on the site and filter here).
-          c.from('service_photos')
-            .select('image_url,sort_order,id,services!inner(vendors_id)')
-            .in('services.vendors_id', idNums)
-            .eq('is_active', true).not('image_url', 'is', null)
-            .order('sort_order', { ascending: true, nullsFirst: false }).order('id', { ascending: true }),
-          c.from('product_photos')
-            .select('image_url,sort_order,id,products!inner(vendors_id)')
-            .in('products.vendors_id', idNums)
-            .eq('is_active', true).not('image_url', 'is', null)
-            .order('sort_order', { ascending: true, nullsFirst: false }).order('id', { ascending: true })
-        ]);
-      }).then(function (res) {
+      return coverData(idNums).then(function (d) {
         var covers = {};
-        // Priority: gallery, then main listing images, then extra photos —
-        // every leg carries a focal point where its table has one.
-        firstBy(covers, res[0] && res[0].data, function (r) { return r.vendors_id; });
-        firstBy(covers, res[1] && res[1].data, function (r) { return r.vendors_id; });
-        firstBy(covers, res[2] && res[2].data, function (r) { return r.vendors_id; });
-        firstBy(covers, res[3] && res[3].data, function (r) { return r.services && r.services.vendors_id; });
-        firstBy(covers, res[4] && res[4].data, function (r) { return r.products && r.products.vendors_id; });
+        Object.keys(d.cands).forEach(function (vid) {
+          var list = d.cands[vid], pick = null, pin = d.pins[vid];
+          if (pin) for (var i = 0; i < list.length; i++) { if (list[i].url === pin) { pick = list[i]; break; } }
+          covers[vid] = pick || list[0];
+        });
         return { data: { covers: covers }, error: null, status: 200 };
       }, function (e) { return fail(errText(e)); }); // never reject — browse falls back to gradient covers
+    },
+    // Dashboard picker (profile page): every cover candidate for ONE vendor,
+    // in chain order, plus the current pin. { candidates: [{url,fx,fy}], pinned: url|null }.
+    coverCandidates: function (vendorId) {
+      var id = Number(vendorId);
+      if (isNaN(id)) return Promise.resolve(fail('bad vendor id', 400));
+      return coverData([id]).then(function (d) {
+        return { data: { candidates: d.cands[id] || [], pinned: d.pins[id] || null }, error: null, status: 200 };
+      }, function (e) { return fail(errText(e)); });
     },
     getById: function (id) {
       return SAPI().vendors.getById(id).then(function (res) {
