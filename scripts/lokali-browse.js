@@ -380,8 +380,14 @@
     // Mobile (≤991px): the filter sidebar had no drawer CSS, so it sat inline and clipped
     // the vendor cards. Collapse the [sidebar | content] layout to one column and turn the
     // sidebar into an off-canvas slide-in drawer (the Filter button toggles `.open` via JS).
+    // v1.4.354: minmax(0,1fr), NOT 1fr — a bare 1fr track's minimum is the
+    // children's min-content, so the cards' intrinsic ~369px beat the ~306px
+    // grid box on phones and every card hung out past the right edge (same
+    // trap as the v1.4.352 dashboard fix). min-width:0 on the children lets
+    // their content shrink with the track.
     "@media screen and (max-width:991px){" +
-      ".grid-template-columns{grid-template-columns:1fr!important;}" +
+      ".grid-template-columns{grid-template-columns:minmax(0,1fr)!important;}" +
+      ".grid-template-columns>*{min-width:0;}" +
       "#browse-sidebar{display:block!important;position:fixed!important;top:0;left:0;height:100vh;width:86vw;max-width:340px;z-index:200;transform:translateX(-100%);transition:transform .25s ease;overflow-y:auto;-webkit-overflow-scrolling:touch;border-radius:0;margin:0;box-shadow:2px 0 16px rgba(0,0,0,.12);}" +
       "#browse-sidebar.open{transform:translateX(0);}" +
       "#browse-filter-backdrop.open{display:block;}" +
