@@ -1,24 +1,28 @@
 /**
- * Lokali — Homepage "Meet your neighbors" strip (#162 person-first follow-ups).
+ * Lokali — Homepage "Meet your neighbors" strip, v2 person-first (#162).
  *
- * Injects a section between the hero and "How It Works" (`.section-3`) with
- * up to 4 live publish-ready vendor cards on a deterministic weekly rotation
- * (Monday, America/Chicago — same cadence as the marketing-tools rotation).
- * Every visitor sees the same set for the week; no server state is involved:
- * the week key seeds a client-side shuffle of the public vendor list.
+ * Injects a section between the hero and "What is Lokali" with up to 4 live
+ * publish-ready vendors as PERSON-first cards (F 2026-08-31): owner face +
+ * first name lead, business name as body text, owner-bio hook line, category
+ * pill (site identity colors/icons) and a FOUNDING VENDOR badge. Founding
+ * vendors sort first; within the week the set is a deterministic shuffle
+ * seeded by the Monday-of-week date in America/Chicago (no server state).
  *
- * Data = the site-wide adapter (`window.LokaliAPI`): vendors.list() is
- * publish-ready-gated server-side, covers() resolves card photos (never the
- * logo), data.locations() maps area chips. Failure/empty = NOTHING is
- * injected — the homepage looks exactly as it does today (spotlight-home's
- * empty-state contract).
+ * Data = direct anon reads through window.LokaliSupabaseReady (the
+ * spotlight-home pattern): one vendors select carrying the Meet-the-Vendor
+ * owner fields (owner_name/owner_photo/owner_bio — NOT in the adapter's
+ * VENDOR_LIST_COLS, which is why this does not go through vendors.list).
+ * RLS gates the rows; is_publish_ready is filtered server-side. Failure or
+ * empty = NOTHING injected, homepage unchanged.
  *
- * SAFETY: business_name / tagline / description are VENDOR-AUTHORED — all
- * text lands via textContent (no innerHTML interpolation of vendor data).
+ * Fallback per F decision: a vendor missing owner_name renders business-led
+ * (business name in the headline slot, tagline as the hook); missing photo =
+ * initials circle. Vendor-authored text lands via textContent only.
  *
- * Loads on the homepage via a PINNED page-level tag (@1.4.N). Requires
- * lokali-api-adapter.js (site-wide footer). Keep this file byte-identical in
- * scripts/ and lokali-webflow-scripts/scripts/.
+ * Deploy: Webflow REGISTERED script `lokalineighbors` (page-level on Home) —
+ * a version bump is a re-register with the new @1.4.N URL + SRI hash, NOT a
+ * freeform-tag sweep (the Data API 406s script tags in Home's freeform code).
+ * Keep this file byte-identical in scripts/ and lokali-webflow-scripts/scripts/.
  */
 (function () {
   'use strict';
@@ -33,13 +37,23 @@
     ? window.LOKALI_NEIGHBORS_EXCLUDE.map(String)
     : ['pancha-ventures'];
 
-  // Cover fallback palettes (match the-market's branded gradient fallbacks).
-  var FALLBACK = [
-    { bg: 'linear-gradient(135deg,#ECE8F8 0%,#D4AAFD 100%)', chipBg: '#F3EBFF', chipFg: '#6002EE', av: '#6002EE' },
-    { bg: 'linear-gradient(135deg,#FFF3EA 0%,#FFC9A1 100%)', chipBg: '#FFF3EA', chipFg: '#B85C2B', av: '#B85C2B' },
-    { bg: 'linear-gradient(135deg,#E7F3EC 0%,#A9D8BE 100%)', chipBg: '#EAFAF2', chipFg: '#1D6A45', av: '#1D6A45' },
-    { bg: 'linear-gradient(135deg,#EEF3F8 0%,#A9C4D8 100%)', chipBg: '#EEF3F8', chipFg: '#2C5470', av: '#2C5470' }
-  ];
+  // Category identities — colors/labels mirror the-market's CAT_BY_ID and the
+  // icon assets its sidebar uses (#96 taxonomy; #152 added 9). Icons render as
+  // CSS-masked spans so they take the pill's text color, like browse does.
+  var CAT_ASSET = 'https://cdn.prod.website-files.com/6989095758ae17edfc424d30/';
+  var CATS = {
+    1: { label: 'Handcrafted Goods',       bg: '#FFF8E6', fg: '#8A5A00', icon: '6a186b061a80eb9ba75f0d0a_scissors-solid.png' },
+    2: { label: 'Business Services',       bg: '#F6EEF5', fg: '#7A3B6D', icon: '6a18f6d4b01673d30ca9bcb8_briefcase.svg' },
+    3: { label: 'Beauty',                  bg: '#FEF3F2', fg: '#C0392B', icon: '6a18f2524e31974a75003735_hair%20dryer.svg' },
+    4: { label: 'Children',                bg: '#E6F1FB', fg: '#1A5C9A', icon: '6a18f6d4f1bbd4795f5345bc_backpack.svg' },
+    5: { label: 'Events & Entertainment',  bg: '#F3EBFF', fg: '#6002EE', icon: '6a18f6d414c76bb968f180db_balloon.svg' },
+    6: { label: 'Food',                    bg: '#FFF3EA', fg: '#FF6B00', icon: '6a186b067365d964abee8918_utensils-solid.png' },
+    7: { label: 'Wellness',                bg: '#EAFAF2', fg: '#1D6A45', icon: '6a186b06cfcb6c4d6d1e1cf7_heart-regular.png' },
+    8: { label: 'Home & Property',         bg: '#E7F4F2', fg: '#1F6E66', icon: '6a186b06a37dcea6514f15f9_house-regular.png' },
+    9: { label: 'Professional Services',   bg: '#EEF3F8', fg: '#2C5470', icon: '6a89a66cb52c25150db94d06_user-tie-solid.svg' }
+  };
+
+  var INITIAL_COLORS = ['#6002EE', '#B85C2B', '#1D6A45', '#2C5470'];
 
   function injectStyle() {
     if (document.getElementById(STYLE_ID)) return;
@@ -51,22 +65,30 @@
       '.lok-nb-sub{font-size:16px;color:#4A4761;margin:6px 0 0;}' +
       '.lok-nb-all{font-size:15px;font-weight:600;color:#6002EE;text-decoration:none;white-space:nowrap;}' +
       '.lok-nb-all:hover{color:#4B02BB;}' +
-      '.lok-nb-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:22px;}' +
+      '.lok-nb-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:22px;align-items:stretch;}' +
       '@media(max-width:991px){.lok-nb-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}' +
       '@media(max-width:560px){.lok-nb-grid{grid-template-columns:1fr;max-width:420px;margin:0 auto;}}' +
-      '.lok-nb-card{display:block;background:#fff;border:1px solid #EEEDF6;border-radius:18px;overflow:hidden;' +
-        'box-shadow:0 10px 26px rgba(26,24,41,.07);text-decoration:none;transition:transform .2s ease,box-shadow .2s ease;}' +
+      '.lok-nb-card{display:flex;flex-direction:column;align-items:center;text-align:center;background:#fff;' +
+        'border:1px solid #EEEDF6;border-radius:18px;padding:30px 20px 22px;box-shadow:0 10px 26px rgba(26,24,41,.07);' +
+        'text-decoration:none;transition:transform .2s ease,box-shadow .2s ease;}' +
       '.lok-nb-card:hover{transform:translateY(-3px);box-shadow:0 16px 34px rgba(26,24,41,.11);}' +
-      '.lok-nb-cover{height:118px;background-size:cover;background-position:center;}' +
-      '.lok-nb-body{padding:0 16px 16px;}' +
-      '.lok-nb-avatar{width:52px;height:52px;border-radius:50%;border:3px solid #fff;margin-top:-26px;' +
-        'background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;' +
-        'font-size:17px;font-weight:700;color:#fff;}' +
-      '.lok-nb-name{margin-top:8px;font-size:16px;font-weight:700;color:#1A1829;}' +
-      '.lok-nb-line{font-size:13px;color:#4A4761;margin-top:2px;overflow:hidden;text-overflow:ellipsis;' +
+      '.lok-nb-photo{width:104px;height:104px;border-radius:50%;overflow:hidden;border:4px solid #F3EBFF;' +
+        'box-shadow:0 6px 16px rgba(96,2,238,.14);flex-shrink:0;}' +
+      '.lok-nb-photo img{width:100%;height:100%;object-fit:cover;display:block;}' +
+      '.lok-nb-initials{width:104px;height:104px;border-radius:50%;border:4px solid #F3EBFF;flex-shrink:0;' +
+        'box-shadow:0 6px 16px rgba(96,2,238,.14);display:flex;align-items:center;justify-content:center;' +
+        'font-size:32px;font-weight:700;color:#fff;}' +
+      '.lok-nb-name{margin-top:13px;font-size:20px;font-weight:800;color:#1A1829;}' +
+      '.lok-nb-biz{margin-top:2px;font-size:14px;font-weight:600;color:#4A4761;}' +
+      '.lok-nb-bio{margin-top:6px;font-size:13px;line-height:1.5;color:#6B6880;overflow:hidden;text-overflow:ellipsis;' +
         'display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}' +
-      '.lok-nb-chip{display:inline-block;margin-top:9px;font-size:11px;font-weight:600;border-radius:999px;padding:4px 10px;}' +
-      '.lok-nb-note{margin-top:24px;text-align:center;font-size:13px;color:#8E8BA6;}';
+      '.lok-nb-pills{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:12px;}' +
+      '.lok-nb-cat{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;border-radius:999px;padding:5px 12px;}' +
+      '.lok-nb-cat-ic{display:inline-block;width:12px;height:12px;-webkit-mask-size:contain;mask-size:contain;' +
+        '-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center;}' +
+      '.lok-nb-founding{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;letter-spacing:.05em;' +
+        'color:#9A6B00;background:#fff;border:1.5px solid #C9A22A;border-radius:999px;padding:3px 10px;}' +
+      '.lok-nb-cta{margin-top:auto;padding-top:14px;font-size:14px;font-weight:700;color:#6002EE;}';
     var s = document.createElement('style');
     s.id = STYLE_ID;
     s.textContent = css;
@@ -74,7 +96,6 @@
   }
 
   // ---- weekly deterministic rotation --------------------------------------
-  // Week key = the Monday of the current week in America/Chicago, "YYYY-MM-DD".
   function weekKey() {
     var parts, y, m, d;
     try {
@@ -84,8 +105,8 @@
       var n = new Date(); y = n.getFullYear(); m = n.getMonth() + 1; d = n.getDate();
     }
     var dt = new Date(Date.UTC(y, m - 1, d));
-    var dow = dt.getUTCDay();                       // 0 Sun .. 6 Sat
-    dt.setUTCDate(dt.getUTCDate() - ((dow + 6) % 7)); // back to Monday
+    var dow = dt.getUTCDay();
+    dt.setUTCDate(dt.getUTCDate() - ((dow + 6) % 7));
     return dt.toISOString().slice(0, 10);
   }
 
@@ -114,7 +135,11 @@
       var j = Math.floor(rnd() * (i + 1));
       var t = arr[i]; arr[i] = arr[j]; arr[j] = t;
     }
-    return arr.slice(0, MAX_CARDS);
+    arr = arr.slice(0, MAX_CARDS);
+    // Founding vendors lead (stable within the shuffled order).
+    var f = [], rest = [];
+    for (var k = 0; k < arr.length; k++) (arr[k].is_founding_member === true ? f : rest).push(arr[k]);
+    return f.concat(rest);
   }
 
   // ---- rendering ----------------------------------------------------------
@@ -130,66 +155,97 @@
     return slug ? ('/' + encodeURIComponent(slug)) : ('/vendor?id=' + encodeURIComponent(v.id));
   }
 
-  function card(v, idx, locById, covers) {
-    var pal = FALLBACK[idx % FALLBACK.length];
+  var CROWN_SVG = '<svg width="11" height="11" viewBox="0 0 24 24" fill="#C9A22A" aria-hidden="true"><path d="M2 8l5 4 5-8 5 8 5-4-2 12H4L2 8z"/></svg>';
+
+  function card(v, idx) {
     var a = document.createElement('a');
     a.className = 'lok-nb-card';
     a.href = vendorHref(v);
 
-    var cover = document.createElement('div');
-    cover.className = 'lok-nb-cover';
-    var cv = covers && covers[v.id];
-    if (cv && cv.url) {
-      cover.style.backgroundImage = 'url("' + String(cv.url).replace(/"/g, '%22') + '")';
-      // fx/fy arrive as PERCENT values (0-100), matching browse's objectPosition use.
-      if (typeof cv.fx === 'number' && typeof cv.fy === 'number') cover.style.backgroundPosition = cv.fx + '% ' + cv.fy + '%';
-    } else {
-      cover.style.background = pal.bg;
-    }
-    a.appendChild(cover);
+    // Person-first when owner_name exists; business-led fallback otherwise.
+    var ownerName = String(v.owner_name || '').trim();
+    var headline = ownerName || String(v.business_name || 'Local business');
+    var photoUrl = String(v.owner_photo || '').trim() || String(v.profile_photo || '').trim();
 
-    var body = document.createElement('div');
-    body.className = 'lok-nb-body';
-
-    var av = document.createElement('div');
-    av.className = 'lok-nb-avatar';
-    var photo = String(v.profile_photo || '').trim();
-    if (photo) {
-      av.style.backgroundImage = 'url("' + photo.replace(/"/g, '%22') + '")';
-      av.style.backgroundColor = '#EEEDF6';
+    if (photoUrl) {
+      var wrap = document.createElement('div');
+      wrap.className = 'lok-nb-photo';
+      var img = document.createElement('img');
+      img.src = photoUrl;
+      img.alt = headline;
+      img.loading = 'lazy';
+      wrap.appendChild(img);
+      a.appendChild(wrap);
     } else {
-      av.style.backgroundColor = pal.av;
-      av.textContent = initials(v.business_name);
+      var ini = document.createElement('div');
+      ini.className = 'lok-nb-initials';
+      ini.style.backgroundColor = INITIAL_COLORS[idx % INITIAL_COLORS.length];
+      ini.textContent = initials(headline);
+      a.appendChild(ini);
     }
-    body.appendChild(av);
 
     var name = document.createElement('div');
     name.className = 'lok-nb-name';
-    name.textContent = v.business_name || 'Local business';
-    body.appendChild(name);
+    name.textContent = headline;
+    a.appendChild(name);
 
-    var line = document.createElement('div');
-    line.className = 'lok-nb-line';
-    line.textContent = String(v.business_tagline || v.business_description || '').trim();
-    body.appendChild(line);
-
-    var locIds = Array.isArray(v.locations_id) ? v.locations_id : (v.locations_id != null ? [v.locations_id] : []);
-    var locName = '';
-    for (var i = 0; i < locIds.length; i++) { if (locById[locIds[i]]) { locName = locById[locIds[i]]; break; } }
-    if (locName) {
-      var chip = document.createElement('span');
-      chip.className = 'lok-nb-chip';
-      chip.style.background = pal.chipBg;
-      chip.style.color = pal.chipFg;
-      chip.textContent = locName;
-      body.appendChild(chip);
+    if (ownerName && v.business_name && v.business_name !== ownerName) {
+      var biz = document.createElement('div');
+      biz.className = 'lok-nb-biz';
+      biz.textContent = v.business_name;
+      a.appendChild(biz);
     }
 
-    a.appendChild(body);
+    var hook = String((ownerName && v.owner_bio) || v.business_tagline || v.business_description || '').trim();
+    if (hook) {
+      var bio = document.createElement('div');
+      bio.className = 'lok-nb-bio';
+      bio.textContent = hook;
+      a.appendChild(bio);
+    }
+
+    var pills = document.createElement('div');
+    pills.className = 'lok-nb-pills';
+
+    var catIds = Array.isArray(v.categories_id) ? v.categories_id : (v.categories_id != null ? [v.categories_id] : []);
+    for (var i = 0; i < catIds.length; i++) {
+      var cat = CATS[catIds[i]];
+      if (!cat) continue;
+      var pill = document.createElement('span');
+      pill.className = 'lok-nb-cat';
+      pill.style.color = cat.fg;
+      pill.style.background = cat.bg;
+      var ic = document.createElement('span');
+      ic.className = 'lok-nb-cat-ic';
+      ic.style.backgroundColor = cat.fg;
+      var url = 'url("' + CAT_ASSET + cat.icon + '")';
+      ic.style.webkitMaskImage = url;
+      ic.style.maskImage = url;
+      pill.appendChild(ic);
+      pill.appendChild(document.createTextNode(cat.label));
+      pills.appendChild(pill);
+      break; // one category pill per card
+    }
+
+    if (v.is_founding_member === true) {
+      var fnd = document.createElement('span');
+      fnd.className = 'lok-nb-founding';
+      fnd.innerHTML = CROWN_SVG; // static SVG only — vendor text never lands here
+      fnd.appendChild(document.createTextNode('FOUNDING VENDOR'));
+      pills.appendChild(fnd);
+    }
+
+    if (pills.childNodes.length) a.appendChild(pills);
+
+    var cta = document.createElement('div');
+    cta.className = 'lok-nb-cta';
+    cta.textContent = 'Visit storefront →';
+    a.appendChild(cta);
+
     return a;
   }
 
-  function buildSection(picks, locById, covers) {
+  function buildSection(picks) {
     var sec = document.createElement('section');
     sec.className = 'lok-nb';
     sec.id = 'lok-neighbors';
@@ -216,21 +272,14 @@
 
     var grid = document.createElement('div');
     grid.className = 'lok-nb-grid';
-    for (var i = 0; i < picks.length; i++) grid.appendChild(card(picks[i], i, locById, covers));
+    for (var i = 0; i < picks.length; i++) grid.appendChild(card(picks[i], i));
     inner.appendChild(grid);
-
-    // Rotation footnote deliberately omitted for now (F 2026-08-31): with only
-    // ~4 eligible vendors every card shows every week — the line would
-    // over-promise. Re-add once the pool is big enough that sets actually change.
 
     sec.appendChild(inner);
     return sec;
   }
 
   function insertSection(sec) {
-    // Directly below the hero: before the "What is Lokali" section
-    // (`.wi-section`), falling back to before "How It Works" (`.section-3`,
-    // the spotlight-home anchor). No anchor = nothing is injected.
     var anchor = document.querySelector('.wi-section') || document.querySelector('.section-3');
     if (!anchor || !anchor.parentNode) return false;
     anchor.parentNode.insertBefore(sec, anchor);
@@ -238,50 +287,24 @@
   }
 
   // ---- boot ---------------------------------------------------------------
-  function apiReady(tries) {
-    if (window.LokaliAPI && window.LokaliAPI.vendors && window.LokaliAPI.data) return Promise.resolve(window.LokaliAPI);
-    if (tries <= 0) return Promise.reject(new Error('LokaliAPI not available'));
-    return new Promise(function (resolve, reject) {
-      setTimeout(function () { apiReady(tries - 1).then(resolve, reject); }, 250);
-    });
-  }
-
   function start() {
-    if (!document.querySelector('.section-3')) return; // homepage anchor only
-    apiReady(40).then(function (api) {
-      return Promise.all([
-        api.vendors.list({ page: 1, per_page: 100 }),
-        api.data.locations()
-      ]).then(function (res) {
-        var vout = res[0];
-        if (!vout || vout.error) return;
-        var items = (vout.data && vout.data.items) || [];
-        var vendors = items.filter(function (v) {
-          return v && v.is_active !== false &&
-            EXCLUDE_SLUGS.indexOf(String(v.slug || '')) === -1;
-        });
-        if (!vendors.length) return; // empty = homepage unchanged
-        var locById = {};
-        try {
-          var locs = (res[1] && res[1].data && (res[1].data.items || res[1].data)) || [];
-          for (var i = 0; i < locs.length; i++) {
-            var l = locs[i];
-            var id = l.id != null ? l.id : l.location_id;
-            if (id != null) locById[id] = l.name || l.location_name || l.title || '';
-          }
-        } catch (e) {}
-        var picks = weeklyPick(vendors);
-        var ids = picks.map(function (v) { return v.id; });
-        // Covers are best-effort (browse contract): fallback gradients paint
-        // immediately; the section renders once, with whatever covers landed.
-        var coverP = (api.vendors && typeof api.vendors.covers === 'function')
-          ? api.vendors.covers(ids).then(function (o) { return (o && o.data && o.data.covers) || {}; }, function () { return {}; })
-          : Promise.resolve({});
-        return coverP.then(function (covers) {
-          injectStyle();
-          insertSection(buildSection(picks, locById, covers));
-        });
+    if (!document.querySelector('.wi-section') && !document.querySelector('.section-3')) return; // homepage only
+    if (!window.LokaliSupabaseReady || !window.LokaliSupabaseReady.then) return;
+    window.LokaliSupabaseReady.then(function (c) {
+      return c.from('vendors')
+        .select('id,slug,business_name,business_tagline,business_description,profile_photo,' +
+                'owner_name,owner_photo,owner_bio,categories_id,is_founding_member,is_active')
+        .eq('is_publish_ready', true)
+        .limit(100);
+    }).then(function (res) {
+      if (!res || res.error || !Array.isArray(res.data)) return;
+      var vendors = res.data.filter(function (v) {
+        return v && v.is_active !== false &&
+          EXCLUDE_SLUGS.indexOf(String(v.slug || '')) === -1;
       });
+      if (!vendors.length) return; // empty = homepage unchanged
+      injectStyle();
+      insertSection(buildSection(weeklyPick(vendors)));
     }).catch(function (e) {
       try { console.warn('[lokali-neighbors] skipped:', e && e.message); } catch (x) {}
     });
