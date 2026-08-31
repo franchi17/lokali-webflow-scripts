@@ -31,11 +31,12 @@
   var MAX_CARDS = 4;
 
   // Storefronts never shown in the strip (F 2026-08-31: Pancha Ventures is the
-  // founding-counter anchor/test fixture, not a discovery surface). Overridable
-  // per-page via window.LOKALI_NEIGHBORS_EXCLUDE = ['slug', ...].
+  // founding-counter anchor/test fixture, not a discovery surface; Rowdy Digital
+  // held back for now so longer-live vendors keep the 4 slots — remove when F
+  // says so). Overridable per-page via window.LOKALI_NEIGHBORS_EXCLUDE = ['slug', ...].
   var EXCLUDE_SLUGS = (Array.isArray(window.LOKALI_NEIGHBORS_EXCLUDE) && window.LOKALI_NEIGHBORS_EXCLUDE.length)
     ? window.LOKALI_NEIGHBORS_EXCLUDE.map(String)
-    : ['pancha-ventures'];
+    : ['pancha-ventures', 'rowdy-digital'];
 
   // Category identities — colors/labels mirror the-market's CAT_BY_ID and the
   // icon assets its sidebar uses (#96 taxonomy; #152 added 9). Icons render as
