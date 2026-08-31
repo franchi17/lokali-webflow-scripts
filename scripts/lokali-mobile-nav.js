@@ -62,6 +62,17 @@
       'html.lok-mnav-open #lok-mnav-panel{display:flex;}',
       'html.lok-mnav-open #lok-mnav-backdrop{display:block;}',
       'html.lok-mnav-open{overflow:hidden;}',
+      // Search row: quick market search from any page. 16px input (iOS zoom
+      // floor), explicit font per the Plus Jakarta Sans rule (inputs don't
+      // inherit fonts), violet accents per the palette.
+      '#lok-mnav-search{display:flex;gap:8px;margin:12px 0 6px;}',
+      '#lok-mnav-search input{flex:1 1 auto;min-width:0;box-sizing:border-box;height:44px;padding:0 14px;',
+      'font-family:"Plus Jakarta Sans",system-ui,sans-serif;font-size:16px;color:#343A40;background:#fff;',
+      'border:1px solid rgba(96,2,238,.25);border-radius:10px;-webkit-appearance:none;appearance:none;}',
+      '#lok-mnav-search input::placeholder{color:#8E8BA6;}',
+      '#lok-mnav-search input:focus{outline:none;border-color:var(--lokali-primary,#6002ee);}',
+      '#lok-mnav-search button{flex:0 0 44px;height:44px;display:flex;align-items:center;justify-content:center;',
+      'background:var(--lokali-primary,#6002ee);color:#fff;border:none;border-radius:10px;cursor:pointer;}',
       '#lok-mnav-panel a{display:block;width:100%;box-sizing:border-box;padding:15px 6px;font-size:17px;',
       'font-weight:500;line-height:1.2;color:var(--lokali-primary,#6002ee);text-decoration:none;',
       'border-bottom:1px solid rgba(15,23,42,.06);}',
@@ -259,6 +270,33 @@
     var panel = document.createElement('nav');
     panel.id = 'lok-mnav-panel';
     panel.setAttribute('aria-label', 'Mobile navigation');
+
+    // Search bar — submits to The Market, where lokali-browse.js's deep-link
+    // handler consumes ?q= into the search box and filters the first paint.
+    // Plain navigation (no in-place wiring) so it works identically from every
+    // public page, including /the-market itself.
+    var sform = document.createElement('form');
+    sform.id = 'lok-mnav-search';
+    sform.setAttribute('role', 'search');
+    var sinp = document.createElement('input');
+    sinp.type = 'search';
+    sinp.name = 'q';
+    sinp.placeholder = 'Search the market…';
+    sinp.setAttribute('aria-label', 'Search the market');
+    sinp.autocomplete = 'off';
+    var sbtn = document.createElement('button');
+    sbtn.type = 'submit';
+    sbtn.setAttribute('aria-label', 'Search');
+    sbtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4.2-4.2"/></svg>';
+    sform.appendChild(sinp);
+    sform.appendChild(sbtn);
+    sform.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var q = (sinp.value || '').trim();
+      window.location.href = '/the-market' + (q ? '?q=' + encodeURIComponent(q) : '');
+    });
+    panel.appendChild(sform);
+
     LINKS.forEach(function (l) {
       if (l.children) {
         // Accordion group: a tappable header + collapsible sub-links. Two header
@@ -338,7 +376,9 @@
       // Focus follows the panel: first link on open, back to the button on close
       // (Escape/backdrop included) — else keyboard focus stays behind the backdrop.
       if (open) {
-        var first = panel.querySelector('a,button');
+        // Skip the search row: focusing its input would pop the keyboard on
+        // every open, and focusing its button reads as a random highlight.
+        var first = panel.querySelector('a,button:not(#lok-mnav-search button)');
         if (first) first.focus();
       } else if (panel.contains(document.activeElement)) {
         btn.focus();

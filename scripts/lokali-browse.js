@@ -586,7 +586,7 @@
   // reload must not silently re-apply a now-stale URL. The link stays valid as a
   // bookmark (a fresh navigation re-reads it); it just doesn't linger mid-session.
   function applyDeepLink() {
-    var out = { location: false, category: false };
+    var out = { location: false, category: false, search: false };
     var qs;
     try { qs = new URLSearchParams(window.location.search); } catch (e) { return out; }
 
@@ -627,10 +627,20 @@
       }
     }
 
-    if (out.location || out.category) {
+    // Search: ?q=<term> — the mobile menu's search bar (lokali-mobile-nav.js)
+    // navigates here with it; any external link works too. Same precedence as
+    // area/category: the explicit link wins over a restored session term, and
+    // syncFilterUI → syncSearchBox reflects it into the (shadow-DOM) input.
+    var qTerm = qs.get('q');
+    if (qTerm != null && qTerm.trim()) {
+      searchTerm = qTerm.trim();
+      out.search = true;
+    }
+
+    if (out.location || out.category || out.search) {
       persistState(); // the deep-linked view becomes the remembered view
       try {
-        qs.delete('area'); qs.delete('location_id'); qs.delete('category');
+        qs.delete('area'); qs.delete('location_id'); qs.delete('category'); qs.delete('q');
         var rest = qs.toString();
         var url = window.location.pathname + (rest ? '?' + rest : '') + window.location.hash;
         window.history.replaceState(null, '', url);
