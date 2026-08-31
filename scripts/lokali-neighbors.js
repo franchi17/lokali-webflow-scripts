@@ -219,10 +219,9 @@
     for (var i = 0; i < picks.length; i++) grid.appendChild(card(picks[i], i, locById, covers));
     inner.appendChild(grid);
 
-    var note = document.createElement('p');
-    note.className = 'lok-nb-note';
-    note.textContent = 'New faces rotate in every Monday.';
-    inner.appendChild(note);
+    // Rotation footnote deliberately omitted for now (F 2026-08-31): with only
+    // ~4 eligible vendors every card shows every week — the line would
+    // over-promise. Re-add once the pool is big enough that sets actually change.
 
     sec.appendChild(inner);
     return sec;
