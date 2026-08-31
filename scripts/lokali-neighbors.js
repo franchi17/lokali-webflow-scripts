@@ -44,7 +44,7 @@
   function injectStyle() {
     if (document.getElementById(STYLE_ID)) return;
     var css =
-      '.lok-nb{font-family:"Plus Jakarta Sans",sans-serif;background:#F7F6FC;padding:56px 20px;}' +
+      '.lok-nb{font-family:"Plus Jakarta Sans",sans-serif;background:#F3EBFF;padding:56px 20px;}' +
       '.lok-nb-inner{max-width:1160px;margin:0 auto;}' +
       '.lok-nb-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:26px;flex-wrap:wrap;}' +
       '.lok-nb-title{font-size:32px;font-weight:800;letter-spacing:-.6px;color:#1A1829;margin:0;}' +
