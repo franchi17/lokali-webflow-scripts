@@ -152,7 +152,7 @@
     var p = String((billing && (billing.plan || billing.plan_code)) || '').toLowerCase();
     if (p.indexOf('featured') >= 0) return { label: 'Featured', top: true };
     if (p.indexOf('pro') >= 0) return { label: 'Pro plan', top: false };
-    if (v && v.is_founding_member) return { label: 'Founding member', top: false };
+    if (v && v.is_founding_member) return { label: 'Founding vendor', top: false };
     return { label: 'Free plan', top: false };
   }
   function photoUrl(v) {
@@ -208,7 +208,7 @@
     // upsell card. Defensive: no-op until the Designer adds the
     // /vendor-dashboard/marketing row.
     var knownFree = !!billing && !plan.top && plan.label !== 'Pro plan' &&
-                    plan.label !== 'Founding member';
+                    plan.label !== 'Founding vendor';
     document.querySelectorAll('.section-11 a[href*="/vendor-dashboard/marketing"]').forEach(function (a) {
       var row = a.closest('.dashboard-btn') || a;
       row.style.display = knownFree ? 'none' : '';

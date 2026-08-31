@@ -2306,7 +2306,7 @@
     if (state.isFounding) {
       var foundWarn = el('div', 'lk-set-help');
       foundWarn.style.cssText = 'margin:-4px 0 10px;padding:8px 10px;border-radius:8px;background:#FBEFD6;color:#9A6B00;font-weight:600;';
-      foundWarn.textContent = 'Heads up: you’re a founding member. Deleting permanently retires your founding spot and its lifetime pricing. It can’t be undone or reclaimed.';
+      foundWarn.textContent = 'Heads up: you’re a founding vendor. Deleting permanently retires your founding spot and its lifetime pricing. It can’t be undone or reclaimed.';
       confirmBox.appendChild(foundWarn);
     }
     // #100 exit survey — one optional question, asked before the point of no

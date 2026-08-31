@@ -136,7 +136,7 @@
       bar.id = 'lok-fb-bar';
       bar.className = 'lok-fb';
       bar.setAttribute('role', 'progressbar');
-      bar.setAttribute('aria-label', 'Founding member spots claimed');
+      bar.setAttribute('aria-label', 'Founding vendor spots claimed');
       bar.innerHTML =
         '<div class="lok-fb-track"><div class="lok-fb-fill"></div></div>' +
         '<div class="lok-fb-meta">' +
@@ -151,7 +151,7 @@
 
     // Label stays constant — the headline right below carries the count
     // ("Only N left" removed 2026-07-14 as redundant with it).
-    bar.querySelector('.lok-fb-count').textContent = 'Founding members';
+    bar.querySelector('.lok-fb-count').textContent = 'Founding vendors';
 
     // Fill to target. Force a reflow at width:0 first so the CSS transition
     // animates 0 → target, then set the width DIRECTLY (not via rAF, which

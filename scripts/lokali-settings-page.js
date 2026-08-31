@@ -462,7 +462,7 @@
         var foundWarn = document.createElement('div');
         foundWarn.style.cssText = 'margin:0 0 10px;padding:8px 10px;border-radius:8px;' +
           "background:#FBEFD6;color:#9A6B00;font-size:13px;font-weight:600;font-family:'Plus Jakarta Sans',sans-serif;";
-        foundWarn.textContent = 'Heads up: you’re a founding member. Deleting permanently retires your founding spot and its lifetime pricing. It can’t be undone or reclaimed.';
+        foundWarn.textContent = 'Heads up: you’re a founding vendor. Deleting permanently retires your founding spot and its lifetime pricing. It can’t be undone or reclaimed.';
         delCard.appendChild(foundWarn);
       }
       // #100 exit survey — vendor list (this page is vendor-only). One optional,
