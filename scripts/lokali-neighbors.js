@@ -81,7 +81,7 @@
       '.lok-nb-name{margin-top:13px;font-size:20px;font-weight:800;color:#1A1829;}' +
       '.lok-nb-biz{margin-top:2px;font-size:14px;font-weight:600;color:#4A4761;}' +
       '.lok-nb-bio{margin-top:6px;font-size:13px;line-height:1.5;color:#6B6880;overflow:hidden;text-overflow:ellipsis;' +
-        'display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}' +
+        'display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;max-width:100%;overflow-wrap:anywhere;word-break:break-word;}' +
       '.lok-nb-pills{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:12px;}' +
       '.lok-nb-cat{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;border-radius:999px;padding:5px 12px;}' +
       '.lok-nb-cat-ic{display:inline-block;width:12px;height:12px;-webkit-mask-size:contain;mask-size:contain;' +
@@ -196,7 +196,18 @@
       a.appendChild(biz);
     }
 
-    var hook = String((ownerName && v.owner_bio) || v.business_tagline || v.business_description || '').trim();
+    // Bios are written for the storefront, not a card: strip URLs (an unbroken
+    // link token overflows the card sideways — bit Umoh's YouTube link on day
+    // one) and cap at a word boundary; the 2-line CSS clamp stays as the
+    // visual guard.
+    var hook = String((ownerName && v.owner_bio) || v.business_tagline || v.business_description || '');
+    hook = hook.replace(/https?:\/\/\S+/g, '').replace(/\s+/g, ' ').trim();
+    if (hook.length > 140) {
+      hook = hook.slice(0, 140);
+      var sp = hook.lastIndexOf(' ');
+      if (sp > 80) hook = hook.slice(0, sp);
+      hook += '…';
+    }
     if (hook) {
       var bio = document.createElement('div');
       bio.className = 'lok-nb-bio';
