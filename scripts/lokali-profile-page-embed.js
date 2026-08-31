@@ -1016,6 +1016,11 @@ var LokaliProfilePage = (function () {
         // row via save() — flag it dirty (the guard skips file inputs) and
         // tell the vendor, or the photo is silently lost on leave.
         _dirty = true;
+        // The save bar's own listeners skip file inputs, so repaint it here or
+        // SAVE stays dimmed with pointer-events:none — an unsaveable change
+        // (bug found by F 2026-08-31: uploaded owner photo, SAVE inert).
+        _rfDirtySection = 'Meet the Vendor';
+        _refreshSaveBar();
         _showToast('success', 'Photo added. Press SAVE to keep it.');
       });
     });
@@ -2345,7 +2350,10 @@ var LokaliProfilePage = (function () {
       pill.appendChild(text);
 
       pill.addEventListener('click', function () {
-        if (String(sel.value) !== String(id)) _dirty = true; // programmatic select.value fires no change event — the guard would miss category picks
+        // Programmatic select.value fires no change event — the guard AND the
+        // save bar would miss category picks (same repaint bug as the owner
+        // photo: bare _dirty leaves SAVE dimmed + pointer-events:none).
+        if (String(sel.value) !== String(id)) { _dirty = true; setTimeout(_refreshSaveBar, 0); }
         sel.value = String(id);
         _renderCategoryPills();
       });
