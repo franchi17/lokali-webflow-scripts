@@ -26,6 +26,13 @@
   var STYLE_ID = 'lok-nb-style';
   var MAX_CARDS = 4;
 
+  // Storefronts never shown in the strip (F 2026-08-31: Pancha Ventures is the
+  // founding-counter anchor/test fixture, not a discovery surface). Overridable
+  // per-page via window.LOKALI_NEIGHBORS_EXCLUDE = ['slug', ...].
+  var EXCLUDE_SLUGS = (Array.isArray(window.LOKALI_NEIGHBORS_EXCLUDE) && window.LOKALI_NEIGHBORS_EXCLUDE.length)
+    ? window.LOKALI_NEIGHBORS_EXCLUDE.map(String)
+    : ['pancha-ventures'];
+
   // Cover fallback palettes (match the-market's branded gradient fallbacks).
   var FALLBACK = [
     { bg: 'linear-gradient(135deg,#ECE8F8 0%,#D4AAFD 100%)', chipBg: '#F3EBFF', chipFg: '#6002EE', av: '#6002EE' },
@@ -250,7 +257,10 @@
         var vout = res[0];
         if (!vout || vout.error) return;
         var items = (vout.data && vout.data.items) || [];
-        var vendors = items.filter(function (v) { return v && v.is_active !== false; });
+        var vendors = items.filter(function (v) {
+          return v && v.is_active !== false &&
+            EXCLUDE_SLUGS.indexOf(String(v.slug || '')) === -1;
+        });
         if (!vendors.length) return; // empty = homepage unchanged
         var locById = {};
         try {
