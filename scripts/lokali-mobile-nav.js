@@ -249,12 +249,14 @@
         st.textContent = '@media screen and (max-width:991px){input{font-size:16px!important;}}';
         root.appendChild(st);
       }
-      // The full placeholder ("Search vendors, categories, services…") truncates at phone
-      // width even full-width; shorten it there. Guarded so only the search island is touched.
-      // 480 matches the F7 stack breakpoint above.
+      // The full placeholder ("Search for a product or service…" since v1.4.378;
+      // previously "Search vendors, categories, services…") truncates at phone width
+      // even full-width; swap in the need-first short form there, matching the header
+      // field's copy. Guarded so only the search island is touched. 480 matches the
+      // F7 stack breakpoint above.
       var inp = root.querySelector('input');
-      if (inp && window.innerWidth < 480 && /^Search vendors,/.test(inp.placeholder || '')) {
-        inp.placeholder = 'Search vendors…';
+      if (inp && window.innerWidth < 480 && /^Search (vendors,|for a product)/.test(inp.placeholder || '')) {
+        inp.placeholder = 'What do you need?';
       }
     });
   }
