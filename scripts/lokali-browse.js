@@ -309,6 +309,15 @@
     ".vcard-cover-dots{position:absolute;bottom:7px;left:50%;transform:translateX(-50%);display:flex;gap:4px;z-index:2;pointer-events:none;}",
     ".vcard-cover-dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.55);box-shadow:0 0 3px rgba(0,0,0,.35);transition:background .3s;}",
     ".vcard-cover-dot.on{background:#fff;}",
+    // Desktop/trackpad carousel arrows: hover-revealed, hidden entirely on
+    // touch devices (their gesture is the swipe). tabindex=-1 keeps the many
+    // per-card buttons out of keyboard tab order — the storefront link is the
+    // keyboard path, same convention as the whole-card click.
+    ".vcard-cover-nav{position:absolute;top:50%;transform:translateY(-50%);z-index:3;width:26px;height:26px;border:none;border-radius:50%;background:rgba(26,24,41,.55);color:#fff;font:600 15px/1 'Plus Jakarta Sans',sans-serif;display:none;align-items:center;justify-content:center;cursor:pointer;opacity:0;transition:opacity .2s,background .15s;padding:0;}",
+    ".vcard-cover-nav:hover{background:rgba(26,24,41,.8);}",
+    ".vcard-cover-nav.prev{left:8px;}",
+    ".vcard-cover-nav.next{right:8px;}",
+    "@media (hover:hover) and (pointer:fine){.vcard-cover-nav{display:flex;}.vcard-cover:hover .vcard-cover-nav{opacity:1;}}",
     // Category pill rides the cover — solid category tint + icon so it reads over photos.
     ".vcard .cat-pill{position:absolute;top:10px;left:10px;z-index:2;display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:600;border-radius:100px;padding:3.5px 11px;box-shadow:0 1px 4px rgba(0,0,0,.08);}",
     ".vcard-body{padding:14px 16px 15px;}",
@@ -856,6 +865,25 @@
     cover.addEventListener('click', function (ev) {
       if (swiped) { swiped = false; ev.preventDefault(); ev.stopPropagation(); }
     }, true);
+    // Desktop/trackpad: hover-revealed prev/next arrows (CSS keeps them off
+    // touch devices, where the swipe above is the gesture). stopPropagation
+    // so an arrow click never opens the storefront.
+    function navBtn(cls, glyph, dir, label) {
+      var b = ce('button', 'vcard-cover-nav ' + cls);
+      b.type = 'button';
+      b.tabIndex = -1;
+      b.setAttribute('aria-label', label);
+      b.textContent = glyph;
+      b.addEventListener('click', function (ev) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        holdUntil = Date.now() + 6500;
+        go(dir);
+      });
+      cover.appendChild(b);
+    }
+    navBtn('prev', '‹', -1, 'Previous photo');
+    navBtn('next', '›', 1, 'Next photo');
     var t = setInterval(function () {
       if (!cover.isConnected) { clearInterval(t); if (io) io.disconnect(); return; }
       if (hover || !visible || document.hidden || Date.now() < holdUntil) return;
