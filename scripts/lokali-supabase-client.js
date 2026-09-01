@@ -173,7 +173,7 @@
   var PRODUCT_EDITABLE = [
     'product_name', 'product_description', 'price', 'stock_quantity', 'image_url',
     'video_url', 'is_custom', 'turnaround_days', 'is_quote_based', 'is_active',
-    'shipping_offered', 'pickup_only', 'sort_order', 'slug',
+    'shipping_offered', 'pickup_only', 'delivery_offered', 'sort_order', 'slug',
     'subcategory', // #96-LISTING
     'lead_time',   // #78: free-text per-item lead time (supersedes turnaround_days for display)
     'is_featured_pick', // FEAT-PICKS: Featured-plan shop window (cap+plan gate = DB trigger)

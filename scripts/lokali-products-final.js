@@ -58,6 +58,48 @@ const LokaliProductsPage = (() => {
     (document.head || document.documentElement).appendChild(p);
   })();
 
+  // Fulfilment options (Francesca 2026-09-01): the Webflow form ships a
+  // "Pickup only" checkbox, but the flag was never exclusive (Shipping could
+  // be checked alongside it), so the label now says what the flag does:
+  // "Pickup available". "Delivery available" (products.delivery_offered) has
+  // no Webflow element — clone the pickup row so it inherits the exact form
+  // styling; the clone resolves as resolveCheckboxInput('product-delivery').
+  (function ensureDeliveryRow() {
+    var pickupNode = document.getElementById('product-pickup-only');
+    if (!pickupNode) return;
+    var pickupInput = (pickupNode.tagName === 'INPUT' && pickupNode.type === 'checkbox')
+      ? pickupNode
+      : (pickupNode.querySelector ? pickupNode.querySelector('input[type="checkbox"]') : null);
+    if (!pickupInput) return;
+    var row = pickupInput.closest('.w-checkbox') || pickupInput.parentElement;
+    if (!row) return;
+    var lbl = row.querySelector('.w-form-label');
+    if (lbl && /pickup\s+only/i.test(lbl.textContent)) lbl.textContent = 'Pickup available';
+    if (document.getElementById('product-delivery')) return;
+    var clone = row.cloneNode(true);
+    if (clone.id) clone.removeAttribute('id');
+    clone.querySelectorAll('[id]').forEach(function (n) { n.removeAttribute('id'); });
+    var ci = clone.querySelector('input[type="checkbox"]');
+    if (!ci) return;
+    ci.id = 'product-delivery';
+    ci.name = 'product-delivery';
+    ci.setAttribute('data-name', 'product-delivery');
+    ci.checked = false;
+    var cl = clone.querySelector('.w-form-label');
+    if (cl) { cl.textContent = 'Delivery available'; if (cl.getAttribute('for')) cl.setAttribute('for', 'product-delivery'); }
+    // If the box uses Webflow's "custom" checkbox style, keep the painted box
+    // in sync — a cloned node never got webflow.js's listeners. (Default-style
+    // boxes have no div.w-checkbox-input, so this is a no-op there.)
+    var painted = clone.querySelector('div.w-checkbox-input');
+    if (painted) {
+      painted.classList.remove('w--redirected-checked');
+      ci.addEventListener('change', function () {
+        painted.classList.toggle('w--redirected-checked', ci.checked);
+      });
+    }
+    row.insertAdjacentElement('afterend', clone);
+  })();
+
   let products     = [];
   let editingId    = null;
   let imageRemoved = false;
@@ -373,6 +415,7 @@ const LokaliProductsPage = (() => {
     fieldCustom:      () => resolveCheckboxInput('product-custom'),
     fieldShipping:    () => resolveCheckboxInput('product-shipping'),
     fieldPickupOnly:  () => resolveCheckboxInput('product-pickup-only'),
+    fieldDelivery:    () => resolveCheckboxInput('product-delivery'), // injected by ensureDeliveryRow
     fieldIsActive:    () => resolveCheckboxInput('product-is-active'),
 
     wrapPrice:      () => document.getElementById('price-wrap-product-fixed'),
@@ -917,6 +960,7 @@ const LokaliProductsPage = (() => {
     if (el.fieldCustom())      el.fieldCustom().checked    = !!product.is_custom;
     if (el.fieldShipping())    el.fieldShipping().checked  = !!product.shipping_offered;
     if (el.fieldPickupOnly())  el.fieldPickupOnly().checked = !!product.pickup_only;
+    if (el.fieldDelivery())    el.fieldDelivery().checked  = !!product.delivery_offered;
     if (el.fieldIsActive())    el.fieldIsActive().checked  = product.is_active !== false;
 
     if (el.fieldPrice()) el.fieldPrice().value = dollarsFromCents(product.price);
@@ -950,6 +994,7 @@ const LokaliProductsPage = (() => {
     if (el.fieldCustom())      el.fieldCustom().checked    = false;
     if (el.fieldShipping())    el.fieldShipping().checked  = false;
     if (el.fieldPickupOnly())  el.fieldPickupOnly().checked = false;
+    if (el.fieldDelivery())    el.fieldDelivery().checked  = false;
     if (el.fieldIsActive())    el.fieldIsActive().checked   = true;
     if (el.fieldCategory())    el.fieldCategory().value    = '';
     _selectedSubcat = null; // #96-LISTING
@@ -1413,6 +1458,7 @@ const LokaliProductsPage = (() => {
       is_active:           el.fieldIsActive()?.checked !== false,
       shipping_offered:    el.fieldShipping()?.checked || false,
       pickup_only:         el.fieldPickupOnly()?.checked || false,
+      delivery_offered:    el.fieldDelivery()?.checked || false,
     };
 
     // Showcase video: '' clears it, a valid URL sets it. Omit an invalid-but-nonempty

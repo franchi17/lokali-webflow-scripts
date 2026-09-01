@@ -547,13 +547,38 @@
       // pickup_only ONLY — shipping_offered was lighting the pickup tag for
       // shipping-only products, contradicting the fulfilment meta row below.
       show($('vd-tag-pickup'), !!p.pickup_only);
+      // "Delivery available" (2026-09-01): the template has no delivery chip —
+      // clone the pickup chip so styling stays identical, once per page.
+      (function () {
+        var chip = $('vd-tag-delivery');
+        if (!chip) {
+          var src = $('vd-tag-pickup') || $('vd-tag-shipping');
+          if (!src) return;
+          chip = src.cloneNode(true);
+          chip.id = 'vd-tag-delivery';
+          chip.textContent = 'Local delivery';
+          src.insertAdjacentElement('afterend', chip);
+        }
+        show(chip, !!p.delivery_offered);
+      })();
       // #78: the template ships a "Lead time / 5–7 days" placeholder in this row.
       // Fill it from the vendor's own words (falling back to the legacy numeric
       // turnaround), or hide the row entirely so the placeholder never reads as data.
       var pLead = leadText(p);
       if (pLead) { setText('vd-meta-k1', 'Lead time'); setText('vd-meta-v1', pLead); }
       else hideMetaRow('vd-meta-k1');
-      var fulfil = p.shipping_offered && p.pickup_only ? 'Shipping & local pickup' : (p.shipping_offered ? 'Shipping' : (p.pickup_only ? 'Local pickup' : '—'));
+      // Fulfilment line composes all three flags (delivery added 2026-09-01):
+      // "Shipping & local pickup", "Shipping, local pickup & local delivery", …
+      var fulfilParts = [];
+      if (p.shipping_offered)  fulfilParts.push('shipping');
+      if (p.pickup_only)       fulfilParts.push('local pickup');
+      if (p.delivery_offered)  fulfilParts.push('local delivery');
+      var fulfil = fulfilParts.length
+        ? (fulfilParts.length > 1
+            ? fulfilParts.slice(0, -1).join(', ') + ' & ' + fulfilParts[fulfilParts.length - 1]
+            : fulfilParts[0])
+        : '—';
+      fulfil = fulfil.charAt(0).toUpperCase() + fulfil.slice(1);
       setText('vd-meta-v2', fulfil);
       setText('vd-meta-v3', p.is_custom ? 'Made to order' : 'Standard');
       fetchPhotos('products', PRODUCT_PHOTOS_PATH, (p.id != null ? p.id : id), imgUrl(p.image_url || p.image))
