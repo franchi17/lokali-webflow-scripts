@@ -191,7 +191,8 @@
       '.mkt-qr-code{flex:0 0 auto;border:1px solid #ECE8F8;border-radius:12px;padding:10px;background:#fff;line-height:0;}' +
       '.mkt-qr-code svg{display:block;width:168px;height:168px;}' +
       '.mkt-qr-side{flex:1;min-width:230px;}' +
-      '.mkt-qr-url{font-size:12px;color:#8E8BA6;word-break:break-all;margin:0 0 10px;}' +
+      '.mkt-qr-url{font-size:12px;color:#8E8BA6;overflow-wrap:anywhere;margin:0 0 10px;}' +
+      '.mkt-qr-url b{color:#6B6880;font-weight:600;}' +
       '.mkt-qr-btns{display:flex;gap:8px;flex-wrap:wrap;}' +
       '.mkt-qr-dl{display:inline-block;border:0;background:#F3EBFF;color:' + BRAND + ';font-weight:600;font-size:12.5px;' +
         'border-radius:9px;padding:8px 14px;cursor:pointer;}' +
@@ -317,7 +318,7 @@
       '<div class="mkt-qr-row">' +
         '<div class="mkt-qr-code">' + window.LokaliQR.toSvg(this.qrUrl(), { px: 168 }) + '</div>' +
         '<div class="mkt-qr-side">' +
-          '<p class="mkt-qr-url">' + esc(this.qrUrl()) + '</p>' +
+          '<p class="mkt-qr-url">Opens <b>golokali.com/' + esc(this.vendor.slug) + '</b>. Scans are counted automatically.</p>' +
           '<div class="mkt-qr-btns">' +
             '<button type="button" class="mkt-qr-dl" data-act="qr-png">Download PNG</button>' +
             '<button type="button" class="mkt-qr-dl" data-act="qr-svg">Download SVG</button>' +
