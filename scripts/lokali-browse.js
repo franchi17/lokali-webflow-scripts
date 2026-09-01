@@ -299,7 +299,9 @@
     ".vcard-spotlight{border-color:rgba(96,2,238,.2);}",
     // Cover: real photo when the vendor has one (gallery -> service -> product,
     // resolved by the adapter), else the branded gradient + initials mark.
-    ".vcard-cover{height:116px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#E9E1FA 0%,#F9E7DC 55%,#FDF3EC 100%);}",
+    // 116px -> 165px (F 2026-09-01: photos were too squat to read); mobile's
+    // full-width single-column card gets 200px in the 767px block below.
+    ".vcard-cover{height:165px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#E9E1FA 0%,#F9E7DC 55%,#FDF3EC 100%);}",
     ".vcard-cover-img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;display:block;transition:opacity .65s ease;}",
     ".vcard-cover-mark{font-size:32px;font-weight:800;color:rgba(96,2,238,.16);letter-spacing:2px;user-select:none;}",
     // Portfolio carousel (Pro/Featured, F 2026-09-01): crossfading cover layers
@@ -382,7 +384,7 @@
     "@keyframes lkbrspin{to{transform:rotate(360deg)}}",
     // Mobile: vendor cards were stuck at 2 columns (Webflow grid is `1fr 1fr` with no
     // responsive override) — too cramped on phones. Drop to a single column at ≤767px.
-    "@media screen and (max-width:767px){#browse-vendor-grid{grid-template-columns:1fr;}}",
+    "@media screen and (max-width:767px){#browse-vendor-grid{grid-template-columns:1fr;} .vcard-cover{height:200px;}}",
     // Mobile (≤991px): the filter sidebar had no drawer CSS, so it sat inline and clipped
     // the vendor cards. Collapse the [sidebar | content] layout to one column and turn the
     // sidebar into an off-canvas slide-in drawer (the Filter button toggles `.open` via JS).
