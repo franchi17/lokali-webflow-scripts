@@ -15,6 +15,10 @@
 (function () {
   'use strict';
 
+  // #166: set inside build() (needs setOpen + the drawer's search input);
+  // called by the header magnifier in its <=1149px icon mode.
+  var openMenuToSearch = null;
+
   var LINKS = [
     { label: 'About',           href: '/about' },
     { label: 'The Market',      href: '/the-market' },
@@ -385,6 +389,14 @@
       }
     }
 
+    // #166 header magnifier -> open the drawer straight into its search field.
+    // Keyboard pop is INTENTIONAL here (the user tapped "search", they want to
+    // type), unlike the plain burger open above, which deliberately skips it.
+    openMenuToSearch = function () {
+      setOpen(true);
+      try { sinp.focus(); } catch (e) {}
+    };
+
     function isHamburgerVisible() {
       return getComputedStyle(btn).display !== 'none';
     }
@@ -467,6 +479,74 @@
     }
   }
 
+  // #166 header search (Francesca 2026-09-01). The evidence (NN/g search
+  // visibility, Baymard commerce benchmarks): a VISIBLE field beats a hidden
+  // icon, top-right is where people expect it, and searchers are the highest-
+  // intent visitors. Desktop >=1150px: compact input left of Login, GETs
+  // /the-market?q= (lokali-browse's deep-link handler consumes it into the
+  // page search). <=1149px the burger nav owns the header, so the field
+  // collapses to a 44px magnifier that opens the drawer with its search field
+  // focused (one tap instead of burger-then-field). Skipped on /the-market:
+  // the page's own search box is already on screen and two boxes would fight.
+  function buildHeaderSearch() {
+    if (document.getElementById('lok-hdr-search')) return;
+    if (/^\/the-market\/?$/.test(location.pathname)) return;
+    var right = document.querySelector('.header-right-side');
+    if (!right) return;
+    if (!document.getElementById('lok-hdr-search-css')) {
+      var st = document.createElement('style');
+      st.id = 'lok-hdr-search-css';
+      st.textContent = [
+        '#lok-hdr-search{display:flex;align-items:center;position:relative;margin-right:14px;}',
+        // 16px font (iOS zoom floor) + explicit Plus Jakarta Sans (inputs never inherit it).
+        '#lok-hdr-search input{box-sizing:border-box;width:180px;height:42px;padding:0 40px 0 14px;',
+        'font-family:"Plus Jakarta Sans",system-ui,sans-serif;font-size:16px;color:#343A40;',
+        'background:#F7F6FC;border:1px solid rgba(96,2,238,.18);border-radius:12px;',
+        '-webkit-appearance:none;appearance:none;transition:width .18s ease,border-color .18s ease,background .18s ease;}',
+        '#lok-hdr-search input::placeholder{color:#8E8BA6;}',
+        '#lok-hdr-search input:focus{outline:none;width:230px;border-color:var(--lokali-primary,#6002ee);background:#fff;}',
+        '#lok-hdr-search button{position:absolute;right:4px;top:50%;transform:translateY(-50%);',
+        'width:34px;height:34px;display:flex;align-items:center;justify-content:center;',
+        'background:transparent;border:none;border-radius:10px;color:var(--lokali-primary,#6002ee);cursor:pointer;}',
+        '#lok-hdr-search button:hover{background:#F3EBFF;}',
+        // Burger range (matches F5 above): icon only, 44px target; the drawer field takes over.
+        '@media screen and (max-width:1149px){',
+        '#lok-hdr-search{margin-right:0;}',
+        '#lok-hdr-search input{display:none;}',
+        '#lok-hdr-search button{position:static;transform:none;width:44px;height:44px;}',
+        '}'
+      ].join('');
+      document.head.appendChild(st);
+    }
+    var form = document.createElement('form');
+    form.id = 'lok-hdr-search';
+    form.setAttribute('role', 'search');
+    var inp = document.createElement('input');
+    inp.type = 'search';
+    inp.name = 'q';
+    inp.placeholder = 'Search the market\u2026';
+    inp.setAttribute('aria-label', 'Search the market');
+    inp.autocomplete = 'off';
+    var sb = document.createElement('button');
+    sb.type = 'submit';
+    sb.setAttribute('aria-label', 'Search');
+    sb.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4.2-4.2"/></svg>';
+    form.appendChild(inp);
+    form.appendChild(sb);
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      // Icon mode (input hidden): the tap means "let me search", not "submit
+      // an empty query" - hand off to the drawer's focused field.
+      if (getComputedStyle(inp).display === 'none') {
+        if (openMenuToSearch) openMenuToSearch();
+        return;
+      }
+      var q = (inp.value || '').trim();
+      window.location.href = '/the-market' + (q ? '?q=' + encodeURIComponent(q) : '');
+    });
+    right.insertBefore(form, right.firstChild);
+  }
+
   function init() {
     injectPolishCss();
     fixFooterResources();
@@ -477,6 +557,7 @@
     if (!btn) return;
     injectCss();
     build(nav, btn);
+    buildHeaderSearch();
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
