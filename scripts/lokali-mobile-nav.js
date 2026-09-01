@@ -509,6 +509,19 @@
         'width:34px;height:34px;display:flex;align-items:center;justify-content:center;',
         'background:transparent;border:none;border-radius:10px;color:var(--lokali-primary,#6002ee);cursor:pointer;}',
         '#lok-hdr-search button:hover{background:#F3EBFF;}',
+        // 1150-1349px: the middle nav links leave no room for an inline field
+        // (measured overlap with "Contact us" at 1280) - magnifier only, and a
+        // click flies the input out OVER the links (absolute, right-anchored).
+        '@media screen and (min-width:1150px) and (max-width:1349px){',
+        '#lok-hdr-search{margin-right:6px;}',
+        '#lok-hdr-search input{display:none;}',
+        '#lok-hdr-search button{position:static;transform:none;width:44px;height:44px;}',
+        '#lok-hdr-search.lok-hs-open input{display:block;position:absolute;right:0;top:50%;',
+        'transform:translateY(-50%);width:260px;background:#fff;border-color:var(--lokali-primary,#6002ee);',
+        'z-index:9;box-shadow:0 6px 18px rgba(20,10,60,.12);}',
+        '#lok-hdr-search.lok-hs-open button{position:absolute;right:4px;top:50%;transform:translateY(-50%);',
+        'width:34px;height:34px;z-index:10;}',
+        '}',
         // Burger range (matches F5 above): icon only, 44px target; the drawer field takes over.
         '@media screen and (max-width:1149px){',
         '#lok-hdr-search{margin-right:0;}',
@@ -536,13 +549,28 @@
     form.addEventListener('submit', function (e) {
       e.preventDefault();
       // Icon mode (input hidden): the tap means "let me search", not "submit
-      // an empty query" - hand off to the drawer's focused field.
+      // an empty query". Burger widths hand off to the drawer's focused field;
+      // the 1150-1349 squeeze expands the fly-out input in place instead.
       if (getComputedStyle(inp).display === 'none') {
-        if (openMenuToSearch) openMenuToSearch();
+        var burger = document.querySelector('.hamburger-menu-wrapper');
+        if (burger && getComputedStyle(burger).display !== 'none') {
+          if (openMenuToSearch) openMenuToSearch();
+        } else {
+          form.classList.add('lok-hs-open');
+          setTimeout(function () { try { inp.focus(); } catch (e2) {} }, 0);
+        }
         return;
       }
       var q = (inp.value || '').trim();
       window.location.href = '/the-market' + (q ? '?q=' + encodeURIComponent(q) : '');
+    });
+    // Fly-out closes like any transient control: outside click or Escape.
+    // (The opening click is inside the form, so the doc listener ignores it.)
+    document.addEventListener('click', function (ev) {
+      if (form.classList.contains('lok-hs-open') && !form.contains(ev.target)) form.classList.remove('lok-hs-open');
+    });
+    document.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Escape') form.classList.remove('lok-hs-open');
     });
     right.insertBefore(form, right.firstChild);
   }
