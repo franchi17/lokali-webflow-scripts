@@ -504,7 +504,10 @@
         'background:#F7F6FC;border:1px solid rgba(96,2,238,.18);border-radius:12px;',
         '-webkit-appearance:none;appearance:none;transition:width .18s ease,border-color .18s ease,background .18s ease;}',
         '#lok-hdr-search input::placeholder{color:#8E8BA6;}',
-        '#lok-hdr-search input:focus{outline:none;width:230px;border-color:var(--lokali-primary,#6002ee);background:#fff;}',
+        '#lok-hdr-search input:focus{outline:none;width:230px;border-color:var(--lokali-primary,#6002ee);',
+        // The grow can brush the last nav link near 1440px - lift it so the
+        // overlap reads as a deliberate overlay, same treatment as the fly-out.
+        'background:#fff;position:relative;z-index:5;box-shadow:0 4px 14px rgba(20,10,60,.10);}',
         '#lok-hdr-search button{position:absolute;right:4px;top:50%;transform:translateY(-50%);',
         'width:34px;height:34px;display:flex;align-items:center;justify-content:center;',
         'background:transparent;border:none;border-radius:10px;color:var(--lokali-primary,#6002ee);cursor:pointer;}',
