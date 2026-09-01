@@ -21,6 +21,13 @@
  * always returns the same single entry), so showing the toggle would be a
  * control with no effect.
  *
+ * #163 "Your QR code" card: a printable QR to the vendor's storefront
+ * (rendered by lokali-qr-kit.js, page-level tag on this page ONLY — the card
+ * self-hides when the kit global is absent). Codes carry
+ * ?utm_source=qr&utm_campaign=vendor&lkv=<id>; lokali-qr-scan.js attributes
+ * the landing. Stats via vendor_qr_stats(): Featured sees the numbers, Pro
+ * sees a locked count (scans are recorded for Pro too — the upgrade teaser).
+ *
  * Plan gates + queue caps (20 cta / 10 showcase) are DB-trigger enforced
  * (LOKALI_LIMIT_REACHED) — this page is honest UI, not the enforcement.
  * Free vendors never see the sidebar tab (lokali-sidebar-account.js hides it);
@@ -178,6 +185,23 @@
         'font-size:13.5px;font-weight:600;text-decoration:none;}' +
       '.mkt-toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:#3E3A55;color:#fff;' +
         'font-family:' + FONT + ';font-size:13.5px;border-radius:10px;padding:11px 18px;z-index:9999;max-width:82vw;}' +
+      // #163 "Your QR code": preview left, copy + downloads + stats right.
+      '.mkt-qr-row{display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;}' +
+      '.mkt-qr-code{flex:0 0 auto;border:1px solid #ECE8F8;border-radius:12px;padding:10px;background:#fff;line-height:0;}' +
+      '.mkt-qr-code svg{display:block;width:168px;height:168px;}' +
+      '.mkt-qr-side{flex:1;min-width:230px;}' +
+      '.mkt-qr-url{font-size:12px;color:#8E8BA6;word-break:break-all;margin:0 0 10px;}' +
+      '.mkt-qr-btns{display:flex;gap:8px;flex-wrap:wrap;}' +
+      '.mkt-qr-dl{display:inline-block;border:0;background:#F3EBFF;color:' + BRAND + ';font-weight:600;font-size:12.5px;' +
+        'border-radius:9px;padding:8px 14px;cursor:pointer;}' +
+      '.mkt-qr-stats{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 0;}' +
+      '.mkt-qr-stat{background:#F7F6FC;border:1px solid #ECE8F8;border-radius:10px;padding:10px 14px;min-width:86px;}' +
+      '.mkt-qr-sv{font-size:20px;font-weight:700;color:#3E3A55;line-height:1.2;}' +
+      '.mkt-qr-sl{font-size:11px;font-weight:600;color:#8E8BA6;text-transform:uppercase;letter-spacing:.04em;}' +
+      '.mkt-qr-teaser{background:#F7F6FC;border:1px solid #ECE8F8;border-radius:10px;padding:12px 14px;margin:14px 0 0;' +
+        'font-size:12.5px;color:#6B6880;}' +
+      '.mkt-qr-teaser a{color:' + BRAND + ';font-weight:600;text-decoration:none;}' +
+      '.mkt-qr-teaser a:hover{text-decoration:underline;}' +
       '@media (max-width:600px){.mkt-card{padding:16px;}.mkt-acts{gap:0;}}';
     document.head.appendChild(st);
   }
@@ -210,7 +234,11 @@
       API.current(this.vendor.id, 1),
       // Spotlight creative is Featured-only (and needs myCreatives support in
       // the shipped client — absent until the phase-2 tag, hence the guard).
-      (SPOTLIGHT_CREATIVE_ENABLED && this.premium && API.myCreatives) ? API.myCreatives(this.vendor.id) : Promise.resolve(null)
+      (SPOTLIGHT_CREATIVE_ENABLED && this.premium && API.myCreatives) ? API.myCreatives(this.vendor.id) : Promise.resolve(null),
+      // #163 QR scan stats — same absent-until-the-tag guard as myCreatives.
+      // The RPC returns full stats for Featured, {allowed:false, total} for
+      // Pro (the teaser), and the card renders either way.
+      API.qrStats ? API.qrStats(this.vendor.id) : Promise.resolve(null)
     ]).then(function (rs) {
       var rows = (rs[0] && rs[0].data) || [];
       self.entries = { cta: [], showcase: [] };
@@ -218,6 +246,8 @@
       self.now = (rs[1] && rs[1].data) || {};
       self.next = (rs[2] && rs[2].data) || {};
       self.spot = (rs[3] && rs[3].data) || null;   // {bookings, creatives} | null
+      var q = rs[4] && rs[4].data;                 // #163 vendor_qr_stats payload
+      self.qr = (q && q.ok) ? q : null;
       self.render();
     });
   };
@@ -227,8 +257,86 @@
     this.mount.innerHTML =
       this.cardHtml('cta') +
       (this.premium ? this.cardHtml('showcase') : this.lockedShowcaseHtml()) +
+      this.qrCardHtml() +
       (SPOTLIGHT_CREATIVE_ENABLED && this.premium && this.spot ? this.spotlightCardHtml() : '');
     this.bind();
+  };
+
+  // ---- #163 Your QR code ------------------------------------------------------
+  // Always the canonical domain, never location.origin: a printed code must
+  // point at golokali.com even when the dashboard is previewed elsewhere.
+  // The lkv param is what lokali-qr-scan.js attributes the landing with.
+  Page.prototype.qrUrl = function () {
+    return 'https://golokali.com/' + this.vendor.slug +
+      '?utm_source=qr&utm_medium=print&utm_campaign=vendor&lkv=' + this.vendor.id;
+  };
+
+  // Renders only when lokali-qr-kit.js is on the page (page-level tag on
+  // /vendor-dashboard/marketing) — same absent-until-the-tag posture as the
+  // API guards, so a half-shipped state hides the card instead of breaking it.
+  Page.prototype.qrCardHtml = function () {
+    if (!window.LokaliQR || !this.vendor.slug) return '';
+    var q = this.qr;   // vendor_qr_stats payload | null (RPC not live yet)
+    var statsHtml = '';
+    if (q && q.allowed) {
+      var mobilePct = q.total > 0 ? Math.round((q.mobile / q.total) * 100) : 0;
+      var since = q.first_scan_at
+        ? new Date(q.first_scan_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+        : null;
+      statsHtml =
+        '<div class="mkt-qr-stats">' +
+          '<div class="mkt-qr-stat"><div class="mkt-qr-sv">' + (+q.total || 0) + '</div><div class="mkt-qr-sl">Scans</div></div>' +
+          '<div class="mkt-qr-stat"><div class="mkt-qr-sv">' + (+q.d30 || 0) + '</div><div class="mkt-qr-sl">Last 30 days</div></div>' +
+          '<div class="mkt-qr-stat"><div class="mkt-qr-sv">' + (+q.d7 || 0) + '</div><div class="mkt-qr-sl">This week</div></div>' +
+        '</div>' +
+        (q.total > 0
+          ? '<p class="mkt-note">' + mobilePct + '% of scans came from a phone' +
+            (since ? ', counting since ' + esc(since) : '') + '.</p>'
+          : '<p class="mkt-note">No scans yet. Counting starts the moment your code is out in the world.</p>');
+    } else if (q && !q.allowed) {
+      // Pro teaser: scans ARE being recorded; the numbers are the Featured perk.
+      statsHtml =
+        '<div class="mkt-qr-teaser">' +
+          (+q.total > 0
+            ? '<b>' + (+q.total) + (+q.total === 1 ? ' scan' : ' scans') + ' recorded so far.</b> '
+            : 'Scan counting is already on. ') +
+          'Scan stats are a Featured perk, and your history is being saved in the meantime, ' +
+          'so it will all be here the day you upgrade. ' +
+          '<a href="/pricing">See the Featured plan</a>' +
+        '</div>';
+    }
+    return '<div class="mkt-card" data-kind="qr">' +
+      '<div class="mkt-head"><p class="mkt-h">Your QR code</p></div>' +
+      '<p class="mkt-sub">A code that opens your storefront. Put it on flyers, table tents, business cards, packaging, anywhere people can point a camera.</p>' +
+      '<div class="mkt-qr-row">' +
+        '<div class="mkt-qr-code">' + window.LokaliQR.toSvg(this.qrUrl(), { px: 168 }) + '</div>' +
+        '<div class="mkt-qr-side">' +
+          '<p class="mkt-qr-url">' + esc(this.qrUrl()) + '</p>' +
+          '<div class="mkt-qr-btns">' +
+            '<button type="button" class="mkt-qr-dl" data-act="qr-png">Download PNG</button>' +
+            '<button type="button" class="mkt-qr-dl" data-act="qr-svg">Download SVG</button>' +
+          '</div>' +
+          '<p class="mkt-note">Print it at least 1 inch (2.5 cm) wide and keep the white border, cameras need it. The SVG stays sharp at any size.</p>' +
+          statsHtml +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  };
+
+  Page.prototype.downloadQr = function (fmt) {
+    var name = 'lokali-qr-' + this.vendor.slug + '.' + fmt;
+    var a = document.createElement('a');
+    if (fmt === 'svg') {
+      var blob = new Blob([window.LokaliQR.toSvg(this.qrUrl(), { px: 1024 })], { type: 'image/svg+xml' });
+      a.href = URL.createObjectURL(blob);
+    } else {
+      a.href = window.LokaliQR.toPngDataUrl(this.qrUrl(), 1024);
+    }
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    if (fmt === 'svg') setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
   };
 
   // ---- Spotlight ad creative (phase 2) --------------------------------------
@@ -568,6 +676,9 @@
         var f = btn.parentElement.querySelector('[data-f="file"]');
         if (f) f.click();
       }
+      // #163 QR code downloads
+      else if (act === 'qr-png') self.downloadQr('png');
+      else if (act === 'qr-svg') self.downloadQr('svg');
       // Spotlight creative (phase 2)
       else if (act === 'sc-upload') {
         var sf = btn.parentElement.querySelector('[data-f="sc-file"]');

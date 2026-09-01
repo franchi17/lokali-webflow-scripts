@@ -15,9 +15,15 @@
  *   lokali-api-adapter.js. sessionStorage dedupes, so navigating around the
  *   site after scanning counts once, not per page.
  *
- *   Stats surface in the admin panel on /account ("QR code scans" card,
- *   lokali-account.js → admin_qr_scans() RPC). The GA4 utm tags still work
- *   as before — this is the in-house count.
+ *   #163 vendor QR codes: a vendor's own printed code (generated on
+ *   /vendor-dashboard/marketing by lokali-qr-kit.js + lokali-marketing.js)
+ *   adds utm_campaign=vendor&lkv=<vendor id>; the row then carries
+ *   vendors_id and the vendor reads their stats via vendor_qr_stats()
+ *   (Featured full stats; Pro sees only the locked count).
+ *
+ *   Site-level stats surface in the admin panel on /account ("QR code scans"
+ *   card, lokali-account.js → admin_qr_scans() RPC). The GA4 utm tags still
+ *   work as before — this is the in-house count.
  *
  * PRIVACY: campaign, landing path, referrer, mobile/desktop, timestamp.
  * Nothing identifying; the table is write-only from the browser (RLS).
@@ -39,11 +45,21 @@
   try { params = new URLSearchParams(window.location.search); } catch (e) { return; }
   if (params.get('utm_source') !== 'qr') return;
 
+  // #163 vendor QR codes: the dashboard bakes `lkv=<vendor id>` into each
+  // vendor's printed code, and the scan row carries it (qr_scans.vendors_id,
+  // patch_vendor_qr.sql). Numeric-or-nothing — a mangled param degrades to a
+  // site-level (NULL) row rather than a failed FK insert.
+  var vendorId = null;
+  var lkv = params.get('lkv');
+  if (lkv && /^\d{1,12}$/.test(lkv)) vendorId = +lkv;
+
   // One scan = one visit: dedupe across the browsing session so clicking
   // around after landing doesn't inflate the count. If sessionStorage is
   // unavailable (rare privacy modes) we still record — the landing itself
   // only fires once per scan anyway, since in-site links carry no utm tags.
-  var DEDUPE_KEY = 'lok_qr_scan_logged';
+  // Per-vendor suffix: scanning two DIFFERENT vendors' codes in one session
+  // (a printed flyer wall) must count once each, not once total.
+  var DEDUPE_KEY = 'lok_qr_scan_logged' + (vendorId ? ':v' + vendorId : '');
   try {
     if (window.sessionStorage.getItem(DEDUPE_KEY)) return;
     window.sessionStorage.setItem(DEDUPE_KEY, '1');
@@ -62,6 +78,7 @@
     referrer: clip(document.referrer, 300),
     device:   /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ? 'mobile' : 'desktop'
   };
+  if (vendorId) row.vendors_id = vendorId;
 
   // keepalive: survives an immediate navigation away (same reasoning as
   // keepaliveInsert in lokali-api-adapter.js). Anonymous on purpose.

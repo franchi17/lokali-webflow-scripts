@@ -916,6 +916,13 @@
           return c.rpc('has_marketing_premium', { p_vendors_id: vendorId });
         });
       },
+      // #163 vendor QR scan stats. Owner-gated definer RPC; the tier split is
+      // INSIDE it (Featured = full stats, Pro = {allowed:false, total} teaser).
+      qrStats: function (vendorId) {
+        return withClient(function (c) {
+          return c.rpc('vendor_qr_stats', { p_vendors_id: vendorId });
+        });
+      },
       list: function (vendorId) {
         return withClient(function (c) {
           return c.from('marketing_entries').select('*')
