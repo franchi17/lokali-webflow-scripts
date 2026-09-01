@@ -38,6 +38,19 @@
     ? window.LOKALI_NEIGHBORS_EXCLUDE.map(String)
     : ['pancha-ventures', 'rowdy-digital'];
 
+  // F 2026-09-01: Umoh (Echoed Reflections) LEADS the strip for a week, and
+  // Paperloom sits the same week out so it is a literal swap — the other
+  // three slots keep rotating normally. SELF-EXPIRING: from `until` (a
+  // Chicago-date string, exclusive) the normal weekly shuffle resumes with
+  // no re-ship; the block is dead code that the next neighbors edit can drop.
+  var FEATURE = { slug: 'echoed-reflections-videography', excludeSlug: 'paperloom', until: '2026-09-09' };
+  function featureActive() {
+    try {
+      // en-CA = YYYY-MM-DD, so plain string compare works; same zone as weekKey().
+      return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Chicago' }).format(new Date()) < FEATURE.until;
+    } catch (e) { return false; }
+  }
+
   // Category identities — colors/labels mirror the-market's CAT_BY_ID and the
   // icon assets its sidebar uses (#96 taxonomy; #152 added 9). Icons render as
   // CSS-masked spans so they take the pill's text color, like browse does.
@@ -312,11 +325,33 @@
       if (!res || res.error || !Array.isArray(res.data)) return;
       var vendors = res.data.filter(function (v) {
         return v && v.is_active !== false &&
-          EXCLUDE_SLUGS.indexOf(String(v.slug || '')) === -1;
+          EXCLUDE_SLUGS.indexOf(String(v.slug || '')) === -1 &&
+          !(featureActive() && String(v.slug || '') === FEATURE.excludeSlug);
       });
       if (!vendors.length) return; // empty = homepage unchanged
+      var picked = weeklyPick(vendors);
+      if (featureActive()) {
+        // Put the featured vendor in slot 1 (ahead of the founding-first
+        // ordering — the pin is the point), pulling them into the set if the
+        // shuffle happened to leave them out.
+        var fi = -1;
+        for (var pi = 0; pi < picked.length; pi++) {
+          if (String(picked[pi].slug || '') === FEATURE.slug) { fi = pi; break; }
+        }
+        if (fi > 0) {
+          picked.unshift(picked.splice(fi, 1)[0]);
+        } else if (fi === -1) {
+          for (var vi = 0; vi < vendors.length; vi++) {
+            if (String(vendors[vi].slug || '') === FEATURE.slug) {
+              if (picked.length >= MAX_CARDS) picked.pop();
+              picked.unshift(vendors[vi]);
+              break;
+            }
+          }
+        }
+      }
       injectStyle();
-      insertSection(buildSection(weeklyPick(vendors)));
+      insertSection(buildSection(picked));
     }).catch(function (e) {
       try { console.warn('[lokali-neighbors] skipped:', e && e.message); } catch (x) {}
     });
