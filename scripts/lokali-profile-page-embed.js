@@ -1602,6 +1602,13 @@ var LokaliProfilePage = (function () {
       // flowing beside it (F 2026-08-29; the head is also DOM-promoted to a
       // direct section child in _applyProfileRefresh).
       '.form-heading-div{width:100%;box-sizing:border-box;}',
+      // EXPANDED rows float the title too (F 2026-09-01, measured): the
+      // Collapse button makes every heading row 44px tall, and Webflow's
+      // .section-heading align-self:flex-start pins the title to the row TOP —
+      // 9px above the icon/button centerline. The v1.4.345 centering fix was
+      // scoped to .lok-collapsed only; center the children in BOTH states.
+      // (align-self only — margins/paddings stay, the icons keep their inset.)
+      '.form-heading-div > *{align-self:center !important;}',
       '.lok-collapsed .form-heading-div{display:flex;align-items:center;gap:10px;margin-bottom:0;cursor:pointer;}',
       // The heading + icon keep their normal-page margins, which read as a
       // "floating" title once the row is a centered flex line — zero the
