@@ -300,8 +300,13 @@
     // Cover: real photo when the vendor has one (gallery -> service -> product,
     // resolved by the adapter), else the branded gradient + initials mark.
     ".vcard-cover{height:116px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#E9E1FA 0%,#F9E7DC 55%,#FDF3EC 100%);}",
-    ".vcard-cover-img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;display:block;}",
+    ".vcard-cover-img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;display:block;transition:opacity .65s ease;}",
     ".vcard-cover-mark{font-size:32px;font-weight:800;color:rgba(96,2,238,.16);letter-spacing:2px;user-select:none;}",
+    // Portfolio carousel (Pro/Featured, F 2026-09-01): crossfading cover layers
+    // + quiet position dots. Dots sit under the pill/heart z-wise and stay tiny.
+    ".vcard-cover-dots{position:absolute;bottom:7px;left:50%;transform:translateX(-50%);display:flex;gap:4px;z-index:2;pointer-events:none;}",
+    ".vcard-cover-dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.55);box-shadow:0 0 3px rgba(0,0,0,.35);transition:background .3s;}",
+    ".vcard-cover-dot.on{background:#fff;}",
     // Category pill rides the cover — solid category tint + icon so it reads over photos.
     ".vcard .cat-pill{position:absolute;top:10px;left:10px;z-index:2;display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:600;border-radius:100px;padding:3.5px 11px;box-shadow:0 1px 4px rgba(0,0,0,.08);}",
     ".vcard-body{padding:14px 16px 15px;}",
@@ -323,6 +328,7 @@
     // so this is the strongest text after the name. `.match` = the label that
     // made this card a search hit (promoted to front, violet).
     ".vcard-offerline{font-size:12.5px;font-weight:600;color:#33304A;line-height:1.45;margin-bottom:5px;}",
+    ".vcard-offer-more{color:#8E8BA6;font-weight:500;white-space:nowrap;}",
     ".vcard-offerline .match{color:#6002EE;}",
     ".vcard-tagline{font-size:12px;color:#6B6880;line-height:1.5;margin-bottom:12px;}",
     ".vcard-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;}",
@@ -766,6 +772,67 @@
         if (_allVendors.length) applyFilters();
       }).catch(function () {});
     } catch (e) {}
+  }
+
+  // ── portfolio carousel (F 2026-09-01, Pro/Featured only) ─────────────────
+  // Slow crossfade through the vendor's cover candidates (adapter covers().list,
+  // pin first, capped at 6). One timer per rotating card, self-cleaning: the
+  // tick clears itself once the card leaves the DOM (every applyFilters()
+  // rebuild). Advance preloads the next photo and fades only after it loads,
+  // so the gradient never flashes through; a broken URL is skipped on the next
+  // tick. Paused while hovered, while the card is offscreen (IntersectionObserver)
+  // and while the tab is hidden — battery over spectacle. Periods carry a
+  // per-card random offset so a grid of cards never flips in lockstep.
+  var COVER_ROLL_MS = 3800;
+  function startCoverRoll(cover, firstImg, photos) {
+    var idx = 0, hover = false, visible = true, busy = false, cur = firstImg;
+    var dots = ce('div', 'vcard-cover-dots');
+    var dotEls = photos.map(function (_, i) {
+      var d = ce('span', 'vcard-cover-dot' + (i === 0 ? ' on' : ''));
+      dots.appendChild(d);
+      return d;
+    });
+    cover.appendChild(dots);
+    cover.addEventListener('mouseenter', function () { hover = true; });
+    cover.addEventListener('mouseleave', function () { hover = false; });
+    var io = null;
+    if ('IntersectionObserver' in window) {
+      io = new IntersectionObserver(function (es) {
+        visible = !!(es[0] && es[0].isIntersecting);
+      }, { threshold: 0.15 });
+      io.observe(cover);
+    }
+    function advance() {
+      if (busy) return;
+      busy = true;
+      var next = (idx + 1) % photos.length;
+      var p = photos[next];
+      var img = ce('img', 'vcard-cover-img');
+      img.alt = '';
+      img.style.opacity = '0';
+      if (typeof p.fx === 'number' && typeof p.fy === 'number') img.style.objectPosition = p.fx + '% ' + p.fy + '%';
+      img.addEventListener('load', function () {
+        if (!cover.isConnected) { busy = false; return; }
+        if (cur && cur.parentNode === cover) cur.insertAdjacentElement('afterend', img);
+        else cover.appendChild(img);
+        requestAnimationFrame(function () { img.style.opacity = '1'; });
+        var old = cur;
+        cur = img;
+        idx = next;
+        for (var i = 0; i < dotEls.length; i++) dotEls[i].className = 'vcard-cover-dot' + (i === idx ? ' on' : '');
+        setTimeout(function () {
+          if (old && old.parentNode) old.parentNode.removeChild(old);
+          busy = false;
+        }, 700);
+      });
+      img.addEventListener('error', function () { idx = next; busy = false; }); // skip a dead URL, move on next tick
+      img.src = safeImgUrl(p.url);
+    }
+    var t = setInterval(function () {
+      if (!cover.isConnected) { clearInterval(t); if (io) io.disconnect(); return; }
+      if (hover || !visible || document.hidden) return;
+      advance();
+    }, COVER_ROLL_MS + Math.floor(Math.random() * 1400));
   }
 
   // #96 — load the public listing-name index (active service/product names for
@@ -1265,6 +1332,14 @@
       // Broken image -> the gradient + mark underneath simply shows through.
       cimg.addEventListener('error', function () { if (cimg.parentNode) cover.removeChild(cimg); });
       cover.appendChild(cimg);
+      // ── portfolio carousel (F 2026-09-01): Pro/Featured cards slow-rotate
+      // through the vendor's cover candidates so the market gives a feel for
+      // the whole portfolio. Free stays a single cover; reduced-motion users
+      // get the static first photo.
+      if (vTier(v) >= 1 && cov.list && cov.list.length > 1 &&
+          !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)) {
+        startCoverRoll(cover, cimg, cov.list);
+      }
     }
     if (style.known) {
       var pill = ce('span', 'cat-pill');
@@ -1322,6 +1397,14 @@
         piece.textContent = nm;
         offerLine.appendChild(piece);
       });
+      // A vendor with more tags than fit was silently truncated (misleading for
+      // multi-line shops like Paperloom, F 2026-09-01) — say how much more there is.
+      if (ordered.length > 3) {
+        offerLine.appendChild(document.createTextNode(' '));
+        var more = ce('span', 'vcard-offer-more');
+        more.textContent = '+' + (ordered.length - 3) + ' more';
+        offerLine.appendChild(more);
+      }
       body.appendChild(offerLine);
     }
 

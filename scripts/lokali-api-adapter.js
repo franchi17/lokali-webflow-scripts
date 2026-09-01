@@ -747,7 +747,11 @@
     // back to the automatic chain untouched.
     // The vendor's LOGO (profile_photo) is deliberately never used here: the
     // card shows it as the small avatar, and the cover's job is their WORK.
-    // Returns { data: { covers: { [vendors_id]: {url, fx, fy} } } }.
+    // Returns { data: { covers: { [vendors_id]: {url, fx, fy, list} } } } —
+    // url/fx/fy = the picked cover (pin honored); list = the whole candidate
+    // chain (pick first, deduped by URL, capped) for the Pro/Featured card
+    // carousel (F 2026-09-01). Old callers reading only url/fx/fy are
+    // untouched.
     covers: function (ids) {
       if (!Array.isArray(ids) || !ids.length) return Promise.resolve({ data: { covers: {} }, error: null, status: 200 });
       var idNums = ids.map(Number).filter(function (n) { return !isNaN(n); });
@@ -756,7 +760,13 @@
         Object.keys(d.cands).forEach(function (vid) {
           var list = d.cands[vid], pick = null, pin = d.pins[vid];
           if (pin) for (var i = 0; i < list.length; i++) { if (list[i].url === pin) { pick = list[i]; break; } }
-          covers[vid] = pick || list[0];
+          pick = pick || list[0];
+          var seen = {}, roll = [pick];
+          seen[pick.url] = true;
+          for (var j = 0; j < list.length && roll.length < 6; j++) {
+            if (!seen[list[j].url]) { seen[list[j].url] = true; roll.push(list[j]); }
+          }
+          covers[vid] = { url: pick.url, fx: pick.fx, fy: pick.fy, list: roll };
         });
         return { data: { covers: covers }, error: null, status: 200 };
       }, function (e) { return fail(errText(e)); }); // never reject — browse falls back to gradient covers
