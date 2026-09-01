@@ -11,9 +11,16 @@
  * "Your QR code" card only when this global exists, so the rest of the site
  * never pays the ~56 KB.
  *
- * Encoding: byte mode, error correction M, auto type number. Codes carry
+ * Encoding: byte mode, auto type number. Codes carry
  *   https://golokali.com/<slug>?utm_source=qr&utm_medium=print&utm_campaign=vendor&lkv=<id>
  * and lokali-qr-scan.js (site-wide) attributes the landing to the vendor.
+ *
+ * Center Lokali "L" badge (default ON, opts.logo:false to disable): white
+ * rounded badge + violet L drawn as plain rectangles — NO fonts, so the
+ * downloaded SVG renders identically everywhere, print shops included. With
+ * the badge, error correction is raised M -> H (30% damage budget; the badge
+ * covers ~6% of the code) and decode was verified against jsQR WITH the
+ * badge drawn. Do not enlarge BADGE past ~0.25 without re-running that test.
  *
  * Dark modules are #1A1829 (the text ink — near-black for scanner contrast;
  * the no-ink rule is about SURFACES) on pure white, 4-module quiet zone (the
@@ -2330,22 +2337,42 @@ var qrcode = function() {
 
   // ---- Lokali wrapper --------------------------------------------------------
 
-  var DARK = '#1A1829';   // ink text tone; scanners want near-black
-  var QUIET = 4;          // quiet-zone modules per side (spec minimum)
+  var DARK  = '#1A1829';   // ink text tone; scanners want near-black
+  var BRAND = '#6002ee';   // the L glyph
+  var QUIET = 4;           // quiet-zone modules per side (spec minimum)
+  // Center badge, as a fraction of the full (code + quiet zone) width. At
+  // ~0.21 the covered area is ~4.5% of the code, far inside EC level H's 30%
+  // damage budget — decode-verified with the badge drawn (see the repo test).
+  var BADGE = 0.21;
 
-  function make(text) {
-    var qr = qrcode(0, 'M');   // 0 = smallest type that fits
+  function make(text, ec) {
+    var qr = qrcode(0, ec || 'M');   // 0 = smallest type that fits
     qr.addData(String(text), 'Byte');
     qr.make();
     return { count: qr.getModuleCount(), isDark: function (r, c) { return qr.isDark(r, c); } };
   }
 
-  // Standalone SVG: one path, unit modules, scaled by the viewBox — crisp at
-  // any print size. White background rect included so a saved .svg file opens
-  // readable anywhere (not transparent-on-dark).
+  // The Lokali "L" as two rectangles (stem + foot) — no fonts involved, so
+  // the downloaded SVG renders identically everywhere, print shops included.
+  // Coordinates are fractions of the badge box.
+  function lRects(bx, by, bs) {
+    var pad = bs * 0.26;                  // glyph inset inside the badge
+    var w = bs - pad * 2, h = bs - pad * 2;
+    var stroke = w * 0.34;                // bar thickness
+    return [
+      [bx + pad, by + pad, stroke, h],                                  // stem
+      [bx + pad, by + pad + h - stroke * 0.9, w, stroke * 0.9]          // foot
+    ];
+  }
+
+  // Standalone SVG: unit modules scaled by the viewBox — crisp at any print
+  // size. White background so a saved .svg opens readable anywhere. With
+  // opts.logo !== false a white rounded badge + violet L sits in the middle
+  // (error correction is raised to H to pay for the covered modules).
   function toSvg(text, opts) {
     opts = opts || {};
-    var q = make(text);
+    var logo = opts.logo !== false;
+    var q = make(text, logo ? 'H' : 'M');
     var n = q.count, total = n + QUIET * 2;
     var px = opts.px || 512;
     var d = '';
@@ -2354,16 +2381,31 @@ var qrcode = function() {
         if (q.isDark(r, c)) d += 'M' + (c + QUIET) + ' ' + (r + QUIET) + 'h1v1h-1z';
       }
     }
+    var badge = '';
+    if (logo) {
+      var bs = total * BADGE, bx = (total - bs) / 2, by = bx;
+      var rects = lRects(bx, by, bs);
+      badge =
+        '<rect x="' + bx + '" y="' + by + '" width="' + bs + '" height="' + bs +
+          '" rx="' + (bs * 0.18) + '" fill="#ffffff"/>' +
+        rects.map(function (t) {
+          return '<rect x="' + t[0] + '" y="' + t[1] + '" width="' + t[2] +
+            '" height="' + t[3] + '" rx="' + (t[2] * 0.12) + '" fill="' + BRAND + '"/>';
+        }).join('');
+    }
     return '<svg xmlns="http://www.w3.org/2000/svg" width="' + px + '" height="' + px +
-      '" viewBox="0 0 ' + total + ' ' + total + '" shape-rendering="crispEdges">' +
+      '" viewBox="0 0 ' + total + ' ' + total + '" shape-rendering="auto">' +
       '<rect width="' + total + '" height="' + total + '" fill="#ffffff"/>' +
-      '<path d="' + d + '" fill="' + (opts.dark || DARK) + '"/></svg>';
+      '<path d="' + d + '" fill="' + (opts.dark || DARK) + '" shape-rendering="crispEdges"/>' +
+      badge + '</svg>';
   }
 
   // PNG via canvas, integer pixels per module so edges stay sharp.
-  function toPngDataUrl(text, px) {
+  function toPngDataUrl(text, px, opts) {
     px = px || 1024;
-    var q = make(text);
+    opts = opts || {};
+    var logo = opts.logo !== false;
+    var q = make(text, logo ? 'H' : 'M');
     var n = q.count, total = n + QUIET * 2;
     var scale = Math.max(1, Math.floor(px / total));
     var size = total * scale;
@@ -2380,7 +2422,25 @@ var qrcode = function() {
         }
       }
     }
+    if (logo) {
+      var bs = size * BADGE, bx = (size - bs) / 2, by = bx;
+      ctx.fillStyle = '#ffffff';
+      roundRect(ctx, bx, by, bs, bs, bs * 0.18);
+      ctx.fillStyle = BRAND;
+      lRects(bx, by, bs).forEach(function (t) { roundRect(ctx, t[0], t[1], t[2], t[3], t[2] * 0.12); });
+    }
     return cv.toDataURL('image/png');
+  }
+
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+    ctx.fill();
   }
 
   window.LokaliQR = { make: make, toSvg: toSvg, toPngDataUrl: toPngDataUrl };

@@ -19,7 +19,7 @@
  *   /vendor-dashboard/marketing by lokali-qr-kit.js + lokali-marketing.js)
  *   adds utm_campaign=vendor&lkv=<vendor id>; the row then carries
  *   vendors_id and the vendor reads their stats via vendor_qr_stats()
- *   (Featured full stats; Pro sees only the locked count).
+ *   (Featured full stats; Pro sees only a no-numbers activity teaser).
  *
  *   Site-level stats surface in the admin panel on /account ("QR code scans"
  *   card, lokali-account.js → admin_qr_scans() RPC). The GA4 utm tags still

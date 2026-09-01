@@ -26,7 +26,8 @@
  * self-hides when the kit global is absent). Codes carry
  * ?utm_source=qr&utm_campaign=vendor&lkv=<id>; lokali-qr-scan.js attributes
  * the landing. Stats via vendor_qr_stats(): Featured sees the numbers, Pro
- * sees a locked count (scans are recorded for Pro too — the upgrade teaser).
+ * sees only "your code is getting scanned" with NO count (scans are recorded
+ * for Pro too — the upgrade teaser; the count is hidden server-side).
  *
  * Plan gates + queue caps (20 cta / 10 showcase) are DB-trigger enforced
  * (LOKALI_LIMIT_REACHED) — this page is honest UI, not the enforcement.
@@ -294,14 +295,19 @@
             (since ? ', counting since ' + esc(since) : '') + '.</p>'
           : '<p class="mkt-note">No scans yet. Counting starts the moment your code is out in the world.</p>');
     } else if (q && !q.allowed) {
-      // Pro teaser: scans ARE being recorded; the numbers are the Featured perk.
+      // Pro teaser: scans ARE being recorded, but the payload carries NO
+      // numbers (v2, Francesca 2026-09-01) — activity yes, count no. The
+      // count is the headline stat, so showing it would undercut the
+      // upgrade; the hide is server-side in vendor_qr_stats(), this copy
+      // just matches it.
       statsHtml =
         '<div class="mkt-qr-teaser">' +
-          (+q.total > 0
-            ? '<b>' + (+q.total) + (+q.total === 1 ? ' scan' : ' scans') + ' recorded so far.</b> '
-            : 'Scan counting is already on. ') +
-          'Scan stats are a Featured perk, and your history is being saved in the meantime, ' +
-          'so it will all be here the day you upgrade. ' +
+          (q.has_scans
+            ? '<b>Your code is getting scanned.</b> How many, how often, and from ' +
+              'what devices are a Featured perk. Your full history is being saved ' +
+              'in the meantime, so it will all be here the day you upgrade. '
+            : 'Scan counting is already on. Your history is saved from the very ' +
+              'first scan, and the stats are a Featured perk. ') +
           '<a href="/pricing">See the Featured plan</a>' +
         '</div>';
     }
