@@ -718,6 +718,19 @@ const LokaliProductsPage = (() => {
       const shipBadge = find('product-shipping', 'shipping-badge', 'product-shipping');
       if (shipBadge) shipBadge.style.display = product.shipping_offered ? 'inline-flex' : 'none';
 
+      // Delivery badge (F 2026-09-01): the Webflow card template ships only a
+      // shipping badge — clone it per-card so "Delivery" reads at a glance too.
+      // Guarded by data-field so reconciled/reused card DOM never doubles it.
+      if (shipBadge && !card.querySelector('[data-field="product-delivery-badge"]')) {
+        const dB = shipBadge.cloneNode(true);
+        dB.setAttribute('data-field', 'product-delivery-badge');
+        dB.removeAttribute('id');
+        (dB.querySelector('div,span') || dB).textContent = 'Delivery';
+        shipBadge.insertAdjacentElement('afterend', dB);
+      }
+      const delBadge = card.querySelector('[data-field="product-delivery-badge"]');
+      if (delBadge) delBadge.style.display = product.delivery_offered ? 'inline-flex' : 'none';
+
       // FEAT-PICKS — the star: a Featured-plan vendor hand-picks up to 6
       // products to LEAD the public page (picks sort before the drag order, so
       // they fill the above-the-fold slots). Non-Featured vendors see the star
@@ -1004,6 +1017,11 @@ const LokaliProductsPage = (() => {
 
     updatePriceVisibility();
     resetImagePreview();
+    // Stale-cover bug (2026-09-01, hit by Paperloom product 93): _galleryPhotos
+    // held the LAST-EDITED product's attached photos, and handleSave prefers
+    // _galleryPhotos[0] as the cover — so a new product created after viewing
+    // another inherited its cover photo.
+    _galleryPhotos = [];
     _pendingGalleryPhotos = [];
     _pendingSubcatLabels = [];
     renderGallery(null);
@@ -1548,11 +1566,13 @@ const LokaliProductsPage = (() => {
 
       // Unified photos (Pro/Featured): the gallery is the cover source — the first
       // photo becomes the card/listing thumbnail. The standalone image field is hidden.
-      // Edit mode reads the attached gallery; add mode reads the staged photos.
+      // Edit mode reads the attached gallery; add mode reads ONLY the staged photos
+      // (gated on editingId since 2026-09-01 — the attached list belongs to the
+      // last-edited product and must never become a NEW product's cover).
       if (_isProPlan) {
-        if (Array.isArray(_galleryPhotos) && _galleryPhotos.length) {
+        if (editingId && Array.isArray(_galleryPhotos) && _galleryPhotos.length) {
           imageUrl = _galleryPhotos[0].image_url || imageUrl;
-        } else if (_pendingGalleryPhotos.length) {
+        } else if (!editingId && _pendingGalleryPhotos.length) {
           imageUrl = _pendingGalleryPhotos[0].url || imageUrl;
         }
       }

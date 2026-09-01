@@ -1073,6 +1073,10 @@ const LokaliServicesPage = (() => {
 
     syncPriceWrapsFromSelect();
     resetImagePreview();
+    // Stale-cover bug (2026-09-01): _galleryPhotos held the LAST-EDITED item's
+    // attached photos, and handleSave prefers _galleryPhotos[0] as the cover —
+    // so a new item created after viewing another inherited its cover photo.
+    _galleryPhotos = [];
     _pendingGalleryPhotos = [];
     _pendingSubcatLabels = [];
     renderGallery(null);
@@ -1642,11 +1646,13 @@ const LokaliServicesPage = (() => {
 
       // Unified photos (Pro/Featured): the gallery is the cover source — the first
       // photo becomes the card/listing thumbnail. The standalone image field is hidden.
-      // Edit mode reads the attached gallery; add mode reads the staged photos.
+      // Edit mode reads the attached gallery; add mode reads ONLY the staged photos
+      // (gated on editingId since 2026-09-01 — the attached list belongs to the
+      // last-edited item and must never become a NEW item's cover).
       if (_isProPlan) {
-        if (Array.isArray(_galleryPhotos) && _galleryPhotos.length) {
+        if (editingId && Array.isArray(_galleryPhotos) && _galleryPhotos.length) {
           imageUrl = _galleryPhotos[0].image_url || imageUrl;
-        } else if (_pendingGalleryPhotos.length) {
+        } else if (!editingId && _pendingGalleryPhotos.length) {
           imageUrl = _pendingGalleryPhotos[0].url || imageUrl;
         }
       }

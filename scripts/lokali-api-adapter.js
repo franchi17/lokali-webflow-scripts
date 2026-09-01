@@ -1354,12 +1354,38 @@
       if (p.indexOf('services?') === 0 && m === 'GET') {
         return listByVendorPublic('services', parseQs(p).vendor_id, true);
       }
+      // Item-page gallery (lokali-vendor-detail.js fetchPhotos). Unmapped since
+      // the Supabase cutover — the page's silent single-image fallback hid it
+      // until the first real multi-photo product (Paperloom, 2026-09-01).
+      match = p.match(/^service\/id\/(\d+)\/photos\/list$/);
+      if (match && m === 'GET') {
+        return SAPI().photos.list('service', Number(match[1])).then(function (res) {
+          var out = envelope(res);
+          if (!out.error) {
+            out.data = (out.data || []).filter(function (r) { return r.is_active !== false; });
+            normalizeTs(out.data);
+          }
+          return out;
+        });
+      }
     }
     if (base === 'products') {
       match = p.match(/^products\/(\d+)$/);
       if (match && m === 'GET') return products.getById(Number(match[1]));
       if (p.indexOf('products?') === 0 && m === 'GET') {
         return listByVendorPublic('products', parseQs(p).vendor_id, false);
+      }
+      // Item-page gallery — same cutover gap as the services mapping above.
+      match = p.match(/^product\/id\/(\d+)\/photos\/list$/);
+      if (match && m === 'GET') {
+        return SAPI().photos.list('product', Number(match[1])).then(function (res) {
+          var out = envelope(res);
+          if (!out.error) {
+            out.data = (out.data || []).filter(function (r) { return r.is_active !== false; });
+            normalizeTs(out.data);
+          }
+          return out;
+        });
       }
     }
     if (base === 'reviews' && m === 'GET' && p.indexOf('reviews?') === 0) {
