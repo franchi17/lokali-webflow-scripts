@@ -1377,8 +1377,20 @@ var LokaliProfilePage = (function () {
     file.addEventListener('change', function () {
       var f = file.files && file.files[0];
       file.value = '';
-      if (!f || f.type.indexOf('image/') !== 0 || !_vendor || _vendor.id == null) return;
-      if (_pfPhotos.length >= _PF_MAX) return;
+      if (!f || !_vendor || _vendor.id == null) return;
+      // SILENT-LOSS FIX (2026-09-01, hit by Paperloom's 15-photo session: 5 of
+      // them vanished with no message): every failure path below used to be a
+      // bare return or a console.error, and the attach step's result was never
+      // checked at all, so a failed upload was indistinguishable from a
+      // successful one. Every path now tells the vendor what happened.
+      if (f.type.indexOf('image/') !== 0) {
+        _showToast('error', 'That file is not a photo. Please choose a JPG, PNG, WebP, or HEIC image.');
+        return;
+      }
+      if (_pfPhotos.length >= _PF_MAX) {
+        _showToast('error', 'Your gallery is full: ' + _PF_MAX + ' items on your plan.');
+        return;
+      }
       var S = window.LokaliSupabaseAPI;
       if (!S || !S.storage || !S.photos) return;
       pick.textContent = 'Uploading…';
@@ -1386,11 +1398,20 @@ var LokaliProfilePage = (function () {
         if (res.error || !res.data || !res.data.url) {
           console.error('[ProfilePage] portfolio upload error:', res.error);
           pick.textContent = 'Add photo';
+          _showToast('error', (res.error && res.error.message) || 'That photo did not upload. Please try again.');
           return;
         }
         var nextSort = _pfPhotos.length ? (Number(_pfPhotos[_pfPhotos.length - 1].sort_order) || _pfPhotos.length) + 1 : 1;
-        S.photos.add('vendor', _vendor.id, res.data.url, nextSort).then(function () {
+        S.photos.add('vendor', _vendor.id, res.data.url, nextSort).then(function (addRes) {
           pick.textContent = 'Add photo';
+          if (addRes && addRes.error) {
+            console.error('[ProfilePage] portfolio attach error:', addRes.error);
+            var m = String(addRes.error.message || '');
+            _showToast('error', m.indexOf('LOKALI_LIMIT_REACHED') !== -1
+              ? m.replace(/^.*LOKALI_LIMIT_REACHED:\s*/, '')
+              : 'That photo uploaded but could not be added to your gallery. Please try again.');
+            return;
+          }
           _renderPortfolio();
           _showToast('success', 'Photo added to your gallery and saved automatically.');
         });
