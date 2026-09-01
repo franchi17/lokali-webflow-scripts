@@ -857,7 +857,15 @@
         if (revLink && revLink.parentNode === nav) nav.insertBefore(a, revLink);
         else nav.appendChild(a);
         opNavFadeSync(nav);
-        opAddHighlight({ key: 'books', url: ICON_BOLT, tint: '#5F51B8', t: 'Books online', s: 'Check live availability and request a date' });
+        // "Books online" only when the widget actually rendered the booking
+        // card (.av-booking = vendor has an external scheduling link). The
+        // section also mounts for published HOURS alone, and until 2026-09-01
+        // that lit this highlight too — an hours-only vendor (Pancha) was
+        // claiming online booking with calendar-era copy for a flow retired
+        // by #157.
+        if (el.querySelector('.av-booking')) {
+          opAddHighlight({ key: 'books', url: ICON_BOLT, tint: '#5F51B8', t: 'Books online', s: 'Book an appointment right from this page' });
+        }
       } else if (tries > 40) {
         clearInterval(iv); // ~20s — vendor isn't on the availability feature
       }
