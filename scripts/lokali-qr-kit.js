@@ -12,7 +12,7 @@
  * never pays the ~56 KB.
  *
  * Encoding: byte mode, auto type number. Codes carry
- *   https://golokali.com/<slug>?utm_source=qr&utm_medium=print&utm_campaign=vendor&lkv=<id>
+ *   https://www.golokali.com/<slug>?utm_source=qr&utm_medium=print&utm_campaign=vendor&lkv=<id>
  * and lokali-qr-scan.js (site-wide) attributes the landing to the vendor.
  *
  * Center Lokali "L" badge (default ON, opts.logo:false to disable): white

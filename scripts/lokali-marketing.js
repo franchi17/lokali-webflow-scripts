@@ -268,7 +268,7 @@
   // point at golokali.com even when the dashboard is previewed elsewhere.
   // The lkv param is what lokali-qr-scan.js attributes the landing with.
   Page.prototype.qrUrl = function () {
-    return 'https://golokali.com/' + this.vendor.slug +
+    return 'https://www.golokali.com/' + this.vendor.slug +
       '?utm_source=qr&utm_medium=print&utm_campaign=vendor&lkv=' + this.vendor.id;
   };
 
