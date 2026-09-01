@@ -16,11 +16,13 @@
  * and lokali-qr-scan.js (site-wide) attributes the landing to the vendor.
  *
  * Center Lokali "L" badge (default ON, opts.logo:false to disable): white
- * rounded badge + violet L drawn as plain rectangles — NO fonts, so the
- * downloaded SVG renders identically everywhere, print shops included. With
- * the badge, error correction is raised M -> H (30% damage budget; the badge
- * covers ~6% of the code) and decode was verified against jsQR WITH the
- * badge drawn. Do not enlarge BADGE past ~0.25 without re-running that test.
+ * rounded badge + the REAL brand L (Gyst Variable glyph), embedded as a tiny
+ * alpha PNG extracted from the site wordmark — exact letterform, no font
+ * shipped (Gyst is commercially licensed; the traced-outline fallback below
+ * covers the one pre-decode canvas edge case). With the badge, error
+ * correction is raised M -> H (30% damage budget; the badge covers ~6% of
+ * the code) and decode was verified against jsQR WITH the badge drawn. Do
+ * not enlarge BADGE past ~0.25 without re-running that test.
  *
  * Dark modules are #1A1829 (the text ink — near-black for scanner contrast;
  * the no-ink rule is about SURFACES) on pure white, 4-module quiet zone (the
@@ -2352,17 +2354,29 @@ var qrcode = function() {
     return { count: qr.getModuleCount(), isDark: function (r, c) { return qr.isDark(r, c); } };
   }
 
-  // The Lokali "L" as two rectangles (stem + foot) — no fonts involved, so
-  // the downloaded SVG renders identically everywhere, print shops included.
-  // Coordinates are fractions of the badge box.
-  function lRects(bx, by, bs) {
-    var pad = bs * 0.26;                  // glyph inset inside the badge
-    var w = bs - pad * 2, h = bs - pad * 2;
-    var stroke = w * 0.34;                // bar thickness
-    return [
-      [bx + pad, by + pad, stroke, h],                                  // stem
-      [bx + pad, by + pad + h - stroke * 0.9, w, stroke * 0.9]          // foot
-    ];
+  // The Lokali "L" brand mark — the REAL artwork (Gyst Variable glyph),
+  // color-isolated at native resolution from the site wordmark PNG
+  // (cdn.prod.website-files.com .../Lokali Logo.png, 116 x 175, 518 bytes,
+  // alpha preserved). Embedding the tiny PNG keeps the exact letterform
+  // without shipping the (commercially licensed) font itself.
+  var L_IMG_W = 116, L_IMG_H = 175;
+  var L_IMG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHQAAACvCAYAAAAsY/rLAAABzUlEQVR42u3cwW2DQBRF0T/IFVAhpVEhJUBWkRDCycJSwrw5dxfZ2XD0Ro6N05ZpO+ohrfvcSh81uQRABVRABVRAgQqogAqogAIVUAEVUAEFKqACKqACClRABVRABRSogAqogAooUAEVUAEVUKACKqACKqBABVRABVRAgQqogAqogAIVUAEVUAEFKqACKqACClRABVRABRSogAqogAooUAEVUAEVUKACKqACKqBABVRABVRAgboEQAVUQAVUQIEKqIAKqIACFVABFVABBSqgAiqgAgpUQAVUQAUUqIAKqIAKKFABFVABFVCgAiqgAiqgQAVU/93LJeijZdqO88/rPjegnSPePXaFdeR2iHl93vm5QDvGvPsdR27nkF7lBmMu03YADcG00EBMoGGYQMMwgYZhAg3D9HdoEKSFBmICDcNc97kBDcG00EBML4qCIL8/F7XQAExHbhjm+a4FR27AKi00FBNoAOb1JjFHbsAqLTQE8+7eXAsNWCXQQEhHbueYvgoRvEqgnUO+WyfQgEUCDYUcFrR3yJ+O26FAUxc5FGga4m/rjAQdZYmxoKMDXmsuSM5xW+Wtv/J/ivTYdQK1UAHVnx23QC1UT15nVdUX9laCJXcKJz4AAAAASUVORK5CYII=';
+  // Pre-decode for the synchronous canvas renderer (data URIs decode
+  // near-instantly; by the first Download click it is long ready).
+  var LIMG = null;
+  try { LIMG = new Image(); LIMG.src = L_IMG; } catch (e) {}
+
+  // Hand-traced outline FALLBACK (close match, box 235 x 350) — used only if
+  // the canvas needs to draw before the image has decoded.
+  var L_PATH = 'M0 0 H72 V268 C82 322 115 348 158 324 C182 310 196 288 211 284 ' +
+               'A25 25 0 0 1 235 310 L219 350 H0 Z';
+  var L_W = 235, L_H = 350;
+
+  // Fit a glyph box inside the badge (centered, aspect kept, height-bound).
+  function lFit(gw, gh, bx, by, bs) {
+    var pad = bs * 0.20;
+    var sc = (bs - pad * 2) / gh;
+    return { x: bx + (bs - gw * sc) / 2, y: by + pad, s: sc, w: gw * sc, h: gh * sc };
   }
 
   // Standalone SVG: unit modules scaled by the viewBox — crisp at any print
@@ -2384,16 +2398,14 @@ var qrcode = function() {
     var badge = '';
     if (logo) {
       var bs = total * BADGE, bx = (total - bs) / 2, by = bx;
-      var rects = lRects(bx, by, bs);
+      var f = lFit(L_IMG_W, L_IMG_H, bx, by, bs);
       badge =
         '<rect x="' + bx + '" y="' + by + '" width="' + bs + '" height="' + bs +
           '" rx="' + (bs * 0.18) + '" fill="#ffffff"/>' +
-        rects.map(function (t) {
-          return '<rect x="' + t[0] + '" y="' + t[1] + '" width="' + t[2] +
-            '" height="' + t[3] + '" rx="' + (t[2] * 0.12) + '" fill="' + BRAND + '"/>';
-        }).join('');
+        '<image x="' + f.x + '" y="' + f.y + '" width="' + f.w + '" height="' + f.h +
+          '" href="' + L_IMG + '" xlink:href="' + L_IMG + '"/>';
     }
-    return '<svg xmlns="http://www.w3.org/2000/svg" width="' + px + '" height="' + px +
+    return '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="' + px + '" height="' + px +
       '" viewBox="0 0 ' + total + ' ' + total + '" shape-rendering="auto">' +
       '<rect width="' + total + '" height="' + total + '" fill="#ffffff"/>' +
       '<path d="' + d + '" fill="' + (opts.dark || DARK) + '" shape-rendering="crispEdges"/>' +
@@ -2426,8 +2438,19 @@ var qrcode = function() {
       var bs = size * BADGE, bx = (size - bs) / 2, by = bx;
       ctx.fillStyle = '#ffffff';
       roundRect(ctx, bx, by, bs, bs, bs * 0.18);
-      ctx.fillStyle = BRAND;
-      lRects(bx, by, bs).forEach(function (t) { roundRect(ctx, t[0], t[1], t[2], t[3], t[2] * 0.12); });
+      if (LIMG && LIMG.complete && LIMG.naturalWidth) {
+        var f = lFit(L_IMG_W, L_IMG_H, bx, by, bs);
+        ctx.drawImage(LIMG, f.x, f.y, f.w, f.h);
+      } else {
+        // image not decoded yet (first paint edge case): traced outline
+        var fp = lFit(L_W, L_H, bx, by, bs);
+        ctx.fillStyle = BRAND;
+        ctx.save();
+        ctx.translate(fp.x, fp.y);
+        ctx.scale(fp.s, fp.s);
+        ctx.fill(new Path2D(L_PATH));
+        ctx.restore();
+      }
     }
     return cv.toDataURL('image/png');
   }
