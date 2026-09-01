@@ -540,7 +540,7 @@
     var inp = document.createElement('input');
     inp.type = 'search';
     inp.name = 'q';
-    inp.placeholder = 'Search the market\u2026';
+    inp.placeholder = 'Search vendors\u2026'; // fits the 180px resting width untruncated
     inp.setAttribute('aria-label', 'Search the market');
     inp.autocomplete = 'off';
     var sb = document.createElement('button');
