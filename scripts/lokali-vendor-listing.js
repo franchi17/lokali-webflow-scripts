@@ -405,9 +405,27 @@
     'html.vl-op #vl-portfolio[data-op-count="4"] .vd-gallery{grid-template-columns:1fr 1fr;grid-auto-rows:158px;}',
     'html.vl-op #vl-portfolio[data-op-count="2"] .vd-gallery{grid-template-columns:1fr 1fr;grid-auto-rows:230px;}',
     'html.vl-op #vl-portfolio[data-op-count="1"] .vd-gallery{grid-template-columns:1fr;grid-auto-rows:300px;}',
+    // #164: capped mosaic — ANY gallery past 3 photos renders big+2 (first
+    // photo spans both rows, next two stacked beside it); the rest hide behind
+    // a "Show all N photos" pill. Before this, 6+ photos fell through to the
+    // generic 3-column template and rendered EVERY row — a 10-photo vendor got
+    // a ~600px photo wall before their own name (Paperloom, 2026-09-01).
+    // These rules sit AFTER the data-op-count templates on purpose: equal
+    // specificity, so source order lets .vl-port-capped win for counts 4/5.
+    'html.vl-op #vl-portfolio.vl-port-capped .vd-gallery{grid-template-columns:2fr 1fr;grid-auto-rows:178px;position:relative;}',
+    'html.vl-op #vl-portfolio.vl-port-capped .vd-frame:first-child{grid-row:1/3;}',
+    'html.vl-op #vl-portfolio.vl-port-capped .vd-frame:nth-child(n+4){display:none;}',
+    // The pill: count + grid glyph beats a bare arrow (users miss arrows and
+    // can't tell how much more there is); white capsule so it reads on any
+    // photo. Absolutely positioned, so it never becomes a grid track.
+    'html.vl-op #vl-portfolio.vl-port-capped .vl-port-more{position:absolute;right:14px;bottom:14px;display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.95);color:#3B3654;border:1px solid #D9D2F2;border-radius:10px;padding:10px 14px;font:700 13.5px/1 "Plus Jakarta Sans",sans-serif;cursor:pointer;box-shadow:0 4px 14px rgba(26,24,41,.18);transition:background .12s;}',
+    'html.vl-op #vl-portfolio.vl-port-capped .vl-port-more:hover{background:#fff;}',
     'html.vl-op #vl-portfolio .vd-pips{display:none !important;}',
     '#vl-op-bar{display:none;}',
     '}',
+    // Mobile keeps the full swipe strip + pips, where the pill would scroll
+    // away with the photos anyway — desktop-only (the rule above re-shows it).
+    '.vl-port-more{display:none;}',
     // ── mockup-fidelity pass (2026-07-19 gap closure) ──────────────────────
     // The Webflow .vl-page container is ~820px; the approved mockup is a
     // 1120px canvas — the single biggest "feels cramped" gap. Widen in
@@ -1712,6 +1730,27 @@
       // ONEPAGE photo-grid hero: the desktop grid template is keyed off how
       // many photos there are (5 = Airbnb big+4, 3 = big+2, etc. — see OP_CSS).
       section.setAttribute('data-op-count', String(photos.length));
+      // #164: 4+ photos cap the desktop hero at big+2 with a "Show all N
+      // photos" pill (see OP_CSS) — every visible tile still opens the
+      // lightbox at itself; the pill opens it at the first HIDDEN photo, so
+      // clicking "more" always shows something new. Mobile is untouched
+      // (swipe strip + pips already communicate the full count).
+      section.classList.remove('vl-port-capped');
+      if (ONEPAGE && photos.length > 3) {
+        section.classList.add('vl-port-capped');
+        var more = document.createElement('button');
+        more.type = 'button';
+        more.className = 'vl-port-more';
+        // Static glyph markup only; the count is a number — nothing
+        // vendor-authored goes through innerHTML (SEC-001).
+        more.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="display:block;"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg>';
+        more.appendChild(document.createTextNode('Show all ' + photos.length + ' photos'));
+        more.addEventListener('click', function (e) {
+          e.stopPropagation();
+          openLightbox(urls, 3, lbl);
+        });
+        strip.appendChild(more);
+      }
       // 'block', NOT '' — the Webflow element carries a combo class whose
       // stylesheet rule is display:none, so clearing the inline style just
       // fell back to hidden (live photos were loading invisibly, 2026-07-19).
