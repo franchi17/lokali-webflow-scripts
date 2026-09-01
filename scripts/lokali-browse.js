@@ -804,10 +804,10 @@
       }, { threshold: 0.15 });
       io.observe(cover);
     }
-    function advance() {
+    function go(dir) {
       if (busy) return;
       busy = true;
-      var next = (idx + 1) % photos.length;
+      var next = (idx + dir + photos.length) % photos.length;
       var p = photos[next];
       var img = ce('img', 'vcard-cover-img');
       img.alt = '';
@@ -830,10 +830,36 @@
       img.addEventListener('error', function () { idx = next; busy = false; }); // skip a dead URL, move on next tick
       img.src = safeImgUrl(p.url);
     }
+    // Touch swipe (F 2026-09-01: "people are going to want to do that
+    // naturally"). Passive listeners with the decision at touchend, so
+    // vertical page scrolling is never blocked: only a clearly horizontal
+    // move (>34px, dominating dy) flips a photo. A swipe swallows the one
+    // click that follows it — the whole card is a storefront link, and a
+    // flip must not navigate. Manual control also parks the auto-rotation
+    // for a few seconds so it doesn't fight the thumb.
+    var holdUntil = 0, tx = null, ty = null, swiped = false;
+    cover.addEventListener('touchstart', function (e) {
+      if (!e.touches || e.touches.length !== 1) return;
+      tx = e.touches[0].clientX; ty = e.touches[0].clientY;
+    }, { passive: true });
+    cover.addEventListener('touchend', function (e) {
+      if (tx == null) return;
+      var t0 = e.changedTouches && e.changedTouches[0];
+      var dx = t0 ? t0.clientX - tx : 0, dy = t0 ? t0.clientY - ty : 0;
+      tx = ty = null;
+      if (Math.abs(dx) > 34 && Math.abs(dx) > Math.abs(dy) * 1.4) {
+        swiped = true;
+        holdUntil = Date.now() + 6500;
+        go(dx < 0 ? 1 : -1);
+      }
+    }, { passive: true });
+    cover.addEventListener('click', function (ev) {
+      if (swiped) { swiped = false; ev.preventDefault(); ev.stopPropagation(); }
+    }, true);
     var t = setInterval(function () {
       if (!cover.isConnected) { clearInterval(t); if (io) io.disconnect(); return; }
-      if (hover || !visible || document.hidden) return;
-      advance();
+      if (hover || !visible || document.hidden || Date.now() < holdUntil) return;
+      go(1);
     }, COVER_ROLL_MS + Math.floor(Math.random() * 1400));
   }
 
