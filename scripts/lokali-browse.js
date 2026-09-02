@@ -1676,6 +1676,22 @@
     var loc = locSelectEl();
     if (loc) loc.addEventListener('change', function () { setLocation(loc.value); });
     var msel = sortSelectEl(); if (msel) msel.addEventListener('change', function () { setSort(msel.value); });
+    // F 2026-09-02: "Sort" moves OUT of the dropdown - the Webflow options are
+    // authored as "Sort: Newest" etc.; strip the prefix so the control reads
+    // just the value, and put a quiet external "Sort by" label before it
+    // (kept as the accessible name too).
+    if (msel) {
+      for (var oi = 0; oi < msel.options.length; oi++) {
+        msel.options[oi].textContent = msel.options[oi].textContent.replace(/^\s*Sort:\s*/i, '');
+      }
+      msel.setAttribute('aria-label', 'Sort by');
+      if (!document.getElementById('lk-sort-label')) {
+        var slab = ce('span'); slab.id = 'lk-sort-label'; slab.textContent = 'Sort by';
+        slab.setAttribute('aria-hidden', 'true');
+        slab.style.cssText = "flex:0 0 auto;align-self:center;font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-size:13px;font-weight:600;color:#6E6A85;margin:0 8px 0 4px;";
+        msel.parentNode.insertBefore(slab, msel);
+      }
+    }
     wireButton(el('browse-mobile-filter-btn'), openFilters);
     var backdrop = el('browse-filter-backdrop'); if (backdrop) backdrop.addEventListener('click', closeFilters);
     wireButton(el('browse-close-filters'), closeFilters);
