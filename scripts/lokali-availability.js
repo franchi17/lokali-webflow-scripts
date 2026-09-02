@@ -1,21 +1,29 @@
 /**
- * Lokali — storefront availability section (#71 → link redesign 2026-08-27),
- * CUSTOMER side: "Book an appointment" (vendor's external scheduling link,
- * Calendly/Acuity/etc.) + the weekly Hours card + the books-full banner.
- * The NATIVE booking calendar/slot picker is retired (usage check 2026-08-27:
- * zero real usage) — its render entry points are gone (hasCalendar is always
- * false); the dormant calendar code below it awaits a cleanup sweep.
+ * Lokali, storefront availability section (#71, link redesign 2026-08-27,
+ * cleanup + Featured embed 2026-09-02). CUSTOMER side: "Book an appointment"
+ * (the vendor's external scheduling link: Calendly, Acuity, Square etc.), the
+ * weekly Hours card, and the books-full banner with the general new-client
+ * waitlist join.
+ *
+ * The NATIVE booking calendar / slot picker / sold-out-date waitlist retired on
+ * 2026-08-27 (usage check: zero real usage). Its code was removed from this file
+ * on 2026-09-02 (#157 CLEAN sweep). Do not re-wire it.
+ *
+ * FEATURED inline embed (#157 fast-follow, 2026-09-02): when the vendor is on
+ * the Featured plan and the link is on a scheduler known to permit framing,
+ * the scheduler renders INSIDE the card (iframe) with an "open in a new tab"
+ * escape hatch. Every other case, and every other plan, keeps the button.
  *
  * Load AFTER scripts/lokali-supabase-client.js (needs window.LokaliSupabaseAPI +
  * window.LokaliSupabaseReady). Renders ONE storefront-level section on the
- * vendor detail page (/{slug}) — never per service/product.
+ * vendor detail page (/{slug}), never per service/product.
  *
  * Mount: a <div id="lokali-availability"></div> placed in the Webflow Designer
  * where the section should appear (same convention as #lokali-share-detail). If
  * that element is absent it falls back to inserting before the services grid.
  *
  * Self-hiding: it probes availability_booking_link() AND
- * availability_hours_public() — link null + hours [] when the vendor isn't on
+ * availability_hours_public(). Link null + hours [] when the vendor isn't on
  * the feature (nothing set / not on a Pro/Featured plan), so non-participating
  * storefronts look exactly as today. A vendor may publish Hours without a
  * booking link, or the reverse; either alone renders its card.
@@ -29,35 +37,11 @@
 
   var FONT = "'Plus Jakarta Sans', sans-serif";
   var BRAND = '#6002ee';
-  var STATUS = {
-    open:     { bg: '#E7F3EC', bd: '#B9DEC9', fg: '#3E7C5E', dot: '#7FC4A4', tag: 'Open' },
-    limited:  { bg: '#FBF1DE', bd: '#EBD3A0', fg: '#96702E', dot: '#E6C079', tag: 'Limited' },
-    sold_out: { bg: '#FAE9E2', bd: '#EBC3B2', fg: '#9E5F44', dot: '#DFA284', tag: 'Sold out' },
-    off:      { bg: '#F1EFF5', bd: '#E7E4F0', fg: '#B0ACBC', dot: '#D3D0DD', tag: 'Off' },
-    closed:   { bg: '#F1EFF5', bd: '#E7E4F0', fg: '#B0ACBC', dot: '#D3D0DD', tag: 'Closed' }
-  };
-  var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  var DOW = ['Mo','Tu','We','Th','Fr','Sa','Su']; // Monday-first display
 
-  // ---- date helpers (local, no tz lib) -------------------------------------
-  function iso(d) {
-    var m = d.getMonth() + 1, day = d.getDate();
-    return d.getFullYear() + '-' + (m < 10 ? '0' + m : m) + '-' + (day < 10 ? '0' + day : day);
-  }
-  function firstOfMonth(d) { return new Date(d.getFullYear(), d.getMonth(), 1); }
-  function lastOfMonth(d) { return new Date(d.getFullYear(), d.getMonth() + 1, 0); }
-  function addMonths(d, n) { return new Date(d.getFullYear(), d.getMonth() + n, 1); }
-  function mondayIndex(d) { return (d.getDay() + 6) % 7; } // 0=Mon … 6=Sun
-  function prettyDate(isoStr) {
-    var p = isoStr.split('-'); var d = new Date(+p[0], +p[1] - 1, +p[2]);
-    var wd = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()];
-    return wd + ', ' + MONTHS[d.getMonth()].slice(0, 3) + ' ' + d.getDate();
-  }
   function esc(s) { return String(s == null ? '' : s).replace(/[<>&"]/g, function (c) {
     return ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' })[c];
   }); }
-  // Friendly 12-hour labels. Server times are "HH:MM" (24h); we show "2:00 PM"
-  // to customers but always submit the raw 24h string the RPC expects.
+  // Friendly 12-hour labels. Server times are "HH:MM" (24h); we show "2:00 PM".
   function toMin(t) { var p = String(t == null ? '0:0' : t).split(':'); return (+p[0]) * 60 + (+p[1]); }
   function fmt12(t) {
     var min = ((toMin(t) % 1440) + 1440) % 1440;
@@ -103,38 +87,28 @@
       '.lok-av,.lok-av *{font-family:' + FONT + ';box-sizing:border-box;}' +
       '.lok-av{background:#F7F5FD;border-radius:20px;padding:22px;color:#45415A;margin:18px 0;}' +
       '.lok-av .av-card{background:#fff;border:1px solid #ECE8F6;border-radius:16px;padding:18px 20px;}' +
-      '.lok-av .av-cell{aspect-ratio:1;border-radius:11px;display:flex;flex-direction:column;align-items:center;' +
-        'justify-content:center;font-size:13px;font-weight:500;border:1px solid transparent;}' +
-      '.lok-av .av-cell.clk{cursor:pointer;}' +
-      '.lok-av .av-cell.sel{border:2px solid ' + BRAND + ' !important;}' +
-      '.lok-av input,.lok-av textarea{width:100%;font-family:inherit;font-size:14px;color:#45415A;' +
+      '.lok-av input{width:100%;font-family:inherit;font-size:14px;color:#45415A;' +
         'border:1px solid #E4DEF4;border-radius:10px;padding:9px 12px;background:#FCFBFE;}' +
       '.lok-av .av-cta{width:100%;background:' + BRAND + ';color:#fff;border:none;border-radius:10px;' +
         'padding:12px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;}' +
       '.lok-av .av-cta[disabled]{opacity:.55;cursor:default;}' +
-      '.lok-av .av-cta2{width:100%;background:#F5EFE4;color:#B5793B;border:none;border-radius:10px;' +
-        'padding:11px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;}' +
-      '.lok-av .av-step{display:flex;align-items:center;justify-content:space-between;border:1px solid #E4DEF4;' +
-        'border-radius:10px;padding:7px 12px;background:#FCFBFE;}' +
-      '.lok-av .av-step b{font-size:15px;font-weight:600;color:#5D4F9E;}' +
-      '.lok-av .av-step span{cursor:pointer;font-size:18px;line-height:1;color:' + BRAND + ';user-select:none;padding:0 4px;}' +
-      '.lok-av .av-slot{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;' +
-        'border-radius:10px;margin-bottom:6px;font-size:14px;font-weight:500;}' +
-      '.lok-av .av-slot.pick{cursor:pointer;}.lok-av .av-slot.on{outline:2px solid ' + BRAND + ';outline-offset:-2px;}' +
-      // Mobile: the 7-col calendar must fit a phone — minmax(0,1fr) columns kill
-      // the min-content floor, and paddings/cells slim down so the widget stays
-      // the same width as every other card (Francesca 2026-07-20).
-      '.lok-av .av-cell{min-width:0;overflow:hidden;}' +
-      // A date-less panel is an empty white bar — hide until a date is picked.
-      '.lok-av .av-panel:empty{display:none;}' +
+      // Featured inline embed: the scheduler's own UI inside a soft frame. The
+      // height is the scheduler's comfortable minimum (Calendly documents 700px
+      // for its inline widget; Acuity fits in less); phones get a shorter frame
+      // so the card never swallows the whole viewport.
+      '.lok-av .av-embed{position:relative;border:1px solid #ECE8F6;border-radius:12px;background:#FAF9FE;overflow:hidden;}' +
+      '.lok-av .av-embed iframe{display:block;width:100%;height:700px;border:0;background:#fff;}' +
+      '.lok-av .av-embed-wait{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;' +
+        'justify-content:center;gap:8px;color:#8B7FC4;font-size:13px;font-weight:600;pointer-events:none;}' +
+      '.lok-av .av-embed.on .av-embed-wait{display:none;}' +
+      '.lok-av .av-alt{display:block;margin:10px 0 0;text-align:center;font-size:12px;color:#8B8798;text-decoration:none;}' +
+      '.lok-av .av-alt:hover{color:' + BRAND + ';}' +
       '@media (max-width:767px){' +
         // The lilac wrapper made the cards narrower than everything else on
-        // the page — strip it so calendar + hours span the full column.
+        // the page: strip it so booking + hours span the full column.
         '.lok-av{padding:0;background:transparent;margin:14px 0;}' +
         '.lok-av .av-card{padding:14px;}' +
-        // Square cells clipped the day number + status at phone width — let
-        // them be shallow rectangles with room for both lines.
-        '.lok-av .av-cell{aspect-ratio:auto;min-height:42px;border-radius:8px;font-size:12px;padding:3px 0;}' +
+        '.lok-av .av-embed iframe{height:620px;}' +
       '}';
     var s = document.createElement('style');
     s.id = 'lok-av-styles';
@@ -144,10 +118,10 @@
 
   // ---- mount ---------------------------------------------------------------
   // Preferred: self-inject an "Availability" TAB into the listing's vl-tab bar
-  // (data-vl-tab / data-vl-panel — lokali-vendor-listing.js). Both native and
+  // (data-vl-tab / data-vl-panel, lokali-vendor-listing.js). Both native and
   // injected click handlers query [data-vl-tab]/[data-vl-panel] live, so the
   // injected tab participates in switching with zero Webflow edits. The tab
-  // only exists for vendors on the feature (boot() probes the calendar first).
+  // only exists for vendors on the feature (boot() probes first).
   // Escape hatch: a #lokali-availability div placed in the Designer wins.
   function activateTab(name) {
     var all = function (sel) { return Array.prototype.slice.call(document.querySelectorAll(sel)); };
@@ -169,7 +143,7 @@
       // Webflow classes/typography; retarget it to the new panel.
       // Prefer a PLAIN-TEXT tab (Reviews/About) as the prototype: the old code
       // cloned tabs[0] ("Services" + count chip) and its deepest-child walk
-      // only sees ELEMENT children, so it relabeled the count CHIP — the tab
+      // only sees ELEMENT children, so it relabeled the count CHIP and the tab
       // rendered as "Services [Availability]" instead of a plain "Availability".
       var proto = null;
       for (var ti = 0; ti < tabs.length; ti++) {
@@ -207,23 +181,72 @@
     return null;
   }
 
+  // ---- scheduler recognition + Featured embed ------------------------------
+  // Host match is exact-or-subdomain, never a substring, so a link on
+  // "calendly.com.evil.example" is neither named nor embedded.
+  function hostOf(url) {
+    try {
+      var u = new URL(url);
+      if (u.protocol !== 'https:') return null;
+      return u.hostname.replace(/^www\./i, '').toLowerCase();
+    } catch (e) { return null; }
+  }
+  function hostMatches(h, d) { return h === d || h.slice(-(d.length + 1)) === '.' + d; }
+  var KNOWN = [
+    ['calendly.com', 'Calendly'],
+    ['acuityscheduling.com', 'Acuity Scheduling'], ['squarespacescheduling.com', 'Acuity Scheduling'],
+    ['as.me', 'Acuity Scheduling'],
+    ['square.site', 'Square Appointments'], ['squareup.com', 'Square Appointments'],
+    ['setmore.com', 'Setmore'], ['booksy.com', 'Booksy']
+  ];
+  function schedulerName(url) {
+    var h = hostOf(url);
+    if (!h) return null;
+    for (var i = 0; i < KNOWN.length; i++) if (hostMatches(h, KNOWN[i][0])) return KNOWN[i][1];
+    return h;
+  }
+  // Schedulers whose booking pages permit being framed by another site. Calendly
+  // documents its inline widget as exactly this iframe; Acuity's own "embed"
+  // snippet is an iframe of the client scheduling page. Square's booking site
+  // sends X-Frame-Options: SAMEORIGIN (checked 2026-09-02), so it stays a button:
+  // a blocked frame renders BLANK and JS cannot detect it, which is why this
+  // list is an allowlist and not a try-then-fallback.
+  var EMBED_HOSTS = ['calendly.com', 'acuityscheduling.com', 'squarespacescheduling.com', 'as.me'];
+  function embedSrc(url) {
+    var h = hostOf(url);
+    if (!h) return null;
+    var ok = false;
+    for (var i = 0; i < EMBED_HOSTS.length; i++) if (hostMatches(h, EMBED_HOSTS[i])) { ok = true; break; }
+    if (!ok) return null;
+    try {
+      var u = new URL(url);
+      if (hostMatches(h, 'calendly.com')) {
+        // Calendly's inline-embed hints: attribute the booking to this site and
+        // keep its cookie banner out of the frame (the storefront has its own).
+        u.searchParams.set('embed_domain', location.hostname);
+        u.searchParams.set('embed_type', 'Inline');
+        u.searchParams.set('hide_gdpr_banner', '1');
+      }
+      return u.href;
+    } catch (e) { return null; }
+  }
+
   // ---- rendering -----------------------------------------------------------
-  function Widget(mount, vendorId, hours, hasCalendar, opts) {
+  function Widget(mount, vendorId, hours, opts) {
     this.mount = mount;
     this.vendorId = vendorId;
     this.hours = hours || [];         // [{weekday, open, close}] from hoursPublic
-    this.hasCalendar = !!hasCalendar; // false => hours-only storefront (booking off)
     // "Accepting new clients" (Francesca 2026-08-13): off = the booking flow is
     // replaced by a full-books note + (Featured) the general waitlist join.
     this.accepting = !opts || opts.accepting !== false;
-    this.canWaitlist = !!(opts && opts.canWaitlist);
+    // has_waitlist_plan() is true for the FEATURED plan only, so it doubles as
+    // the Featured signal for the inline embed (no extra RPC, already public).
+    this.isFeatured = !!(opts && opts.canWaitlist);
+    this.canWaitlist = this.isFeatured;
     // External scheduling link (2026-08-27): replaces the native calendar.
     this.bookingUrl = (opts && opts.bookingUrl) || null;
-    this.viewMonth = firstOfMonth(new Date());
-    this.statusByDate = {};
-    this.selected = null;
+    this.embedUrl = (this.isFeatured && this.bookingUrl) ? embedSrc(this.bookingUrl) : null;
     this.render();
-    if (this.hasCalendar && this.accepting) this.loadMonth();
   }
 
   // Full-books banner + general (date-less) waitlist join.
@@ -233,9 +256,7 @@
       '<p style="margin:0 0 6px;font-size:15px;font-weight:600;color:#3E3A55;">Not taking new clients right now</p>' +
       '<p style="margin:0;font-size:13px;color:#6C6880;line-height:1.5;">' + (this.canWaitlist
         // #121: name the LAYER. This is the vendor-level new-client queue (a
-        // date-less availability_waitlist row); the sold-out panel's slot
-        // waitlist says "for <date>". Both used to read "join the waitlist",
-        // so a customer on both had no way to tell them apart.
+        // date-less availability_waitlist row).
         ? 'Their books are full at the moment. Join their new-client waitlist and they’ll reach out when they’re taking clients again.'
         : 'Their books are full at the moment. Check back soon.') + '</p>' +
       (this.canWaitlist
@@ -276,8 +297,8 @@
     });
   };
 
-  // "Hours" card — the vendor's weekly open→close schedule (split days render as
-  // "9:00 AM – 12:00 PM, 2:00 – 5:00 PM"). Empty string when the vendor set none.
+  // "Hours" card: the vendor's weekly open to close schedule (split days render
+  // as "9:00 AM – 12:00 PM, 2:00 – 5:00 PM"). Empty string when the vendor set none.
   Widget.prototype.hoursHTML = function () {
     if (!this.hours.length) return '';
     var byDay = {};
@@ -295,31 +316,38 @@
       '<p style="margin:0 0 4px;font-size:15px;font-weight:600;color:#3E3A55;">Hours</p>' + rows + '</div>';
   };
 
-  // "Book an appointment" card — the vendor's external scheduling link
-  // (Calendly/Acuity/Square etc.; https-only, enforced in the DB and re-checked
-  // in boot). Replaced the native booking calendar 2026-08-27. Empty string
-  // when the vendor set no link.
-  function schedulerName(url) {
-    try {
-      var h = new URL(url).hostname.replace(/^www\./i, '').toLowerCase();
-      if (h.indexOf('calendly.com') !== -1) return 'Calendly';
-      if (h.indexOf('acuityscheduling.com') !== -1 || h.indexOf('squarespacescheduling.com') !== -1) return 'Acuity Scheduling';
-      if (h.indexOf('square.site') !== -1 || h.indexOf('squareup.com') !== -1) return 'Square Appointments';
-      if (h.indexOf('setmore.com') !== -1) return 'Setmore';
-      if (h.indexOf('booksy.com') !== -1) return 'Booksy';
-      return h;
-    } catch (e) { return null; }
-  }
+  // "Book an appointment" card: the vendor's external scheduling link
+  // (https-only, enforced in the DB and re-checked in boot). Empty string when
+  // the vendor set no link. Featured + embeddable host = the scheduler inline;
+  // everything else = the button. The .av-booking class is load-bearing:
+  // lokali-vendor-listing.js keys its "Books online" highlight on it.
   Widget.prototype.bookingHTML = function () {
     if (!this.bookingUrl) return '';
     var who = schedulerName(this.bookingUrl);
-    return '<div class="av-card av-booking" style="margin-bottom:14px;">' +
+    var href = esc(this.bookingUrl);
+    var head =
       '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;">' +
         '<p style="margin:0;font-size:15px;font-weight:600;color:#3E3A55;">Book an appointment</p>' +
         '<span style="font-size:11px;font-weight:500;padding:4px 11px;border-radius:999px;background:#E9F4EE;color:#3E7C5E;white-space:nowrap;">Accepting new clients</span>' +
-      '</div>' +
+      '</div>';
+    if (this.embedUrl) {
+      return '<div class="av-card av-booking av-booking-embed" style="margin-bottom:14px;">' + head +
+        '<p style="margin:0 0 12px;font-size:13px;color:#6C6880;line-height:1.5;">Pick a time that works for you. You are booking on the vendor&#8217;s ' + esc(who || 'scheduling') + ' page, right here.</p>' +
+        '<div class="av-embed">' +
+          '<div class="av-embed-wait" aria-hidden="true">' +
+            '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"></rect><path d="M16 2v4M8 2v4M3 10h18M8 15h2M14 15h2M8 18h2"></path></svg>' +
+            '<span>Loading the scheduler&#8230;</span>' +
+          '</div>' +
+          '<iframe class="av-embed-frame" data-src="' + esc(this.embedUrl) + '" title="Book an appointment' + (who ? ' on ' + esc(who) : '') + '" ' +
+            'loading="lazy" referrerpolicy="strict-origin-when-cross-origin" ' +
+            'sandbox="allow-scripts allow-forms allow-same-origin allow-popups allow-popups-to-escape-sandbox"></iframe>' +
+        '</div>' +
+        '<a class="av-alt" href="' + href + '" target="_blank" rel="noopener nofollow">Open in a new tab instead</a>' +
+        '</div>';
+    }
+    return '<div class="av-card av-booking" style="margin-bottom:14px;">' + head +
       '<p style="margin:0 0 12px;font-size:13px;color:#6C6880;line-height:1.5;">Pick a time that works for you. Booking opens the vendor&#8217;s scheduling page.</p>' +
-      '<a class="av-cta" href="' + esc(this.bookingUrl) + '" target="_blank" rel="noopener nofollow" ' +
+      '<a class="av-cta" href="' + href + '" target="_blank" rel="noopener nofollow" ' +
         'style="display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;">' +
         '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="3"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg>' +
         '<span>Book an appointment</span></a>' +
@@ -327,27 +355,29 @@
       '</div>';
   };
 
-  Widget.prototype.calendarHTML = function () {
-    return '<div class="av-card" style="margin-bottom:14px;">' +
-        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">' +
-          '<p style="margin:0;font-size:15px;font-weight:600;color:#3E3A55;">Pick a date</p>' +
-          '<div style="display:flex;align-items:center;gap:10px;">' +
-            '<button type="button" class="av-nav" data-d="-1" aria-label="Previous month" style="cursor:pointer;color:#8B7FC4;font-size:18px;user-select:none;background:none;border:none;padding:2px 6px;line-height:1;">&#8249;</button>' +
-            '<span class="av-month" style="font-size:13px;color:#6C6880;min-width:110px;text-align:center;"></span>' +
-            '<button type="button" class="av-nav" data-d="1" aria-label="Next month" style="cursor:pointer;color:' + BRAND + ';font-size:18px;user-select:none;background:none;border:none;padding:2px 6px;line-height:1;">&#8250;</button>' +
-          '</div>' +
-        '</div>' +
-        '<div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;font-size:11px;color:#B0ACBC;text-align:center;margin-bottom:6px;">' +
-          DOW.map(function (d) { return '<div>' + d + '</div>'; }).join('') +
-        '</div>' +
-        '<div class="av-grid" style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;"></div>' +
-        '<div style="display:flex;gap:16px;margin-top:13px;font-size:11px;color:#8B8798;">' +
-          '<span><span style="display:inline-block;width:9px;height:9px;border-radius:3px;background:' + STATUS.open.dot + ';"></span> Open</span>' +
-          '<span><span style="display:inline-block;width:9px;height:9px;border-radius:3px;background:' + STATUS.limited.dot + ';"></span> Limited</span>' +
-          '<span><span style="display:inline-block;width:9px;height:9px;border-radius:3px;background:' + STATUS.sold_out.dot + ';"></span> Sold out</span>' +
-        '</div>' +
-      '</div>' +
-      '<div class="av-panel av-card"></div>';
+  // The frame's src is set only once the card is near the viewport: the section
+  // usually sits below the fold (or in a hidden tab), and a third-party
+  // scheduler is the heaviest thing on the page.
+  Widget.prototype.armEmbed = function () {
+    var box = this.mount.querySelector('.av-embed');
+    var frame = box && box.querySelector('.av-embed-frame');
+    if (!frame) return;
+    var armed = false;
+    function arm() {
+      if (armed) return;
+      armed = true;
+      frame.addEventListener('load', function () { box.classList.add('on'); });
+      frame.src = frame.getAttribute('data-src');
+      // A blocked or very slow frame would leave the placeholder forever; drop
+      // it after a beat either way so the "open in a new tab" link stands alone.
+      setTimeout(function () { box.classList.add('on'); }, 8000);
+    }
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (en) { if (en.isIntersecting) { io.disconnect(); arm(); } });
+      }, { rootMargin: '300px 0px' });
+      io.observe(box);
+    } else { arm(); }
   };
 
   Widget.prototype.render = function () {
@@ -359,330 +389,9 @@
       this.bindJoin();
       return;
     }
-    // Booking leads, hours follow (same order the calendar used, F 2026-07-20).
+    // Booking leads, hours follow (F 2026-07-20).
     this.mount.innerHTML = this.bookingHTML() + this.hoursHTML();
-    if (!this.hasCalendar) return;    // no native calendar: nothing else to wire
-
-    var self = this;
-    this.mount.querySelectorAll('.av-nav').forEach(function (n) {
-      n.addEventListener('click', function () {
-        var next = addMonths(self.viewMonth, Number(n.getAttribute('data-d')));
-        // Don't page before the current month or more than 2 months ahead.
-        var floor = firstOfMonth(new Date());
-        var ceil = addMonths(floor, 2);
-        if (next < floor || next > ceil) return;
-        self.viewMonth = next;
-        self.selected = null;
-        self.loadMonth();
-      });
-    });
-    this.grid = this.mount.querySelector('.av-grid');
-    this.panel = this.mount.querySelector('.av-panel');
-    this.monthLabel = this.mount.querySelector('.av-month');
-  };
-
-  // Dim + disable an arrow when the clamp makes it inert (an active-looking
-  // arrow that no-ops reads as broken — the back arrow is dead on first load).
-  Widget.prototype.updateNav = function () {
-    var self = this;
-    var floor = firstOfMonth(new Date());
-    var ceil = addMonths(floor, 2);
-    this.mount.querySelectorAll('.av-nav').forEach(function (n) {
-      var next = addMonths(self.viewMonth, Number(n.getAttribute('data-d')));
-      var dead = next < floor || next > ceil;
-      n.disabled = dead;
-      n.style.opacity = dead ? '.35' : '';
-      n.style.cursor = dead ? 'default' : 'pointer';
-    });
-  };
-
-  Widget.prototype.loadMonth = function () {
-    var self = this;
-    var from = firstOfMonth(this.viewMonth), to = lastOfMonth(this.viewMonth);
-    this.updateNav();
-    this.monthLabel.textContent = MONTHS[from.getMonth()] + ' ' + from.getFullYear();
-    this.grid.innerHTML = '';
-    this.panel.innerHTML = '';
-    API.calendar(this.vendorId, iso(from), iso(to)).then(function (r) {
-      var rows = (r && r.data) || [];
-      self.statusByDate = {};
-      rows.forEach(function (row) { self.statusByDate[row.date] = row.status; });
-      self.drawGrid();
-    });
-  };
-
-  Widget.prototype.drawGrid = function () {
-    var self = this;
-    var from = firstOfMonth(this.viewMonth), last = lastOfMonth(this.viewMonth);
-    var pad = mondayIndex(from);
-    this.grid.innerHTML = '';
-    var i;
-    for (i = 0; i < pad; i++) this.grid.appendChild(document.createElement('div'));
-    for (i = 1; i <= last.getDate(); i++) {
-      var dISO = iso(new Date(from.getFullYear(), from.getMonth(), i));
-      var st = this.statusByDate[dISO];
-      var cell = document.createElement('div');
-      if (!st) {
-        cell.className = 'av-cell';
-        cell.style.color = '#C9C5D6';
-        cell.style.border = '1px solid #F0EDF8';
-        cell.innerHTML = '<span>' + i + '</span>';
-      } else {
-        var s = STATUS[st] || STATUS.off;
-        var clickable = (st === 'open' || st === 'limited' || st === 'sold_out');
-        cell.className = 'av-cell' + (clickable ? ' clk' : '') + (dISO === this.selected ? ' sel' : '');
-        cell.style.background = s.bg; cell.style.color = s.fg; cell.style.border = '1px solid ' + s.bd;
-        cell.innerHTML = '<span>' + i + '</span><span style="font-size:9px;font-weight:400;margin-top:1px;">' + s.tag + '</span>';
-        if (clickable) {
-          cell.setAttribute('role', 'button');
-          cell.setAttribute('tabindex', '0');
-          cell.setAttribute('aria-label', prettyDate(dISO) + ', ' + s.tag);
-          (function (dd) {
-            function go() { self.selectDate(dd); }
-            cell.addEventListener('click', go);
-            cell.addEventListener('keydown', function (e) {
-              if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); }
-            });
-          })(dISO);
-        }
-      }
-      this.grid.appendChild(cell);
-    }
-  };
-
-  Widget.prototype.selectDate = function (dISO) {
-    this.selected = dISO;
-    this.drawGrid();
-    var self = this;
-    var st = this.statusByDate[dISO];
-    if (st === 'sold_out') { this.renderWaitlist(dISO); return; }
-    this.panel.innerHTML = '<p style="margin:0;font-size:13px;color:#8B8798;">Loading…</p>';
-    // Infer mode: slots() non-empty => slot mode; empty => quantity mode.
-    API.slots(this.vendorId, dISO).then(function (r) {
-      var slots = (r && r.data) || [];
-      if (slots.length) self.renderSlotForm(dISO, slots);
-      else self.renderQtyForm(dISO);
-    });
-  };
-
-  Widget.prototype.contactFields = function () {
-    return '<div style="display:flex;gap:10px;margin-bottom:12px;">' +
-        '<div style="flex:1;"><p style="margin:0 0 4px;font-size:12px;color:#8B8798;">Your name</p>' +
-          '<input class="av-name" maxlength="120" aria-label="Your name" placeholder="Jordan Mills" /></div>' +
-        '<div style="flex:1;"><p style="margin:0 0 4px;font-size:12px;color:#8B8798;">Email</p>' +
-          '<input class="av-email" type="email" maxlength="200" aria-label="Email" placeholder="you@email.com" /></div>' +
-      '</div>' +
-      '<input class="av-hp" style="display:none;" tabindex="-1" autocomplete="off" aria-hidden="true" />';
-  };
-
-  Widget.prototype.renderQtyForm = function (dISO) {
-    var self = this;
-    this.panel.innerHTML =
-      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">' +
-        '<p style="margin:0;font-size:15px;font-weight:600;color:#3E3A55;">Request for ' + esc(prettyDate(dISO)) + '</p>' +
-        '<span style="font-size:11px;font-weight:500;color:' + STATUS[self.statusByDate[dISO]].fg + ';background:' +
-          STATUS[self.statusByDate[dISO]].bg + ';padding:4px 11px;border-radius:999px;">' +
-          (self.statusByDate[dISO] === 'limited' ? 'Only a few left' : 'Open') + '</span>' +
-      '</div>' +
-      '<div style="display:flex;gap:10px;margin-bottom:12px;">' +
-        '<div style="flex:1;"><p style="margin:0 0 4px;font-size:12px;color:#8B8798;">How many?</p>' +
-          '<div class="av-step"><span class="av-dec" role="button" tabindex="0" aria-label="Decrease quantity">&#8722;</span><b class="av-qty">1</b><span class="av-inc" role="button" tabindex="0" aria-label="Increase quantity">+</span></div></div>' +
-        '<div style="flex:1;"><p style="margin:0 0 4px;font-size:12px;color:#8B8798;">Phone (optional)</p>' +
-          '<input class="av-phone" maxlength="40" aria-label="Phone (optional)" placeholder="(555) 555-5555" /></div>' +
-      '</div>' +
-      this.contactFields() +
-      '<p style="margin:0 0 4px;font-size:12px;color:#8B8798;">Anything they should know?</p>' +
-      '<textarea class="av-msg" rows="2" maxlength="2000" aria-label="Anything they should know?" style="margin-bottom:14px;resize:none;"></textarea>' +
-      '<button class="av-cta av-send">Send request</button>' +
-      '<p style="margin:9px 0 0;font-size:11px;color:#B0ACBC;text-align:center;">They confirm each order, so you\'ll hear back before it\'s reserved.</p>';
-
-    var qtyEl = this.panel.querySelector('.av-qty');
-    // Steppers are spans with role=button — wire Enter/Space alongside click.
-    function wireStep(el, fn) {
-      el.addEventListener('click', fn);
-      el.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fn(); }
-      });
-    }
-    wireStep(this.panel.querySelector('.av-dec'), function () {
-      qtyEl.textContent = String(Math.max(1, (+qtyEl.textContent) - 1));
-    });
-    wireStep(this.panel.querySelector('.av-inc'), function () {
-      qtyEl.textContent = String(Math.min(99, (+qtyEl.textContent) + 1));
-    });
-    this.panel.querySelector('.av-send').addEventListener('click', function () {
-      self.submit(dISO, { qty: +qtyEl.textContent, slotTime: null });
-    });
-  };
-
-  Widget.prototype.renderSlotForm = function (dISO, slots) {
-    var self = this;
-    var rows = slots.map(function (s, idx) {
-      var av = s.status === 'available';
-      var col = av ? STATUS.open : (s.status === 'held' ? STATUS.limited : STATUS.sold_out);
-      var label = av ? 'Available' : (s.status === 'held' ? 'On hold' : 'Booked');
-      return '<div class="av-slot' + (av ? ' pick' : '') + '" data-t="' + esc(s.time) + '" data-idx="' + idx + '" ' +
-        (av ? 'role="button" tabindex="0" aria-label="' + esc(fmt12(s.time)) + ', ' + label + '" ' : '') +
-        'style="background:' + col.bg + ';color:' + col.fg + ';border:1px solid ' + col.bd + ';">' +
-        '<span>' + esc(fmt12(s.time)) + '</span><span style="font-size:12px;">' + label + '</span></div>';
-    }).join('');
-    this.panel.innerHTML =
-      '<p style="margin:0 0 12px;font-size:15px;font-weight:600;color:#3E3A55;">Book a slot for ' + esc(prettyDate(dISO)) + '</p>' +
-      '<div class="av-slots" style="margin-bottom:14px;">' + rows + '</div>' +
-      this.contactFields() +
-      '<p style="margin:0 0 4px;font-size:12px;color:#8B8798;">Anything they should know?</p>' +
-      '<textarea class="av-msg" rows="2" maxlength="2000" aria-label="Anything they should know?" style="margin-bottom:14px;resize:none;"></textarea>' +
-      '<button class="av-cta av-send" disabled>Pick a time to continue</button>';
-
-    var picked = { time: null };
-    var send = this.panel.querySelector('.av-send');
-    this.panel.querySelectorAll('.av-slot.pick').forEach(function (el) {
-      function pickSlot() {
-        self.panel.querySelectorAll('.av-slot').forEach(function (n) { n.classList.remove('on'); });
-        el.classList.add('on');
-        picked.time = el.getAttribute('data-t');
-        send.removeAttribute('disabled');
-        send.textContent = 'Request ' + fmt12(picked.time);
-      }
-      el.addEventListener('click', pickSlot);
-      el.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pickSlot(); }
-      });
-    });
-    send.addEventListener('click', function () {
-      if (!picked.time) return;
-      self.submit(dISO, { qty: null, slotTime: picked.time });
-    });
-  };
-
-  Widget.prototype.readContact = function () {
-    return {
-      name: (this.panel.querySelector('.av-name') || {}).value || null,
-      email: (this.panel.querySelector('.av-email') || {}).value || null,
-      phone: (this.panel.querySelector('.av-phone') || {}).value || null,
-      message: (this.panel.querySelector('.av-msg') || {}).value || null,
-      website: (this.panel.querySelector('.av-hp') || {}).value || null
-    };
-  };
-
-  Widget.prototype.submit = function (dISO, what) {
-    var self = this;
-    var c = this.readContact();
-    if (!c.email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(c.email)) {
-      var em = this.panel.querySelector('.av-email');
-      if (em) { em.style.borderColor = '#DFA284'; em.focus(); }
-      return;
-    }
-    var btn = this.panel.querySelector('.av-send');
-    if (btn) { btn.setAttribute('disabled', 'disabled'); btn.textContent = 'Sending…'; }
-    API.submitInquiry({
-      vendorId: this.vendorId, date: dISO, qty: what.qty, slotTime: what.slotTime,
-      name: c.name, email: c.email, phone: c.phone, message: c.message, website: c.website
-    }).then(function (r) {
-      var res = (r && r.data) || {};
-      if (r && r.error && !res.reason) { self.errorState(dISO); return; }
-      if (res.ok) { self.successState(dISO, false); return; }
-      if (res.reason === 'sold_out') { self.renderWaitlist(dISO); return; }
-      if (res.reason) { self.rejectState(dISO, res.reason); return; }
-      self.errorState(dISO);
-    }).catch(function () { self.errorState(dISO); });
-  };
-
-  // Structured RPC rejections get honest copy — a generic "try again" is wrong
-  // for these (retrying keeps failing); unmapped reasons fall through to
-  // errorState, whose retry re-fetches the date and genuinely can recover.
-  Widget.prototype.rejectState = function (dISO, reason) {
-    var copy = {
-      rate_limited: "You've sent a few requests recently. Please wait a while before sending another.",
-      past_lead_time: 'This date needs more notice than they can take. Please pick a later date above.',
-      day_off: "They're not taking requests for this day. Please pick another date above.",
-      availability_off: "This storefront isn't taking requests right now."
-    }[reason];
-    if (!copy) { this.errorState(dISO); return; }
-    this.panel.innerHTML =
-      '<div style="display:flex;align-items:center;gap:9px;margin-bottom:6px;">' +
-        '<span style="font-size:19px;color:#C77B63;">&#9888;</span>' +
-        '<p style="margin:0;font-size:15px;font-weight:600;color:#3E3A55;">' + esc(prettyDate(dISO)) + '</p></div>' +
-      '<p style="margin:0;font-size:13px;color:#8B8798;line-height:1.5;">' + esc(copy) + '</p>';
-  };
-
-  Widget.prototype.successState = function (dISO, isWaitlist) {
-    this.panel.innerHTML =
-      '<div style="text-align:center;padding:8px 0;">' +
-        '<div style="font-size:30px;color:' + (isWaitlist ? '#B5793B' : '#4E9B7A') + ';">' + (isWaitlist ? '&#9733;' : '&#10003;') + '</div>' +
-        '<p style="margin:10px 0 3px;font-size:15px;font-weight:600;color:#3E3A55;">' +
-          // #121: the waitlist branch here is always the SLOT layer (the
-          // date-less general join renders its own confirmation inline in
-          // closedHTML), so the headline can name the date it's tied to.
-          (isWaitlist ? "You're on the waitlist for " + esc(prettyDate(dISO)) : 'Request sent') + '</p>' +
-        '<p style="margin:0;font-size:13px;color:#8B8798;">' +
-          (isWaitlist
-            ? "We'll email you the moment a spot opens for that day."
-            : "They'll confirm your request for " + esc(prettyDate(dISO)) + ' shortly.') +
-        '</p>' +
-      '</div>';
-  };
-
-  Widget.prototype.errorState = function (dISO) {
-    var self = this;
-    this.panel.innerHTML =
-      '<p style="margin:0 0 10px;font-size:14px;color:#9E5F44;">Something went wrong sending that. Please try again.</p>' +
-      '<button class="av-cta2 av-retry">Back to ' + esc(prettyDate(dISO)) + '</button>';
-    this.panel.querySelector('.av-retry').addEventListener('click', function () { self.selectDate(dISO); });
-  };
-
-  // Sold-out panel. The waitlist join is a FEATURED-only vendor perk — probe
-  // has_waitlist_plan (anon RPC) and fall back to a plain sold-out message.
-  Widget.prototype.renderWaitlist = function (dISO) {
-    var self = this;
-    if (this._waitlistOpen == null) {
-      this.panel.innerHTML = '<p style="margin:0;font-size:13px;color:#8B8798;">Loading…</p>';
-      API.waitlistOpen(this.vendorId).then(function (r) {
-        self._waitlistOpen = (r && r.data) === true;
-        self.renderWaitlist(dISO);
-      });
-      return;
-    }
-    if (!this._waitlistOpen) {
-      this.panel.innerHTML =
-        '<div style="display:flex;align-items:center;gap:9px;margin-bottom:6px;">' +
-          '<span style="font-size:19px;color:#C77B63;">&#9888;</span>' +
-          '<p style="margin:0;font-size:15px;font-weight:600;color:#3E3A55;">' + esc(prettyDate(dISO)) + ' is sold out</p></div>' +
-        '<p style="margin:0;font-size:13px;color:#8B8798;line-height:1.5;">This day is fully booked. Pick another date above.</p>';
-      return;
-    }
-    this.panel.innerHTML =
-      '<div style="display:flex;align-items:center;gap:9px;margin-bottom:6px;">' +
-        '<span style="font-size:19px;color:#C77B63;">&#9888;</span>' +
-        '<p style="margin:0;font-size:15px;font-weight:600;color:#3E3A55;">' + esc(prettyDate(dISO)) + ' is sold out</p></div>' +
-      // #121: this is the SLOT waitlist — one specific date. Say so, so it
-      // can't be confused with the vendor-level new-client waitlist on the
-      // books-full banner (which is date-less and named accordingly).
-      '<p style="margin:0 0 14px;font-size:13px;color:#8B8798;line-height:1.5;">Join the waitlist for this date and you\'ll be first to know if a spot frees up.</p>' +
-      '<div style="display:flex;gap:10px;margin-bottom:10px;">' +
-        '<input class="av-name" maxlength="120" aria-label="Your name" placeholder="Your name" />' +
-        '<input class="av-email" type="email" maxlength="200" aria-label="Email" placeholder="you@email.com" /></div>' +
-      '<input class="av-hp" style="display:none;" tabindex="-1" autocomplete="off" aria-hidden="true" />' +
-      '<button class="av-cta2 av-join">Join the waitlist for ' + esc(prettyDate(dISO)) + '</button>';
-    this.panel.querySelector('.av-join').addEventListener('click', function () {
-      var email = (self.panel.querySelector('.av-email') || {}).value || '';
-      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
-        var em = self.panel.querySelector('.av-email');
-        if (em) { em.style.borderColor = '#DFA284'; em.focus(); }
-        return;
-      }
-      var btn = self.panel.querySelector('.av-join');
-      btn.setAttribute('disabled', 'disabled'); btn.textContent = 'Joining…';
-      API.joinWaitlist({
-        vendorId: self.vendorId, date: dISO, email: email,
-        name: (self.panel.querySelector('.av-name') || {}).value || null,
-        website: (self.panel.querySelector('.av-hp') || {}).value || null
-      }).then(function (r) {
-        var res = (r && r.data) || {};
-        if (res.ok) self.successState(dISO, true);
-        else self.errorState(dISO);
-      }).catch(function () { self.errorState(dISO); });
-    });
+    if (this.embedUrl) this.armEmbed();
   };
 
   // ---- boot ----------------------------------------------------------------
@@ -691,13 +400,11 @@
       if (!vid) return;
       // Probe the booking link AND the published Hours together. Build the
       // section if EITHER is present. Both empty => not on the feature ->
-      // render nothing. (The native calendar probe is retired 2026-08-27 —
-      // the calendar was replaced by the vendor's external scheduling link.)
+      // render nothing.
       Promise.all([
         API.bookingLink ? API.bookingLink(vid) : Promise.resolve(null),
         API.hoursPublic ? API.hoursPublic(vid) : Promise.resolve({ data: [] }),
-        // Defensive probes: until the matching SQL patch is applied an RPC
-        // doesn't exist — any error reads as "accepting" / "no link".
+        // Defensive probes: an RPC error reads as "accepting" / "not Featured".
         API.accepting ? API.accepting(vid) : Promise.resolve(null),
         API.waitlistOpen ? API.waitlistOpen(vid) : Promise.resolve(null)
       ]).then(function (res) {
@@ -706,12 +413,12 @@
         var accepting = !(res[2] && res[2].data === false);
         var canWaitlist = !!(res[3] && res[3].data === true);
         // Books-full vendors render the closed banner even with no link or
-        // hours — the banner IS the content.
+        // hours: the banner IS the content.
         if (!bookingUrl && !hours.length && accepting) return;
         var mount = findMount();
         if (!mount) return;
         injectStyles();
-        new Widget(mount, vid, hours, false, { accepting: accepting, canWaitlist: canWaitlist, bookingUrl: bookingUrl });
+        new Widget(mount, vid, hours, { accepting: accepting, canWaitlist: canWaitlist, bookingUrl: bookingUrl });
       });
     });
   }

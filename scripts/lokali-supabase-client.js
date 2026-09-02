@@ -389,27 +389,12 @@
         return withClient(function (c) { return c.rpc('set_vendor_active', { p_active: true }); });
       }
     },
-    // #71 availability / limited-capacity. Reads are anon RPCs that return DERIVED
-    // status only (never raw counts). Writes are the two public routes (service
-    // role + vendor notify). Owner actions (confirm/decline/offer) are added by
-    // the dashboard client — they're authenticated RPCs gated by owns_vendor().
+    // #71 availability -> #157 booking link + hours (2026-08-27; the native
+    // calendar/slot methods were removed 2026-09-02). Reads are anon RPCs that
+    // return DERIVED values only. The one public write is the waitlist route
+    // (service role). Owner actions (offer) are authenticated RPCs gated by
+    // owns_vendor().
     availability: {
-      // Derived per-date status for [fromISO, toISO] (YYYY-MM-DD). Empty array
-      // when the vendor isn't on the feature -> the storefront shows no calendar.
-      calendar: function (vendorId, fromISO, toISO) {
-        return withClient(function (c) {
-          return c.rpc('availability_calendar', {
-            p_vendors_id: vendorId, p_from: fromISO, p_to: toISO
-          });
-        });
-      },
-      // Open slot times for one date (slot mode). Empty for quantity mode — the
-      // storefront uses that emptiness to pick the qty stepper vs the slot list.
-      slots: function (vendorId, dateISO) {
-        return withClient(function (c) {
-          return c.rpc('availability_slots', { p_vendors_id: vendorId, p_date: dateISO });
-        });
-      },
       // Public weekly hours for the storefront "Hours" block (Pro/Featured perk).
       // Returns [] for a free/off-plan vendor. Derived read — never a raw count.
       hoursPublic: function (vendorId) {
@@ -435,24 +420,8 @@
           return c.rpc('availability_booking_link', { p_vendors_id: vendorId });
         });
       },
-      // Public date-aware inquiry -> /availability/submit (service-role RPC +
-      // vendor notify). No auth (open to logged-out visitors). Returns
-      // { data: { ok, inquiry_id } | { ok:false, reason }, error }.
-      submitInquiry: function (payload) {
-        payload = payload || {};
-        return postRoute('/availability/submit', {
-          vendorId: payload.vendorId,
-          date: payload.date,
-          qty: payload.qty != null ? payload.qty : null,
-          slotTime: payload.slotTime || null,
-          name: payload.name || null,
-          email: payload.email || null,
-          phone: payload.phone || null,
-          message: payload.message || null,
-          website: payload.website || null
-        }, false);
-      },
-      // Public waitlist join for a sold-out date -> /availability/waitlist.
+      // Public waitlist join -> /availability/waitlist. date null = the general
+      // new-client queue (#121), the only layer still reachable from the UI.
       joinWaitlist: function (payload) {
         payload = payload || {};
         return postRoute('/availability/waitlist', {
@@ -492,77 +461,25 @@
           return c.from('availability_config').upsert(row, { onConflict: 'vendors_id' });
         });
       },
-      // Per-date rows for the month (blackouts + confirmed counts; owner-only read).
-      listDates: function (vendorId, fromISO, toISO) {
-        return withClient(function (c) {
-          return c.from('availability_date').select('*')
-            .eq('vendors_id', vendorId).gte('the_date', fromISO).lte('the_date', toISO);
-        });
-      },
-      setDateBlocked: function (vendorId, dateISO, blocked) {
-        return withClient(function (c) {
-          return c.from('availability_date')
-            .upsert({ vendors_id: vendorId, the_date: dateISO, is_blocked: !!blocked },
-                    { onConflict: 'vendors_id,the_date' });
-        });
-      },
-      // Materialized per-date slot rows for the month (slot mode; owner-only via
-      // RLS). The dashboard's Days-off calendar shows booked-of-generated counts.
-      listSlots: function (vendorId, fromISO, toISO) {
-        return withClient(function (c) {
-          return c.from('availability_slot')
-            .select('the_date,slot_time,booked_count,capacity,hold_expires_at')
-            .eq('vendors_id', vendorId).gte('the_date', fromISO).lte('the_date', toISO);
-        });
-      },
-      // Weekly HOURS schedule (the unified open→close windows). Doubles as the
-      // storefront "Hours" and, in slot mode, the source the bookable times are
-      // generated from (server-side avail_expand_slots). weekday: 0=Sun … 6=Sat.
-      // slotMin/bufferMin null => inherit the config default (per-window override).
+      // Weekly HOURS schedule (open-to-close windows), the storefront "Hours"
+      // card. weekday: 0=Sun … 6=Sat.
       listHours: function (vendorId) {
         return withClient(function (c) {
           return c.from('availability_hours').select('*')
             .eq('vendors_id', vendorId).order('weekday').order('open_time');
         });
       },
-      addHours: function (vendorId, weekday, open, close, slotMin, bufferMin) {
+      addHours: function (vendorId, weekday, open, close) {
         return withClient(function (c) {
           return c.from('availability_hours').insert({
             vendors_id: vendorId, weekday: weekday,
-            open_time: open, close_time: close,
-            slot_minutes: slotMin != null ? slotMin : null,
-            buffer_minutes: bufferMin != null ? bufferMin : null
+            open_time: open, close_time: close
           });
-        });
-      },
-      updateHours: function (hoursId, fields) {
-        return withClient(function (c) {
-          return c.from('availability_hours').update(fields || {}).eq('id', hoursId);
         });
       },
       removeHours: function (hoursId) {
         return withClient(function (c) {
           return c.from('availability_hours').delete().eq('id', hoursId);
-        });
-      },
-      // Pending date-tagged requests (the confirm inbox).
-      pendingRequests: function (vendorId) {
-        return withClient(function (c) {
-          return c.from('inquiries')
-            .select('id,created_at,customer_name,customer_email,customer_phone,message,requested_date,requested_qty,slot_id,availability_status')
-            .eq('vendors_id', vendorId).eq('availability_status', 'pending')
-            .order('requested_date').order('created_at');
-        });
-      },
-      // Confirm / decline — the ONLY capacity movers, owner-only RPCs.
-      confirm: function (inquiryId) {
-        return withClient(function (c) {
-          return c.rpc('confirm_availability_inquiry', { p_inquiry_id: inquiryId });
-        });
-      },
-      decline: function (inquiryId) {
-        return withClient(function (c) {
-          return c.rpc('decline_availability_inquiry', { p_inquiry_id: inquiryId });
         });
       },
       // Waitlist queue + offer-a-freed-spot.
@@ -594,18 +511,10 @@
             .eq('id', waitlistId).eq('status', 'offered');
         });
       },
-      // Customer-facing emails, fired best-effort by the dashboard right after a
-      // successful confirm/offer. These go through the Vercel route (Brevo needs
-      // the server key + the confirm/offer RPCs never return the customer email);
-      // the route re-verifies the vendor session + row ownership. Authed POST.
-      notifyConfirmed: function (inquiryId) {
-        return postRoute('/availability/notify', { kind: 'confirm', inquiryId: inquiryId }, true);
-      },
-      // Decline email with the vendor's optional customer-facing note
-      // (Francesca 2026-08-13). Server-side escaped before it reaches Brevo.
-      notifyDeclined: function (inquiryId, reason) {
-        return postRoute('/availability/notify', { kind: 'declined', inquiryId: inquiryId, reason: reason || '' }, true);
-      },
+      // Customer-facing "a spot is yours" email, fired best-effort by the
+      // dashboard right after a successful offer. Goes through the Vercel route
+      // (Brevo needs the server key + the offer RPC never returns the customer
+      // email); the route re-verifies the vendor session + row ownership.
       notifyOffered: function (waitlistId) {
         return postRoute('/availability/notify', { kind: 'offer', waitlistId: waitlistId }, true);
       }
