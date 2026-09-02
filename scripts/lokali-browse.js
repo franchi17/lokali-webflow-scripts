@@ -397,9 +397,6 @@
     "select#browse-sort,select#location-select,select#browse-location,select#browse-mobile-sort{-webkit-appearance:none;appearance:none;",
     "border:1px solid #E4E2F0;border-radius:12px;min-height:46px;padding:0 40px 0 14px;",
     "font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-size:15.5px;font-weight:600;color:#343A40;",
-    // The sort control matches its external "Sort by" label (F: dropdown font
-    // read too big next to it); the neighborhoods select keeps the hero size.
-    "select#browse-sort{font-size:13.5px;min-height:42px;}",
     "background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 6l5 5 5-5' fill='none' stroke='%236002EE' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E\");",
     "background-repeat:no-repeat;background-position:right 14px center;background-size:13px;cursor:pointer;",
     "transition:border-color .15s ease,box-shadow .15s ease;}",
@@ -408,6 +405,12 @@
     "select#browse-sort:hover,select#location-select:hover,select#browse-location:hover,select#browse-mobile-sort:hover{border-color:#C9BFEA;}",
     "select#browse-sort:focus,select#location-select:focus,select#browse-location:focus,select#browse-mobile-sort:focus{outline:none;border-color:#6002EE;box-shadow:0 0 0 3px rgba(96,2,238,.12);}",
     "select#browse-sort::-ms-expand,select#location-select::-ms-expand{display:none;}",
+    // The sort control matches its external "Sort by" label (F: dropdown font
+    // read too big next to it); the neighborhoods select keeps the hero size.
+    // Applies >=1150px only: below that the #98 iOS rule floors ALL form
+    // controls at 16px !important (sub-16px fields make Safari zoom-lock the
+    // page on tap), and that accessibility floor deliberately wins.
+    "@media screen and (min-width:1150px){select#browse-sort{font-size:13.5px;min-height:42px;}}",
     // Mobile category chips (F 2026-09-02): the sidebar hides behind the Filter
     // button on small screens, so the primary facet gets its own always-visible
     // scrollable row (exposed filters get measurably more use than hidden ones).
