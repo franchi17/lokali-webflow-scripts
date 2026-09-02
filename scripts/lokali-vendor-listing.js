@@ -895,7 +895,8 @@
       '.vl-pair-sec{font-family:"Plus Jakarta Sans",sans-serif;margin:26px 0 8px;padding:26px 0 6px;border-top:1px solid #EEE9F5;}',
       '.vl-pair-eyebrow{font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#9A6B00;}',
       '.vl-pair-h{font-size:17px;font-weight:800;color:#231d3f;margin:6px 0 14px;font-family:inherit;}',
-      '.vl-pair-card{display:flex;gap:16px;align-items:center;flex-wrap:wrap;background:linear-gradient(120deg,#F3EBFF 0%,#FBF6EF 70%);border:1px solid #E4DAF6;border-radius:14px;padding:18px 20px;}',
+      // Solid soft violet — F retired the violet-to-orange gradient 2026-09-01.
+      '.vl-pair-card{display:flex;gap:16px;align-items:center;flex-wrap:wrap;background:#F6F0FF;border:1px solid #E4DAF6;border-radius:14px;padding:18px 20px;}',
       '.vl-pair-ava{width:64px;height:64px;border-radius:50%;object-fit:cover;flex:0 0 auto;border:2.5px solid #fff;box-shadow:0 3px 10px rgba(51,48,74,.14);}',
       '.vl-pair-ava-mark{width:64px;height:64px;border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;background:#F9E7DC;color:#B85C2B;font-weight:800;font-size:22px;border:2.5px solid #fff;box-shadow:0 3px 10px rgba(51,48,74,.14);}',
       '.vl-pair-who{flex:1 1 240px;min-width:0;}',
@@ -1041,7 +1042,9 @@
       }).catch(function () { tellSend.disabled = false; tellSend.textContent = 'Try again'; });
     });
 
-    // flag row (message optional; the flag must never fail on a blank box)
+    // flag row (reason REQUIRED — F 2026-09-01: "if you're going to flag it,
+    // you better tell us why"; a bare flag would just be a lazy opt-out
+    // button, and the reason is exactly what re-pairing needs)
     var flagRow = ce('span', 'vl-pair-flagrow');
     flagRow.appendChild(document.createTextNode('Feels too close to what you offer? '));
     var flagLink = ce('button', 'vl-pair-link');
@@ -1051,7 +1054,7 @@
     pop.appendChild(flagRow);
     var flagBox = ce('div', 'vl-pair-box');
     var flagTa = document.createElement('textarea');
-    flagTa.placeholder = 'What feels too close? Optional';
+    flagTa.placeholder = 'What feels too close? We use this to pick a better pairing.';
     flagTa.maxLength = 1000;
     var flagSend = ce('button', 'vl-pair-send');
     flagSend.type = 'button';
@@ -1060,7 +1063,8 @@
     pop.appendChild(flagBox);
     flagLink.addEventListener('click', function () { flagBox.classList.add('on'); flagTa.focus(); });
     flagSend.addEventListener('click', function () {
-      var msg = String(flagTa.value || '').trim() || '(no details given)';
+      var msg = String(flagTa.value || '').trim();
+      if (!msg) { flagTa.focus(); return; }
       flagSend.disabled = true; flagSend.textContent = 'Flagging…';
       S.pairings.flag(vid, msg).then(function (res) {
         var ok = res && res.data && res.data.ok === true;

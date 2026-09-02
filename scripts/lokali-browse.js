@@ -470,7 +470,11 @@
     vSubcats(v).forEach(function (s) { if (SUBCAT_BY_SLUG[s]) out.push(SUBCAT_BY_SLUG[s].label); });
     return out;
   }
-  function vCreated(v) { var c = v.created_at; if (c == null) return 0; return typeof c === 'number' ? c : (Date.parse(c) || 0); }
+  // "Newest" = newest ARRIVAL in the Market, not newest account (F 2026-09-02:
+  // Paperloom/Rowdy signed up in July but went live 09-01 and must sort first).
+  // published_at = first-went-live stamp (patch_published_at.sql); created_at
+  // stays the fallback so an unshipped/old column can't zero the sort.
+  function vCreated(v) { var c = (v.published_at != null ? v.published_at : v.created_at); if (c == null) return 0; return typeof c === 'number' ? c : (Date.parse(c) || 0); }
   function vIsNew(v)       { var t = vCreated(v); return t > 0 && (Date.now() - t) < NEW_WINDOW_MS; }
   function vIsFounding(v)  { return v.is_founding_member === true; }
   function vIsVerified(v)  { var f = window.LOKALI_VERIFIED_FIELD; if (f && v[f] != null) return v[f] === true; return v.is_verified === true; }
