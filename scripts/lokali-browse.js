@@ -271,7 +271,7 @@
     { key: 'verified', id: 'browse-toggle-verified', label: 'Verified only',         color: '#0000E4', glyph: '✓' }
   ];
   var SORT_LIST = [
-    { sort: 'best_match', id: 'sort-match', label: 'Recommended',   url: ASSET + '6a1d92f85db0d873ff20900a_sort-solid.png' },
+    { sort: 'best_match', id: 'sort-match', label: 'Founding vendors',   url: ASSET + '6a1d92f85db0d873ff20900a_sort-solid.png' },
     { sort: 'newest',     id: 'sort-new',  label: 'Newest first',  url: ASSET + '6a1d92f83a64390307583b8e_bolt-solid.png' },
     { sort: 'a_z',        id: 'sort-az',   label: 'A → Z',         url: ASSET + '6a1d92f86dcb45f8402fe0ea_arrow-down-a-z-solid.png' }
   ];
@@ -397,6 +397,9 @@
     "select#browse-sort,select#location-select,select#browse-location,select#browse-mobile-sort{-webkit-appearance:none;appearance:none;",
     "border:1px solid #E4E2F0;border-radius:12px;min-height:46px;padding:0 40px 0 14px;",
     "font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-size:15.5px;font-weight:600;color:#343A40;",
+    // The sort control matches its external "Sort by" label (F: dropdown font
+    // read too big next to it); the neighborhoods select keeps the hero size.
+    "select#browse-sort{font-size:13.5px;min-height:42px;}",
     "background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 6l5 5 5-5' fill='none' stroke='%236002EE' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E\");",
     "background-repeat:no-repeat;background-position:right 14px center;background-size:13px;cursor:pointer;",
     "transition:border-color .15s ease,box-shadow .15s ease;}",
@@ -1301,7 +1304,10 @@
     // #151: under the default sort an exact-phrase hit outranks an all-tokens
     // hit; tier rank still orders everything within each band. A-Z / Newest
     // are the visitor's explicit choice and stay literal.
-    else list.sort(function (a, b) { return sscore(b) - sscore(a) || rank(b) - rank(a) || (vCreated(b) - vCreated(a)); });
+    // Default = "Founding vendors" (F 2026-09-02): founding first, then the
+    // paid-tier rank WITHIN each group (Featured placement keeps its value),
+    // then newest arrival. A search phrase hit still outranks everything.
+    else list.sort(function (a, b) { return sscore(b) - sscore(a) || ((vIsFounding(b) ? 1 : 0) - (vIsFounding(a) ? 1 : 0)) || rank(b) - rank(a) || (vCreated(b) - vCreated(a)); });
   }
   function sscore(v) { return _searchScores[String(v.id)] || 0; }
   // Paid tier is the dominant band — Featured > Pro > Free outright (×8 clears
@@ -1705,7 +1711,9 @@
           .replace(/^\s*Sort:\s*/i, '')
           // "Best Match" is meaningless without a query (F 2026-09-02); the
           // default is the tier-first curated order = "Recommended".
-          .replace(/^Best\s*Match$/i, 'Recommended');
+          // F 2026-09-02: default sort is the founding story, not "Best
+          // Match"/"Recommended" - founding vendors first, paid tier second.
+          .replace(/^(Best\s*Match|Recommended)$/i, 'Founding vendors');
       }
       msel.setAttribute('aria-label', 'Sort by');
       // Label sits to the LEFT of the dropdown on one line (F): wrap both in a
