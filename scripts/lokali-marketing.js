@@ -290,8 +290,10 @@
   Page.prototype.refreshQrPreview = function () {
     var box = this.mount.querySelector('.mkt-qr-code');
     if (box) box.innerHTML = window.LokaliQR.toSvg(this.qrUrl(), this.qrOpts(168));
-    var tg = this.mount.querySelector('.mkt-qr-badge');
-    if (tg) tg.outerHTML = this.qrBadgeHtml();
+    // The slot is always rendered (empty until the logo lands), so the toggle
+    // can appear AFTER the async logo load without a full re-render.
+    var slot = this.mount.querySelector('.mkt-qr-badge-slot');
+    if (slot) slot.innerHTML = this.qrBadgeHtml();
   };
   Page.prototype.qrBadgeHtml = function () {
     if (!this.premium || !this.qrLogo) return '';
@@ -380,7 +382,7 @@
             '<button type="button" class="mkt-qr-dl" data-act="qr-svg">Download SVG</button>' +
           '</div>' +
           '<p class="mkt-note">Print it at least 1 inch (2.5 cm) wide and keep the white border, cameras need it. The SVG stays sharp at any size.</p>' +
-          this.qrBadgeHtml() +
+          '<div class="mkt-qr-badge-slot">' + this.qrBadgeHtml() + '</div>' +
           statsHtml +
         '</div>' +
       '</div>' +
@@ -495,7 +497,7 @@
             '<div class="mkt-demo-ghost">Text</div>' +
           '</div>' +
         '</div>' +
-        '<p class="mkt-example-note">It sits at the top of your contact card, right above &ldquo;Send a message&rdquo; &mdash; the first thing a visitor can tap.</p>'
+        '<p class="mkt-example-note">It sits at the top of your contact card, right above &ldquo;Send a message&rdquo;: the first thing a visitor can tap.</p>'
       : '<div class="mkt-demo-sec">Showcase of the week</div>' +
         '<div class="mkt-demo-show">' +
           '<div class="mkt-demo-show-img">' + IMG_ICON + '<span>Your photo</span></div>' +
