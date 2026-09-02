@@ -271,7 +271,7 @@
     { key: 'verified', id: 'browse-toggle-verified', label: 'Verified only',         color: '#0000E4', glyph: '✓' }
   ];
   var SORT_LIST = [
-    { sort: 'best_match', id: 'sort-match', label: 'Founding vendors',   url: ASSET + '6a1d92f85db0d873ff20900a_sort-solid.png' },
+    { sort: 'best_match', id: 'sort-match', label: 'Featured first',   url: ASSET + '6a1d92f85db0d873ff20900a_sort-solid.png' },
     { sort: 'newest',     id: 'sort-new',  label: 'Newest first',  url: ASSET + '6a1d92f83a64390307583b8e_bolt-solid.png' },
     { sort: 'a_z',        id: 'sort-az',   label: 'A → Z',         url: ASSET + '6a1d92f86dcb45f8402fe0ea_arrow-down-a-z-solid.png' }
   ];
@@ -1304,10 +1304,11 @@
     // #151: under the default sort an exact-phrase hit outranks an all-tokens
     // hit; tier rank still orders everything within each band. A-Z / Newest
     // are the visitor's explicit choice and stay literal.
-    // Default = "Founding vendors" (F 2026-09-02): founding first, then the
-    // paid-tier rank WITHIN each group (Featured placement keeps its value),
-    // then newest arrival. A search phrase hit still outranks everything.
-    else list.sort(function (a, b) { return sscore(b) - sscore(a) || ((vIsFounding(b) ? 1 : 0) - (vIsFounding(a) ? 1 : 0)) || rank(b) - rank(a) || (vCreated(b) - vCreated(a)); });
+    // Default = "Featured first" (F 2026-09-02): exactly the pricing-page
+    // promise - Featured > Pro > Free via rank()'s dominant tier band - with
+    // spotlight/founding/verified only breaking ties INSIDE a tier, then
+    // newest arrival. A search phrase hit still outranks everything.
+    else list.sort(function (a, b) { return sscore(b) - sscore(a) || rank(b) - rank(a) || (vCreated(b) - vCreated(a)); });
   }
   function sscore(v) { return _searchScores[String(v.id)] || 0; }
   // Paid tier is the dominant band — Featured > Pro > Free outright (×8 clears
@@ -1711,9 +1712,11 @@
           .replace(/^\s*Sort:\s*/i, '')
           // "Best Match" is meaningless without a query (F 2026-09-02); the
           // default is the tier-first curated order = "Recommended".
-          // F 2026-09-02: default sort is the founding story, not "Best
-          // Match"/"Recommended" - founding vendors first, paid tier second.
-          .replace(/^(Best\s*Match|Recommended)$/i, 'Founding vendors');
+          // F 2026-09-02: the default sort IS the pricing-page promise
+          // (Featured "Top of search results" > Pro "Elevated" > Free
+          // "Standard"), so it's labeled by the mechanic - "Featured first" -
+          // not an editorial "Best Match"/"Recommended".
+          .replace(/^(Best\s*Match|Recommended)$/i, 'Featured first');
       }
       msel.setAttribute('aria-label', 'Sort by');
       // Label sits to the LEFT of the dropdown on one line (F): wrap both in a
