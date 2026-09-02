@@ -17,6 +17,16 @@
 (function () {
   'use strict';
 
+  // Icons: Font Awesome Free 6.7.2 (fontawesome.com), CC BY 4.0. Inline SVGs replace the
+  // emoji that used to sit here (F rule 2026-09-02: no emoji in UI, Font Awesome only).
+  var LK_FA = {
+    up: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="currentColor" aria-hidden="true" focusable="false" style="width:1em;height:1em;vertical-align:-.125em;flex-shrink:0;"><path d="M313.4 32.9c26 5.2 42.9 30.5 37.7 56.5l-2.3 11.4c-5.3 26.7-15.1 52.1-28.8 75.2l144 0c26.5 0 48 21.5 48 48c0 18.5-10.5 34.6-25.9 42.6C497 275.4 504 288.9 504 304c0 23.4-16.8 42.9-38.9 47.1c4.4 7.3 6.9 15.8 6.9 24.9c0 21.3-13.9 39.4-33.1 45.6c.7 3.3 1.1 6.8 1.1 10.4c0 26.5-21.5 48-48 48l-97.5 0c-19 0-37.5-5.6-53.3-16.1l-38.5-25.7C176 420.4 160 390.4 160 358.3l0-38.3 0-48 0-24.9c0-29.2 13.3-56.7 36-75l7.4-5.9c26.5-21.2 44.6-51 51.2-84.2l2.3-11.4c5.2-26 30.5-42.9 56.5-37.7zM32 192l64 0c17.7 0 32 14.3 32 32l0 224c0 17.7-14.3 32-32 32l-64 0c-17.7 0-32-14.3-32-32L0 224c0-17.7 14.3-32 32-32z"/></svg>',
+    down: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="currentColor" aria-hidden="true" focusable="false" style="width:1em;height:1em;vertical-align:-.125em;flex-shrink:0;"><path d="M313.4 479.1c26-5.2 42.9-30.5 37.7-56.5l-2.3-11.4c-5.3-26.7-15.1-52.1-28.8-75.2l144 0c26.5 0 48-21.5 48-48c0-18.5-10.5-34.6-25.9-42.6C497 236.6 504 223.1 504 208c0-23.4-16.8-42.9-38.9-47.1c4.4-7.3 6.9-15.8 6.9-24.9c0-21.3-13.9-39.4-33.1-45.6c.7-3.3 1.1-6.8 1.1-10.4c0-26.5-21.5-48-48-48l-97.5 0c-19 0-37.5 5.6-53.3 16.1L202.7 73.8C176 91.6 160 121.6 160 153.7l0 38.3 0 48 0 24.9c0 29.2 13.3 56.7 36 75l7.4 5.9c26.5 21.2 44.6 51 51.2 84.2l2.3 11.4c5.2 26 30.5 42.9 56.5 37.7zM32 384l64 0c17.7 0 32-14.3 32-32l0-224c0-17.7-14.3-32-32-32L32 96C14.3 96 0 110.3 0 128L0 352c0 17.7 14.3 32 32 32z"/></svg>',
+    store: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512" fill="currentColor" aria-hidden="true" focusable="false" style="width:40px;height:40px;vertical-align:-.125em;flex-shrink:0;"><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7l-86.8-68 0-17.1 0-131.4c-4 1-8 1.8-12.3 2.3c0 0 0 0-.1 0c-5.3 .7-10.7 1.1-16.2 1.1c-12.4 0-24.3-1.9-35.4-5.3l0 100.3L301.2 210.7c7-4.4 13.3-9.7 18.8-15.7c15.9 17.6 39.1 29 65.2 29c26.2 0 49.3-11.4 65.2-29c16 17.6 39.1 29 65.2 29c4.1 0 8.1-.3 12.1-.8c55.5-7.4 81.8-72.5 52.1-119.4L522.3 13.1C517.2 5 508.1 0 498.4 0L141.6 0c-9.7 0-18.8 5-23.9 13.1l-22.7 36L38.8 5.1zm73.4 218.1c4 .5 8.1 .8 12.1 .8c11 0 21.4-2 31-5.6L48.9 134.5c-6.1 40.6 19.5 82.8 63.3 88.7zM160 384l0-133.4c-11.2 3.5-23.2 5.4-35.6 5.4c-5.5 0-11-.4-16.3-1.1l-.1 0c-4.1-.6-8.1-1.3-12-2.3L96 384l0 64c0 35.3 28.7 64 64 64l320 0c12.9 0 24.8-3.8 34.9-10.3L365.5 384 160 384z"/></svg>',
+    hourglass: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" fill="currentColor" aria-hidden="true" focusable="false" style="width:40px;height:40px;vertical-align:-.125em;flex-shrink:0;color:#B5793B;"><path d="M32 0C14.3 0 0 14.3 0 32S14.3 64 32 64l0 11c0 42.4 16.9 83.1 46.9 113.1L146.7 256 78.9 323.9C48.9 353.9 32 394.6 32 437l0 11c-17.7 0-32 14.3-32 32s14.3 32 32 32l32 0 256 0 32 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l0-11c0-42.4-16.9-83.1-46.9-113.1L237.3 256l67.9-67.9c30-30 46.9-70.7 46.9-113.1l0-11c17.7 0 32-14.3 32-32s-14.3-32-32-32L320 0 64 0 32 0zM96 75l0-11 192 0 0 11c0 19-5.6 37.4-16 53L112 128c-10.3-15.6-16-34-16-53zm16 309c3.5-5.3 7.6-10.3 12.1-14.9L192 301.3l67.9 67.9c4.6 4.6 8.6 9.6 12.1 14.9L112 384z"/></svg>',
+    search: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="currentColor" aria-hidden="true" focusable="false" style="width:40px;height:40px;vertical-align:-.125em;flex-shrink:0;"><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352a144 144 0 1 0 0-288 144 144 0 1 0 0 288z"/></svg>'
+  };
+
   var currentVendorId = null; // set during hydrate(); used to build detail-page links
   var currentVendorSlug = null; // set during hydrate(); used to build clean item/about URLs
   var openAboutOnLoad = false; // true when the URL is /{slug}/about — open the About tab once loaded
@@ -2111,7 +2121,7 @@
       '.vl-np{font-family:"Plus Jakarta Sans",sans-serif;max-width:560px;margin:64px auto 96px;padding:40px 32px;',
       'background:linear-gradient(180deg,#faf7ff 0%,#fff 70%);border:1px solid #eee9fb;border-radius:20px;',
       'text-align:center;color:#3b3654;}',
-      '.vl-np-emoji{font-size:40px;line-height:1;margin-bottom:14px;}',
+      '.vl-np-emoji{line-height:1;margin-bottom:14px;color:#6002EE;}',
       '.vl-np h1{font-size:26px;font-weight:800;color:#231d3f;margin:0 0 10px;font-family:inherit;}',
       '.vl-np p{font-size:16px;line-height:1.6;margin:0 0 20px;}',
       '.vl-np-list{text-align:left;margin:0 auto 22px;max-width:360px;padding:0;list-style:none;}',
@@ -2178,7 +2188,7 @@
           }
           var itemsOk = (liveCount(lr[0]) + liveCount(lr[1])) > 0;
           card.innerHTML =
-            '<div class="vl-np-emoji">🚧</div>' +
+            '<div class="vl-np-emoji">' + LK_FA.store + '</div>' +
             '<h1>Your storefront isn’t live yet</h1>' +
             '<p>Customers can’t find it on The Market until these are done:</p>' +
             '<ul class="vl-np-list">' +
@@ -2202,7 +2212,7 @@
     injectNpStyles();
     var card = ce('div', 'vl-np');
     card.innerHTML =
-      '<div class="vl-np-emoji">⏳</div>' +
+      '<div class="vl-np-emoji">' + LK_FA.hourglass + '</div>' +
       '<h1>Having trouble loading this storefront</h1>' +
       '<p>It’s us, not you. Give it another try in a moment.</p>' +
       '<button type="button" class="vl-np-btn" data-vl-retry>Try again</button>';
@@ -2216,7 +2226,7 @@
     injectNpStyles();
     var card = ce('div', 'vl-np');
     card.innerHTML =
-      '<div class="vl-np-emoji">🔍</div>' +
+      '<div class="vl-np-emoji">' + LK_FA.search + '</div>' +
       '<h1>This vendor isn’t available</h1>' +
       '<p>The storefront you’re looking for doesn’t exist, or the link is out of date.</p>' +
       '<a class="vl-np-btn" href="/the-market">Browse local vendors</a>';
@@ -2953,7 +2963,8 @@
     card.appendChild(head);
     var rec = !!r.is_recommended;
     var pill = ce('div', 'vl-rev-pill' + (rec ? '' : ' no'));
-    pill.textContent = rec ? '👍 Recommends' : '👎 Doesn’t recommend';
+    pill.innerHTML = rec ? LK_FA.up : LK_FA.down;
+    pill.appendChild(document.createTextNode(rec ? ' Recommends' : ' Doesn’t recommend'));
     card.appendChild(pill);
     if (r.comment) { var b = ce('div', 'vl-rev-body'); b.textContent = r.comment; card.appendChild(b); }
     if (r.vendor_reply) {

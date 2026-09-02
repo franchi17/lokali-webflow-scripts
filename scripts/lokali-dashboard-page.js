@@ -211,7 +211,8 @@
       el.style.cssText = 'display:flex;align-items:flex-start;gap:10px;background:#FDF1E7;' +
         'border:1px solid #F6D9BE;border-radius:12px;padding:12px 14px;margin:0 0 14px;' +
         "font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;line-height:1.5;color:#8A4B14;";
-      el.innerHTML = '<span style="font-size:16px;line-height:1.4;">🚦</span><span data-ls-gate-msg></span>';
+      // Icon: Font Awesome Free 6.7.2 traffic-light (CC BY 4.0); was an emoji (F rule 2026-09-02).
+      el.innerHTML = '<span style="display:inline-flex;line-height:1.4;padding-top:2px;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512" fill="currentColor" aria-hidden="true" focusable="false" style="width:16px;height:16px;vertical-align:-.125em;flex-shrink:0;"><path d="M64 0C28.7 0 0 28.7 0 64L0 352c0 88.4 71.6 160 160 160s160-71.6 160-160l0-288c0-35.3-28.7-64-64-64L64 0zm96 416a48 48 0 1 1 0-96 48 48 0 1 1 0 96zm48-176a48 48 0 1 1 -96 0 48 48 0 1 1 96 0zm-48-80a48 48 0 1 1 0-96 48 48 0 1 1 0 96z"/></svg></span><span data-ls-gate-msg></span>';
       root.insertBefore(el, root.firstChild);
     }
     var m = el.querySelector('[data-ls-gate-msg]');

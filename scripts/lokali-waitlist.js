@@ -87,7 +87,7 @@
       + '.lok-wl-btn{width:100%;border:0;border-radius:12px;padding:13px;font-size:15.5px;font-weight:700;color:#fff;cursor:pointer;background:linear-gradient(90deg,#8B6CF0,#A45FE8);box-shadow:0 8px 20px rgba(139,108,240,.35);transition:filter .15s;}'
       + '.lok-wl-btn:hover{filter:brightness(1.06);}.lok-wl-btn:disabled{opacity:.6;cursor:default;}'
       + '.lok-wl-msg{font-size:13.5px;margin:12px 0 0;display:none;}.lok-wl-msg.err{color:#c0392b;display:block;}'
-      + '.lok-wl-done{text-align:center;padding:8px 0 4px;}.lok-wl-done .em{font-size:40px;line-height:1;display:block;margin:0 0 14px;}'
+      + '.lok-wl-done{text-align:center;padding:8px 0 4px;}.lok-wl-done .em{line-height:1;display:block;margin:0 0 14px;color:#6002EE;}'
       + '.lok-wl-done h3{font-size:21px;color:#1f1638;margin:0 0 8px;font-weight:700;}'
       + '.lok-wl-done p{font-size:14.5px;color:#5d5470;line-height:1.5;margin:0 0 22px;}'
       + ".pac-container{z-index:10001 !important;border-radius:12px;margin-top:4px;box-shadow:0 12px 30px rgba(40,20,90,.22);font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;}"
@@ -134,7 +134,7 @@
       +     '</form>'
       +   '</div>'
       +   '<div id="lok-wl-done" class="lok-wl-done" style="display:none;">'
-      +     '<span class="em">🎉</span><h3>You’re on the list!</h3>'
+      +     '<span class="em"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512" fill="currentColor" aria-hidden="true" focusable="false" style="width:40px;height:40px;vertical-align:-.125em;flex-shrink:0;"><path d="M155.6 17.3C163 3 179.9-3.6 195 1.9L320 47.5l125-45.6c15.1-5.5 32 1.1 39.4 15.4l78.8 152.9c28.8 55.8 10.3 122.3-38.5 156.6L556.1 413l41-15c16.6-6 35 2.5 41 19.1s-2.5 35-19.1 41l-71.1 25.9L476.8 510c-16.6 6.1-35-2.5-41-19.1s2.5-35 19.1-41l41-15-31.3-86.2c-59.4 5.2-116.2-34-130-95.2L320 188.8l-14.6 64.7c-13.8 61.3-70.6 100.4-130 95.2l-31.3 86.2 41 15c16.6 6 25.2 24.4 19.1 41s-24.4 25.2-41 19.1L92.2 484.1 21.1 458.2c-16.6-6.1-25.2-24.4-19.1-41s24.4-25.2 41-19.1l41 15 31.3-86.2C66.5 292.5 48.1 226 76.9 170.2L155.6 17.3zm44 54.4l-27.2 52.8L261.6 157l13.1-57.9L199.6 71.7zm240.9 0L365.4 99.1 378.5 157l89.2-32.5L440.5 71.7z"/></svg></span><h3>You’re on the list!</h3>'
       +     '<p id="wl-done-msg">We’ll tell you the moment Lokali reaches your area.</p>'
       +     '<button class="lok-wl-btn" type="button" id="wl-done-close">Done</button>'
       +   '</div>'

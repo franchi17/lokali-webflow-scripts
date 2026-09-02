@@ -20,6 +20,16 @@
 (function () {
   'use strict';
 
+  // Icons: Font Awesome Free 6.7.2 (fontawesome.com), CC BY 4.0. Inline SVGs replace the
+  // emoji that used to sit here (F rule 2026-09-02: no emoji in UI, Font Awesome only).
+  var LK_FA = {
+    up: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="currentColor" aria-hidden="true" focusable="false" style="width:1em;height:1em;vertical-align:-.125em;flex-shrink:0;"><path d="M313.4 32.9c26 5.2 42.9 30.5 37.7 56.5l-2.3 11.4c-5.3 26.7-15.1 52.1-28.8 75.2l144 0c26.5 0 48 21.5 48 48c0 18.5-10.5 34.6-25.9 42.6C497 275.4 504 288.9 504 304c0 23.4-16.8 42.9-38.9 47.1c4.4 7.3 6.9 15.8 6.9 24.9c0 21.3-13.9 39.4-33.1 45.6c.7 3.3 1.1 6.8 1.1 10.4c0 26.5-21.5 48-48 48l-97.5 0c-19 0-37.5-5.6-53.3-16.1l-38.5-25.7C176 420.4 160 390.4 160 358.3l0-38.3 0-48 0-24.9c0-29.2 13.3-56.7 36-75l7.4-5.9c26.5-21.2 44.6-51 51.2-84.2l2.3-11.4c5.2-26 30.5-42.9 56.5-37.7zM32 192l64 0c17.7 0 32 14.3 32 32l0 224c0 17.7-14.3 32-32 32l-64 0c-17.7 0-32-14.3-32-32L0 224c0-17.7 14.3-32 32-32z"/></svg>',
+    down: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="currentColor" aria-hidden="true" focusable="false" style="width:1em;height:1em;vertical-align:-.125em;flex-shrink:0;"><path d="M313.4 479.1c26-5.2 42.9-30.5 37.7-56.5l-2.3-11.4c-5.3-26.7-15.1-52.1-28.8-75.2l144 0c26.5 0 48-21.5 48-48c0-18.5-10.5-34.6-25.9-42.6C497 236.6 504 223.1 504 208c0-23.4-16.8-42.9-38.9-47.1c4.4-7.3 6.9-15.8 6.9-24.9c0-21.3-13.9-39.4-33.1-45.6c.7-3.3 1.1-6.8 1.1-10.4c0-26.5-21.5-48-48-48l-97.5 0c-19 0-37.5 5.6-53.3 16.1L202.7 73.8C176 91.6 160 121.6 160 153.7l0 38.3 0 48 0 24.9c0 29.2 13.3 56.7 36 75l7.4 5.9c26.5 21.2 44.6 51 51.2 84.2l2.3 11.4c5.2 26 30.5 42.9 56.5 37.7zM32 384l64 0c17.7 0 32-14.3 32-32l0-224c0-17.7-14.3-32-32-32L32 96C14.3 96 0 110.3 0 128L0 352c0 17.7 14.3 32 32 32z"/></svg>',
+    check: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="currentColor" aria-hidden="true" focusable="false" style="width:1em;height:1em;vertical-align:-.125em;flex-shrink:0;color:#1A6640;"><path d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM369 209L241 337c-9.4 9.4-24.6 9.4-33.9 0l-64-64c-9.4-9.4-9.4-24.6 0-33.9s24.6-9.4 33.9 0l47 47L335 175c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9z"/></svg>',
+    flag: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" fill="currentColor" aria-hidden="true" focusable="false" style="width:1em;height:1em;vertical-align:-.125em;flex-shrink:0;color:#C0392B;"><path d="M64 32C64 14.3 49.7 0 32 0S0 14.3 0 32L0 64 0 368 0 480c0 17.7 14.3 32 32 32s32-14.3 32-32l0-128 64.3-16.1c41.1-10.3 84.6-5.5 122.5 13.4c44.2 22.1 95.5 24.8 141.7 7.4l34.7-13c12.5-4.7 20.8-16.6 20.8-30l0-247.7c0-23-24.2-38-44.8-27.7l-9.6 4.8c-46.3 23.2-100.8 23.2-147.1 0c-35.1-17.6-75.4-22-113.5-12.5L64 48l0-16z"/></svg>',
+    bulb: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" fill="currentColor" aria-hidden="true" focusable="false" style="width:1em;height:1em;vertical-align:-.125em;flex-shrink:0;color:#B5793B;"><path d="M272 384c9.6-31.9 29.5-59.1 49.2-86.2c0 0 0 0 0 0c5.2-7.1 10.4-14.2 15.4-21.4c19.8-28.5 31.4-63 31.4-100.3C368 78.8 289.2 0 192 0S16 78.8 16 176c0 37.3 11.6 71.9 31.4 100.3c5 7.2 10.2 14.3 15.4 21.4c0 0 0 0 0 0c19.8 27.1 39.7 54.4 49.2 86.2l160 0zM192 512c44.2 0 80-35.8 80-80l0-16-160 0 0 16c0 44.2 35.8 80 80 80zM112 176c0 8.8-7.2 16-16 16s-16-7.2-16-16c0-61.9 50.1-112 112-112c8.8 0 16 7.2 16 16s-7.2 16-16 16c-44.2 0-80 35.8-80 80z"/></svg>'
+  };
+
   var MOUNT_ID = 'lokali-account';
   var PANES = ['badges', 'saved', 'reviews', 'settings'];
 
@@ -882,7 +892,7 @@
       if (c.addresses) parts.push(c.addresses + (c.addresses === 1 ? ' address flag' : ' address flags'));
       if (c.pairings) parts.push(c.pairings + (c.pairings === 1 ? ' pairing message' : ' pairing messages'));
       attn.innerHTML = '';
-      if (!parts.length) { attn.style.background = '#EAFAF2'; attn.style.borderColor = '#BFE9D2'; attn.style.color = '#1A6640'; attn.appendChild(document.createTextNode('✅ Nothing needs your approval right now.')); return; }
+      if (!parts.length) { attn.style.background = '#EAFAF2'; attn.style.borderColor = '#BFE9D2'; attn.style.color = '#1A6640'; attn.innerHTML = LK_FA.check + ' Nothing needs your approval right now.'; return; }
       attn.style.background = '#FFF6E5'; attn.style.borderColor = '#FFE2A8'; attn.style.color = '#6B4A00';
       var s = document.createElement('strong'); s.textContent = 'Needs your attention: '; attn.appendChild(s);
       attn.appendChild(document.createTextNode(parts.join(' · ') + '. Details below. You also get an email within 5 minutes of anything new.'));
@@ -1503,7 +1513,7 @@
         var row = el('div', 'lk-admin-row');
         var meta = el('div', 'lk-admin-row-meta');
         var l1 = el('div', 'lk-admin-row-l1');
-        l1.textContent = (f.kind === 'flag' ? '🚩 ' : '💡 ') + (f.vendor || 'Unknown vendor') +
+        l1.innerHTML = (f.kind === 'flag' ? LK_FA.flag : LK_FA.bulb) + ' ' + esc(f.vendor || 'Unknown vendor') +
           (f.kind === 'flag' ? ' flagged their pairing' : ' suggests a pairing');
         var l2 = el('div', 'lk-admin-row-l2');
         l2.textContent = '“' + String(f.message || '') + '”';
@@ -2047,7 +2057,7 @@
       top.appendChild(mn);
       top.appendChild(el('div', 'lkg-badge-pill ' + (n >= 5 ? 'c-rose' : 'c-peach'), n >= 5 ? 'Neighborhood Regular' : 'First Review'));
       mini.appendChild(top);
-      mini.appendChild(el('div', 'lkg-mini-rec', '👍 Recommends'));
+      mini.appendChild(el('div', 'lkg-mini-rec', LK_FA.up + ' Recommends'));
       mini.appendChild(el('div', 'lkg-mini-body', 'The custom cookie set was even better than the photos. Ordering was easy and pickup was right in my neighborhood.'));
       prev.appendChild(mini);
       card.appendChild(prev);
@@ -2163,8 +2173,8 @@
     var comp = el('div', 'lk-composer');
     var rec = { val: null };
     var recRow = el('div', 'lk-rec');
-    var yes = el('button', null, '👍 Would recommend');
-    var no = el('button', null, '👎 Wouldn’t');
+    var yes = el('button', null, LK_FA.up + ' Would recommend');
+    var no = el('button', null, LK_FA.down + ' Wouldn’t');
     yes.addEventListener('click', function () { rec.val = true; yes.className = 'sel-yes'; no.className = ''; });
     no.addEventListener('click', function () { rec.val = false; no.className = 'sel-no'; yes.className = ''; });
     recRow.appendChild(yes); recRow.appendChild(no);
@@ -2226,8 +2236,8 @@
     var rec = { val: !!row.is_recommended };
     card.innerHTML = '';
     var recRow = el('div', 'lk-rec');
-    var yes = el('button', rec.val ? 'sel-yes' : null, '👍 Would recommend');
-    var no = el('button', !rec.val ? 'sel-no' : null, '👎 Wouldn’t');
+    var yes = el('button', rec.val ? 'sel-yes' : null, LK_FA.up + ' Would recommend');
+    var no = el('button', !rec.val ? 'sel-no' : null, LK_FA.down + ' Wouldn’t');
     yes.addEventListener('click', function () { rec.val = true; yes.className = 'sel-yes'; no.className = ''; });
     no.addEventListener('click', function () { rec.val = false; no.className = 'sel-no'; yes.className = ''; });
     recRow.appendChild(yes); recRow.appendChild(no);
