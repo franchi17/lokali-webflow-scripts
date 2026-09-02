@@ -387,6 +387,23 @@
     // Mobile Filter button 'filters active' cue (.has-filters set in JS).
     "#browse-mobile-filter-btn.has-filters{border-color:#6002EE;color:#6002EE;}",
     "#browse-mobile-filter-btn.has-filters::after{content:'';display:inline-block;width:8px;height:8px;border-radius:50%;background:#FF8D00;margin-left:6px;vertical-align:middle;}",
+    // Elegant dropdowns (F 2026-09-02: native selects "look very basic"). The
+    // CLOSED control is fully custom - OS chrome off, brand font, soft border,
+    // violet chevron, real focus ring - while the OPEN menu stays native (the
+    // OS picker is the best select interaction on touch, per Baymard). The
+    // neighborhoods select keeps its soft-gray fill to match the search box;
+    // the sort select is white like the cards it sits above.
+    "#browse-sort,#location-select,#browse-location,#browse-mobile-sort{-webkit-appearance:none;appearance:none;",
+    "border:1px solid #E4E2F0;border-radius:12px;min-height:46px;padding:0 40px 0 14px;",
+    "font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-size:15px;font-weight:600;color:#343A40;",
+    "background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 6l5 5 5-5' fill='none' stroke='%236002EE' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E\");",
+    "background-repeat:no-repeat;background-position:right 14px center;background-size:13px;cursor:pointer;",
+    "transition:border-color .15s ease,box-shadow .15s ease;}",
+    "#browse-sort,#browse-mobile-sort{background-color:#fff;}",
+    "#location-select,#browse-location{background-color:#F7F6FC;}",
+    "#browse-sort:hover,#location-select:hover,#browse-location:hover,#browse-mobile-sort:hover{border-color:#C9BFEA;}",
+    "#browse-sort:focus,#location-select:focus,#browse-location:focus,#browse-mobile-sort:focus{outline:none;border-color:#6002EE;box-shadow:0 0 0 3px rgba(96,2,238,.12);}",
+    "#browse-sort::-ms-expand,#location-select::-ms-expand{display:none;}",
     // Mobile category chips (F 2026-09-02): the sidebar hides behind the Filter
     // button on small screens, so the primary facet gets its own always-visible
     // scrollable row (exposed filters get measurably more use than hidden ones).
