@@ -271,7 +271,7 @@
     { key: 'verified', id: 'browse-toggle-verified', label: 'Verified only',         color: '#0000E4', glyph: '✓' }
   ];
   var SORT_LIST = [
-    { sort: 'best_match', id: 'sort-match', label: 'Best match',   url: ASSET + '6a1d92f85db0d873ff20900a_sort-solid.png' },
+    { sort: 'best_match', id: 'sort-match', label: 'Recommended',   url: ASSET + '6a1d92f85db0d873ff20900a_sort-solid.png' },
     { sort: 'newest',     id: 'sort-new',  label: 'Newest first',  url: ASSET + '6a1d92f83a64390307583b8e_bolt-solid.png' },
     { sort: 'a_z',        id: 'sort-az',   label: 'A → Z',         url: ASSET + '6a1d92f86dcb45f8402fe0ea_arrow-down-a-z-solid.png' }
   ];
@@ -319,19 +319,19 @@
     ".vcard-cover-nav.next{right:8px;}",
     "@media (hover:hover) and (pointer:fine){.vcard-cover-nav{display:flex;}.vcard-cover:hover .vcard-cover-nav{opacity:1;}}",
     // Category pill rides the cover — solid category tint + icon so it reads over photos.
-    ".vcard .cat-pill{position:absolute;top:10px;left:10px;z-index:2;display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:600;border-radius:100px;padding:3.5px 11px;box-shadow:0 1px 4px rgba(0,0,0,.08);}",
+    ".vcard .cat-pill{position:absolute;top:10px;left:10px;z-index:2;display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;border-radius:100px;padding:3.5px 11px;box-shadow:0 1px 4px rgba(0,0,0,.08);}",
     ".vcard-body{padding:14px 16px 15px;}",
     ".vcard-name-row{display:flex;align-items:center;gap:7px;margin-bottom:5px;flex-wrap:wrap;}",
     // Circle, not rounded square — the profile page promises vendors a round
     // logo, and the storefront renders it round (Francesca 2026-08-13).
-    ".vcard-avatar{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:700;flex-shrink:0;border:1.5px solid #F0E9FB;overflow:hidden;}",
+    ".vcard-avatar{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;border:1.5px solid #F0E9FB;overflow:hidden;}",
     ".vcard-avatar-initials{background:#F3EBFF;color:#6002EE;letter-spacing:.5px;}",
     ".vcard-avatar-img{width:100%;height:100%;object-fit:cover;display:block;}",
     // .vcard-name is a real <a> (keyboard/SR path into the profile) — kill link chrome.
     ".vcard-name{font-size:15.5px;font-weight:700;color:#1A1829;letter-spacing:-.3px;line-height:1.2;text-decoration:none;}",
     // Status chips sit inline after the name, labeled (an unlabeled 22px icon
     // circle was undecodable for first-time visitors). Same palette as the old badges.
-    ".vcard .name-chip{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;border-radius:100px;padding:2px 7px;line-height:1.3;flex-shrink:0;}",
+    ".vcard .name-chip{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;border-radius:100px;padding:2px 7px;line-height:1.3;flex-shrink:0;}",
     ".vcard .chip-verified{background:#D2DEFF;color:#1730C9;}",
     ".vcard .chip-new{background:#C6F2DB;color:#11744A;}",
     ".vcard .chip-spotlight{background:#E2D2FF;color:#5A00E0;}",
@@ -341,34 +341,34 @@
     ".vcard-offerline{font-size:12.5px;font-weight:600;color:#33304A;line-height:1.45;margin-bottom:5px;}",
     ".vcard-offer-more{color:#6E6A85;font-weight:500;white-space:nowrap;}",
     ".vcard-offerline .match{color:#6002EE;}",
-    ".vcard-tagline{font-size:12px;color:#6B6880;line-height:1.5;margin-bottom:12px;}",
+    ".vcard-tagline{font-size:12.5px;color:#6B6880;line-height:1.5;margin-bottom:12px;}",
     ".vcard-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;}",
-    ".vcard-foot-meta{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:600;color:#6E6A85;min-width:0;flex-wrap:wrap;}",
-    ".vcard-visit{font-size:12px;font-weight:700;color:#6002EE;text-decoration:none;white-space:nowrap;display:inline-flex;align-items:center;gap:4px;}",
+    ".vcard-foot-meta{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#6E6A85;min-width:0;flex-wrap:wrap;}",
+    ".vcard-visit{font-size:12.5px;font-weight:700;color:#6002EE;text-decoration:none;white-space:nowrap;display:inline-flex;align-items:center;gap:4px;}",
     // #96 sidebar subcategory pills — unfold under the ACTIVE category row
     // (expand-in-place accordion; other categories stay visible/clickable).
     "#browse-filter-panel .lk-subcat-row{display:flex;flex-wrap:wrap;gap:5px;padding:8px 4px 10px 14px;}",
     // text-align:left — <button> defaults to center, which reads as ragged/odd on the
     // labels long enough to wrap in the narrow sidebar ("Bookkeeping & accounting").
-    "#browse-filter-panel .subcat-pill{font-family:inherit;-webkit-appearance:none;appearance:none;font-size:11.5px;font-weight:500;background:#fff;border:1px solid #E4E2F0;color:#6B6880;border-radius:100px;padding:4px 11px;cursor:pointer;user-select:none;transition:all .12s;line-height:1.3;text-align:left;}",
+    "#browse-filter-panel .subcat-pill{font-family:inherit;-webkit-appearance:none;appearance:none;font-size:11px;font-weight:500;background:#fff;border:1px solid #E4E2F0;color:#6B6880;border-radius:100px;padding:4px 11px;cursor:pointer;user-select:none;transition:all .12s;line-height:1.3;text-align:left;}",
     "#browse-filter-panel .subcat-pill:hover{border-color:#6002EE;color:#6002EE;}",
     "#browse-filter-panel .subcat-pill.on{background:#6002EE;border-color:#6002EE;color:#fff;font-weight:600;}",
     // ── filter panel ──
     "#browse-filter-panel{font-family:'Plus Jakarta Sans',sans-serif;}",
     "#browse-filter-panel .lk-filter-section{margin-bottom:1.5rem;}",
     "#browse-filter-panel .lk-filter-section:last-child{margin-bottom:0;}",
-    "#browse-filter-panel .lk-filter-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:#6E6A85;margin-bottom:.6rem;}",
+    "#browse-filter-panel .lk-filter-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:#6E6A85;margin-bottom:.6rem;}",
     // .filter-item / .lk-toggle are real <button>s (keyboard path) — reset UA button chrome.
-    "#browse-filter-panel .filter-item{display:flex;align-items:center;justify-content:space-between;width:100%;background:none;border:none;font-family:inherit;-webkit-appearance:none;appearance:none;text-align:left;padding:7px 10px;border-radius:8px;font-size:13px;line-height:1.45;color:#4A4761;cursor:pointer;transition:all .1s;margin-bottom:2px;user-select:none;}",
+    "#browse-filter-panel .filter-item{display:flex;align-items:center;justify-content:space-between;width:100%;background:none;border:none;font-family:inherit;-webkit-appearance:none;appearance:none;text-align:left;padding:7px 10px;border-radius:8px;font-size:13.5px;line-height:1.45;color:#4A4761;cursor:pointer;transition:all .1s;margin-bottom:2px;user-select:none;}",
     "#browse-filter-panel .filter-item:hover{background:#F7F6FC;color:#1A1829;}",
     "#browse-filter-panel .filter-item.active{background:#F3EBFF;color:#6002EE;font-weight:600;}",
     "#browse-filter-panel .fi-left{display:flex;align-items:center;gap:8px;}",
     "#browse-filter-panel .lk-glyph-icon{font-size:13px;font-weight:700;width:16px;text-align:center;display:inline-block;flex-shrink:0;}",
-    "#browse-filter-panel .filter-count-pill{font-size:10px;font-weight:600;background:#EEEDF6;color:#6E6A85;border-radius:100px;padding:1px 7px;min-width:22px;text-align:center;}",
+    "#browse-filter-panel .filter-count-pill{font-size:11px;font-weight:600;background:#EEEDF6;color:#6E6A85;border-radius:100px;padding:1px 7px;min-width:22px;text-align:center;}",
     "#browse-filter-panel .filter-item.active .filter-count-pill{background:rgba(96,2,238,.12);color:#6002EE;}",
     "#browse-filter-panel .lk-divider{height:.5px;background:#EEEDF6;margin:1rem 0;}",
     "#browse-filter-panel .lk-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;background:none;border:none;font-family:inherit;-webkit-appearance:none;appearance:none;text-align:left;padding:6px 0;cursor:pointer;user-select:none;}",
-    "#browse-filter-panel .lk-toggle-label{font-size:13px;line-height:1.45;color:#4A4761;display:flex;align-items:flex-start;gap:6px;}",
+    "#browse-filter-panel .lk-toggle-label{font-size:13.5px;line-height:1.45;color:#4A4761;display:flex;align-items:flex-start;gap:6px;}",
     "#browse-filter-panel .lk-tg-ic{font-size:12px;font-weight:700;}",
     "#browse-filter-panel .toggle-switch{width:32px;height:18px;border-radius:100px;background:#C8C6D8;position:relative;transition:background .18s;flex-shrink:0;}",
     "#browse-filter-panel .toggle-switch.on{background:#1D6A45;}",
@@ -377,11 +377,11 @@
     // #107(d) recruitment empty-state CTA (injected node — Webflow has no style
     // for it, so font is set explicitly per the Plus Jakarta Sans rule; brand
     // primary-700 violet; 44px min-height per the tap-target floor).
-    ".browse-empty-cta{display:inline-flex;align-items:center;justify-content:center;margin-top:16px;padding:12px 22px;min-height:44px;box-sizing:border-box;background:#3d00e0;color:#fff;border-radius:10px;font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:600;text-decoration:none;transition:background .15s;}",
+    ".browse-empty-cta{display:inline-flex;align-items:center;justify-content:center;margin-top:16px;padding:12px 22px;min-height:44px;box-sizing:border-box;background:#3d00e0;color:#fff;border-radius:10px;font-family:'Plus Jakarta Sans',sans-serif;font-size:15.5px;font-weight:600;text-decoration:none;transition:background .15s;}",
     ".browse-empty-cta:hover{background:#3100b3;color:#fff;}",
     // Active-filter chips (no Webflow styles exist for them) — pill matching the
     // sidebar's .filter-item.active; the × is a real button with a 32px hit area.
-    ".active-filter-chip{display:inline-flex;align-items:center;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:500;background:#F3EBFF;color:#6002EE;border:1px solid #E4D6FF;border-radius:100px;padding:2px 2px 2px 12px;min-height:28px;box-sizing:border-box;margin:2px 6px 2px 0;}",
+    ".active-filter-chip{display:inline-flex;align-items:center;font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:500;background:#F3EBFF;color:#6002EE;border:1px solid #E4D6FF;border-radius:100px;padding:2px 2px 2px 12px;min-height:28px;box-sizing:border-box;margin:2px 6px 2px 0;}",
     ".active-filter-chip .remove-x{-webkit-appearance:none;appearance:none;background:none;border:none;font-family:inherit;font-size:15px;line-height:1;color:#6002EE;cursor:pointer;padding:0;width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;}",
     ".active-filter-chip .remove-x:hover{background:rgba(96,2,238,.1);}",
     // Mobile Filter button 'filters active' cue (.has-filters set in JS).
@@ -396,7 +396,7 @@
     // Tag-qualified: #browse-mobile-sort is a DIV wrapper in the live markup (legacy name), a bare id match painted a chevron on the row container.
     "select#browse-sort,select#location-select,select#browse-location,select#browse-mobile-sort{-webkit-appearance:none;appearance:none;",
     "border:1px solid #E4E2F0;border-radius:12px;min-height:46px;padding:0 40px 0 14px;",
-    "font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-size:15px;font-weight:600;color:#343A40;",
+    "font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-size:15.5px;font-weight:600;color:#343A40;",
     "background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 6l5 5 5-5' fill='none' stroke='%236002EE' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E\");",
     "background-repeat:no-repeat;background-position:right 14px center;background-size:13px;cursor:pointer;",
     "transition:border-color .15s ease,box-shadow .15s ease;}",
@@ -423,7 +423,8 @@
     ".lk-cat-chip.active .lk-cat-chip-n{background:rgba(255,255,255,.22);color:#fff;}",
     "}",
     // Injected loading state (#browse-loading — no such mount exists in the Webflow page).
-    "#browse-loading{display:none;text-align:center;padding:36px 0;font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;color:#6B6880;}",
+    ".section-18{margin-right:0;}",
+    "#browse-loading{display:none;text-align:center;padding:36px 0;font-family:'Plus Jakarta Sans',sans-serif;font-size:13.5px;color:#6B6880;}",
     ".lk-browse-spin{display:inline-block;vertical-align:-4px;margin-right:10px;width:18px;height:18px;border:2.5px solid #E4E2F0;border-top-color:#6002EE;border-radius:50%;animation:lkbrspin .8s linear infinite;}",
     "@keyframes lkbrspin{to{transform:rotate(360deg)}}",
     // Mobile: vendor cards were stuck at 2 columns (Webflow grid is `1fr 1fr` with no
@@ -1700,7 +1701,11 @@
     // (kept as the accessible name too).
     if (msel) {
       for (var oi = 0; oi < msel.options.length; oi++) {
-        msel.options[oi].textContent = msel.options[oi].textContent.replace(/^\s*Sort:\s*/i, '');
+        msel.options[oi].textContent = msel.options[oi].textContent
+          .replace(/^\s*Sort:\s*/i, '')
+          // "Best Match" is meaningless without a query (F 2026-09-02); the
+          // default is the tier-first curated order = "Recommended".
+          .replace(/^Best\s*Match$/i, 'Recommended');
       }
       msel.setAttribute('aria-label', 'Sort by');
       // Label sits to the LEFT of the dropdown on one line (F): wrap both in a
@@ -1710,7 +1715,7 @@
         swrap.style.cssText = 'display:flex;align-items:center;gap:8px;flex:1 1 auto;min-width:0;';
         var slab = ce('span'); slab.id = 'lk-sort-label'; slab.textContent = 'Sort by';
         slab.setAttribute('aria-hidden', 'true');
-        slab.style.cssText = "flex:0 0 auto;font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-size:13px;font-weight:600;color:#6E6A85;white-space:nowrap;";
+        slab.style.cssText = "flex:0 0 auto;font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-size:13.5px;font-weight:600;color:#6E6A85;white-space:nowrap;";
         msel.parentNode.insertBefore(swrap, msel);
         swrap.appendChild(slab);
         swrap.appendChild(msel);
