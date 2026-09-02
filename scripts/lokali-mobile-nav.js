@@ -255,8 +255,18 @@
       // field's copy. Guarded so only the search island is touched. 480 matches the
       // F7 stack breakpoint above.
       var inp = root.querySelector('input');
-      if (inp && window.innerWidth < 480 && /^Search (vendors,|for a product)/.test(inp.placeholder || '')) {
-        inp.placeholder = 'What do you need?';
+      if (inp && !inp.dataset.lokPhWired && /^Search (vendors,|for a product)/.test(inp.placeholder || '')) {
+        inp.dataset.lokPhWired = '1';
+        var fullPh = inp.placeholder;
+        var applyPh = function () {
+          var short = window.innerWidth < 480;
+          var want = short ? 'What do you need?' : fullPh;
+          if (inp.placeholder !== want) inp.placeholder = want;
+        };
+        applyPh();
+        // Live-responsive (was load-time only): rotate/resize restores the
+        // right copy in BOTH directions instead of freezing the first pick.
+        window.addEventListener('resize', applyPh);
       }
     });
   }

@@ -339,11 +339,11 @@
     // so this is the strongest text after the name. `.match` = the label that
     // made this card a search hit (promoted to front, violet).
     ".vcard-offerline{font-size:12.5px;font-weight:600;color:#33304A;line-height:1.45;margin-bottom:5px;}",
-    ".vcard-offer-more{color:#8E8BA6;font-weight:500;white-space:nowrap;}",
+    ".vcard-offer-more{color:#6E6A85;font-weight:500;white-space:nowrap;}",
     ".vcard-offerline .match{color:#6002EE;}",
     ".vcard-tagline{font-size:12px;color:#6B6880;line-height:1.5;margin-bottom:12px;}",
     ".vcard-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;}",
-    ".vcard-foot-meta{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:600;color:#8B8599;min-width:0;flex-wrap:wrap;}",
+    ".vcard-foot-meta{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:600;color:#6E6A85;min-width:0;flex-wrap:wrap;}",
     ".vcard-visit{font-size:12px;font-weight:700;color:#6002EE;text-decoration:none;white-space:nowrap;display:inline-flex;align-items:center;gap:4px;}",
     // #96 sidebar subcategory pills — unfold under the ACTIVE category row
     // (expand-in-place accordion; other categories stay visible/clickable).
@@ -357,14 +357,14 @@
     "#browse-filter-panel{font-family:'Plus Jakarta Sans',sans-serif;}",
     "#browse-filter-panel .lk-filter-section{margin-bottom:1.5rem;}",
     "#browse-filter-panel .lk-filter-section:last-child{margin-bottom:0;}",
-    "#browse-filter-panel .lk-filter-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:#8E8BA6;margin-bottom:.6rem;}",
+    "#browse-filter-panel .lk-filter-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:#6E6A85;margin-bottom:.6rem;}",
     // .filter-item / .lk-toggle are real <button>s (keyboard path) — reset UA button chrome.
     "#browse-filter-panel .filter-item{display:flex;align-items:center;justify-content:space-between;width:100%;background:none;border:none;font-family:inherit;-webkit-appearance:none;appearance:none;text-align:left;padding:7px 10px;border-radius:8px;font-size:13px;line-height:1.45;color:#4A4761;cursor:pointer;transition:all .1s;margin-bottom:2px;user-select:none;}",
     "#browse-filter-panel .filter-item:hover{background:#F7F6FC;color:#1A1829;}",
     "#browse-filter-panel .filter-item.active{background:#F3EBFF;color:#6002EE;font-weight:600;}",
     "#browse-filter-panel .fi-left{display:flex;align-items:center;gap:8px;}",
     "#browse-filter-panel .lk-glyph-icon{font-size:13px;font-weight:700;width:16px;text-align:center;display:inline-block;flex-shrink:0;}",
-    "#browse-filter-panel .filter-count-pill{font-size:10px;font-weight:600;background:#EEEDF6;color:#8E8BA6;border-radius:100px;padding:1px 7px;min-width:22px;text-align:center;}",
+    "#browse-filter-panel .filter-count-pill{font-size:10px;font-weight:600;background:#EEEDF6;color:#6E6A85;border-radius:100px;padding:1px 7px;min-width:22px;text-align:center;}",
     "#browse-filter-panel .filter-item.active .filter-count-pill{background:rgba(96,2,238,.12);color:#6002EE;}",
     "#browse-filter-panel .lk-divider{height:.5px;background:#EEEDF6;margin:1rem 0;}",
     "#browse-filter-panel .lk-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;background:none;border:none;font-family:inherit;-webkit-appearance:none;appearance:none;text-align:left;padding:6px 0;cursor:pointer;user-select:none;}",
@@ -1080,6 +1080,12 @@
       if (slug === 'all') count = _allVendors.length;
       else { var catId = SLUG_TO_ID[slug]; count = _allVendors.filter(function (v) { return vCategoryIds(v).indexOf(catId) !== -1; }).length; }
       pill.textContent = String(count);
+      // Empty categories HIDE instead of advertising a dead-end "0" (F
+      // 2026-09-02; same emptiness concern that made #118 a rename). The row
+      // returns by itself when the category's first vendor goes live. The
+      // active category stays visible even at 0 so a deep link / stale filter
+      // can still be seen and cleared rather than pointing at a vanished row.
+      items[i].style.display = (count === 0 && slug !== 'all' && slug !== activeCategory) ? 'none' : '';
     }
   }
 
@@ -1484,7 +1490,7 @@
     var town = vAreaLabel(v).split(',')[0].trim();
     if (town) {
       if (footMeta.childNodes.length) footMeta.appendChild(document.createTextNode(' · '));
-      footMeta.appendChild(maskIcon(ICON_PIN, '#8B8599', 10));
+      footMeta.appendChild(maskIcon(ICON_PIN, '#6E6A85', 10));
       footMeta.appendChild(document.createTextNode(' ' + town));
     }
     foot.appendChild(footMeta);
