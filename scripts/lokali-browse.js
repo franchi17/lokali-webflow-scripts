@@ -1685,11 +1685,19 @@
         msel.options[oi].textContent = msel.options[oi].textContent.replace(/^\s*Sort:\s*/i, '');
       }
       msel.setAttribute('aria-label', 'Sort by');
-      if (!document.getElementById('lk-sort-label')) {
+      // Label sits to the LEFT of the dropdown on one line (F): wrap both in a
+      // flex group so the surrounding row's own wrapping can't stack them.
+      if (!document.getElementById('lk-sort-wrap')) {
+        var swrap = ce('div'); swrap.id = 'lk-sort-wrap';
+        swrap.style.cssText = 'display:flex;align-items:center;gap:8px;flex:1 1 auto;min-width:0;';
         var slab = ce('span'); slab.id = 'lk-sort-label'; slab.textContent = 'Sort by';
         slab.setAttribute('aria-hidden', 'true');
-        slab.style.cssText = "flex:0 0 auto;align-self:center;font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-size:13px;font-weight:600;color:#6E6A85;margin:0 8px 0 4px;";
-        msel.parentNode.insertBefore(slab, msel);
+        slab.style.cssText = "flex:0 0 auto;font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-size:13px;font-weight:600;color:#6E6A85;white-space:nowrap;";
+        msel.parentNode.insertBefore(swrap, msel);
+        swrap.appendChild(slab);
+        swrap.appendChild(msel);
+        msel.style.flex = '1 1 auto';
+        msel.style.minWidth = '0';
       }
     }
     wireButton(el('browse-mobile-filter-btn'), openFilters);
