@@ -1164,6 +1164,38 @@
         });
       }
     },
+    // --- #166 Neighbor referral card (fn_pairings.sql) -----------------------
+    // Every gate lives inside the definer RPCs: get() is the ONLY public read
+    // (active + unflagged + suggested-vendor-public + zero tag overlap, checked
+    // on every call), flag/suggest are owner-gated, admin* are is_admin-gated.
+    pairings: {
+      get: function (vendorId) {
+        return withClient(function (c) {
+          return c.rpc('storefront_pairing', { p_vendors_id: vendorId });
+        });
+      },
+      flag: function (vendorId, message) {
+        return withClient(function (c) {
+          return c.rpc('flag_pairing', { p_vendors_id: vendorId, p_message: message });
+        });
+      },
+      suggest: function (vendorId, message) {
+        return withClient(function (c) {
+          return c.rpc('suggest_pairing', { p_vendors_id: vendorId, p_message: message });
+        });
+      },
+      adminFeedback: function () {
+        return withClient(function (c) {
+          return c.rpc('admin_pairing_feedback');
+        });
+      },
+      adminResolve: function (id) {
+        return withClient(function (c) {
+          return c.rpc('admin_resolve_pairing_feedback', { p_id: id });
+        });
+      }
+    },
+
     // --- Photo-gallery rows (service_photos / product_photos / vendor_photos) ---
     // After uploadImage returns a URL, attach it as a gallery row here. RLS
     // (owner_all) limits writes to the caller's own listings.

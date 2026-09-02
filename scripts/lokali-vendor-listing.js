@@ -872,6 +872,221 @@
     }, 500);
   }
 
+  // ---- #166 neighbor referral card ----------------------------------------
+  // One complementary vendor at the bottom of the storefront (after Reviews).
+  // Fed by the anon RPC storefront_pairing(): the never-a-competitor gate
+  // (active + unflagged + suggested-vendor-public + ZERO tag overlap) runs
+  // INSIDE the definer on every call, so an empty payload here simply means
+  // "render nothing" and the page ends normally. Owners of the host storefront
+  // additionally get an i-icon: popover explaining the tag guarantee + the two
+  // message boxes (suggest a pairing / flag as too close, which hides the
+  // card instantly). Spec: docs/neighbor-referral-spec.md. Design: mockup
+  // Variant A + A2 (F-approved 2026-09-01). All injected copy: PJS, no dark
+  // surfaces, vendor-authored text via textContent only.
+  var _pairOwnerVid = null;   // set by markPairingOwner() (vendors.me() match)
+  var _pairSec = null;        // rendered section, so a late owner mark can mount the i
+  var _pairVid = null;
+
+  function injectPairStyles() {
+    if (document.getElementById('vl-pair-styles')) return;
+    var st = ce('style');
+    st.id = 'vl-pair-styles';
+    st.textContent = [
+      '.vl-pair-sec{font-family:"Plus Jakarta Sans",sans-serif;margin:26px 0 8px;padding:26px 0 6px;border-top:1px solid #EEE9F5;}',
+      '.vl-pair-eyebrow{font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#9A6B00;}',
+      '.vl-pair-h{font-size:17px;font-weight:800;color:#231d3f;margin:6px 0 14px;font-family:inherit;}',
+      '.vl-pair-card{display:flex;gap:16px;align-items:center;flex-wrap:wrap;background:linear-gradient(120deg,#F3EBFF 0%,#FBF6EF 70%);border:1px solid #E4DAF6;border-radius:14px;padding:18px 20px;}',
+      '.vl-pair-ava{width:64px;height:64px;border-radius:50%;object-fit:cover;flex:0 0 auto;border:2.5px solid #fff;box-shadow:0 3px 10px rgba(51,48,74,.14);}',
+      '.vl-pair-ava-mark{width:64px;height:64px;border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;background:#F9E7DC;color:#B85C2B;font-weight:800;font-size:22px;border:2.5px solid #fff;box-shadow:0 3px 10px rgba(51,48,74,.14);}',
+      '.vl-pair-who{flex:1 1 240px;min-width:0;}',
+      '.vl-pair-name{font-weight:800;font-size:15.5px;color:#231d3f;}',
+      '.vl-pair-biz{font-weight:600;font-size:13px;color:#6002EE;}',
+      '.vl-pair-why{font-size:13px;color:#6C6880;margin-top:5px;line-height:1.5;}',
+      '.vl-pair-cta{display:inline-block;background:#FFFDFB;color:#6002EE;border:1.5px solid #6002EE;font-weight:700;font-size:13px;border-radius:100px;padding:10px 20px;text-decoration:none;white-space:nowrap;font-family:inherit;}',
+      '.vl-pair-note{font-size:11px;color:#A9A4BC;margin-top:10px;}',
+      '.vl-pair-i{display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;border:1.5px solid #A9A4BC;color:#6C6880;font-size:10.5px;font-weight:700;vertical-align:2px;margin-left:7px;cursor:pointer;background:none;padding:0;font-family:inherit;}',
+      '.vl-pair-popwrap{position:relative;display:inline-block;}',
+      '.vl-pair-pop{position:absolute;left:0;top:26px;z-index:60;width:min(330px,84vw);background:#fff;border:1px solid #EEE9F5;border-radius:12px;box-shadow:0 12px 34px rgba(51,48,74,.16);padding:14px 16px;font-size:12.5px;line-height:1.55;color:#6C6880;font-weight:400;text-transform:none;letter-spacing:0;}',
+      '.vl-pair-pop b{color:#231d3f;display:block;margin-bottom:4px;font-size:13px;}',
+      '.vl-pair-pop a,.vl-pair-pop button.vl-pair-link{color:#6002EE;font-weight:700;text-decoration:none;background:none;border:none;padding:0;cursor:pointer;font:inherit;font-weight:700;}',
+      '.vl-pair-box{margin-top:9px;display:none;}',
+      '.vl-pair-box.on{display:block;}',
+      '.vl-pair-box textarea{width:100%;box-sizing:border-box;min-height:64px;border:1px solid #E4DAF6;border-radius:8px;padding:8px 10px;font:400 12.5px/1.5 "Plus Jakarta Sans",sans-serif;color:#33304A;resize:vertical;}',
+      '.vl-pair-box .vl-pair-send{margin-top:7px;background:#6002EE;color:#fff;border:none;border-radius:100px;font:700 12px/1 "Plus Jakarta Sans",sans-serif;padding:8px 16px;cursor:pointer;}',
+      '.vl-pair-flagrow{display:block;margin-top:10px;padding-top:10px;border-top:1px solid #EEE9F5;}'
+    ].join('');
+    (document.head || document.documentElement).appendChild(st);
+  }
+
+  function loadPairing(vid) {
+    if (!ONEPAGE || vid == null) return;
+    var S = window.LokaliSupabaseAPI;
+    if (!S || !S.pairings || !S.pairings.get) return; // stale cached client: no-op
+    S.pairings.get(vid).then(function (res) {
+      var d = res && res.data;
+      if ((res && res.error) || !d || d.ok !== true || !d.slug) return;
+      renderPairing(vid, d);
+    }).catch(function () {});
+  }
+
+  function renderPairing(vid, d) {
+    if (document.getElementById('vl-pair-sec')) return;
+    var main = document.querySelector('.vl-op-main');
+    if (!main) return;
+    injectPairStyles();
+
+    var sec = ce('section', 'vl-pair-sec');
+    sec.id = 'vl-pair-sec';
+    var eb = ce('div', 'vl-pair-eyebrow'); eb.textContent = 'Keep it local';
+    sec.appendChild(eb);
+    var h = ce('div', 'vl-pair-h vl-pair-popwrap');
+    h.appendChild(document.createTextNode('Neighbors work together'));
+    sec.appendChild(h);
+
+    var card = ce('div', 'vl-pair-card');
+    var avaUrl = String(d.owner_photo || d.profile_photo || '').trim();
+    if (avaUrl) {
+      var ava = ce('img', 'vl-pair-ava');
+      ava.alt = '';
+      ava.addEventListener('error', function () {
+        var m = ce('div', 'vl-pair-ava-mark');
+        m.textContent = String(d.owner_name || d.business_name || 'L').trim().charAt(0).toUpperCase();
+        if (ava.parentNode) ava.parentNode.replaceChild(m, ava);
+      });
+      ava.src = avaUrl;
+      card.appendChild(ava);
+    } else {
+      var mark = ce('div', 'vl-pair-ava-mark');
+      mark.textContent = String(d.owner_name || d.business_name || 'L').trim().charAt(0).toUpperCase();
+      card.appendChild(mark);
+    }
+    var who = ce('div', 'vl-pair-who');
+    var nm = ce('div', 'vl-pair-name');
+    nm.textContent = d.owner_name || d.business_name;
+    who.appendChild(nm);
+    if (d.owner_name) {
+      var biz = ce('div', 'vl-pair-biz');
+      biz.textContent = d.business_name || '';
+      who.appendChild(biz);
+    }
+    var why = ce('div', 'vl-pair-why');
+    why.textContent = d.why || '';
+    who.appendChild(why);
+    card.appendChild(who);
+    var cta = ce('a', 'vl-pair-cta');
+    cta.textContent = 'Visit storefront';
+    cta.href = '/' + encodeURIComponent(String(d.slug));
+    card.appendChild(cta);
+    sec.appendChild(card);
+
+    var note = ce('div', 'vl-pair-note');
+    note.textContent = 'Paired by Lokali.';
+    sec.appendChild(note);
+
+    main.appendChild(sec);
+    _pairSec = sec; _pairVid = vid;
+    if (_pairOwnerVid != null && Number(_pairOwnerVid) === Number(vid)) mountPairOwnerUi(vid, sec);
+  }
+
+  // Called from the same vendors.me() match that shows the owner bar (#80).
+  function markPairingOwner(vid) {
+    _pairOwnerVid = vid;
+    if (_pairSec && Number(_pairVid) === Number(vid)) mountPairOwnerUi(vid, _pairSec);
+  }
+
+  function mountPairOwnerUi(vid, sec) {
+    var h = sec.querySelector('.vl-pair-h');
+    if (!h || h.querySelector('.vl-pair-i')) return;
+    var S = window.LokaliSupabaseAPI;
+    if (!S || !S.pairings) return;
+
+    var btn = ce('button', 'vl-pair-i');
+    btn.type = 'button';
+    btn.textContent = 'i';
+    btn.setAttribute('aria-label', 'How pairing works');
+    h.appendChild(btn);
+
+    var pop = ce('div', 'vl-pair-pop');
+    pop.hidden = true;
+    var b = ce('b'); b.textContent = 'How pairing works';
+    pop.appendChild(b);
+    pop.appendChild(document.createTextNode(
+      'Lokali pairs your storefront with one neighbor whose work complements yours. ' +
+      'Pairings are matched by tags: a vendor who shares any of your tags can never ' +
+      'appear here, so this space is never given to a competitor. Have a neighbor in mind? '));
+    var tellLink = ce('button', 'vl-pair-link');
+    tellLink.type = 'button';
+    tellLink.textContent = 'Tell us.';
+    pop.appendChild(tellLink);
+
+    // suggest box (message required: the suggestion IS the message)
+    var tellBox = ce('div', 'vl-pair-box');
+    var tellTa = document.createElement('textarea');
+    tellTa.placeholder = 'Which neighbor would you pair with, and why?';
+    tellTa.maxLength = 1000;
+    var tellSend = ce('button', 'vl-pair-send');
+    tellSend.type = 'button';
+    tellSend.textContent = 'Send suggestion';
+    tellBox.appendChild(tellTa); tellBox.appendChild(tellSend);
+    pop.appendChild(tellBox);
+    tellLink.addEventListener('click', function () { tellBox.classList.add('on'); tellTa.focus(); });
+    tellSend.addEventListener('click', function () {
+      var msg = String(tellTa.value || '').trim();
+      if (!msg) { tellTa.focus(); return; }
+      tellSend.disabled = true; tellSend.textContent = 'Sending…';
+      S.pairings.suggest(vid, msg).then(function (res) {
+        var ok = res && res.data && res.data.ok === true;
+        tellSend.textContent = ok ? 'Thanks, we got it.' : 'Try again';
+        if (!ok) tellSend.disabled = false; else tellTa.value = '';
+      }).catch(function () { tellSend.disabled = false; tellSend.textContent = 'Try again'; });
+    });
+
+    // flag row (message optional; the flag must never fail on a blank box)
+    var flagRow = ce('span', 'vl-pair-flagrow');
+    flagRow.appendChild(document.createTextNode('Feels too close to what you offer? '));
+    var flagLink = ce('button', 'vl-pair-link');
+    flagLink.type = 'button';
+    flagLink.textContent = 'Flag this pairing.';
+    flagRow.appendChild(flagLink);
+    pop.appendChild(flagRow);
+    var flagBox = ce('div', 'vl-pair-box');
+    var flagTa = document.createElement('textarea');
+    flagTa.placeholder = 'What feels too close? Optional';
+    flagTa.maxLength = 1000;
+    var flagSend = ce('button', 'vl-pair-send');
+    flagSend.type = 'button';
+    flagSend.textContent = 'Flag pairing';
+    flagBox.appendChild(flagTa); flagBox.appendChild(flagSend);
+    pop.appendChild(flagBox);
+    flagLink.addEventListener('click', function () { flagBox.classList.add('on'); flagTa.focus(); });
+    flagSend.addEventListener('click', function () {
+      var msg = String(flagTa.value || '').trim() || '(no details given)';
+      flagSend.disabled = true; flagSend.textContent = 'Flagging…';
+      S.pairings.flag(vid, msg).then(function (res) {
+        var ok = res && res.data && res.data.ok === true;
+        if (!ok) { flagSend.disabled = false; flagSend.textContent = 'Try again'; return; }
+        // Instant relief: swap the whole section for the confirmation.
+        sec.innerHTML = '';
+        var done = ce('div', 'vl-pair-note');
+        done.style.fontSize = '13px';
+        done.textContent = 'Done. The pairing is off your page and we will pick a better one.';
+        sec.appendChild(done);
+      }).catch(function () { flagSend.disabled = false; flagSend.textContent = 'Try again'; });
+    });
+
+    h.appendChild(pop);
+    btn.addEventListener('click', function (ev) {
+      ev.stopPropagation();
+      pop.hidden = !pop.hidden;
+    });
+    document.addEventListener('click', function (ev) {
+      if (!pop.hidden && !pop.contains(ev.target) && ev.target !== btn) pop.hidden = true;
+    });
+    document.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Escape') pop.hidden = true;
+    });
+  }
+
   // ---- marketing tools: rotating promo CTA + Showcase of the week ---------
   // Fed by the anon RPC marketing_current() (server-side weekly rotation,
   // Monday/Central). The RPC returns {} unless the vendor is live AND entitled
@@ -2533,6 +2748,7 @@
       // Marketing tools: rotating promo CTA + Showcase of the week (self-hides
       // server-side for non-entitled vendors; fire-and-forget).
       loadMarketing(vid);
+      loadPairing(vid); // #166 neighbor referral card (after Reviews; self-hides on empty RPC)
       // Log a listing view, deduped per browser session so one visit = one row
       // (the analytics page needs impressions for the views→contacts→inquiries
       // funnel). Fire-and-forget; never blocks render.
@@ -2591,6 +2807,7 @@
             if (mine80 && mine80.vendor) mine80 = mine80.vendor;
             if (!mine80 || mine80.id == null || Number(mine80.id) !== Number(vid)) return;
             injectOwnerStorefrontBar();
+            markPairingOwner(vid); // #166: same ownership proof gates the pairing i-icon
           }, function () {});
         }
       } catch (e) {}

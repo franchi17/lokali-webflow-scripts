@@ -873,13 +873,14 @@
     attn.setAttribute('data-lk-attn', '');
     attn.style.cssText = 'display:flex;flex-wrap:wrap;align-items:center;gap:8px;background:#FFF6E5;border:1px solid #FFE2A8;border-radius:12px;padding:10px 14px;margin:0 0 16px;font-size:13px;color:#6B4A00;';
     wrap.appendChild(attn);
-    window.__lokAttn = { suggestions: a.queue.length, reports: (Number(ov.open_vendor_reports) || 0) + (Number(ov.open_review_reports) || 0), creatives: null, addresses: null };
+    window.__lokAttn = { suggestions: a.queue.length, reports: (Number(ov.open_vendor_reports) || 0) + (Number(ov.open_review_reports) || 0), creatives: null, addresses: null, pairings: null };
     function paintAttn() {
       var c = window.__lokAttn; var parts = [];
       if (c.reports) parts.push(c.reports + (c.reports === 1 ? ' report' : ' reports'));
       if (c.suggestions) parts.push(c.suggestions + (c.suggestions === 1 ? ' tag suggestion' : ' tag suggestions'));
       if (c.creatives) parts.push(c.creatives + (c.creatives === 1 ? ' ad creative' : ' ad creatives'));
       if (c.addresses) parts.push(c.addresses + (c.addresses === 1 ? ' address flag' : ' address flags'));
+      if (c.pairings) parts.push(c.pairings + (c.pairings === 1 ? ' pairing message' : ' pairing messages'));
       attn.innerHTML = '';
       if (!parts.length) { attn.style.background = '#EAFAF2'; attn.style.borderColor = '#BFE9D2'; attn.style.color = '#1A6640'; attn.appendChild(document.createTextNode('✅ Nothing needs your approval right now.')); return; }
       attn.style.background = '#FFF6E5'; attn.style.borderColor = '#FFE2A8'; attn.style.color = '#6B4A00';
@@ -979,6 +980,7 @@
     appendAddressFlagsSection(grid);   // #147
     appendSpotlightSection(grid, ov);
     appendSpotlightCreativesSection(grid);
+    appendPairingFeedbackSection(grid); // #166 neighbor-referral flags + suggestions
     appendExitSurveySection(grid, ov);
     appendQrScansSection(grid);
     appendAcquisitionSection(grid);  // #156
@@ -1465,6 +1467,93 @@
       }
       sec.appendChild(row);
     });
+  }
+
+  // ── #166 pairing feedback (fn_pairings.sql) ───────────────────────────────
+  // Vendor messages from the storefront referral card's owner popover: flags
+  // ("too close to my work" — the pairing is ALREADY hidden the moment they
+  // flagged; this queue is the re-curation reminder) and pairing suggestions.
+  // Own RPC (admin_pairing_feedback), never an admin_overview() redefinition
+  // (the 2026-08-16 rule). Also lists every curated pairing with its health —
+  // flagged / curator-inactive / guard_hidden (the tag guard is suppressing
+  // it after tag drift). Re-pairing itself is SQL-editor work in v1.
+  function appendPairingFeedbackSection(wrap) {
+    var API = window.LokaliSupabaseAPI && window.LokaliSupabaseAPI.pairings;
+    if (!API || !API.adminFeedback) return;       // stale cached client: no-op
+    var host = el('div', 'lk-admin-section');
+    wrap.appendChild(host);
+
+    function draw(d) {
+      host.innerHTML = '';
+      var rows = (d && d.feedback) || [];
+      var pairs = (d && d.pairings) || [];
+      host.className = 'lk-admin-section' + (rows.length ? ' lk-admin-section-wide' : '');
+      if (window.__lokAttn) { window.__lokAttn.pairings = rows.length; if (window.__lokPaintAttn) window.__lokPaintAttn(); }
+      var t = el('div', 'lk-admin-qtitle');
+      t.appendChild(document.createTextNode('Neighbor pairings'));
+      t.appendChild(el('span', 'lk-admin-qcount', String(rows.length)));
+      host.appendChild(t);
+      host.appendChild(el('p', 'lk-admin-sub',
+        'Messages from the storefront referral card. A flagged pairing is already hidden from that storefront; re-pair or retire it in the SQL editor, then resolve the message here.'));
+
+      if (!rows.length) {
+        host.appendChild(el('div', 'lk-admin-empty', 'No pairing messages waiting.'));
+      }
+      rows.forEach(function (f) {
+        var row = el('div', 'lk-admin-row');
+        var meta = el('div', 'lk-admin-row-meta');
+        var l1 = el('div', 'lk-admin-row-l1');
+        l1.textContent = (f.kind === 'flag' ? '🚩 ' : '💡 ') + (f.vendor || 'Unknown vendor') +
+          (f.kind === 'flag' ? ' flagged their pairing' : ' suggests a pairing');
+        var l2 = el('div', 'lk-admin-row-l2');
+        l2.textContent = '“' + String(f.message || '') + '”';
+        meta.appendChild(l1); meta.appendChild(l2);
+        row.appendChild(meta);
+        var ok = document.createElement('button');
+        ok.type = 'button'; ok.className = 'lk-admin-approve'; ok.textContent = 'Resolve';
+        ok.onclick = function () {
+          ok.disabled = true; ok.textContent = '…';
+          API.adminResolve(f.id).then(function (res) {
+            var rd = res && res.data;
+            if ((res && res.error) || !rd || rd.ok !== true) { ok.disabled = false; ok.textContent = 'Resolve'; return; }
+            load();
+          }).catch(function () { ok.disabled = false; ok.textContent = 'Resolve'; });
+        };
+        row.appendChild(ok);
+        if (f.slug) {
+          var view = document.createElement('a');
+          view.className = 'lk-admin-decline';
+          view.style.textDecoration = 'none';
+          view.textContent = 'View';
+          view.href = '/' + encodeURIComponent(f.slug);
+          view.target = '_blank';
+          view.rel = 'noopener';
+          row.appendChild(view);
+        }
+        host.appendChild(row);
+      });
+
+      // Pairing health line: anything not currently rendering, at a glance.
+      var off = pairs.filter(function (p) { return p.flagged_at || p.is_active === false || p.guard_hidden; });
+      if (off.length) {
+        var warn = el('div', 'lk-admin-row-l2');
+        warn.style.marginTop = '8px';
+        warn.textContent = '⚠️ Not currently showing: ' + off.map(function (p) {
+          return p.host + ' → ' + p.suggested + ' (' +
+            (p.flagged_at ? 'flagged' : (p.is_active === false ? 'inactive' : 'tag overlap')) + ')';
+        }).join(' · ');
+        host.appendChild(warn);
+      }
+    }
+
+    function load() {
+      API.adminFeedback().then(function (res) {
+        var d = res && res.data;
+        if ((res && res.error) || !d || d.ok !== true) return;
+        draw(d);
+      }).catch(function () {});
+    }
+    load();
   }
 
   // ── Spotlight ad creative review (patch_spotlight_creative.sql) ───────────
