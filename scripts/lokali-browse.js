@@ -387,6 +387,23 @@
     // Mobile Filter button 'filters active' cue (.has-filters set in JS).
     "#browse-mobile-filter-btn.has-filters{border-color:#6002EE;color:#6002EE;}",
     "#browse-mobile-filter-btn.has-filters::after{content:'';display:inline-block;width:8px;height:8px;border-radius:50%;background:#FF8D00;margin-left:6px;vertical-align:middle;}",
+    // Mobile category chips (F 2026-09-02): the sidebar hides behind the Filter
+    // button on small screens, so the primary facet gets its own always-visible
+    // scrollable row (exposed filters get measurably more use than hidden ones).
+    // Count sits in its OWN badge with a real gap - never tight against the
+    // label. 44px tap height per the #98 mobile floor; the strip only exists
+    // <=991px where the sidebar is a drawer.
+    "#lk-cat-chips{display:none;}",
+    "@media screen and (max-width:991px){",
+    "#lk-cat-chips{display:flex;gap:8px;overflow-x:auto;padding:12px 2px 2px;-webkit-overflow-scrolling:touch;scrollbar-width:none;}",
+    "#lk-cat-chips::-webkit-scrollbar{display:none;}",
+    ".lk-cat-chip{flex:0 0 auto;display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 16px;",
+    "border-radius:100px;border:1px solid #E4E2F0;background:#fff;color:#4A4761;",
+    "font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-size:13.5px;font-weight:600;cursor:pointer;}",
+    ".lk-cat-chip-n{font-size:11px;font-weight:700;background:#EEEDF6;color:#6E6A85;border-radius:100px;padding:2px 8px;line-height:1.4;}",
+    ".lk-cat-chip.active{background:#6002EE;border-color:#6002EE;color:#fff;}",
+    ".lk-cat-chip.active .lk-cat-chip-n{background:rgba(255,255,255,.22);color:#fff;}",
+    "}",
     // Injected loading state (#browse-loading — no such mount exists in the Webflow page).
     "#browse-loading{display:none;text-align:center;padding:36px 0;font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;color:#6B6880;}",
     ".lk-browse-spin{display:inline-block;vertical-align:-4px;margin-right:10px;width:18px;height:18px;border:2.5px solid #E4E2F0;border-top-color:#6002EE;border-radius:50%;animation:lkbrspin .8s linear infinite;}",
@@ -1530,7 +1547,56 @@
     x.addEventListener('click', onRemove);
     chip.appendChild(x); strip.appendChild(chip);
   }
+  // Mobile chip strip: rebuilt on every filter pass (<=10 nodes, cheap).
+  // Lives right under the Filter/Sort row; clicks reuse setCategory so the
+  // sidebar, subcat pills, URL state and GA event all stay in one code path.
+  var _chipLastActive = null;
+  function renderCategoryChips() {
+    var btn = el('browse-mobile-filter-btn');
+    if (!btn || !btn.parentElement || !btn.parentElement.parentElement) return;
+    var strip = el('lk-cat-chips');
+    if (!strip) {
+      strip = ce('div'); strip.id = 'lk-cat-chips';
+      strip.setAttribute('role', 'group');
+      strip.setAttribute('aria-label', 'Filter by category');
+      var row = btn.parentElement;
+      row.parentElement.insertBefore(strip, row.nextSibling);
+    }
+    var entries = [{ slug: 'all', label: 'All', count: _allVendors.length }];
+    CATEGORY_LIST.forEach(function (c) {
+      if (c.slug === 'all') return;
+      var id = SLUG_TO_ID[c.slug];
+      var n = _allVendors.filter(function (v) { return vCategoryIds(v).indexOf(id) !== -1; }).length;
+      // Same emptiness rule as the sidebar: zero-count categories don't render
+      // (dead-end taps advertise a thin market); the active one always does.
+      if (n > 0 || c.slug === activeCategory) entries.push({ slug: c.slug, label: c.label, count: n });
+    });
+    // All first, then fullest categories first - the busiest shelves lead.
+    entries = [entries[0]].concat(entries.slice(1).sort(function (a, b) {
+      return b.count - a.count || a.label.localeCompare(b.label);
+    }));
+    strip.textContent = '';
+    entries.forEach(function (en) {
+      var b = ce('button', 'lk-cat-chip' + (en.slug === activeCategory ? ' active' : ''));
+      b.type = 'button';
+      b.setAttribute('aria-pressed', en.slug === activeCategory ? 'true' : 'false');
+      var t = ce('span'); t.textContent = en.label;
+      var n = ce('span', 'lk-cat-chip-n'); n.textContent = String(en.count);
+      b.appendChild(t); b.appendChild(n);
+      b.addEventListener('click', function () { setCategory(en.slug); });
+      strip.appendChild(b);
+    });
+    // Bring the active chip into view only when the SELECTION changed - never
+    // fight a horizontal scroll the visitor is doing themselves.
+    if (activeCategory !== _chipLastActive) {
+      _chipLastActive = activeCategory;
+      var act = strip.querySelector('.lk-cat-chip.active');
+      if (act && act.scrollIntoView) { try { act.scrollIntoView({ inline: 'nearest', block: 'nearest' }); } catch (e) {} }
+    }
+  }
+
   function updateMobileIndicator() {
+    renderCategoryChips();
     var btn = el('browse-mobile-filter-btn');
     if (!btn) return;
     btn.classList.toggle('has-filters', activeCategory !== 'all' || activeSubcats.length > 0 || showNewOnly || showFoundingOnly || showVerifiedOnly || activeLocationId !== 'all' || !!searchTerm);
