@@ -204,6 +204,12 @@
         'font-size:12.5px;color:#6B6880;}' +
       '.mkt-qr-teaser a{color:' + BRAND + ';font-weight:600;text-decoration:none;}' +
       '.mkt-qr-teaser a:hover{text-decoration:underline;}' +
+      // #163b badge toggle (Featured): two pills under the preview.
+      '.mkt-qr-badge{display:flex;align-items:center;gap:6px;margin:10px 0 0;flex-wrap:wrap;}' +
+      '.mkt-qr-badge span{font-size:11.5px;color:#8E8BA6;margin-right:2px;}' +
+      '.mkt-qr-badge button{border:1px solid #E4DEF4;background:#fff;color:#5D4F9E;font-family:inherit;font-size:12px;' +
+        'font-weight:600;border-radius:999px;padding:5px 11px;cursor:pointer;}' +
+      '.mkt-qr-badge button.on{background:#F3EBFF;border-color:' + BRAND + ';color:' + BRAND + ';}' +
       '@media (max-width:600px){.mkt-card{padding:16px;}.mkt-acts{gap:0;}}';
     document.head.appendChild(st);
   }
@@ -225,6 +231,11 @@
     this.premium = premium;            // Featured? (showcase entitlement)
     this.entries = { cta: [], showcase: [] };
     this.editing = null;               // entry id being edited, or 'new:<kind>'
+    // #163b: Featured vendors may put their OWN storefront logo in the QR
+    // badge. null until loaded; the L is always the default and the fallback.
+    this.qrLogo = null;
+    this.qrBadge = 'l';
+    try { if (localStorage.getItem('lok-qr-badge:' + vendor.id) === 'own') this.qrBadge = 'own'; } catch (e) {}
     this.load();
   }
 
@@ -251,7 +262,50 @@
       var q = rs[4] && rs[4].data;                 // #163 vendor_qr_stats payload
       self.qr = (q && q.ok) ? q : null;
       self.render();
+      self.loadQrLogo();
     });
+  };
+
+  // #163b: fetch the storefront logo once (CORS) so it can sit in the badge.
+  // Featured only (featured-first rollout); a failed load simply keeps the L
+  // and the toggle never appears.
+  Page.prototype.loadQrLogo = function () {
+    var self = this;
+    if (!this.premium || !window.LokaliQR || !window.LokaliQR.loadBadgeImage) return;
+    var url = this.vendor.profile_photo;
+    if (!url) return;
+    window.LokaliQR.loadBadgeImage(url, 512).then(function (logo) {
+      if (!logo) { self.qrBadge = 'l'; return; }
+      self.qrLogo = logo;
+      self.refreshQrPreview();
+    });
+  };
+  Page.prototype.qrOpts = function (px) {
+    var o = { px: px };
+    if (this.qrBadge === 'own' && this.qrLogo) o.custom = this.qrLogo;
+    return o;
+  };
+  // Re-render just the QR preview + toggle (no full re-render, so an open
+  // editor elsewhere on the page is untouched).
+  Page.prototype.refreshQrPreview = function () {
+    var box = this.mount.querySelector('.mkt-qr-code');
+    if (box) box.innerHTML = window.LokaliQR.toSvg(this.qrUrl(), this.qrOpts(168));
+    var tg = this.mount.querySelector('.mkt-qr-badge');
+    if (tg) tg.outerHTML = this.qrBadgeHtml();
+  };
+  Page.prototype.qrBadgeHtml = function () {
+    if (!this.premium || !this.qrLogo) return '';
+    var own = this.qrBadge === 'own';
+    return '<div class="mkt-qr-badge" role="group" aria-label="Center badge">' +
+      '<span>Center:</span>' +
+      '<button type="button" data-act="qr-badge-l"' + (own ? '' : ' class="on"') + '>Lokali L</button>' +
+      '<button type="button" data-act="qr-badge-own"' + (own ? ' class="on"' : '') + '>Your logo</button>' +
+    '</div>';
+  };
+  Page.prototype.setQrBadge = function (which) {
+    this.qrBadge = (which === 'own' && this.qrLogo) ? 'own' : 'l';
+    try { localStorage.setItem('lok-qr-badge:' + this.vendor.id, this.qrBadge); } catch (e) {}
+    this.refreshQrPreview();
   };
 
   Page.prototype.render = function () {
@@ -311,12 +365,14 @@
               'first scan, and the stats are a Featured perk. ') +
           '<a href="/pricing">See the Featured plan</a>' +
         '</div>';
+      // #163b: Featured also puts the vendor's own logo in the center.
+      statsHtml += '<p class="mkt-note">Featured vendors can also put their own logo in the center of the code.</p>';
     }
     return '<div class="mkt-card" data-kind="qr">' +
       '<div class="mkt-head"><p class="mkt-h">Your QR code</p></div>' +
       '<p class="mkt-sub">A code that opens your storefront. Put it on flyers, table tents, business cards, packaging, anywhere people can point a camera.</p>' +
       '<div class="mkt-qr-row">' +
-        '<div class="mkt-qr-code">' + window.LokaliQR.toSvg(this.qrUrl(), { px: 168 }) + '</div>' +
+        '<div class="mkt-qr-code">' + window.LokaliQR.toSvg(this.qrUrl(), this.qrOpts(168)) + '</div>' +
         '<div class="mkt-qr-side">' +
           '<p class="mkt-qr-url">Opens <b>golokali.com/' + esc(this.vendor.slug) + '</b>. Scans are counted automatically.</p>' +
           '<div class="mkt-qr-btns">' +
@@ -324,6 +380,7 @@
             '<button type="button" class="mkt-qr-dl" data-act="qr-svg">Download SVG</button>' +
           '</div>' +
           '<p class="mkt-note">Print it at least 1 inch (2.5 cm) wide and keep the white border, cameras need it. The SVG stays sharp at any size.</p>' +
+          this.qrBadgeHtml() +
           statsHtml +
         '</div>' +
       '</div>' +
@@ -334,10 +391,10 @@
     var name = 'lokali-qr-' + this.vendor.slug + '.' + fmt;
     var a = document.createElement('a');
     if (fmt === 'svg') {
-      var blob = new Blob([window.LokaliQR.toSvg(this.qrUrl(), { px: 1024 })], { type: 'image/svg+xml' });
+      var blob = new Blob([window.LokaliQR.toSvg(this.qrUrl(), this.qrOpts(1024))], { type: 'image/svg+xml' });
       a.href = URL.createObjectURL(blob);
     } else {
-      a.href = window.LokaliQR.toPngDataUrl(this.qrUrl(), 1024);
+      a.href = window.LokaliQR.toPngDataUrl(this.qrUrl(), 1024, this.qrOpts(1024));
     }
     a.download = name;
     document.body.appendChild(a);
@@ -686,6 +743,8 @@
       // #163 QR code downloads
       else if (act === 'qr-png') self.downloadQr('png');
       else if (act === 'qr-svg') self.downloadQr('svg');
+      else if (act === 'qr-badge-l') self.setQrBadge('l');
+      else if (act === 'qr-badge-own') self.setQrBadge('own');
       // Spotlight creative (phase 2)
       else if (act === 'sc-upload') {
         var sf = btn.parentElement.querySelector('[data-f="sc-file"]');

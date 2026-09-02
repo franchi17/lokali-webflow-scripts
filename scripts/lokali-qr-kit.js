@@ -15,6 +15,14 @@
  *   https://www.golokali.com/<slug>?utm_source=qr&utm_medium=print&utm_campaign=vendor&lkv=<id>
  * and lokali-qr-scan.js (site-wide) attributes the landing to the vendor.
  *
+ * #163b (2026-09-02): opts.custom = { img, dataUrl, w, h } swaps the L for the
+ * vendor's own logo (Featured). It is drawn INSIDE the same white badge box,
+ * letterboxed with the same padding, so the covered-module footprint (the
+ * thing the jsQR decode test measured) is byte-for-byte identical to the L.
+ * `img` = a decoded, CORS-enabled HTMLImageElement (canvas PNG export);
+ * `dataUrl` = the same pixels as a data: URI (inlined into the SVG, since
+ * remote hrefs do not load in most SVG viewers).
+ *
  * Center Lokali "L" badge (default ON, opts.logo:false to disable): white
  * rounded badge + the REAL brand L (Gyst Variable glyph), embedded as a tiny
  * alpha PNG extracted from the site wordmark — exact letterform, no font
@@ -2378,6 +2386,17 @@ var qrcode = function() {
     var sc = (bs - pad * 2) / gh;
     return { x: bx + (bs - gw * sc) / 2, y: by + pad, s: sc, w: gw * sc, h: gh * sc };
   }
+  // #163b: fit an ARBITRARY logo inside the badge (centered, aspect kept,
+  // bound on BOTH axes so a wide wordmark and a tall mark both stay inside
+  // the same padded box the L uses).
+  function boxFit(gw, gh, bx, by, bs) {
+    var pad = bs * 0.16;
+    var inner = bs - pad * 2;
+    var sc = Math.min(inner / gw, inner / gh);
+    var w = gw * sc, h = gh * sc;
+    return { x: bx + (bs - w) / 2, y: by + (bs - h) / 2, w: w, h: h };
+  }
+  function customOk(c) { return !!(c && c.w > 0 && c.h > 0); }
 
   // Standalone SVG: unit modules scaled by the viewBox — crisp at any print
   // size. White background so a saved .svg opens readable anywhere. With
@@ -2398,12 +2417,14 @@ var qrcode = function() {
     var badge = '';
     if (logo) {
       var bs = total * BADGE, bx = (total - bs) / 2, by = bx;
-      var f = lFit(L_IMG_W, L_IMG_H, bx, by, bs);
+      var cu = customOk(opts.custom) && opts.custom.dataUrl ? opts.custom : null;
+      var f = cu ? boxFit(cu.w, cu.h, bx, by, bs) : lFit(L_IMG_W, L_IMG_H, bx, by, bs);
+      var href = cu ? cu.dataUrl : L_IMG;
       badge =
         '<rect x="' + bx + '" y="' + by + '" width="' + bs + '" height="' + bs +
           '" rx="' + (bs * 0.18) + '" fill="#ffffff"/>' +
         '<image x="' + f.x + '" y="' + f.y + '" width="' + f.w + '" height="' + f.h +
-          '" href="' + L_IMG + '" xlink:href="' + L_IMG + '"/>';
+          '" preserveAspectRatio="xMidYMid meet" href="' + href + '" xlink:href="' + href + '"/>';
     }
     return '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="' + px + '" height="' + px +
       '" viewBox="0 0 ' + total + ' ' + total + '" shape-rendering="auto">' +
@@ -2438,7 +2459,11 @@ var qrcode = function() {
       var bs = size * BADGE, bx = (size - bs) / 2, by = bx;
       ctx.fillStyle = '#ffffff';
       roundRect(ctx, bx, by, bs, bs, bs * 0.18);
-      if (LIMG && LIMG.complete && LIMG.naturalWidth) {
+      var cimg = customOk(opts.custom) && opts.custom.img && opts.custom.img.complete && opts.custom.img.naturalWidth ? opts.custom.img : null;
+      if (cimg) {
+        var fc = boxFit(opts.custom.w, opts.custom.h, bx, by, bs);
+        ctx.drawImage(cimg, fc.x, fc.y, fc.w, fc.h);
+      } else if (LIMG && LIMG.complete && LIMG.naturalWidth) {
         var f = lFit(L_IMG_W, L_IMG_H, bx, by, bs);
         ctx.drawImage(LIMG, f.x, f.y, f.w, f.h);
       } else {
@@ -2466,5 +2491,33 @@ var qrcode = function() {
     ctx.fill();
   }
 
-  window.LokaliQR = { make: make, toSvg: toSvg, toPngDataUrl: toPngDataUrl };
+  // #163b: load a vendor logo for the badge. Resolves { img, dataUrl, w, h }
+  // or null (CORS refused / 404 / not an image): callers keep the L then.
+  // The image is fetched WITH CORS (Supabase storage sends the header) so the
+  // canvas never taints; the data URL is re-encoded from a capped canvas so a
+  // 3 MB upload does not become a 4 MB SVG.
+  function loadBadgeImage(url, maxPx) {
+    maxPx = maxPx || 512;
+    return new Promise(function (resolve) {
+      if (!url || !/^https:\/\//i.test(url)) { resolve(null); return; }
+      var img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = function () {
+        try {
+          var w = img.naturalWidth, h = img.naturalHeight;
+          if (!w || !h) { resolve(null); return; }
+          var sc = Math.min(1, maxPx / Math.max(w, h));
+          var cw = Math.max(1, Math.round(w * sc)), ch = Math.max(1, Math.round(h * sc));
+          var cv = document.createElement('canvas');
+          cv.width = cw; cv.height = ch;
+          cv.getContext('2d').drawImage(img, 0, 0, cw, ch);
+          resolve({ img: img, dataUrl: cv.toDataURL('image/png'), w: w, h: h });
+        } catch (e) { resolve(null); }   // tainted canvas = no CORS = keep the L
+      };
+      img.onerror = function () { resolve(null); };
+      img.src = url;
+    });
+  }
+
+  window.LokaliQR = { make: make, toSvg: toSvg, toPngDataUrl: toPngDataUrl, loadBadgeImage: loadBadgeImage };
 })();
