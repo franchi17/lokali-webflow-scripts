@@ -349,6 +349,9 @@
     ".vcard-offer-more{color:#6E6A85;font-weight:500;white-space:nowrap;}",
     ".vcard-offerline .match{color:#6002EE;}",
     ".vcard-tagline{font-size:12.5px;color:#6B6880;line-height:1.5;margin-bottom:12px;}",
+    // #162d person-first: the human behind the business, right under the name.
+    ".vcard-by{font-size:12px;color:#6E6A85;line-height:1.3;margin:-2px 0 6px 33px;}",
+    ".vcard-by b{font-weight:600;color:#4B4666;}",
     ".vcard-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;}",
     ".vcard-foot-meta{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#6E6A85;min-width:0;flex-wrap:wrap;}",
     ".vcard-visit{font-size:12.5px;font-weight:700;color:#6002EE;text-decoration:none;white-space:nowrap;display:inline-flex;align-items:center;gap:4px;}",
@@ -1512,6 +1515,16 @@
     if (vIsNew(v))       nameRow.appendChild(nameChip('chip-new', 'New', ICON_BULLHORN, '#11744A', 'New this week'));
     if (vIsSpotlight(v)) nameRow.appendChild(nameChip('chip-spotlight', '✦ Spotlight', null, null, 'Spotlight'));
     body.appendChild(nameRow);
+    // ── #162d "by {first name}": people hire people. Renders only when the
+    // vendor filled the Meet-the-Vendor name (owner_name, anon-granted since
+    // #76); first token only, so "Maria Elena Ruiz" reads as "by Maria".
+    var ownerFirst = String(v.owner_name || '').trim().split(/\s+/)[0] || '';
+    if (ownerFirst) {
+      var by = ce('div', 'vcard-by');
+      by.appendChild(document.createTextNode('by '));
+      var bn = ce('b'); bn.textContent = ownerFirst; by.appendChild(bn);
+      body.appendChild(by);
+    }
 
     // ── #96 offerings line — need-first: shoppers search for a service, not a
     // business, so this is the strongest text after the name. When the current
