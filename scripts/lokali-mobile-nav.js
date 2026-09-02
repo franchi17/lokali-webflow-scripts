@@ -511,7 +511,10 @@
       st.textContent = [
         '#lok-hdr-search{display:flex;align-items:center;position:relative;margin-right:14px;}',
         // 16px font (iOS zoom floor) + explicit Plus Jakarta Sans (inputs never inherit it).
-        '#lok-hdr-search input{box-sizing:border-box;width:180px;height:42px;padding:0 40px 0 14px;',
+        // Resting width = placeholder + padding: "What do you need?" measures 146px
+        // at 500/16px PJS (Safari, 2026-09-02) and the old 180px box left 126px of
+        // text room, so it clipped to "What do you nee". 206px leaves 6px slack.
+        '#lok-hdr-search input{box-sizing:border-box;width:206px;height:42px;padding:0 40px 0 14px;',
         'font-family:"Plus Jakarta Sans",system-ui,sans-serif;font-size:16px;color:#343A40;',
         'background:#F7F6FC;border:1px solid rgba(96,2,238,.18);border-radius:12px;',
         '-webkit-appearance:none;appearance:none;transition:width .18s ease,border-color .18s ease,background .18s ease;}',
@@ -524,10 +527,12 @@
         'width:34px;height:34px;display:flex;align-items:center;justify-content:center;',
         'background:transparent;border:none;border-radius:10px;color:var(--lokali-primary,#6002ee);cursor:pointer;}',
         '#lok-hdr-search button:hover{background:#F3EBFF;}',
-        // 1150-1349px: the middle nav links leave no room for an inline field
-        // (measured overlap with "Contact us" at 1280) - magnifier only, and a
-        // click flies the input out OVER the links (absolute, right-anchored).
-        '@media screen and (min-width:1150px) and (max-width:1349px){',
+        // 1150-1379px: the middle nav links leave no room for an inline field
+        // (measured overlap with "Contact us" at 1280; the inline threshold moved
+        // 1350 -> 1380 on 2026-09-02 to pay for the 26px wider resting field) -
+        // magnifier only, and a click flies the input out OVER the links
+        // (absolute, right-anchored).
+        '@media screen and (min-width:1150px) and (max-width:1379px){',
         '#lok-hdr-search{margin-right:6px;}',
         '#lok-hdr-search input{display:none;}',
         '#lok-hdr-search button{position:static;transform:none;width:44px;height:44px;}',
@@ -552,7 +557,7 @@
     var inp = document.createElement('input');
     inp.type = 'search';
     inp.name = 'q';
-    inp.placeholder = 'What do you need?'; // need-first (F: people search products/services, not vendors); fits 180px untruncated
+    inp.placeholder = 'What do you need?'; // need-first (F: people search products/services, not vendors); 146px wide, fits the 206px box
     inp.setAttribute('aria-label', 'Search the market');
     inp.autocomplete = 'off';
     var sb = document.createElement('button');
@@ -565,7 +570,7 @@
       e.preventDefault();
       // Icon mode (input hidden): the tap means "let me search", not "submit
       // an empty query". Burger widths hand off to the drawer's focused field;
-      // the 1150-1349 squeeze expands the fly-out input in place instead.
+      // the 1150-1379 squeeze expands the fly-out input in place instead.
       if (getComputedStyle(inp).display === 'none') {
         var burger = document.querySelector('.hamburger-menu-wrapper');
         if (burger && getComputedStyle(burger).display !== 'none') {
