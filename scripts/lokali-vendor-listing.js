@@ -385,8 +385,8 @@
     // and the category pill (13px/5x13) visibly mismatched (Francesca 2026-07-20).
     'html.vl-op .vl-badge-row .vl-badge,html.vl-op .vl-cat-pill{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;line-height:1;padding:0 13px;height:29px;box-sizing:border-box;border-radius:999px;margin:0;}',
     'html.vl-op .vl-cat-pill{background:#F3EBFF;color:#5F51B8;}',
-    '.vl-op-showall{display:inline-block;margin-top:14px;border:1.5px solid #D9D2F2;background:#fff;color:#5F51B8;border-radius:12px;padding:12px 20px;font:700 14.5px "Plus Jakarta Sans",sans-serif;cursor:pointer;transition:background .12s;}',
-    '.vl-op-showall:hover{background:#F3EBFF;}',
+    '.vl-op-showall{display:block;width:100%;text-align:center;margin-top:14px;border:0;background:#F3EBFF;color:#6002EE;border-radius:12px;padding:13px 20px;font:700 14.5px "Plus Jakarta Sans",sans-serif;cursor:pointer;transition:background .12s;}',
+    '.vl-op-showall:hover{background:#E9DEFF;}',
     // instant channels: primary message button (injected by lokali-inquiry.js)
     // full-width on top, Text/WhatsApp/Call sharing one compact row below.
     'html.vl-op .vl-op-card .vl-channels{display:flex !important;flex-direction:row !important;flex-wrap:wrap;gap:8px;width:100%;min-width:0;}',

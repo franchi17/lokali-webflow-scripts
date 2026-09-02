@@ -103,8 +103,10 @@
       { slug: 'custom-embroidery',    label: 'Custom embroidery' },
       { slug: 'floral-arrangements',  label: 'Floral arrangements' },
       // 2026-08-19 (F): 'sewn-goods' retired — nobody searches the craft, they
-      // search the product. 'clothing' takes its slot (patch_retire_dresses_fashion.sql).
-      { slug: 'clothing',             label: 'Clothing' }
+      // search the product. 2026-09-02 (F): 'clothing' retired in turn for
+      // 'dresses' (patch_retire_clothing_cups_subcats.sql) — Quori & Lace
+      // sells dresses, and the product beats the category here too.
+      { slug: 'dresses',              label: 'Dresses' }
     ],
     2: [ // Business
       { slug: 'bookkeeping',          label: 'Bookkeeping & accounting' },
