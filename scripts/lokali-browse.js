@@ -16,6 +16,9 @@
  * - Cards: the vendor's subcategory pills render under the tagline; the pill
  *   that made a search hit is promoted to the front and highlighted.
  * - Search haystack = name/tagline/description/category + subcategory labels
+ *   + subcategory KEYWORDS (#151 step 2: curated synonyms from the table), and
+ *   hits are RANKED by where they land (#151 step 3): name/subcategory >
+ *   listing names > description, paid tier breaking ties within a band.
  *   + ACTIVE listing names (invisible recall layer, via
  *   LokaliSupabaseAPI.data.listingIndex). If the Supabase surface is absent
  *   (stale cached client), the listing-name layer silently drops out.
@@ -195,7 +198,7 @@
     SUBCAT_BY_SLUG = {};
     for (var cid in SUBCATS_BY_CAT) if (SUBCATS_BY_CAT.hasOwnProperty(cid)) {
       (function (catId) {
-        SUBCATS_BY_CAT[catId].forEach(function (s) { SUBCAT_BY_SLUG[s.slug] = { label: s.label, catId: parseInt(catId, 10) }; });
+        SUBCATS_BY_CAT[catId].forEach(function (s) { SUBCAT_BY_SLUG[s.slug] = { label: s.label, catId: parseInt(catId, 10), keywords: s.keywords || [] }; });
       })(cid);
     }
   }
@@ -220,7 +223,9 @@
       var byCat = {};
       out.data.forEach(function (r) {
         if (!r || r.category_id == null || !r.slug || !r.label) return;
-        (byCat[r.category_id] = byCat[r.category_id] || []).push({ slug: r.slug, label: r.label });
+        // #151: keywords = curated synonyms per subcategory (text[]; '{}' until
+        // curated). Only the live table carries them; the baked fallback has none.
+        (byCat[r.category_id] = byCat[r.category_id] || []).push({ slug: r.slug, label: r.label, keywords: Array.isArray(r.keywords) ? r.keywords : [] });
       });
       if (!Object.keys(byCat).length) return; // empty/short read — keep the baked fallback
       SUBCATS_BY_CAT = byCat;
@@ -512,6 +517,16 @@
   function vSubcatLabels(v) {
     var out = [];
     vSubcats(v).forEach(function (s) { if (SUBCAT_BY_SLUG[s]) out.push(SUBCAT_BY_SLUG[s].label); });
+    return out;
+  }
+  // #151: the synonyms behind the vendor's subcategories ("cpa", "taxes" for
+  // Bookkeeping). Searchable, never rendered.
+  function vSubcatKeywords(v) {
+    var out = [];
+    vSubcats(v).forEach(function (s) {
+      var m = SUBCAT_BY_SLUG[s];
+      if (m && m.keywords && m.keywords.length) out = out.concat(m.keywords);
+    });
     return out;
   }
   // "Newest" = newest ARRIVAL in the Market, not newest account (F 2026-09-02:
@@ -1157,14 +1172,27 @@
     var st = stemToken(t);
     return st !== t && hay.indexOf(st) !== -1;
   }
-  // 0 = no match; 1 = every token matched; 2 = the whole phrase matched
-  // verbatim (ranks first under the default sort).
-  function searchScore(hay, q, toks) {
+  // #151 step 3 relevance. Three nested haystacks, best band wins:
+  //   h1 = name + tagline + category + subcategory labels + subcategory KEYWORDS
+  //   h2 = h1 + active listing names
+  //   h3 = h2 + description
+  // 6/5 = phrase/all-tokens in h1, 4/3 = needs listings, 2/1 = needs the
+  // description, 0 = no match. A vendor whose NAME or specialty says "cpa"
+  // outranks one who mentions it in paragraph three; the default sort then
+  // breaks ties by paid tier (rank()), then newest arrival.
+  function searchScore(h1, h2, h3, q, toks) {
     // Phrase = the query as typed, or the kept tokens re-joined ("insurance
     // near me" → "insurance") so stop-words don't demote an exact hit.
-    if (hay.indexOf(q) !== -1 || hay.indexOf(toks.join(' ')) !== -1) return 2;
-    for (var i = 0; i < toks.length; i++) { if (!hayHasToken(hay, toks[i])) return 0; }
-    return 1;
+    var p2 = toks.join(' ');
+    function phrase(h) { return h.indexOf(q) !== -1 || h.indexOf(p2) !== -1; }
+    function all(h) { for (var i = 0; i < toks.length; i++) { if (!hayHasToken(h, toks[i])) return false; } return true; }
+    if (phrase(h1)) return 6;
+    if (all(h1)) return 5;
+    if (phrase(h2)) return 4;
+    if (all(h2)) return 3;
+    if (phrase(h3)) return 2;
+    if (all(h3)) return 1;
+    return 0;
   }
   var _searchScores = {};
 
@@ -1195,13 +1223,15 @@
         // name/tagline/category label. Fields join on '\n' (a trimmed query
         // can never contain one) so a phrase can't falsely match across the
         // boundary of two adjacent fields/names.
-        var hay = [vName(v), vTagline(v), vDescription(v), vCategoryStyle(v).label]
-          .concat(vSubcatLabels(v)).concat(vListingNames(v)).join('\n').toLowerCase();
         // #151: people search by PRODUCT ("business insurance"), and the old
         // whole-phrase indexOf only matched those two words ADJACENT and in
-        // order. Now every token must appear somewhere (any order, any field,
-        // light stem/prefix tolerance); the exact phrase still ranks first.
-        var sc = searchScore(hay, q, toks);
+        // order. Every token must appear somewhere (any order, any field,
+        // light stem/prefix tolerance), and WHERE it lands sets the band.
+        var h1 = [vName(v), vTagline(v), vCategoryStyle(v).label]
+          .concat(vSubcatLabels(v)).concat(vSubcatKeywords(v)).join('\n').toLowerCase();
+        var h2 = h1 + '\n' + vListingNames(v).join('\n').toLowerCase();
+        var h3 = h2 + '\n' + String(vDescription(v) || '').toLowerCase();
+        var sc = searchScore(h1, h2, h3, q, toks);
         if (!sc) return false;
         _searchScores[String(v.id)] = sc;
       }
@@ -1497,8 +1527,12 @@
         for (var ni = 0; ni < subLabels.length && matchIdx === -1; ni++) {
           if (subLabels[ni].toLowerCase().indexOf(q) !== -1) matchIdx = ni;
         }
+        // #151 step 2: a keyword hit ("cpa" → Bookkeeping) promotes and
+        // highlights that pill too, so the synonym explains the result.
+        var subKw = vSubcats(v).filter(function (s) { return !!SUBCAT_BY_SLUG[s]; })
+          .map(function (s) { return (SUBCAT_BY_SLUG[s].keywords || []).join('\n').toLowerCase(); });
         for (ni = 0; ni < subLabels.length && matchIdx === -1; ni++) {
-          var lab = subLabels[ni].toLowerCase();
+          var lab = subLabels[ni].toLowerCase() + '\n' + (subKw[ni] || '');
           for (var ti = 0; ti < qt.length; ti++) { if (hayHasToken(lab, qt[ti])) { matchIdx = ni; break; } }
         }
       }

@@ -1345,7 +1345,8 @@
     subcategories: {
       list: function () {
         return withClient(function (c) {
-          return c.from('subcategory').select('category_id,slug,label,sort_order')
+          // #151: keywords = curated search synonyms (patch_subcategory_keywords.sql).
+          return c.from('subcategory').select('category_id,slug,label,sort_order,keywords')
             .eq('is_active', true)
             .order('category_id', { ascending: true })
             .order('sort_order', { ascending: true })
