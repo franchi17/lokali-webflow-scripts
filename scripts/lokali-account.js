@@ -986,6 +986,7 @@
     });
     grid.appendChild(sugSec);
 
+    appendInviteVendorSection(grid);   // #168
     appendReportsSection(grid, ov);
     appendAddressFlagsSection(grid);   // #147
     appendSpotlightSection(grid, ov);
@@ -1066,6 +1067,86 @@
       if (!d || d.ok === false) { host.innerHTML = ''; host.appendChild(el('div', 'lk-admin-empty', 'Address flags unavailable (apply patch_vendor_address_geo.sql).')); return; }
       draw(d.flags || []);
     }).catch(function () { host.innerHTML = ''; host.appendChild(el('div', 'lk-admin-empty', 'Address flags unavailable.')); });
+  }
+
+
+  // #168 (F 2026-09-04) — invite a vendor: creates their account + pre-fills the
+  // storefront; Supabase sends the "set your password" email. Nothing is sent
+  // until the admin clicks Invite.
+  function appendInviteVendorSection(wrap) {
+    var API = window.LokaliSupabaseAPI;
+    if (!API || !API.admin || !API.admin.inviteVendor) return;
+    var host = el('div', 'lk-admin-section lk-admin-section-wide');
+    wrap.appendChild(host);
+    var t = el('div', 'lk-admin-qtitle'); t.appendChild(document.createTextNode('Invite a vendor')); host.appendChild(t);
+    host.appendChild(el('p', 'lk-admin-sub',
+      'For people who said yes in person: this creates their account and pre-fills the storefront, then emails them a link to choose a password. They land on their dashboard with only a listing left to add. Nothing goes out until you press Invite.'));
+    var form = document.createElement('form'); form.setAttribute('novalidate', '');
+    form.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;align-items:end;';
+    function field(label, name, type, ph, max) {
+      var w = el('label'); w.style.cssText = 'display:flex;flex-direction:column;gap:4px;font-size:12px;color:#6B6880;';
+      w.appendChild(document.createTextNode(label));
+      var i = document.createElement(type === 'textarea' ? 'textarea' : 'input');
+      if (type !== 'textarea') i.type = type; i.name = name; i.className = 'lk-admin-input'; i.style.width = '100%'; i.style.boxSizing = 'border-box';
+      if (ph) i.placeholder = ph; if (max) i.maxLength = max; if (type === 'textarea') i.rows = 3;
+      w.appendChild(i); form.appendChild(w); return i;
+    }
+    var fEmail = field('Their email *', 'email', 'email', 'name@business.com', 254);
+    var fFirst = field('First name', 'first_name', 'text', 'e.g. Lupita', 60);
+    var fBiz = field('Business name *', 'business_name', 'text', 'e.g. HTS Solutions', 120);
+    var catW = el('label'); catW.style.cssText = 'display:flex;flex-direction:column;gap:4px;font-size:12px;color:#6B6880;';
+    catW.appendChild(document.createTextNode('Category'));
+    var fCat = document.createElement('select'); fCat.className = 'lk-admin-input'; fCat.style.width = '100%';
+    var o0 = document.createElement('option'); o0.value = ''; o0.textContent = 'Pick one'; fCat.appendChild(o0);
+    Object.keys(CAT_NAMES).forEach(function (id) { var o = document.createElement('option'); o.value = id; o.textContent = CAT_NAMES[id]; fCat.appendChild(o); });
+    catW.appendChild(fCat); form.appendChild(catW);
+    var areasW = el('div'); areasW.style.cssText = 'grid-column:1/-1;font-size:12px;color:#6B6880;';
+    areasW.appendChild(document.createTextNode('Areas they serve'));
+    var areasRow = el('div'); areasRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;'; areasW.appendChild(areasRow); form.appendChild(areasW);
+    if (API.data && API.data.locations) {
+      API.data.locations().then(function (res) {
+        (res && res.data || []).forEach(function (l) {
+          var lab = el('label'); lab.style.cssText = 'display:inline-flex;align-items:center;gap:5px;font-size:13px;color:#1A1829;background:#F7F6FC;border:1px solid #E4DEF4;border-radius:999px;padding:5px 10px;cursor:pointer;';
+          var cb = document.createElement('input'); cb.type = 'checkbox'; cb.value = String(l.id); cb.name = 'loc';
+          lab.appendChild(cb); lab.appendChild(document.createTextNode(l.location_name)); areasRow.appendChild(lab);
+        });
+      }).catch(function () {});
+    }
+    var fTag = field('Tagline', 'tagline', 'text', 'One line about what they do', 160);
+    var fWeb = field('Website', 'website_url', 'url', 'https://…', 300);
+    var fPhone = field('Phone', 'phone', 'tel', '(832) 555-0100', 40);
+    var fDesc = field('Description', 'description', 'textarea', 'A paragraph in their voice (they can edit it)', 2000);
+    fDesc.parentNode.style.gridColumn = '1/-1';
+    var actions = el('div'); actions.style.cssText = 'grid-column:1/-1;display:flex;align-items:center;gap:12px;flex-wrap:wrap;';
+    var btn = document.createElement('button'); btn.type = 'submit'; btn.className = 'lk-admin-btn'; btn.textContent = 'Invite';
+    var msg = el('div'); msg.style.cssText = 'font-size:13px;color:#6B6880;';
+    actions.appendChild(btn); actions.appendChild(msg); form.appendChild(actions);
+    var ERR = {
+      already_registered: 'That email already has a Lokali account. Ask them to log in instead; nothing was sent.',
+      email_invalid: 'That email doesn’t look right.', business_name_required: 'Business name is required.',
+      not_admin: 'Only the admin can invite vendors.', rpc_unavailable: 'The database side isn’t installed yet (patch_admin_invite_vendor.sql). Nothing was sent.',
+      invite_failed: 'Supabase refused the invite. Nothing was sent.', provision_failed: 'The invite email went out but the storefront pre-fill failed. Tell Claude the email address.'
+    };
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var payload = {
+        email: fEmail.value.trim(), first_name: fFirst.value.trim(), business_name: fBiz.value.trim(),
+        category_id: fCat.value ? Number(fCat.value) : null,
+        locations_id: Array.prototype.map.call(areasRow.querySelectorAll('input[name=loc]:checked'), function (c) { return Number(c.value); }),
+        tagline: fTag.value.trim(), website_url: fWeb.value.trim(), phone: fPhone.value.trim(), description: fDesc.value.trim()
+      };
+      if (!payload.email || !payload.business_name) { msg.textContent = 'Email and business name are required.'; return; }
+      if (!window.confirm('Send the invite email to ' + payload.email + ' now?')) return;
+      btn.disabled = true; btn.textContent = 'Inviting…'; msg.textContent = '';
+      API.admin.inviteVendor(payload).then(function (res) {
+        btn.disabled = false; btn.textContent = 'Invite';
+        var d = res && res.data;
+        if (res && res.error) { msg.textContent = ERR[res.error] || ('Could not invite (' + res.error + ').'); return; }
+        msg.textContent = 'Invite sent to ' + payload.email + '. Storefront pre-filled' + (d && d.slug ? ' at /' + d.slug : '') + ' — it goes public once they add a listing.';
+        form.reset();
+      }).catch(function () { btn.disabled = false; btn.textContent = 'Invite'; msg.textContent = 'Network error — nothing was sent.'; });
+    });
+    host.appendChild(form);
   }
 
   function appendReportsSection(wrap, ov) {

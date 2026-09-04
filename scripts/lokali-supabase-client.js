@@ -1335,6 +1335,11 @@
       // incident). is_admin()-gated server-side.
       signupSources: function () {
         return withClient(function (c) { return c.rpc('admin_signup_sources'); });
+      },
+      // #168 — admin invites a vendor: account created for them + storefront
+      // basics pre-filled; Supabase emails the invite. Admin-checked server-side.
+      inviteVendor: function (payload) {
+        return postRoute('/admin/invite-vendor', payload || {}, true);
       }
     },
     // #96-SUGGEST — subcategory taxonomy + the vendor suggestion pipeline.

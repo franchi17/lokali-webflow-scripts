@@ -261,6 +261,7 @@
   var _session = null;      // last-known session
   var _user = null;         // last-known user
   var _recoveryMode = false; // PASSWORD_RECOVERY in progress — never route away
+  var _inviteMode = false;   // #168 admin-invited vendor choosing their first password
   var _confirming = false;   // email-confirm / OAuth code exchange in progress — show a loading card, never a blank page
 
   function setSession(session) {
@@ -1020,8 +1021,10 @@
     root.innerHTML = '';
     var box = el('div', 'lok-auth');
     var card = el('div', 'lok-auth-card');
-    card.appendChild(el('h2', null, 'Set a new password'));
-    card.appendChild(el('p', 'lok-auth-sub', 'Choose a new password for your Lokali account.'));
+    card.appendChild(el('h2', null, _inviteMode ? 'Welcome to Lokali! Choose a password' : 'Set a new password'));
+    card.appendChild(el('p', 'lok-auth-sub', _inviteMode
+      ? 'Francesca started your storefront for you. Pick a password and you\u2019ll land right in it.'
+      : 'Choose a new password for your Lokali account.'));
     var err = errorBox(); var info = infoBox();
     card.appendChild(err); card.appendChild(info);
 
@@ -1769,15 +1772,17 @@
         // and no chance to choose a new password. Detect recovery FIRST and flip
         // _recoveryMode before anything (initialKick / routeAfterAuth) can route.
         var _otp0 = otpFromUrlOrStash();
-        var _isRecoveryLink = !!(_otp0 && _otp0.token_hash && /recovery/i.test(_otp0.type || ''));
-        if (_isRecoveryLink) _recoveryMode = true;
+        // #168: an admin INVITE link is the same shape as recovery (verifyOtp mints a
+        // session before any password exists) — treat it identically, different copy.
+        var _isRecoveryLink = !!(_otp0 && _otp0.token_hash && /recovery|invite/i.test(_otp0.type || ''));
+        if (_isRecoveryLink) { _recoveryMode = true; _inviteMode = /invite/i.test(_otp0.type || ''); }
         if (!_session || _isRecoveryLink) {
           var _otp = _otp0;
           var _th = _otp && _otp.token_hash;
           var _ty = _otp && _otp.type;
           _thSeen = !!_th;
           if (_th && _ty) {
-            var _isRecovery = /recovery/i.test(_ty);
+            var _isRecovery = /recovery|invite/i.test(_ty);
             if (_isRecovery) _recoveryMode = true;
             // Clean up-front: drop the stash and (belt and braces) the URL before
             // verifyOtp is even called, so a failed verify cannot leave an
