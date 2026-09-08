@@ -237,6 +237,13 @@
   var EDGE_CAP = { profile: 800, owner: 800, showcase: 1200 };
   var EDGE_CAP_DEFAULT = 1600;
   var WEBP_QUALITY = 0.82;
+  // CLEAN-P19: Safari (macOS and every iOS browser) has never encoded WebP —
+  // toBlob('image/webp') silently hands back a PNG, and a downscaled PHOTO as
+  // PNG is routinely 1.5–2.5 MB (Quori & Lace, 2026-08-25: three of them on
+  // live listing pages). When WebP doesn't come back, re-encode as JPEG, which
+  // every browser writes — unless the image actually uses transparency
+  // (logos), which JPEG would flatten to black; those stay PNG.
+  var JPEG_QUALITY = 0.85;
   // Never rasterise these: an animated GIF would be flattened to one frame and
   // SVG is vector (canvas would freeze it at one size).
   var NO_RECODE = /^image\/(gif|svg\+xml)$/i;
@@ -266,6 +273,32 @@
     });
   }
 
+  // Promise wrapper over toBlob. Resolves null when the browser can't encode.
+  function _encode(canvas, type, quality) {
+    return new Promise(function (resolve) {
+      try { canvas.toBlob(function (b) { resolve(b || null); }, type, quality); }
+      catch (e) { resolve(null); }
+    });
+  }
+
+  // Does any pixel carry real transparency? Samples ~40k pixels row-by-row so
+  // a 1600-edge canvas never allocates its full 10 MB pixel buffer. A read
+  // failure (tainted canvas) counts as "has alpha": the safe answer keeps PNG.
+  function _hasAlpha(canvas) {
+    try {
+      var ctx = canvas.getContext('2d');
+      var w = canvas.width, h = canvas.height;
+      var step = Math.max(1, Math.floor(Math.sqrt((w * h) / 40000)));
+      for (var y = 0; y < h; y += step) {
+        var row = ctx.getImageData(0, y, w, 1).data;
+        for (var i = 3; i < row.length; i += 4 * step) {
+          if (row[i] < 250) return true;
+        }
+      }
+      return false;
+    } catch (e) { return true; }
+  }
+
   // Resolves { blob, ext, type } — always. Never rejects.
   function _prepareImage(file, kind) {
     var asIs = { blob: file, ext: _extOf(file), type: (file && file.type) || 'application/octet-stream' };
@@ -282,17 +315,23 @@
       canvas.height = Math.max(1, Math.round(h * scale));
       canvas.getContext('2d').drawImage(src, 0, 0, canvas.width, canvas.height);
       if (src.close) src.close(); // release the ImageBitmap
-      return new Promise(function (resolve) {
-        canvas.toBlob(function (blob) {
-          // Keep the original when the encode failed or genuinely didn't help —
-          // an already-lean JPEG/WebP can beat a fresh encode at these settings.
-          if (!blob || blob.size >= file.size) return resolve(asIs);
-          // toBlob silently falls back to PNG where WebP isn't supported, so
-          // trust the blob's own type rather than what we asked for.
-          var t = blob.type || 'image/webp';
-          var e = t === 'image/webp' ? 'webp' : (t === 'image/jpeg' ? 'jpg' : 'png');
-          resolve({ blob: blob, ext: e, type: t });
-        }, 'image/webp', WEBP_QUALITY);
+      return _encode(canvas, 'image/webp', WEBP_QUALITY).then(function (blob) {
+        // toBlob silently falls back to PNG where WebP isn't supported, so
+        // trust the blob's own type rather than what we asked for.
+        if (blob && blob.type === 'image/webp') return blob;
+        // CLEAN-P19: no WebP encoder here (Safari). Try JPEG and keep whichever
+        // is smaller — but never JPEG an image that relies on transparency.
+        if (_hasAlpha(canvas)) return blob;
+        return _encode(canvas, 'image/jpeg', JPEG_QUALITY).then(function (jpg) {
+          return (jpg && (!blob || jpg.size < blob.size)) ? jpg : blob;
+        });
+      }).then(function (blob) {
+        // Keep the original when the encode failed or genuinely didn't help —
+        // an already-lean JPEG/WebP can beat a fresh encode at these settings.
+        if (!blob || blob.size >= file.size) return asIs;
+        var t = blob.type || 'image/webp';
+        var e = t === 'image/webp' ? 'webp' : (t === 'image/jpeg' ? 'jpg' : 'png');
+        return { blob: blob, ext: e, type: t };
       });
     }).catch(function () {
       // HEIC and other formats this browser can't decode: upload untouched.
