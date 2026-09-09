@@ -1600,7 +1600,25 @@
     return card;
   }
 
-  function updateCounts(n) { setText(el('browse-result-count'), String(n)); setText(el('browse-grid-count'), String(n)); }
+  function updateCounts(n) {
+    setCount(el('browse-result-count'), n);
+    setCount(el('browse-grid-count'), n);
+  }
+  // The noun ("vendors found" / "Showing N vendors") is Webflow-baked static
+  // text in the text node right after each <strong>; agree it with the number
+  // so a single hit reads "1 vendor found", not "1 vendors found". Only the
+  // adjacent text node is touched and only the word itself is swapped, so the
+  // baked whitespace and wording survive. The "…"/0 empty-state paths leave the
+  // plural alone on purpose.
+  function setCount(node, n) {
+    if (!node) return;
+    setText(node, String(n));
+    var sib = node.nextSibling;
+    if (!sib || sib.nodeType !== 3) return;
+    var word = (n === 1) ? 'vendor' : 'vendors';
+    var txt = sib.nodeValue.replace(/\bvendors?\b/, word);
+    if (txt !== sib.nodeValue) sib.nodeValue = txt;
+  }
 
   // ── active filter chips ──
   function updateActiveFilters() {
