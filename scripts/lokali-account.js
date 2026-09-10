@@ -1023,15 +1023,17 @@
       t.appendChild(el('span', 'lk-admin-qcount', String(rows.length)));
       host.appendChild(t);
       host.appendChild(el('p', 'lk-admin-sub',
-        'Vendors whose business address is more than 50 miles from every area they list. Nothing is blocked. This is your cue to reach out. Fixes itself when they update the address or their areas.'));
-      if (!rows.length) { host.appendChild(el('div', 'lk-admin-empty', 'No out-of-area addresses right now.')); return; }
+        'Vendors whose business address is more than 50 miles from every area they list, and live vendors with no address on file yet. Nothing is blocked. This is your cue to reach out. Fixes itself when they update the address or their areas.'));
+      if (!rows.length) { host.appendChild(el('div', 'lk-admin-empty', 'No address flags right now.')); return; }
       rows.forEach(function (r) {
+        // #147c (2026-09-10): 'missing' = live with no address (soft gate); no Accept, nothing to accept.
+        var missing = r.kind === 'missing';
         var row = el('div', 'lk-admin-row');
         var meta = el('div', 'lk-admin-row-meta');
         var l1 = el('div', 'lk-admin-row-l1');
-        l1.textContent = (r.business_name || 'Unknown vendor') + ' · ' + [r.city, r.state].filter(Boolean).join(', ');
+        l1.textContent = (r.business_name || 'Unknown vendor') + ' · ' + (missing ? 'no address on file' : [r.city, r.state].filter(Boolean).join(', '));
         var l2 = el('div', 'lk-admin-row-l2');
-        l2.textContent = (r.nearest_miles != null ? ('~' + r.nearest_miles + ' mi from the nearest listed area') : 'distance unknown') +
+        l2.textContent = (missing ? 'Published without a business address' : (r.nearest_miles != null ? ('~' + r.nearest_miles + ' mi from the nearest listed area') : 'distance unknown')) +
           ' · lists: ' + (r.areas || '—') + (r.is_publish_ready ? ' · LIVE on The Market' : ' · not public yet') +
           (r.checked_at ? ' · ' + fmtSpotDay(r.checked_at) : '');
         meta.appendChild(l1); meta.appendChild(l2);
@@ -1043,7 +1045,7 @@
         }
         // #147b Accept — "I checked, they're fine": sticks to THIS address; a new
         // address goes back through the distance rule. Needs patch_address_accept.sql.
-        if (API.adminAcceptAddress) {
+        if (API.adminAcceptAddress && !missing) {
           var acc = document.createElement('button'); acc.type = 'button'; acc.className = 'lk-admin-btn'; acc.textContent = 'Accept';
           acc.addEventListener('click', function () {
             acc.disabled = true; acc.textContent = 'Accepting…';
@@ -1053,7 +1055,7 @@
               row.remove();
               var cnt = t.querySelector('.lk-admin-qcount'); if (cnt) cnt.textContent = String(Math.max(0, parseInt(cnt.textContent, 10) - 1));
               if (window.__lokAttn && window.__lokAttn.addresses) { window.__lokAttn.addresses -= 1; if (window.__lokPaintAttn) window.__lokPaintAttn(); }
-              if (!host.querySelector('.lk-admin-row')) host.appendChild(el('div', 'lk-admin-empty', 'No out-of-area addresses right now.'));
+              if (!host.querySelector('.lk-admin-row')) host.appendChild(el('div', 'lk-admin-empty', 'No address flags right now.'));
             }).catch(function () { acc.disabled = false; acc.textContent = 'Accept'; });
           });
           row.appendChild(acc);

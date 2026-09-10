@@ -194,27 +194,31 @@
   function renderGateBanner(root, gateReady, bits) {
     if (!root) return;
     var el = root.querySelector('[data-ls-gate]');
-    if (gateReady) { if (el) el.parentNode.removeChild(el); return; }
+    // #147c (2026-09-10): the address no longer blocks publishing. A LIVE
+    // storefront with no address on file gets a soft note in the same slot
+    // instead of the hard "not public yet" banner.
+    var soft = gateReady && bits.address === false;
+    if (gateReady && !soft) { if (el) el.parentNode.removeChild(el); return; }
     var missing = [];
     if (!bits.name) missing.push('name your storefront'); // #101 — signup-path vendors start nameless
     if (!bits.cats) missing.push('pick your category');
     if (!bits.locs) missing.push('set your service area');
     if (!bits.listing) missing.push('add a service or product');
-    // #147 (2026-08-22): vendors created after the rollout need a resolved US
-    // business address (never public) before The Market lists them.
-    if (bits.address === false) missing.push('add your business address');
-    var msg = 'Your storefront isn’t public yet. Customers can’t find it on The Market until you ' +
-      (missing.length ? missing.join(' · ') : 'finish setup') + '.';
+    var msg = soft
+      ? 'Your storefront is live. One thing left: add your business address on your profile. It is never shown to customers; it lets us confirm you are local.'
+      : 'Your storefront isn’t public yet. Customers can’t find it on The Market until you ' +
+        (missing.length ? missing.join(' · ') : 'finish setup') + '.';
     if (!el) {
       el = document.createElement('div');
       el.setAttribute('data-ls-gate', '');
-      el.style.cssText = 'display:flex;align-items:flex-start;gap:10px;background:#FDF1E7;' +
-        'border:1px solid #F6D9BE;border-radius:12px;padding:12px 14px;margin:0 0 14px;' +
-        "font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;line-height:1.5;color:#8A4B14;";
       // Icon: Font Awesome Free 6.7.2 traffic-light (CC BY 4.0); was an emoji (F rule 2026-09-02).
       el.innerHTML = '<span style="display:inline-flex;line-height:1.4;padding-top:2px;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512" fill="currentColor" aria-hidden="true" focusable="false" style="width:16px;height:16px;vertical-align:-.125em;flex-shrink:0;"><path d="M64 0C28.7 0 0 28.7 0 64L0 352c0 88.4 71.6 160 160 160s160-71.6 160-160l0-288c0-35.3-28.7-64-64-64L64 0zm96 416a48 48 0 1 1 0-96 48 48 0 1 1 0 96zm48-176a48 48 0 1 1 -96 0 48 48 0 1 1 96 0zm-48-80a48 48 0 1 1 0-96 48 48 0 1 1 0 96z"/></svg></span><span data-ls-gate-msg></span>';
       root.insertBefore(el, root.firstChild);
     }
+    el.style.cssText = 'display:flex;align-items:flex-start;gap:10px;border-radius:12px;padding:12px 14px;margin:0 0 14px;' +
+      "font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;line-height:1.5;" +
+      (soft ? 'background:#F4F1FC;border:1px solid #DDD5F5;color:#4A3C7A;'
+            : 'background:#FDF1E7;border:1px solid #F6D9BE;color:#8A4B14;');
     var m = el.querySelector('[data-ls-gate-msg]');
     if (m) m.textContent = msg;
     // The gate outranks a saved dismiss — a hidden card can't warn anyone.
@@ -249,12 +253,11 @@
     // client-side math (matches the trigger's rule) pre-patch.
     var gCats = !!(v.categories_id && v.categories_id.length);
     var gLocs = !!(v.locations_id && v.locations_id.length);
-    // #147 address rule mirrors set_vendor_publish_ready(): grandfathered if the
-    // vendor row predates 2026-08-23 UTC; else needs a resolved (geocoded) address.
-    var gOld = !!(v.created_at && new Date(v.created_at).getTime() < Date.UTC(2026, 7, 23));
-    var gAddr = gOld || (!!(v.address && String(v.address).trim()) && v.address_lat != null && v.address_lng != null);
+    // #147c: the address is not part of the gate any more (soft gate, 2026-09-10);
+    // it only decides whether a live storefront shows the "add your address" note.
+    var gAddr = !!(v.address && String(v.address).trim());
     var gateReady = (v.is_publish_ready != null) ? !!v.is_publish_ready
-                    : (!!v.business_name && gCats && gLocs && !!hasListing && gAddr);
+                    : (!!v.business_name && gCats && gLocs && !!hasListing);
     renderGateBanner(root, gateReady, { name: !!v.business_name, cats: gCats, locs: gLocs, listing: !!hasListing, address: gAddr });
     if (root) {
       if (score >= MAX_SCORE) { root.classList.add('is-complete'); }
