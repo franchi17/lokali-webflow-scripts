@@ -196,6 +196,7 @@
   var APP_USER_EDITABLE = [
     'first_name', 'last_name', 'phone_number', 'preferred_language', 'region',
     'notif_letter', 'notif_vendor_replies', 'notif_review_reminders',
+    'notif_circle', // #170 The Lokali Circle (vendor-only email) opt-out
     'avatar' // #76 customer-dashboard preset avatar id
   ];
   // The public vendor surface — exactly the column grant in
@@ -1275,6 +1276,12 @@
       // Brevo list. Best-effort — never blocks or fails the save.
       syncNewsletter: function () {
         return postRoute('/preferences/newsletter-sync', {}, true);
+      },
+      // #170 — The Lokali Circle mirror: same contract as syncNewsletter, its
+      // own flag (notif_circle), its own Brevo list. The route re-reads the
+      // saved flag AND checks the person owns an active storefront.
+      syncCircle: function () {
+        return postRoute('/preferences/circle-sync', {}, true);
       },
       // #66 Phase 1 — the person-first unlock. Goes through the /open-storefront
       // route (not a direct RPC) so the server can fire the Brevo vendor-list add

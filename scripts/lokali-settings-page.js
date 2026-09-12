@@ -155,6 +155,7 @@
 
     mountSlugEditor();
     mountNewsletterToggle(); // #54 — person-level newsletter opt-out
+    mountCircleToggle();     // #170 — The Lokali Circle (vendor-only email) opt-out
 
     // Gate paid-only toggles on Free plans
     if (!isPro()) {
@@ -370,6 +371,70 @@
         if (window.LokaliAPI.account.syncNewsletter) window.LokaliAPI.account.syncNewsletter();
       } catch (e) {}
       toast('success', value ? 'Subscribed to The Neighborhood Edit.' : 'Unsubscribed from The Neighborhood Edit.');
+    }).catch(function () {
+      toast('error', 'Network error. Please try again.');
+      if (inputEl) inputEl.checked = !value;
+    });
+  }
+
+  // ── #170 "The Lokali Circle" — the vendor-only monthly email ───────────────
+  // Same injection technique and the same person-level flag pattern as the
+  // Neighborhood Edit toggle above, on its own column (app_user.notif_circle)
+  // so opting out of one never opts you out of the other. Sits directly under
+  // the Neighborhood Edit row; if that row failed to mount, anchors on the
+  // announcements row instead so the Circle toggle still appears.
+  function mountCircleToggle() {
+    if ($('toggle-notify-circle')) return;                 // idempotent
+    var anchor = $('toggle-notify-letter') || $('toggle-notify-announcements');
+    if (!anchor) return;                                   // markup changed — skip silently
+    var row = anchor.closest ? anchor.closest('.div-block-160') : null;
+    if (!row || !row.parentNode) return;
+
+    var newRow = document.createElement('div');
+    newRow.className = row.className || 'div-block-160';
+    var label = document.createElement('div');
+    var h = document.createElement('div');
+    h.className = 'notifications-header';
+    h.textContent = 'The Lokali Circle';
+    var p = document.createElement('div');
+    p.className = 'settings-lokali-text';
+    p.textContent = 'A monthly note for vendors: storefront tips, what is new in your dashboard, and the occasional question from Francesca.';
+    label.appendChild(h); label.appendChild(p);
+
+    var embed = document.createElement('div');
+    embed.id = 'toggle-notify-circle';
+    embed.className = anchor.className || 'w-embed';
+    embed.innerHTML =
+      '<label class="lk-toggle">' +
+        '<input type="checkbox" />' +
+        '<span class="lk-toggle-track"><span class="lk-toggle-thumb"></span></span>' +
+      '</label>';
+
+    newRow.appendChild(label);
+    newRow.appendChild(embed);
+    row.parentNode.insertBefore(newRow, row.nextSibling);
+
+    var input = inputOf(embed);
+    if (!input) return;
+    input.setAttribute('aria-label', 'The Lokali Circle vendor email');
+    // Default ON: null/undefined = subscribed, same as admin_circle_recipients().
+    input.checked = !(_user && _user.notif_circle === false);
+    input.addEventListener('change', function () { saveCircle(input.checked, input); });
+  }
+
+  function saveCircle(value, inputEl) {
+    if (!(window.LokaliAPI.account && window.LokaliAPI.account.update)) return;
+    window.LokaliAPI.account.update({ notif_circle: !!value }).then(function (res) {
+      if (res && res.error) {
+        toast('error', 'Could not save preference.');
+        if (inputEl) inputEl.checked = !value; // revert
+        return;
+      }
+      if (_user) _user.notif_circle = !!value;
+      try {
+        if (window.LokaliAPI.account.syncCircle) window.LokaliAPI.account.syncCircle();
+      } catch (e) {}
+      toast('success', value ? 'Subscribed to The Lokali Circle.' : 'Unsubscribed from The Lokali Circle.');
     }).catch(function () {
       toast('error', 'Network error. Please try again.');
       if (inputEl) inputEl.checked = !value;
