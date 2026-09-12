@@ -195,6 +195,7 @@
   var APP_USER_EDITABLE = [
     'first_name', 'last_name', 'phone_number', 'preferred_language', 'region',
     'notif_letter', 'notif_vendor_replies', 'notif_review_reminders',
+    'notif_circle', // #170 The Lokali Circle (vendor-only email) opt-out
     'avatar' // #76 customer-dashboard preset avatar id
   ];
   // The public vendor surface — exactly the column grant in
@@ -1236,6 +1237,12 @@
       syncNewsletter: function () {
         return postRoute('/preferences/newsletter-sync', {}, true);
       },
+      // #170 — The Lokali Circle mirror: same contract as syncNewsletter, its
+      // own flag (notif_circle), its own Brevo list. The route re-reads the
+      // saved flag AND checks the person owns an active storefront.
+      syncCircle: function () {
+        return postRoute('/preferences/circle-sync', {}, true);
+      },
       // #66 Phase 1 — the person-first unlock. Goes through the /open-storefront
       // route (not a direct RPC) so the server can fire the Brevo vendor-list add
       // + welcome email after admin_open_storefront creates the vendors row + free
@@ -1379,6 +1386,13 @@
       // basics pre-filled; Supabase emails the invite. Admin-checked server-side.
       inviteVendor: function (payload) {
         return postRoute('/admin/invite-vendor', payload || {}, true);
+      },
+      // #171 — admin mints a one-time sign-in link for an existing VENDOR account
+      // (build their storefront without holding their password). The route
+      // refuses admins, shoppers and unknown emails; the link is returned, never
+      // emailed. Open it in a PRIVATE window — same browser = replaces your session.
+      signInAs: function (payload) {
+        return postRoute('/admin/sign-in-as', payload || {}, true);
       }
     },
     // #96-SUGGEST — subcategory taxonomy + the vendor suggestion pipeline.
