@@ -2087,6 +2087,7 @@ const LokaliProductsPage = (() => {
       card.innerHTML =
         '<div id="lok-import-title" style="font-size:17px;font-weight:700;color:#1A1829;margin-bottom:4px;">Import products from a spreadsheet</div>' +
         '<p data-import-sub style="font-size:13.5px;color:#5A5570;line-height:1.5;margin:0 0 12px;"></p>' +
+        '<p style="font-size:13px;color:#6E6A85;margin:-6px 0 12px;"><a href="/vendor-resources/import-guide" target="_blank" rel="noopener" style="color:#6002EE;font-weight:600;text-decoration:none;">How importing works</a> (opens the guide in a new tab)</p>' +
         (platform === 'etsy' || platform === 'shopify'
           ? '<div style="margin:0 0 12px;">' +
               '<label for="lok-import-store" style="display:block;font-size:12.5px;font-weight:600;color:#4A4761;margin-bottom:5px;">' +
@@ -2337,7 +2338,7 @@ const LokaliProductsPage = (() => {
     var btn = document.createElement('button');
     btn.type = 'button';
     btn.id = 'lok-import-btn';
-    btn.setAttribute('title', 'Bring in listings from an Etsy or Shopify export (CSV)');
+    btn.setAttribute('title', 'Bring in listings from an Etsy or Shopify export (CSV). Guide: /vendor-resources/import-guide');
     // Font Awesome Free 6 "file-import" (CC BY 4.0), currentColor.
     btn.innerHTML =
       '<svg viewBox="0 0 512 512" fill="currentColor" aria-hidden="true"><path d="M128 64c0-35.3 28.7-64 64-64H352V128c0 17.7 14.3 32 32 32H512V448c0 35.3-28.7 64-64 64H192c-35.3 0-64-28.7-64-64V336H302.1l-39 39c-9.4 9.4-9.4 24.6 0 33.9s24.6 9.4 33.9 0l80-80c9.4-9.4 9.4-24.6 0-33.9l-80-80c-9.4-9.4-24.6-9.4-33.9 0s-9.4 24.6 0 33.9l39 39H128V64zm0 224v48H24c-13.3 0-24-10.7-24-24s10.7-24 24-24H128zM512 128H384V0L512 128z"/></svg>' +
