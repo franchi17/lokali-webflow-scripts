@@ -2310,23 +2310,40 @@ const LokaliProductsPage = (() => {
     input.click();
   };
 
-  // Secondary button beside "Add product": a deep clone of it (same Webflow
-  // classes, no template edit), Featured plan only — it self-removes otherwise.
+  // Secondary button beside "Add product" — Featured plan only, self-removes
+  // otherwise. Deliberately NOT a clone of the orange button (F 2026-09-12:
+  // "I don't want two buttons of the same color", and the clone overflowed its
+  // 140px min-width and got flung to the far edge by the header's
+  // space-between). A quiet white button with a hairline border, violet on
+  // hover, inserted BEFORE Add product with margin-left:auto so the pair sits
+  // together on the right and the title keeps the left. Short label on phones.
   const ensureImportButton = () => {
     var existing = document.getElementById('lok-import-btn');
     if (!_isFeaturedPlan) { if (existing) existing.remove(); return; }
     if (existing) return;
     var add = el.addBtn(); if (!add || !add.parentNode) return;
-    var btn = add.cloneNode(true);
+    if (!document.getElementById('lok-import-css')) {
+      var css = document.createElement('style');
+      css.id = 'lok-import-css';
+      css.textContent =
+        '#lok-import-btn{display:inline-flex;align-items:center;gap:8px;margin-left:auto;margin-right:10px;padding:0 16px;min-height:38px;box-sizing:border-box;border:1px solid #E6E4F0;border-radius:12px;background:#fff;color:#4A4761;font-family:"Plus Jakarta Sans",system-ui,sans-serif;font-size:14px;font-weight:600;line-height:1;cursor:pointer;white-space:nowrap;transition:border-color .15s,color .15s,background .15s;}' +
+        '#lok-import-btn:hover{border-color:#6002EE;color:#6002EE;background:#FBFAFF;}' +
+        '#lok-import-btn:focus-visible{outline:2px solid #6002EE;outline-offset:2px;}' +
+        '#lok-import-btn svg{width:16px;height:16px;flex:0 0 auto;}' +
+        '#lok-import-btn .lok-import-short{display:none;}' +
+        '@media (max-width:640px){#lok-import-btn{padding:0 12px;margin-right:8px;}#lok-import-btn .lok-import-full{display:none;}#lok-import-btn .lok-import-short{display:inline;}}';
+      document.head.appendChild(css);
+    }
+    var btn = document.createElement('button');
+    btn.type = 'button';
     btn.id = 'lok-import-btn';
-    btn.querySelectorAll('[id]').forEach(function (n) { n.removeAttribute('id'); });
-    var textHost = btn; while (textHost.children && textHost.children.length === 1) textHost = textHost.children[0];
-    textHost.textContent = 'Import from spreadsheet';
-    if (btn.tagName === 'A') btn.setAttribute('href', '#');
     btn.setAttribute('title', 'Bring in listings from an Etsy or Shopify export (CSV)');
-    btn.style.marginLeft = '10px';
+    // Font Awesome Free 6 "file-import" (CC BY 4.0), currentColor.
+    btn.innerHTML =
+      '<svg viewBox="0 0 512 512" fill="currentColor" aria-hidden="true"><path d="M128 64c0-35.3 28.7-64 64-64H352V128c0 17.7 14.3 32 32 32H512V448c0 35.3-28.7 64-64 64H192c-35.3 0-64-28.7-64-64V336H302.1l-39 39c-9.4 9.4-9.4 24.6 0 33.9s24.6 9.4 33.9 0l80-80c9.4-9.4 9.4-24.6 0-33.9l-80-80c-9.4-9.4-24.6-9.4-33.9 0s-9.4 24.6 0 33.9l39 39H128V64zm0 224v48H24c-13.3 0-24-10.7-24-24s10.7-24 24-24H128zM512 128H384V0L512 128z"/></svg>' +
+      '<span class="lok-import-full">Import from spreadsheet</span><span class="lok-import-short">Import</span>';
     btn.addEventListener('click', function (ev) { ev.preventDefault(); openImportPicker(); });
-    add.insertAdjacentElement('afterend', btn);
+    add.insertAdjacentElement('beforebegin', btn);
   };
 
   const loadData = async () => {
