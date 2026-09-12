@@ -2332,7 +2332,10 @@ const LokaliProductsPage = (() => {
         '#lok-import-btn:focus-visible{outline:2px solid #6002EE;outline-offset:2px;}' +
         '#lok-import-btn svg{width:16px;height:16px;flex:0 0 auto;}' +
         '#lok-import-btn .lok-import-short{display:none;}' +
-        '@media (max-width:640px){#lok-import-btn{padding:0 12px;margin-right:8px;}#lok-import-btn .lok-import-full{display:none;}#lok-import-btn .lok-import-short{display:inline;}}';
+        '#lok-import-help{margin-left:auto;margin-right:14px;font-family:"Plus Jakarta Sans",system-ui,sans-serif;font-size:13px;font-weight:600;color:#6002EE;text-decoration:none;white-space:nowrap;}' +
+        '#lok-import-help:hover{text-decoration:underline;}' +
+        '#lok-import-help + #lok-import-btn{margin-left:0;}' +
+        '@media (max-width:640px){#lok-import-help{display:none;}#lok-import-btn{padding:0 12px;margin-right:8px;}#lok-import-btn .lok-import-full{display:none;}#lok-import-btn .lok-import-short{display:inline;}}';
       document.head.appendChild(css);
     }
     var btn = document.createElement('button');
@@ -2344,7 +2347,15 @@ const LokaliProductsPage = (() => {
       '<svg viewBox="0 0 512 512" fill="currentColor" aria-hidden="true"><path d="M128 64c0-35.3 28.7-64 64-64H352V128c0 17.7 14.3 32 32 32H512V448c0 35.3-28.7 64-64 64H192c-35.3 0-64-28.7-64-64V336H302.1l-39 39c-9.4 9.4-9.4 24.6 0 33.9s24.6 9.4 33.9 0l80-80c9.4-9.4 9.4-24.6 0-33.9l-80-80c-9.4-9.4-24.6-9.4-33.9 0s-9.4 24.6 0 33.9l39 39H128V64zm0 224v48H24c-13.3 0-24-10.7-24-24s10.7-24 24-24H128zM512 128H384V0L512 128z"/></svg>' +
       '<span class="lok-import-full">Import from spreadsheet</span><span class="lok-import-short">Import</span>';
     btn.addEventListener('click', function (ev) { ev.preventDefault(); openImportPicker(); });
-    add.insertAdjacentElement('beforebegin', btn);
+    // "How it works" sits before the button and takes the margin-left:auto slot,
+    // so the trio (help · Import · Add product) hugs the right edge together.
+    var help = document.createElement('a');
+    help.id = 'lok-import-help';
+    help.href = '/vendor-resources/import-guide';
+    help.target = '_blank'; help.rel = 'noopener';
+    help.textContent = 'How importing works';
+    add.insertAdjacentElement('beforebegin', help);
+    help.insertAdjacentElement('afterend', btn);
   };
 
   const loadData = async () => {
