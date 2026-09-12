@@ -987,6 +987,7 @@
     grid.appendChild(sugSec);
 
     appendInviteVendorSection(grid);   // #168
+    appendSignInAsSection(grid);       // #171
     appendReportsSection(grid, ov);
     appendAddressFlagsSection(grid);   // #147
     appendSpotlightSection(grid, ov);
@@ -1147,6 +1148,68 @@
         msg.textContent = 'Invite sent to ' + payload.email + '. Storefront pre-filled' + (d && d.slug ? ' at /' + d.slug : '') + ' — it goes public once they add a listing.';
         form.reset();
       }).catch(function () { btn.disabled = false; btn.textContent = 'Invite'; msg.textContent = 'Network error — nothing was sent.'; });
+    });
+    host.appendChild(form);
+  }
+
+  // #171 (F 2026-09-12) — sign in as a vendor: mints a one-time magic link for an
+  // EXISTING vendor account so the admin can build their storefront for them
+  // without ever holding their password. The link is shown here (never emailed)
+  // and must be opened in a private window; opening it in this browser would
+  // replace the admin session. Server refuses admins, shoppers, unknown emails.
+  function appendSignInAsSection(wrap) {
+    var API = window.LokaliSupabaseAPI;
+    if (!API || !API.admin || !API.admin.signInAs) return;
+    var host = el('div', 'lk-admin-section lk-admin-section-wide');
+    wrap.appendChild(host);
+    var t = el('div', 'lk-admin-qtitle'); t.appendChild(document.createTextNode('Sign in as a vendor')); host.appendChild(t);
+    host.appendChild(el('p', 'lk-admin-sub',
+      'For storefronts you are building on someone’s behalf, with their OK. This makes a one-time sign-in link for their account. Open it in a private or incognito window (opening it here would sign you out), do the work as them, then sign out. The link works once and expires within the hour. Nothing is emailed.'));
+    var form = document.createElement('form'); form.setAttribute('novalidate', '');
+    form.style.cssText = 'display:flex;flex-wrap:wrap;gap:10px;align-items:end;';
+    var w = el('label'); w.style.cssText = 'display:flex;flex-direction:column;gap:4px;font-size:12px;color:#6B6880;flex:1 1 260px;';
+    w.appendChild(document.createTextNode('Their account email *'));
+    var fEmail = document.createElement('input'); fEmail.type = 'email'; fEmail.name = 'email'; fEmail.className = 'lk-admin-input';
+    fEmail.style.width = '100%'; fEmail.style.boxSizing = 'border-box'; fEmail.placeholder = 'name@business.com'; fEmail.maxLength = 254;
+    w.appendChild(fEmail); form.appendChild(w);
+    var btn = document.createElement('button'); btn.type = 'submit'; btn.className = 'lk-admin-btn'; btn.textContent = 'Make sign-in link';
+    form.appendChild(btn);
+    var out = el('div'); out.style.cssText = 'flex-basis:100%;font-size:13px;color:#6B6880;display:flex;flex-wrap:wrap;gap:10px;align-items:center;';
+    form.appendChild(out);
+    var ERR = {
+      email_invalid: 'That email doesn’t look right.',
+      no_account: 'No Lokali account with that email yet. They need to sign up first (or use Invite a vendor).',
+      target_is_admin: 'That is an admin account. Sign-in links are only made for vendor accounts.',
+      not_a_vendor: 'That account has no storefront. Sign-in links are only made for vendors.',
+      not_admin: 'Only the admin can do this.',
+      link_failed: 'Supabase refused to make the link. Nothing happened.',
+      lookup_failed: 'Could not look up that account. Try again.'
+    };
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var email = fEmail.value.trim();
+      if (!email) { out.textContent = 'Email is required.'; return; }
+      if (!window.confirm('Make a one-time sign-in link for ' + email + '? Only do this with their OK.')) return;
+      btn.disabled = true; btn.textContent = 'Making…'; out.textContent = '';
+      API.admin.signInAs({ email: email }).then(function (res) {
+        btn.disabled = false; btn.textContent = 'Make sign-in link';
+        var d = res && res.data;
+        if (res && res.error) { out.textContent = ERR[res.error] || ('Could not make the link (' + res.error + ').'); return; }
+        if (!d || !d.link) { out.textContent = 'No link came back.'; return; }
+        out.innerHTML = '';
+        var note = el('span'); note.textContent = 'Link for ' + (d.slug ? '/' + d.slug : email) + '. Copy it, then paste it into a PRIVATE window:';
+        var box = document.createElement('input'); box.type = 'text'; box.readOnly = true; box.value = d.link; box.className = 'lk-admin-input';
+        box.style.cssText = 'flex:1 1 320px;min-width:0;font-size:12px;';
+        box.addEventListener('focus', function () { box.select(); });
+        var copy = document.createElement('button'); copy.type = 'button'; copy.className = 'lk-admin-btn'; copy.textContent = 'Copy link';
+        copy.addEventListener('click', function () {
+          var done = function () { copy.textContent = 'Copied'; setTimeout(function () { copy.textContent = 'Copy link'; }, 1800); };
+          if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(d.link).then(done, function () { box.focus(); box.select(); });
+          else { box.focus(); box.select(); try { document.execCommand('copy'); done(); } catch (e2) {} }
+        });
+        out.appendChild(note); out.appendChild(box); out.appendChild(copy);
+        fEmail.value = '';
+      }).catch(function () { btn.disabled = false; btn.textContent = 'Make sign-in link'; out.textContent = 'Network error. Nothing happened.'; });
     });
     host.appendChild(form);
   }
