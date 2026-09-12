@@ -439,6 +439,59 @@
     });
   }
 
+  // #172: per-product external checkout ("Buy on Etsy" / "Buy online").
+  // Lokali processes no payments, so a vendor whose checkout lives on Etsy,
+  // Shopify or their own site pastes the listing URL into the product form.
+  // The button is a deep clone of the Inquire CTA (identical styling, no
+  // template edit), inserted BEFORE it so buying is the primary action and
+  // Inquire stays for custom orders. The href is re-validated here (https
+  // only) even though SQL shape-checks it; the click logs a 'buy_link' lead
+  // event, which Insights groups with the payment clicks — never a contact
+  // lead and never a review-gate event.
+  var BUY_HOST_LABELS = { 'etsy.com': 'Etsy', 'amazon.com': 'Amazon', 'ebay.com': 'eBay', 'faire.com': 'Faire' };
+  function buyHostLabel(u) {
+    var host = String(u.hostname || '').replace(/^www\./, '').toLowerCase();
+    var keys = Object.keys(BUY_HOST_LABELS);
+    for (var i = 0; i < keys.length; i++) {
+      var k = keys[i];
+      if (host === k || host.slice(-(k.length + 1)) === '.' + k) return BUY_HOST_LABELS[k];
+    }
+    return '';
+  }
+  function mountBuyLink(p, vendorId) {
+    try {
+      if (document.getElementById('vd-buy-btn')) return;
+      var raw = p && p.buy_url;
+      if (!raw) return;
+      var u;
+      try { u = new URL(String(raw).trim()); } catch (e) { return; }
+      if (u.protocol !== 'https:') return;
+      var cta = $('vd-cta-btn');
+      if (!cta || !cta.parentNode) return;
+      var btn = cta.cloneNode(true);
+      btn.id = 'vd-buy-btn';
+      btn.querySelectorAll('[id]').forEach(function (n) { n.removeAttribute('id'); });
+      // Set the label on the innermost single child so a link-block's own
+      // typography wrapper survives; a plain button just gets its text.
+      var textHost = btn;
+      while (textHost.children && textHost.children.length === 1) textHost = textHost.children[0];
+      var brand = buyHostLabel(u);
+      var label = brand ? 'Buy on ' + brand : 'Buy online';
+      textHost.textContent = label;
+      btn.href = u.href;               // property, never string-built markup
+      btn.target = '_blank';
+      btn.rel = 'noopener';
+      btn.setAttribute('aria-label', label + ' (opens in a new tab)');
+      btn.style.marginBottom = '10px';
+      cta.parentNode.insertBefore(btn, cta);
+      btn.addEventListener('click', function () {
+        if (window.LokaliAPI && window.LokaliAPI.leads && vendorId != null) {
+          window.LokaliAPI.leads.trackEvent(vendorId, 'buy_link', 'product');
+        }
+      });
+    } catch (e) {}
+  }
+
   // Log a service/product view (deduped per browser session) so the analytics
   // page can rank top items. Fire-and-forget; needs the vendor id + item id.
   function emitItemView(vendorId, source, itemId) {
@@ -587,6 +640,7 @@
       var vid = vendorParam || p.vendors_id || p.vendor_id;
       emitItemView(vid, 'product', p.id != null ? p.id : id);
       fillVendor(vid, name, true);
+      mountBuyLink(p, vid); // #172
     };
     if (vendorParam) {
       reqRetry(function () { return window.LokaliAPI.products.listByVendor(vendorParam); }).then(function (res) {

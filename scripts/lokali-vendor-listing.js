@@ -1588,7 +1588,10 @@
         focusX: p.image_focus_x, focusY: p.image_focus_y,   // #149
         tint: IMG_TINTS[(i + 1) % IMG_TINTS.length],
         pick: p.is_featured_pick === true, // FEAT-PICKS
-        cta: 'Order', orange: true,
+        // #172: a product with an external checkout reads "Buy online" so the
+        // card promises what the detail page delivers (the card still opens
+        // the detail page; the actual outbound button + click log live there).
+        cta: /^https:\/\/\S+$/.test(String(p.buy_url || '')) ? 'Buy online' : 'Order', orange: true,
         lead: leadText(p),
         href: itemHref('products', p)
       });

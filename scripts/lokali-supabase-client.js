@@ -174,6 +174,7 @@
     'product_name', 'product_description', 'price', 'stock_quantity', 'image_url',
     'video_url', 'is_custom', 'turnaround_days', 'is_quote_based', 'is_active',
     'shipping_offered', 'pickup_only', 'delivery_offered', 'sort_order', 'slug',
+    'buy_url',     // #172: external checkout link (https only; shape-checked by patch_product_buy_link.sql)
     'subcategory', // #96-LISTING
     'lead_time',   // #78: free-text per-item lead time (supersedes turnaround_days for display)
     'is_featured_pick', // FEAT-PICKS: Featured-plan shop window (cap+plan gate = DB trigger)
@@ -1330,7 +1331,7 @@
     // selector when the LOADED client actually whitelists the column —
     // otherwise pick() would strip it and the save would silently drop the
     // vendor's choice under a success toast.
-    capabilities: { listingSubcategory: true, itemLeadTime: true }, // itemLeadTime = #78 (lead_time in both EDITABLE lists)
+    capabilities: { listingSubcategory: true, itemLeadTime: true, productBuyLink: true }, // itemLeadTime = #78 (lead_time in both EDITABLE lists); productBuyLink = #172 (buy_url in PRODUCT_EDITABLE)
     // #96-SUGGEST — admin surface (is_admin()-gated server-side; non-admins
     // get { ok:false } — safe to call from any session).
     // #137 — the notification feed behind the header bell. All three RPCs are

@@ -995,6 +995,7 @@ const LokaliProductsPage = (() => {
     }
     renderGallery(product.id);
     setVideoUrl(product.video_url);
+    setBuyUrl(product.buy_url);   // #172
   };
 
   const resetForm = () => {
@@ -1026,6 +1027,7 @@ const LokaliProductsPage = (() => {
     _pendingSubcatLabels = [];
     renderGallery(null);
     setVideoUrl('');
+    setBuyUrl('');   // #172
   };
 
   const revokeImagePreviewUrl = () => {
@@ -1094,6 +1096,54 @@ const LokaliProductsPage = (() => {
   const videoInput = () => { videoHost(); return document.getElementById('lok-product-video-input'); };
   const readVideoUrl = () => (videoInput()?.value || '').trim();
   const setVideoUrl = (v) => { const inp = videoInput(); if (inp) inp.value = v || ''; markVideoValidity(); };
+
+  // ---------------------------------------------------------------------------
+  // #172: optional "Buy link" — an external checkout for this product (Etsy,
+  // Shopify, the vendor's own site). Self-mounting, right under the showcase
+  // video. Mirrors patch_product_buy_link.sql's shape check (https only, no
+  // whitespace/quotes, <= 500 chars); the public detail page re-validates and
+  // renders a "Buy on Etsy" / "Buy online" button next to Inquire.
+  // Gated on the client capability so a stale cached client (no buy_url in
+  // PRODUCT_EDITABLE) never shows a field whose value would silently drop.
+  // ---------------------------------------------------------------------------
+  const BUY_URL_RE = /^https:\/\/[^\s"'<>`\\]+$/;
+  const BUY_MAXLEN = 500;
+  const isValidBuyUrl = (u) => { const s = String(u || '').trim(); return BUY_URL_RE.test(s) && s.length <= BUY_MAXLEN; };
+  const BUY_HINT = 'Sell this on Etsy, Shopify or your own site? Paste the listing link and shoppers get a "Buy online" button. Leave blank to keep Inquire only.';
+  let _buyUiMounted = false;
+
+  const markBuyValidity = () => {
+    const inp = document.getElementById('lok-product-buy-input');
+    const hint = document.getElementById('lok-product-buy-hint');
+    if (!inp) return;
+    const v = inp.value.trim();
+    const bad = v && !isValidBuyUrl(v);
+    inp.style.borderColor = bad ? '#E4739A' : '#E6E4F0';
+    if (hint) { hint.style.color = bad ? '#B1006A' : '#8E8BA6'; hint.textContent = bad ? 'Enter a full https:// link with no spaces (or leave blank).' : BUY_HINT; }
+  };
+
+  const buyHost = () => {
+    let host = document.getElementById('lok-product-buy');
+    if (host) return host;
+    if (!window.LokaliSupabaseAPI?.capabilities?.productBuyLink) return null;
+    const anchorEl = videoHost();
+    if (!anchorEl) return null;
+    host = document.createElement('div');
+    host.id = 'lok-product-buy';
+    host.style.cssText = 'margin-top:16px;font-family:"Plus Jakarta Sans",system-ui,sans-serif;white-space:normal;';
+    host.innerHTML =
+      '<div style="font-size:13px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;color:#4A4761;margin-bottom:8px;">Buy link <span style="font-weight:500;text-transform:none;color:#8E8BA6;">· optional</span></div>' +
+      '<input id="lok-product-buy-input" type="url" inputmode="url" autocomplete="off" spellcheck="false" maxlength="' + BUY_MAXLEN + '" placeholder="https://www.etsy.com/listing/..." style="width:100%;box-sizing:border-box;padding:11px 13px;border:1px solid #E6E4F0;border-radius:10px;font-size:14px;font-family:inherit;color:#1A1829;background:#fff;" />' +
+      '<div id="lok-product-buy-hint" style="font-size:12px;color:#8E8BA6;margin-top:6px;line-height:1.5;">' + BUY_HINT + '</div>';
+    anchorEl.insertAdjacentElement('afterend', host);
+    const inp = host.querySelector('#lok-product-buy-input');
+    if (inp) inp.addEventListener('input', markBuyValidity);
+    _buyUiMounted = true;
+    return host;
+  };
+  const buyInput = () => { buyHost(); return document.getElementById('lok-product-buy-input'); };
+  const readBuyUrl = () => (buyInput()?.value || '').trim();
+  const setBuyUrl = (v) => { const inp = buyInput(); if (inp) inp.value = v || ''; markBuyValidity(); };
 
   // ---------------------------------------------------------------------------
   // Per-product photo gallery (Pro & Featured). Self-mounting — no Webflow edits.
@@ -1483,6 +1533,14 @@ const LokaliProductsPage = (() => {
     // value so background autosaves don't fail — the explicit Save blocks it via validate().
     const vurl = readVideoUrl();
     if (vurl === '' || isValidVideoUrl(vurl)) payload.video_url = vurl;
+    // #172 Buy link: same shape — '' clears (sent as NULL: the SQL shape check
+    // rejects an empty string), a valid https link sets it, an invalid one is
+    // omitted so background autosaves never fail; explicit Save blocks it.
+    if (_buyUiMounted) {
+      const burl = readBuyUrl();
+      if (burl === '') payload.buy_url = null;
+      else if (isValidBuyUrl(burl)) payload.buy_url = burl;
+    }
 
     // #96-LISTING — only when the selector actually mounted; otherwise the key
     // is omitted and the saved value is left alone.
@@ -1503,6 +1561,8 @@ const LokaliProductsPage = (() => {
     }
     if (readVideoUrl() && !isValidVideoUrl(readVideoUrl()))
       return 'Your video link must be a YouTube or Vimeo URL (or leave it blank).';
+    if (readBuyUrl() && !isValidBuyUrl(readBuyUrl()))
+      return 'Your buy link must be a full https:// address with no spaces (or leave it blank).';
     return null;
   };
 
