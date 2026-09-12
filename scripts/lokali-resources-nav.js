@@ -56,7 +56,8 @@
         { href: '/vendor-resources/service-photo-guide', label: 'Service Photo Guide' },
         { href: '/vendor-resources/availability-guide',  label: 'Availability Guide' },
         { href: '/vendor-resources/marketing-tools-guide', label: 'Marketing Tools Guide' },
-        { href: '/vendor-resources/badges-guide',        label: 'Badges & Referrals' }
+        { href: '/vendor-resources/badges-guide',        label: 'Badges & Referrals' },
+        { href: '/vendor-resources/import-guide',        label: 'Import Guide' }   // #173 (2026-09-12)
       ]
     }
   ];
