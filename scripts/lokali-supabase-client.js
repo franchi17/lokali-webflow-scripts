@@ -1114,6 +1114,45 @@
         });
       }
     },
+    // --- #173c link-fetch (Vercel /link-fetch, vendor-only) --------------------
+    // The server only FETCHES a public URL for the signed-in vendor; the browser
+    // then uploads the bytes through storage.uploadImage as the user, so RLS +
+    // the photo-cap trigger + the re-encode all apply. Used by the spreadsheet
+    // import (photos from an Etsy/Shopify export) and the product form's
+    // "Fill from link". etsy.com PAGES are refused server-side for preview().
+    media: {
+      // Resolves to { data: File, error } — a File so it can go straight into
+      // uploadImage (which reads size/type like a picked file).
+      fetchImage: function (url) {
+        var api = vercelApiBase();
+        if (!api) return Promise.resolve({ data: null, error: 'api_base_missing' });
+        return sessionAccessToken().then(function (token) {
+          if (!token) return { data: null, error: 'not_signed_in' };
+          return fetch(api + '/link-fetch', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify({ kind: 'image', url: String(url || '') })
+          }).then(function (res) {
+            if (!res.ok) {
+              return res.json().catch(function () { return null; }).then(function (j) {
+                return { data: null, error: (j && j.error) || ('HTTP ' + res.status) };
+              });
+            }
+            var type = (res.headers.get('content-type') || 'image/jpeg').split(';')[0].trim();
+            return res.blob().then(function (blob) {
+              var ext = type === 'image/png' ? 'png' : type === 'image/webp' ? 'webp' : type === 'image/gif' ? 'gif' : type === 'image/avif' ? 'avif' : 'jpg';
+              var file;
+              try { file = new File([blob], 'import.' + ext, { type: type }); } catch (e) { file = blob; }
+              return { data: file, error: null };
+            });
+          });
+        }).catch(function (err) { return { data: null, error: (err && err.message) || 'network_error' }; });
+      },
+      // { title, description, price, image, host } from the page's OG / JSON-LD.
+      preview: function (url) {
+        return postRoute('/link-fetch', { kind: 'meta', url: String(url || '') }, true);
+      }
+    },
     // --- #166 Neighbor referral card (fn_pairings.sql) -----------------------
     // Every gate lives inside the definer RPCs: get() is the ONLY public read
     // (active + unflagged + suggested-vendor-public + zero tag overlap, checked
@@ -1338,7 +1377,7 @@
     // selector when the LOADED client actually whitelists the column —
     // otherwise pick() would strip it and the save would silently drop the
     // vendor's choice under a success toast.
-    capabilities: { listingSubcategory: true, itemLeadTime: true, productBuyLink: true }, // itemLeadTime = #78 (lead_time in both EDITABLE lists); productBuyLink = #172 (buy_url in PRODUCT_EDITABLE)
+    capabilities: { listingSubcategory: true, itemLeadTime: true, productBuyLink: true, linkFetch: true }, // itemLeadTime = #78 (lead_time in both EDITABLE lists); productBuyLink = #172 (buy_url in PRODUCT_EDITABLE)
     // #96-SUGGEST — admin surface (is_admin()-gated server-side; non-admins
     // get { ok:false } — safe to call from any session).
     // #137 — the notification feed behind the header bell. All three RPCs are

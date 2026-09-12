@@ -1120,6 +1120,8 @@ const LokaliProductsPage = (() => {
     const bad = v && !isValidBuyUrl(v);
     inp.style.borderColor = bad ? '#E4739A' : '#E6E4F0';
     if (hint) { hint.style.color = bad ? '#B1006A' : '#8E8BA6'; hint.textContent = bad ? 'Enter a full https:// link with no spaces (or leave blank).' : BUY_HINT; }
+    const fill = document.getElementById('lok-product-buy-fill');
+    if (fill) fill.style.display = fillEligible(v) ? 'inline-flex' : 'none';   // #173c
   };
 
   const buyHost = () => {
@@ -1133,13 +1135,78 @@ const LokaliProductsPage = (() => {
     host.style.cssText = 'margin-top:16px;font-family:"Plus Jakarta Sans",system-ui,sans-serif;white-space:normal;';
     host.innerHTML =
       '<div style="font-size:13px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;color:#4A4761;margin-bottom:8px;">Buy link <span style="font-weight:500;text-transform:none;color:#8E8BA6;">· optional</span></div>' +
-      '<input id="lok-product-buy-input" type="url" inputmode="url" autocomplete="off" spellcheck="false" maxlength="' + BUY_MAXLEN + '" placeholder="https://www.etsy.com/listing/..." style="width:100%;box-sizing:border-box;padding:11px 13px;border:1px solid #E6E4F0;border-radius:10px;font-size:14px;font-family:inherit;color:#1A1829;background:#fff;" />' +
+      '<div style="display:flex;gap:8px;align-items:stretch;">' +
+        '<input id="lok-product-buy-input" type="url" inputmode="url" autocomplete="off" spellcheck="false" maxlength="' + BUY_MAXLEN + '" placeholder="https://www.etsy.com/listing/..." style="flex:1 1 auto;min-width:0;box-sizing:border-box;padding:11px 13px;border:1px solid #E6E4F0;border-radius:10px;font-size:14px;font-family:inherit;color:#1A1829;background:#fff;" />' +
+        '<button type="button" id="lok-product-buy-fill" style="display:none;flex:0 0 auto;padding:0 14px;border:1px solid #D9CFFB;border-radius:10px;background:#fff;color:#6002EE;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">Fill from link</button>' +
+      '</div>' +
       '<div id="lok-product-buy-hint" style="font-size:12px;color:#8E8BA6;margin-top:6px;line-height:1.5;">' + BUY_HINT + '</div>';
     anchorEl.insertAdjacentElement('afterend', host);
     const inp = host.querySelector('#lok-product-buy-input');
     if (inp) inp.addEventListener('input', markBuyValidity);
+    const fill = host.querySelector('#lok-product-buy-fill');
+    if (fill) fill.addEventListener('click', fillFromBuyLink);
     _buyUiMounted = true;
     return host;
+  };
+
+  // #173c "Fill from link": read the store page's preview tags (OG / JSON-LD
+  // Product) through the link-fetch route and fill whatever is still EMPTY —
+  // name, description, price — plus the cover photo via the normal upload
+  // path. Never overwrites what the vendor typed. Not offered for etsy.com
+  // (Etsy forbids reading its pages; the route refuses too). Featured-plan
+  // perk for now (featured-first rollout) — one flag to widen.
+  const isEtsyHost = (u) => { try { return /(^|\.)etsy\.com$/i.test(new URL(u).hostname); } catch (e) { return false; } };
+  const fillEligible = (u) => !!(window.LokaliSupabaseAPI?.capabilities?.linkFetch && _isFeaturedPlan && isValidBuyUrl(u) && !isEtsyHost(u));
+  const fillFromBuyLink = async () => {
+    const url = readBuyUrl();
+    const btn = document.getElementById('lok-product-buy-fill');
+    const hint = document.getElementById('lok-product-buy-hint');
+    if (!fillEligible(url) || !btn) return;
+    const SAPI = window.LokaliSupabaseAPI;
+    btn.disabled = true; btn.textContent = 'Reading the page…';
+    const say = (t, bad) => { if (hint) { hint.textContent = t; hint.style.color = bad ? '#B1006A' : '#1D6A45'; } };
+    try {
+      const res = await SAPI.media.preview(url);
+      const d = res && res.data;
+      if (!res || res.error || !d) { say('Could not read that page. Fill in the details yourself.', true); return; }
+      let filled = [];
+      const nameEl = el.fieldName();
+      if (nameEl && !nameEl.value.trim() && d.title) { nameEl.value = d.title; filled.push('name'); }
+      const descEl = el.fieldDescription();
+      if (descEl && !descEl.value.trim() && d.description) { descEl.value = d.description; filled.push('description'); }
+      const priceEl = el.fieldPrice();
+      if (priceEl && d.price != null && !String(priceEl.value || '').trim()) {
+        priceEl.value = String(d.price);
+        const q = el.fieldQuoteBased();
+        if (q && q.checked) { q.checked = false; q.dispatchEvent(new Event('change', { bubbles: true })); }
+        filled.push('price');
+      }
+      if (d.image) {
+        const cap = _maxProductPhotos || 1;
+        const room = editingId ? true : (_pendingGalleryPhotos.length < cap);
+        if (room) {
+          btn.textContent = 'Copying the photo…';
+          const f = await SAPI.media.fetchImage(d.image);
+          if (f && !f.error && f.data) {
+            const up = await window.LokaliAPI.products.uploadProductImage(f.data);
+            const purl = up && !up.error && up.data ? (up.data.url || up.data.image_url) : null;
+            if (purl) {
+              if (editingId) {
+                const r2 = await window.LokaliAPI.products.addPhoto(editingId, purl, _galleryPhotos.length);
+                if (!r2 || !r2.error) { filled.push('photo'); await renderGallery(editingId); await syncCoverFromGallery(); }
+              } else {
+                _pendingGalleryPhotos.push({ url: purl }); filled.push('photo'); renderGallery(null);
+              }
+            }
+          }
+        }
+      }
+      say(filled.length ? 'Filled in: ' + filled.join(', ') + '. Check the wording, then save.' : 'Nothing new to fill in from that page.', !filled.length);
+    } catch (e) {
+      say('Could not read that page. Fill in the details yourself.', true);
+    } finally {
+      btn.disabled = false; btn.textContent = 'Fill from link';
+    }
   };
   const buyInput = () => { buyHost(); return document.getElementById('lok-product-buy-input'); };
   const readBuyUrl = () => (buyInput()?.value || '').trim();
@@ -1883,6 +1950,385 @@ const LokaliProductsPage = (() => {
     }
   };
 
+  // ---------------------------------------------------------------------------
+  // #173: IMPORT FROM A SPREADSHEET (Etsy "Currently for sale listings" export,
+  // a Shopify products export, or any CSV with title/description/price/quantity
+  // columns). Featured-plan perk (featured-first rollout; Featured is also the
+  // uncapped plan, so the plan-cap question never arises). Everything runs in
+  // the browser: the file never leaves the page. Selected rows become DRAFT
+  // products (is_active=false) through the normal create path, so the vendor
+  // finishes photos, Specialty, pickup/delivery and the Buy link on each, then
+  // switches it on. No SQL, no server route, no Etsy API: this is the vendor's
+  // own export of their own content. Photos are NOT imported (Etsy CDN links
+  // rot and are not ours to fetch); the dialog says so.
+  // ---------------------------------------------------------------------------
+  const CSV_MAX_BYTES = 8 * 1024 * 1024;
+  const CSV_MAX_ROWS = 500;
+  const CSV_TITLE_MAX = 140;   // Etsy's own title limit
+
+  // RFC 4180: quoted fields, doubled quotes, embedded newlines, CRLF, BOM.
+  function parseCsv(text) {
+    const rows = []; let row = []; let field = ''; let inQ = false;
+    if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (inQ) {
+        if (c === '"') { if (text[i + 1] === '"') { field += '"'; i++; } else inQ = false; }
+        else field += c;
+      } else if (c === '"') { inQ = true; }
+      else if (c === ',') { row.push(field); field = ''; }
+      else if (c === '\n' || c === '\r') {
+        if (c === '\r' && text[i + 1] === '\n') i++;
+        row.push(field); field = ''; rows.push(row); row = [];
+      } else { field += c; }
+    }
+    if (field !== '' || row.length) { row.push(field); rows.push(row); }
+    return rows.filter(r => r.some(v => String(v).trim() !== ''));
+  }
+
+  const csvColumns = (headers) => {
+    const norm = headers.map(h => String(h || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, ''));
+    const find = (...names) => { for (const n of names) { const i = norm.indexOf(n); if (i >= 0) return i; } return -1; };
+    return {
+      title: find('title', 'name', 'product_name', 'product', 'item', 'item_name'),
+      desc:  find('description', 'product_description', 'body_html', 'body', 'details'),
+      price: find('price', 'variant_price', 'unit_price', 'amount'),
+      qty:   find('quantity', 'stock_quantity', 'stock', 'qty', 'inventory', 'variant_inventory_qty'),
+      handle: find('handle', 'url_handle', 'slug'),                  // Shopify: the product URL path
+      images: norm.map((h, i) => (/^(image_?\d*|image_src|images?|photo_?\d*|image_url)$/.test(h) ? i : -1)).filter(i => i >= 0),
+      // Which export is this? Drives the buy-link recipe + the store prompt.
+      platform: norm.indexOf('handle') >= 0 ? 'shopify' : (norm.indexOf('image1') >= 0 && norm.indexOf('currency_code') >= 0) ? 'etsy' : 'generic',
+    };
+  };
+
+  // #173b: buy links straight from the export. Shopify rows carry the product
+  // handle → exact URL once the vendor gives the store address. Etsy's export
+  // has NO listing URL, so the link opens the vendor's own shop SEARCHED for the
+  // exact title (lands on the listing in practice; the vendor can swap in the
+  // exact link later). Both inputs are sanitized to a strict charset before
+  // they touch a URL, and the result is re-checked against the same https-only
+  // shape the Buy link field enforces.
+  const IMPORT_STORE_KEY = 'lok_import_store_v1';
+  const cleanEtsyShop = (v) => String(v || '').trim().replace(/^https?:\/\/(www\.)?etsy\.com\/shop\//i, '').replace(/[/?#].*$/, '').replace(/[^A-Za-z0-9]/g, '').slice(0, 40);
+  const cleanShopifyDomain = (v) => String(v || '').trim().toLowerCase().replace(/^https?:\/\//, '').replace(/[/?#].*$/, '').replace(/[^a-z0-9.-]/g, '').slice(0, 120);
+  const importBuyUrl = (platform, store, it) => {
+    let u = '';
+    if (platform === 'etsy' && store) u = 'https://www.etsy.com/shop/' + store + '/search?search_query=' + encodeURIComponent(it.title);
+    else if (platform === 'shopify' && store && it.handle) u = 'https://' + store + '/products/' + encodeURIComponent(it.handle);
+    return isValidBuyUrl(u) ? u : '';
+  };
+  const readImportStore = (platform) => { try { return (JSON.parse(localStorage.getItem(IMPORT_STORE_KEY) || '{}') || {})[platform] || ''; } catch (e) { return ''; } };
+  const saveImportStore = (platform, v) => { try { const o = JSON.parse(localStorage.getItem(IMPORT_STORE_KEY) || '{}') || {}; o[platform] = v; localStorage.setItem(IMPORT_STORE_KEY, JSON.stringify(o)); } catch (e) {} };
+
+  // Shopify exports HTML descriptions; Etsy exports plain text. Flatten either.
+  const csvPlainText = (v) => {
+    let t = String(v == null ? '' : v);
+    if (/<[a-z][\s\S]*>/i.test(t)) {
+      t = t.replace(/<br\s*\/?>/gi, '\n').replace(/<\/(p|div|li|h[1-6])>/gi, '\n').replace(/<[^>]+>/g, '');
+      const ta = document.createElement('textarea'); ta.innerHTML = t; t = ta.value;
+    }
+    return t.replace(/\r\n?/g, '\n').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+  };
+  const csvPrice = (v) => {
+    const n = Number(String(v == null ? '' : v).replace(/[^0-9.\-]/g, ''));
+    return (isFinite(n) && n > 0) ? Math.round(n * 100) / 100 : null;
+  };
+  const csvQty = (v) => {
+    const n = parseInt(String(v == null ? '' : v).replace(/[^0-9\-]/g, ''), 10);
+    return isNaN(n) ? null : Math.max(0, n);
+  };
+  const csvTitleKey = (t) => String(t || '').toLowerCase().replace(/\s+/g, ' ').trim();
+
+  // Rows → import candidates. Continuation rows (Shopify variants/images carry
+  // a blank title) are skipped; duplicates of an existing product, or of an
+  // earlier row, are flagged and unticked by default.
+  const csvToItems = (rows) => {
+    if (!rows.length) return { error: 'That file looks empty.' };
+    const cols = csvColumns(rows[0]);
+    if (cols.title < 0) return { error: 'No title column found. Etsy exports have TITLE, DESCRIPTION, PRICE and QUANTITY columns; any sheet with a "title" or "name" column works.' };
+    const seen = new Set(products.map(p => csvTitleKey(p.product_name)));
+    const items = [];
+    for (let r = 1; r < rows.length && items.length < CSV_MAX_ROWS; r++) {
+      const row = rows[r];
+      const title = String(row[cols.title] || '').replace(/\s+/g, ' ').trim().slice(0, CSV_TITLE_MAX);
+      if (!title) continue;
+      const key = csvTitleKey(title);
+      const dup = seen.has(key);
+      seen.add(key);
+      const images = cols.images.map(ci => String(row[ci] || '').trim()).filter(u => /^https:\/\/\S+$/.test(u));
+      items.push({
+        title,
+        desc:  cols.desc  >= 0 ? csvPlainText(row[cols.desc]) : '',
+        price: cols.price >= 0 ? csvPrice(row[cols.price]) : null,
+        qty:   cols.qty   >= 0 ? csvQty(row[cols.qty]) : null,
+        handle: cols.handle >= 0 ? String(row[cols.handle] || '').trim().replace(/[^A-Za-z0-9._-]/g, '').slice(0, 200) : '',
+        images,      // display-only thumbnails now; the #173c photo-copy route consumes these later
+        dup,
+        checked: !dup,
+      });
+    }
+    if (!items.length) return { error: 'No rows with a title were found in that file.' };
+    return { items, truncated: rows.length - 1 > CSV_MAX_ROWS, platform: cols.platform };
+  };
+
+  function openImportDialog(items, fileName, truncated, platform) {
+    return new Promise(function (resolve) {
+      var prev = document.activeElement;
+      var overlay = document.createElement('div');
+      overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:9990;background:rgba(51,37,78,.5);display:flex;align-items:center;justify-content:center;padding:20px;';
+      var card = document.createElement('div');
+      card.setAttribute('role', 'dialog');
+      card.setAttribute('aria-modal', 'true');
+      card.setAttribute('aria-labelledby', 'lok-import-title');
+      card.style.cssText = 'background:#fff;border-radius:14px;max-width:760px;width:100%;max-height:88vh;display:flex;flex-direction:column;padding:22px 20px;box-sizing:border-box;font-family:"Plus Jakarta Sans",system-ui,sans-serif;box-shadow:0 12px 40px rgba(51,37,78,.28);';
+      var btnBase = 'display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 18px;border-radius:10px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;';
+      var newCount = items.filter(function (it) { return !it.dup; }).length;
+      var dupCount = items.length - newCount;
+      card.innerHTML =
+        '<div id="lok-import-title" style="font-size:17px;font-weight:700;color:#1A1829;margin-bottom:4px;">Import products from a spreadsheet</div>' +
+        '<p data-import-sub style="font-size:13.5px;color:#5A5570;line-height:1.5;margin:0 0 12px;"></p>' +
+        (platform === 'etsy' || platform === 'shopify'
+          ? '<div style="margin:0 0 12px;">' +
+              '<label for="lok-import-store" style="display:block;font-size:12.5px;font-weight:600;color:#4A4761;margin-bottom:5px;">' +
+                (platform === 'etsy' ? 'Your Etsy shop name <span style="font-weight:500;color:#6E6A85;">(the part after etsy.com/shop/) · adds a "Buy on Etsy" link to every item</span>'
+                                     : 'Your store address <span style="font-weight:500;color:#6E6A85;">(e.g. mystore.com) · adds the exact product link to every item</span>') +
+              '</label>' +
+              '<input id="lok-import-store" type="text" autocomplete="off" spellcheck="false" placeholder="' + (platform === 'etsy' ? 'MyShopName' : 'mystore.com') + '" style="width:100%;max-width:360px;box-sizing:border-box;padding:9px 12px;border:1px solid #E6E4F0;border-radius:10px;font-size:14px;font-family:inherit;color:#1A1829;background:#fff;" />' +
+            '</div>'
+          : '') +
+        '<div style="display:flex;gap:14px;align-items:center;font-size:13px;color:#6E6A85;margin-bottom:8px;">' +
+          '<button type="button" data-import-all style="background:none;border:0;padding:0;color:#6002EE;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;">Select all new</button>' +
+          '<button type="button" data-import-none style="background:none;border:0;padding:0;color:#6002EE;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;">Select none</button>' +
+          '<span data-import-count style="margin-left:auto;"></span></div>' +
+        '<div style="flex:1 1 auto;min-height:0;overflow:auto;border:1px solid #E6E4F0;border-radius:10px;">' +
+          '<table style="width:100%;border-collapse:collapse;font-size:13.5px;color:#1A1829;">' +
+            '<thead><tr style="position:sticky;top:0;background:#F7F6FC;">' +
+              '<th style="width:36px;padding:9px 10px;"></th>' +
+              '<th style="width:44px;padding:9px 6px;"></th>' +
+              '<th style="text-align:left;padding:9px 10px;font-weight:600;color:#4A4761;">Title</th>' +
+              '<th style="text-align:right;padding:9px 10px;font-weight:600;color:#4A4761;white-space:nowrap;">Price</th>' +
+              '<th style="text-align:right;padding:9px 10px;font-weight:600;color:#4A4761;white-space:nowrap;">Qty</th>' +
+              '<th style="text-align:left;padding:9px 10px;font-weight:600;color:#4A4761;">Status</th>' +
+            '</tr></thead><tbody data-import-rows></tbody></table></div>' +
+        '<p style="font-size:12.5px;color:#6E6A85;line-height:1.5;margin:12px 0 0;">Imported items start <strong>off</strong> (drafts) and are marked as shipping. Photos from the file are copied in (up to your plan\u2019s limit per item). Open each item to check it, add a Specialty and pickup or delivery, then switch it on.</p>' +
+        '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:14px;">' +
+          '<button type="button" data-import-cancel style="' + btnBase + 'border:1px solid #E6E4F0;background:#fff;color:#5A5570;">Cancel</button>' +
+          '<button type="button" data-import-go style="' + btnBase + 'border:1px solid #6002EE;background:#6002EE;color:#fff;"></button>' +
+        '</div>';
+      overlay.appendChild(card);
+      // Vendor-supplied strings go in as TEXT, never markup.
+      card.querySelector('[data-import-sub]').textContent =
+        fileName + ' · ' + items.length + ' item' + (items.length === 1 ? '' : 's') +
+        (dupCount ? ' · ' + dupCount + ' already listed (unticked)' : '') +
+        (truncated ? ' · only the first ' + CSV_MAX_ROWS + ' rows are shown' : '');
+      var tbody = card.querySelector('[data-import-rows]');
+      items.forEach(function (it, i) {
+        var tr = document.createElement('tr');
+        tr.style.cssText = 'border-top:1px solid #EEEDF6;' + (it.dup ? 'color:#8E8BA6;' : '');
+        var tdC = document.createElement('td'); tdC.style.cssText = 'padding:8px 10px;text-align:center;';
+        var cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = it.checked; cb.setAttribute('aria-label', 'Import ' + it.title);
+        cb.addEventListener('change', function () { it.checked = cb.checked; updateCount(); });
+        tdC.appendChild(cb);
+        // Thumbnail = the export's first photo, DISPLAYED only (an <img> may show a
+        // cross-site image; nothing is fetched or stored). src set as a property.
+        var tdI = document.createElement('td'); tdI.style.cssText = 'padding:6px 6px;';
+        if (it.images && it.images[0]) {
+          var im = document.createElement('img');
+          im.src = it.images[0]; im.alt = ''; im.loading = 'lazy'; im.referrerPolicy = 'no-referrer';
+          im.style.cssText = 'width:36px;height:36px;object-fit:cover;border-radius:7px;background:#F3EBFF;display:block;';
+          im.addEventListener('error', function () { im.style.visibility = 'hidden'; });
+          tdI.appendChild(im);
+        }
+        var tdT = document.createElement('td'); tdT.style.cssText = 'padding:8px 10px;max-width:380px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'; tdT.textContent = it.title; tdT.title = it.title;
+        var tdP = document.createElement('td'); tdP.style.cssText = 'padding:8px 10px;text-align:right;white-space:nowrap;'; tdP.textContent = it.price == null ? 'Quote' : '$' + it.price;
+        var tdQ = document.createElement('td'); tdQ.style.cssText = 'padding:8px 10px;text-align:right;'; tdQ.textContent = it.qty == null ? '' : String(it.qty);
+        var tdS = document.createElement('td'); tdS.style.cssText = 'padding:8px 10px;white-space:nowrap;font-size:12px;';
+        var chip = document.createElement('span');
+        chip.style.cssText = it.dup
+          ? 'display:inline-block;padding:2px 9px;border-radius:999px;background:#F1EFF7;color:#6E6A85;font-weight:600;'
+          : 'display:inline-block;padding:2px 9px;border-radius:999px;background:#EAFAF2;color:#1D6A45;font-weight:600;';
+        chip.textContent = it.dup ? 'Already listed' : 'New';
+        tdS.appendChild(chip);
+        var linkChip = document.createElement('span');
+        linkChip.setAttribute('data-import-linkchip', '1');
+        linkChip.style.cssText = 'display:none;margin-left:6px;padding:2px 9px;border-radius:999px;background:#F3EBFF;color:#4D02C0;font-weight:600;';
+        linkChip.textContent = 'Buy link';
+        tdS.appendChild(linkChip);
+        tr.appendChild(tdC); tr.appendChild(tdI); tr.appendChild(tdT); tr.appendChild(tdP); tr.appendChild(tdQ); tr.appendChild(tdS);
+        tbody.appendChild(tr);
+      });
+      var goBtn = card.querySelector('[data-import-go]');
+      var storeInp = card.querySelector('#lok-import-store');
+      function storeValue() {
+        if (!storeInp) return '';
+        return platform === 'etsy' ? cleanEtsyShop(storeInp.value) : cleanShopifyDomain(storeInp.value);
+      }
+      function refreshLinks() {
+        var store = storeValue();
+        tbody.querySelectorAll('[data-import-linkchip]').forEach(function (c, i) {
+          c.style.display = importBuyUrl(platform, store, items[i]) ? 'inline-block' : 'none';
+        });
+      }
+      if (storeInp) { storeInp.value = readImportStore(platform); storeInp.addEventListener('input', refreshLinks); }
+      function selected() { return items.filter(function (it) { return it.checked; }); }
+      function updateCount() {
+        var n = selected().length;
+        card.querySelector('[data-import-count]').textContent = n + ' selected';
+        goBtn.textContent = n ? 'Import ' + n + ' as draft' + (n === 1 ? '' : 's') : 'Nothing selected';
+        goBtn.disabled = !n; goBtn.style.opacity = n ? '1' : '.55';
+      }
+      updateCount();
+      refreshLinks();
+      function close(choice) {
+        document.removeEventListener('keydown', onKey, true);
+        overlay.remove();
+        if (prev && prev.focus) { try { prev.focus(); } catch (e) {} }
+        resolve(choice);
+      }
+      function onKey(ev) { if (ev.key === 'Escape' && !goBtn.dataset.busy) { ev.preventDefault(); close(null); } }
+      document.addEventListener('keydown', onKey, true);
+      overlay.addEventListener('click', function (ev) { if (ev.target === overlay && !goBtn.dataset.busy) close(null); });
+      card.querySelector('[data-import-all]').addEventListener('click', function () {
+        items.forEach(function (it) { it.checked = !it.dup; });
+        tbody.querySelectorAll('input[type="checkbox"]').forEach(function (c, i) { c.checked = items[i].checked; });
+        updateCount();
+      });
+      card.querySelector('[data-import-none]').addEventListener('click', function () {
+        items.forEach(function (it) { it.checked = false; });
+        tbody.querySelectorAll('input[type="checkbox"]').forEach(function (c) { c.checked = false; });
+        updateCount();
+      });
+      card.querySelector('[data-import-cancel]').addEventListener('click', function () { if (!goBtn.dataset.busy) close(null); });
+      goBtn.addEventListener('click', function () {
+        var list = selected(); if (!list.length) return;
+        // The dialog stays up as the progress surface; close() is called by the runner.
+        goBtn.dataset.busy = '1'; goBtn.disabled = true; goBtn.style.opacity = '.7';
+        card.querySelector('[data-import-cancel]').disabled = true;
+        var store = storeValue(); if (storeInp) saveImportStore(platform, store);
+        resolve({ items: list, store: store, progress: function (done, total, note) { goBtn.textContent = 'Importing ' + (done + 1) + ' of ' + total + (note ? ' · ' + note : '') + '…'; }, close: function () { close(null); } });
+      });
+      document.body.appendChild(overlay);
+      goBtn.focus();
+    });
+  }
+
+  // #173c: copy the export's photos into the new draft. The server only fetches
+  // the bytes (link-fetch route); the upload + product_photos rows happen HERE
+  // as the signed-in vendor, exactly like a picked file — so the plan photo cap
+  // trigger and the re-encode apply. Best-effort: a failed photo never fails
+  // the import. Returns how many landed.
+  const importPhotosFor = async (newId, images, cap, note) => {
+    const SAPI = window.LokaliSupabaseAPI;
+    if (newId == null || !images || !images.length || !SAPI || !SAPI.media || !(SAPI.capabilities && SAPI.capabilities.linkFetch)) return 0;
+    const urls = [];
+    const wanted = images.slice(0, Math.max(1, cap));
+    for (let k = 0; k < wanted.length; k++) {
+      note('photo ' + (k + 1) + ' of ' + wanted.length);
+      try {
+        const f = await SAPI.media.fetchImage(wanted[k]);
+        if (!f || f.error || !f.data) continue;
+        const up = await window.LokaliAPI.products.uploadProductImage(f.data);
+        if (!up || up.error) continue;
+        const url = (up.data && (up.data.url || up.data.image_url)) || null;
+        if (url) urls.push(url);
+      } catch (e) {}
+    }
+    for (let k = 0; k < urls.length; k++) {
+      try { await window.LokaliAPI.products.addPhoto(newId, urls[k], k); } catch (e) {}
+    }
+    if (urls.length) { try { await window.LokaliAPI.products.update(newId, { image_url: urls[0] }); } catch (e) {} }
+    return urls.length;
+  };
+
+  const runImport = async (list, progress, platform, store) => {
+    // Preserve the sheet's order and put the batch on TOP (same policy as a
+    // single new product): first row gets the smallest sort_order.
+    const start = topProductSortOrder() - (list.length - 1);
+    let done = 0, failed = null, photos = 0;
+    for (let i = 0; i < list.length; i++) {
+      const it = list[i];
+      progress(i, list.length);
+      const payload = {
+        product_name: it.title,
+        product_description: it.desc || '',
+        price: it.price,
+        is_quote_based: it.price == null,
+        stock_quantity: it.qty,
+        is_active: false,           // draft — the vendor switches it on after finishing it
+        shipping_offered: true,     // a shop export ships by definition; pickup/delivery stay unset
+        pickup_only: false,
+        delivery_offered: false,
+        is_custom: false,
+        sort_order: start + i,
+      };
+      const burl = importBuyUrl(platform, store, it);   // #173b: link from the export, or nothing
+      if (burl) payload.buy_url = burl;
+      let res;
+      try { res = await window.LokaliAPI.products.create(payload); } catch (e) { res = { error: String(e && e.message || e) }; }
+      if (!res || res.error) { failed = String((res && res.error) || 'Unknown error').replace(/^LOKALI_LIMIT_REACHED:\s*/, ''); break; }
+      done++;
+      const newId = res.data && (res.data.id != null ? res.data.id : (res.data.product && res.data.product.id));
+      photos += await importPhotosFor(newId, it.images, _maxProductPhotos || 1, function (n) { progress(i, list.length, n); });
+    }
+    return { done, failed, photos };
+  };
+
+  const showImportSummary = (text, tone) => {
+    var host = el.listView() || document.body;
+    var old = document.getElementById('lok-import-summary'); if (old) old.remove();
+    var box = document.createElement('div');
+    box.id = 'lok-import-summary';
+    box.setAttribute('role', 'status');
+    box.style.cssText = 'margin:0 0 14px;padding:12px 14px;border-radius:10px;font-family:"Plus Jakarta Sans",system-ui,sans-serif;font-size:13.5px;line-height:1.5;' +
+      (tone === 'error' ? 'background:#FCEBEB;color:#791F1F;border:1px solid #F7C1C1;' : 'background:#EAFAF2;color:#1D6A45;border:1px solid #C8E6C9;');
+    box.textContent = text;
+    host.insertBefore(box, host.firstChild);
+    setTimeout(function () { if (box.parentNode) box.remove(); }, 15000);
+  };
+
+  const openImportPicker = () => {
+    var input = document.createElement('input');
+    input.type = 'file'; input.accept = '.csv,text/csv,text/plain'; input.style.display = 'none';
+    input.addEventListener('change', async function () {
+      var file = input.files && input.files[0]; input.remove();
+      if (!file) return;
+      if (file.size > CSV_MAX_BYTES) { showImportSummary('That file is over 8 MB. Export just your current listings and try again.', 'error'); return; }
+      var text;
+      try { text = await file.text(); } catch (e) { showImportSummary('Could not read that file.', 'error'); return; }
+      var parsed = csvToItems(parseCsv(text));
+      if (parsed.error) { showImportSummary(parsed.error, 'error'); return; }
+      var choice = await openImportDialog(parsed.items, file.name, parsed.truncated, parsed.platform);
+      if (!choice) return;
+      var out = await runImport(choice.items, choice.progress, parsed.platform, choice.store);
+      choice.close();
+      await loadData();
+      var pill = el.pillInactive(); if (pill && out.done) { try { pill.click(); } catch (e) {} }
+      if (out.failed) showImportSummary('Imported ' + out.done + ' of ' + choice.items.length + ', then stopped: ' + out.failed, 'error');
+      else showImportSummary('Imported ' + out.done + ' draft' + (out.done === 1 ? '' : 's') + (out.photos ? ' and ' + out.photos + ' photo' + (out.photos === 1 ? '' : 's') : '') + (choice.store ? ', with buy links' : '') + '. They are in your Inactive list: open each one to check the photos, add a Specialty and pickup or delivery, then switch it on.', 'ok');
+    });
+    document.body.appendChild(input);
+    input.click();
+  };
+
+  // Secondary button beside "Add product": a deep clone of it (same Webflow
+  // classes, no template edit), Featured plan only — it self-removes otherwise.
+  const ensureImportButton = () => {
+    var existing = document.getElementById('lok-import-btn');
+    if (!_isFeaturedPlan) { if (existing) existing.remove(); return; }
+    if (existing) return;
+    var add = el.addBtn(); if (!add || !add.parentNode) return;
+    var btn = add.cloneNode(true);
+    btn.id = 'lok-import-btn';
+    btn.querySelectorAll('[id]').forEach(function (n) { n.removeAttribute('id'); });
+    var textHost = btn; while (textHost.children && textHost.children.length === 1) textHost = textHost.children[0];
+    textHost.textContent = 'Import from spreadsheet';
+    if (btn.tagName === 'A') btn.setAttribute('href', '#');
+    btn.setAttribute('title', 'Bring in listings from an Etsy or Shopify export (CSV)');
+    btn.style.marginLeft = '10px';
+    btn.addEventListener('click', function (ev) { ev.preventDefault(); openImportPicker(); });
+    add.insertAdjacentElement('afterend', btn);
+  };
+
   const loadData = async () => {
     // Both calls can transiently fail (429 / cold start). If the
     // BILLING call loses that race, plan detection falls back to "free" and the
@@ -1954,6 +2400,7 @@ const LokaliProductsPage = (() => {
     });
 
     renderList();
+    ensureImportButton(); // #173 — plan known by now
     requestAnimationFrame(reconcileListDom);
   };
 
