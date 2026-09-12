@@ -1419,6 +1419,13 @@
       // basics pre-filled; Supabase emails the invite. Admin-checked server-side.
       inviteVendor: function (payload) {
         return postRoute('/admin/invite-vendor', payload || {}, true);
+      },
+      // #171 — admin mints a one-time sign-in link for an existing VENDOR account
+      // (build their storefront without holding their password). The route
+      // refuses admins, shoppers and unknown emails; the link is returned, never
+      // emailed. Open it in a PRIVATE window — same browser = replaces your session.
+      signInAs: function (payload) {
+        return postRoute('/admin/sign-in-as', payload || {}, true);
       }
     },
     // #96-SUGGEST — subcategory taxonomy + the vendor suggestion pipeline.
