@@ -32,8 +32,8 @@
   // Page order. Keep labels short — they wrap on mobile otherwise.
   var LINKS = [
     { href: '/pricing#plans',   label: 'Plans' },
-    { href: '/pricing#compare', label: 'Compare plans' },
     { href: '/pricing#versus',  label: 'Why Lokali' },
+    { href: '/pricing#compare', label: 'Compare plans' },
     { href: '/pricing#faq',     label: 'FAQ' }
   ];
 
