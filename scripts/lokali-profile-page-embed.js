@@ -646,6 +646,85 @@ var LokaliProfilePage = (function () {
     else anchorSection.parentNode.appendChild(section);
   }
 
+  // ---- Shared listing-photo picker (F 2026-09-13: "for the market card
+  // section, it goes on forever") -------------------------------------------
+  // One overlay dialog for both cards. The inline strips stay short; the full
+  // set (every service/product/gallery photo, hundreds after a spreadsheet
+  // import) lives in here, scrollable, thumbnails lazy-loaded. Single-select
+  // (Market card pin) or multi-select with a cap (portfolio). Escape / overlay
+  // click cancel; focus returns to the opener.
+  function _openPhotoPicker(o) {
+    var prev = document.activeElement;
+    var overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:9990;background:rgba(51,37,78,.5);display:flex;align-items:center;justify-content:center;padding:20px;';
+    var card = document.createElement('div');
+    card.setAttribute('role', 'dialog'); card.setAttribute('aria-modal', 'true'); card.setAttribute('aria-labelledby', 'lok-pp-title');
+    card.style.cssText = 'background:#fff;border-radius:14px;max-width:820px;width:100%;max-height:88vh;display:flex;flex-direction:column;padding:20px;box-sizing:border-box;font-family:"Plus Jakarta Sans",system-ui,sans-serif;box-shadow:0 12px 40px rgba(51,37,78,.28);';
+    var head = document.createElement('div');
+    head.style.cssText = 'display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px;';
+    var ht = document.createElement('div');
+    var h = document.createElement('div'); h.id = 'lok-pp-title'; h.style.cssText = 'font-size:17px;font-weight:700;color:#1A1829;'; h.textContent = o.title || 'Choose a photo';
+    var sub = document.createElement('div'); sub.style.cssText = 'font-size:13px;color:#6E6A85;line-height:1.5;margin-top:3px;'; sub.textContent = o.sub || '';
+    ht.appendChild(h); ht.appendChild(sub);
+    var count = document.createElement('div'); count.style.cssText = 'font-size:13px;font-weight:600;color:#4A4761;white-space:nowrap;padding-top:3px;';
+    head.appendChild(ht); head.appendChild(count);
+    var body = document.createElement('div');
+    body.style.cssText = 'flex:1 1 auto;min-height:0;overflow:auto;border:1px solid #E6E4F0;border-radius:10px;padding:10px;display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:8px;align-content:start;';
+    var foot = document.createElement('div');
+    foot.style.cssText = 'display:flex;gap:10px;justify-content:flex-end;margin-top:14px;';
+    var btnBase = 'display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:0 18px;border-radius:10px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;';
+    var cancel = document.createElement('button'); cancel.type = 'button'; cancel.textContent = 'Cancel';
+    cancel.style.cssText = btnBase + 'border:1px solid #E6E4F0;background:#fff;color:#5A5570;';
+    var go = document.createElement('button'); go.type = 'button';
+    go.style.cssText = btnBase + 'border:1px solid #6002EE;background:#6002EE;color:#fff;';
+    foot.appendChild(cancel); foot.appendChild(go);
+    card.appendChild(head); card.appendChild(body); card.appendChild(foot); overlay.appendChild(card);
+    var picked = []; if (o.selectedUrl) picked.push(o.selectedUrl);
+    var max = o.multi ? (o.max > 0 ? o.max : Infinity) : 1;
+    function paint() {
+      var n = picked.length;
+      count.textContent = o.multi ? (n + ' selected' + (isFinite(max) ? ' of ' + max : '')) : (n ? '1 selected' : 'Pick one');
+      go.textContent = typeof o.confirmLabel === 'function' ? o.confirmLabel(n) : (o.confirmLabel || 'Use photo');
+      go.disabled = !n; go.style.opacity = n ? '1' : '.55';
+      Array.prototype.forEach.call(body.children, function (b) {
+        var on = picked.indexOf(b.dataset.url) !== -1;
+        b.style.borderColor = on ? '#6002EE' : '#E4DFF6';
+        b.style.boxShadow = on ? '0 0 0 3px rgba(96,2,238,.18)' : 'none';
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
+        b.lastChild.style.display = on ? 'flex' : 'none';
+      });
+    }
+    (o.cands || []).forEach(function (c) {
+      var b = document.createElement('button'); b.type = 'button'; b.dataset.url = c.url;
+      b.style.cssText = 'position:relative;height:84px;padding:0;border-radius:10px;overflow:hidden;cursor:pointer;background:#F7F6FC;border:2px solid #E4DFF6;';
+      var img = document.createElement('img'); img.src = c.url; img.alt = ''; img.loading = 'lazy'; img.decoding = 'async';
+      img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';
+      if (typeof c.fx === 'number' && typeof c.fy === 'number') img.style.objectPosition = c.fx + '% ' + c.fy + '%';
+      img.addEventListener('error', function () { if (b.parentNode) body.removeChild(b); });
+      var check = document.createElement('span');
+      check.style.cssText = 'position:absolute;top:6px;right:6px;width:20px;height:20px;border-radius:50%;background:#6002EE;color:#fff;display:none;align-items:center;justify-content:center;font:700 12px "Plus Jakarta Sans",sans-serif;';
+      check.textContent = '\u2713';
+      b.appendChild(img); b.appendChild(check);
+      b.addEventListener('click', function () {
+        var i = picked.indexOf(c.url);
+        if (i !== -1) picked.splice(i, 1);
+        else if (o.multi) { if (picked.length >= max) { _showToast('error', 'You can add ' + max + ' more to your gallery.'); return; } picked.push(c.url); }
+        else picked = [c.url];
+        paint();
+      });
+      body.appendChild(b);
+    });
+    function close() { document.removeEventListener('keydown', onKey); if (overlay.parentNode) overlay.parentNode.removeChild(overlay); try { if (prev && prev.focus) prev.focus(); } catch (e) {} }
+    function onKey(e) { if (e.key === 'Escape') { e.preventDefault(); close(); } }
+    document.addEventListener('keydown', onKey);
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) close(); });
+    cancel.addEventListener('click', close);
+    go.addEventListener('click', function () { if (!picked.length) return; var out = picked.slice(); close(); o.onConfirm(out); });
+    document.body.appendChild(overlay);
+    paint();
+    setTimeout(function () { try { (body.firstChild || cancel).focus(); } catch (e) {} }, 0);
+  }
+
   // ---- Market card photo picker (card redesign follow-up, 2026-08-29) -----
   // One compact card, zero standing preview: a thumbnail strip of the vendor's
   // EXISTING photos (portfolio + listing images, via the adapter's
@@ -737,7 +816,14 @@ var LokaliProfilePage = (function () {
     auto.appendChild(al);
     auto.addEventListener('click', function () { if (_cardPhotoPinned()) choose(null); });
     strip.appendChild(auto);
-    cands.forEach(function (c) {
+    // Inline: the current pick first, then the first few candidates. The rest
+    // (hundreds after an import) open in the picker dialog — the card used to
+    // list every photo and "went on forever" (F 2026-09-13).
+    var CARD_INLINE = 7;
+    var shown = [];
+    if (pinValid) cands.forEach(function (c) { if (c.url === pinned) shown.push(c); });
+    cands.forEach(function (c) { if (shown.length < CARD_INLINE && shown.indexOf(c) === -1) shown.push(c); });
+    shown.forEach(function (c) {
       var selected = pinValid && c.url === pinned;
       var b = tile(selected);
       b.setAttribute('aria-label', selected ? 'Current card photo' : 'Use this photo on your Market card');
@@ -756,6 +842,25 @@ var LokaliProfilePage = (function () {
       b.addEventListener('click', function () { if (!selected) choose(c.url); });
       strip.appendChild(b);
     });
+    if (cands.length > shown.length) {
+      var more = tile(false);
+      more.setAttribute('aria-label', 'Show all ' + cands.length + ' photos');
+      more.style.background = '#F7F6FC';
+      var ml = document.createElement('span');
+      ml.style.cssText = 'position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:600 12px/1.3 "Plus Jakarta Sans",sans-serif;color:#6002EE;text-align:center;padding:6px;';
+      ml.textContent = 'Show all ' + cands.length + ' photos';
+      more.appendChild(ml);
+      more.addEventListener('click', function () {
+        _openPhotoPicker({
+          title: 'Choose your Market card photo',
+          sub: 'Every photo on your gallery, services and products. Shoppers see a wide crop of it on your card.',
+          cands: cands, multi: false, selectedUrl: pinValid ? pinned : null,
+          confirmLabel: 'Use this photo',
+          onConfirm: function (urls) { if (urls[0] && urls[0] !== _cardPhotoPinned()) choose(urls[0]); }
+        });
+      });
+      strip.appendChild(more);
+    }
   }
 
   // ---- unsaved-changes guard ----------------------------------------------
@@ -1346,6 +1451,83 @@ var LokaliProfilePage = (function () {
       if (vidRow.style.display === 'flex' && inp0) inp0.focus();
     });
     btnRow.appendChild(vidBtn);
+    // F 2026-09-13: reuse listing photos for the gallery without re-uploading.
+    // Opens the shared picker over the vendor's service/product photos (gallery
+    // photos and anything already in the gallery excluded); each pick is COPIED
+    // into {vendor}/portfolio/ through the normal upload path, so the plan-cap
+    // trigger and the re-encode apply and deleting a product later never
+    // breaks the gallery.
+    var pickBtn = _brandBtn('Pick from listings');
+    pickBtn.id = 'lok-pf-pick';
+    pickBtn.style.flex = '1';
+    pickBtn.style.textAlign = 'center';
+    var _pfPicking = false;
+    pickBtn.addEventListener('click', function (e) {
+      e.preventDefault();
+      if (_pfPicking || !_vendor || _vendor.id == null) return;
+      var api = window.LokaliAPI && window.LokaliAPI.vendors;
+      if (!api || typeof api.coverCandidates !== 'function') { _showToast('error', 'Photo picking is not available right now. Please reload the page.'); return; }
+      var room = _PF_MAX - _pfPhotos.length;
+      if (room <= 0) { _showToast('error', 'Your gallery is full: ' + _PF_MAX + ' items on your plan.'); return; }
+      var have = {};
+      _pfPhotos.forEach(function (r) { if (r && r.image_url) have[r.image_url] = true; });
+      var loaded = _cardPhotoCands ? Promise.resolve(_cardPhotoCands) : api.coverCandidates(_vendor.id).then(function (out) {
+        var seen = {}, list = [];
+        ((out && out.data && out.data.candidates) || []).forEach(function (c) { if (c && c.url && !seen[c.url]) { seen[c.url] = true; list.push(c); } });
+        _cardPhotoCands = list; return list;
+      });
+      pickBtn.textContent = 'Loading\u2026';
+      loaded.then(function (list) {
+        pickBtn.textContent = 'Pick from listings';
+        var cands = (list || []).filter(function (c) { return c && c.url && !have[c.url] && c.url.indexOf('/portfolio/') === -1; });
+        if (!cands.length) { _showToast('error', 'No listing photos to pick from yet. Add photos to a service or product first.'); return; }
+        _openPhotoPicker({
+          title: 'Add listing photos to your gallery',
+          sub: 'Tick the photos from your services and products you want at the top of your public page. Up to ' + room + ' more.',
+          cands: cands, multi: true, max: room,
+          confirmLabel: function (n) { return n ? 'Add ' + n + ' to gallery' : 'Add to gallery'; },
+          onConfirm: function (urls) { _pfCopyIntoGallery(urls); }
+        });
+      }).catch(function () { pickBtn.textContent = 'Pick from listings'; _showToast('error', 'Could not load your photos. Please try again.'); });
+    });
+    function _pfCopyIntoGallery(urls) {
+      var S = window.LokaliSupabaseAPI;
+      if (!S || !S.storage || !S.photos) return;
+      _pfPicking = true;
+      var done = 0, failed = 0, i = 0;
+      function step() {
+        if (i >= urls.length || _pfPhotos.length + done >= _PF_MAX) { finish(); return; }
+        var url = urls[i++];
+        pickBtn.textContent = 'Adding ' + (done + failed + 1) + ' of ' + urls.length + '\u2026';
+        fetch(url, { mode: 'cors', credentials: 'omit' }).then(function (r) { if (!r.ok) throw new Error('fetch ' + r.status); return r.blob(); }).then(function (blob) {
+          var ext = (blob.type || '').split('/')[1] || 'jpg';
+          var file = new File([blob], 'listing.' + ext, { type: blob.type || 'image/jpeg' });
+          return S.storage.uploadImage(_vendor.id, 'portfolio', file);
+        }).then(function (res) {
+          if (!res || res.error || !res.data || !res.data.url) throw new Error((res && res.error && res.error.message) || 'upload');
+          var nextSort = (_pfPhotos.length ? (Number(_pfPhotos[_pfPhotos.length - 1].sort_order) || _pfPhotos.length) : 0) + done + 1;
+          return S.photos.add('vendor', _vendor.id, res.data.url, nextSort);
+        }).then(function (addRes) {
+          if (addRes && addRes.error) throw new Error(String(addRes.error.message || 'attach'));
+          done++; step();
+        }).catch(function (err) {
+          failed++;
+          var m = String(err && err.message || '');
+          if (m.indexOf('LOKALI_LIMIT_REACHED') !== -1) { _showToast('error', m.replace(/^.*LOKALI_LIMIT_REACHED:\s*/, '')); finish(); return; }
+          step();
+        });
+      }
+      function finish() {
+        _pfPicking = false;
+        pickBtn.textContent = 'Pick from listings';
+        _renderPortfolio();
+        if (done && !failed) _showToast('success', done + (done === 1 ? ' photo' : ' photos') + ' added to your gallery and saved automatically.');
+        else if (done) _showToast('error', done + ' added, ' + failed + ' could not be copied. Try those again.');
+        else _showToast('error', 'Those photos could not be added. Please try again.');
+      }
+      step();
+    }
+    btnRow.appendChild(pickBtn);
     card.col.appendChild(vidRow);
     var vidHint = document.createElement('p');
     vidHint.id = 'lok-pf-vidhint';
@@ -1569,6 +1751,8 @@ var LokaliProfilePage = (function () {
       if (pfSec && pfSec._lokRefreshSummary) pfSec._lokRefreshSummary();
       var add = document.getElementById('lok-pf-add');
       if (add) add.style.display = _pfPhotos.length >= _PF_MAX ? 'none' : '';
+      var pickB = document.getElementById('lok-pf-pick');
+      if (pickB) pickB.style.display = _pfPhotos.length >= _PF_MAX ? 'none' : '';
     });
   }
   function _pfSwap(i, j) {
