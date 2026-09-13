@@ -1649,14 +1649,19 @@
       breakdown('First-visit channel', d.channel_counts, CHAN_LBL);
 
       var recent = Array.isArray(d.recent) ? d.recent : [];
-      if (recent.length) host.className += ' lk-admin-section-wide';
       if (!recent.length) {
         host.appendChild(el('div', 'lk-admin-empty',
           'No signups recorded yet. New accounts land here with their source.'));
         return;
       }
-      recent.forEach(function (r) {
+      // #176 (F 2026-09-13: "it's going to get unruly as more people join"): the
+      // card stays compact — only the 5 newest signups show; the rest sit behind
+      // a "Show all N" toggle. The breakdown rows above already carry the totals.
+      var SHOW = 5;
+      var hidden = [];
+      recent.forEach(function (r, i) {
         var row = el('div', 'lk-admin-row');
+        if (i >= SHOW) { row.style.display = 'none'; hidden.push(row); }
         var meta = el('div', 'lk-admin-row-meta');
         var l1 = el('div', 'lk-admin-row-l1');
         // vendor text lands via textContent (heard_about_detail is free text)
@@ -1677,6 +1682,20 @@
         row.appendChild(meta);
         host.appendChild(row);
       });
+      if (hidden.length) {
+        var more = document.createElement('button');
+        more.type = 'button'; more.className = 'lk-admin-decline';
+        more.style.cssText = 'margin-top:10px;';
+        var open = false;
+        var label = function () { more.textContent = open ? 'Show the latest ' + SHOW + ' only' : 'Show all ' + recent.length + ' signups'; };
+        label();
+        more.addEventListener('click', function () {
+          open = !open;
+          hidden.forEach(function (row) { row.style.display = open ? '' : 'none'; });
+          label();
+        });
+        host.appendChild(more);
+      }
     }).catch(function () { if (host.parentNode) host.parentNode.removeChild(host); });
   }
 
