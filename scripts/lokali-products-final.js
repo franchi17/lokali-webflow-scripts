@@ -430,11 +430,18 @@ const LokaliProductsPage = (() => {
     imgRemoveBtn:   () => document.getElementById('product-img-remove'),
   };
 
+  // products.price is DOLLARS. The column is numeric and every public surface
+  // (storefront cards, the item page, the Worker's crawler HTML, the #173
+  // importer, Fill from link) prints the raw value as dollars. This dashboard
+  // was the only place that treated it as cents (x100 on save, /100 on
+  // display): every imported price showed as $0, the form refused to save the
+  // draft, and a retyped $29.97 would have gone to the storefront as $2997.
+  // Fixed 2026-09-13: dollars end to end, no conversion anywhere.
   const formatPrice = (p) => {
     if (p.is_quote_based) return 'Quote';
-    const cents = p.price != null ? Number(p.price) : null;
-    if (cents == null || isNaN(cents)) return '';
-    return '$' + (cents / 100).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    const n = p.price != null ? Number(p.price) : null;
+    if (n == null || isNaN(n)) return '';
+    return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
   };
 
   const getCategoryName = (_categoryId) => '';
@@ -467,12 +474,19 @@ const LokaliProductsPage = (() => {
     e.style.display = 'none';
   };
 
-  const centsFromDollars = (val) => {
-    const n = parseFloat(String(val ?? '').replace(/,/g, ''));
+  // Form <-> column, both in dollars (see formatPrice). Typed input is rounded
+  // to the cent; the field shows whole dollars without a trailing ".00".
+  const priceFromInput = (val) => {
+    const n = parseFloat(String(val ?? '').replace(/[$,\s]/g, ''));
     if (isNaN(n) || n < 0) return 0;
-    return Math.round(n * 100);
+    return Math.round(n * 100) / 100;
   };
-  const dollarsFromCents = (cents) => (cents != null && !isNaN(cents)) ? (Number(cents) / 100).toFixed(0) : '';
+  const priceToInput = (price) => {
+    if (price == null || price === '') return '';
+    const n = Number(price);
+    if (isNaN(n)) return '';
+    return Number.isInteger(n) ? String(n) : n.toFixed(2);
+  };
 
   const updatePriceVisibility = () => {
     const quote = el.fieldQuoteBased()?.checked;
@@ -553,8 +567,8 @@ const LokaliProductsPage = (() => {
             const nameB = (b.querySelector('[data-field="product-name"]') || b.querySelector('.product-name'))?.textContent || '';
             return nameA.localeCompare(nameB) || 0;
           }
-          if (sortVal === 'price_asc')  return parseInt(a.dataset.price) - parseInt(b.dataset.price);
-          if (sortVal === 'price_desc') return parseInt(b.dataset.price) - parseInt(a.dataset.price);
+          if (sortVal === 'price_asc')  return parseFloat(a.dataset.price) - parseFloat(b.dataset.price);
+          if (sortVal === 'price_desc') return parseFloat(b.dataset.price) - parseFloat(a.dataset.price);
           return 0;
         });
       }
@@ -976,7 +990,7 @@ const LokaliProductsPage = (() => {
     if (el.fieldDelivery())    el.fieldDelivery().checked  = !!product.delivery_offered;
     if (el.fieldIsActive())    el.fieldIsActive().checked  = product.is_active !== false;
 
-    if (el.fieldPrice()) el.fieldPrice().value = dollarsFromCents(product.price);
+    if (el.fieldPrice()) el.fieldPrice().value = priceToInput(product.price);
     if (el.fieldPriceNote()) el.fieldPriceNote().value = product.price_note || '';
 
     updatePriceVisibility();
@@ -1571,7 +1585,7 @@ const LokaliProductsPage = (() => {
       product_name:        el.fieldName()?.value.trim(),
       product_description: el.fieldDescription()?.value.trim() || null,
       category_id:         parseInt(el.fieldCategory()?.value) || null,
-      price:               isQuote ? null : centsFromDollars(el.fieldPrice()?.value),
+      price:               isQuote ? null : priceFromInput(el.fieldPrice()?.value),
       price_note:          el.fieldPriceNote()?.value.trim() || null,
       stock_quantity:      (() => {
         const v = el.fieldStock()?.value;
@@ -2252,7 +2266,7 @@ const LokaliProductsPage = (() => {
       const payload = {
         product_name: it.title,
         product_description: it.desc || '',
-        price: it.price,
+        price: it.price,            // dollars, the column's unit (see formatPrice)
         is_quote_based: it.price == null,
         stock_quantity: it.qty,
         is_active: false,           // draft — the vendor switches it on after finishing it
