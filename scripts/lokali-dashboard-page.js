@@ -643,8 +643,8 @@
       body = '<div class="lok-gam-sub" style="margin-top:8px;">Tap the Share button ' + A2HS_ICO_SHARE +
         ' at the bottom of the screen, then choose <strong style="font-weight:700;color:#1A1829;">Add to Home Screen</strong>.</div>';
     } else {
-      body = '<div class="lok-gam-actions"><button type="button" class="lok-gam-btn" data-a2hs-install>Add to home screen</button>' +
-        '<button type="button" class="lok-gam-ghost" data-a2hs-later>Not now</button></div>';
+      body = '<div class="lok-gam-actions" style="flex-wrap:wrap;"><button type="button" class="lok-gam-btn" data-a2hs-install style="white-space:nowrap;">Add to home screen</button>' +
+        '<button type="button" class="lok-gam-ghost" data-a2hs-later style="white-space:nowrap;">Not now</button></div>';
     }
     card.innerHTML =
       '<button type="button" data-a2hs-close aria-label="Dismiss" style="position:absolute;top:10px;right:10px;width:32px;height:32px;border:none;background:none;color:#8E8BA6;font-size:18px;line-height:1;cursor:pointer;font-family:inherit;">✕</button>' +
