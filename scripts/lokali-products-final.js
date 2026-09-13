@@ -2125,7 +2125,7 @@ const LokaliProductsPage = (() => {
               '<th style="text-align:right;padding:9px 10px;font-weight:600;color:#4A4761;white-space:nowrap;">Qty</th>' +
               '<th style="text-align:left;padding:9px 10px;font-weight:600;color:#4A4761;">Status</th>' +
             '</tr></thead><tbody data-import-rows></tbody></table></div>' +
-        '<p style="font-size:12.5px;color:#6E6A85;line-height:1.5;margin:12px 0 0;">Imported items start <strong>off</strong> (drafts) and are marked as shipping. Photos from the file are copied in (up to your plan\u2019s limit per item). Open each item to check it, add a Specialty and pickup or delivery, then switch it on.</p>' +
+        '<p style="font-size:12.5px;color:#6E6A85;line-height:1.5;margin:12px 0 0;">Imported items go <strong>live on your storefront</strong> as soon as their photos are copied in (up to your plan\u2019s limit per item), marked as shipping. Open any item later to add a Specialty, pickup or delivery, or a friendlier title.</p>' +
         '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:14px;">' +
           '<button type="button" data-import-cancel style="' + btnBase + 'border:1px solid #E6E4F0;background:#fff;color:#5A5570;">Cancel</button>' +
           '<button type="button" data-import-go style="' + btnBase + 'border:1px solid #6002EE;background:#6002EE;color:#fff;"></button>' +
@@ -2189,7 +2189,7 @@ const LokaliProductsPage = (() => {
       function updateCount() {
         var n = selected().length;
         card.querySelector('[data-import-count]').textContent = n + ' selected';
-        goBtn.textContent = n ? 'Import ' + n + ' as draft' + (n === 1 ? '' : 's') : 'Nothing selected';
+        goBtn.textContent = n ? 'Import ' + n + ' product' + (n === 1 ? '' : 's') : 'Nothing selected';
         goBtn.disabled = !n; goBtn.style.opacity = n ? '1' : '.55';
       }
       updateCount();
@@ -2259,7 +2259,7 @@ const LokaliProductsPage = (() => {
     // Preserve the sheet's order and put the batch on TOP (same policy as a
     // single new product): first row gets the smallest sort_order.
     const start = topProductSortOrder() - (list.length - 1);
-    let done = 0, failed = null, photos = 0;
+    let done = 0, failed = null, photos = 0, live = 0;
     for (let i = 0; i < list.length; i++) {
       const it = list[i];
       progress(i, list.length);
@@ -2269,7 +2269,9 @@ const LokaliProductsPage = (() => {
         price: it.price,            // dollars, the column's unit (see formatPrice)
         is_quote_based: it.price == null,
         stock_quantity: it.qty,
-        is_active: false,           // draft — the vendor switches it on after finishing it
+        is_active: false,           // created off, switched on below once its photos are in (F 2026-09-13:
+                                    // imports go live automatically; the two-step keeps a photo-less item
+                                    // out of the storefront and the Worker's ~4h HTML cache)
         shipping_offered: true,     // a shop export ships by definition; pickup/delivery stay unset
         pickup_only: false,
         delivery_offered: false,
@@ -2284,8 +2286,14 @@ const LokaliProductsPage = (() => {
       done++;
       const newId = res.data && (res.data.id != null ? res.data.id : (res.data.product && res.data.product.id));
       photos += await importPhotosFor(newId, it.images, _maxProductPhotos || 1, function (n) { progress(i, list.length, n); });
+      // Go live. A refused activation (plan-cap guard, network) leaves the item
+      // in the Inactive list rather than failing the whole import.
+      try {
+        const act = await window.LokaliAPI.products.setActive(newId, true);
+        if (act && !act.error) live++;
+      } catch (e) {}
     }
-    return { done, failed, photos };
+    return { done, failed, photos, live };
   };
 
   const showImportSummary = (text, tone) => {
@@ -2317,9 +2325,10 @@ const LokaliProductsPage = (() => {
       var out = await runImport(choice.items, choice.progress, parsed.platform, choice.store);
       choice.close();
       await loadData();
-      var pill = el.pillInactive(); if (pill && out.done) { try { pill.click(); } catch (e) {} }
+      var pill = (out.live ? el.pillActive() : el.pillInactive()); if (pill && out.done) { try { pill.click(); } catch (e) {} }
+      var notLive = out.done - (out.live || 0);
       if (out.failed) showImportSummary('Imported ' + out.done + ' of ' + choice.items.length + ', then stopped: ' + out.failed, 'error');
-      else showImportSummary('Imported ' + out.done + ' draft' + (out.done === 1 ? '' : 's') + (out.photos ? ' and ' + out.photos + ' photo' + (out.photos === 1 ? '' : 's') : '') + (choice.store ? ', with buy links' : '') + '. They are in your Inactive list: open each one to check the photos, add a Specialty and pickup or delivery, then switch it on.', 'ok');
+      else showImportSummary('Imported ' + out.done + ' product' + (out.done === 1 ? '' : 's') + (out.photos ? ' and ' + out.photos + ' photo' + (out.photos === 1 ? '' : 's') : '') + (choice.store ? ', with buy links' : '') + '. ' + (out.live ? (out.live === out.done ? 'All are live on your storefront now' : out.live + ' are live on your storefront') : 'They are in your Inactive list') + (notLive && out.live ? '; ' + notLive + ' stayed in your Inactive list' : '') + '. Open any item to add a Specialty, pickup or delivery, or a friendlier title.', 'ok');
     });
     document.body.appendChild(input);
     input.click();
