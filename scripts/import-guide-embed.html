@@ -1,0 +1,177 @@
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@800&display=swap" rel="stylesheet">
+
+<style>
+  .lg-wrap { display: block; width: 100%; font-family: 'Plus Jakarta Sans', sans-serif; color: #0f0f14; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  .lg-wrap *, .lg-wrap *::before, .lg-wrap *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  .lg-hero { display: block; width: 100%; background: #f8f7fc; border-bottom: 1px solid rgba(0,0,0,0.1); padding: 5rem 1.5rem 4rem; text-align: center; }
+  .lg-eyebrow { display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #6002EE; background: #f0e6ff; border-radius: 20px; padding: 4px 14px; margin-bottom: 1.25rem; }
+  .lg-h1 { display: block; font-size: clamp(28px, 5vw, 48px); font-weight: 800; color: #0f0f14; letter-spacing: -1px; line-height: 1.15; margin: 0 0 1rem; }
+  .lg-h1 span { color: #6002EE; }
+  .lg-sub { display: block; font-size: 18px; color: #4a4a5a; line-height: 1.65; }
+
+  .lg-section { display: block; width: 100%; padding: 3.5rem 1.5rem; border-bottom: 1px solid rgba(0,0,0,0.1); }
+  .lg-section:last-of-type { border-bottom: none; }
+  .lg-section-eye { display: block; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #888898; margin-bottom: 0.5rem; }
+  .lg-section-title { display: block; font-size: clamp(20px, 3vw, 26px); font-weight: 800; color: #0f0f14; letter-spacing: -0.4px; margin-bottom: 0.75rem; line-height: 1.25; }
+  .lg-section-body { display: block; font-size: 17px; color: #4a4a5a; line-height: 1.7; margin-bottom: 2rem; }
+  .lg-section-body strong { color: #0f0f14; font-weight: 700; }
+
+  .lg-tips { display: flex; flex-direction: column; gap: 12px; width: 100%; }
+  .lg-tip { display: flex; align-items: flex-start; gap: 14px; padding: 16px 18px; background: #f0e6ff; border-radius: 14px; }
+  .lg-tip-num { width: 28px; height: 28px; border-radius: 50%; background: #6002EE; color: #fff; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
+  .lg-tip-title { display: block; font-size: 16px; font-weight: 700; color: #0f0f14; margin-bottom: 3px; }
+  .lg-tip-body { display: block; font-size: 15px; color: #4a4a5a; line-height: 1.55; }
+
+  .lg-spec { display: flex; flex-wrap: wrap; gap: 14px; width: 100%; }
+  .lg-spec-card { flex: 1 1 200px; border: 1px solid rgba(0,0,0,0.1); border-radius: 16px; background: #fff; padding: 20px 18px; }
+  .lg-spec-ico { width: 40px; height: 40px; border-radius: 11px; background: #f0e6ff; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; }
+  .lg-spec-k { display: block; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #888898; margin-bottom: 4px; }
+  .lg-spec-v { display: block; font-size: 21px; font-weight: 800; color: #0f0f14; letter-spacing: -0.3px; line-height: 1.2; }
+  .lg-spec-sub { display: block; font-size: 13px; color: #888898; margin-top: 3px; }
+  .lg-callout { display: flex; gap: 12px; align-items: flex-start; background: #f0e6ff; border-radius: 14px; padding: 16px 18px; margin-top: 18px; }
+  .lg-callout svg { flex-shrink: 0; margin-top: 1px; }
+  .lg-callout-t { font-size: 15px; color: #0f0f14; line-height: 1.55; }
+  .lg-callout-t strong { font-weight: 700; }
+  .lg-callout.lg-warm { background: #fff1e6; }
+
+  .lg-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); gap: 14px; width: 100%; }
+  .lg-card { border: 1px solid rgba(0,0,0,0.1); border-radius: 16px; background: #fff; padding: 18px; }
+  .lg-card-h { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin-bottom: 8px; }
+  .lg-card-t { font-size: 15px; font-weight: 700; color: #0f0f14; }
+  .lg-card-b { font-size: 14px; color: #4a4a5a; line-height: 1.55; }
+  .lg-tag { display: inline-block; white-space: nowrap; flex-shrink: 0; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; border-radius: 20px; padding: 3px 10px; }
+  .lg-good { background: #eafaf2; color: #1d6a45; }
+  .lg-bad { background: #f1eff7; color: #6e6a85; }
+</style>
+
+<div class="lg-wrap">
+
+  <div class="lg-hero">
+    <div class="lg-eyebrow">Vendor Resources</div>
+    <div class="lg-h1">Import your products:<br><span>bring your whole catalog over in one sitting</span></div>
+    <div class="lg-sub">Already selling on Etsy, Shopify, or your own site? Export your listings once, upload the file, and Lokali creates your products for you, photos and buy links included. You finish each one with the local details, then switch it on. Included with the Featured plan.</div>
+  </div>
+
+  <div class="lg-section">
+    <div class="lg-section-eye">The big idea</div>
+    <div class="lg-section-title">Your shop stays where it is. Lokali is your local storefront.</div>
+    <div class="lg-section-body">Nothing moves and nothing gets reconnected. Your Etsy or Shopify shop keeps running exactly as it does today, and checkout stays there too. What the import gives you is a local storefront in front of neighbors who browse by city and category: each imported product carries a <strong>Buy on Etsy</strong> or <strong>Buy online</strong> button that sends shoppers to your listing to pay, while <strong>Inquire</strong> stays on every product for custom and bulk orders. The file is read in your browser and never uploaded to us; only the products you tick are created.</div>
+    <div class="lg-callout">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="5" y="11" width="14" height="9" rx="2" stroke="#6002EE" stroke-width="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3" stroke="#6002EE" stroke-width="2" stroke-linecap="round"/></svg>
+      <div class="lg-callout-t"><strong>Curate, don&rsquo;t dump.</strong> A local storefront works best with your 20 to 40 strongest items, not 800 of them. Tick the ones a neighbor would want to find, and let the buy link carry them to the full catalog.</div>
+    </div>
+  </div>
+
+  <div class="lg-section">
+    <div class="lg-section-eye">Step one</div>
+    <div class="lg-section-title">Export your listings from the shop you already run</div>
+    <div class="lg-section-body">Every platform can hand you a spreadsheet of your listings. Save it somewhere you can find it; it is the file you will upload in step two.</div>
+    <div class="lg-spec">
+
+      <div class="lg-spec-card">
+        <div class="lg-spec-ico">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 7h16M4 12h16M4 17h10" stroke="#6002EE" stroke-width="2" stroke-linecap="round"/></svg>
+        </div>
+        <div class="lg-spec-k">Etsy</div>
+        <div class="lg-spec-v">Download your listings</div>
+        <div class="lg-spec-sub">Shop Manager &rarr; Settings &rarr; Options &rarr; Download Data &rarr; Currently for sale listings (CSV)</div>
+      </div>
+
+      <div class="lg-spec-card">
+        <div class="lg-spec-ico">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 3v12m0 0l-4-4m4 4l4-4" stroke="#6002EE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke="#6002EE" stroke-width="2" stroke-linecap="round"/></svg>
+        </div>
+        <div class="lg-spec-k">Shopify</div>
+        <div class="lg-spec-v">Products &rarr; Export</div>
+        <div class="lg-spec-sub">choose all products and &ldquo;Plain CSV file&rdquo;; product links come over automatically</div>
+      </div>
+
+      <div class="lg-spec-card">
+        <div class="lg-spec-ico">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="16" rx="3" stroke="#6002EE" stroke-width="2"/><path d="M3 10h18M9 4v16" stroke="#6002EE" stroke-width="2"/></svg>
+        </div>
+        <div class="lg-spec-k">Any spreadsheet</div>
+        <div class="lg-spec-v">Save as CSV</div>
+        <div class="lg-spec-sub">a Title column is all it needs; Description, Price, Quantity and image links are used when present</div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="lg-section">
+    <div class="lg-section-eye">Step two</div>
+    <div class="lg-section-title">Upload it and tick what you want</div>
+    <div class="lg-section-body">Go to <strong>Dashboard &rarr; Products</strong> and click <strong>Import from spreadsheet</strong>, next to Add product. Pick your file and a preview appears before anything is created.</div>
+    <div class="lg-tips">
+      <div class="lg-tip">
+        <div class="lg-tip-num">1</div>
+        <div><span class="lg-tip-title">Add your shop once</span><span class="lg-tip-body">Etsy: type your shop name (the part after etsy.com/shop/). Shopify: type your store address. That is what turns every imported product into a working buy link. Lokali remembers it for next time.</span></div>
+      </div>
+      <div class="lg-tip">
+        <div class="lg-tip-num">2</div>
+        <div><span class="lg-tip-title">Check the ticks</span><span class="lg-tip-body">Every new row is ticked. Rows whose title already exists in your products are marked <strong>Already listed</strong> and left unticked, so you can re-import a fresh export later and only the new items come in.</span></div>
+      </div>
+      <div class="lg-tip">
+        <div class="lg-tip-num">3</div>
+        <div><span class="lg-tip-title">Import as drafts</span><span class="lg-tip-body">Click the import button and watch the count climb. Photos are copied one product at a time, so a big file takes a minute or two. Keep the page open until it finishes.</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="lg-section">
+    <div class="lg-section-eye">What comes over</div>
+    <div class="lg-section-title">Six things arrive, three stay behind</div>
+    <div class="lg-section-body">The import fills in what your file can tell us. The rest is yours to add, because it is local knowledge no export contains.</div>
+    <div class="lg-grid">
+      <div class="lg-card"><div class="lg-card-h"><span class="lg-tag lg-good">Comes over</span><span class="lg-card-t">Title</span></div><div class="lg-card-b">Up to 140 characters, exactly as exported. Worth trimming later into plain shopper language.</div></div>
+      <div class="lg-card"><div class="lg-card-h"><span class="lg-tag lg-good">Comes over</span><span class="lg-card-t">Description</span></div><div class="lg-card-b">Full text. Shopify formatting is flattened to plain paragraphs.</div></div>
+      <div class="lg-card"><div class="lg-card-h"><span class="lg-tag lg-good">Comes over</span><span class="lg-card-t">Price and quantity</span></div><div class="lg-card-b">A blank or zero price becomes &ldquo;Price on request&rdquo;. Quantity fills your stock count.</div></div>
+      <div class="lg-card"><div class="lg-card-h"><span class="lg-tag lg-good">Comes over</span><span class="lg-card-t">Photos</span></div><div class="lg-card-b">Up to five per product, the first one as the cover. If a photo cannot be copied, the product still imports.</div></div>
+      <div class="lg-card"><div class="lg-card-h"><span class="lg-tag lg-good">Comes over</span><span class="lg-card-t">Buy link</span></div><div class="lg-card-b">Shopify gets the exact product page. Etsy gets a link that opens your shop searched for that title; swap in the exact listing link whenever you like.</div></div>
+      <div class="lg-card"><div class="lg-card-h"><span class="lg-tag lg-good">Comes over</span><span class="lg-card-t">Shipping</span></div><div class="lg-card-b">Every import is marked as shipping, since that is how an online shop sells. Add pickup or delivery yourself.</div></div>
+      <div class="lg-card"><div class="lg-card-h"><span class="lg-tag lg-bad">Stays behind</span><span class="lg-card-t">Tags and materials</span></div><div class="lg-card-b">Lokali uses a Specialty instead. Pick one per product; it is how neighbors find you.</div></div>
+      <div class="lg-card"><div class="lg-card-h"><span class="lg-tag lg-bad">Stays behind</span><span class="lg-card-t">Variations and SKUs</span></div><div class="lg-card-b">Sizes, colors and stock codes live on your shop. Mention options in the description if they matter.</div></div>
+      <div class="lg-card"><div class="lg-card-h"><span class="lg-tag lg-bad">Stays behind</span><span class="lg-card-t">Pickup, delivery, lead time</span></div><div class="lg-card-b">Local details only you know. Set them on each product before you switch it on.</div></div>
+    </div>
+  </div>
+
+  <div class="lg-section">
+    <div class="lg-section-eye">Step three</div>
+    <div class="lg-section-title">Finish each draft, then switch it on</div>
+    <div class="lg-section-body">Imported products land in your <strong>Inactive</strong> list, switched off, so nothing half-finished shows on your storefront. Open each one and give it the two-minute treatment.</div>
+    <div class="lg-tips">
+      <div class="lg-tip">
+        <div class="lg-tip-num">1</div>
+        <div><span class="lg-tip-title">Check the photos</span><span class="lg-tip-body">Reorder them, drop the weak ones, and set the focal point on the cover so it crops well on the card.</span></div>
+      </div>
+      <div class="lg-tip">
+        <div class="lg-tip-num">2</div>
+        <div><span class="lg-tip-title">Pick a Specialty</span><span class="lg-tip-body">One per product. This is what search and the category filters use, so it matters more than any tag did.</span></div>
+      </div>
+      <div class="lg-tip">
+        <div class="lg-tip-num">3</div>
+        <div><span class="lg-tip-title">Set the local options</span><span class="lg-tip-body">Pickup available, local delivery, lead time. This is what makes a neighbor choose you over the same item shipped from anywhere.</span></div>
+      </div>
+      <div class="lg-tip">
+        <div class="lg-tip-num">4</div>
+        <div><span class="lg-tip-title">Say it like a neighbor would</span><span class="lg-tip-body">Marketplace titles are written for search engines. &ldquo;Hand-lettered birthday card&rdquo; beats a 140-character keyword string.</span></div>
+      </div>
+      <div class="lg-tip">
+        <div class="lg-tip-num">5</div>
+        <div><span class="lg-tip-title">Switch it on</span><span class="lg-tip-body">Tick Active and save. It goes to the top of your storefront in the order it came from your file. Star up to six as your picks.</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="lg-section">
+    <div class="lg-section-eye">One at a time</div>
+    <div class="lg-section-title">Adding a single product from a link</div>
+    <div class="lg-section-body">No spreadsheet handy? Open <strong>Add product</strong>, paste the product&rsquo;s page link into the <strong>Buy link</strong> field, and click <strong>Fill from link</strong>. The title, description, price and cover photo fill in from the page for you to review. Works for Shopify, Squarespace, Faire, Amazon and your own website. Etsy links get the Buy on Etsy button but do not fill in, because Etsy does not allow it; use the spreadsheet for those.</div>
+    <div class="lg-callout lg-warm">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#EE6002" stroke-width="2"/><path d="M12 8v5M12 16h.01" stroke="#EE6002" stroke-width="2" stroke-linecap="round"/></svg>
+      <div class="lg-callout-t"><strong>Good to know.</strong> Files up to 8 MB and 500 rows. Re-importing is safe: anything already listed is skipped. Drafts you do not want can be deleted from the Inactive list. Nothing is ever changed on your Etsy or Shopify shop.</div>
+    </div>
+  </div>
+
+</div>
