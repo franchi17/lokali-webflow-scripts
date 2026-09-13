@@ -372,14 +372,23 @@
   }
 
   // ---- vendor mini-card + back link + CTA -------------------------------
+  // #174: resolves to the public vendor row (null on failure) so the
+  // item-to-item nav can reuse it. The slug hydrator primes _vendorCache
+  // (getBySlug and getById select the same VENDOR_PUBLIC_COLS), so that path
+  // no longer pays a second vendor request.
   function fillVendor(vendorId, itemName, isProduct) {
     var back = $('vd-back'); if (back && vendorId) back.href = '/vendor?id=' + encodeURIComponent(vendorId);
     var link = $('vd-mini-link'); if (link && vendorId) link.href = '/vendor?id=' + encodeURIComponent(vendorId);
-    if (!vendorId || !window.LokaliAPI) return;
-    reqRetry(function () { return window.LokaliAPI.vendors.getById(vendorId); }).then(function (res) {
-      if (res && res.error) return; // gave up after retries — leave links as-is, don't render an error object as a vendor
+    if (!vendorId || !window.LokaliAPI) return Promise.resolve(null);
+    var cached = _vendorCache[String(vendorId)];
+    var vendorReq = cached
+      ? Promise.resolve({ data: { vendor: cached } })
+      : reqRetry(function () { return window.LokaliAPI.vendors.getById(vendorId); });
+    return vendorReq.then(function (res) {
+      if (res && res.error) return null; // gave up after retries — leave links as-is, don't render an error object as a vendor
       var v = unwrap(res); if (v && v.vendor) v = v.vendor; // { vendor: {...} } envelope
-      if (!v || v.error != null) return;
+      if (!v || v.error != null) return null;
+      _vendorCache[String(vendorId)] = v;
       // Upgrade the back/mini links to the clean root URL once we know the slug
       // (the ?id= hrefs set above keep working as a fallback in the meantime).
       if (v.slug) {
@@ -436,6 +445,7 @@
           }
         });
       }
+      return v;
     });
   }
 
@@ -489,6 +499,258 @@
           window.LokaliAPI.leads.trackEvent(vendorId, 'buy_link', 'product');
         }
       });
+    } catch (e) {}
+  }
+
+  // ---- #174 item-to-item browsing ---------------------------------------
+  // A shopper on one item could only leave through the back link, so
+  // comparing two of a vendor's listings meant a round trip through the
+  // storefront every time. Two additions, both PLAIN LINKS (every item keeps
+  // its own URL, canonical, JSON-LD, sitemap entry and deduped view event;
+  // nothing is swapped in place):
+  //   1. a Prev/Next pager in the back-link row, within ONE kind, in the
+  //      storefront's order (hand-picked items first, then the list's own
+  //      sort_order; the list arrives ordered from the client, so only the
+  //      stable picks-first pass is repeated here), no wrap-around, the end
+  //      buttons disabled;
+  //   2. a "More from {business}" strip below the item card: both kinds,
+  //      current item excluded, same kind first, the first NAV_STRIP_MAX
+  //      cards plus a "See all N listings" link to the storefront.
+  // The sibling list of the current kind is already fetched by the slug and
+  // ?vendor= hydrators (cached in _listCache), so only the other kind costs a
+  // request. No swipe gesture: the photo gallery owns horizontal swipe here.
+  var NAV_STRIP_MAX = 8;
+  var NAV_TINTS = ['#FFF1E6', '#F3EBFF', '#EAFAF2', '#FEF9E6']; // the storefront card tints
+  var _vendorCache = {};                                 // vendor id -> public vendor row
+  var _listCache = { services: null, products: null };   // this vendor's public lists
+  var _navCssDone = false;
+
+  function vendorList(kind, vendorId) {
+    if (_listCache[kind]) return Promise.resolve(_listCache[kind]);
+    var api = window.LokaliAPI && window.LokaliAPI[kind];
+    if (!api || typeof api.listByVendor !== 'function') return Promise.resolve(null);
+    return reqRetry(function () { return api.listByVendor(vendorId); }).then(function (res) {
+      if (!res || res.error) return null;
+      var rows = asArray(unwrap(res));
+      _listCache[kind] = rows;
+      return rows;
+    }).catch(function () { return null; });
+  }
+  // Storefront order: hand-picked items lead (stable sort), drag order within.
+  function storefrontOrder(rows) {
+    return (rows || []).filter(Boolean).slice().sort(function (a, b) {
+      return (b.is_featured_pick === true ? 1 : 0) - (a.is_featured_pick === true ? 1 : 0);
+    });
+  }
+  function navItemName(kind, it) {
+    var nm = kind === 'services' ? (it.service_name || it.name) : (it.product_name || it.name);
+    return String(nm || '').trim();
+  }
+  // Price wording mirrors lokali-vendor-listing.js servicePrice()/productPrice().
+  function navPriceText(kind, it) {
+    if (kind === 'services') {
+      var t = String(it.price_type || '').toLowerCase();
+      if (t === 'quote' || t === 'get_a_quote' || it.is_quote_based) return 'Get a quote';
+      if (it.price_min_cents != null && it.price_max_cents != null && it.price_min_cents !== it.price_max_cents) {
+        return cents(it.price_min_cents) + '–' + cents(it.price_max_cents);
+      }
+      if (it.price_min_cents != null) return 'From ' + cents(it.price_min_cents);
+      if (it.price_cents != null) return (t === 'from' || t === 'starting' ? 'From ' : '') + cents(it.price_cents);
+      if (it.price_note) return String(it.price_note);
+      return 'Get a quote';
+    }
+    if (it.is_quote_based) return 'Get a quote';
+    if (it.price != null && it.price !== '') { var n = Number(it.price); return isFinite(n) ? '$' + n : String(it.price); }
+    if (it.price_note) return String(it.price_note);
+    return 'Get a quote';
+  }
+  // Clean item URL when both slugs are known, else the legacy ?id= link: the
+  // same fallback the storefront's itemHref() uses. Always set as a property.
+  function navHref(kind, it, vendor, vendorId) {
+    var vslug = vendor && vendor.slug;
+    if (vslug && it.slug) return '/' + encodeURIComponent(vslug) + '/' + kind + '/' + encodeURIComponent(it.slug);
+    if (it.id == null) return '';
+    return (kind === 'services' ? '/service' : '/product-detail') + '?id=' + encodeURIComponent(it.id) +
+      (vendorId != null ? '&vendor=' + encodeURIComponent(vendorId) : '');
+  }
+  function storefrontHref(vendor, vendorId) {
+    if (vendor && vendor.slug) return '/' + encodeURIComponent(vendor.slug);
+    return vendorId != null ? '/vendor?id=' + encodeURIComponent(vendorId) : '/the-market';
+  }
+  // Chevron drawn like the page's own back-link arrow (stroke polyline), so
+  // the pager reads as part of the template. No glyphs, no emoji.
+  function chevronSvg(left) {
+    var NS = 'http://www.w3.org/2000/svg';
+    var svg = document.createElementNS(NS, 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24'); svg.setAttribute('fill', 'none');
+    svg.setAttribute('stroke', 'currentColor'); svg.setAttribute('stroke-width', '2.2');
+    svg.setAttribute('stroke-linecap', 'round'); svg.setAttribute('stroke-linejoin', 'round');
+    svg.setAttribute('aria-hidden', 'true');
+    var pl = document.createElementNS(NS, 'polyline');
+    pl.setAttribute('points', left ? '15 18 9 12 15 6' : '9 18 15 12 9 6');
+    svg.appendChild(pl);
+    return svg;
+  }
+  function ensureNavCss() {
+    if (_navCssDone) return; _navCssDone = true;
+    var FONT = '"Plus Jakarta Sans",system-ui,sans-serif';
+    var st = document.createElement('style');
+    st.id = 'lok-nav-css';
+    st.textContent = [
+      // pager row: back link left, pager right (wraps on narrow screens)
+      '.lok-pgrow{display:flex;align-items:center;justify-content:space-between;gap:10px 16px;flex-wrap:wrap;margin:0 0 20px;font-family:' + FONT + ';}',
+      '.lok-pgrow>.vd-back{margin:0 !important;}',
+      '.lok-pager{display:inline-flex;align-items:center;gap:6px;margin-left:auto;font:600 13px/1 ' + FONT + ';color:#4A4761;}',
+      '.lok-pg-btn{display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:0 12px;border-radius:999px;background:#F3EBFF;color:#6002EE;text-decoration:none;font:700 13px/1 ' + FONT + ';transition:background .12s;}',
+      'a.lok-pg-btn:hover{background:#E9DCFF;color:#6002EE;}',
+      '.lok-pg-btn svg{display:block;width:16px;height:16px;flex:none;}',
+      '.lok-pg-off{background:#F7F6FC;color:#B9B6C9;cursor:default;}',
+      '.lok-pg-name{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
+      '.lok-pg-off .lok-pg-name{display:none;}',
+      '.lok-pg-count{padding:0 4px;color:#6E6A85;font-weight:600;white-space:nowrap;}',
+      // strip
+      '.lok-more{margin:28px 0 8px;font-family:' + FONT + ';}',
+      '.lok-more-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 14px;}',
+      '.lok-more-head h2{margin:0;font:700 20px/1.3 ' + FONT + ';color:#1A1829;}',
+      '.lok-more-all{font:700 13px/1 ' + FONT + ';color:#6002EE;text-decoration:none;white-space:nowrap;background:#F3EBFF;border-radius:999px;padding:9px 14px;transition:background .12s;}',
+      '.lok-more-all:hover{background:#E9DCFF;color:#6002EE;}',
+      '.lok-more-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;}',
+      '.lok-more-card{display:block;background:#fff;border:.5px solid #EEEDF6;border-radius:16px;overflow:hidden;text-decoration:none;color:#1A1829;transition:box-shadow .15s,transform .15s;}',
+      '.lok-more-card:hover{box-shadow:0 10px 26px rgba(26,24,41,.10);transform:translateY(-2px);}',
+      '.lok-more-img{position:relative;aspect-ratio:4/3;overflow:hidden;}',
+      '.lok-more-img img{width:100%;height:100%;object-fit:cover;display:block;}',
+      '.lok-more-kind{position:absolute;top:8px;left:8px;font:700 11px/1 ' + FONT + ';letter-spacing:.2px;color:#6002EE;background:rgba(255,255,255,.94);border-radius:999px;padding:5px 9px;}',
+      '.lok-more-kind-products{color:#C05621;}',
+      '.lok-more-body{padding:10px 12px 12px;}',
+      '.lok-more-name{font:600 14px/1.3 ' + FONT + ';color:#1A1829;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}',
+      '.lok-more-price{margin-top:4px;font:600 12.5px/1.3 ' + FONT + ';color:#6E6A85;}',
+      '@media (min-width:768px) and (max-width:1023px){.lok-more-grid{grid-template-columns:repeat(3,minmax(0,1fr));}}',
+      // phones: arrows only in the pager; the strip becomes a snap scroller
+      '@media (max-width:767px){',
+      '.lok-pg-name{display:none;}',
+      '.lok-pg-btn{width:36px;min-height:36px;padding:0;justify-content:center;}',
+      '.lok-more-head h2{font-size:18px;}',
+      '.lok-more-grid{display:flex;overflow-x:auto;gap:12px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:6px;}',
+      '.lok-more-grid::-webkit-scrollbar{display:none;}',
+      '.lok-more-card{flex:0 0 62%;scroll-snap-align:start;}',
+      '}'
+    ].join('');
+    (document.head || document.documentElement).appendChild(st);
+  }
+  function pagerBtn(dir, target, kind, vendor, vendorId) {
+    var isPrev = dir === 'prev';
+    var word = kind === 'services' ? 'service' : 'product';
+    var nm = target ? navItemName(kind, target) : '';
+    var el = document.createElement(target ? 'a' : 'span');
+    el.className = 'lok-pg-btn lok-pg-' + dir + (target ? '' : ' lok-pg-off');
+    if (target) {
+      el.href = navHref(kind, target, vendor, vendorId);
+      el.setAttribute('aria-label', (isPrev ? 'Previous ' : 'Next ') + word + (nm ? ': ' + nm : ''));
+      if (nm) el.title = nm;
+    } else {
+      el.setAttribute('aria-disabled', 'true');
+      el.setAttribute('aria-label', (isPrev ? 'No previous ' : 'No next ') + word);
+    }
+    var label = document.createElement('span'); label.className = 'lok-pg-name'; label.textContent = nm;
+    if (isPrev) { el.appendChild(chevronSvg(true)); el.appendChild(label); }
+    else { el.appendChild(label); el.appendChild(chevronSvg(false)); }
+    return el;
+  }
+  function mountPager(kind, rows, currentId, vendor, vendorId) {
+    if (document.getElementById('lok-pager')) return;
+    if (!rows || rows.length < 2) return;
+    var idx = -1;
+    for (var i = 0; i < rows.length; i++) { if (String(rows[i].id) === String(currentId)) { idx = i; break; } }
+    if (idx < 0) return; // e.g. the owner previewing an inactive item
+    var back = $('vd-back');
+    var host = back && back.parentNode;
+    if (!host) return;
+    ensureNavCss();
+    // One row: back link left, pager right. The back link keeps its id, so
+    // fillVendor still upgrades its href to the clean slug URL afterwards.
+    var row = document.createElement('div'); row.id = 'lok-pager-row'; row.className = 'lok-pgrow';
+    host.insertBefore(row, back); row.appendChild(back);
+    var nav = document.createElement('nav'); nav.id = 'lok-pager'; nav.className = 'lok-pager';
+    nav.setAttribute('aria-label', kind === 'services' ? "Browse this vendor's services" : "Browse this vendor's products");
+    nav.appendChild(pagerBtn('prev', rows[idx - 1] || null, kind, vendor, vendorId));
+    var count = document.createElement('span'); count.className = 'lok-pg-count';
+    count.textContent = (kind === 'services' ? 'Service ' : 'Product ') + (idx + 1) + ' of ' + rows.length;
+    nav.appendChild(count);
+    nav.appendChild(pagerBtn('next', rows[idx + 1] || null, kind, vendor, vendorId));
+    row.appendChild(nav);
+  }
+  function stripCard(entry, i, hasBoth, vendor, vendorId) {
+    var kind = entry.kind, it = entry.it;
+    var a = document.createElement('a');
+    a.className = 'lok-more-card';
+    a.href = navHref(kind, it, vendor, vendorId);
+    var img = document.createElement('div'); img.className = 'lok-more-img';
+    img.style.background = NAV_TINTS[i % NAV_TINTS.length];
+    var nm = navItemName(kind, it) || 'Untitled';
+    var src = imgUrl(it.image_url || it.image);
+    if (src) {
+      var im = document.createElement('img');
+      im.loading = 'lazy'; im.src = src; im.alt = nm; // #97: the item name is the alt
+      if (it.image_focus_x != null && it.image_focus_y != null) { // #149 focal point
+        im.style.objectPosition = it.image_focus_x + '% ' + it.image_focus_y + '%';
+      }
+      img.appendChild(im);
+    }
+    if (hasBoth) {
+      var k = document.createElement('span'); k.className = 'lok-more-kind lok-more-kind-' + kind;
+      k.textContent = kind === 'services' ? 'Service' : 'Product';
+      img.appendChild(k);
+    }
+    var body = document.createElement('div'); body.className = 'lok-more-body';
+    var name = document.createElement('div'); name.className = 'lok-more-name'; name.textContent = nm;
+    var price = document.createElement('div'); price.className = 'lok-more-price'; price.textContent = navPriceText(kind, it);
+    body.appendChild(name); body.appendChild(price);
+    a.appendChild(img); a.appendChild(body);
+    return a;
+  }
+  function mountStrip(kind, same, other, currentId, vendor, vendorId) {
+    if (document.getElementById('lok-more')) return;
+    same = same || []; other = other || [];
+    var otherKind = kind === 'services' ? 'products' : 'services';
+    var list = [];
+    same.forEach(function (it) { if (String(it.id) !== String(currentId)) list.push({ kind: kind, it: it }); });
+    other.forEach(function (it) { list.push({ kind: otherKind, it: it }); });
+    if (!list.length) return;
+    var card = document.querySelector('.vd-wrap');
+    var host = card ? card.parentNode : (document.querySelector('.vd-page') || document.querySelector('[data-vd-type]'));
+    if (!host) return;
+    ensureNavCss();
+    var total = same.length + other.length; // everything the storefront lists, this item included
+    var hasBoth = same.length > 0 && other.length > 0;
+    var sec = document.createElement('section'); sec.id = 'lok-more'; sec.className = 'lok-more';
+    sec.setAttribute('aria-labelledby', 'lok-more-h');
+    var head = document.createElement('div'); head.className = 'lok-more-head';
+    var h = document.createElement('h2'); h.id = 'lok-more-h';
+    var biz = vendor && vendor.business_name ? String(vendor.business_name).trim() : '';
+    h.textContent = biz ? 'More from ' + biz : 'More from this vendor';
+    var all = document.createElement('a'); all.className = 'lok-more-all';
+    all.href = storefrontHref(vendor, vendorId);
+    all.textContent = 'See all ' + total + (total === 1 ? ' listing' : ' listings');
+    head.appendChild(h); head.appendChild(all);
+    var grid = document.createElement('div'); grid.className = 'lok-more-grid';
+    list.slice(0, NAV_STRIP_MAX).forEach(function (entry, i) { grid.appendChild(stripCard(entry, i, hasBoth, vendor, vendorId)); });
+    sec.appendChild(head); sec.appendChild(grid);
+    if (card && card.nextSibling) host.insertBefore(sec, card.nextSibling); else host.appendChild(sec);
+  }
+  function mountItemNav(kind, currentId, vendorId, vendorP) {
+    try {
+      if (currentId == null || vendorId == null || !window.LokaliAPI) return;
+      var otherKind = kind === 'services' ? 'products' : 'services';
+      var vendorSafe = (vendorP && typeof vendorP.then === 'function')
+        ? vendorP.then(null, function () { return null; })
+        : Promise.resolve(null);
+      Promise.all([vendorSafe, vendorList(kind, vendorId), vendorList(otherKind, vendorId)]).then(function (r) {
+        var vendor = r[0] || null;
+        var same = storefrontOrder(r[1]);
+        var other = storefrontOrder(r[2]);
+        mountPager(kind, same, currentId, vendor, vendorId);
+        mountStrip(kind, same, other, currentId, vendor, vendorId);
+      }).then(null, function (e) { console.warn('[vd] item nav failed', e); });
     } catch (e) {}
   }
 
@@ -550,7 +812,8 @@
       renderVideo(s.video_url);
       var vid = vendorParam || s.vendors_id || s.vendor_id;
       emitItemView(vid, 'service', s.id != null ? s.id : id);
-      fillVendor(vid, name, false);
+      var vendorP = fillVendor(vid, name, false);
+      mountItemNav('services', s.id != null ? s.id : id, vid, vendorP); // #174
     });
   }
 
@@ -639,13 +902,16 @@
       renderVideo(p.video_url);
       var vid = vendorParam || p.vendors_id || p.vendor_id;
       emitItemView(vid, 'product', p.id != null ? p.id : id);
-      fillVendor(vid, name, true);
+      var vendorP = fillVendor(vid, name, true);
       mountBuyLink(p, vid); // #172
+      mountItemNav('products', p.id != null ? p.id : id, vid, vendorP); // #174
     };
     if (vendorParam) {
       reqRetry(function () { return window.LokaliAPI.products.listByVendor(vendorParam); }).then(function (res) {
         if (res && res.error) { console.warn('[vd] product load failed', res.error); renderNotFound('This product isn’t available', vendorBackHref(vendorParam), 'Back to the vendor'); return; }
-        var found = asArray(unwrap(res)).filter(function (x) { return String(x.id) === String(id); })[0];
+        var rows = asArray(unwrap(res));
+        _listCache.products = rows; // #174: the sibling list is already here
+        var found = rows.filter(function (x) { return String(x.id) === String(id); })[0];
         done(found);
       });
     } else {
@@ -677,10 +943,13 @@
       if (res && res.error) { console.warn('[vd] vendor slug load failed', res.error); renderNotFound('This vendor isn’t available', null, null); return; }
       var v = unwrap(res); if (v && v.vendor) v = v.vendor;
       if (!v || v.error != null || v.id == null) { console.warn('[vd] vendor not found for slug', info.vendorSlug); renderNotFound('This vendor isn’t available', null, null); return; }
+      _vendorCache[String(v.id)] = v; // #174: fillVendor reuses this row instead of refetching by id
       var listFn = isProduct ? window.LokaliAPI.products.listByVendor : window.LokaliAPI.services.listByVendor;
       reqRetry(function () { return listFn(v.id); }).then(function (lres) {
         if (lres && lres.error) { console.warn('[vd] item list load failed', lres.error); renderNotFound(itemMsg, '/' + info.vendorSlug, 'Back to the vendor'); return; }
-        var match = asArray(unwrap(lres)).filter(function (x) { return x && String(x.slug) === String(info.itemSlug); })[0];
+        var rows = asArray(unwrap(lres));
+        _listCache[info.kind] = rows; // #174: the sibling list is already here
+        var match = rows.filter(function (x) { return x && String(x.slug) === String(info.itemSlug); })[0];
         if (!match || match.id == null) { console.warn('[vd] item not found for slug', info.itemSlug); renderNotFound(itemMsg, '/' + info.vendorSlug, 'Back to the vendor'); return; }
         if (isProduct) hydrateProduct(match.id, v.id);
         else hydrateService(match.id, v.id);
