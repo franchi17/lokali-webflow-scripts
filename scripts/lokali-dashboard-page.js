@@ -570,6 +570,108 @@
     }).catch(function () {});
   }
 
+  // ── Add Lokali to your home screen (F 2026-09-13: "people keep asking if I
+  // have an app"). The site is installable (manifest + pass-through service
+  // worker served by the Cloudflare Worker, head tags in Site Settings); this
+  // card tells phone users how to install it. Mounts on the dashboard home
+  // only, right after the listing-strength card, and only when:
+  //   - the device has a coarse pointer (a phone or tablet, not a laptop);
+  //   - the page is NOT already running from the home screen;
+  //   - the vendor has not dismissed it in the last 30 days.
+  // iOS: step copy (Share, then Add to Home Screen; Safari and Chrome 16.4+).
+  // Android/Chrome: the card waits for the browser's beforeinstallprompt and
+  // renders a one-tap "Add to home screen" button; browsers that never fire
+  // it (Firefox, Samsung Internet) get no card rather than a guess.
+  var A2HS_KEY = 'lokali_a2hs_dismissed';
+  var A2HS_SNOOZE_MS = 30 * 24 * 60 * 60 * 1000;
+  var a2hsPrompt = null;
+  var a2hsMounted = false;
+  try {
+    window.addEventListener('beforeinstallprompt', function (e) {
+      e.preventDefault();
+      a2hsPrompt = e;
+      renderHomeScreenCard();
+    });
+    window.addEventListener('appinstalled', function () {
+      var c = document.querySelector('[data-a2hs]');
+      if (c && c.parentNode) c.parentNode.removeChild(c);
+      try { localStorage.setItem(A2HS_KEY, String(Date.now())); } catch (err) {}
+    });
+  } catch (err) {}
+
+  function a2hsStandalone() {
+    try {
+      if (window.navigator.standalone === true) return true;
+      return !!(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+    } catch (e) { return false; }
+  }
+  function a2hsSnoozed() {
+    try {
+      var t = parseInt(localStorage.getItem(A2HS_KEY) || '0', 10);
+      return t && (Date.now() - t) < A2HS_SNOOZE_MS;
+    } catch (e) { return false; }
+  }
+  function a2hsDismiss() {
+    try { localStorage.setItem(A2HS_KEY, String(Date.now())); } catch (e) {}
+    var c = document.querySelector('[data-a2hs]');
+    if (c && c.parentNode) c.parentNode.removeChild(c);
+  }
+  // Font Awesome Free 6.7.2 (CC BY 4.0) inline SVGs, F rule: no emoji in UI.
+  var A2HS_ICO_PHONE = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" fill="currentColor" aria-hidden="true" focusable="false" style="width:20px;height:20px;"><path d="M16 64C16 28.7 44.7 0 80 0L304 0c35.3 0 64 28.7 64 64l0 384c0 35.3-28.7 64-64 64L80 512c-35.3 0-64-28.7-64-64L16 64zM224 448a32 32 0 1 0 -64 0 32 32 0 1 0 64 0zM304 64L80 64l0 320 224 0 0-320z"/></svg>';
+  var A2HS_ICO_SHARE = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" fill="currentColor" aria-hidden="true" focusable="false" style="width:13px;height:13px;vertical-align:-2px;margin:0 2px;"><path d="M246.6 9.4c-12.5-12.5-32.8-12.5-45.3 0l-128 128c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192 109.3 192 320c0 17.7 14.3 32 32 32s32-14.3 32-32l0-210.7 73.4 73.4c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3l-128-128zM64 352c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 64c0 53 43 96 96 96l256 0c53 0 96-43 96-96l0-64c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 64c0 17.7-14.3 32-32 32L96 448c-17.7 0-32-14.3-32-32l0-64z"/></svg>';
+
+  function renderHomeScreenCard() {
+    if (a2hsMounted) return;
+    var anchor = document.querySelector('[data-listing-strength]');
+    if (!anchor || !anchor.parentNode) return;
+    if (a2hsStandalone() || a2hsSnoozed()) return;
+    var coarse = false;
+    try { coarse = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches); } catch (e) {}
+    if (!coarse) return;
+    var ua = navigator.userAgent || '';
+    var isIOS = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if (!isIOS && !a2hsPrompt) return; // Android: wait for beforeinstallprompt (re-called from the listener)
+
+    gamStyles();
+    a2hsMounted = true;
+    var card = document.createElement('div');
+    card.className = 'lok-gam-moment';
+    card.setAttribute('data-a2hs', '');
+    card.style.position = 'relative';
+    var body;
+    if (isIOS) {
+      body = '<div class="lok-gam-sub" style="margin-top:8px;">Tap the Share button ' + A2HS_ICO_SHARE +
+        ' at the bottom of the screen, then choose <strong style="font-weight:700;color:#1A1829;">Add to Home Screen</strong>.</div>';
+    } else {
+      body = '<div class="lok-gam-actions"><button type="button" class="lok-gam-btn" data-a2hs-install>Add to home screen</button>' +
+        '<button type="button" class="lok-gam-ghost" data-a2hs-later>Not now</button></div>';
+    }
+    card.innerHTML =
+      '<button type="button" data-a2hs-close aria-label="Dismiss" style="position:absolute;top:10px;right:10px;width:32px;height:32px;border:none;background:none;color:#8E8BA6;font-size:18px;line-height:1;cursor:pointer;font-family:inherit;">✕</button>' +
+      '<div class="lok-gam-moment-ico">' + A2HS_ICO_PHONE + '</div>' +
+      '<div style="min-width:0;padding-right:28px;">' +
+        '<div class="lok-gam-moment-title">Add Lokali to your home screen</div>' +
+        '<div class="lok-gam-moment-sub">Open your dashboard in one tap, full screen, no browser bar. Same account, nothing to download.</div>' +
+        body +
+      '</div>';
+    card.querySelector('[data-a2hs-close]').addEventListener('click', a2hsDismiss);
+    var later = card.querySelector('[data-a2hs-later]');
+    if (later) later.addEventListener('click', a2hsDismiss);
+    var install = card.querySelector('[data-a2hs-install]');
+    if (install) install.addEventListener('click', function () {
+      if (!a2hsPrompt) return a2hsDismiss();
+      var p = a2hsPrompt; a2hsPrompt = null;
+      try {
+        p.prompt();
+        if (p.userChoice) p.userChoice.then(function (r) {
+          if (r && r.outcome === 'accepted') a2hsDismiss();
+          else install.style.display = 'none'; // the prompt can only be shown once
+        }).catch(function () {});
+      } catch (e) { a2hsDismiss(); }
+    });
+    anchor.parentNode.insertBefore(card, anchor.nextSibling);
+  }
+
   function render(v, services, products, leadsData) {
     var hasListing = services.length > 0 || products.length > 0;
 
@@ -653,6 +755,7 @@
 
     // Milestones + referral cards (best-effort; no-op until the SQL is live)
     renderGamification();
+    renderHomeScreenCard();
   }
 
   // ── #90 first-run setup wizard ─────────────────────────────────────────────
