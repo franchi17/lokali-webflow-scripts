@@ -848,7 +848,30 @@
       ".lk-admin-input{font-family:inherit;font-size:13px;padding:7px 10px;border:1px solid #C9BDE8;border-radius:8px;color:#1A1829;width:170px;}" +
       ".lk-admin-approve{font-family:inherit;font-size:12.5px;font-weight:600;padding:7px 14px;border-radius:8px;border:1px solid #A8DFC4;background:#EDFAF3;color:#1A6640;cursor:pointer;}" +
       ".lk-admin-decline{font-family:inherit;font-size:12.5px;padding:7px 14px;border-radius:8px;border:1px solid #E4E2F0;background:#F7F6FC;color:#6B6880;cursor:pointer;}" +
-      ".lk-admin-empty{font-size:12.5px;color:#8E8BA6;padding:8px 0 2px;border-top:.5px solid #EEEDF6;}";
+      ".lk-admin-empty{font-size:12.5px;color:#8E8BA6;padding:8px 0 2px;border-top:.5px solid #EEEDF6;}" +
+      /* #175 admin regroup (F 2026-09-13: "everything looks the same"): three zones, a
+         sticky pill nav, color-by-kind edges, empty queues collapse to one line. */
+      ".lk-admin-nav{position:sticky;z-index:20;display:flex;flex-wrap:wrap;gap:6px;align-items:center;background:#fff;border:1px solid #EEEDF6;border-radius:12px;padding:6px;margin:0 0 16px;}" +
+      ".lk-admin-nav a{font-size:13px;font-weight:600;color:#6B6880;text-decoration:none;padding:7px 12px;border-radius:999px;display:inline-flex;align-items:center;gap:6px;}" +
+      ".lk-admin-nav a:hover{background:#F7F6FC;color:#1A1829;}" +
+      ".lk-admin-nav a.lk-nav-attn{background:#FFF6E5;color:#6B4A00;}" +
+      ".lk-admin-nav a.lk-nav-attn .lk-admin-navcount{background:#EF9F27;color:#412402;}" +
+      ".lk-admin-nav a.lk-nav-clear{background:#EAFAF2;color:#1A6640;}" +
+      ".lk-admin-navcount{font-size:11px;font-weight:700;border-radius:999px;padding:1px 7px;background:#E4E2F0;color:#4A4761;}" +
+      ".lk-zone{margin:0 0 22px;scroll-margin-top:110px;}" +
+      ".lk-zone-head{display:flex;align-items:center;gap:8px;margin:0 0 10px;}" +
+      ".lk-zone-head svg{width:18px;height:18px;flex:0 0 auto;}" +
+      ".lk-zone-title{font-size:15px;font-weight:700;color:#1A1829;}" +
+      ".lk-zone-sub{font-size:12px;color:#8E8BA6;}" +
+      ".lk-zone-attn .lk-admin-section{border-left:3px solid #EF9F27;border-radius:0 12px 12px 0;}" +
+      ".lk-zone-tools .lk-admin-section{border-left:3px solid #7F77DD;border-radius:0 12px 12px 0;}" +
+      ".lk-zone-insights .lk-admin-section{border-left:3px solid #5DCAA5;border-radius:0 12px 12px 0;}" +
+      ".lk-zone-attn .lk-admin-qcount{background:#FAEEDA;color:#633806;}" +
+      ".lk-admin-section.lk-collapsed{display:none;}" +
+      ".lk-admin-allclear{display:none;font-size:13px;color:#4A4761;background:#FBFAFE;border:1px solid #EEEDF6;border-radius:12px;padding:10px 14px;margin-top:10px;line-height:1.5;}" +
+      ".lk-admin-allclear.lk-on{display:block;}" +
+      ".lk-admin-allclear svg{width:14px;height:14px;vertical-align:-2px;margin-right:6px;}" +
+      ".lk-admin-allclear span{color:#8E8BA6;}";
     document.head.appendChild(s);
   }
 
@@ -892,6 +915,8 @@
       if (c.addresses) parts.push(c.addresses + (c.addresses === 1 ? ' address flag' : ' address flags'));
       if (c.pairings) parts.push(c.pairings + (c.pairings === 1 ? ' pairing message' : ' pairing messages'));
       attn.innerHTML = '';
+      var total = (c.reports || 0) + (c.suggestions || 0) + (c.creatives || 0) + (c.addresses || 0) + (c.pairings || 0);
+      if (typeof navCount !== 'undefined') { navCount.textContent = String(total); navAttn.className = total ? 'lk-nav-attn' : 'lk-nav-clear'; }
       if (!parts.length) { attn.style.background = '#EAFAF2'; attn.style.borderColor = '#BFE9D2'; attn.style.color = '#1A6640'; attn.innerHTML = LK_FA.check + ' Nothing needs your approval right now.'; return; }
       attn.style.background = '#FFF6E5'; attn.style.borderColor = '#FFE2A8'; attn.style.color = '#6B4A00';
       var s = document.createElement('strong'); s.textContent = 'Needs your attention: '; attn.appendChild(s);
@@ -900,11 +925,95 @@
     window.__lokPaintAttn = paintAttn;
     paintAttn();
 
-    // Sections live in a responsive 2-col grid: quiet sections sit side by side
-    // as compact cards; sections with queue rows span the full width (the rows
-    // carry inputs/buttons and need the horizontal room).
-    var grid = el('div', 'lk-admin-grid');
-    wrap.appendChild(grid);
+    // #175: three zones instead of one flat grid. Each zone owns its own
+    // responsive grid (quiet cards side by side, queue-bearing cards full width).
+    //   Needs attention = the queues you approve or answer (amber edge)
+    //   Vendor tools    = actions on an account (violet edge)
+    //   Insights        = read-only numbers and lists (teal edge)
+    // The sticky pill nav jumps between them and carries the attention count.
+    var ICO = {
+      inbox: '<svg viewBox="0 0 512 512" fill="#854F0B" aria-hidden="true"><path d="M121 32C91.6 32 66 52 58.9 80.5L1.9 308.4C.6 313.5 0 318.7 0 323.9V416c0 35.3 28.7 64 64 64H448c35.3 0 64-28.7 64-64V323.9c0-5.2-.6-10.4-1.9-15.5l-57-227.9C446 52 420.4 32 391 32H121zm0 64H391l48 192H387.8c-12.1 0-23.2 6.8-28.6 17.7l-14.3 28.6c-5.4 10.8-16.5 17.7-28.6 17.7H195.8c-12.1 0-23.2-6.8-28.6-17.7l-14.3-28.6c-5.4-10.8-16.5-17.7-28.6-17.7H73l48-192z"/></svg>',
+      tool:  '<svg viewBox="0 0 512 512" fill="#534AB7" aria-hidden="true"><path d="M352 320c88.4 0 160-71.6 160-160c0-15.3-2.2-30.1-6.2-44.2c-3.1-10.8-16.4-13.2-24.3-5.3l-76.8 76.8c-3 3-7.1 4.7-11.3 4.7H336c-8.8 0-16-7.2-16-16V118.6c0-4.2 1.7-8.3 4.7-11.3l76.8-76.8c7.9-7.9 5.4-21.2-5.3-24.3C382.1 2.2 367.3 0 352 0C263.6 0 192 71.6 192 160c0 19.1 3.4 37.5 9.5 54.5L19.9 396.1C7.2 408.8 0 426.1 0 444.1C0 481.6 30.4 512 67.9 512c18 0 35.3-7.2 48-19.9L297.5 310.5c17 6.2 35.4 9.5 54.5 9.5zM80 408a24 24 0 1 1 0 48 24 24 0 1 1 0-48z"/></svg>',
+      chart: '<svg viewBox="0 0 512 512" fill="#0F6E56" aria-hidden="true"><path d="M32 32c17.7 0 32 14.3 32 32V400c0 8.8 7.2 16 16 16H480c17.7 0 32 14.3 32 32s-14.3 32-32 32H80c-44.2 0-80-35.8-80-80V64C0 46.3 14.3 32 32 32zm96 96c0-17.7 14.3-32 32-32s32 14.3 32 32V320c0 17.7-14.3 32-32 32s-32-14.3-32-32V128zm128 64c17.7 0 32 14.3 32 32V320c0 17.7-14.3 32-32 32s-32-14.3-32-32V224c0-17.7 14.3-32 32-32zm96-96c17.7 0 32 14.3 32 32V320c0 17.7-14.3 32-32 32s-32-14.3-32-32V128c0-17.7 14.3-32 32-32z"/></svg>',
+      check: '<svg viewBox="0 0 448 512" fill="#1A6640" aria-hidden="true"><path d="M438.6 105.4c12.5 12.5 12.5 32.8 0 45.3l-256 256c-12.5 12.5-32.8 12.5-45.3 0l-128-128c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0L160 338.7 393.4 105.4c12.5-12.5 32.8-12.5 45.3 0z"/></svg>'
+    };
+    var nav = el('div', 'lk-admin-nav');
+    var navAttn = document.createElement('a'); navAttn.href = '#lk-zone-attn'; navAttn.textContent = 'Needs attention ';
+    var navCount = el('span', 'lk-admin-navcount', '0'); navAttn.appendChild(navCount);
+    var navTools = document.createElement('a'); navTools.href = '#lk-zone-tools'; navTools.textContent = 'Vendor tools';
+    var navIns = document.createElement('a'); navIns.href = '#lk-zone-insights'; navIns.textContent = 'Insights';
+    nav.appendChild(navAttn); nav.appendChild(navTools); nav.appendChild(navIns);
+    // Sit just under the site header, which lokali-sticky-nav.js fixes to the
+    // top on desktop (>=992px) once you scroll; on phones it scrolls away.
+    var siteHead = document.querySelector('.header-wrapper.w-nav');
+    var deskHead = window.matchMedia && window.matchMedia('(min-width: 992px)').matches && siteHead ? siteHead.offsetHeight : 0;
+    nav.style.top = (deskHead + 8) + 'px';
+    wrap.appendChild(nav);
+    [navAttn, navTools, navIns].forEach(function (a) {
+      a.addEventListener('click', function (ev) {
+        var t = document.getElementById(a.getAttribute('href').slice(1));
+        if (t) { ev.preventDefault(); t.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+      });
+    });
+
+    function zone(id, cls, ico, title, sub) {
+      var z = el('div', 'lk-zone ' + cls); z.id = id;
+      var h = el('div', 'lk-zone-head');
+      h.innerHTML = ICO[ico];
+      h.appendChild(el('div', 'lk-zone-title', title));
+      h.appendChild(el('div', 'lk-zone-sub', sub));
+      z.appendChild(h);
+      var g = el('div', 'lk-admin-grid'); z.appendChild(g);
+      return { root: z, grid: g };
+    }
+    var zAttn = zone('lk-zone-attn', 'lk-zone-attn', 'inbox', 'Needs attention', 'queues you approve or answer');
+    var zTools = zone('lk-zone-tools', 'lk-zone-tools', 'tool', 'Vendor tools', 'things you do to an account');
+    var zIns = zone('lk-zone-insights', 'lk-zone-insights', 'chart', 'Insights', 'read-only, nothing to do here');
+    wrap.appendChild(zAttn.root); wrap.appendChild(zTools.root); wrap.appendChild(zIns.root);
+    var allClear = el('div', 'lk-admin-allclear'); zAttn.root.appendChild(allClear);
+    // Stat tiles move into Insights, plus a founding tile (filled async).
+    zIns.root.insertBefore(stats, zIns.grid);
+    var fTile = el('div', 'lk-admin-stat'); var fNum = el('div', 'lk-admin-stat-num', '\u2014');
+    fTile.appendChild(fNum); fTile.appendChild(el('div', 'lk-admin-stat-lbl', 'Founding vendors')); stats.appendChild(fTile);
+    try {
+      window.LokaliSupabaseAPI.founding.status(null).then(function (r) {
+        var d = r && r.data; if (!d) return;
+        var claimed = d.claimed != null ? d.claimed : (d.cap != null && d.remaining != null ? d.cap - d.remaining : null);
+        var cap = d.cap != null ? d.cap : 50;
+        if (claimed != null) { fNum.textContent = ''; fNum.appendChild(document.createTextNode(String(claimed))); var sm = document.createElement('span'); sm.style.cssText = 'font-size:12px;color:#8E8BA6;font-weight:500;'; sm.textContent = ' / ' + cap; fNum.appendChild(sm); }
+      }).catch(function () {});
+    } catch (e) {}
+
+    // Empty queues collapse to one "All clear" line so the zone is dominated
+    // by what needs doing. Sections load async, so watch the zone: a section
+    // with an empty-state and no rows collapses; it comes back if rows land.
+    function sectionTitle(sec) {
+      var t = sec.querySelector('.lk-admin-qtitle'); if (!t) return '';
+      var out = ''; t.childNodes.forEach(function (n) { if (n.nodeType === 3) out += n.textContent; });
+      return out.trim();
+    }
+    function collapseEmpties() {
+      var names = [];
+      zAttn.grid.querySelectorAll('.lk-admin-section').forEach(function (sec) {
+        var empty = sec.querySelector('.lk-admin-empty');
+        var loading = empty && /loading/i.test(empty.textContent || '');
+        var quiet = !!empty && !loading && !sec.querySelector('.lk-admin-row') && !sec.querySelector('form');
+        sec.classList.toggle('lk-collapsed', quiet);
+        if (quiet) names.push(sectionTitle(sec) || 'a queue');
+      });
+      allClear.innerHTML = '';
+      if (names.length) {
+        allClear.innerHTML = ICO.check;
+        allClear.appendChild(document.createTextNode('All clear: ' + names.join(', ') + ' '));
+        var hint = document.createElement('span'); hint.textContent = '(these open by themselves when something arrives)'; allClear.appendChild(hint);
+      }
+      allClear.classList.toggle('lk-on', names.length > 0);
+    }
+    try { new MutationObserver(function () { collapseEmpties(); }).observe(zAttn.grid, { childList: true, subtree: true, characterData: true }); } catch (e) {}
+    setTimeout(collapseEmpties, 0);
+
+    var grid = zAttn.grid;
+    paintAttn();   // now that the pill exists, stamp the count on it
 
     var sugSec = el('div', 'lk-admin-section' + (a.queue.length ? ' lk-admin-section-wide' : ''));
     var qt = el('div', 'lk-admin-qtitle');
@@ -986,16 +1095,16 @@
     });
     grid.appendChild(sugSec);
 
-    appendInviteVendorSection(grid);   // #168
-    appendSignInAsSection(grid);       // #171
-    appendReportsSection(grid, ov);
-    appendAddressFlagsSection(grid);   // #147
-    appendSpotlightSection(grid, ov);
-    appendSpotlightCreativesSection(grid);
-    appendPairingFeedbackSection(grid); // #166 neighbor-referral flags + suggestions
-    appendExitSurveySection(grid, ov);
-    appendQrScansSection(grid);
-    appendAcquisitionSection(grid);  // #156
+    appendReportsSection(zAttn.grid, ov);
+    appendAddressFlagsSection(zAttn.grid);   // #147
+    appendSpotlightCreativesSection(zAttn.grid);
+    appendPairingFeedbackSection(zAttn.grid); // #166 neighbor-referral flags + suggestions
+    appendSpotlightSection(zAttn.grid, ov);
+    appendInviteVendorSection(zTools.grid);   // #168
+    appendSignInAsSection(zTools.grid);       // #171
+    appendAcquisitionSection(zIns.grid);  // #156
+    appendQrScansSection(zIns.grid);
+    appendExitSurveySection(zIns.grid, ov);
     return wrap;
   }
 
@@ -1168,9 +1277,9 @@
     var form = document.createElement('form'); form.setAttribute('novalidate', '');
     form.style.cssText = 'display:flex;flex-wrap:wrap;gap:10px;align-items:end;';
     var w = el('label'); w.style.cssText = 'display:flex;flex-direction:column;gap:4px;font-size:12px;color:#6B6880;flex:1 1 260px;';
-    w.appendChild(document.createTextNode('Their account email *'));
-    var fEmail = document.createElement('input'); fEmail.type = 'email'; fEmail.name = 'email'; fEmail.className = 'lk-admin-input';
-    fEmail.style.width = '100%'; fEmail.style.boxSizing = 'border-box'; fEmail.placeholder = 'name@business.com'; fEmail.maxLength = 254;
+    w.appendChild(document.createTextNode('Business name or account email *'));
+    var fEmail = document.createElement('input'); fEmail.type = 'text'; fEmail.name = 'who'; fEmail.className = 'lk-admin-input'; fEmail.autocomplete = 'off';
+    fEmail.style.width = '100%'; fEmail.style.boxSizing = 'border-box'; fEmail.placeholder = 'Paperloom  or  name@business.com'; fEmail.maxLength = 254;
     w.appendChild(fEmail); form.appendChild(w);
     var btn = document.createElement('button'); btn.type = 'submit'; btn.className = 'lk-admin-btn'; btn.textContent = 'Make sign-in link';
     form.appendChild(btn);
@@ -1183,21 +1292,24 @@
       not_a_vendor: 'That account has no storefront. Sign-in links are only made for vendors.',
       not_admin: 'Only the admin can do this.',
       link_failed: 'Supabase refused to make the link. Nothing happened.',
-      lookup_failed: 'Could not look up that account. Try again.'
+      lookup_failed: 'Could not look up that account. Try again.',
+      no_vendor_named: 'No storefront with that business name. Try the exact name from The Market, or their email.',
+      name_ambiguous: 'More than one storefront matches that name. Use their email instead.'
     };
     form.addEventListener('submit', function (e) {
       e.preventDefault();
       var email = fEmail.value.trim();
-      if (!email) { out.textContent = 'Email is required.'; return; }
+      if (!email) { out.textContent = 'A business name or email is required.'; return; }
       if (!window.confirm('Make a one-time sign-in link for ' + email + '? Only do this with their OK.')) return;
       btn.disabled = true; btn.textContent = 'Making…'; out.textContent = '';
-      API.admin.signInAs({ email: email }).then(function (res) {
+      var payload = email.indexOf('@') >= 0 ? { email: email } : { name: email };   // #175: name lookup lives in the route
+      API.admin.signInAs(payload).then(function (res) {
         btn.disabled = false; btn.textContent = 'Make sign-in link';
         var d = res && res.data;
         if (res && res.error) { out.textContent = ERR[res.error] || ('Could not make the link (' + res.error + ').'); return; }
         if (!d || !d.link) { out.textContent = 'No link came back.'; return; }
         out.innerHTML = '';
-        var note = el('span'); note.textContent = 'Link for ' + (d.slug ? '/' + d.slug : email) + '. Copy it, then paste it into a PRIVATE window:';
+        var note = el('span'); note.textContent = 'Link for ' + (d.slug ? '/' + d.slug : email) + (d.email ? ' (' + d.email + ')' : '') + '. Copy it, then paste it into a PRIVATE window:';
         var box = document.createElement('input'); box.type = 'text'; box.readOnly = true; box.value = d.link; box.className = 'lk-admin-input';
         box.style.cssText = 'flex:1 1 320px;min-width:0;font-size:12px;';
         box.addEventListener('focus', function () { box.select(); });
