@@ -92,7 +92,7 @@
   // Keyed by category id (matches lokali-browse.js CAT_BY_ID).
   var ASSET = 'https://cdn.prod.website-files.com/6989095758ae17edfc424d30/';
   var CAT_BY_ID = {
-    1: { bg: '#FFF8E6', text: '#8A5A00', url: ASSET + '6a186b061a80eb9ba75f0d0a_scissors-solid.png' }, // Handcrafted
+    1: { bg: '#FFF8E6', text: '#8A5A00', url: ASSET + '6a186b061a80eb9ba75f0d0a_scissors-solid.png' }, // Handmade & Custom
     2: { bg: '#F6EEF5', text: '#7A3B6D', url: ASSET + '6a18f6d4b01673d30ca9bcb8_briefcase.svg' },       // Business
     3: { bg: '#FEF3F2', text: '#C0392B', url: ASSET + '6a18f2524e31974a75003735_hair%20dryer.svg' },    // Beauty
     4: { bg: '#E6F1FB', text: '#1A5C9A', url: ASSET + '6a18f6d4f1bbd4795f5345bc_backpack.svg' },        // Children

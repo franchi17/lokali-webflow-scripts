@@ -56,7 +56,7 @@
   // CSS-masked spans so they take the pill's text color, like browse does.
   var CAT_ASSET = 'https://cdn.prod.website-files.com/6989095758ae17edfc424d30/';
   var CATS = {
-    1: { label: 'Handcrafted Goods',       bg: '#FFF8E6', fg: '#8A5A00', icon: '6a186b061a80eb9ba75f0d0a_scissors-solid.png' },
+    1: { label: 'Handmade & Custom',       bg: '#FFF8E6', fg: '#8A5A00', icon: '6a186b061a80eb9ba75f0d0a_scissors-solid.png' },
     2: { label: 'Business Services',       bg: '#F6EEF5', fg: '#7A3B6D', icon: '6a18f6d4b01673d30ca9bcb8_briefcase.svg' },
     3: { label: 'Beauty',                  bg: '#FEF3F2', fg: '#C0392B', icon: '6a18f2524e31974a75003735_hair%20dryer.svg' },
     4: { label: 'Children',                bg: '#E6F1FB', fg: '#1A5C9A', icon: '6a18f6d4f1bbd4795f5345bc_backpack.svg' },

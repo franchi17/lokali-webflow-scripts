@@ -76,7 +76,7 @@
 
   // label = short sidebar label; bg/text = card pill colors (icon is masked to `text`).
   var CAT_BY_ID = {
-    1: { slug: 'handcrafted', label: 'Handcrafted Goods', bg: '#FFF8E6', text: '#8A5A00' },
+    1: { slug: 'handcrafted', label: 'Handmade & Custom', bg: '#FFF8E6', text: '#8A5A00' },
     2: { slug: 'business',    label: 'Business',          bg: '#F6EEF5', text: '#7A3B6D' },
     3: { slug: 'beauty',      label: 'Beauty',            bg: '#FEF3F2', text: '#C0392B' },
     4: { slug: 'children',    label: 'Children',          bg: '#E6F1FB', text: '#1A5C9A' },
@@ -97,7 +97,7 @@
   // lokali-profile-page-embed.js. It isn't — that file has no subcategory list
   // at all, and the listing forms read the live table directly.)
   var SUBCATS_BY_CAT = {
-    1: [ // Handcrafted Goods (Artisans & Makers)
+    1: [ // Handmade & Custom (Artisans & Makers)
       { slug: 'handmade-jewelry',     label: 'Handmade jewelry' },
       { slug: 'candles-soap',         label: 'Candles & soap' },
       { slug: 'art-prints',           label: 'Art prints & paintings' },
@@ -267,7 +267,7 @@
     { slug: 'children',    label: 'Children',          url: ASSET + '6a18f6d4f1bbd4795f5345bc_backpack.svg' },
     { slug: 'events',      label: 'Events & Entertainment',            url: ASSET + '6a18f6d414c76bb968f180db_balloon.svg' },
     { slug: 'food',        label: 'Food',              url: ASSET + '6a186b067365d964abee8918_utensils-solid.png' },
-    { slug: 'handcrafted', label: 'Handcrafted Goods', url: ASSET + '6a186b061a80eb9ba75f0d0a_scissors-solid.png' },
+    { slug: 'handcrafted', label: 'Handmade & Custom', url: ASSET + '6a186b061a80eb9ba75f0d0a_scissors-solid.png' },
     { slug: 'home',        label: 'Home & Property',              url: ASSET + '6a186b06a37dcea6514f15f9_house-regular.png' },
     { slug: 'professional', label: 'Professional Services', url: ASSET + '6a89a66cb52c25150db94d06_user-tie-solid.svg' }, // #152 Font Awesome user-tie
     { slug: 'wellness',    label: 'Wellness',          url: ASSET + '6a186b06cfcb6c4d6d1e1cf7_heart-regular.png' }

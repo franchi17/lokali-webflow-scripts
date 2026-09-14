@@ -404,7 +404,7 @@
       // table); hide the line if the id can't be resolved rather than show a
       // wrong label.
       var CAT_NAMES = {
-        1: 'Handcrafted Goods', 2: 'Business Services', 3: 'Beauty',
+        1: 'Handmade & Custom', 2: 'Business Services', 3: 'Beauty',
         4: 'Children & Education', 5: 'Events & Entertainment', 6: 'Food',
         7: 'Health & Wellness', 8: 'Home & Property', 9: 'Professional Services'
       };
