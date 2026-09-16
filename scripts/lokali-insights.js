@@ -661,6 +661,12 @@
         return;
       }
       var vendor = unwrap(r[3]);
+      // vendors.me() answers { vendor: row } (adapter vendorMe), not the row.
+      // v1.4.421 read the wrapper: every vendor-side check saw undefined and
+      // the extras below had no id, so a complete storefront showed "9 to do"
+      // (F, 2026-09-16). Unwrap once here; the raw row is what buildCheckup
+      // and isTopTier expect.
+      if (vendor && vendor.vendor && typeof vendor.vendor === 'object') vendor = vendor.vendor;
       // Checkup extras (portfolio photos + availability config): best-effort,
       // both owner-scoped reads on the Supabase client; a miss just hides
       // the gallery/booking rows rather than blocking the page.
