@@ -348,7 +348,10 @@
     ".vcard-offerline{font-size:12.5px;font-weight:600;color:#33304A;line-height:1.45;margin-bottom:5px;}",
     ".vcard-offer-more{color:#6E6A85;font-weight:500;white-space:nowrap;}",
     ".vcard-offerline .match{color:#6002EE;}",
-    ".vcard-tagline{font-size:12.5px;color:#6B6880;line-height:1.5;margin-bottom:12px;}",
+    // Clamped: a vendor with no tagline falls back to the business description,
+    // which is storefront-length (Delightful Designs put ~120 words on one card,
+    // F 2026-09-16). cardHook() caps the text; the clamp is the visual guard.
+    ".vcard-tagline{font-size:12.5px;color:#6B6880;line-height:1.5;margin-bottom:12px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;}",
     // #162d person-first: the human behind the business, right under the name.
     ".vcard-by{font-size:12px;color:#6E6A85;line-height:1.3;margin:-2px 0 6px 33px;}",
     ".vcard-by b{font-weight:600;color:#4B4666;}",
@@ -515,6 +518,23 @@
   function vName(v)    { return v.business_name || v.businessName || 'Vendor'; }
   function vTagline(v) { return v.business_tagline || v.tagline || v.business_description || ''; }
   function vDescription(v) { return v.business_description || ''; }
+  // Card hook = tagline, else the description cut to card length. Descriptions
+  // are written for the storefront: strip URLs (an unbroken link token widens
+  // the card) and cap at a word boundary, same shape as lokali-neighbors.js.
+  // vTagline() stays uncapped for the search haystack.
+  function cardHook(v) {
+    var hook = String(v.business_tagline || v.tagline || '').trim();
+    if (!hook) {
+      hook = String(vDescription(v) || '').replace(/https?:\/\/\S+/g, '').replace(/\s+/g, ' ').trim();
+      if (hook.length > 140) {
+        hook = hook.slice(0, 140);
+        var sp = hook.lastIndexOf(' ');
+        if (sp > 80) hook = hook.slice(0, sp);
+        hook = hook.replace(/[\s,;:.]+$/, '') + '\u2026';
+      }
+    }
+    return hook;
+  }
   function vListingNames(v) { return (v.id != null && _listingsByVendor[v.id]) || []; }
   function vSubcats(v) { return Array.isArray(v.subcategories) ? v.subcategories : []; }
   function vSubcatLabels(v) {
@@ -1569,7 +1589,7 @@
       body.appendChild(offerLine);
     }
 
-    var tag = ce('div', 'vcard-tagline'); tag.textContent = vTagline(v); body.appendChild(tag);
+    var tag = ce('div', 'vcard-tagline'); tag.textContent = cardHook(v); body.appendChild(tag);
 
     // ── foot: quiet metadata left (founding + town), single CTA right.
     // Contact buttons moved to the storefront with the redesign — see nameChip's
