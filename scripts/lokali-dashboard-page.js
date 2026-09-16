@@ -10,6 +10,25 @@
   markup (data-listing-strength, element IDs) stays in the page — only the JS
   moved here.
 
+  2026-09-17 DASHBOARD HOME REDESIGN (F-approved mockup, evidence-based UX):
+   - Header: rotating greeting (time-of-day aware, first name when Meet the
+     Vendor is filled, never the same line twice in a row) + Live/Not-public
+     chip + plan chip + storefront URL, with 'Copy link' and 'View storefront'
+     as the two header actions.
+   - Four 7-day tiles (views w/ 14-day sparkline, leads w/ unread, payment taps,
+     shares) each with a 'vs. week before' delta — lifetime totals moved off.
+   - 'Your next step' (the shared window.LokaliCheckup, top item large + two
+     runners-up) REPLACES the Listing-strength points card. Points retired:
+     they never mapped to an outcome and the card went static at 100%.
+   - 'What happened' feed: last 8 human events (inquiry, contact tap, payment
+     tap, review) + the month's busiest day. Views themselves stay out.
+   - Quick actions re-cut by frequency: Add a service / Add a product /
+     Reply to leads / Share & QR kit. The Webflow share card is hidden; its two
+     buttons stay in the DOM and drive the header 'Copy link'.
+   - Milestones, referrals, home-screen card, celebration moments and the
+     first-run wizard are unchanged, mounted after the quick actions.
+   All script-side: the Webflow elements are mount points only.
+
   Fixes baked in:
    - services.getMine() returns {items:[...]}, products returns a bare array → coerce both (toArr).
    - vendors.me() returns {data:{vendor:{...}}} → unwrap once (no double-nesting).
@@ -23,8 +42,6 @@
      in Webflow), #qa-preview href set here; services/products sub-lines show counts.
 */
 (function () {
-  var DISMISS_KEY = 'lokali_ls_dismissed';
-  var MAX_SCORE = 105; // 76f: +10 owner_photo +10 meet_vendor (was 85)
 
   function toArr(d) {
     if (Array.isArray(d)) return d;
@@ -34,7 +51,6 @@
   }
   function setId(id, val) { var e = document.getElementById(id); if (e) e.textContent = val; }
   function setSel(sel, val) { var e = document.querySelector(sel); if (e) e.textContent = val; }
-  function isDismissed() { try { return localStorage.getItem(DISMISS_KEY) === '1'; } catch (e) { return false; } }
 
   var ORIGIN = 'https://www.golokali.com';
   // Clean root URL when the vendor has a slug (golokali.com/dreams-inc);
@@ -153,38 +169,6 @@
     }
   }
 
-  // Self-heal the listing-strength card. Webflow HTML Embeds can mangle pasted
-  // markup (a stray `<div<` truncates the whole card). If the card container
-  // exists but its inner markup is missing/broken, rebuild it here so the embed
-  // only needs the empty container (or even a broken one — we overwrite it).
-  var LS_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
-  function lsItem(id, title, desc, pts) {
-    return '<div class="ls-item" data-ls-item="' + id + '">' +
-      '<div class="ls-check">' + LS_CHECK + '</div>' +
-      '<div class="ls-item-body"><div class="ls-item-title">' + title + '</div>' +
-      (desc ? '<div class="ls-item-desc">' + desc + '</div>' : '') + '</div>' +
-      '<div class="ls-points">+' + pts + ' pts</div></div>';
-  }
-  function ensureCardMarkup() {
-    var card = document.querySelector('[data-listing-strength]');
-    if (!card) return;
-    if (card.querySelector('[data-ls-item]')) return; // markup intact
-    card.innerHTML =
-      '<button class="ls-dismiss" data-ls-dismiss aria-label="Dismiss"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>' +
-      '<div class="ls-header"><div class="ls-header-left"><h3 class="ls-title">Your listing strength</h3><p class="ls-subtitle" data-ls-subtitle></p></div><div class="ls-score-value" data-ls-score></div></div>' +
-      '<div class="ls-progress-track"><div class="ls-progress-fill" data-ls-progress></div></div>' +
-      '<div class="ls-checklist" data-ls-checklist>' +
-        lsItem('business_name', 'Business name added', '', 10) +
-        lsItem('category', 'Category selected', '', 10) +
-        lsItem('profile_photo', 'Add your logo', 'Vendors with photos get 3× more contacts', 15) +
-        lsItem('bio', 'Write a bio <span style="color:#9A9AB0;font-weight:500;">(80+ characters)</span>', 'Your story is what makes a customer choose you over a directory', 20) +
-        lsItem('tagline', 'Add a tagline', 'One sentence. What you do and who you do it for.', 10) +
-        lsItem('owner_photo', 'Add your photo', 'A real face builds trust, and it tops the "Meet the vendor" section', 10) +
-        lsItem('meet_vendor', 'Fill out Meet the Vendor', 'Your first name + a short personal intro on your public page', 10) +
-        lsItem('has_listing', 'Add a service or product', "Customers can't book or buy without at least one listing", 20) +
-      '</div>' +
-      '<div class="ls-complete-state"><div class="ls-complete-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#1E8E3E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div><div class="ls-complete-body"><p class="ls-complete-title">Your listing is complete</p><p class="ls-complete-desc">Your profile is set up to get the most visibility on Lokali.</p></div></div>';
-  }
 
   // #90 publish gate — persistent "not public yet" banner INTEGRATED into the
   // Listing Strength card (decision: one place tied to the real gate, not a
@@ -225,77 +209,347 @@
     root.style.display = '';
   }
 
-  function listingStrength(v, hasListing) {
-    ensureCardMarkup();
-    var tasks = [
-      { id: 'business_name', pts: 10, done: !!v.business_name },
-      { id: 'category',      pts: 10, done: !!(v.categories_id && v.categories_id.length) },
-      { id: 'profile_photo', pts: 15, done: !!v.profile_photo },
-      { id: 'bio',           pts: 20, done: (v.business_description || '').trim().length >= 80 },
-      { id: 'tagline',       pts: 10, done: !!(v.business_tagline && String(v.business_tagline).trim()) },
-      // 76f — the Meet-the-Vendor personal fields (76e columns)
-      { id: 'owner_photo',   pts: 10, done: !!v.owner_photo },
-      { id: 'meet_vendor',   pts: 10, done: !!(v.owner_name && String(v.owner_name).trim()) && (v.owner_bio || '').trim().length >= 40 },
-      { id: 'has_listing',   pts: 20, done: !!hasListing }
-    ];
-    var score = 0, missing = 0;
-    var root = document.querySelector('[data-listing-strength]');
-    tasks.forEach(function (t) {
-      if (root) {
-        var item = root.querySelector('[data-ls-item="' + t.id + '"]');
-        if (item) item.classList.toggle('is-complete', t.done);
-      }
-      if (t.done) score += t.pts; else missing++;
+  // ── Home layout helpers (2026-09-17 redesign) ───────────────────────────
+  var HOME_CSS = [
+    '#lok-hd{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin:6px 0 18px;font-family:"Plus Jakarta Sans",-apple-system,sans-serif;}',
+    '#lok-hd .lok-hd-sub{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;color:#4A4761;line-height:1.5;}',
+    '#lok-hd .lok-hd-url{font-weight:600;color:#1A1829;}',
+    '.lok-chip{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;border-radius:100px;padding:3px 10px;line-height:1.5;white-space:nowrap;}',
+    '.lok-chip.live{background:#EAFAF2;color:#1D6A45;}',
+    '.lok-chip.live i{width:7px;height:7px;border-radius:50%;background:#1D6A45;display:inline-block;}',
+    '.lok-chip.off{background:#FDECEC;color:#A32D2D;}',
+    '.lok-chip.paused{background:#EEEDF6;color:#4A4761;}',
+    '.lok-chip.plan{background:#FFF1E3;color:#9a4d00;}',
+    '.lok-chip.plan.free{background:#EEEDF6;color:#4A4761;}',
+    '#lok-hd .lok-btns{display:flex;gap:8px;flex-wrap:wrap;}',
+    '.lok-btn{display:inline-flex;align-items:center;gap:8px;min-height:38px;padding:8px 14px;border-radius:9px;font-size:13px;font-weight:700;text-decoration:none;border:1px solid #E5D4FD;background:#fff;color:#6002EE;font-family:inherit;cursor:pointer;line-height:1.2;}',
+    '.lok-btn:hover{background:#F3EBFF;}',
+    '.lok-btn.primary{background:#6002EE;color:#fff;border-color:#6002EE;}',
+    '.lok-btn.primary:hover{opacity:.92;background:#6002EE;}',
+    '.lok-btn svg{width:14px;height:14px;flex-shrink:0;}',
+    '.lok-btn:focus-visible,.quick-actions-card:focus-visible{outline:2px solid #6002EE;outline-offset:2px;}',
+    '.lok-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:0 0 16px;font-family:"Plus Jakarta Sans",-apple-system,sans-serif;}',
+    '.lok-kpi{background:#fff;border:.5px solid #EEEDF6;border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;min-width:0;}',
+    '.lok-klabel{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#8E8BA6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.5;}',
+    '.lok-krow{display:flex;align-items:flex-end;justify-content:space-between;gap:8px;}',
+    '.lok-kvalue{font-size:28px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums;color:#1A1829;margin:0;}',
+    '.lok-spark{width:84px;height:28px;flex-shrink:0;}',
+    '.lok-delta{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;border-radius:100px;padding:2px 8px;width:fit-content;line-height:1.5;}',
+    '.lok-delta.up{color:#1D6A45;background:#EAFAF2;}',
+    '.lok-delta.down{color:#A32D2D;background:#FDECEC;}',
+    '.lok-delta.flat{color:#8E8BA6;background:#EEEDF6;}',
+    '.lok-delta.new{color:#6002EE;background:#F3EBFF;}',
+    '.lok-kdetail{font-size:11.5px;color:#6E6A85;line-height:1.5;}',
+    '#lok-cols{display:grid;grid-template-columns:1.1fr .9fr;gap:12px;margin:0 0 16px;align-items:start;}',
+    '.lok-card{background:#fff;border:.5px solid #EEEDF6;border-radius:12px;padding:16px 18px;min-width:0;font-family:"Plus Jakarta Sans",-apple-system,sans-serif;}',
+    '.lok-card.accent{border-color:#E5D4FD;}',
+    '.lok-ct{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;}',
+    '.lok-ct h3{font-size:13.5px;font-weight:700;margin:0;color:#1A1829;line-height:1.4;}',
+    '.lok-ct a{font-size:12px;font-weight:600;text-decoration:none;color:#6002EE;}',
+    '.lok-pill{font-size:11px;font-weight:700;border-radius:100px;padding:3px 10px;background:#F3EBFF;color:#6002EE;white-space:nowrap;line-height:1.5;}',
+    '.lok-pill.ok{background:#EAFAF2;color:#1D6A45;}',
+    '.lok-next{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start;padding:12px;border-radius:10px;background:#F3EBFF;}',
+    '.lok-next .n{width:28px;height:28px;border-radius:50%;background:#6002EE;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;}',
+    '.lok-next .t{font-size:14px;font-weight:700;margin:0;color:#1A1829;line-height:1.4;}',
+    '.lok-next .w{font-size:12.5px;color:#4A4761;margin:2px 0 8px;max-width:52ch;line-height:1.5;}',
+    '.lok-next .lok-btn{min-height:34px;padding:6px 12px;font-size:12.5px;}',
+    '.lok-meter{height:5px;background:#EEEDF6;border-radius:100px;overflow:hidden;margin:12px 0 6px;}',
+    '.lok-meter>div{height:100%;background:#6002EE;border-radius:100px;}',
+    '.lok-meter.ok>div{background:#1D6A45;}',
+    '.lok-mline{display:flex;justify-content:space-between;gap:10px;font-size:11.5px;color:#6E6A85;line-height:1.5;}',
+    '.lok-mline a{text-decoration:none;font-weight:600;color:#6002EE;white-space:nowrap;}',
+    '.lok-also{list-style:none;margin:10px 0 0;padding:0;font-size:12.5px;color:#4A4761;}',
+    '.lok-also li{display:flex;align-items:center;gap:8px;padding:6px 0;border-top:.5px solid #EEEDF6;line-height:1.5;}',
+    '.lok-also li svg{width:14px;height:14px;color:#8E8BA6;flex-shrink:0;}',
+    '.lok-also li a{margin-left:auto;text-decoration:none;font-weight:600;font-size:12px;white-space:nowrap;color:#6002EE;min-height:32px;display:inline-flex;align-items:center;}',
+    '.lok-ns-done{font-size:12.5px;color:#4A4761;line-height:1.55;}',
+    '.lok-feed{list-style:none;margin:0;padding:0;}',
+    '.lok-feed li{display:grid;grid-template-columns:26px 1fr auto;gap:10px;align-items:start;padding:9px 0;border-bottom:.5px solid #EEEDF6;font-size:12.5px;line-height:1.5;}',
+    '.lok-feed li:last-child{border-bottom:none;}',
+    '.lok-feed li:first-child{padding-top:0;}',
+    '.lok-fi{width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}',
+    '.lok-fi svg{width:13px;height:13px;}',
+    '.lok-fi.lead{background:#F3EBFF;color:#6002EE;}',
+    '.lok-fi.view{background:#EEEDF6;color:#4A4761;}',
+    '.lok-fi.pay{background:#FFF1E3;color:#9a4d00;}',
+    '.lok-fi.review{background:#EAFAF2;color:#1D6A45;}',
+    '.lok-ft{margin:0;color:#1A1829;}',
+    '.lok-ft b{font-weight:700;}',
+    '.lok-ft .m{color:#6E6A85;}',
+    '.lok-fw{font-size:11px;color:#8E8BA6;white-space:nowrap;font-variant-numeric:tabular-nums;padding-top:2px;}',
+    '.lok-feed-empty{font-size:12.5px;color:#4A4761;background:#F7F6FC;border-radius:10px;padding:12px 14px;line-height:1.55;}',
+    '#lokali-share-teaser{margin-top:12px;}',
+    '.lok-qa-ic{width:30px;height:30px;border-radius:9px;background:#F3EBFF;color:#6002EE;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-right:10px;}',
+    '.lok-qa-ic svg{width:14px;height:14px;}',
+    '@media(max-width:900px){.lok-kpis{grid-template-columns:1fr 1fr;}#lok-cols{grid-template-columns:1fr;}}',
+    '@media(max-width:480px){.lok-kpis{grid-template-columns:1fr;}.lok-btn{min-height:44px;}.lok-also li a{min-height:44px;}}'
+  ].join('');
+  function injectHomeStyles() {
+    if (document.getElementById('lok-home-css')) return;
+    var st = document.createElement('style'); st.id = 'lok-home-css'; st.textContent = HOME_CSS;
+    document.head.appendChild(st);
+  }
+  function esc(str) { return String(str == null ? '' : str).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function el(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
+  function tsOf(v) { if (v == null) return 0; if (typeof v === 'number') return v; var n = Number(v); if (!isNaN(n) && String(v).trim() !== '') return n; n = Date.parse(v); return isNaN(n) ? 0 : n; }
+  var DAY = 86400000;
+  function countIn(rows, from, to) { var now = Date.now(); return (rows || []).filter(function (r) { var d = now - tsOf(r.created_at); return d >= from && d < to; }).length; }
+
+  // Font Awesome Free 6.7.2 (CC BY 4.0) inline paths. F rule: icons, never emoji.
+  var ICO = {
+    circle: '<svg viewBox="0 0 512 512" fill="currentColor" aria-hidden="true"><path d="M464 256A208 208 0 1 0 48 256a208 208 0 1 0 416 0zM0 256a256 256 0 1 1 512 0A256 256 0 1 1 0 256z"/></svg>',
+    copy: '<svg viewBox="0 0 448 512" fill="currentColor" aria-hidden="true"><path d="M384 336H192c-8.8 0-16-7.2-16-16V64c0-8.8 7.2-16 16-16h140.1l52 52V320c0 8.8-7.2 16-16 16zM192 384h192c35.3 0 64-28.7 64-64V100.1c0-12.7-5.1-24.9-14.1-33.9L400.1 34.1c-9-9-21.2-14.1-33.9-14.1H192c-35.3 0-64 28.7-64 64V320c0 35.3 28.7 64 64 64zM64 128c-35.3 0-64 28.7-64 64V448c0 35.3 28.7 64 64 64H256c35.3 0 64-28.7 64-64V416H272v32c0 8.8-7.2 16-16 16H64c-8.8 0-16-7.2-16-16V192c0-8.8 7.2-16 16-16H96V128H64z"/></svg>',
+    ext: '<svg viewBox="0 0 512 512" fill="currentColor" aria-hidden="true"><path d="M320 0c-17.7 0-32 14.3-32 32s14.3 32 32 32h82.7L201.4 265.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L448 109.3V192c0 17.7 14.3 32 32 32s32-14.3 32-32V32c0-17.7-14.3-32-32-32H320zM80 32C35.8 32 0 67.8 0 112V432c0 44.2 35.8 80 80 80H400c44.2 0 80-35.8 80-80V320c0-17.7-14.3-32-32-32s-32 14.3-32 32V432c0 8.8-7.2 16-16 16H80c-8.8 0-16-7.2-16-16V112c0-8.8 7.2-16 16-16H192c17.7 0 32-14.3 32-32s-14.3-32-32-32H80z"/></svg>',
+    plus: '<svg viewBox="0 0 448 512" fill="currentColor" aria-hidden="true"><path d="M256 80c0-17.7-14.3-32-32-32s-32 14.3-32 32V224H48c-17.7 0-32 14.3-32 32s14.3 32 32 32H192V432c0 17.7 14.3 32 32 32s32-14.3 32-32V288H400c17.7 0 32-14.3 32-32s-14.3-32-32-32H256V80z"/></svg>',
+    mail: '<svg viewBox="0 0 512 512" fill="currentColor" aria-hidden="true"><path d="M64 112c-8.8 0-16 7.2-16 16v22.1L220.5 291.7c20.7 17 50.4 17 71.1 0L464 150.1V128c0-8.8-7.2-16-16-16H64zM48 212.2V384c0 8.8 7.2 16 16 16H448c8.8 0 16-7.2 16-16V212.2L322 328.8c-38.4 31.5-93.7 31.5-132 0L48 212.2zM0 128C0 92.7 28.7 64 64 64H448c35.3 0 64 28.7 64 64V384c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V128z"/></svg>',
+    qr: '<svg viewBox="0 0 448 512" fill="currentColor" aria-hidden="true"><path d="M0 80C0 53.5 21.5 32 48 32h96c26.5 0 48 21.5 48 48v96c0 26.5-21.5 48-48 48H48c-26.5 0-48-21.5-48-48V80zM64 96v64h64V96H64zM0 336c0-26.5 21.5-48 48-48h96c26.5 0 48 21.5 48 48v96c0 26.5-21.5 48-48 48H48c-26.5 0-48-21.5-48-48V336zm64 16v64h64V352H64zM304 32h96c26.5 0 48 21.5 48 48v96c0 26.5-21.5 48-48 48H304c-26.5 0-48-21.5-48-48V80c0-26.5 21.5-48 48-48zm80 64H320v64h64V96zM256 304c0-8.8 7.2-16 16-16h64c8.8 0 16 7.2 16 16s7.2 16 16 16h32c8.8 0 16-7.2 16-16s7.2-16 16-16s16 7.2 16 16v96c0 8.8-7.2 16-16 16H368c-8.8 0-16-7.2-16-16s-7.2-16-16-16s-16 7.2-16 16v64c0 8.8-7.2 16-16 16H272c-8.8 0-16-7.2-16-16V304zM368 480a16 16 0 1 1 0-32 16 16 0 1 1 0 32zm64 0a16 16 0 1 1 0-32 16 16 0 1 1 0 32z"/></svg>',
+    pay: '<svg viewBox="0 0 576 512" fill="currentColor" aria-hidden="true"><path d="M64 32C28.7 32 0 60.7 0 96v32H576V96c0-35.3-28.7-64-64-64H64zM576 224H0V416c0 35.3 28.7 64 64 64H512c35.3 0 64-28.7 64-64V224zM112 352h64c8.8 0 16 7.2 16 16s-7.2 16-16 16H112c-8.8 0-16-7.2-16-16s7.2-16 16-16zm112 16c0-8.8 7.2-16 16-16H368c8.8 0 16 7.2 16 16s-7.2 16-16 16H240c-8.8 0-16-7.2-16-16z"/></svg>',
+    eye: '<svg viewBox="0 0 576 512" fill="currentColor" aria-hidden="true"><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM144 256a144 144 0 1 1 288 0 144 144 0 1 1 -288 0zm144-64c0 35.3-28.7 64-64 64c-7.1 0-13.9-1.2-20.3-3.3c-5.5-1.8-11.9 1.6-11.7 7.4c.3 6.9 1.3 13.8 3.2 20.7c13.7 51.2 66.4 81.6 117.6 67.9s81.6-66.4 67.9-117.6c-11.1-41.5-47.8-69.4-88.6-71.1c-5.8-.2-9.2 6.1-7.4 11.7c2.1 6.4 3.3 13.2 3.3 20.3z"/></svg>',
+    star: '<svg viewBox="0 0 576 512" fill="currentColor" aria-hidden="true"><path d="M316.9 18C311.6 7 300.4 0 288.1 0s-23.4 7-28.8 18L195 150.3 51.4 171.5c-12 1.8-22 10.2-25.7 21.7s-.7 24.2 7.9 32.7L137.8 329 113.2 474.7c-2 12 3 24.2 12.9 31.3s23 8 33.8 2.3l128.3-68.5 128.3 68.5c10.8 5.7 23.9 4.9 33.8-2.3s14.9-19.3 12.9-31.3L438.5 329 542.7 225.9c8.6-8.5 11.7-21.2 7.9-32.7s-13.7-19.9-25.7-21.7L381.2 150.3 316.9 18z"/></svg>',
+    phone: '<svg viewBox="0 0 512 512" fill="currentColor" aria-hidden="true"><path d="M164.9 24.6c-7.7-18.6-28-28.5-47.4-23.2l-88 24C12.1 30.2 0 46 0 64C0 311.4 200.6 512 448 512c18 0 33.8-12.1 38.6-29.5l24-88c5.3-19.4-4.6-39.7-23.2-47.4l-96-40c-16.3-6.8-35.2-2.1-46.3 11.6L304.7 368C234.3 334.7 177.3 277.7 144 207.3L193.3 167c13.7-11.2 18.4-30 11.6-46.3l-40-96z"/></svg>'
+  };
+
+  // ── Greeting: rotates every load, time-of-day aware, never repeats the
+  // previous line (F 2026-09-17: "like Claude does it"). Greets the PERSON
+  // when Meet the Vendor has a first name, else the business.
+  var GREETINGS = ['Welcome back', 'Good to see you', 'Nice to have you back', 'Hello again', 'Back at it', 'Ready when you are', 'Let’s see what’s new', 'Glad you’re here', 'Hi there', 'Look who’s back'];
+  var GREET_KEY = 'lokali_greet_last';
+  function pickGreeting() {
+    var h = new Date().getHours();
+    var tod = h < 5 ? 'Up late' : h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+    var pool = GREETINGS.concat([tod, tod, tod]); // time-of-day line wins about a quarter of loads
+    var last = ''; try { last = localStorage.getItem(GREET_KEY) || ''; } catch (e) {}
+    var pick = pool[Math.floor(Math.random() * pool.length)];
+    for (var i = 0; i < 6 && pick === last; i++) pick = pool[Math.floor(Math.random() * pool.length)];
+    try { localStorage.setItem(GREET_KEY, pick); } catch (e) {}
+    return pick;
+  }
+  function renderGreeting(v) {
+    var h1 = document.querySelector('.heading-17');
+    if (h1) h1.textContent = pickGreeting() + ', ';
+    var first = String(v.owner_name || '').trim().split(/\s+/)[0];
+    setId('vendor-name', first || v.business_name || 'friend');
+  }
+
+  // ── Header: status chips + the two actions ──────────────────────────────
+  function renderHeader(v, billing, gateReady) {
+    var greet = document.querySelector('.div-block-40');
+    if (!greet || !greet.parentNode) return;
+    var sub = document.querySelector('.text-block-95'); if (sub) sub.style.display = 'none';
+    var hd = document.getElementById('lok-hd');
+    if (!hd) { hd = el('div'); hd.id = 'lok-hd'; greet.parentNode.insertBefore(hd, greet.nextSibling); }
+    var url = v.slug ? ('golokali.com/' + v.slug) : ('golokali.com/vendor?id=' + v.id);
+    var status = v.is_active === false
+      ? '<span class="lok-chip paused">Paused</span>'
+      : (gateReady ? '<span class="lok-chip live"><i></i>Live</span>' : '<span class="lok-chip off">Not public yet</span>');
+    var planName = (billing && billing.subscription && billing.subscription.plan_name) || 'Free';
+    var isFree = !billing || !billing.plan || billing.plan === 'free';
+    var plan = '<span class="lok-chip plan' + (isFree ? ' free' : '') + '">' + esc(isFree ? 'Free plan' : planName) + '</span>';
+    hd.innerHTML =
+      '<div class="lok-hd-sub">' + status + plan + '<span class="lok-hd-url">' + esc(url) + '</span></div>' +
+      '<div class="lok-btns">' +
+        '<button type="button" class="lok-btn" data-hd-copy>' + ICO.copy + '<span>Copy link</span></button>' +
+        '<a class="lok-btn primary" href="' + esc(publicListingUrl(v)) + '" target="_blank" rel="noopener">View storefront' + ICO.ext + '</a>' +
+      '</div>';
+    var copy = hd.querySelector('[data-hd-copy]');
+    copy.addEventListener('click', function () {
+      // The hidden Webflow 'Copy link' anchor carries the tokenized ?via= URL
+      // (wireShareButtons), so clicking it keeps share attribution intact.
+      var hidden = document.getElementById('share-copy-link');
+      if (hidden && hidden.__wired) hidden.click();
+      else copyToClipboard('https://www.' + url);
+      flashCopied(copy.querySelector('span'));
     });
-    var pct = Math.round((score / MAX_SCORE) * 100);
-    // #90 — the publish-gate banner rides the same data pass. Prefer the
-    // server-computed flag when the column exists; fall back to the same
-    // client-side math (matches the trigger's rule) pre-patch.
+  }
+
+  // ── Tiles: last 7 days with a comparison; views carry a 14-day sparkline ──
+  function sparkline(views) {
+    var now = Date.now(), buckets = [], i, max = 0;
+    for (i = 0; i < 14; i++) buckets.push(0);
+    (views || []).forEach(function (r) {
+      var d = Math.floor((now - tsOf(r.created_at)) / DAY);
+      if (d >= 0 && d < 14) buckets[13 - d]++;
+    });
+    buckets.forEach(function (n) { if (n > max) max = n; });
+    var W = 84, H = 28, step = W / 13, pts = buckets.map(function (n, k) {
+      var y = max ? (H - 3) - (n / max) * (H - 6) : H - 3;
+      return (k * step).toFixed(1) + ',' + y.toFixed(1);
+    });
+    var prev = pts.slice(0, 8).join(' '), cur = pts.slice(7).join(' '), last = pts[13].split(',');
+    return '<svg class="lok-spark" viewBox="0 0 84 28" role="img" aria-label="Views over the last 14 days">' +
+      '<polyline fill="none" stroke="#E5D4FD" stroke-width="2" points="' + prev + '"/>' +
+      '<polyline fill="none" stroke="#6002EE" stroke-width="2" stroke-linecap="round" points="' + cur + '"/>' +
+      '<circle cx="' + last[0] + '" cy="' + last[1] + '" r="2.5" fill="#6002EE"/></svg>';
+  }
+  function deltaChip(cur, prev) {
+    if (cur === prev) return '<span class="lok-delta flat">' + (cur === 0 ? 'none yet' : 'same as week before') + '</span>';
+    if (cur > prev) return '<span class="lok-delta up">↑ ' + (cur - prev) + ' vs. week before</span>';
+    return '<span class="lok-delta down">↓ ' + (prev - cur) + ' vs. week before</span>';
+  }
+  function tile(label, valueId, value, extra, chip, detail) {
+    return '<div class="lok-kpi"><div class="lok-klabel">' + label + '</div>' +
+      '<div class="lok-krow"><h2 class="lok-kvalue"' + (valueId ? ' id="' + valueId + '"' : '') + '>' + value + '</h2>' + (extra || '') + '</div>' +
+      chip + '<div class="lok-kdetail">' + detail + '</div></div>';
+  }
+  function renderTiles(leadsData, shares) {
+    var box = document.querySelector('.div-block-41');
+    if (!box) return;
+    var L = leadsData || {};
+    var views = L.views || [], inq = L.inquiries || [], con = L.contacts || [], pay = L.payment_clicks || [];
+    var W7 = 7 * DAY;
+    var v7 = countIn(views, 0, W7), vPrev = countIn(views, W7, 2 * W7);
+    var l7 = countIn(inq, 0, W7) + countIn(con, 0, W7), lPrev = countIn(inq, W7, 2 * W7) + countIn(con, W7, 2 * W7);
+    var p7 = countIn(pay, 0, W7), pPrev = countIn(pay, W7, 2 * W7);
+    var unread = (L.totals && L.totals.unread) || 0;
+    var sh = shares && shares.ok ? shares : null;
+    var landings = sh ? (Number(sh.landings) || 0) : 0, sharers = sh ? (Number(sh.unique_sharers) || 0) : 0;
+    box.className = 'lok-kpis';
+    box.innerHTML =
+      tile('Views · last 7 days', 'stat-profile-views', v7, sparkline(views), deltaChip(v7, vPrev), 'Storefront and listing opens') +
+      tile('Leads · last 7 days', 'stat-profile-complete', l7, '',
+        unread ? '<span class="lok-delta new">' + unread + ' unread</span>' : deltaChip(l7, lPrev), 'Inquiries and contact taps') +
+      tile('Payment taps · last 7 days', 'stat-active-products', p7, '', deltaChip(p7, pPrev), 'Venmo, Cash App, PayPal, Buy') +
+      tile('Shared link · all time', null, landings, '',
+        '<span class="lok-delta ' + (sharers ? 'up' : 'flat') + '">' + (sharers ? sharers + (sharers === 1 ? ' neighbor shared it' : ' neighbors shared it') : 'not shared yet') + '</span>',
+        'People who opened a link someone shared');
+  }
+
+  // ── Your next step: the shared checkup, top item large ──────────────────
+  function nextStepCard(v, hasListing, ck) {
+    var root = document.querySelector('[data-listing-strength]');
+    if (!root) return null;
+    root.className = 'lok-card accent';
+    root.style.cssText = '';
+    var open = ck.open || [], done = ck.done || [], total = ck.total || 0;
+    var html = '<div class="lok-ct"><h3>Your next step</h3>' +
+      (open.length ? '<span class="lok-pill">' + open.length + ' to do</span>' : '<span class="lok-pill ok">All in place</span>') + '</div>';
+    if (open.length) {
+      var f = open[0];
+      html += '<div class="lok-next"><div class="n">1</div><div>' +
+        '<p class="t">' + esc(f.title) + '</p><p class="w">' + esc(f.why) + '</p>' +
+        '<a class="lok-btn" href="' + esc(f.href) + '">' + esc(f.action) + ' →</a></div></div>';
+    } else {
+      html += '<div class="lok-ns-done">Your storefront has everything shoppers look for. Fresh photos and a new listing now and then keep it that way.</div>';
+    }
+    if (total) {
+      html += '<div class="lok-meter' + (open.length ? '' : ' ok') + '" role="img" aria-label="' + done.length + ' of ' + total + ' in place"><div style="width:' + Math.round(done.length / total * 100) + '%"></div></div>' +
+        '<div class="lok-mline"><span>' + done.length + ' of ' + total + ' things shoppers look for are in place</span><a href="/vendor-dashboard/analytics">Full checkup →</a></div>';
+    }
+    if (open.length > 1) {
+      html += '<ul class="lok-also">' + open.slice(1, 3).map(function (it) {
+        return '<li>' + ICO.circle + '<span>' + esc(it.title) + '</span><a href="' + esc(it.href) + '">' + esc(it.action) + ' →</a></li>';
+      }).join('') + '</ul>';
+    }
+    root.innerHTML = html;
+    // #90 publish gate: the 'not public yet' / soft address note rides on top.
     var gCats = !!(v.categories_id && v.categories_id.length);
     var gLocs = !!(v.locations_id && v.locations_id.length);
-    // #147c: the address is not part of the gate any more (soft gate, 2026-09-10);
-    // it only decides whether a live storefront shows the "add your address" note.
     var gAddr = !!(v.address && String(v.address).trim());
     var gateReady = (v.is_publish_ready != null) ? !!v.is_publish_ready
                     : (!!v.business_name && gCats && gLocs && !!hasListing);
     renderGateBanner(root, gateReady, { name: !!v.business_name, cats: gCats, locs: gLocs, listing: !!hasListing, address: gAddr });
-    if (root) {
-      if (score >= MAX_SCORE) { root.classList.add('is-complete'); }
-      // Score = donut ring with the % centered (Francesca 2026-07-30, replaces
-      // the straight progress bar). Runtime transform of the embed's markup so
-      // no Webflow edit/publish is needed: hide the linear track, rebuild the
-      // score element as an SVG ring, then update arc + label on every pass.
-      var track = root.querySelector('.ls-progress-track');
-      if (track) track.style.display = 'none';
-      var s = root.querySelector('[data-ls-score]');
-      if (s) {
-        var RING_C = 188.5; // 2πr for r=30
-        if (!s.querySelector('[data-ls-ring]')) {
-          s.style.lineHeight = '0';
-          s.innerHTML =
-            '<svg data-ls-ring width="76" height="76" viewBox="0 0 76 76" role="img">' +
-              '<circle cx="38" cy="38" r="30" fill="none" stroke="#EEEDF6" stroke-width="9"/>' +
-              '<circle data-ls-ring-arc cx="38" cy="38" r="30" fill="none" stroke="#6002EE" stroke-width="9" ' +
-                'stroke-linecap="round" stroke-dasharray="0 ' + RING_C + '" transform="rotate(-90 38 38)"/>' +
-              '<text data-ls-ring-txt x="38" y="39" text-anchor="middle" dominant-baseline="central" ' +
-                'font-family="\'Plus Jakarta Sans\',sans-serif" font-weight="800" font-size="17" fill="#1A1829"></text>' +
-            '</svg>';
-        }
-        var arc = s.querySelector('[data-ls-ring-arc]');
-        var txt = s.querySelector('[data-ls-ring-txt]');
-        if (arc) {
-          // Round linecap draws a dot even at 0 — hide the arc entirely there.
-          arc.style.display = pct > 0 ? '' : 'none';
-          arc.setAttribute('stroke-dasharray', (pct / 100 * RING_C).toFixed(1) + ' ' + RING_C);
-        }
-        if (txt) txt.textContent = pct + '%';
-        var ringSvg = s.querySelector('[data-ls-ring]');
-        if (ringSvg) ringSvg.setAttribute('aria-label', 'Listing strength ' + pct + '%');
-      }
-      var sub = root.querySelector('[data-ls-subtitle]');
-      if (sub) sub.textContent = "You're missing " + missing + (missing > 1 ? ' things that help' : ' thing that helps') + ' customers decide to reach out.';
+    return gateReady;
+  }
+
+  // ── What happened: the last 8 human events + the month's busiest day ────
+  var CONTACT_VERB = { call: 'tapped Call', sms: 'tapped Text', whatsapp: 'tapped WhatsApp', email: 'tapped Email', instagram: 'opened your Instagram', website: 'opened your website' };
+  var PAY_VERB = { venmo: 'tapped your Venmo', cashapp: 'tapped your Cash App', paypal: 'tapped your PayPal', zelle: 'copied your Zelle', buy_link: 'clicked Buy on a product', other_pay: 'tapped your pay link' };
+  var DOW = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  var DOW3 = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  var MON3 = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  function whenLabel(t) {
+    var now = Date.now(), d = now - t;
+    if (d < 60000) return 'just now';
+    if (d < 3600000) return Math.floor(d / 60000) + 'm ago';
+    if (d < DAY) return Math.floor(d / 3600000) + 'h ago';
+    var a = new Date(now), b = new Date(t);
+    var days = Math.round((Date.UTC(a.getFullYear(), a.getMonth(), a.getDate()) - Date.UTC(b.getFullYear(), b.getMonth(), b.getDate())) / DAY);
+    if (days <= 1) return 'Yesterday';
+    if (days < 7) return DOW3[b.getDay()];
+    return MON3[b.getMonth()] + ' ' + b.getDate();
+  }
+  function buildFeed(leadsData, reviews) {
+    var L = leadsData || {}, items = [];
+    (L.inquiries || []).forEach(function (r) { var t = tsOf(r.created_at); if (t) items.push({ t: t, kind: 'lead', ico: ICO.mail, html: '<b>New inquiry</b> came in' }); });
+    (L.contacts || []).forEach(function (r) { var t = tsOf(r.created_at); if (t) items.push({ t: t, kind: 'lead', ico: ICO.phone, html: '<b>Someone ' + esc(CONTACT_VERB[r.event_type] || 'reached out') + '</b>' }); });
+    (L.payment_clicks || []).forEach(function (r) { var t = tsOf(r.created_at); if (t) items.push({ t: t, kind: 'pay', ico: ICO.pay, html: '<b>Someone ' + esc(PAY_VERB[r.event_type] || 'tapped a pay link') + '</b>' }); });
+    (reviews || []).forEach(function (r) {
+      var t = tsOf(r.created_at); if (!t) return;
+      var who = r.author_name ? esc(String(r.author_name).split(' ')[0]) : 'A customer';
+      var rating = Number(r.rating);
+      items.push({ t: t, kind: 'review', ico: ICO.star, html: '<b>' + who + ' left a review</b>' + (rating > 0 ? ' <span class="m">· ' + rating + (rating === 1 ? ' star' : ' stars') + '</span>' : '') });
+    });
+    // Busiest day of the last 30 days (needs at least 3 views to be a story).
+    var byDay = {}, best = null, now = Date.now();
+    (L.views || []).forEach(function (r) {
+      var t = tsOf(r.created_at); if (!t || now - t > 30 * DAY) return;
+      var d = new Date(t), k = d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate();
+      byDay[k] = byDay[k] || { n: 0, t: new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12).getTime() };
+      byDay[k].n++;
+      if (!best || byDay[k].n > best.n) best = byDay[k];
+    });
+    if (best && best.n >= 3) items.push({ t: best.t, kind: 'view', ico: ICO.eye, html: '<b>Busiest day this month</b> <span class="m">· ' + best.n + ' views on ' + DOW[new Date(best.t).getDay()] + '</span>' });
+    items.sort(function (a, b) { return b.t - a.t; });
+    return items.slice(0, 8);
+  }
+  function renderFeed(leadsData, reviews, gateReady) {
+    var strength = document.querySelector('[data-listing-strength]');
+    var host = strength && strength.parentNode; // Webflow's .div-block-182 embed wrapper
+    if (!host || !host.parentNode) return;
+    var cols = document.getElementById('lok-cols');
+    if (!cols) {
+      cols = el('div'); cols.id = 'lok-cols';
+      host.parentNode.insertBefore(cols, host);
+      cols.appendChild(host);
+      host.style.margin = '0';
     }
-    return pct;
+    var card = document.getElementById('lok-feed-card');
+    if (!card) { card = el('div', 'lok-card'); card.id = 'lok-feed-card'; cols.appendChild(card); }
+    var items = buildFeed(leadsData, reviews);
+    var html = '<div class="lok-ct"><h3>What happened</h3><a href="/vendor-dashboard/leads">All leads →</a></div>';
+    if (items.length) {
+      html += '<ul class="lok-feed">' + items.map(function (it) {
+        return '<li><span class="lok-fi ' + it.kind + '">' + it.ico + '</span><p class="lok-ft">' + it.html + '</p><span class="lok-fw">' + whenLabel(it.t) + '</span></li>';
+      }).join('') + '</ul>';
+    } else {
+      html += '<div class="lok-feed-empty">' + (gateReady
+        ? 'Nothing yet, and that is normal early on. Inquiries, contact taps, payment taps and reviews show up here as they happen. Sharing your link with ten people you already know is the fastest way to see the first one.'
+        : 'Once your storefront is live, inquiries, contact taps, payment taps and reviews show up here as they happen.') + '</div>';
+    }
+    card.innerHTML = html;
+    // The Free-tier share teaser (lokali-share.js) used to sit in the share
+    // card; keep its mount alive under the feed so the nudge still renders.
+    var teaser = document.getElementById('lokali-share-teaser');
+    if (teaser) card.appendChild(teaser);
+  }
+
+  // ── Quick actions: re-cut by how often a vendor actually does them ───────
+  function qaCard(id, href, ico, label, sub) {
+    var a = document.getElementById(id); if (!a) return;
+    a.setAttribute('href', href); a.removeAttribute('target'); a.removeAttribute('rel');
+    var img = a.querySelector('img'); if (img) img.style.display = 'none';
+    if (!a.querySelector('.lok-qa-ic')) a.insertBefore(el('span', 'lok-qa-ic', ico), a.firstChild);
+    var l = a.querySelector('.text-block-99'); if (l) l.textContent = label;
+    var s2 = a.querySelector('.text-block-100'); if (s2) s2.textContent = sub;
+  }
+  function renderQuickActions(services, products, leadsData) {
+    var sCount = services.filter(function (s) { return !!s.is_active; }).length;
+    var pCount = products.filter(function (p) { return !!p.is_active; }).length;
+    var unread = (leadsData && leadsData.totals && leadsData.totals.unread) || 0;
+    qaCard('qa-services', '/vendor-dashboard/services', ICO.plus, 'Add a service', sCount + (sCount === 1 ? ' active service' : ' active services'));
+    qaCard('qa-products', '/vendor-dashboard/products', ICO.plus, 'Add a product', pCount + (pCount === 1 ? ' active product' : ' active products'));
+    qaCard('qa-settings', '/vendor-dashboard/leads', ICO.mail, 'Reply to leads', unread ? unread + ' unread' : 'Nothing waiting');
+    qaCard('qa-preview', '/vendor-dashboard/marketing', ICO.qr, 'Share & QR kit', 'Link, caption, printable code');
+    var share = document.querySelector('.div-block-43'); if (share) share.style.display = 'none';
+  }
+  // Where the standing cards (milestones, referrals, home-screen) mount now:
+  // after the quick actions, so the first screen holds status / tiles /
+  // next step / feed. Celebration moments still ride above the two columns.
+  function homeBottomAnchor() {
+    return document.querySelector('.div-block-168') || document.getElementById('lok-cols') || document.querySelector('[data-listing-strength]');
+  }
+  function homeTopAnchor() {
+    return document.getElementById('lok-cols') || document.querySelector('[data-listing-strength]');
   }
 
   // ── Vendor gamification: milestones + referrals ────────────────────────────
@@ -536,7 +790,7 @@
   function renderGamification() {
     var SB = window.LokaliSupabaseAPI;
     if (!SB || !SB.vendorGamification) return;
-    var anchor = document.querySelector('[data-listing-strength]');
+    var anchor = homeBottomAnchor(), top = homeTopAnchor();
     if (!anchor || !anchor.parentNode) return;
     if (document.querySelector('[data-gam-mounted]')) return;
 
@@ -556,7 +810,7 @@
         var moment = gamCelebration(rows);
         // Celebration rides ABOVE the listing-strength card; the two standing
         // cards mount together right after it.
-        if (moment) anchor.parentNode.insertBefore(moment, anchor);
+        if (moment && top && top.parentNode) top.parentNode.insertBefore(moment, top);
         wrap.appendChild(gamMilestonesCard(rows));
       }
       var refData = refRes && !refRes.error && refRes.data;
@@ -622,7 +876,7 @@
 
   function renderHomeScreenCard() {
     if (a2hsMounted) return;
-    var anchor = document.querySelector('[data-listing-strength]');
+    var anchor = homeBottomAnchor();
     if (!anchor || !anchor.parentNode) return;
     if (a2hsStandalone() || a2hsSnoozed()) return;
     var coarse = false;
@@ -672,88 +926,28 @@
     anchor.parentNode.insertBefore(card, anchor.nextSibling);
   }
 
-  function render(v, services, products, leadsData) {
+  function render(v, services, products, leadsData, x) {
+    x = x || {};
     var hasListing = services.length > 0 || products.length > 0;
+    injectHomeStyles();
+    renderGreeting(v);
 
-    // Heading + subtitle. The subtitle used to repeat the business name right
-    // under "Good to see you, {name}" — show the tagline instead, or hide it.
-    setId('vendor-name', v.business_name || 'Vendor');
-    var subEl = document.querySelector('.text-block-95');
-    if (subEl) {
-      var tagline = String(v.business_tagline || v.tagline || '').trim();
-      subEl.textContent = tagline;
-      subEl.style.display = tagline ? '' : 'none';
-    }
-
-    // Share + preview links — clean /{slug} URL once the vendor has one.
-    var publicUrl = v.slug ? ('golokali.com/' + v.slug) : ('golokali.com/vendor?id=' + v.id);
-    setSel('.text-block-96', publicUrl);
+    // Preview + share links (the share card is hidden; the header 'Copy link' clicks through).
     var previewBtn = document.getElementById('btn-preview-listing');
     if (previewBtn) previewBtn.href = v.slug ? ('/' + v.slug) : ('/vendor?id=' + v.id);
-
-    // Stat cards
-    var activeServices = services.filter(function (s) { return !!s.is_active; }).length;
-    var activeProducts = products.filter(function (p) { return !!p.is_active; }).length;
-    setId('stat-active-services', activeServices);
-    // Webflow has a single combined "Active Products / Services" card bound to
-    // id="stat-active-products" — show the total of both, not products alone.
-    setId('stat-active-products', activeServices + activeProducts);
-    // The static Webflow label reads "Active Products /SerVICEs" (mid-word
-    // caps typo) — normalize it here, same retitle pattern as the Leads card.
-    var apVal = document.getElementById('stat-active-products');
-    if (apVal) {
-      var apCard = apVal, apLabel = null;
-      for (var k = 0; k < 4 && apCard && !apLabel; k++) {
-        apCard = apCard.parentElement;
-        apLabel = apCard && apCard.querySelector('.dashboard-card-header');
-      }
-      if (apLabel) apLabel.textContent = 'Active Products / Services';
-    }
-    // Profile views. Needs an element with id="stat-profile-views" in Webflow.
-    // vendor/me now returns profile_views_total computed LIVE from page_views
-    // (same source as the analytics page, so the two numbers agree). Falls back
-    // to the legacy month_count key, then 0.
-    var profileViews = v.profile_views_total != null ? v.profile_views_total
-      : (v.profile_views_month_count != null ? v.profile_views_month_count : 0);
-    setId('stat-profile-views', profileViews);
-
-    // Third stat card: "Leads this month" (was a Listing Strength mirror —
-    // redundant with the checklist card right below, and static once 100%).
-    // Same 30-day inquiries+contacts count as the analytics page's Leads KPI,
-    // so the two pages always agree. The Webflow card's label is static text,
-    // so retitle it here; the value element keeps its legacy id.
-    var DAY30 = 30 * 24 * 60 * 60 * 1000;
-    function in30(rows) {
-      var now = Date.now();
-      return (rows || []).filter(function (r) {
-        // The adapter normalizes created_at to epoch-ms NUMBERS — Date.parse
-        // NaNs on those, so coerce numerics (incl. numeric strings) first.
-        var raw = r.created_at || r.created || 0;
-        var t = isNaN(Number(raw)) ? Date.parse(raw) : Number(raw);
-        return t && (now - t) < DAY30;
-      }).length;
-    }
-    var leads30 = leadsData ? (in30(leadsData.inquiries) + in30(leadsData.contacts)) : 0;
-    var statLeads = document.getElementById('stat-profile-complete');
-    if (statLeads) {
-      statLeads.textContent = String(leads30);
-      // Retitle the static Webflow label ("Listing Strength") on the same card.
-      var cardEl = statLeads, label = null;
-      for (var i = 0; i < 4 && cardEl && !label; i++) {
-        cardEl = cardEl.parentElement;
-        label = cardEl && cardEl.querySelector('.dashboard-card-header');
-      }
-      if (label) label.textContent = 'Leads this month';
-    }
-    // The big checklist card below still needs its update — listingStrength()
-    // writes data-ls-score/-progress as a side effect, so keep the call.
-    listingStrength(v, hasListing);
-
-    // Share card buttons + quick-action cards
     wireShareButtons(v);
-    wireQuickActions(v, services, products);
 
-    // Milestones + referral cards (best-effort; no-op until the SQL is live)
+    var ck = (typeof window.LokaliCheckup === 'function')
+      ? window.LokaliCheckup(v, services, products, x.photos, x.cfg, x.billing)
+      : { items: [], open: [], done: [], total: 0, paidPlan: false };
+    var gateReady = nextStepCard(v, hasListing, ck);
+    if (gateReady == null) gateReady = !!v.is_publish_ready;
+    renderHeader(v, x.billing, gateReady);
+    renderTiles(leadsData, x.shares);
+    renderFeed(leadsData, x.reviews, gateReady);
+    renderQuickActions(services, products, leadsData);
+
+    // Milestones + referral cards + home-screen card (best-effort; mount after the quick actions now)
     renderGamification();
     renderHomeScreenCard();
   }
@@ -1050,19 +1244,6 @@
   function init() {
     if (!window.LokaliDashboard || !window.LokaliDashboard.requireAuth()) return;
 
-    ensureCardMarkup(); // rebuild card markup first so the dismiss button below binds to it
-
-    if (isDismissed()) {
-      var card = document.querySelector('[data-listing-strength]');
-      if (card) card.style.display = 'none';
-    } else {
-      var dismissBtn = document.querySelector('[data-ls-dismiss]');
-      if (dismissBtn) dismissBtn.addEventListener('click', function () {
-        try { localStorage.setItem(DISMISS_KEY, '1'); } catch (e) {}
-        var c = document.querySelector('[data-listing-strength]');
-        if (c) c.style.display = 'none';
-      });
-    }
 
     if (!(window.LokaliAPI && window.LokaliAPI.vendors)) { setTimeout(init, 300); return; }
 
@@ -1098,8 +1279,29 @@
       var v = vendorRes.data.vendor || vendorRes.data;
       var leadsRes = r[3];
       var leadsData = leadsRes && !leadsRes.error ? (leadsRes.data != null ? leadsRes.data : leadsRes) : null;
-      render(v, toArr(r[1].data), toArr(r[2].data), leadsData);
-      maybeRunWizard(v); // #90 first-run setup wizard (one-shot, flag-gated)
+      var services = toArr(r[1].data), products = toArr(r[2].data);
+      // Home extras, every one best-effort: plan (chip + checkup gating),
+      // portfolio photos + booking config (checkup), share count (tile),
+      // public reviews (feed). A miss degrades that one element, never the page.
+      var A = window.LokaliAPI, S = window.LokaliSupabaseAPI;
+      function soft(p) { return (p && p.then ? p : Promise.resolve(null)).catch(function () { return null; }); }
+      function data(res) { return res && !res.error ? (res.data != null ? res.data : res) : null; }
+      return Promise.all([
+        soft(A.plans && A.plans.getMyBilling ? A.plans.getMyBilling() : null),
+        soft(S && S.photos && S.photos.list ? S.photos.list('vendor', v.id) : null),
+        soft(S && S.availability && S.availability.getConfig ? S.availability.getConfig(v.id) : null),
+        soft(A.share && A.share.count ? A.share.count(v.id) : null),
+        soft(A.reviews && A.reviews.forVendor ? A.reviews.forVendor(v.id) : null)
+      ]).then(function (x) {
+        render(v, services, products, leadsData, {
+          billing: data(x[0]),
+          photos: toArr(data(x[1])),
+          cfg: data(x[2]),
+          shares: data(x[3]),
+          reviews: toArr(data(x[4]))
+        });
+        maybeRunWizard(v); // #90 first-run setup wizard (one-shot, flag-gated)
+      });
     }).catch(function () {
       // Hard rejection (thrown error anywhere in the chain) — same budget + card.
       if (_initRetries < 2) {
@@ -1112,6 +1314,7 @@
   }
 
   var _initRetries = 0;
+  try { window.LokaliHome = { buildFeed: buildFeed, sparkline: sparkline, deltaChip: deltaChip, whenLabel: whenLabel, pickGreeting: pickGreeting }; } catch (e) {}
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();

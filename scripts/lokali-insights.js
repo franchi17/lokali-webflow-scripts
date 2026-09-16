@@ -289,98 +289,14 @@
     return p.indexOf('featured') >= 0 || p.indexOf('spotlight') >= 0;
   }
 
-  // ─── Storefront checkup (2026-09-16) ──────────────────────────────────────
-  // Field-based, not traffic-based: every check asks whether something a
-  // shopper looks for EXISTS on the storefront, never how good it is or how it
-  // compares to other vendors (with ~20 storefronts and a handful of views a
-  // week a category benchmark would be noise; revisit once there are a few
-  // hundred views a week). Pure: takes the rows the page already loads plus
-  // two best-effort reads (portfolio photos, availability config) and returns
-  // plain items; the plan-gated checks (gallery, booking link, Verified) are
-  // simply absent for Free vendors — the upsell card below already does that
-  // pitch. Exposed as window.LokaliCheckup for the node test.
-  var CK_PROFILE = '/vendor-dashboard/profile';
+  // Storefront checkup: the pure builder lives in lokali-dashboard.js
+  // (window.LokaliCheckup, sitewide plain tag, loads before this deferred
+  // script) so the dashboard home and this page read ONE copy. A missing
+  // global (old cached bundle) just hides the card.
   function buildCheckup(v, services, products, photos, cfg, billing) {
-    v = v || {}; services = services || []; products = products || []; photos = photos || []; cfg = cfg || {};
-    var f = (billing && billing.features) || {};
-    var svc = services.filter(function (s) { return s.is_active !== false; });
-    var prd = products.filter(function (p) { return p.is_active !== false; });
-    var listings = svc.length + prd.length;
-    var svcNoPrice = svc.filter(function (s) { return !s.price_type; }).length;
-    var prdNoPrice = prd.filter(function (p) { return (p.price == null || p.price === '') && !p.is_quote_based; }).length;
-    var noPrice = svcNoPrice + prdNoPrice;
-    var svcNoPhoto = svc.filter(function (s) { return !s.image_url; }).length;
-    var prdNoPhoto = prd.filter(function (p) { return !p.image_url; }).length;
-    var noPhoto = svcNoPhoto + prdNoPhoto;
-    var desc = String(v.business_description || '').trim();
-    var paidWays = !!(v.venmo_username || v.cashapp_cashtag || v.paypalme_slug || v.zelle_contact || v.other_pay_url);
-    var gallery = photos.filter(function (p) { return p && p.is_active !== false && (p.image_url || p.video_url); }).length;
-    var paidPlan = (Number(f.max_vendor_photos) || 0) > 0 || !!f.trust_badge;
-    var SVC = '/vendor-dashboard/services', PRD = '/vendor-dashboard/products';
-    function n(c, w) { return c + ' ' + w + (c === 1 ? '' : 's'); }
-    var items = [];
-    // add(key, done, openTitle, doneTitle, why, action, href, show)
-    function add(key, done, openTitle, doneTitle, why, action, href, show) {
-      if (show === false) return;
-      items.push({ key: key, done: !!done, title: done ? doneTitle : openTitle, why: why, action: action, href: href });
-    }
-    add('price', noPrice === 0,
-      'Add a price to ' + (noPrice === listings ? 'your ' : '') + n(noPrice, 'listing'), 'Every listing shows a price',
-      'Shoppers skip listings with no price. "Starting at" or "Ask for a quote" both count.',
-      'Add prices', svcNoPrice ? SVC : PRD, listings > 0);
-    add('photo', noPhoto === 0,
-      'Add a photo to ' + (noPhoto === listings ? 'your ' : '') + n(noPhoto, 'listing'), 'Every listing has a photo',
-      'A listing with no photo is the one nobody opens.',
-      'Add photos', svcNoPhoto ? SVC : PRD, listings > 0);
-    add('cover', !!v.card_photo_url,
-      'Pin a cover photo for your Market card', 'Cover photo pinned',
-      'Your card is the first thing shoppers see in the Market. Right now we pick a photo for you.',
-      'Pick a cover', CK_PROFILE + '#lok-card-photo');
-    add('depth', listings >= 2,
-      listings === 0 ? 'Add your first service or product' : 'Add a second service or product', 'More than one listing',
-      'One listing reads as a side project. Two or more reads as a business.',
-      'Add a listing', SVC);
-    add('desc', desc.length >= 80,
-      desc ? 'Say more in your description' : 'Write a description', 'Description written',
-      (desc ? 'Yours is one line. ' : '') + 'A couple of sentences on what you make and who it is for. Google reads this too.',
-      desc ? 'Write more' : 'Write it', CK_PROFILE + '#lok-sec-about');
-    add('tagline', !!(v.business_tagline || v.tagline),
-      'Add a tagline', 'Tagline set',
-      'One line under your name on your card and in search results.',
-      'Add a tagline', CK_PROFILE + '#lok-sec-about');
-    add('intro', !!v.owner_bio,
-      'Introduce yourself', 'Personal intro added',
-      'Personal sells. Shoppers on Lokali pick people, not logos.',
-      'Write an intro', CK_PROFILE + '#lok-about-you');
-    add('contact', !!(v.contact_email || v.phone_number),
-      'Add a way to reach you', 'Shoppers can reach you',
-      'A phone number or email so an inquiry has somewhere to land.',
-      'Add contact', CK_PROFILE + '#lok-sec-business');
-    add('pay', paidWays,
-      'Add a way to get paid', 'Ways to get paid listed',
-      'Venmo, Cash App, PayPal or Zelle. Taps on these show up as Payment clicks above.',
-      'Add payment', CK_PROFILE + '#lok-pay-card');
-    add('buy', prd.some(function (p) { return !!p.buy_url; }),
-      'Link your online store', 'Online store linked',
-      'If you sell on Etsy, Shopify or your own site, a Buy button turns a view into a sale.',
-      'Add a Buy link', PRD, prd.length > 0);
-    add('gallery', gallery > 0,
-      'Add photos to your storefront gallery', 'Gallery has photos',
-      'A photo strip across the top of your storefront. It is the first thing a visitor sees.',
-      'Add gallery photos', CK_PROFILE + '#lok-portfolio-card', (Number(f.max_vendor_photos) || 0) > 0);
-    add('booking', !!cfg.booking_url,
-      'Add your booking link', 'Booking link added',
-      'Calendly, Acuity, Square or any scheduling page. Puts a Book button on your storefront.',
-      'Add booking link', '/vendor-dashboard/availability', paidPlan && svc.length > 0);
-    add('verified', v.identity_status === 'verified',
-      'Get Verified', 'Verified',
-      'A quick ID check. The Verified badge tells a stranger you are a real person.',
-      'Get Verified', '/vendor-dashboard/settings', !!f.trust_badge);
-    var open = items.filter(function (i) { return !i.done; });
-    var done = items.filter(function (i) { return i.done; });
-    return { items: items, open: open, done: done, total: items.length, paidPlan: paidPlan };
+    if (typeof window.LokaliCheckup !== 'function') return { items: [], open: [], done: [], total: 0, paidPlan: false };
+    return window.LokaliCheckup(v, services, products, photos, cfg, billing);
   }
-  try { window.LokaliCheckup = buildCheckup; } catch (e) {}
 
   var CK_ICON_OPEN = '<svg viewBox="0 0 512 512" fill="currentColor" aria-hidden="true"><path d="M464 256A208 208 0 1 0 48 256a208 208 0 1 0 416 0zM0 256a256 256 0 1 1 512 0A256 256 0 1 1 0 256z"/></svg>';
   var CK_ICON_DONE = '<svg viewBox="0 0 512 512" fill="currentColor" aria-hidden="true"><path d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM369 209L241 337c-9.4 9.4-24.6 9.4-33.9 0l-64-64c-9.4-9.4-9.4-24.6 0-33.9s24.6-9.4 33.9 0l47 47L335 175c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9z"/></svg>';
@@ -552,7 +468,7 @@
         rate.toFixed(0) + '%</strong> of them reached out. ' + tail;
       mount.appendChild(ins);
     }
-    mount.appendChild(checkupCard(ck));
+    if (ck.total) mount.appendChild(checkupCard(ck));
 
     // views chart with plan-gated range selector. The selectable window is the
     // vendor's plan tier: Featured 360d / Pro 180d / free 30d (paid truth =
