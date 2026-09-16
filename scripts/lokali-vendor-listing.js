@@ -86,6 +86,14 @@
     // rather than a broken-host URL. Live rows store full URLs (handled above).
     return '';
   }
+  // CLEAN-P23: card/avatar/tile-size variants through the Storage render
+  // endpoint (helper in lokali-supabase-client.js as window.LokaliImg; absent =
+  // the full object, as before). Call it BEFORE registering an error handler on
+  // the same <img>: a render miss falls back to the stored object silently.
+  function imgSet(img, url, w) {
+    var I = window.LokaliImg;
+    if (I && typeof I.set === 'function') I.set(img, url, w); else img.src = url;
+  }
 
   // ---- category pill styling (mirrors The Market vendor card) -----------
   // bg/text = pill colors; url = the same masked category icon used on the card.
@@ -959,12 +967,12 @@
     if (avaUrl) {
       var ava = ce('img', 'vl-pair-ava');
       ava.alt = '';
+      imgSet(ava, avaUrl, 240); // CLEAN-P23 — before the error handler below
       ava.addEventListener('error', function () {
         var m = ce('div', 'vl-pair-ava-mark');
         m.textContent = String(d.owner_name || d.business_name || 'L').trim().charAt(0).toUpperCase();
         if (ava.parentNode) ava.parentNode.replaceChild(m, ava);
       });
-      ava.src = avaUrl;
       card.appendChild(ava);
     } else {
       var mark = ce('div', 'vl-pair-ava-mark');
@@ -1453,7 +1461,7 @@
       // #94: an unlimited Featured catalog must not fetch every image on load —
       // and display:none never stopped <img> downloads under the old collapse.
       imgEl.loading = 'lazy';
-      imgEl.src = opts.image;
+      imgSet(imgEl, opts.image, 640); // CLEAN-P23: card-size variant
       imgEl.alt = opts.name || '';
       // #149: vendor-chosen focal point — which part of the photo survives the
       // object-fit:cover crop. Absent (older rows) = the browser default, center.
@@ -1949,7 +1957,10 @@
           if (pips) { var pip0 = document.createElement('span'); pip0.className = 'vd-pip' + (i === 0 ? ' vd-pip-active' : ''); pips.appendChild(pip0); }
           return;
         }
-        var img = document.createElement('img'); img.src = imgUrl(p.image_url || p.image);
+        var img = document.createElement('img');
+        // CLEAN-P23: the tile gets a 960-edge variant; the lightbox (urls above)
+        // still opens the full object.
+        imgSet(img, imgUrl(p.image_url || p.image), 960);
         // #149b: vendor-chosen focal point (dragged in the portfolio manager);
         // absent = browser default, center. The lightbox shows the full image.
         if (p.image_focus_x != null && p.image_focus_y != null) {
@@ -2267,8 +2278,8 @@
     }
     if (av && photo) {
       av.style.display = '';
+      imgSet(av, photo, 240); // CLEAN-P23 — before the error handler
       av.addEventListener('error', showInitials);
-      av.src = photo;
     } else {
       showInitials();
     }
@@ -2380,7 +2391,7 @@
         el = ce('img');
         // #97: a photo of a person — their name is the alt (matches the
         // initials fallback below, which "reads" the same way).
-        el.src = photo; el.alt = name || v.business_name || '';
+        imgSet(el, photo, 240); el.alt = name || v.business_name || ''; // CLEAN-P23
         el.style.cssText = 'width:' + size + 'px;height:' + size + 'px;border-radius:50%;object-fit:cover;flex:none;box-shadow:0 3px 10px rgba(26,24,41,.12);';
       } else {
         el = ce('div');

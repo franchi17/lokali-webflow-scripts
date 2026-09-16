@@ -32,6 +32,51 @@
     (typeof window !== 'undefined' && window.LOKALI_SUPABASE_PUBLISHABLE_KEY) ||
     'sb_publishable_--wRW6DD_9ZCBqfb0kJUww_0lzfzs39';
 
+  // CLEAN-P23 (2026-09-16): card-size image variants. Every card, strip and
+  // avatar used to download the FULL stored object (1600-edge gallery photos,
+  // up to 5.5 MB for pre-P9 uploads) for a 100-400 px render. Supabase Storage
+  // image transformations are enabled on the project, so those surfaces now ask
+  // for a long-edge-capped variant instead:
+  //   /storage/v1/object/public/<path>
+  //     -> /storage/v1/render/image/public/<path>?width=W&height=W&resize=contain&quality=70
+  // resize=contain with BOTH sides = a W x W bounding box, aspect kept (width
+  // alone keeps the original height and crops — verified 2026-09-16). The full
+  // object stays the source for the lightbox, the item-page hero and every
+  // Worker-emitted og:image. set() falls back to the stored object when the
+  // render misses (400 for a deleted/renamed object) and stops the consumer's
+  // own error handler from firing for that miss, so the initials/remove
+  // fallbacks only run when the ORIGINAL fails too. GIF/SVG (the upload
+  // pipeline's NO_RECODE kinds) and non-vendor-media URLs pass through
+  // untouched. Billing: transformations are metered per origin image per month
+  // (Pro plan: an included allowance, then per 1,000) — a few dollars at
+  // today's ~400 objects.
+  window.LokaliImg = (function () {
+    var RE = /^(https?:\/\/[^/?#]+)\/storage\/v1\/object\/public\/(vendor-media\/[^?#]+)/;
+    function thumb(url, w) {
+      url = String(url || '');
+      var m = RE.exec(url);
+      if (!m || /\.(gif|svg)$/i.test(m[2])) return url;
+      w = Math.max(64, Math.min(1600, Math.round(Number(w) || 640)));
+      return m[1] + '/storage/v1/render/image/public/' + m[2] +
+        '?width=' + w + '&height=' + w + '&resize=contain&quality=70';
+    }
+    // Call BEFORE the consumer registers its own error listener: listeners run
+    // in registration order, and this one must be first to swallow the miss.
+    function set(img, url, w) {
+      var t = thumb(url, w);
+      if (t !== url) {
+        img.addEventListener('error', function onErr(e) {
+          if (img.getAttribute('src') !== t) return;
+          img.removeEventListener('error', onErr);
+          e.stopImmediatePropagation();
+          img.src = url;
+        });
+      }
+      img.src = t;
+    }
+    return { thumb: thumb, set: set };
+  })();
+
   // Load supabase-js (ESM) from jsDelivr — the same CDN the rest of the Lokali
   // scripts already ship from — and build the singleton client.
   window.LokaliSupabaseReady = import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm')

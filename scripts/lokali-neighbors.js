@@ -169,6 +169,14 @@
     return slug ? ('/' + encodeURIComponent(slug)) : ('/vendor?id=' + encodeURIComponent(v.id));
   }
 
+  // CLEAN-P23: the 104 px circle asks for a 240-edge variant through the Storage
+  // render endpoint (helper in lokali-supabase-client.js as window.LokaliImg;
+  // absent = the full object, as before).
+  function imgSet(img, url, w) {
+    var I = window.LokaliImg;
+    if (I && typeof I.set === 'function') I.set(img, url, w); else img.src = url;
+  }
+
   var CROWN_SVG = '<svg width="11" height="11" viewBox="0 0 24 24" fill="#C9A22A" aria-hidden="true"><path d="M2 8l5 4 5-8 5 8 5-4-2 12H4L2 8z"/></svg>';
 
   function card(v, idx) {
@@ -185,7 +193,7 @@
       var wrap = document.createElement('div');
       wrap.className = 'lok-nb-photo';
       var img = document.createElement('img');
-      img.src = photoUrl;
+      imgSet(img, photoUrl, 240);
       img.alt = headline;
       img.loading = 'lazy';
       wrap.appendChild(img);

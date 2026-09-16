@@ -604,6 +604,13 @@
     return '';
   }
   function vPhotoUrl(v) { return safeImgUrl(v.profile_photo); }
+  // CLEAN-P23: card-size variant through the Storage render endpoint. The helper
+  // lives in lokali-supabase-client.js (window.LokaliImg); if it is absent the
+  // full object loads exactly as before.
+  function imgSet(img, url, w) {
+    var I = window.LokaliImg;
+    if (I && typeof I.set === 'function') I.set(img, url, w); else img.src = url;
+  }
   function vAreaLabel(v) {
     var ids = Array.isArray(v.locations_id) ? v.locations_id : (v.locations_id != null ? [v.locations_id] : []);
     for (var i = 0; i < ids.length; i++) if (_locationsById[ids[i]]) return _locationsById[ids[i]].label;
@@ -908,6 +915,10 @@
       img.alt = '';
       img.style.opacity = '0';
       if (typeof p.fx === 'number' && typeof p.fy === 'number') img.style.objectPosition = p.fx + '% ' + p.fy + '%';
+      // CLEAN-P23: card-size variant. src is set BEFORE the listeners below on
+      // purpose — load/error fire asynchronously, and the helper's own fallback
+      // listener must be registered ahead of the skip-on-error one.
+      imgSet(img, safeImgUrl(p.url), 640);
       img.addEventListener('load', function () {
         if (!cover.isConnected) { busy = false; return; }
         if (cur && cur.parentNode === cover) cur.insertAdjacentElement('afterend', img);
@@ -923,7 +934,6 @@
         }, 700);
       });
       img.addEventListener('error', function () { idx = next; busy = false; }); // skip a dead URL, move on next tick
-      img.src = safeImgUrl(p.url);
     }
     // Touch swipe (F 2026-09-01: "people are going to want to do that
     // naturally"). Passive listeners with the decision at touchend, so
@@ -1464,7 +1474,7 @@
       // #97: alt DELIBERATELY empty — the business name is the card's visible
       // title right next to this avatar, so a non-empty alt would make screen
       // readers announce every vendor twice. Decorative-adjacent-text rule.
-      var img = ce('img', 'vcard-avatar-img'); img.src = photo; img.alt = '';
+      var img = ce('img', 'vcard-avatar-img'); imgSet(img, photo, 240); img.alt = '';
       img.addEventListener('error', function () { if (img.parentNode) avatar.removeChild(img); fillInitials(); });
       avatar.appendChild(img);
     } else {
@@ -1493,7 +1503,7 @@
     cover.appendChild(mark);
     if (covUrl) {
       // alt deliberately empty (#97 rule): decorative-adjacent to the visible name.
-      var cimg = ce('img', 'vcard-cover-img'); cimg.src = covUrl; cimg.alt = ''; cimg.loading = 'lazy';
+      var cimg = ce('img', 'vcard-cover-img'); imgSet(cimg, covUrl, 640); cimg.alt = ''; cimg.loading = 'lazy';
       // #149b: gallery covers reuse the vendor's drag-set focal point.
       if (typeof cov.fx === 'number' && typeof cov.fy === 'number') cimg.style.objectPosition = cov.fx + '% ' + cov.fy + '%';
       // Broken image -> the gradient + mark underneath simply shows through.

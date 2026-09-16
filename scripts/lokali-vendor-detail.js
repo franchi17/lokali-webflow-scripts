@@ -120,6 +120,14 @@
   var SERVICE_PHOTOS_PATH = (typeof window !== 'undefined' && window.LOKALI_SERVICE_PHOTOS_PATH) || 'service/id/{id}/photos/list';
   var PRODUCT_PHOTOS_PATH = (typeof window !== 'undefined' && window.LOKALI_PRODUCT_PHOTOS_PATH) || 'product/id/{id}/photos/list';
 
+  // CLEAN-P23: avatar/strip-size variants through the Storage render endpoint
+  // (helper in lokali-supabase-client.js as window.LokaliImg; absent = the full
+  // object, as before). The hero gallery + lightbox keep the full object.
+  function imgSet(img, url, w) {
+    var I = window.LokaliImg;
+    if (I && typeof I.set === 'function') I.set(img, url, w); else img.src = url;
+  }
+
   function fetchPhotos(base, pathTpl, id, fallback) {
     var fb = fallback ? [fallback] : [];
     if (!id || !window.LokaliAPI) return Promise.resolve(fb);
@@ -429,7 +437,7 @@
         av = realAv;
       }
       var photo = imgUrl(v.profile_photo);
-      if (av && photo) av.src = photo;
+      if (av && photo) imgSet(av, photo, 240); // CLEAN-P23
       else if (av) av.style.display = 'none';
       // CTA -> mailto
       var cta = $('vd-cta-btn');
@@ -690,7 +698,7 @@
     var src = imgUrl(it.image_url || it.image);
     if (src) {
       var im = document.createElement('img');
-      im.loading = 'lazy'; im.src = src; im.alt = nm; // #97: the item name is the alt
+      im.loading = 'lazy'; imgSet(im, src, 480); im.alt = nm; // #97: the item name is the alt; CLEAN-P23: strip-size variant
       if (it.image_focus_x != null && it.image_focus_y != null) { // #149 focal point
         im.style.objectPosition = it.image_focus_x + '% ' + it.image_focus_y + '%';
       }
