@@ -9,7 +9,8 @@
  * (plan, for the tier-aware upsell). Everything is bucketed client-side.
  *
  * Renders: 3 KPIs (Storefront views, View→Lead rate, Leads → links to Leads
- * page), a daily/weekly views chart with a range selector (30d free; 90d and
+ * page), the Storefront checkup card (2026-09-16: field-based list of what
+ * shoppers look for that the storefront lacks; see buildCheckup), a daily/weekly views chart with a range selector (30d free; 90d and
  * 6mo are a Pro/Featured perk — the server clamps free vendors to 60d of
  * rows and reports history_days, so the lock here mirrors real enforcement),
  * Top services / Top products by views (Phase 2 — needs page_views.item_id),
@@ -87,6 +88,39 @@
     '#lok-analytics-section .an-up-btn{font:inherit;font-size:12px;font-weight:600;color:#fff;background:' + VIOLET + ';border:none;border-radius:8px;padding:8px 16px;cursor:pointer;text-decoration:none;}',
     '#lok-analytics-section .an-insight{background:#FFFCF0;border:.5px solid #F5E6A8;border-radius:10px;padding:.85rem 1.1rem;font-size:12px;color:#8a6d1a;line-height:1.55;margin-bottom:1rem;}',
     '#lok-analytics-section .an-insight strong{color:#6b540f;}',
+    // Storefront checkup (2026-09-16). Design notes in the mockup artifact:
+    // endowed progress (meter shows credit already earned), goal gradient
+    // (count remaining, not a percent), Hick's law (3 open items by default),
+    // descriptive link labels (WCAG 2.4.4), 44px touch targets on phones.
+    '#lok-analytics-section .an-ck{background:#fff;border:.5px solid #E5D4FD;border-radius:10px;padding:1.25rem;margin-bottom:1rem;font-family:"Plus Jakarta Sans",sans-serif;}',
+    '#lok-analytics-section .an-ck-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px;}',
+    '#lok-analytics-section .an-ck-head .an-ctitle{margin-bottom:0;}',
+    '#lok-analytics-section .an-ck-sub{font-size:12px;color:' + DUSK + ';margin-top:2px;max-width:62ch;}',
+    '#lok-analytics-section .an-ck-pill{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;border-radius:100px;padding:4px 10px;background:' + VIOLET_L + ';color:' + VIOLET + ';white-space:nowrap;}',
+    '#lok-analytics-section .an-ck-pill.ok{background:' + GREEN_L + ';color:' + GREEN + ';}',
+    '#lok-analytics-section .an-ck-pill svg{width:11px;height:11px;}',
+    '#lok-analytics-section .an-ck-meter{height:5px;background:' + MIST + ';border-radius:100px;overflow:hidden;margin-bottom:14px;}',
+    '#lok-analytics-section .an-ck-meter>div{height:100%;background:' + VIOLET + ';border-radius:100px;}',
+    '#lok-analytics-section .an-ck-meter.ok>div{background:' + GREEN + ';}',
+    '#lok-analytics-section .an-ck-list{list-style:none;margin:0;padding:0;}',
+    '#lok-analytics-section .an-ck-row{display:grid;grid-template-columns:22px 1fr auto;gap:12px;align-items:start;padding:10px 0;border-bottom:.5px solid ' + BORDER + ';}',
+    '#lok-analytics-section .an-ck-row:first-child{padding-top:0;}',
+    '#lok-analytics-section .an-ck-row:last-child{border-bottom:none;padding-bottom:0;}',
+    '#lok-analytics-section .an-ck-ico{width:20px;height:20px;margin-top:1px;color:' + SLATE + ';}',
+    '#lok-analytics-section .an-ck-row.done .an-ck-ico{color:' + GREEN + ';}',
+    '#lok-analytics-section .an-ck-t{font-size:13px;font-weight:600;color:' + INK + ';}',
+    '#lok-analytics-section .an-ck-row.done .an-ck-t{font-weight:500;color:' + DUSK + ';}',
+    '#lok-analytics-section .an-ck-w{font-size:12px;color:#6E6A85;margin-top:1px;max-width:62ch;line-height:1.5;}',
+    '#lok-analytics-section .an-ck-fix{display:inline-flex;align-items:center;min-height:32px;font-size:12px;font-weight:600;color:' + VIOLET + ';text-decoration:none;white-space:nowrap;padding:4px 12px;border:1px solid #E5D4FD;border-radius:8px;background:#fff;}',
+    '#lok-analytics-section .an-ck-fix:hover{background:' + VIOLET_L + ';}',
+    '#lok-analytics-section .an-ck-fix:focus-visible,#lok-analytics-section .an-ck-more:focus-visible{outline:2px solid ' + VIOLET + ';outline-offset:2px;}',
+    '#lok-analytics-section .an-ck-more{margin-top:10px;font:inherit;font-size:12px;font-weight:600;color:' + DUSK + ';background:none;border:none;padding:6px 0;cursor:pointer;display:inline-flex;align-items:center;gap:6px;min-height:32px;}',
+    '#lok-analytics-section .an-ck-more svg{width:12px;height:12px;transition:transform .12s;}',
+    '#lok-analytics-section .an-ck-more[aria-expanded="false"] svg{transform:rotate(-90deg);}',
+    '#lok-analytics-section .an-ck-done{margin-top:6px;border-top:.5px dashed ' + BORDER + ';padding-top:10px;}',
+    '#lok-analytics-section .an-ck-plan{font-size:11px;color:' + SLATE + ';margin-top:12px;}',
+    '@media(max-width:720px){#lok-analytics-section .an-ck-row{grid-template-columns:22px 1fr;}#lok-analytics-section .an-ck-fix{grid-column:2;justify-self:start;min-height:44px;padding:8px 14px;}#lok-analytics-section .an-ck-more{min-height:44px;}}',
+    '@media(prefers-reduced-motion:reduce){#lok-analytics-section .an-ck-more svg{transition:none;}}',
     '@media(max-width:720px){#lok-analytics-section .an-grid{grid-template-columns:1fr;}#lok-analytics-section .an-two{grid-template-columns:1fr;}}',
     // loading card — same spinner language as the auth "Signing you in…" card
     '#lok-analytics-section .an-load{background:#fff;border:.5px solid ' + BORDER + ';border-radius:10px;padding:36px 20px;text-align:center;}',
@@ -255,7 +289,184 @@
     return p.indexOf('featured') >= 0 || p.indexOf('spotlight') >= 0;
   }
 
-  function render(mount, data, services, products, vendor, billing) {
+  // ─── Storefront checkup (2026-09-16) ──────────────────────────────────────
+  // Field-based, not traffic-based: every check asks whether something a
+  // shopper looks for EXISTS on the storefront, never how good it is or how it
+  // compares to other vendors (with ~20 storefronts and a handful of views a
+  // week a category benchmark would be noise; revisit once there are a few
+  // hundred views a week). Pure: takes the rows the page already loads plus
+  // two best-effort reads (portfolio photos, availability config) and returns
+  // plain items; the plan-gated checks (gallery, booking link, Verified) are
+  // simply absent for Free vendors — the upsell card below already does that
+  // pitch. Exposed as window.LokaliCheckup for the node test.
+  var CK_PROFILE = '/vendor-dashboard/profile';
+  function buildCheckup(v, services, products, photos, cfg, billing) {
+    v = v || {}; services = services || []; products = products || []; photos = photos || []; cfg = cfg || {};
+    var f = (billing && billing.features) || {};
+    var svc = services.filter(function (s) { return s.is_active !== false; });
+    var prd = products.filter(function (p) { return p.is_active !== false; });
+    var listings = svc.length + prd.length;
+    var svcNoPrice = svc.filter(function (s) { return !s.price_type; }).length;
+    var prdNoPrice = prd.filter(function (p) { return (p.price == null || p.price === '') && !p.is_quote_based; }).length;
+    var noPrice = svcNoPrice + prdNoPrice;
+    var svcNoPhoto = svc.filter(function (s) { return !s.image_url; }).length;
+    var prdNoPhoto = prd.filter(function (p) { return !p.image_url; }).length;
+    var noPhoto = svcNoPhoto + prdNoPhoto;
+    var desc = String(v.business_description || '').trim();
+    var paidWays = !!(v.venmo_username || v.cashapp_cashtag || v.paypalme_slug || v.zelle_contact || v.other_pay_url);
+    var gallery = photos.filter(function (p) { return p && p.is_active !== false && (p.image_url || p.video_url); }).length;
+    var paidPlan = (Number(f.max_vendor_photos) || 0) > 0 || !!f.trust_badge;
+    var SVC = '/vendor-dashboard/services', PRD = '/vendor-dashboard/products';
+    function n(c, w) { return c + ' ' + w + (c === 1 ? '' : 's'); }
+    var items = [];
+    // add(key, done, openTitle, doneTitle, why, action, href, show)
+    function add(key, done, openTitle, doneTitle, why, action, href, show) {
+      if (show === false) return;
+      items.push({ key: key, done: !!done, title: done ? doneTitle : openTitle, why: why, action: action, href: href });
+    }
+    add('price', noPrice === 0,
+      'Add a price to ' + (noPrice === listings ? 'your ' : '') + n(noPrice, 'listing'), 'Every listing shows a price',
+      'Shoppers skip listings with no price. "Starting at" or "Ask for a quote" both count.',
+      'Add prices', svcNoPrice ? SVC : PRD, listings > 0);
+    add('photo', noPhoto === 0,
+      'Add a photo to ' + (noPhoto === listings ? 'your ' : '') + n(noPhoto, 'listing'), 'Every listing has a photo',
+      'A listing with no photo is the one nobody opens.',
+      'Add photos', svcNoPhoto ? SVC : PRD, listings > 0);
+    add('cover', !!v.card_photo_url,
+      'Pin a cover photo for your Market card', 'Cover photo pinned',
+      'Your card is the first thing shoppers see in the Market. Right now we pick a photo for you.',
+      'Pick a cover', CK_PROFILE + '#lok-card-photo');
+    add('depth', listings >= 2,
+      listings === 0 ? 'Add your first service or product' : 'Add a second service or product', 'More than one listing',
+      'One listing reads as a side project. Two or more reads as a business.',
+      'Add a listing', SVC);
+    add('desc', desc.length >= 80,
+      desc ? 'Say more in your description' : 'Write a description', 'Description written',
+      (desc ? 'Yours is one line. ' : '') + 'A couple of sentences on what you make and who it is for. Google reads this too.',
+      desc ? 'Write more' : 'Write it', CK_PROFILE + '#lok-sec-about');
+    add('tagline', !!(v.business_tagline || v.tagline),
+      'Add a tagline', 'Tagline set',
+      'One line under your name on your card and in search results.',
+      'Add a tagline', CK_PROFILE + '#lok-sec-about');
+    add('intro', !!v.owner_bio,
+      'Introduce yourself', 'Personal intro added',
+      'Personal sells. Shoppers on Lokali pick people, not logos.',
+      'Write an intro', CK_PROFILE + '#lok-about-you');
+    add('contact', !!(v.contact_email || v.phone_number),
+      'Add a way to reach you', 'Shoppers can reach you',
+      'A phone number or email so an inquiry has somewhere to land.',
+      'Add contact', CK_PROFILE + '#lok-sec-business');
+    add('pay', paidWays,
+      'Add a way to get paid', 'Ways to get paid listed',
+      'Venmo, Cash App, PayPal or Zelle. Taps on these show up as Payment clicks above.',
+      'Add payment', CK_PROFILE + '#lok-pay-card');
+    add('buy', prd.some(function (p) { return !!p.buy_url; }),
+      'Link your online store', 'Online store linked',
+      'If you sell on Etsy, Shopify or your own site, a Buy button turns a view into a sale.',
+      'Add a Buy link', PRD, prd.length > 0);
+    add('gallery', gallery > 0,
+      'Add photos to your storefront gallery', 'Gallery has photos',
+      'A photo strip across the top of your storefront. It is the first thing a visitor sees.',
+      'Add gallery photos', CK_PROFILE + '#lok-portfolio-card', (Number(f.max_vendor_photos) || 0) > 0);
+    add('booking', !!cfg.booking_url,
+      'Add your booking link', 'Booking link added',
+      'Calendly, Acuity, Square or any scheduling page. Puts a Book button on your storefront.',
+      'Add booking link', '/vendor-dashboard/availability', paidPlan && svc.length > 0);
+    add('verified', v.identity_status === 'verified',
+      'Get Verified', 'Verified',
+      'A quick ID check. The Verified badge tells a stranger you are a real person.',
+      'Get Verified', '/vendor-dashboard/settings', !!f.trust_badge);
+    var open = items.filter(function (i) { return !i.done; });
+    var done = items.filter(function (i) { return i.done; });
+    return { items: items, open: open, done: done, total: items.length, paidPlan: paidPlan };
+  }
+  try { window.LokaliCheckup = buildCheckup; } catch (e) {}
+
+  var CK_ICON_OPEN = '<svg viewBox="0 0 512 512" fill="currentColor" aria-hidden="true"><path d="M464 256A208 208 0 1 0 48 256a208 208 0 1 0 416 0zM0 256a256 256 0 1 1 512 0A256 256 0 1 1 0 256z"/></svg>';
+  var CK_ICON_DONE = '<svg viewBox="0 0 512 512" fill="currentColor" aria-hidden="true"><path d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM369 209L241 337c-9.4 9.4-24.6 9.4-33.9 0l-64-64c-9.4-9.4-9.4-24.6 0-33.9s24.6-9.4 33.9 0l47 47L335 175c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9z"/></svg>';
+  var CK_ICON_CHEV = '<svg viewBox="0 0 512 512" fill="currentColor" aria-hidden="true"><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>';
+  var CK_SHOW = 3; // Hick's law: three open items by default, the rest behind one toggle
+
+  function ckRow(item) {
+    var li = el('li', 'an-ck-row' + (item.done ? ' done' : ''));
+    var ico = el('span', 'an-ck-ico'); ico.innerHTML = item.done ? CK_ICON_DONE : CK_ICON_OPEN;
+    li.appendChild(ico);
+    var body = el('div');
+    body.appendChild(el('div', 'an-ck-t', item.title));
+    if (!item.done) body.appendChild(el('div', 'an-ck-w', item.why));
+    li.appendChild(body);
+    if (!item.done) {
+      // Descriptive label (WCAG 2.4.4): the link says what happens, not "Fix".
+      var a = el('a', 'an-ck-fix', item.action + ' →'); a.href = item.href;
+      a.setAttribute('aria-label', item.action + ': ' + item.title);
+      li.appendChild(a);
+    }
+    return li;
+  }
+
+  function ckToggle(label, list, startOpen) {
+    var btn = document.createElement('button');
+    btn.type = 'button'; btn.className = 'an-ck-more';
+    btn.innerHTML = CK_ICON_CHEV + '<span></span>';
+    var lbl = btn.querySelector('span');
+    function paint(open) {
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      list.hidden = !open;
+      lbl.textContent = (open ? 'Hide ' : 'Show ') + label;
+    }
+    paint(!!startOpen);
+    btn.addEventListener('click', function () { paint(list.hidden); });
+    return btn;
+  }
+
+  function checkupCard(ck) {
+    var card = el('div', 'an-ck');
+    card.setAttribute('role', 'region'); card.setAttribute('aria-label', 'Storefront checkup');
+    var head = el('div', 'an-ck-head');
+    var ht = el('div');
+    ht.appendChild(el('div', 'an-ctitle', 'Storefront checkup'));
+    ht.appendChild(el('div', 'an-ck-sub', ck.open.length
+      ? 'Things shoppers look for that your page doesn’t have yet.'
+      : 'Your storefront has everything shoppers look for. The next lift is more photos and a fresh listing now and then.'));
+    head.appendChild(ht);
+    var pill = el('span', 'an-ck-pill' + (ck.open.length ? '' : ' ok'));
+    if (ck.open.length) pill.textContent = ck.open.length + ' to do';
+    else pill.innerHTML = CK_ICON_DONE + ' All ' + ck.total + ' in place';
+    head.appendChild(pill);
+    card.appendChild(head);
+
+    // Endowed progress: the meter starts with the credit already earned.
+    var meter = el('div', 'an-ck-meter' + (ck.open.length ? '' : ' ok'));
+    meter.setAttribute('role', 'img');
+    meter.setAttribute('aria-label', ck.done.length + ' of ' + ck.total + ' in place');
+    var fill = el('div'); fill.style.width = Math.round(ck.done.length / Math.max(1, ck.total) * 100) + '%';
+    meter.appendChild(fill); card.appendChild(meter);
+
+    if (ck.open.length) {
+      var first = ck.open.slice(0, CK_SHOW), rest = ck.open.slice(CK_SHOW);
+      var ul = el('ul', 'an-ck-list');
+      first.forEach(function (i) { ul.appendChild(ckRow(i)); });
+      card.appendChild(ul);
+      if (rest.length) {
+        var more = el('ul', 'an-ck-list an-ck-done');
+        rest.forEach(function (i) { more.appendChild(ckRow(i)); });
+        card.appendChild(ckToggle(rest.length + ' more to do', more, false));
+        card.appendChild(more);
+      }
+    }
+    if (ck.done.length) {
+      var dl = el('ul', 'an-ck-list an-ck-done');
+      ck.done.forEach(function (i) { dl.appendChild(ckRow(i)); });
+      card.appendChild(ckToggle(ck.open.length ? ck.done.length + ' already in place' : 'the ' + ck.total + ' checks', dl, false));
+      card.appendChild(dl);
+    }
+    if (!ck.paidPlan) {
+      card.appendChild(el('div', 'an-ck-plan', 'Gallery, booking link and Verified checks appear once those features are on your plan.'));
+    }
+    return card;
+  }
+
+  function render(mount, data, services, products, vendor, billing, photos, cfg) {
     var views = (data && data.views) || [];
     var inq = (data && data.inquiries) || [];
     var con = (data && data.contacts) || [];
@@ -328,13 +539,20 @@
 
     mount.appendChild(grid);
 
-    // light real-data insight (peak day) — no Phase 3 benchmark data needed
+    var ck = buildCheckup(vendor, services, products, photos, cfg, billing);
+
+    // light real-data insight — points at the top open checkup item instead of
+    // the old one-size sentence ("add photos") that every vendor used to get.
     if (views30 > 0) {
       var ins = el('div', 'an-insight');
+      var tail = ck.open.length
+        ? 'The quickest lift below: <strong>' + ck.open[0].title.charAt(0).toLowerCase() + ck.open[0].title.slice(1) + '</strong>.'
+        : 'Your storefront has everything shoppers look for. Fresh photos and a new listing now and then keep it that way.';
       ins.innerHTML = '<strong>' + views30 + '</strong> people viewed your storefront in the last 30 days, and <strong>' +
-        rate.toFixed(0) + '%</strong> of them reached out. Adding photos and a second service is the fastest way to lift both numbers.';
+        rate.toFixed(0) + '%</strong> of them reached out. ' + tail;
       mount.appendChild(ins);
     }
+    mount.appendChild(checkupCard(ck));
 
     // views chart with plan-gated range selector. The selectable window is the
     // vendor's plan tier: Featured 360d / Pro 180d / free 30d (paid truth =
@@ -442,7 +660,20 @@
         showMsg(mount, 'Analytics are taking a moment to load.', true);
         return;
       }
-      render(mount, data, asArray(unwrap(r[1])), asArray(unwrap(r[2])), unwrap(r[3]), unwrap(r[4]));
+      var vendor = unwrap(r[3]);
+      // Checkup extras (portfolio photos + availability config): best-effort,
+      // both owner-scoped reads on the Supabase client; a miss just hides
+      // the gallery/booking rows rather than blocking the page.
+      var S = window.LokaliSupabaseAPI, vid = vendor && vendor.id;
+      var extras = (S && vid != null)
+        ? Promise.all([
+            S.photos && S.photos.list ? S.photos.list('vendor', vid).catch(function () { return null; }) : null,
+            S.availability && S.availability.getConfig ? S.availability.getConfig(vid).catch(function () { return null; }) : null
+          ])
+        : Promise.resolve([null, null]);
+      return extras.then(function (x) {
+        render(mount, data, asArray(unwrap(r[1])), asArray(unwrap(r[2])), vendor, unwrap(r[4]), asArray(unwrap(x[0])), unwrap(x[1]));
+      });
     }).catch(function (err) {
       console.warn('[lokali-analytics] load failed', err);
       if (attempt < 1) { setTimeout(function () { load(mount, attempt + 1); }, 2500); return; }

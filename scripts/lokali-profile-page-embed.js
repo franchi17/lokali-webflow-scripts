@@ -1997,6 +1997,7 @@ var LokaliProfilePage = (function () {
     };
     setCollapsed(opts.initial !== false);
   }
+  var _rfHashDone = false;
   function _rfExpandAndGo(section) {
     if (!section) return;
     if (section._lokExpand) section._lokExpand();
@@ -2278,6 +2279,7 @@ var LokaliProfilePage = (function () {
       var catSec = _rfSectionByHeading(/categories\s*&\s*locations/i);
       var bizSec = _rfSectionByHeading(/business information/i);
       var aboutBizSec = _rfSectionByHeading(/about your business/i);
+      if (aboutBizSec && !aboutBizSec.id) aboutBizSec.id = 'lok-sec-about'; // deep-link target for the Insights checkup
       var locCount = (_selectedLocationIds && _selectedLocationIds.length) || (Array.isArray(v.locations_id) ? v.locations_id.length : 0);
       if (_PF_MAX > 0) {
         coll(document.getElementById('lok-portfolio-card'), 'gallery', function () {
@@ -2330,6 +2332,15 @@ var LokaliProfilePage = (function () {
       _refreshNavStates();
       _rfScrollspy();
       _rfInjectSaveBar();
+      // Deep links from the Insights "Storefront checkup" (2026-09-16), e.g.
+      // /vendor-dashboard/profile#lok-sec-about: the section ids only exist
+      // once this layer has run and a collapsed section hides its fields, so
+      // the browser's own hash jump lands on nothing. Expand + scroll once.
+      if (!_rfHashDone) {
+        var hh = (location.hash || '').replace(/^#/, '');
+        var ht = hh && /^lok-/.test(hh) ? document.getElementById(hh) : null;
+        if (ht) { _rfHashDone = true; setTimeout(function () { _rfExpandAndGo(ht); }, 60); }
+      }
     } catch (e) { console.warn('[ProfilePage] refresh layer skipped:', e); }
   }
 
