@@ -22,13 +22,13 @@
 
   // Supabase-backend mode (dormant until cutover): same field names, POSTed to
   // the Vercel route (/api/lokali/waitlist) instead of Xano. Base derived from
-  // LOKALI_AUTH_SYNC_URL (canonical) or the legacy LOKALI_CLERK_SYNC_URL,
-  // overridable directly (same derivation as lokali-supabase-client.js).
+  // LOKALI_AUTH_SYNC_URL (canonical), overridable directly (same derivation
+  // as lokali-supabase-client.js; the legacy LOKALI_CLERK_SYNC_URL branch was
+  // removed 2026-09-16, CLEAN-C23).
   var ENDPOINT = (function () {
     if (window.LOKALI_BACKEND === 'supabase') {
       var base = window.LOKALI_VERCEL_API_BASE ||
-        (window.LOKALI_AUTH_SYNC_URL ? String(window.LOKALI_AUTH_SYNC_URL).replace(/\/(auth-sync|clerk-sync)\/?$/, '') :
-         window.LOKALI_CLERK_SYNC_URL ? String(window.LOKALI_CLERK_SYNC_URL).replace(/\/(auth-sync|clerk-sync)\/?$/, '') : '');
+        (window.LOKALI_AUTH_SYNC_URL ? String(window.LOKALI_AUTH_SYNC_URL).replace(/\/(auth-sync|clerk-sync)\/?$/, '') : '');
       if (base) return base.replace(/\/$/, '') + '/waitlist';
     }
     // Xano is retired (XANO-DECOMM 2026-07-24) — last-resort fallback is the

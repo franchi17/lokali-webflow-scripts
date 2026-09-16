@@ -37,16 +37,14 @@
 (function () {
   'use strict';
 
-  // Base derived from LOKALI_AUTH_SYNC_URL (canonical) or the legacy
-  // LOKALI_CLERK_SYNC_URL, overridable directly (same derivation as
-  // lokali-supabase-client.js).
+  // Base derived from LOKALI_AUTH_SYNC_URL (canonical), overridable directly
+  // (same derivation as lokali-supabase-client.js). CLEAN-C23: the legacy
+  // LOKALI_CLERK_SYNC_URL branch was removed 2026-09-16.
   var BILLING_BASE =
     (window.LOKALI_BILLING_BASE ||
       (window.LOKALI_AUTH_SYNC_URL
         ? String(window.LOKALI_AUTH_SYNC_URL).replace(/\/(auth-sync|clerk-sync)\/?$/, '')
-        : window.LOKALI_CLERK_SYNC_URL
-          ? String(window.LOKALI_CLERK_SYNC_URL).replace(/\/(auth-sync|clerk-sync)\/?$/, '')
-          : 'https://lokali-api.vercel.app/api/lokali')).replace(/\/$/, '');
+        : 'https://lokali-api.vercel.app/api/lokali')).replace(/\/$/, '');
 
   var CHECKOUT_URL = BILLING_BASE + '/billing/checkout';
   var PORTAL_URL = BILLING_BASE + '/billing/portal';

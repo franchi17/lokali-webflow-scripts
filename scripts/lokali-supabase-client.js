@@ -140,13 +140,13 @@
 
   // Base URL of the Vercel API. A couple of writes go through a route instead
   // of straight to Supabase — the inquiry + review submits, which must fire a
-  // Brevo email server-side. Derived from LOKALI_AUTH_SYNC_URL (canonical) or
-  // the legacy LOKALI_CLERK_SYNC_URL, overridable directly.
+  // Brevo email server-side. Derived from LOKALI_AUTH_SYNC_URL (canonical),
+  // overridable directly (CLEAN-C23: the legacy LOKALI_CLERK_SYNC_URL branch
+  // was removed 2026-09-16).
   function vercelApiBase() {
     if (typeof window === 'undefined') return '';
     if (window.LOKALI_VERCEL_API_BASE) return String(window.LOKALI_VERCEL_API_BASE).replace(/\/$/, '');
     if (window.LOKALI_AUTH_SYNC_URL) return String(window.LOKALI_AUTH_SYNC_URL).replace(/\/(auth-sync|clerk-sync)\/?$/, '');
-    if (window.LOKALI_CLERK_SYNC_URL) return String(window.LOKALI_CLERK_SYNC_URL).replace(/\/(auth-sync|clerk-sync)\/?$/, '');
     return '';
   }
   // POST JSON to a Vercel route; resolves to { data, error } like supabase-js.

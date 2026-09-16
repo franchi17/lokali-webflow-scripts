@@ -26,7 +26,6 @@
  *
  * Optional globals (set in the Webflow head before this script):
  *   LOKALI_AUTH_SYNC_URL           — auth-sync route (canonical)
- *   LOKALI_CLERK_SYNC_URL          — legacy; /clerk-sync is rewritten to /auth-sync
  *   LOKALI_TURNSTILE_SITE_KEY      — enables Cloudflare Turnstile on the forms
  *   LOKALI_CUSTOMER_AFTER_SIGN_IN_PATH, LOKALI_AUTH_PATH_PREFIXES
  * ---------------------------------------------------------------------------
@@ -39,10 +38,8 @@
   // ──────────────────────────────────────────────────────────────────────────
   function syncUrl() {
     if (window.LOKALI_AUTH_SYNC_URL) return String(window.LOKALI_AUTH_SYNC_URL);
-    if (window.LOKALI_CLERK_SYNC_URL) {
-      // Legacy global points at .../clerk-sync — same Vercel base, new route.
-      return String(window.LOKALI_CLERK_SYNC_URL).replace(/\/clerk-sync\/?$/, '/auth-sync');
-    }
+    // CLEAN-C23 (2026-09-16): the legacy LOKALI_CLERK_SYNC_URL branch is gone —
+    // no live page has set it since the Clerk decommission (2026-07-11).
     return 'https://lokali-api.vercel.app/api/lokali/auth-sync';
   }
   var AFTER_SIGN_IN_PATH = '/vendor-dashboard/dashboard';
