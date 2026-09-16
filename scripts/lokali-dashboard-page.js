@@ -492,7 +492,7 @@
     items.sort(function (a, b) { return b.t - a.t; });
     return items.slice(0, 8);
   }
-  function renderFeed(leadsData, reviews, gateReady) {
+  function renderFeed(leadsData, reviews, gateReady, paidPlan) {
     var strength = document.querySelector('[data-listing-strength]');
     var host = strength && strength.parentNode; // Webflow's .div-block-182 embed wrapper
     if (!host || !host.parentNode) return;
@@ -519,8 +519,15 @@
     card.innerHTML = html;
     // The Free-tier share teaser (lokali-share.js) used to sit in the share
     // card; keep its mount alive under the feed so the nudge still renders.
+    // lokali-share.js gates it with isPaidTier(vendor row), and the vendor row
+    // carries no plan field, so PAID vendors saw 'Upgrade to Pro' too (latent
+    // since the card existed; F's Featured account, 2026-09-17). Plan truth is
+    // billing: on a paid plan the mount is removed, so nothing can render into it.
     var teaser = document.getElementById('lokali-share-teaser');
-    if (teaser) card.appendChild(teaser);
+    if (teaser) {
+      if (paidPlan) teaser.parentNode.removeChild(teaser);
+      else card.appendChild(teaser);
+    }
   }
 
   // ── Quick actions: re-cut by how often a vendor actually does them ───────
@@ -944,7 +951,7 @@
     if (gateReady == null) gateReady = !!v.is_publish_ready;
     renderHeader(v, x.billing, gateReady);
     renderTiles(leadsData, x.shares);
-    renderFeed(leadsData, x.reviews, gateReady);
+    renderFeed(leadsData, x.reviews, gateReady, !!(x.billing && x.billing.plan && x.billing.plan !== 'free'));
     renderQuickActions(services, products, leadsData);
 
     // Milestones + referral cards + home-screen card (best-effort; mount after the quick actions now)
