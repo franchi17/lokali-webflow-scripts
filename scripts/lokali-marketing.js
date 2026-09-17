@@ -29,6 +29,17 @@
  * sees only "your code is getting scanned" with NO count (scans are recorded
  * for Pro too — the upgrade teaser; the count is hidden server-side).
  *
+ * "Bring your neighbors" card (2026-09-17): three STABLE ?via= links, one per
+ * placement (Etsy shop About, packaging insert, email signature), minted by
+ * placement_share_links() (patch_placement_links.sql) on top of the existing
+ * share_events / share_landings pipeline, plus copy-ready snippets. Stats
+ * follow the QR precedent: Featured sees per-placement arrivals + saves, Pro
+ * sees activity-yes/count-no. The card self-hides when the RPC is absent
+ * (rs[5] null) so a pre-SQL tag can never break the page. Etsy is named on
+ * purpose: this is vendor-facing, and the snippet copy stays inside Etsy's
+ * off-platform rules (a website link under About is allowed; "buy my Etsy
+ * items elsewhere" and QR codes off-platform are not).
+ *
  * Plan gates + queue caps (20 cta / 10 showcase) are DB-trigger enforced
  * (LOKALI_LIMIT_REACHED) — this page is honest UI, not the enforcement.
  * Free vendors never see the sidebar tab (lokali-sidebar-account.js hides it);
@@ -69,6 +80,31 @@
   var IMG_ICON = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true">' +
     '<path d="M448 80c8.8 0 16 7.2 16 16V415.8l-5-6.5-136-176c-4.5-5.9-11.6-9.3-19-9.3s-14.4 3.4-19 9.3L202 340.7l-30.5-42.7C167 291.7 159.8 288 152 288s-15 3.7-19.5 10.1l-80 112L48 416.3l0-.3V96c0-8.8 7.2-16 16-16H448zM64 32C28.7 32 0 60.7 0 96V416c0 35.3 28.7 64 64 64H448c35.3 0 64-28.7 64-64V96c0-35.3-28.7-64-64-64H64zm80 192a48 48 0 1 0 0-96 48 48 0 1 0 0 96z"/></svg>';
 
+  // Font Awesome Free 6 solid 'store' / 'bag-shopping' / 'envelope', inlined
+  // for the "Bring your neighbors" placement rows. License: CC BY 4.0.
+  var PL_ICONS = {
+    etsy_about: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512" aria-hidden="true"><path d="M547.6 103.8L490.3 13.1C485.2 5 476.1 0 466.4 0H109.6C99.9 0 90.8 5 85.7 13.1L28.3 103.8c-29.6 46.8-3.4 111.9 51.9 119.4c4 .5 8.1 .8 12.1 .8c26.1 0 49.3-11.4 65.2-29c15.9 17.6 39.1 29 65.2 29c26.1 0 49.3-11.4 65.2-29c15.9 17.6 39.1 29 65.2 29c26.2 0 49.3-11.4 65.2-29c16 17.6 39.1 29 65.2 29c4.1 0 8.1-.3 12.1-.8c55.5-7.4 81.8-72.5 52.1-119.4zM499.7 254.9l-.1 0c-5.3 .7-10.7 1.1-16.2 1.1c-12.4 0-24.3-1.9-35.4-5.3V384H128V250.6c-11.2 3.5-23.2 5.4-35.6 5.4c-5.5 0-11-.4-16.3-1.1l-.1 0c-4.1-.6-8.1-1.3-12-2.3V384v64c0 35.3 28.7 64 64 64H448c35.3 0 64-28.7 64-64V384 252.6c-4 1-8 1.8-12.3 2.3z"/></svg>',
+    packaging: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" aria-hidden="true"><path d="M160 112c0-35.3 28.7-64 64-64s64 28.7 64 64v48H160V112zm-48 48H48c-26.5 0-48 21.5-48 48V416c0 53 43 96 96 96H352c53 0 96-43 96-96V208c0-26.5-21.5-48-48-48H336V112C336 50.1 285.9 0 224 0S112 50.1 112 112v48zm24 48a24 24 0 1 1 0 48 24 24 0 1 1 0-48zm152 24a24 24 0 1 1 48 0 24 24 0 1 1 -48 0z"/></svg>',
+    email_signature: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><path d="M48 64C21.5 64 0 85.5 0 112c0 15.1 7.1 29.3 19.2 38.4L236.8 313.6c11.4 8.5 27 8.5 38.4 0L492.8 150.4c12.1-9.1 19.2-23.3 19.2-38.4c0-26.5-21.5-48-48-48H48zM0 176V384c0 35.3 28.7 64 64 64H448c35.3 0 64-28.7 64-64V176L294.4 339.2c-22.8 17.1-54 17.1-76.8 0L0 176z"/></svg>'
+  };
+  // The three placements. `snippet` is what the Copy button puts on the
+  // clipboard: sentence + the placement's own tagged link. Wording rule for
+  // the Etsy row (Etsy Off-Platform Transactions policy, 2026-06-09): pickup,
+  // custom work and messaging only; never "buy here instead" or fee talk.
+  var PLACEMENTS = [
+    { ch: 'etsy_about', title: 'Your Etsy shop\u2019s About section',
+      why: 'Etsy lets you list a website under About. Buyers who already trust you there can find your Lokali storefront, save you, and message you directly.',
+      snippet: function (v, url) { return 'Local to the Houston area? Find me on Lokali for pickup and custom work: ' + url; },
+      note: 'Keep it about pickup, custom work and messaging. Etsy\u2019s rules don\u2019t allow telling buyers to purchase your Etsy items somewhere else, or QR codes that lead off Etsy.' },
+    { ch: 'packaging', title: 'A thank-you note in the package',
+      why: 'Every order is a chance to turn a one-time buyer into a neighbor who can find you again.',
+      snippet: function (v, url) { return 'Thank you for your order! I\u2019m also on Lokali, where neighbors can save my storefront, message me directly and arrange pickup: ' + url; },
+      note: 'Write the link out. For market booths and flyers, use your QR code above instead.' },
+    { ch: 'email_signature', title: 'Your email signature',
+      why: 'One line under your name, on every email you already send.',
+      snippet: function (v, url) { return (v.business_name || 'My storefront') + ' \u00b7 Find me on Lokali: ' + url; },
+      note: null }
+  ];
   function esc(s) { return String(s == null ? '' : s).replace(/[<>&"]/g, function (c) {
     return ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' })[c];
   }); }
@@ -210,6 +246,28 @@
       '.mkt-qr-badge button{border:1px solid #E4DEF4;background:#fff;color:#5D4F9E;font-family:inherit;font-size:12px;' +
         'font-weight:600;border-radius:999px;padding:5px 11px;cursor:pointer;}' +
       '.mkt-qr-badge button.on{background:#F3EBFF;border-color:' + BRAND + ';color:' + BRAND + ';}' +
+      // "Bring your neighbors": one row per placement, snippet + Copy, stats as
+      // pills. Violet/green/gray only (no amber, F 2026-09-17).
+      '.mkt-pl{border:1px solid #ECE8F8;border-radius:12px;background:#FDFCFF;padding:14px 16px;display:flex;gap:14px;align-items:flex-start;}' +
+      '.mkt-pl+.mkt-pl{margin-top:10px;}' +
+      '.mkt-pl-ic{width:36px;height:36px;border-radius:10px;background:#F3EBFF;color:' + BRAND + ';display:flex;align-items:center;justify-content:center;flex:0 0 auto;}' +
+      '.mkt-pl-ic svg{width:16px;height:16px;fill:currentColor;}' +
+      '.mkt-pl-body{flex:1;min-width:0;}' +
+      '.mkt-pl-t{font-size:14.5px;font-weight:600;color:#3E3A55;margin:0 0 2px;}' +
+      '.mkt-pl-why{font-size:12.5px;color:#6B6880;margin:0 0 8px;line-height:1.45;}' +
+      '.mkt-pl-snip{display:flex;gap:8px;align-items:stretch;}' +
+      '.mkt-pl-txt{flex:1;min-width:0;background:#F7F6FC;border:1px solid #ECE8F8;border-radius:9px;padding:9px 12px;font-size:12.5px;color:#231D3F;line-height:1.45;overflow-wrap:anywhere;}' +
+      '.mkt-pl-copy{flex:0 0 auto;border:0;background:#F3EBFF;color:' + BRAND + ';font-weight:600;font-size:12.5px;border-radius:9px;padding:9px 14px;cursor:pointer;min-height:38px;}' +
+      '.mkt-pl-copy:hover{background:#E9DDFB;}' +
+      '.mkt-pl-stats{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}' +
+      '.mkt-pl-stat{display:inline-flex;align-items:center;gap:5px;background:#E7F3EC;color:#3E7C5E;border-radius:999px;padding:3px 10px;font-size:11.5px;font-weight:600;}' +
+      '.mkt-pl-stat.zero{background:#F7F6FC;color:#8E8BA6;}' +
+      '.mkt-pl-note{font-size:11.5px;color:#9490AC;margin:6px 0 0;line-height:1.4;}' +
+      '.mkt-pl-sum{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 14px;}' +
+      '.mkt-pl-foot{display:flex;align-items:center;gap:12px;margin-top:14px;padding:12px 14px;background:#F7F6FC;border-radius:10px;flex-wrap:wrap;}' +
+      '.mkt-pl-foot p{flex:1;min-width:200px;margin:0;font-size:12.5px;color:#6B6880;line-height:1.45;}' +
+      '.mkt-pl-foot a{display:inline-block;background:' + BRAND + ';color:#fff;border-radius:9px;padding:9px 16px;font-size:12.5px;font-weight:600;text-decoration:none;white-space:nowrap;}' +
+      '@media (max-width:600px){.mkt-pl{flex-direction:column;gap:10px;}.mkt-pl-snip{flex-direction:column;}.mkt-pl-copy{width:100%;}}' +
       '@media (max-width:600px){.mkt-card{padding:16px;}.mkt-acts{gap:0;}}';
     document.head.appendChild(st);
   }
@@ -251,7 +309,13 @@
       // #163 QR scan stats — same absent-until-the-tag guard as myCreatives.
       // The RPC returns full stats for Featured, {allowed:false, total} for
       // Pro (the teaser), and the card renders either way.
-      API.qrStats ? API.qrStats(this.vendor.id) : Promise.resolve(null)
+      API.qrStats ? API.qrStats(this.vendor.id) : Promise.resolve(null),
+      // "Bring your neighbors" placement links. Absent-until-the-tag guard
+      // like the two above, plus a catch: a missing RPC (SQL not applied yet)
+      // must hide the card, never take the whole page down with it.
+      API.placementLinks
+        ? API.placementLinks(this.vendor.id).catch(function () { return null; })
+        : Promise.resolve(null)
     ]).then(function (rs) {
       var rows = (rs[0] && rs[0].data) || [];
       self.entries = { cta: [], showcase: [] };
@@ -261,6 +325,8 @@
       self.spot = (rs[3] && rs[3].data) || null;   // {bookings, creatives} | null
       var q = rs[4] && rs[4].data;                 // #163 vendor_qr_stats payload
       self.qr = (q && q.ok) ? q : null;
+      var pl = rs[5] && rs[5].data;                // placement_share_links payload
+      self.places = (pl && pl.ok && pl.links) ? pl : null;
       self.render();
       self.loadQrLogo();
     });
@@ -316,6 +382,7 @@
       this.cardHtml('cta') +
       (this.premium ? this.cardHtml('showcase') : this.lockedShowcaseHtml()) +
       this.qrCardHtml() +
+      this.neighborsCardHtml() +
       (SPOTLIGHT_CREATIVE_ENABLED && this.premium && this.spot ? this.spotlightCardHtml() : '');
     this.bind();
   };
@@ -404,6 +471,87 @@
     document.body.removeChild(a);
     if (fmt === 'svg') setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
   };
+
+  // ---- "Bring your neighbors" (placement links) ------------------------------
+  Page.prototype.neighborsCardHtml = function () {
+    var p = this.places;
+    if (!p || !p.links) return '';
+    var self = this;
+    var allowed = p.allowed === true;
+    var sum30 = 0, sumSaved = 0;
+    var rows = PLACEMENTS.map(function (pl) {
+      var L = p.links[pl.ch];
+      if (!L || !L.url) return '';
+      var text = pl.snippet(self.vendor, L.url);
+      var stats = '';
+      if (allowed) {
+        var d30 = +L.d30 || 0, saved = +L.saved || 0;
+        sum30 += d30; sumSaved += saved;
+        stats = '<div class="mkt-pl-stats">' +
+          '<span class="mkt-pl-stat' + (d30 ? '' : ' zero') + '">' + d30 + ' arrived in 30 days</span>' +
+          '<span class="mkt-pl-stat' + (saved ? '' : ' zero') + '">' + saved + ' saved you</span>' +
+        '</div>';
+      }
+      return '<div class="mkt-pl" data-ch="' + pl.ch + '">' +
+        '<div class="mkt-pl-ic">' + PL_ICONS[pl.ch] + '</div>' +
+        '<div class="mkt-pl-body">' +
+          '<p class="mkt-pl-t">' + pl.title + '</p>' +
+          '<p class="mkt-pl-why">' + pl.why + '</p>' +
+          '<div class="mkt-pl-snip">' +
+            '<div class="mkt-pl-txt" data-f="pl-text">' + esc(text) + '</div>' +
+            '<button type="button" class="mkt-pl-copy" data-act="copy-place" aria-label="Copy the ' + pl.title.replace(/’/g, '\'') + ' text">Copy</button>' +
+          '</div>' +
+          stats +
+          (pl.note ? '<p class="mkt-pl-note">' + pl.note + '</p>' : '') +
+        '</div>' +
+      '</div>';
+    }).join('');
+    var summary = '';
+    if (allowed) {
+      summary = '<div class="mkt-pl-sum">' +
+        '<div class="mkt-qr-stat"><div class="mkt-qr-sv">' + sum30 + '</div><div class="mkt-qr-sl">Arrived, 30 days</div></div>' +
+        '<div class="mkt-qr-stat"><div class="mkt-qr-sv">' + sumSaved + '</div><div class="mkt-qr-sl">Saved you</div></div>' +
+      '</div>';
+    } else {
+      // Pro teaser, same shape as the QR card: activity yes, numbers no.
+      summary = '<div class="mkt-qr-teaser" style="margin:0 0 14px;">' +
+        (p.has_landings
+          ? '<b>Neighbors are arriving from your links.</b> How many, from which placement, and how many saved you are a Featured perk. Every arrival is being counted in the meantime. '
+          : 'Counting is already on. Every arrival from these links is saved from the first click, and the per-placement numbers are a Featured perk. ') +
+        '<a href="/pricing">See the Featured plan</a>' +
+      '</div>';
+    }
+    return '<div class="mkt-card" data-kind="neighbors">' +
+      '<div class="mkt-head"><p class="mkt-h">Bring your neighbors</p></div>' +
+      '<p class="mkt-sub">Your customers are your best marketing. Each link below is yours alone, so you can see exactly where people found you. Paste it once; it never changes.</p>' +
+      summary +
+      rows +
+      '<p class="mkt-note">Arrivals are counted once per visit. Your own clicks don’t count, so test away.</p>' +
+      '<div class="mkt-pl-foot">' +
+        '<p><b>Know a vendor your customers would love?</b> Invite them. Shoppers come back when there is more to find, and your referral link is on your dashboard.</p>' +
+        '<a href="/vendor-dashboard/dashboard">Invite a vendor</a>' +
+      '</div>' +
+    '</div>';
+  };
+
+  Page.prototype.copyPlacement = function (btn) {
+    var row = btn.closest('.mkt-pl');
+    var txt = row && row.querySelector('[data-f="pl-text"]');
+    if (!txt) return;
+    var text = txt.textContent;
+    var done = function () { toast('Copied. Paste it where your customers already read you.'); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, function () { fallbackCopy(text); done(); });
+    } else { fallbackCopy(text); done(); }
+  };
+  function fallbackCopy(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed'; ta.style.top = '-1000px';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); } catch (e) {}
+    document.body.removeChild(ta);
+  }
 
   // ---- Spotlight ad creative (phase 2) --------------------------------------
   Page.prototype.spotlightCardHtml = function () {
@@ -747,6 +895,8 @@
       else if (act === 'qr-svg') self.downloadQr('svg');
       else if (act === 'qr-badge-l') self.setQrBadge('l');
       else if (act === 'qr-badge-own') self.setQrBadge('own');
+      // "Bring your neighbors" copy buttons
+      else if (act === 'copy-place') self.copyPlacement(btn);
       // Spotlight creative (phase 2)
       else if (act === 'sc-upload') {
         var sf = btn.parentElement.querySelector('[data-f="sc-file"]');

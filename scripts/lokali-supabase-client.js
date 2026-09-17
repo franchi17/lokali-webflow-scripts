@@ -918,6 +918,15 @@
           return c.rpc('vendor_qr_stats', { p_vendors_id: vendorId });
         });
       },
+      // "Bring your neighbors" placement links (patch_placement_links.sql):
+      // three STABLE vendor-origin ?via= links (Etsy About / packaging / email
+      // signature) + per-placement landings. Owner-gated; tier split inside
+      // (Featured = numbers, Pro = links only + has_landings).
+      placementLinks: function (vendorId) {
+        return withClient(function (c) {
+          return c.rpc('placement_share_links', { p_vendors_id: vendorId });
+        });
+      },
       list: function (vendorId) {
         return withClient(function (c) {
           return c.from('marketing_entries').select('*')
