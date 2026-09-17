@@ -197,7 +197,12 @@
   var LUI_CSS = [
     // grid
     '.lok-grid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:stretch;}',
-    '.lok-grid>[id$="-empty-state"],.lok-grid>[id$="-empty-filtered"],.lok-grid>.lok-gsec{grid-column:1/-1;}',
+    // Everything in the stack that is not a card spans the row: the empty states, the hidden
+    // template wrapper (hidden outright; the scripts clone its inner node, which still works)
+    // and Webflow's footer row (count + upgrade link) which goes last.
+    '.lok-grid>:not(.lok-gc):not(.lok-gsec):not(.lok-gspot){grid-column:1/-1;order:99;}',
+    '.lok-grid>.lok-gsec{grid-column:1/-1;}',
+    '.lok-grid>#service-card-template,.lok-grid>#product-card-template{display:none!important;}',
     '.lok-gsec{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0 -4px;font-family:' + LUI_FONT + ';}',
     '.lok-gsec h3{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#8E8BA6;margin:0;}',
     '.lok-gsec span{font-size:11.5px;color:#8E8BA6;}',
@@ -206,7 +211,7 @@
     '.lok-gspot b{font-size:13px;font-weight:700;color:#6002EE;}',
     '.lok-gspot span{font-size:12px;color:#6E6A85;max-width:22ch;margin-top:4px;line-height:1.5;}',
     // card
-    '.lok-gc{display:flex!important;flex-direction:column;background:#fff;border:.5px solid #EEEDF6;border-radius:14px;overflow:hidden;margin:0!important;padding:0!important;position:relative;transform:none!important;box-shadow:none!important;min-width:0;cursor:pointer;font-family:' + LUI_FONT + ';}',
+    '.lok-gc{display:flex!important;flex-direction:column;align-items:stretch!important;background:#fff;border:.5px solid #EEEDF6;border-radius:14px;overflow:hidden;margin:0!important;padding:0!important;position:relative;transform:none!important;box-shadow:none!important;min-width:0;cursor:pointer;font-family:' + LUI_FONT + ';}',
     '.lok-gc:hover{transform:none!important;border-color:#C8C6D8;box-shadow:0 4px 18px rgba(96,2,238,.08)!important;}',
     '.lok-gc.is-pick{order:-2;}',
     '.lok-gc.is-off .lok-gc-cover,.lok-gc.is-off .lok-gc-body{opacity:.62;}',
@@ -272,9 +277,11 @@
     '.lok-form-bar{position:sticky;bottom:0;z-index:6;background:#fff;border-top:.5px solid #EEEDF6;padding:10px 0!important;display:flex!important;align-items:center;gap:10px;flex-wrap:wrap;}',
     '.lok-form-msg{font-size:12.5px;color:#6E6A85;margin-right:auto;font-family:' + LUI_FONT + ';display:none;}',
     '.lok-form-bar.dirty .lok-form-msg{display:block;}',
-    '#lok-lc-preview{background:#F7F6FC;border:.5px solid #EEEDF6;border-radius:12px;padding:12px 14px;margin:0 0 18px;display:grid;grid-template-columns:220px 1fr;gap:16px;align-items:center;font-family:' + LUI_FONT + ';}',
+    '#lok-lc-preview{background:#F7F6FC;border:.5px solid #EEEDF6;border-radius:12px;padding:12px 14px;margin:12px 20px 18px;font-size:14px;line-height:1.5;display:grid;grid-template-columns:220px 1fr;gap:16px;align-items:center;font-family:' + LUI_FONT + ';}',
     '#lok-lc-preview .lab{grid-column:1/-1;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#8E8BA6;}',
     '#lok-lc-preview .lok-gc{cursor:default;}',
+    '#lok-lc-preview .service-name{font-size:14px!important;font-weight:700!important;color:#1A1829!important;line-height:1.3!important;}',
+    '#lok-lc-preview .lok-pv-price{font-size:14px!important;font-weight:700!important;line-height:1.4!important;}',
     '#lok-lc-preview ul{list-style:none;margin:0;padding:0;font-size:12px;color:#4A4761;}',
     '#lok-lc-preview li{display:flex;gap:8px;align-items:center;padding:3px 0;line-height:1.5;}',
     '#lok-lc-preview li svg{width:13px;height:13px;flex-shrink:0;}',
