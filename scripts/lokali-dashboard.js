@@ -588,7 +588,10 @@
   var LUI_FORM_CSS = [
     '[id$="-form-view"].lok-org{background:#F1EDFB!important;border-color:#E5D4FD!important;}',
     '[id$="-form-view"].lok-org .w-layout-grid.lok-org-grid{display:none!important;}',
-    '.lok-fwrap{display:flex;flex-direction:column;gap:14px;margin:0 0 6px;font-family:' + LUI_FONT + ';white-space:normal;}',
+    // Side inset (F 2026-09-17 'a little padding on the sides of the forms from the border'):
+    // the hidden Webflow grid carried margin 0 1.25rem; the section stack replaced it flush
+    // against the .form-view border. Same 1.25rem as the form header above it; 12px on phones.
+    '.lok-fwrap{display:flex;flex-direction:column;gap:14px;margin:0 1.25rem 6px;font-family:' + LUI_FONT + ';white-space:normal;}',
     '.lok-fs{background:#fff;border:1px solid #E4E0F2;border-radius:14px;padding:16px 18px 18px;box-shadow:0 2px 10px rgba(96,2,238,.05);}',
     '.lok-fs.need{border-color:#E5D4FD;}',
     '.lok-fs.is-collapsed{background:#FCFBFF;}',
@@ -677,7 +680,7 @@
     // form bar messages
     '.lok-form-msg-base{font:500 12.5px/1.5 ' + LUI_FONT + ';color:#6E6A85;margin-right:auto;}',
     '.lok-form-bar.dirty .lok-form-msg-base{display:none;}',
-    '@media(max-width:600px){.lok-sw-grid{grid-template-columns:1fr;}.lok-fs{padding:14px 14px 16px;}}'
+    '@media(max-width:600px){.lok-sw-grid{grid-template-columns:1fr;}.lok-fs{padding:14px 14px 16px;}.lok-fwrap{margin:0 12px 6px;}}'
   ].join('');
 
   window.LokaliListingUI.organize = function (fv, cfg) {
