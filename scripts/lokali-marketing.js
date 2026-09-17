@@ -91,11 +91,28 @@
   // clipboard: sentence + the placement's own tagged link. Wording rule for
   // the Etsy row (Etsy Off-Platform Transactions policy, 2026-06-09): pickup,
   // custom work and messaging only; never "buy here instead" or fee talk.
-  var PLACEMENTS = [
-    { ch: 'etsy_about', title: 'Your Etsy shop\u2019s About section',
+  // The first row is PLATFORM-AWARE (F 2026-09-17: "what if they're on Shopify"):
+  // a vendor whose Buy links (or website) point at Etsy gets the Etsy About row
+  // with Etsy's off-platform wording rule; everyone else gets a generic
+  // shop-or-website row (own site = no platform rules; the order confirmation
+  // email is the strongest spot). Both share channel 'etsy_about' on purpose:
+  // the link is minted once per vendor and must not change if their platform
+  // changes, and the channel key is internal (never shown).
+  var PLACE_ETSY = { ch: 'etsy_about', title: 'Your Etsy shop\u2019s About section',
       why: 'Etsy lets you list a website under About. Buyers who already trust you there can find your Lokali storefront, save you, and message you directly.',
       snippet: function (v, url) { return 'Local to the Houston area? Find me on Lokali for pickup and custom work: ' + url; },
-      note: 'Keep it about pickup, custom work and messaging. Etsy\u2019s rules don\u2019t allow telling buyers to purchase your Etsy items somewhere else, or QR codes that lead off Etsy.' },
+      note: 'Keep it about pickup, custom work and messaging. Etsy\u2019s rules don\u2019t allow telling buyers to purchase your Etsy items somewhere else, or QR codes that lead off Etsy.' };
+  var PLACE_SHOP = { ch: 'etsy_about', title: 'Your online shop or website',
+      why: 'One line on your About page, in your site footer, or in your order confirmation email. Buyers who already trust you there can find your Lokali storefront, save you, and message you directly.',
+      snippet: function (v, url) { return 'Local to the Houston area? Find me on Lokali for pickup and custom work: ' + url; },
+      note: 'Shopify, Square and Wix all let you edit the order confirmation email. That one reaches every buyer at the moment they trust you most.' };
+  // True when any product Buy link or the vendor's own website points at Etsy.
+  function sellsOnEtsy(vendor, products) {
+    var urls = (products || []).map(function (p) { return p && p.buy_url; });
+    urls.push(vendor && (vendor.website_url || vendor.website));
+    return urls.some(function (u) { return /(^|\.)etsy\.(com|me)(\/|$)/i.test(String(u || '').replace(/^https?:\/\//i, '').split('/')[0] + '/'); });
+  }
+  var PLACEMENTS = [
     { ch: 'packaging', title: 'A thank-you note in the package',
       why: 'Every order is a chance to turn a one-time buyer into a neighbor who can find you again.',
       snippet: function (v, url) { return 'Thank you for your order! I\u2019m also on Lokali, where neighbors can save my storefront, message me directly and arrange pickup: ' + url; },
@@ -315,6 +332,11 @@
       // must hide the card, never take the whole page down with it.
       API.placementLinks
         ? API.placementLinks(this.vendor.id).catch(function () { return null; })
+        : Promise.resolve(null),
+      // Owner's products (buy_url) for the platform-aware first placement row.
+      // A miss only means the generic row shows.
+      (window.LokaliSupabaseAPI.products && window.LokaliSupabaseAPI.products.listByVendor)
+        ? window.LokaliSupabaseAPI.products.listByVendor(this.vendor.id).catch(function () { return null; })
         : Promise.resolve(null)
     ]).then(function (rs) {
       var rows = (rs[0] && rs[0].data) || [];
@@ -327,6 +349,7 @@
       self.qr = (q && q.ok) ? q : null;
       var pl = rs[5] && rs[5].data;                // placement_share_links payload
       self.places = (pl && pl.ok && pl.links) ? pl : null;
+      self.onEtsy = sellsOnEtsy(self.vendor, (rs[6] && rs[6].data) || []);
       self.render();
       self.loadQrLogo();
     });
@@ -479,7 +502,7 @@
     var self = this;
     var allowed = p.allowed === true;
     var sum30 = 0, sumSaved = 0;
-    var rows = PLACEMENTS.map(function (pl) {
+    var rows = [self.onEtsy ? PLACE_ETSY : PLACE_SHOP].concat(PLACEMENTS).map(function (pl) {
       var L = p.links[pl.ch];
       if (!L || !L.url) return '';
       var text = pl.snippet(self.vendor, L.url);
