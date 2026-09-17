@@ -769,7 +769,16 @@
       if (!tile.querySelector('.lok-cov-tag')) tile.appendChild(luiEl('span', 'lok-cov-tag', 'Cover'));
     }
 
+    // hosts the page scripts create lazily (video, buy link) appear after
+    // organize() ran: pull them into Details whenever we repaint
+    function settle() {
+      [hosts.video, hosts.buy].forEach(function (id) {
+        var h = id && byId(id); if (!h || h.parentElement === S3.body) return;
+        used.push(h); S3.body.appendChild(h);
+      });
+    }
     api.reset = function (editing) {
+      settle();
       S3.el.classList.toggle('is-folded', !editing);
       var bar = fv.querySelector('.lok-form-bar');
       if (bar) {
@@ -785,7 +794,7 @@
     };
     // s: { photos, photoCap, imgUrl, name, price, hasPrice, spec }
     api.update = function (s) {
-      s = s || {};
+      s = s || {}; settle();
       var photosOk = !!s.imgUrl, coreOk = !!(s.name && s.hasPrice);
       S1.el.classList.toggle('is-done', photosOk); S2.el.classList.toggle('is-done', coreOk);
       S1.cnt.textContent = s.photoCap ? (s.photos || 0) + ' of ' + s.photoCap : ((s.photos || 0) + (s.photos === 1 ? ' photo' : ' photos'));
