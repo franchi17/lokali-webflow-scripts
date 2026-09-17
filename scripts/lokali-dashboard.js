@@ -689,7 +689,10 @@
     b = take(blockOf(ids.name)); if (b) S2.body.appendChild(b);
     b = take(blockOf(ids.priceType || ids.price)); if (b) S2.body.appendChild(b);
     // 3 Details (folded on add)
-    var S3 = section('details', { num: 3, title: 'Details', optional: true, fold: 'Add details', foldSub: isP ? 'description, specialty tag, lead time, buy link, video' : 'description, specialty tag, lead time, video' });
+    // products: the description is required on save, so Details is never folded away there
+    var S3 = isP
+      ? section('details', { num: 3, title: 'Details', need: true })
+      : section('details', { num: 3, title: 'Details', optional: true, fold: 'Add details', foldSub: 'description, specialty tag, lead time, video' });
     b = take(blockOf(ids.desc)); if (b) S3.body.appendChild(b);
     var vid = take(byId(hosts.video)); if (vid) S3.body.appendChild(vid);
     var buy = take(byId(hosts.buy)); if (buy) S3.body.appendChild(buy);
@@ -783,12 +786,12 @@
     }
     api.reset = function (editing) {
       settle();
-      S3.el.classList.toggle('is-folded', !editing);
+      S3.el.classList.toggle('is-folded', !editing && !isP);
       var bar = fv.querySelector('.lok-form-bar');
       if (bar) {
         var base = bar.querySelector('.lok-form-msg-base');
         if (!base) { base = luiEl('span', 'lok-form-msg-base'); bar.insertBefore(base, bar.firstChild); }
-        base.textContent = editing ? '' : 'A photo, a name and a price make it live.';
+        base.textContent = editing ? '' : (isP ? 'A photo, a name, a price and a description make it live.' : 'A photo, a name and a price make it live.');
         bar.classList.remove('dirty');
       }
       S1.collapse(false); S2.collapse(false);
