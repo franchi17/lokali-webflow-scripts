@@ -230,7 +230,9 @@
     '.lok-gc .service-info,.lok-gc .product-info{display:block;min-width:0;}',
     '.lok-gc .service-name,.lok-gc .product-name{font-size:14px;font-weight:700;color:#1A1829;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:normal;}',
     '.lok-gc-line{display:flex;align-items:center;justify-content:space-between;gap:8px;}',
-    '.lok-gc .service-price,.lok-gc .product-price,.lok-gc .product-price-row{font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;color:#1A1829;margin:0;display:block;}',
+    '.lok-gc-top{align-items:flex-start;}',
+    '.lok-gc-top .lok-gc-stat{flex-shrink:0;padding-top:1px;}',
+    '.lok-gc .service-price,.lok-gc .product-price,.lok-gc .product-price-row{font-size:13px;font-weight:500;font-variant-numeric:tabular-nums;white-space:nowrap;color:#4A4761;margin:0;display:block;line-height:1.4;}',
     '.lok-gc .lok-gc-noprice{color:#8E8BA6!important;font-weight:500!important;}',
     '.lok-gc-stat{font-size:11.5px;color:#6E6A85;white-space:nowrap;}',
     '.lok-gc-stat b{color:#1A1829;font-weight:700;}',
@@ -272,17 +274,20 @@
     '.lok-btn:focus-visible,.lok-gc .icon-btn:focus-visible,.lok-seg>[id^="filter-pill"]:focus-visible{outline:2px solid #6002EE;outline-offset:2px;}',
     '.lok-ghosts{display:grid;grid-template-columns:1fr 1fr;gap:10px;}',
     '.lok-ghosts .lok-gc{opacity:.75;cursor:default;}',
-    '.lok-ghosts .lok-gc-line span,.lok-ghosts .service-name{font-size:14px!important;line-height:1.4!important;}',
+    '.lok-ghosts .lok-gc-line span{font-size:13px!important;font-weight:500!important;color:#4A4761!important;line-height:1.4!important;}',
+    '.lok-ghosts .service-name{font-size:14px!important;line-height:1.4!important;}',
     // form
-    '[id$="-form-view"] .form-header{position:sticky;top:0;z-index:6;background:#fff;}',
-    '.lok-form-bar{position:sticky;bottom:0;z-index:6;background:#fff;border-top:.5px solid #EEEDF6;padding:10px 0!important;display:flex!important;align-items:center;gap:10px;flex-wrap:wrap;}',
+    // No white bands: the header row stays in flow (F, 2026-09-17) and the sticky save bar
+    // inherits the form card's own background instead of painting white over it.
+    '[id$="-form-view"] .form-header{position:static;background:transparent;}',
+    '.lok-form-bar{position:sticky;bottom:0;z-index:6;background:inherit;border-top:.5px solid #EEEDF6;padding:10px 0!important;display:flex!important;align-items:center;gap:10px;flex-wrap:wrap;}',
     '.lok-form-msg{font-size:12.5px;color:#6E6A85;margin-right:auto;font-family:' + LUI_FONT + ';display:none;}',
     '.lok-form-bar.dirty .lok-form-msg{display:block;}',
     '#lok-lc-preview{background:#F7F6FC;border:.5px solid #EEEDF6;border-radius:12px;padding:12px 14px;margin:12px 20px 18px;font-size:14px;line-height:1.5;display:grid;grid-template-columns:220px 1fr;gap:16px;align-items:center;font-family:' + LUI_FONT + ';}',
     '#lok-lc-preview .lab{grid-column:1/-1;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#8E8BA6;}',
     '#lok-lc-preview .lok-gc{cursor:default;}',
     '#lok-lc-preview .service-name{font-size:14px!important;font-weight:700!important;color:#1A1829!important;line-height:1.3!important;}',
-    '#lok-lc-preview .lok-pv-price{font-size:14px!important;font-weight:700!important;line-height:1.4!important;}',
+    '#lok-lc-preview .lok-pv-price{font-size:13px!important;font-weight:500!important;color:#4A4761!important;line-height:1.4!important;}',
     '#lok-lc-preview ul{list-style:none;margin:0;padding:0;font-size:12px;color:#4A4761;}',
     '#lok-lc-preview li{display:flex;gap:8px;align-items:center;padding:3px 0;line-height:1.5;}',
     '#lok-lc-preview li svg{width:13px;height:13px;flex-shrink:0;}',
@@ -349,12 +354,15 @@
       if (!body) {
         body = luiEl('div', 'lok-gc-body');
         card.appendChild(body);
+        // Row 1: name (left) + views (upper right). Row 2: price, lighter than the name (F, 2026-09-17).
+        var top = luiEl('div', 'lok-gc-line lok-gc-top');
         var info = card.querySelector('.service-info, .product-info');
-        if (info) body.appendChild(info);
-        var line = luiEl('div', 'lok-gc-line');
+        if (info) top.appendChild(info);
+        top.appendChild(luiEl('span', 'lok-gc-stat'));
+        body.appendChild(top);
+        var line = luiEl('div', 'lok-gc-line lok-gc-priceline');
         var price = card.querySelector('.product-price-row') || card.querySelector('.service-price, .product-price');
         if (price) line.appendChild(price);
-        line.appendChild(luiEl('span', 'lok-gc-stat'));
         body.appendChild(line);
         body.appendChild(luiEl('div', 'lok-gc-meta'));
         var acts = card.querySelector('.card-actions');
@@ -519,7 +527,7 @@
         box.id = 'lok-lc-preview';
         box.innerHTML = '<div class="lab">What shoppers see</div>' +
           '<div class="lok-gc"><div class="lok-gc-cover ph"><div class="lok-gc-corner"><span class="lok-gc-chip on">Live</span></div>' + LUI_ICO.photo + '</div>' +
-          '<div class="lok-gc-body"><div class="service-name"></div><div class="lok-gc-line"><span class="lok-pv-price" style="font-weight:700"></span></div><div class="lok-gc-meta"></div></div></div>' +
+          '<div class="lok-gc-body"><div class="service-name"></div><div class="lok-gc-line"><span class="lok-pv-price"></span></div><div class="lok-gc-meta"></div></div></div>' +
           '<ul></ul>';
         if (header && header.parentNode === formView) formView.insertBefore(box, header.nextSibling);
         else formView.insertBefore(box, formView.firstChild);

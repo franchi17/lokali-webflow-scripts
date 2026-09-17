@@ -279,8 +279,13 @@
     '.lok-fw{font-size:11px;color:#8E8BA6;white-space:nowrap;font-variant-numeric:tabular-nums;padding-top:2px;}',
     '.lok-feed-empty{font-size:12.5px;color:#4A4761;background:#F7F6FC;border-radius:10px;padding:12px 14px;line-height:1.55;}',
     '#lokali-share-teaser{margin-top:12px;}',
-    '.lok-qa-ic{width:30px;height:30px;border-radius:9px;background:#F3EBFF;color:#6002EE;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-right:10px;}',
-    '.lok-qa-ic svg{width:14px;height:14px;}',
+    // Webflow's .quick-actions-card is a 2-col grid with a 45px .large-icon carrying a 20px
+    // left margin; our icon tile had neither, so it sat on the card edge (F, phone screenshot
+    // 2026-09-17). Flex row with real padding at every width.
+    '.quick-actions-card{display:flex!important;align-items:center;gap:12px;padding:12px 14px!important;min-height:60px;grid-template-columns:none!important;}',
+    '.lok-qa-ic{width:34px;height:34px;border-radius:10px;background:#F3EBFF;color:#6002EE;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin:0;}',
+    '.lok-qa-ic svg{width:15px;height:15px;}',
+    '.quick-actions-card .div-block-171{min-width:0;}',
     '@media(max-width:900px){.lok-kpis{grid-template-columns:1fr 1fr;}#lok-cols{grid-template-columns:1fr;}}',
     '@media(max-width:480px){.lok-kpis{grid-template-columns:1fr;}.lok-btn{min-height:44px;}.lok-also li a{min-height:44px;}}'
   ].join('');
