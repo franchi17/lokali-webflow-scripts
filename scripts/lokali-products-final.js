@@ -941,6 +941,8 @@ const LokaliProductsPage = (() => {
   // Rendering lives in window.LokaliListingUI (lokali-dashboard.js); these
   // readers hand it this page's state.
   let _lcPreview = null, _lcPreviewWired = false, _lcViews = null, _lcViewsP = null;
+  let _lcOrg = null;
+  const lcPhotoCap = () => { const m = /(\d+) of (\d+) photos/.exec(document.getElementById('lok-product-gallery')?.textContent || ''); return m ? parseInt(m[2], 10) : 0; };
   const lcSpecLabel = (slug) => {
     if (!slug) return '';
     const hit = (_subcatList || []).find((r) => r.slug === slug);
@@ -966,6 +968,8 @@ const LokaliProductsPage = (() => {
   const lcRefreshPreview = () => {
     if (!_lcPreview) return;
     const price = lcPreviewPrice();
+    const imgUrl0 = lcCoverUrl();
+    if (_lcOrg && _lcOrg.update) _lcOrg.update({ photos: (_galleryPhotos && _galleryPhotos.length) || (imgUrl0 ? 1 : 0), photoCap: lcPhotoCap(), imgUrl: imgUrl0, name: el.fieldName()?.value, price, hasPrice: !!price, spec: lcSpecLabel(_selectedSubcat) });
     _lcPreview.update({ name: el.fieldName()?.value, price, hasPrice: !!price, spec: lcSpecLabel(_selectedSubcat), lead: _leadTime || '', imgUrl: lcCoverUrl(), ways: lcWays(), live: el.fieldIsActive() ? !!el.fieldIsActive().checked : true });
   };
   const lcMountPreview = () => {
@@ -987,6 +991,8 @@ const LokaliProductsPage = (() => {
         }).observe(fv, { childList: true, subtree: true, attributes: true, attributeFilter: ['src', 'style'] });
       }
     }
+    if (!_lcOrg) _lcOrg = LUI.organize(fv, { kind: 'product', ids: { img: 'product-img-input', name: 'product-name', desc: 'product-description', price: 'product-price', quote: 'product-quote-based', active: 'product-is-active', ship: 'product-shipping', pickup: 'product-pickup-only', delivery: 'product-delivery', stock: 'product-stock', turnaround: 'product-turnaround' }, hosts: { gallery: 'lok-product-gallery', video: 'lok-product-video', buy: 'lok-product-buy' } });
+    if (_lcOrg && _lcOrg.reset) _lcOrg.reset(!!editingId);
     setTimeout(lcRefreshPreview, 0);
     setTimeout(lcRefreshPreview, 500);
   };

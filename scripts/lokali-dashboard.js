@@ -552,6 +552,259 @@
     }
   };
 
+  // ─── Listing FORM organisation (2026-09-17, F-approved form mockup v4) ────
+  // The Webflow form is one grid of blocks. organize() moves those blocks
+  // (and the pieces the page scripts inject: gallery, video, buy link,
+  // specialty, lead time, delivery row) into numbered section cards in the
+  // order shoppers read: 1 Photos, 2 Name and price, 3 Details (folded on a
+  // new listing), 4 How they get it, then Live. Nodes are MOVED, never
+  // rebuilt, so every id, listener and validator in the page scripts keeps
+  // working. Price type becomes a segmented control that drives the hidden
+  // <select>; the Live / Remote / Pickup / Delivery / Ships checkboxes are
+  // styled as switches (still the native inputs). Idempotent per form view.
+  var LUI_FORM_CSS = [
+    '[id$="-form-view"].lok-org{background:#F1EDFB!important;border-color:#E5D4FD!important;}',
+    '[id$="-form-view"].lok-org .w-layout-grid.lok-org-grid{display:none!important;}',
+    '.lok-fwrap{display:flex;flex-direction:column;gap:14px;margin:0 0 6px;font-family:' + LUI_FONT + ';white-space:normal;}',
+    '.lok-fs{background:#fff;border:1px solid #E4E0F2;border-radius:14px;padding:16px 18px 18px;box-shadow:0 2px 10px rgba(96,2,238,.05);}',
+    '.lok-fs.need{border-color:#E5D4FD;}',
+    '.lok-fs.is-collapsed{background:#FCFBFF;}',
+    '.lok-fs-h{display:flex;align-items:center;justify-content:space-between;gap:10px;}',
+    '.lok-fs-h h3{font-size:16px;font-weight:800;margin:0;display:flex;align-items:center;gap:10px;letter-spacing:-.01em;color:#1A1829;line-height:1.3;font-family:' + LUI_FONT + ';}',
+    '.lok-fs-num{width:24px;height:24px;border-radius:50%;background:#6002EE;color:#fff;font-style:normal;font-weight:800;font-size:12px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}',
+    '.lok-fs-num.opt{background:#EEEDF6;color:#4A4761;}',
+    '.lok-fs.is-done .lok-fs-num{background:#1D6A45;}',
+    '.lok-fs-pill{font-size:10.5px;font-weight:700;border-radius:100px;padding:2px 8px;text-transform:uppercase;letter-spacing:.06em;line-height:1.5;}',
+    '.lok-fs-pill.need{color:#1D6A45;background:#EAFAF2;}',
+    '.lok-fs-pill.opt{color:#4A4761;background:#EEEDF6;}',
+    '.lok-fs-cnt{font-size:11.5px;font-weight:600;color:#6E6A85;white-space:nowrap;}',
+    '.lok-fs-chg{font:600 12px/1.5 ' + LUI_FONT + ';color:#6002EE;background:none;border:none;padding:6px 0 6px 10px;cursor:pointer;white-space:nowrap;}',
+    '.lok-fs-sum{display:none;font-size:13px;color:#4A4761;margin:6px 0 0 34px;line-height:1.5;}',
+    '.lok-fs.is-collapsed .lok-fs-body{display:none;}',
+    '.lok-fs.is-collapsed .lok-fs-sum{display:block;}',
+    '.lok-fs.is-collapsed .lok-fs-cnt{display:none;}',
+    '.lok-fs-body{margin-top:4px;}',
+    '.lok-fs-body>*{margin-left:0!important;margin-right:0!important;}',
+    // fold (Details on a new listing)
+    '.lok-fs.details.is-folded>.lok-fs-h,.lok-fs.details.is-folded>.lok-fs-body{display:none;}',
+    '.lok-fs-fold{display:none;width:100%;align-items:center;justify-content:space-between;gap:10px;background:#F3EBFF;border:1px dashed #CBB8F5;border-radius:14px;padding:14px 18px;font:700 14px/1.4 ' + LUI_FONT + ';color:#6002EE;cursor:pointer;text-align:left;}',
+    '.lok-fs-fold small{font-weight:500;color:#6E6A85;font-size:12px;margin-left:8px;}',
+    '.lok-fs-fold svg{width:12px;height:12px;flex-shrink:0;}',
+    '.lok-fs.details.is-folded{background:transparent;border:none;box-shadow:none;padding:0;}',
+    '.lok-fs.details.is-folded>.lok-fs-fold{display:flex;}',
+    // Products: brand orange for the optional steps (500 fill, 50 tint, dark text; F 2026-09-17)
+    '.lok-org.lok-org-product .lok-fs-num.opt{background:#FF8D00;color:#fff;}',
+    '.lok-org.lok-org-product .lok-fs-fold{background:#FFF2DF;border-color:#FFDDB0;color:#B8471B;}',
+    // segmented price control
+    '.lok-pseg{display:inline-flex;flex-wrap:wrap;background:#fff;border:1px solid #EEEDF6;border-radius:10px;padding:3px;gap:2px;margin:4px 0 10px;}',
+    '.lok-pseg button{font:600 12.5px/1.2 ' + LUI_FONT + ';color:#4A4761;background:transparent;border:none;border-radius:8px;padding:0 12px;height:32px;cursor:pointer;white-space:nowrap;}',
+    '.lok-pseg button.on{background:#6002EE;color:#fff;}',
+    '.lok-pseg button:focus-visible{outline:2px solid #6002EE;outline-offset:2px;}',
+    // switches: the native checkbox drawn as a toggle, label as a row
+    '.lok-sw-row{display:flex!important;flex-direction:row-reverse;align-items:center;justify-content:space-between;gap:10px;border:1px solid #EEEDF6;border-radius:10px;padding:10px 12px!important;margin:0!important;background:#fff;font:600 13px/1.4 ' + LUI_FONT + ';color:#1A1829;cursor:pointer;}',
+    '.lok-sw-row input[type="checkbox"]{appearance:none;-webkit-appearance:none;width:36px;height:20px;border-radius:100px;background:#D9D5EA;position:relative;margin:0!important;flex-shrink:0;cursor:pointer;border:none;outline:none;transition:background .15s;}',
+    '.lok-sw-row input[type="checkbox"]::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.18);transition:left .15s;}',
+    '.lok-sw-row input[type="checkbox"]:checked{background:#6002EE;}',
+    '.lok-sw-row input[type="checkbox"]:checked::after{left:18px;}',
+    '.lok-sw-row input[type="checkbox"]:focus-visible{box-shadow:0 0 0 2px #fff,0 0 0 4px #6002EE;}',
+    '.lok-sw-row .w-form-label,.lok-sw-row span{margin:0!important;font:inherit!important;color:inherit!important;}',
+    '.lok-sw-row .w-checkbox-input--inputType-custom{display:none!important;}',
+    '.lok-sw-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:8px;}',
+    '.lok-sw-live{display:flex;align-items:center;justify-content:space-between;gap:12px;}',
+    '.lok-sw-live-t{font:800 15px/1.3 ' + LUI_FONT + ';color:#1A1829;}',
+    '.lok-sw-live-s{font:500 12px/1.5 ' + LUI_FONT + ';color:#6E6A85;margin-top:2px;}',
+    '.lok-sw-live .lok-sw-row{border:none;padding:0!important;}',
+    '.lok-sw-live .lok-sw-row .w-form-label,.lok-sw-live .lok-sw-row span{display:none!important;}',
+    // cover tile: visible focal-point handle + label on the first gallery photo
+    '[id$="-gallery-body"] [data-photo-idx="0"]{outline:2px solid #6002EE;outline-offset:2px;}',
+    '[id$="-gallery-body"] img[data-photo-idx="0"]{cursor:move;}',
+    '.lok-cov-tag{position:absolute;left:0;right:0;bottom:0;background:rgba(26,24,41,.6);color:#fff;font:700 9.5px/1.4 ' + LUI_FONT + ';text-align:center;padding:3px 0;letter-spacing:.04em;text-transform:uppercase;pointer-events:none;}',
+    '.lok-cov-x{position:absolute;top:50%;left:50%;width:18px;height:18px;margin:-9px 0 0 -9px;border:2px solid #fff;border-radius:50%;box-shadow:0 0 0 1px rgba(0,0,0,.35);pointer-events:none;}',
+    '.lok-cov-x::before,.lok-cov-x::after{content:"";position:absolute;background:#fff;left:50%;top:50%;}',
+    '.lok-cov-x::before{width:2px;height:6px;margin:-3px 0 0 -1px;}',
+    '.lok-cov-x::after{width:6px;height:2px;margin:-1px 0 0 -3px;}',
+    // form bar messages
+    '.lok-form-msg-base{font:500 12.5px/1.5 ' + LUI_FONT + ';color:#6E6A85;margin-right:auto;}',
+    '.lok-form-bar.dirty .lok-form-msg-base{display:none;}',
+    '@media(max-width:600px){.lok-sw-grid{grid-template-columns:1fr;}.lok-fs{padding:14px 14px 16px;}}'
+  ].join('');
+
+  window.LokaliListingUI.organize = function (fv, cfg) {
+    if (!fv) return { update: function () {}, reset: function () {} };
+    if (fv.__lokOrg) return fv.__lokOrg;
+    this.css();
+    if (!document.getElementById('lok-lui-form-css')) {
+      var st = document.createElement('style'); st.id = 'lok-lui-form-css'; st.textContent = LUI_FORM_CSS;
+      document.head.appendChild(st);
+    }
+    cfg = cfg || {}; var ids = cfg.ids || {}, hosts = cfg.hosts || {};
+    var isP = cfg.kind === 'product';
+    var form = fv.querySelector('form'); var grid = form && form.querySelector('.w-layout-grid');
+    if (!form || !grid) return { update: function () {}, reset: function () {} };
+    var byId = function (id) { return id ? document.getElementById(id) : null; };
+    var blockOf = function (id) { var e = byId(id); if (!e) return null; var n = e; while (n && n.parentElement !== grid) n = n.parentElement; return n; };
+    var blocks = Array.prototype.slice.call(grid.children);
+    var used = [];
+    var take = function (node) { if (node && used.indexOf(node) < 0) { used.push(node); return node; } return null; };
+
+    var wrap = luiEl('div', 'lok-fwrap');
+    var api = {};
+    function section(key, opts) {
+      var s = luiEl('div', 'lok-fs ' + key + (opts.need ? ' need' : ''));
+      var h = luiEl('div', 'lok-fs-h');
+      var h3 = luiEl('h3');
+      if (opts.num) h3.appendChild(luiEl('span', 'lok-fs-num' + (opts.need ? '' : ' opt'), String(opts.num)));
+      h3.appendChild(document.createTextNode(opts.title));
+      if (opts.need) h3.appendChild(luiEl('span', 'lok-fs-pill need', 'needed'));
+      else if (opts.optional) h3.appendChild(luiEl('span', 'lok-fs-pill opt', 'optional'));
+      h.appendChild(h3);
+      var right = luiEl('div', '', '');
+      right.style.cssText = 'display:flex;align-items:center;gap:6px;';
+      var cnt = luiEl('span', 'lok-fs-cnt'); right.appendChild(cnt);
+      var chg = document.createElement('button'); chg.type = 'button'; chg.className = 'lok-fs-chg'; chg.textContent = 'Change'; chg.style.display = 'none';
+      chg.addEventListener('click', function () { s.classList.remove('is-collapsed'); chg.style.display = 'none'; });
+      right.appendChild(chg);
+      h.appendChild(right);
+      s.appendChild(h);
+      var sum = luiEl('div', 'lok-fs-sum'); s.appendChild(sum);
+      var body = luiEl('div', 'lok-fs-body'); s.appendChild(body);
+      if (opts.fold) {
+        var fold = document.createElement('button'); fold.type = 'button'; fold.className = 'lok-fs-fold';
+        fold.innerHTML = '<span>' + luiEsc(opts.fold) + '<small>' + luiEsc(opts.foldSub || '') + '</small></span><svg viewBox="0 0 512 512" fill="currentColor" aria-hidden="true"><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>';
+        fold.addEventListener('click', function () { s.classList.remove('is-folded'); });
+        s.insertBefore(fold, s.firstChild);
+      }
+      wrap.appendChild(s);
+      return { el: s, body: body, cnt: cnt, sum: sum, chg: chg, collapse: function (on) { s.classList.toggle('is-collapsed', !!on); chg.style.display = on ? '' : 'none'; } };
+    }
+
+    // 1 Photos
+    var S1 = section('photos', { num: 1, title: 'Photos', need: true });
+    var b = take(blockOf(ids.img)); if (b) S1.body.appendChild(b);
+    var gal = take(byId(hosts.gallery)); if (gal) S1.body.appendChild(gal);
+    // 2 Name and price
+    var S2 = section('core', { num: 2, title: 'Name and price', need: true });
+    b = take(blockOf(ids.name)); if (b) S2.body.appendChild(b);
+    b = take(blockOf(ids.priceType || ids.price)); if (b) S2.body.appendChild(b);
+    // 3 Details (folded on add)
+    var S3 = section('details', { num: 3, title: 'Details', optional: true, fold: 'Add details', foldSub: isP ? 'description, specialty tag, lead time, buy link, video' : 'description, specialty tag, lead time, video' });
+    b = take(blockOf(ids.desc)); if (b) S3.body.appendChild(b);
+    var vid = take(byId(hosts.video)); if (vid) S3.body.appendChild(vid);
+    var buy = take(byId(hosts.buy)); if (buy) S3.body.appendChild(buy);
+    b = take(blockOf(ids.stock)); if (b) S3.body.appendChild(b);
+    b = take(blockOf(ids.turnaround)); if (b) S3.body.appendChild(b);
+    // 4 How they get it
+    var S4 = section('get', { num: 4, title: 'How they get it', optional: true });
+    var swGrid = luiEl('div', 'lok-sw-grid'); S4.body.appendChild(swGrid);
+    var swIds = isP ? [ids.pickup, ids.delivery, ids.ship] : [ids.remote];
+    var swLabels = isP ? ['Pickup', 'Delivery', 'Ships'] : ['Available remotely'];
+    swIds.forEach(function (id, i) {
+      var inp = byId(id); if (!inp) return;
+      var row = inp.closest('label') || inp.parentElement;
+      var blk = take(blockOf(id));
+      row.classList.add('lok-sw-row');
+      var lbl = row.querySelector('.w-form-label, span'); if (lbl) lbl.textContent = swLabels[i];
+      swGrid.appendChild(row);
+      if (blk && blk !== row && !blk.querySelector('input,select,textarea')) blk.style.display = 'none';
+    });
+    if (!swGrid.children.length) S4.el.style.display = 'none';
+    // Live
+    var S5 = section('live', { title: '' });
+    S5.el.querySelector('.lok-fs-h').style.display = 'none';
+    var live = byId(ids.active);
+    if (live) {
+      var lrow = live.closest('label') || live.parentElement;
+      take(blockOf(ids.active));
+      lrow.classList.add('lok-sw-row');
+      var lw = luiEl('div', 'lok-sw-live');
+      lw.appendChild(luiEl('div', '', '<div class="lok-sw-live-t">Live on your storefront</div><div class="lok-sw-live-s">Turn off to hide it without deleting.</div>'));
+      lw.appendChild(lrow);
+      S5.body.appendChild(lw);
+    }
+    // headings + leftovers: anything still in the grid with no field is a Webflow section title
+    blocks.forEach(function (blk) {
+      if (used.indexOf(blk) >= 0 || blk.parentElement !== grid) return;
+      if (!blk.querySelector('input,select,textarea')) blk.style.display = 'none';
+      else S3.body.appendChild(blk); // unknown field block: keep it reachable inside Details
+    });
+    grid.classList.add('lok-org-grid');
+    grid.insertAdjacentElement('afterend', wrap);
+    fv.classList.add('lok-org'); if (isP) fv.classList.add('lok-org-product');
+
+    // Price type → segmented control (services: <select>; products: the quote checkbox)
+    var seg = null;
+    if (ids.priceType && byId(ids.priceType)) {
+      var sel = byId(ids.priceType);
+      seg = luiEl('div', 'lok-pseg'); seg.setAttribute('role', 'group'); seg.setAttribute('aria-label', 'Price type');
+      Array.prototype.forEach.call(sel.options, function (o) {
+        var bt = document.createElement('button'); bt.type = 'button'; bt.textContent = String(o.textContent || '').trim().replace(/^Quote.*$/i, 'Ask for a quote'); bt.setAttribute('data-v', o.value);
+        bt.addEventListener('click', function () { sel.value = o.value; sel.dispatchEvent(new Event('change', { bubbles: true })); sel.dispatchEvent(new Event('input', { bubbles: true })); paintSeg(); });
+        seg.appendChild(bt);
+      });
+      sel.insertAdjacentElement('afterend', seg); sel.style.display = 'none';
+      var paintSeg = function () { Array.prototype.forEach.call(seg.children, function (bt) { bt.classList.toggle('on', bt.getAttribute('data-v') === sel.value); }); };
+      sel.addEventListener('change', paintSeg); paintSeg(); api._paintSeg = paintSeg;
+    } else if (ids.quote && byId(ids.quote)) {
+      var q = byId(ids.quote), qrow = q.closest('label') || q.parentElement;
+      seg = luiEl('div', 'lok-pseg'); seg.setAttribute('role', 'group'); seg.setAttribute('aria-label', 'Price type');
+      [['Set a price', false], ['Ask for a quote', true]].forEach(function (p) {
+        var bt = document.createElement('button'); bt.type = 'button'; bt.textContent = p[0];
+        bt.addEventListener('click', function () { q.checked = p[1]; q.dispatchEvent(new Event('change', { bubbles: true })); paintQ(); });
+        seg.appendChild(bt);
+      });
+      var priceBlk = blockOf(ids.price) || qrow.parentElement;
+      priceBlk.insertBefore(seg, priceBlk.firstChild); qrow.style.display = 'none';
+      var paintQ = function () { seg.children[0].classList.toggle('on', !q.checked); seg.children[1].classList.toggle('on', !!q.checked); };
+      q.addEventListener('change', paintQ); paintQ(); api._paintSeg = paintQ;
+    }
+
+    // cover tile decoration (first gallery photo): crosshair + label
+    function paintCover() {
+      var body = byId((hosts.gallery || '') + '-body'); if (!body) return;
+      var first = body.querySelector('img[data-photo-idx="0"]'); var tile = first && first.parentElement;
+      body.querySelectorAll('.lok-cov-tag,.lok-cov-x').forEach(function (n) { if (!tile || n.parentElement !== tile) n.parentElement.removeChild(n); });
+      if (!tile) return;
+      if (getComputedStyle(tile).position === 'static') tile.style.position = 'relative';
+      if (!tile.querySelector('.lok-cov-x')) tile.appendChild(luiEl('span', 'lok-cov-x'));
+      if (!tile.querySelector('.lok-cov-tag')) tile.appendChild(luiEl('span', 'lok-cov-tag', 'Cover'));
+    }
+
+    api.reset = function (editing) {
+      S3.el.classList.toggle('is-folded', !editing);
+      var bar = fv.querySelector('.lok-form-bar');
+      if (bar) {
+        var base = bar.querySelector('.lok-form-msg-base');
+        if (!base) { base = luiEl('span', 'lok-form-msg-base'); bar.insertBefore(base, bar.firstChild); }
+        base.textContent = editing ? '' : 'A photo, a name and a price make it live.';
+        bar.classList.remove('dirty');
+      }
+      S1.collapse(false); S2.collapse(false);
+      api._editing = !!editing;
+      if (api._paintSeg) api._paintSeg();
+      paintCover();
+    };
+    // s: { photos, photoCap, imgUrl, name, price, hasPrice, spec }
+    api.update = function (s) {
+      s = s || {};
+      var photosOk = !!s.imgUrl, coreOk = !!(s.name && s.hasPrice);
+      S1.el.classList.toggle('is-done', photosOk); S2.el.classList.toggle('is-done', coreOk);
+      S1.cnt.textContent = s.photoCap ? (s.photos || 0) + ' of ' + s.photoCap : ((s.photos || 0) + (s.photos === 1 ? ' photo' : ' photos'));
+      S1.sum.textContent = (s.photos || 0) + (s.photoCap ? ' of ' + s.photoCap : '') + ' · the first one is your cover';
+      S2.sum.textContent = (s.name || 'Untitled') + (s.hasPrice ? ' · ' + s.price : '');
+      if (api._editing && !api._resetDone) {
+        // first paint after opening an existing listing: finished sections fold to a line
+        api._resetDone = true;
+        if (photosOk) S1.collapse(true);
+        if (coreOk) S2.collapse(true);
+      }
+      paintCover();
+    };
+    var _reset = api.reset;
+    api.reset = function (editing) { api._resetDone = false; _reset(editing); };
+    fv.__lokOrg = api;
+    return api;
+  };
+
   window.LokaliDashboard = {
 
     requireAuth: function () {
