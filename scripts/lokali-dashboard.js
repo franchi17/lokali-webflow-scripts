@@ -573,7 +573,7 @@
     '.lok-fs-h h3{font-size:16px;font-weight:800;margin:0;display:flex;align-items:center;gap:10px;letter-spacing:-.01em;color:#1A1829;line-height:1.3;font-family:' + LUI_FONT + ';}',
     '.lok-fs-num{width:24px;height:24px;border-radius:50%;background:#6002EE;color:#fff;font-style:normal;font-weight:800;font-size:12px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}',
     '.lok-fs-num.opt{background:#EEEDF6;color:#4A4761;}',
-    '.lok-fs.is-done .lok-fs-num{background:#1D6A45;}',
+    '.lok-fs.is-done .lok-fs-num{background:#EAFAF2;color:#1D6A45;}',
     '.lok-fs-pill{font-size:10.5px;font-weight:700;border-radius:100px;padding:2px 8px;text-transform:uppercase;letter-spacing:.06em;line-height:1.5;}',
     '.lok-fs-pill.need{color:#1D6A45;background:#EAFAF2;}',
     '.lok-fs-pill.opt{color:#4A4761;background:#EEEDF6;}',
