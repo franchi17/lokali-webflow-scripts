@@ -256,7 +256,7 @@
     // header
     '.lok-hdl{display:flex;flex-direction:column;gap:2px;}',
     '.lok-hdl .text-block-33{font-size:22px!important;font-weight:800!important;color:#1A1829!important;letter-spacing:-.01em;line-height:1.2!important;margin:0!important;font-family:' + LUI_FONT + '!important;}',
-    '.lok-hdl [id$="-active-count"],.lok-hdl [id$="-active-count"] *{font-size:12.5px!important;color:#6E6A85!important;font-weight:500!important;font-family:' + LUI_FONT + '!important;margin:0!important;}',
+    '.lok-hdl-count{font-size:12.5px;color:#6E6A85;font-weight:500;font-family:' + LUI_FONT + ';margin:0;line-height:1.5;}',
     '#services-add-btn,#products-add-btn{background:#6002EE!important;border-color:#6002EE!important;color:#fff!important;border-radius:9px!important;font-family:' + LUI_FONT + '!important;font-weight:700!important;}',
     '#services-add-btn *,#products-add-btn *{color:#fff!important;}',
     // empty state
@@ -443,13 +443,20 @@
       paint(all, 'All', c.all); paint(live, 'Live', c.live); paint(hidden, 'Hidden', c.hidden);
     },
     // Count line moves under the page title; hint text shortened.
+    // The count element itself stays where Webflow put it (the page scripts'
+    // reorderFooterAfterStack() moves ITS ancestor after the grid on every
+    // render; moving the node into the header dragged the header along,
+    // caught live 2026-09-17). We mirror its text under the title instead.
     header: function (titleEl, countEl, hintEl) {
       this.css();
-      if (titleEl && countEl && !titleEl.closest('.lok-hdl')) {
+      if (titleEl && !titleEl.closest('.lok-hdl')) {
         var box = luiEl('div', 'lok-hdl');
         titleEl.parentNode.insertBefore(box, titleEl);
-        box.appendChild(titleEl); box.appendChild(countEl);
+        box.appendChild(titleEl);
+        box.appendChild(luiEl('div', 'lok-hdl-count'));
       }
+      var mirror = titleEl && titleEl.parentNode && titleEl.parentNode.querySelector('.lok-hdl-count');
+      if (mirror && countEl) { mirror.textContent = countEl.textContent || ''; countEl.style.display = 'none'; }
       if (hintEl) hintEl.classList.add('lok-order-hint');
     },
     // host: the Webflow empty-state block. o: { kind, onAdd, onImport }
