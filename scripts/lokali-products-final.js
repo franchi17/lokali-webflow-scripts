@@ -10,7 +10,9 @@ const LokaliProductsPage = (() => {
     s.id = 'lok-icon-btn-delete-style';
     s.textContent = '.icon-btn--delete:hover{color:#C0152F;background:#FCEBED;border-color:#F2C4CB;}' +
       // Duplicate (2026-09-17): same look as Edit, in the products orange.
-      '.lok-gc .card-actions [data-action="duplicate"]{order:0;display:inline-flex;align-items:center;gap:5px;color:#B8471B;border-color:#FFDDB0;background:#fff;font-weight:600;}';
+      // Webflow's .icon-btn is a fixed 32px square; the two text buttons need their own width.
+      '.lok-gc .card-actions .icon-btn[data-action="edit"],.lok-gc .card-actions .icon-btn[data-action="duplicate"]{width:auto!important;}' +
+      '.lok-gc .card-actions .icon-btn[data-action="duplicate"]{order:0;display:inline-flex;align-items:center;gap:5px;color:#B8471B;border-color:#FFDDB0;background:#fff;font-weight:600;}';
     (document.head || document.documentElement).appendChild(s);
   })();
 
