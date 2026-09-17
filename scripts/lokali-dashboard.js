@@ -294,12 +294,11 @@
     '#lok-lc-preview li.ok svg{color:#1D6A45;}#lok-lc-preview li.todo svg{color:#8E8BA6;}',
     // Products PAGE (list, pills, empty state) in orange too, so the colour is the
     // service/product cue everywhere, not only inside the form (F 2026-09-17).
-    // body.lok-pg-product is set by css() from the pathname. Small orange badges and
-    // pills carry DARK text (F): white on orange 500 is ~2.4:1; the big Add button keeps
-    // white like the site's other orange buttons.
+    // body.lok-pg-product is set at load from the pathname. White text on the orange
+    // 500 throughout (F 2026-09-17: prefers white over dark text on the orange).
     'body.lok-pg-product #products-add-btn{background:#FF8D00!important;border-color:#FF8D00!important;}',
-    'body.lok-pg-product .lok-seg>.lok-seg-on .lok-seg-b,body.lok-pg-product .lok-seg>.lok-seg-on.lok-seg-b{background:#FF8D00!important;color:#1A1829!important;}',
-    'body.lok-pg-product .lok-seg>.lok-seg-on .lok-seg-b>*,body.lok-pg-product .lok-seg>.lok-seg-on.lok-seg-b>*{color:#1A1829!important;background:rgba(26,24,41,.1)!important;}',
+    'body.lok-pg-product .lok-seg>.lok-seg-on .lok-seg-b,body.lok-pg-product .lok-seg>.lok-seg-on.lok-seg-b{background:#FF8D00!important;color:#fff!important;}',
+    'body.lok-pg-product .lok-seg>.lok-seg-on .lok-seg-b>*,body.lok-pg-product .lok-seg>.lok-seg-on.lok-seg-b>*{color:#fff!important;background:rgba(255,255,255,.22)!important;}',
     'body.lok-pg-product .lok-empty{border-color:#FFDDB0;}',
     'body.lok-pg-product .lok-steps li i{background:#FFF2DF;color:#B8471B;}',
     'body.lok-pg-product .lok-btn{border-color:#FFDDB0;color:#B8471B;}',
@@ -624,11 +623,11 @@
     '.lok-org-product .lok-fs{border-color:#F3E6D6;box-shadow:0 2px 10px rgba(255,141,0,.06);}',
     '.lok-org-product .lok-fs.need{border-color:#FFDDB0;}',
     '.lok-org-product .lok-fs.is-collapsed{background:#FFFCF7;}',
-    '.lok-org-product .lok-fs:not(.is-done) .lok-fs-num{background:#FF8D00;color:#1A1829;}',
+    '.lok-org-product .lok-fs:not(.is-done) .lok-fs-num{background:#FF8D00;color:#fff;}',
     '.lok-org-product .lok-fs-chg{color:#B8471B;}',
     '.lok-org-product .lok-fs-fold{background:#FFF2DF;border-color:#FFDDB0;color:#B8471B;}',
     '.lok-org-product .lok-pseg{border-color:#F3E6D6;}',
-    '.lok-org-product .lok-pseg button.on{background:#FF8D00;color:#1A1829;}',
+    '.lok-org-product .lok-pseg button.on{background:#FF8D00;color:#fff;}',
     '.lok-org-product .lok-pseg button:focus-visible{outline-color:#FF8D00;}',
     '.lok-org-product .lok-sw-row{border-color:#F3E6D6;}',
     '.lok-org-product .lok-sw-row input[type="checkbox"]:checked{background:#FF8D00;}',
