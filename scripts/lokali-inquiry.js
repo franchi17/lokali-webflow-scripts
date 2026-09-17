@@ -161,6 +161,33 @@
     reallyOpen(context);
   }
   var lastFocus = null; // restored on close (keyboard/SR users otherwise land at document top)
+  // Away mode (2026-09-17): the storefront hands the vendor's away fields over
+  // with the id; a future away_until adds a note above the form, and when the
+  // vendor paused messages the form is replaced by "back on <date>".
+  function awayInfo() {
+    if (!vendor || !vendor.away_until) return null;
+    var d = String(vendor.away_until).slice(0, 10);
+    var t = new Date(); var today = t.getFullYear() + '-' + ('0' + (t.getMonth() + 1)).slice(-2) + '-' + ('0' + t.getDate()).slice(-2);
+    if (d < today) return null;
+    var p = d.split('-'); var when = new Date(+p[0], +p[1] - 1, +p[2]);
+    return { label: when.toLocaleDateString(undefined, { month: 'long', day: 'numeric' }), note: String(vendor.away_note || '').trim(), accepts: vendor.away_accepts_inquiries !== false };
+  }
+  function paintAway() {
+    var a = awayInfo();
+    var host = modal.querySelector('#lok-inq-away');
+    if (!host) {
+      host = document.createElement('div'); host.id = 'lok-inq-away';
+      host.style.cssText = 'display:none;background:#FFF2DF;border:1px solid #FFDDB0;border-radius:10px;padding:10px 12px;margin:0 0 12px;font-size:13px;line-height:1.5;color:#B8471B;';
+      var sub = modal.querySelector('.lok-inq-sub');
+      if (sub && sub.parentNode) sub.parentNode.insertBefore(host, sub.nextSibling);
+    }
+    var form = modal.querySelector('#lok-inq-form');
+    var fields = form.querySelectorAll('.lok-inq-field, #lok-inq-send');
+    if (!a) { host.style.display = 'none'; for (var i = 0; i < fields.length; i++) fields[i].style.display = ''; return; }
+    host.innerHTML = '<b>Away until ' + a.label + '.</b> ' + (a.note ? a.note.replace(/[<>&]/g, function (c) { return { '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]; }) : (a.accepts ? 'You can still send a message; the reply will come after that.' : 'Messages are paused until then.'));
+    host.style.display = 'block';
+    for (var j = 0; j < fields.length; j++) fields[j].style.display = a.accepts ? '' : 'none';
+  }
   function reallyOpen(context) {
     if (!vendor) return;
     injectStyles();
@@ -170,6 +197,7 @@
     modal.querySelector('#lok-inq-form').style.display = '';
     modal.querySelector('#lok-inq-done').style.display = 'none';
     modal.querySelector('#lok-inq-error').style.display = 'none';
+    try { paintAway(); } catch (e) {}
     lastFocus = document.activeElement;
     document.body.style.overflow = 'hidden'; // lock the page behind the overlay
     modal.style.display = 'flex';
@@ -218,7 +246,9 @@
       btn.disabled = false;
       btn.textContent = 'Send message';
       if (res && res.error) {
-        showError(res.error === 'Request failed' ? 'Something went wrong. Please try again.' : res.error);
+        var isAway = res.status === 409 || /\baway\b/i.test(String(res.error));
+        showError(isAway ? 'This vendor is away right now and not taking messages. Please check back after their return date.' :
+          (res.error === 'Request failed' ? 'Something went wrong. Please try again.' : res.error));
         return;
       }
       // #110 GA4: the highest-intent lead event (no form contents sent, id only).
@@ -277,7 +307,7 @@
 
   function setVendor(v) {
     if (!v || v.id == null) return;
-    vendor = { id: v.id, name: v.name || '' };
+    vendor = { id: v.id, name: v.name || '', away_until: v.away_until || null, away_note: v.away_note || '', away_accepts_inquiries: v.away_accepts_inquiries !== false };
     mountButton();
     maybeDeepLink();
   }

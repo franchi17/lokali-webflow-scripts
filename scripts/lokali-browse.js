@@ -1230,6 +1230,15 @@
   var _searchScores = {};
 
   // ── filter + sort + render cards ──
+  // Away mode chip helper: 'Sep 29' for a future vendors.away_until, else ''.
+  function vAwayLabel(v) {
+    var d = v && v.away_until ? String(v.away_until).slice(0, 10) : '';
+    if (!d) return '';
+    var t = new Date(); var today = t.getFullYear() + '-' + ('0' + (t.getMonth() + 1)).slice(-2) + '-' + ('0' + t.getDate()).slice(-2);
+    if (d < today) return '';
+    var p = d.split('-'); return new Date(+p[0], +p[1] - 1, +p[2]).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  }
+  var _lastVisibleIds = [];   // demand signals: what the last filter pass matched
   function applyFilters() {
     var q = searchTerm.toLowerCase().trim();
     var toks = searchTokens(q);
@@ -1271,6 +1280,7 @@
       return true;
     });
     sortVendors(visible);
+    _lastVisibleIds = visible.map(function (v) { return v.id; });
     renderGrid(visible);
     updateCounts(visible.length);
     updateActiveFilters();
@@ -1543,6 +1553,8 @@
     // Founding moved to the quiet foot line; Verified/New/Spotlight stay here.
     if (vIsVerified(v))  nameRow.appendChild(nameChip('chip-verified', '✓ Verified', null, null, 'Verified'));
     if (vIsNew(v))       nameRow.appendChild(nameChip('chip-new', 'New', ICON_BULLHORN, '#11744A', 'New this week'));
+    // Away mode (2026-09-17): a quiet dated chip, no greying, no ranking change.
+    if (vAwayLabel(v))   nameRow.appendChild(nameChip('chip-away', 'Back ' + vAwayLabel(v), null, '#B8471B', 'Away until ' + vAwayLabel(v)));
     if (vIsSpotlight(v)) nameRow.appendChild(nameChip('chip-spotlight', '✦ Spotlight', null, null, 'Spotlight'));
     body.appendChild(nameRow);
     // ── #162d "by {first name}": people hire people. Renders only when the
@@ -1791,6 +1803,17 @@
       if (term.length < 2 || term === _gaLastTerm) return;
       _gaLastTerm = term;
       try { if (typeof window.gtag === 'function') window.gtag('event', 'market_search', { term: term }); } catch (e) {}
+      // Demand signals (2026-09-17): the settled term + active filters + what it
+      // matched, counted anonymously (log_market_search bounds and floors it;
+      // vendors read the aggregate on Analytics). Best-effort, never awaited.
+      try {
+        var S = window.LokaliSupabaseAPI;
+        if (S && S.marketing && typeof S.marketing.logSearch === 'function') {
+          var catId = activeCategory === 'all' ? null : (SLUG_TO_ID[activeCategory] || null);
+          var locId = activeLocationId === 'all' ? null : activeLocationId;
+          S.marketing.logSearch(term, catId, locId, _lastVisibleIds.length, _lastVisibleIds.slice(0, 50)).catch(function () {});
+        }
+      } catch (e) {}
     }, 800);
     document.addEventListener('input', function (e) {
       var t = (e.composedPath && e.composedPath()[0]) || e.target;

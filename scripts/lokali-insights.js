@@ -291,6 +291,55 @@
   }
 
   // Storefront checkup: the pure builder lives in lokali-dashboard.js
+  function demandCard(mount, vendor, services, products) {
+    var escapeHtml = function (x) { return String(x).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+    var S = window.LokaliSupabaseAPI;
+    if (!S || !S.marketing || typeof S.marketing.searchSignals !== 'function') return;
+    var host = el('div'); mount.appendChild(host);
+    S.marketing.searchSignals(30).then(function (r) {
+      var d = r && !r.error ? r.data : null;
+      if (!d || d.ok !== true) { host.parentNode && host.parentNode.removeChild(host); return; }
+      var found = d.found || [], missed = d.missed || [];
+      if (!found.length && !missed.length) { host.parentNode && host.parentNode.removeChild(host); return; }
+      if (!document.getElementById('an-dm-css')) {
+        var st = document.createElement('style'); st.id = 'an-dm-css';
+        st.textContent = '.an-dm{background:#fff;border:.5px solid #EEEDF6;border-radius:14px;padding:16px 18px 18px;margin-top:14px;font-family:"Plus Jakarta Sans",-apple-system,sans-serif;}' +
+          '.an-dm h3{font-size:15px;font-weight:800;margin:0 0 2px;color:#1A1829;}.an-dm .s{font-size:12px;color:#6E6A85;margin:0 0 10px;}' +
+          '.an-dm h4{font-size:12.5px;font-weight:700;margin:12px 0 6px;color:#1A1829;}' +
+          '.an-dm .bar{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;font-size:12.5px;color:#1A1829;margin:0 0 7px;}' +
+          '.an-dm .bar i{display:block;height:8px;border-radius:100px;background:#F3EBFF;position:relative;margin-top:4px;}' +
+          '.an-dm .bar i::after{content:"";position:absolute;left:0;top:0;bottom:0;border-radius:100px;background:#6002EE;width:var(--w);}' +
+          '.an-dm .bar.miss i{background:#FDE7F3;}.an-dm .bar.miss i::after{background:#B1006A;}' +
+          '.an-dm .bar .n{font-weight:700;color:#4A4761;font-size:12px;}' +
+          '.an-dm .tip{background:#F1EDFB;border:1px solid #E5D4FD;border-radius:10px;padding:10px 12px;margin-top:12px;font-size:12.5px;line-height:1.5;color:#1A1829;}' +
+          '.an-dm .tip a{display:inline-block;margin-top:8px;font:700 12.5px/1.2 inherit;background:#6002EE;color:#fff;text-decoration:none;border-radius:9px;padding:8px 13px;}' +
+          '.an-dm .foot{font-size:11px;color:#6E6A85;margin-top:12px;line-height:1.5;}';
+        document.head.appendChild(st);
+      }
+      function bars(list, cls) {
+        var max = Math.max.apply(null, list.map(function (x) { return +x.n || 0; }).concat([1]));
+        return list.map(function (x) {
+          var w = Math.max(6, Math.round((+x.n || 0) / max * 100));
+          return '<div class="bar' + cls + '"><div>' + escapeHtml(String(x.term)) + '<i style="--w:' + w + '%"></i></div><span class="n">' + (+x.n || 0) + '</span></div>';
+        }).join('');
+      }
+      var c = el('div', 'an-dm');
+      var html = '<h3>What people searched for</h3><div class="s">Last ' + (d.days || 30) + ' days, in your category and area. Counts only, never who searched.</div>';
+      if (found.length) html += '<h4>Searches that found you</h4>' + bars(found, '');
+      if (missed.length) html += '<h4>Searches near you that found nobody</h4>' + bars(missed, ' miss');
+      if (missed.length) {
+        var top = missed[0];
+        var hasSvc = (services || []).length > 0, hasPrd = (products || []).length > 0;
+        var addHref = hasPrd && !hasSvc ? '/vendor-dashboard/products' : '/vendor-dashboard/services';
+        html += '<div class="tip"><b>' + (+top.n) + ' ' + ((+top.n) === 1 ? 'person' : 'people') + ' looked for \u201c' + escapeHtml(String(top.term)) + '\u201d and left empty-handed.</b> If you do it, a listing named that way, with the matching specialty tag, would show up for every one of those searches.' +
+          '<br><a href="' + addHref + '">Add a listing</a></div>';
+      }
+      html += '<div class="foot">A term only appears once it has been searched five or more times, so no single search can be traced to a person.</div>';
+      c.innerHTML = html;
+      host.appendChild(c);
+    }).catch(function () { if (host.parentNode) host.parentNode.removeChild(host); });
+  }
+
   // (window.LokaliCheckup, sitewide plain tag, loads before this deferred
   // script) so the dashboard home and this page read ONE copy. A missing
   // global (old cached bundle) just hides the card.
@@ -470,6 +519,11 @@
       mount.appendChild(ins);
     }
     if (ck.total) mount.appendChild(checkupCard(ck));
+
+    // Demand signals (2026-09-17): searches that found this vendor and searches
+    // nearby that found nobody, from my_search_signals() (five-search floor is
+    // server-side). Renders only once the RPC exists and has something to say.
+    try { demandCard(mount, vendor, services, products); } catch (e) {}
 
     // views chart with plan-gated range selector. The selectable window is the
     // vendor's plan tier: Featured 360d / Pro 180d / free 30d (paid truth =

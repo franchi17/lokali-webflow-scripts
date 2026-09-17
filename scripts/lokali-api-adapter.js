@@ -434,7 +434,8 @@
     'locations_id,categories_id,subcategories,profile_photo,text_messages,whatsapp_messages,phone_calls,' + // subcategories = #96 card pills/filter
     'contact_email,phone_number,slug,created_at,published_at,is_founding_member,is_verified,is_spotlight,is_featured,plan_rank,' + // published_at = first went-live stamp (patch_published_at.sql): Newest sort + New chip
     'owner_name,' + // #162d person-first: 'by {first name}' line on market cards (already in the anon column grant, rls.sql #76)
-    'is_active'; // browse guards v.is_active !== false — unselected it was always undefined (column-granted in patch_vendor_columns.sql)
+    'is_active,' + // browse guards v.is_active !== false — unselected it was always undefined (column-granted in patch_vendor_columns.sql)
+    'away_until'; // away mode chip on Market cards (patch_dashboard_additions.sql 2026-09-17; anon-granted there)
 
   // ═══════════════════════════════════════════════════════════════════════════
   // The legacy surface

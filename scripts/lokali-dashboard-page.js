@@ -421,15 +421,40 @@
   }
 
   // ── Your next step: the shared checkup, top item large ──────────────────
-  function nextStepCard(v, hasListing, ck) {
+  // Inquiries still marked new with no first reply, oldest first (from leads.getMine).
+  function waitingLeads(d) {
+    var rows = (d && d.inquiries) || [];
+    return rows.filter(function (i) { return !(i.status) || i.status === 'new'; })
+      .filter(function (i) { return !i.first_reply_at; })
+      .map(function (i) { return { id: i.id, name: i.customer_name || i.customer_email || 'A shopper', email: i.customer_email || '', context: i.context || '', t: i.created_at ? Date.parse(i.created_at) : 0 }; })
+      .sort(function (a, b) { return a.t - b.t; });
+  }
+  function waitingLabel(t) {
+    var d = Date.now() - (t || Date.now());
+    if (d < 3600000) return 'Just now';
+    if (d < 86400000) return Math.round(d / 3600000) + 'h ago';
+    var days = Math.floor(d / 86400000); return 'Waiting ' + days + (days === 1 ? ' day' : ' days');
+  }
+  function nextStepCard(v, hasListing, ck, waiting) {
     var root = document.querySelector('[data-listing-strength]');
     if (!root) return null;
     root.className = 'lok-card accent';
     root.style.cssText = '';
     var open = ck.open || [], done = ck.done || [], total = ck.total || 0;
+    waiting = waiting || [];
     var html = '<div class="lok-ct"><h3>Your next step</h3>' +
-      (open.length ? '<span class="lok-pill">' + open.length + ' to do</span>' : '<span class="lok-pill ok">All in place</span>') + '</div>';
-    if (open.length) {
+      (waiting.length ? '<span class="lok-pill" style="background:#FDE7F3;color:#B1006A">' + waiting.length + ' waiting' + (open.length ? ' · ' + open.length + ' to do' : '') + '</span>'
+        : (open.length ? '<span class="lok-pill">' + open.length + ' to do</span>' : '<span class="lok-pill ok">All in place</span>')) + '</div>';
+    if (waiting.length) {
+      // A lead waiting on the vendor outranks every checkup item: it is the only
+      // one with a person on the other end (2026-09-17).
+      var w = waiting[0];
+      var first = String(w.name).trim().split(/\s+/)[0] || 'there';
+      var mailto = w.email ? 'mailto:' + w.email + '?subject=' + encodeURIComponent('Re: your ' + (w.context ? 'question about ' + w.context : 'inquiry') + ' on Lokali') + '&body=' + encodeURIComponent('Hi ' + first + ',\n\n') : '/vendor-dashboard/leads';
+      html += '<div class="lok-next"><div class="n" style="background:#FDE7F3;color:#B1006A">!</div><div>' +
+        '<p class="t">Reply to ' + esc(w.name) + '</p><p class="w">' + (w.context ? esc(w.name) + ' asked about ' + esc(w.context) + '. ' : '') + esc(waitingLabel(w.t)) + '. A reply today keeps the lead warm.</p>' +
+        '<a class="lok-btn" href="' + esc(mailto) + '">Reply by email →</a> <a class="lok-btn" style="background:#fff;color:#6002EE;border:1px solid #E5D4FD" href="/vendor-dashboard/leads">Open Leads →</a></div></div>';
+    } else if (open.length) {
       var f = open[0];
       html += '<div class="lok-next"><div class="n">1</div><div>' +
         '<p class="t">' + esc(f.title) + '</p><p class="w">' + esc(f.why) + '</p>' +
@@ -953,7 +978,7 @@
     var ck = (typeof window.LokaliCheckup === 'function')
       ? window.LokaliCheckup(v, services, products, x.photos, x.cfg, x.billing)
       : { items: [], open: [], done: [], total: 0, paidPlan: false };
-    var gateReady = nextStepCard(v, hasListing, ck);
+    var gateReady = nextStepCard(v, hasListing, ck, x.waiting);
     if (gateReady == null) gateReady = !!v.is_publish_ready;
     renderHeader(v, x.billing, gateReady);
     renderTiles(leadsData, x.shares);
@@ -1304,14 +1329,17 @@
         soft(S && S.photos && S.photos.list ? S.photos.list('vendor', v.id) : null),
         soft(S && S.availability && S.availability.getConfig ? S.availability.getConfig(v.id) : null),
         soft(A.share && A.share.count ? A.share.count(v.id) : null),
-        soft(A.reviews && A.reviews.forVendor ? A.reviews.forVendor(v.id) : null)
+        soft(A.reviews && A.reviews.forVendor ? A.reviews.forVendor(v.id) : null),
+        // Waiting inquiries for 'Your next step' (2026-09-17): a person beats a checkup item.
+        soft(A.leads && A.leads.getMine ? A.leads.getMine() : null)
       ]).then(function (x) {
         render(v, services, products, leadsData, {
           billing: data(x[0]),
           photos: toArr(data(x[1])),
           cfg: data(x[2]),
           shares: data(x[3]),
-          reviews: toArr(data(x[4]))
+          reviews: toArr(data(x[4])),
+          waiting: waitingLeads(data(x[5]))
         });
         maybeRunWizard(v); // #90 first-run setup wizard (one-shot, flag-gated)
       });

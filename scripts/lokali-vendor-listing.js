@@ -2248,11 +2248,42 @@
     document.title = 'Vendor not found | Lokali';
   }
 
+  // Away mode (2026-09-17, patch_dashboard_additions.sql): a dated away line
+  // under the tagline. A past date means "not away"; nothing else changes
+  // (listings, ranking and the contact buttons stay as they are).
+  function awayState(v) {
+    if (!v || !v.away_until) return null;
+    var d = String(v.away_until).slice(0, 10);
+    var t = new Date(); var today = t.getFullYear() + '-' + ('0' + (t.getMonth() + 1)).slice(-2) + '-' + ('0' + t.getDate()).slice(-2);
+    if (d < today) return null;
+    var parts = d.split('-'); var when = new Date(+parts[0], +parts[1] - 1, +parts[2]);
+    return { until: d, label: when.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }), note: String(v.away_note || '').trim(), accepts: v.away_accepts_inquiries !== false };
+  }
+  function renderAway(v) {
+    var a = awayState(v);
+    var old = document.getElementById('vl-away'); if (old) old.parentNode.removeChild(old);
+    if (!a) return;
+    var tagEl = document.getElementById('vl-tagline') || document.getElementById('vl-name');
+    if (!tagEl || !tagEl.parentNode) return;
+    if (!document.getElementById('vl-away-css')) {
+      var st = document.createElement('style'); st.id = 'vl-away-css';
+      st.textContent = '#vl-away{display:flex;gap:10px;align-items:flex-start;background:#FFF2DF;border:1px solid #FFDDB0;border-radius:10px;padding:10px 12px;margin:10px 0 6px;font:500 13px/1.5 "Plus Jakarta Sans",system-ui,sans-serif;color:#B8471B;max-width:640px;}' +
+        '#vl-away svg{width:14px;height:14px;flex-shrink:0;margin-top:2px;fill:currentColor;}#vl-away b{font-weight:700;}';
+      document.head.appendChild(st);
+    }
+    var esc = function (x) { return String(x).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+    var box = document.createElement('div'); box.id = 'vl-away';
+    box.innerHTML = '<svg viewBox="0 0 512 512" aria-hidden="true"><path d="M256 0a256 256 0 1 0 0 512A256 256 0 1 0 256 0zm24 120v128l88 88-34 34-102-102V120h48z"/></svg>' +
+      '<div><b>Away until ' + esc(a.label) + '.</b> ' + (a.note ? esc(a.note) : (a.accepts ? 'You can still send a message; replies will come after that.' : 'Messages are paused until then.')) + '</div>';
+    tagEl.parentNode.insertBefore(box, tagEl.nextSibling);
+  }
+
   function populateVendor(v, labels) {
     setText('vl-name', v.business_name);
     setText('vl-tagline', v.business_tagline || '');
     var tagEl = document.getElementById('vl-tagline');
     if (tagEl && !(v.business_tagline)) show(tagEl, false);
+    try { renderAway(v); } catch (e) {}
 
     // avatar — show the photo, falling back to initials when there's no image (or it fails to load)
     var av = document.getElementById('vl-avatar');
@@ -2771,7 +2802,7 @@
       // Announce the loaded vendor for companion scripts (lokali-inquiry.js
       // mounts the "Send an inquiry" button off this). Window var covers the
       // load-order race; the event covers scripts already listening.
-      window.LOKALI_LOADED_VENDOR = { id: vid, name: v.business_name || '' };
+      window.LOKALI_LOADED_VENDOR = { id: vid, name: v.business_name || '', away_until: v.away_until || null, away_note: v.away_note || '', away_accepts_inquiries: v.away_accepts_inquiries !== false };
       try { document.dispatchEvent(new CustomEvent('lokali:vendor-loaded', { detail: window.LOKALI_LOADED_VENDOR })); } catch (e) {}
       // Marketing tools: rotating promo CTA + Showcase of the week (self-hides
       // server-side for non-entitled vendors; fire-and-forget).

@@ -202,7 +202,8 @@
     // `authenticated`; a straggler key here would fail the whole PATCH (42501).
     // P2P payment handles (stored bare; URL built at render time).
     'venmo_username', 'cashapp_cashtag', 'paypalme_slug',
-    'other_pay_url', 'other_pay_label', 'zelle_contact'
+    'other_pay_url', 'other_pay_label', 'zelle_contact',
+    'away_until', 'away_note', 'away_accepts_inquiries' // away mode (patch_dashboard_additions.sql 2026-09-17); the Away card on Availability
     // NB: 'slug' is intentionally NOT here — it changes only via vendors.changeSlug
     // (the validated/rate-limited path) or the auto-slug trigger.
   ];
@@ -257,7 +258,8 @@
     'created_at,is_active,slug,is_founding_member,' +
     'is_spotlight,spotlight_until,is_verified,is_featured,plan_rank,' +
     'venmo_username,cashapp_cashtag,paypalme_slug,other_pay_url,other_pay_label,zelle_contact,' +
-    'is_publish_ready';  // #90 publish gate — listing page renders a "not public yet" state on false
+    'is_publish_ready,' +  // #90 publish gate — listing page renders a "not public yet" state on false
+    'away_until,away_note,away_accepts_inquiries'; // away mode (patch_dashboard_additions.sql 2026-09-17): storefront banner + inquiry form note
   // Photo-gallery kind -> its table + parent-id column.
   var PHOTO_TABLES = {
     service: { table: 'service_photos', parent: 'services_id' },
@@ -922,6 +924,24 @@
       // three STABLE vendor-origin ?via= links (Etsy About / packaging / email
       // signature) + per-placement landings. Owner-gated; tier split inside
       // (Featured = numbers, Pro = links only + has_landings).
+      // Demand signals (patch_dashboard_additions.sql 2026-09-17). logSearch is the
+      // ANONYMOUS write from The Market (term + filters + matched vendor ids, no
+      // person); searchSignals is the owner read behind Analytics' 'What people
+      // searched for' (five-search floor applied server-side).
+      logSearch: function (term, categoryId, locationId, results, vendorIds) {
+        return withClient(function (c) {
+          return c.rpc('log_market_search', {
+            p_term: String(term || ''),
+            p_category_id: categoryId == null ? null : Number(categoryId),
+            p_location_id: locationId == null ? null : Number(locationId),
+            p_results: Number(results) || 0,
+            p_vendor_ids: (vendorIds || []).slice(0, 50).map(Number)
+          });
+        });
+      },
+      searchSignals: function (days) {
+        return withClient(function (c) { return c.rpc('my_search_signals', { p_days: Number(days) || 30 }); });
+      },
       placementLinks: function (vendorId) {
         return withClient(function (c) {
           return c.rpc('placement_share_links', { p_vendors_id: vendorId });

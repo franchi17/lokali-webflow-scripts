@@ -586,6 +586,77 @@
   }
 
   // ---- boot --------------------------------------------------------------------
+  // ---- Away mode (2026-09-17, F 'build all') -----------------------------------
+  // For EVERY vendor (the rest of this page is plan-gated): a dated away line
+  // for the storefront and the Market card, an optional note, and whether the
+  // inquiry form stays open. Saved on vendors (updateProfile); a past date is
+  // "not away", so nothing has to be switched off. Hidden until the SQL patch
+  // has added the columns (get_my_vendor returns the whole row, so their
+  // presence on the vendor object is the gate).
+  function awayCard(mount, vendor) {
+    if (!vendor || vendor.away_accepts_inquiries === undefined) return;
+    var S = window.LokaliSupabaseAPI;
+    if (!S || !S.vendors || typeof S.vendors.updateProfile !== 'function') return;
+    if (document.getElementById('lok-away-card')) return;
+    if (!document.getElementById('lok-away-css')) {
+      var st = document.createElement('style'); st.id = 'lok-away-css';
+      st.textContent = '#lok-away-card{font-family:"Plus Jakarta Sans",-apple-system,sans-serif;background:#fff;border:1px solid #EEEDF6;border-radius:14px;padding:16px 18px 18px;margin:0 0 16px;color:#1A1829;}' +
+        '#lok-away-card .aw-row{display:flex;align-items:center;justify-content:space-between;gap:12px;}' +
+        '#lok-away-card h3{font-size:15px;font-weight:800;margin:0 0 2px;}#lok-away-card .aw-s{font-size:12.5px;color:#6E6A85;line-height:1.5;}' +
+        '#lok-away-card .aw-sw{appearance:none;-webkit-appearance:none;width:36px;height:20px;border-radius:100px;background:#D9D5EA;position:relative;cursor:pointer;flex-shrink:0;border:none;margin:0;}' +
+        '#lok-away-card .aw-sw::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.18);transition:left .15s;}' +
+        '#lok-away-card .aw-sw:checked{background:#6002EE;}#lok-away-card .aw-sw:checked::after{left:18px;}' +
+        '#lok-away-card .aw-body{display:none;margin-top:12px;}#lok-away-card.on .aw-body{display:block;}' +
+        '#lok-away-card label.aw-l{display:block;font-size:12.5px;font-weight:700;margin:10px 0 5px;}' +
+        '#lok-away-card input[type=date],#lok-away-card textarea{width:100%;box-sizing:border-box;font:inherit;font-size:14px;padding:9px 11px;border:1px solid #EEEDF6;border-radius:9px;color:#1A1829;background:#fff;}' +
+        '#lok-away-card textarea{min-height:64px;resize:vertical;}' +
+        '#lok-away-card .aw-acts{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px;}' +
+        '#lok-away-card .aw-save{font:700 13px/1.2 inherit;background:#6002EE;color:#fff;border:none;border-radius:9px;padding:10px 16px;cursor:pointer;min-height:38px;}' +
+        '#lok-away-card .aw-msg{font-size:12.5px;color:#6E6A85;}' +
+        '#lok-away-card .aw-chip{display:inline-block;font-size:11px;font-weight:700;border-radius:100px;padding:3px 9px;background:#FFF2DF;color:#B8471B;margin-left:8px;vertical-align:middle;}';
+      document.head.appendChild(st);
+    }
+    var today = (function () { var t = new Date(); return t.getFullYear() + '-' + ('0' + (t.getMonth() + 1)).slice(-2) + '-' + ('0' + t.getDate()).slice(-2); })();
+    var until = vendor.away_until ? String(vendor.away_until).slice(0, 10) : '';
+    var active = !!until && until >= today;
+    var card = document.createElement('div'); card.id = 'lok-away-card'; if (active) card.className = 'on';
+    card.innerHTML =
+      '<div class="aw-row"><div><h3>Away mode' + (active ? '<span class="aw-chip">Back ' + until.slice(5).replace('-', '/') + '</span>' : '') + '</h3>' +
+        '<div class="aw-s">Tell shoppers you\u2019re not taking orders right now. Your storefront stays up, nothing else changes, and it ends by itself on the date.</div></div>' +
+        '<input type="checkbox" class="aw-sw" id="lok-away-on"' + (active ? ' checked' : '') + ' aria-label="Away mode"></div>' +
+      '<div class="aw-body">' +
+        '<label class="aw-l" for="lok-away-until">Back on</label><input type="date" id="lok-away-until" min="' + today + '" value="' + (active ? until : '') + '">' +
+        '<label class="aw-l" for="lok-away-note">Note shoppers see (optional)</label><textarea id="lok-away-note" maxlength="240" placeholder="Taking a short break. Orders placed now will be answered when I\u2019m back.">' + String(vendor.away_note || '').replace(/[<>&]/g, function (c) { return { '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]; }) + '</textarea>' +
+        '<div class="aw-row" style="margin-top:12px"><div><div style="font-size:13px;font-weight:700">Keep taking inquiries while away</div><div class="aw-s">On: the form works and shows your note. Off: the form says "back on" and nothing is sent.</div></div>' +
+        '<input type="checkbox" class="aw-sw" id="lok-away-inq"' + (vendor.away_accepts_inquiries !== false ? ' checked' : '') + ' aria-label="Keep taking inquiries while away"></div>' +
+        '<div class="aw-acts"><button type="button" class="aw-save" id="lok-away-save">Save</button><span class="aw-msg" id="lok-away-msg"></span></div>' +
+      '</div>';
+    mount.parentNode.insertBefore(card, mount);
+    var on = card.querySelector('#lok-away-on'), msg = card.querySelector('#lok-away-msg');
+    on.addEventListener('change', function () {
+      card.classList.toggle('on', on.checked);
+      if (!on.checked && active) save({ away_until: null, away_note: null, away_accepts_inquiries: true }, 'Away mode is off.');
+    });
+    card.querySelector('#lok-away-save').addEventListener('click', function () {
+      var d = card.querySelector('#lok-away-until').value;
+      if (!d) { msg.textContent = 'Pick the day you\u2019re back.'; return; }
+      if (d < today) { msg.textContent = 'That date is in the past.'; return; }
+      save({ away_until: d, away_note: card.querySelector('#lok-away-note').value.trim() || null, away_accepts_inquiries: card.querySelector('#lok-away-inq').checked }, 'Saved. Shoppers now see "Away until" on your storefront.');
+    });
+    function save(fields, okText) {
+      msg.textContent = 'Saving\u2026';
+      S.vendors.updateProfile(vendor.id, fields).then(function (r) {
+        if (r && r.error) { msg.textContent = 'Couldn\u2019t save. Try again.'; console.warn('[availability] away save failed', r.error); return; }
+        vendor.away_until = fields.away_until; vendor.away_note = fields.away_note; vendor.away_accepts_inquiries = fields.away_accepts_inquiries;
+        active = !!fields.away_until;
+        var chip = card.querySelector('.aw-chip'); if (chip) chip.parentNode.removeChild(chip);
+        if (active) card.querySelector('h3').insertAdjacentHTML('beforeend', '<span class="aw-chip">Back ' + String(fields.away_until).slice(5).replace('-', '/') + '</span>');
+        msg.textContent = okText;
+        setTimeout(function () { msg.textContent = ''; }, 4000);
+      });
+    }
+  }
+
   function boot() {
     var mount = document.getElementById('lok-availability-page');
     if (!mount) return;
@@ -593,6 +664,7 @@
     VENDORS.me().then(function (r) {
       var vendor = r && r.data;
       if (!vendor || !vendor.id) return;                 // not a vendor / not signed in
+      try { awayCard(mount, vendor); } catch (e) { console.warn('[availability] away card', e); }
       API.hasPlan(vendor.id).then(function (pr) {
         if (pr && pr.data === true) new Page(mount, vendor);
         else renderUpsell(mount);
