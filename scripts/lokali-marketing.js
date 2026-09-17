@@ -522,7 +522,7 @@
         '<div class="mkt-pl-body">' +
           '<p class="mkt-pl-t">' + sn.title + '</p>' +
           '<div class="mkt-pl-snip">' +
-            '<div class="mkt-pl-txt" data-f="pl-text">' + esc(sn.text) + '</div>' +
+            '<div class="mkt-pl-txt" data-f="pl-text" style="white-space:pre-line">' + esc(sn.text) + '</div>' +
             '<button type="button" class="mkt-pl-copy" data-act="copy-place" aria-label="Copy the ' + sn.title + ' version">Copy</button>' +
           '</div>' +
         '</div>' +
