@@ -596,8 +596,8 @@
     '.lok-fs-h{display:flex;align-items:center;justify-content:space-between;gap:10px;}',
     '.lok-fs-h h3{font-size:16px;font-weight:800;margin:0;display:flex;align-items:center;gap:10px;letter-spacing:-.01em;color:#1A1829;line-height:1.3;font-family:' + LUI_FONT + ';}',
     '.lok-fs-num{width:24px;height:24px;border-radius:50%;background:#6002EE;color:#fff;font-style:normal;font-weight:800;font-size:12px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}',
-    '.lok-fs-num.opt{background:#EEEDF6;color:#4A4761;}',
-    '.lok-fs.is-done .lok-fs-num{background:#EAFAF2;color:#1D6A45;}',
+        '.lok-fs.is-done .lok-fs-num{background:#EAFAF2;color:#1D6A45;}',
+    '.lok-fs-num svg{width:12px;height:12px;fill:currentColor;display:block;}',
     '.lok-fs-pill{font-size:10.5px;font-weight:700;border-radius:100px;padding:2px 8px;text-transform:uppercase;letter-spacing:.06em;line-height:1.5;}',
     '.lok-fs-pill.need{color:#1D6A45;background:#EAFAF2;}',
     '.lok-fs-pill.opt{color:#4A4761;background:#EEEDF6;}',
@@ -727,7 +727,7 @@
         s.insertBefore(fold, s.firstChild);
       }
       wrap.appendChild(s);
-      return { el: s, body: body, cnt: cnt, sum: sum, chg: chg, collapse: function (on) { s.classList.toggle('is-collapsed', !!on); chg.style.display = on ? '' : 'none'; } };
+      return { el: s, body: body, cnt: cnt, sum: sum, chg: chg, num: opts.num, collapse: function (on) { s.classList.toggle('is-collapsed', !!on); chg.style.display = on ? '' : 'none'; } };
     }
 
     // 1 Photos
@@ -834,6 +834,15 @@
         used.push(h); S3.body.appendChild(h);
       });
     }
+    // a filled section shows a green checkmark instead of its number (F 2026-09-17)
+    var LUI_CHECK = '<svg viewBox="0 0 448 512" aria-hidden="true"><path d="M438.6 105.4c12.5 12.5 12.5 32.8 0 45.3l-256 256c-12.5 12.5-32.8 12.5-45.3 0l-128-128c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0L160 338.7 393.4 105.4c12.5-12.5 32.8-12.5 45.3 0z"/></svg>';
+    function markDone(S, on) {
+      on = !!on; if (S.el.classList.contains('is-done') === on && S._painted) return;
+      S._painted = true; S.el.classList.toggle('is-done', on);
+      var n = S.el.querySelector('.lok-fs-num'); if (!n) return;
+      if (on) { n.innerHTML = LUI_CHECK; n.setAttribute('aria-label', 'Done'); }
+      else { n.textContent = String(S.num || ''); n.removeAttribute('aria-label'); }
+    }
     api.reset = function (editing) {
       settle();
       S3.el.classList.toggle('is-folded', !editing && !isP);
@@ -853,7 +862,10 @@
     api.update = function (s) {
       s = s || {}; settle();
       var photosOk = !!s.imgUrl, coreOk = !!(s.name && s.hasPrice);
-      S1.el.classList.toggle('is-done', photosOk); S2.el.classList.toggle('is-done', coreOk);
+      markDone(S1, photosOk); markDone(S2, coreOk);
+      // Details counts as filled once the description has text; How they get it once any switch is on
+      var dEl = byId(ids.desc); markDone(S3, !!(dEl && String(dEl.value || '').trim()));
+      markDone(S4, swIds.some(function (id) { var i = byId(id); return !!(i && i.checked); }));
       S1.cnt.textContent = s.photoCap ? (s.photos || 0) + ' of ' + s.photoCap : ((s.photos || 0) + (s.photos === 1 ? ' photo' : ' photos'));
       S1.sum.textContent = (s.photos || 0) + (s.photoCap ? ' of ' + s.photoCap : '') + ' · the first one is your cover';
       S2.sum.textContent = (s.name || 'Untitled') + (s.hasPrice ? ' · ' + s.price : '');
