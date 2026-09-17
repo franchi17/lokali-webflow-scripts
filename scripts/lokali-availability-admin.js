@@ -600,7 +600,11 @@
     if (document.getElementById('lok-away-card')) return;
     if (!document.getElementById('lok-away-css')) {
       var st = document.createElement('style'); st.id = 'lok-away-css';
-      st.textContent = '#lok-away-card{font-family:"Plus Jakarta Sans",-apple-system,sans-serif;background:#fff;border:1px solid #EEEDF6;border-radius:14px;padding:16px 18px 18px;margin:0 0 16px;color:#1A1829;}' +
+      st.textContent = '#lok-away-card{font-family:"Plus Jakarta Sans",-apple-system,sans-serif;background:#fff;border:1px solid #ECE8F6;border-radius:16px;padding:18px 20px;margin:0 22px 16px;color:#1A1829;}' +
+        /* The card sits OUTSIDE the tinted .lok-ava panel (it is not plan-gated), so it
+           mirrors that panel's 22px inset to line up with the cards inside it; on phones
+           the panel drops its padding (see injectStyles), so the inset drops here too. */
+        '@media(max-width:767px){#lok-away-card{margin:0 0 14px;}}' +
         '#lok-away-card .aw-row{display:flex;align-items:center;justify-content:space-between;gap:12px;}' +
         '#lok-away-card h3{font-size:15px;font-weight:800;margin:0 0 2px;}#lok-away-card .aw-s{font-size:12.5px;color:#6E6A85;line-height:1.5;}' +
         '#lok-away-card .aw-sw{appearance:none;-webkit-appearance:none;width:36px;height:20px;border-radius:100px;background:#D9D5EA;position:relative;cursor:pointer;flex-shrink:0;border:none;margin:0;}' +
