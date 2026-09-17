@@ -592,9 +592,35 @@
     '.lok-fs-fold svg{width:12px;height:12px;flex-shrink:0;}',
     '.lok-fs.details.is-folded{background:transparent;border:none;box-shadow:none;padding:0;}',
     '.lok-fs.details.is-folded>.lok-fs-fold{display:flex;}',
-    // Products: brand orange for the optional steps (500 fill, 50 tint, dark text; F 2026-09-17)
-    '.lok-org.lok-org-product .lok-fs-num.opt{background:#FF8D00;color:#fff;}',
-    '.lok-org.lok-org-product .lok-fs-fold{background:#FFF2DF;border-color:#FFDDB0;color:#B8471B;}',
+    // Products: the WHOLE form reads orange so the colour alone says "product, not service"
+    // (F 2026-09-17). Brand scale only: 500 #FF8D00 fill, 50 #FFF2DF tint, #B8471B text;
+    // #FFF7EC / #FFDDB0 / #F3E6D6 are washes of the 50 for the card tint, borders and hairlines.
+    // Needed (green) and done (green) stay semantic. Page-script inline styles need !important.
+    '[id$="-form-view"].lok-org.lok-org-product{background:#FFF7EC!important;border-color:#FFDDB0!important;}',
+    '.lok-org-product .lok-fs{border-color:#F3E6D6;box-shadow:0 2px 10px rgba(255,141,0,.06);}',
+    '.lok-org-product .lok-fs.need{border-color:#FFDDB0;}',
+    '.lok-org-product .lok-fs.is-collapsed{background:#FFFCF7;}',
+    '.lok-org-product .lok-fs:not(.is-done) .lok-fs-num{background:#FF8D00;color:#fff;}',
+    '.lok-org-product .lok-fs-chg{color:#B8471B;}',
+    '.lok-org-product .lok-fs-fold{background:#FFF2DF;border-color:#FFDDB0;color:#B8471B;}',
+    '.lok-org-product .lok-pseg{border-color:#F3E6D6;}',
+    '.lok-org-product .lok-pseg button.on{background:#FF8D00;}',
+    '.lok-org-product .lok-pseg button:focus-visible{outline-color:#FF8D00;}',
+    '.lok-org-product .lok-sw-row{border-color:#F3E6D6;}',
+    '.lok-org-product .lok-sw-row input[type="checkbox"]:checked{background:#FF8D00;}',
+    '.lok-org-product .lok-sw-row input[type="checkbox"]:focus-visible{box-shadow:0 0 0 2px #fff,0 0 0 4px #FF8D00;}',
+    '.lok-org-product [id$="-gallery-body"] [data-photo-idx="0"]{outline-color:#FF8D00;}',
+    '.lok-org-product .lok-form-bar{border-top-color:#F3E6D6;}',
+    '.lok-org-product #lok-gallery-add{border-color:#FF8D00!important;color:#FF8D00!important;}',
+    '.lok-org-product .lokali-product-upload__trigger{border-color:#FF8D00!important;color:#B8471B!important;}',
+    '.lok-org-product #lok-product-subcat{background:#FFF2DF!important;}',
+    '.lok-org-product #lok-product-subcat select,.lok-org-product #lok-product-subcat input{border-color:#FFDDB0!important;}',
+    '.lok-org-product #lok-product-subcat [data-subcat-suggest-btn]{background:#FF8D00!important;border-color:#FF8D00!important;}',
+    '.lok-org-product #lok-product-subcat div[style*="border-top"]{border-top-color:#FFDDB0!important;}',
+    '.lok-org-product #lok-product-subcat span[style*="#6002EE"]{color:#B8471B!important;}',
+    '.lok-org-product #lok-product-buy-fill{border-color:#FFDDB0!important;color:#B8471B!important;}',
+    '.lok-org-product #lok-lc-preview .lok-tagc.spec{background:#FFF2DF;color:#B8471B;}',
+    '.lok-org-product #lok-lc-preview .lok-gc-cover.ph{background:linear-gradient(135deg,#FFF2DF,#FFE4C4);}',
     // segmented price control
     '.lok-pseg{display:inline-flex;flex-wrap:wrap;background:#fff;border:1px solid #EEEDF6;border-radius:10px;padding:3px;gap:2px;margin:4px 0 10px;}',
     '.lok-pseg button{font:600 12.5px/1.2 ' + LUI_FONT + ';color:#4A4761;background:transparent;border:none;border-radius:8px;padding:0 12px;height:32px;cursor:pointer;white-space:nowrap;}',
