@@ -610,6 +610,8 @@
     '.lok-sw-row .w-form-label,.lok-sw-row span{margin:0!important;font:inherit!important;color:inherit!important;}',
     '.lok-sw-row .w-checkbox-input--inputType-custom{display:none!important;}',
     '.lok-sw-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:8px;}',
+    '.lok-sw-grid>*{grid-area:auto!important;grid-column:auto!important;grid-row:auto!important;align-self:auto!important;justify-self:stretch!important;margin:0!important;}',
+    '.lok-pseg-lbl{font-size:14px;font-weight:600;color:#1A1829;margin:0 0 6px;font-family:"Plus Jakarta Sans",system-ui,sans-serif;}',
     '.lok-sw-live{display:flex;align-items:center;justify-content:space-between;gap:12px;}',
     '.lok-sw-live-t{font:800 15px/1.3 ' + LUI_FONT + ';color:#1A1829;}',
     '.lok-sw-live-s{font:500 12px/1.5 ' + LUI_FONT + ';color:#6E6A85;margin-top:2px;}',
@@ -752,8 +754,10 @@
         bt.addEventListener('click', function () { q.checked = p[1]; q.dispatchEvent(new Event('change', { bubbles: true })); paintQ(); });
         seg.appendChild(bt);
       });
-      var priceBlk = blockOf(ids.price) || qrow.parentElement;
-      priceBlk.insertBefore(seg, priceBlk.firstChild); qrow.style.display = 'none';
+      // the price block already moved into section 2, so find it from the input upward
+      var pIn = byId(ids.price), priceBlk = (pIn && pIn.closest('.lok-fs-body > *')) || qrow.parentElement;
+      var segLbl = luiEl('div', 'lok-pseg-lbl', 'Price type');
+      priceBlk.insertBefore(seg, priceBlk.firstChild); priceBlk.insertBefore(segLbl, seg); qrow.style.display = 'none';
       var paintQ = function () { seg.children[0].classList.toggle('on', !q.checked); seg.children[1].classList.toggle('on', !!q.checked); };
       q.addEventListener('change', paintQ); paintQ(); api._paintSeg = paintQ;
     }
