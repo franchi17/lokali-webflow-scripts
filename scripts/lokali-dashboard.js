@@ -299,7 +299,7 @@
     // white like the site's other orange buttons.
     'body.lok-pg-product #products-add-btn{background:#FF8D00!important;border-color:#FF8D00!important;}',
     'body.lok-pg-product .lok-seg>.lok-seg-on .lok-seg-b,body.lok-pg-product .lok-seg>.lok-seg-on.lok-seg-b{background:#FF8D00!important;color:#1A1829!important;}',
-    'body.lok-pg-product .lok-seg>.lok-seg-on .lok-seg-b *,body.lok-pg-product .lok-seg>.lok-seg-on.lok-seg-b *{color:#1A1829!important;}',
+    'body.lok-pg-product .lok-seg>.lok-seg-on .lok-seg-b>*,body.lok-pg-product .lok-seg>.lok-seg-on.lok-seg-b>*{color:#1A1829!important;background:rgba(26,24,41,.1)!important;}',
     'body.lok-pg-product .lok-empty{border-color:#FFDDB0;}',
     'body.lok-pg-product .lok-steps li i{background:#FFF2DF;color:#B8471B;}',
     'body.lok-pg-product .lok-btn{border-color:#FFDDB0;color:#B8471B;}',
