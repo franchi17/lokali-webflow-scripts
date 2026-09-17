@@ -9,6 +9,9 @@
  *     sits at the bottom of the viewport; the native menu opened downward and
  *     rendered entirely below the fold — bug #36)
  *   - hides the "Upgrade" row for top-tier vendors
+ *   - regroups the main nav (Dashboard / YOUR STOREFRONT / GROW), badges unread
+ *     leads, marks the storefront row as external, locks (not hides) Marketing
+ *     on Free — F 2026-09-17, mockup tab F
  *   - appends a "My Customer Account" row -> /account (bug #37: there was no
  *     way back from the vendor dashboard to the customer side)
  *   - retries once if the first fetch fails (transient rate limit)
@@ -207,11 +210,23 @@
     // vendor mid-session; a Free vendor who clicks through just meets the
     // upsell card. Defensive: no-op until the Designer adds the
     // /vendor-dashboard/marketing row.
+    // F 2026-09-17 (menu regroup): the row is no longer HIDDEN on Free — a
+    // hidden tab cannot sell itself. It stays visible with a 'Featured' lock
+    // pill (Featured-first rollout) and still links to the Marketing page,
+    // whose upsell card is the honest landing for a Free vendor.
     var knownFree = !!billing && !plan.top && plan.label !== 'Pro plan' &&
                     plan.label !== 'Founding vendor';
     document.querySelectorAll('.section-11 a[href*="/vendor-dashboard/marketing"]').forEach(function (a) {
       var row = a.closest('.dashboard-btn') || a;
-      row.style.display = knownFree ? 'none' : '';
+      row.style.display = '';
+      var pill = row.querySelector('.lok-nav-lock');
+      if (knownFree && !pill) {
+        pill = document.createElement('span'); pill.className = 'lok-nav-lock';
+        // Text only: with the lock glyph the pill was 68px and 'Marketing' clipped
+        // by a pixel at the sidebar's 220px; the grey plan tag reads as locked on its own.
+        pill.textContent = 'Featured'; pill.setAttribute('aria-label', 'Featured plan feature');
+        row.appendChild(pill);
+      } else if (!knownFree && pill) pill.parentNode.removeChild(pill);
     });
   }
 
@@ -354,48 +369,146 @@
   // #76: person-first naming — the sidebar's native "My Listing" item reads
   // "My Storefront" (Francesca 2026-07-19). Static Webflow markup on every
   // dashboard page, so the rename lives here (this script loads on them all).
+  // F 2026-09-17 (menu regroup): 'View storefront' — the row leaves the
+  // dashboard (lokali-dashboard.js rewrites it to the live /{slug} URL and
+  // opens a new tab), so the label says so and carries an external mark.
   function renameMyListing() {
     var items = document.querySelectorAll('strong.dashboard-menu');
     for (var i = 0; i < items.length; i++) {
-      if ((items[i].textContent || '').trim() === 'My Listing') items[i].textContent = 'My Storefront';
+      var t = (items[i].textContent || '').trim();
+      if (t === 'My Listing' || t === 'My Storefront') items[i].textContent = 'View storefront';
     }
   }
 
-  // F 2026-08-29: the read-only surfaces sink to the BOTTOM of the sidebar —
-  // My Storefront, Analytics and Leads ask nothing of the vendor, so the
-  // actionable pages (Profile/Services/Products/Availability/Marketing) stay
-  // together up top. Matched by menu LABEL, not href: the storefront link is
-  // runtime-rewritten to the vendor's live /{slug} URL. The mobile drawer
-  // slides this same DOM, so one reorder covers both surfaces.
-  function sinkReadOnlyMenuItems() {
-    // Anchor on the Dashboard link's parent (all menu items share it). Match by
-    // HREF where stable, by LABEL where the href is runtime-rewritten (the
-    // storefront link becomes the vendor's live /{slug} URL). NOT by
-    // strong.dashboard-menu — the Leads/Availability items carry no such
-    // element (that miss shipped in v1.4.345 and left Leads un-sunk).
+  // F 2026-09-17 (MENU REGROUP, mockup tab F): the flat nine-item list becomes
+  //   Dashboard
+  //   YOUR STOREFRONT  Profile · Services · Products · Availability · View storefront ↗
+  //   GROW             Leads (unread badge) · Analytics · Marketing (Featured pill on Free)
+  // Supersedes the 2026-08-29 "sink read-only rows to the bottom" rule: that was
+  // a code distinction (read-only vs edit), not a vendor one — Leads is the
+  // reason most vendors open the dashboard. Rows are MOVED, never rebuilt, so
+  // Webflow's w--current highlight and every href keep working; the mobile
+  // drawer slides this same DOM, so one regroup covers both surfaces.
+  // Matched by href where stable and by label where the href is runtime-
+  // rewritten (the storefront link becomes the live /{slug} URL). Idempotent.
+  var NAV_CSS =
+    '.lok-nav-grp{font-family:\'Plus Jakarta Sans\',sans-serif;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#8E8BA6;padding:14px 8px 5px;line-height:1;}' +
+    // Rows span the sidebar (Webflow lays them out shrink-to-fit, which put the
+    // badge right after the word and squeezed the Marketing row); one type ramp
+    // for every row — the Availability/Leads rows carry a plain .text-block-17
+    // instead of strong.dashboard-menu and rendered a size larger.
+    '.div-block-28{align-items:stretch!important;}' +
+    '.div-block-28 .dashboard-btn{position:relative;width:100%;box-sizing:border-box;display:flex;align-items:center;}' +
+    '.div-block-28 .dashboard-btn .text-block-17{flex:1 1 auto;min-width:0;font-family:\'Plus Jakarta Sans\',sans-serif;font-size:16px;font-weight:500;color:#1A1829;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}' +
+    '.div-block-28 .dashboard-btn strong.dashboard-menu{font-size:16px;font-weight:500;}' +
+    '.section-11 .dashboard-btn.w--current .text-block-17{color:#6002EE;}' +
+    '.lok-nav-badge{margin-left:auto;min-width:20px;height:20px;padding:0 6px;border-radius:100px;background:#6002EE;color:#fff;' +
+      'font-family:\'Plus Jakarta Sans\',sans-serif;font-size:11.5px;font-weight:700;line-height:20px;text-align:center;flex:0 0 auto;}' +
+    '.lok-nav-lock{margin-left:auto;display:inline-flex;align-items:center;gap:3px;font-family:\'Plus Jakarta Sans\',sans-serif;font-size:10px;font-weight:700;' +
+      'color:#6E6A85;background:#EEEDF6;border-radius:100px;padding:2px 6px;flex:0 0 auto;line-height:1.4;}' +
+    '.div-block-28 .dashboard-btn strong.dashboard-menu{margin-right:6px;}' +
+    '.div-block-28 .dashboard-btn .icon-div{flex:0 0 auto;}' +
+    '.div-block-28 .dashboard-btn .text-block-17 strong{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}' +
+    '.lok-nav-ext{display:inline-block;width:11px;height:11px;margin-left:6px;vertical-align:-1px;color:#8E8BA6;}' +
+    '.lok-nav-ext svg{width:11px;height:11px;fill:currentColor;display:block;}' +
+    // Mobile: the hamburger (built by lokali-dashboard-mobile-nav.js) gets a dot
+    // while Leads has unread — the drawer is closed, so the badge alone is unseen.
+    '#lok-ham.lok-unread::after{content:"";position:absolute;top:7px;right:7px;width:9px;height:9px;border-radius:50%;background:#FF8D00;border:2px solid #fff;}' +
+    '#lok-ham.lok-unread{position:relative;}';
+  // Font Awesome Free 6 solid 'arrow-up-right-from-square' (CC BY 4.0).
+  var EXT_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><path d="M320 0c-17.7 0-32 14.3-32 32s14.3 32 32 32h82.7L201.4 265.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L448 109.3V192c0 17.7 14.3 32 32 32s32-14.3 32-32V32c0-17.7-14.3-32-32-32H320zM80 32C35.8 32 0 67.8 0 112V432c0 44.2 35.8 80 80 80H400c44.2 0 80-35.8 80-80V320c0-17.7-14.3-32-32-32s-32 14.3-32 32V432c0 8.8-7.2 16-16 16H80c-8.8 0-16-7.2-16-16V112c0-8.8 7.2-16 16-16H192c17.7 0 32-14.3 32-32s-14.3-32-32-32H80z"/></svg>';
+
+  function navRows() {
     var dash = document.querySelector('a[href="/vendor-dashboard/dashboard"]');
-    if (!dash || !dash.parentNode) return;
+    if (!dash || !dash.parentNode) return null;
     var parent = dash.parentNode;
+    var out = { parent: parent, dashboard: dash };
     var anchors = parent.querySelectorAll('a');
-    var found = [];
     for (var i = 0; i < anchors.length; i++) {
       var a = anchors[i];
-      if (a.parentNode !== parent) continue;
+      if (a.parentNode !== parent || a === dash) continue;
       var t = (a.textContent || '').trim();
       var href = a.getAttribute('href') || '';
-      var o = 0;
-      if (t === 'My Storefront' || t === 'My Listing') o = 1;
-      else if (href.indexOf('/vendor-dashboard/analytics') === 0 || t === 'Analytics') o = 2;
-      else if (href.indexOf('/vendor-dashboard/leads') === 0 || t === 'Leads') o = 3;
-      if (o) found.push({ a: a, o: o });
+      if (href.indexOf('/vendor-dashboard/profile') === 0) out.profile = a;
+      else if (href.indexOf('/vendor-dashboard/services') === 0) out.services = a;
+      else if (href.indexOf('/vendor-dashboard/products') === 0) out.products = a;
+      else if (href.indexOf('/vendor-dashboard/availability') === 0) out.availability = a;
+      else if (href.indexOf('/vendor-dashboard/marketing') === 0) out.marketing = a;
+      else if (href.indexOf('/vendor-dashboard/analytics') === 0 || t === 'Analytics') out.analytics = a;
+      else if (href.indexOf('/vendor-dashboard/leads') === 0 || t === 'Leads') out.leads = a;
+      else if (href.indexOf('view-listing') >= 0 || /^(View storefront|My Storefront|My Listing)$/.test(t)) out.storefront = a;
     }
-    found.sort(function (x, y) { return x.o - y.o; });
-    found.forEach(function (f) { parent.appendChild(f.a); });
+    return out;
+  }
+
+  function groupMenuItems() {
+    var r = navRows();
+    if (!r) return;
+    if (!document.getElementById('lok-nav-css')) {
+      var st = document.createElement('style'); st.id = 'lok-nav-css'; st.textContent = NAV_CSS;
+      document.head.appendChild(st);
+    }
+    var parent = r.parent;
+    function label(key, text) {
+      var el = parent.querySelector('.lok-nav-grp[data-grp="' + key + '"]');
+      if (!el) {
+        el = document.createElement('div'); el.className = 'lok-nav-grp'; el.setAttribute('data-grp', key);
+        el.textContent = text;
+      }
+      parent.appendChild(el);
+    }
+    function move(a) { if (a) parent.appendChild(a); }
+    // Order is the append order; every node is moved, never cloned.
+    move(r.dashboard);
+    label('store', 'Your storefront');
+    move(r.profile); move(r.services); move(r.products); move(r.availability); move(r.storefront);
+    label('grow', 'Grow');
+    move(r.leads); move(r.analytics); move(r.marketing);
+    // External mark on the storefront row (its href is rewritten to the live
+    // storefront by lokali-dashboard.js, which also sets target=_blank).
+    if (r.storefront && !r.storefront.querySelector('.lok-nav-ext')) {
+      var lbl = r.storefront.querySelector('strong.dashboard-menu') || r.storefront.querySelector('.text-block-17');
+      if (lbl) {
+        var ext = document.createElement('span'); ext.className = 'lok-nav-ext'; ext.innerHTML = EXT_SVG;
+        lbl.appendChild(ext);
+      }
+      r.storefront.setAttribute('rel', 'noopener');
+    }
+  }
+
+  // Unread-leads badge on the Leads row (+ a dot on the mobile hamburger).
+  // Same figure the dashboard home's Leads tile shows (leads.analytics totals.unread).
+  function setUnreadBadge(n) {
+    var r = navRows(); if (!r || !r.leads) return;
+    var b = r.leads.querySelector('.lok-nav-badge');
+    if (n > 0) {
+      if (!b) { b = document.createElement('span'); b.className = 'lok-nav-badge'; r.leads.appendChild(b); }
+      b.textContent = n > 99 ? '99+' : String(n);
+      b.setAttribute('aria-label', n + ' unread');
+    } else if (b) b.parentNode.removeChild(b);
+    var tries = 0;
+    (function mark() {
+      var ham = document.getElementById('lok-ham');
+      if (ham) { ham.classList.toggle('lok-unread', n > 0); return; }
+      if (tries++ < 20) setTimeout(mark, 500);
+    })();
+  }
+  function fetchUnread() {
+    var A = window.LokaliAPI;
+    if (!A || !A.leads || !A.leads.analytics) return;
+    try {
+      A.leads.analytics().then(function (res) {
+        var d = res && !res.error ? (res.data != null ? res.data : res) : null;
+        var n = d && d.totals ? Number(d.totals.unread) || 0 : 0;
+        setUnreadBadge(n);
+      }).catch(function () {});
+    } catch (e) {}
   }
 
   function init() {
     renameMyListing(); // runs page-wide even when the chip below is absent
-    sinkReadOnlyMenuItems();
+    groupMenuItems();
+    whenApi(fetchUnread);
     // Target ONLY the native dashboard-sidebar chip. The header account menu
     // (lokali-auth-nav.js) reuses the same .lok-acct/.lok-acct-name classes but
     // marks its wrapper with data-lok-acct="1" — exclude it, or this would
