@@ -312,7 +312,8 @@
   // ── Greeting: rotates every load, time-of-day aware, never repeats the
   // previous line (F 2026-09-17: "like Claude does it"). Greets the PERSON
   // when Meet the Vendor has a first name, else the business.
-  var GREETINGS = ['Welcome back', 'Good to see you', 'Nice to have you back', 'Hello again', 'Back at it', 'Ready when you are', 'Let’s see what’s new', 'Glad you’re here', 'Hi there', 'Look who’s back'];
+  var GREETINGS = ['Welcome back', 'Good to see you', 'Nice to have you back', 'Hello again', 'Back at it', 'Ready when you are', 'Let’s see what’s new', 'Glad you’re here', 'Hi there', 'Look who’s back',
+    'Good to have you here', 'There you are', 'Welcome in', 'Hey', 'Happy to see you', 'Right on time', 'Let’s get to it', 'Welcome home', 'Good things ahead', 'Off we go'];
   var GREET_KEY = 'lokali_greet_last';
   function pickGreeting() {
     var h = new Date().getHours();
