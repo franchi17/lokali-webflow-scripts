@@ -413,8 +413,11 @@
     '.lok-nav-ext svg{width:11px;height:11px;fill:currentColor;display:block;}' +
     // Mobile: the hamburger (built by lokali-dashboard-mobile-nav.js) gets a dot
     // while Leads has unread — the drawer is closed, so the badge alone is unseen.
-    '#lok-ham.lok-unread::after{content:"";position:absolute;top:7px;right:7px;width:9px;height:9px;border-radius:50%;background:#FF8D00;border:2px solid #fff;}' +
-    '#lok-ham.lok-unread{position:relative;}';
+    // The bubble carries the NUMBER (F 2026-09-17: a bare dot said nothing about what
+    // it was or how to clear it) and the hamburger's aria-label / title explain it.
+    '#lok-ham{position:relative;}' +
+    '#lok-ham .lok-ham-n{position:absolute;top:-5px;right:-5px;min-width:18px;height:18px;padding:0 5px;border-radius:100px;background:#FF8D00;color:#fff;' +
+      'font-family:\'Plus Jakarta Sans\',sans-serif;font-size:11px;font-weight:800;line-height:18px;text-align:center;border:2px solid #F7F6FC;box-sizing:content-box;pointer-events:none;}';
   // Font Awesome Free 6 solid 'arrow-up-right-from-square' (CC BY 4.0).
   var EXT_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><path d="M320 0c-17.7 0-32 14.3-32 32s14.3 32 32 32h82.7L201.4 265.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L448 109.3V192c0 17.7 14.3 32 32 32s32-14.3 32-32V32c0-17.7-14.3-32-32-32H320zM80 32C35.8 32 0 67.8 0 112V432c0 44.2 35.8 80 80 80H400c44.2 0 80-35.8 80-80V320c0-17.7-14.3-32-32-32s-32 14.3-32 32V432c0 8.8-7.2 16-16 16H80c-8.8 0-16-7.2-16-16V112c0-8.8 7.2-16 16-16H192c17.7 0 32-14.3 32-32s-14.3-32-32-32H80z"/></svg>';
 
@@ -484,13 +487,23 @@
     if (n > 0) {
       if (!b) { b = document.createElement('span'); b.className = 'lok-nav-badge'; r.leads.appendChild(b); }
       b.textContent = n > 99 ? '99+' : String(n);
-      b.setAttribute('aria-label', n + ' unread');
+      b.setAttribute('aria-label', n + (n === 1 ? ' lead needs' : ' leads need') + ' a reply');
+      b.setAttribute('title', 'Needs a reply');
     } else if (b) b.parentNode.removeChild(b);
     var tries = 0;
     (function mark() {
       var ham = document.getElementById('lok-ham');
-      if (ham) { ham.classList.toggle('lok-unread', n > 0); return; }
-      if (tries++ < 20) setTimeout(mark, 500);
+      if (!ham) { if (tries++ < 20) setTimeout(mark, 500); return; }
+      var bub = ham.querySelector('.lok-ham-n');
+      if (n > 0) {
+        if (!bub) { bub = document.createElement('span'); bub.className = 'lok-ham-n'; bub.setAttribute('aria-hidden', 'true'); ham.appendChild(bub); }
+        bub.textContent = n > 99 ? '99+' : String(n);
+        ham.setAttribute('aria-label', 'Menu, ' + n + (n === 1 ? ' lead needs' : ' leads need') + ' a reply');
+        ham.setAttribute('title', n + (n === 1 ? ' lead needs' : ' leads need') + ' a reply. Reply or close it on Leads to clear this.');
+      } else {
+        if (bub) bub.parentNode.removeChild(bub);
+        ham.setAttribute('aria-label', 'Menu'); ham.removeAttribute('title');
+      }
     })();
   }
   function fetchUnread() {

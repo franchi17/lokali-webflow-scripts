@@ -1100,7 +1100,11 @@
           var payEvents = allEvents.filter(isPaymentEvent);
           var events = allEvents.filter(function (e) { return !isPaymentEvent(e); });
           var views = normalizeTs(pv.data || []);
-          var unread = inquiries.filter(function (i) { return i.is_read !== true; }).length;
+          // 'unread' = NEEDS A REPLY (status new/null), not is_read: nothing ever
+          // wrote is_read, so the old count could never clear and the dashboard
+          // tile + sidebar badge + hamburger dot stayed lit forever (F 2026-09-17).
+          // Replying, marking replied, or closing on the Leads page clears it.
+          var unread = inquiries.filter(function (i) { return !i.status || i.status === 'new'; }).length;
           function inWindow(r) { return typeof r.created_at === 'number' ? r.created_at >= winStart : true; }
           return {
             data: {

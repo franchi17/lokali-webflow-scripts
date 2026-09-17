@@ -112,9 +112,20 @@
     '#lok-leads-page .lq-when{font-size:12px;color:' + GRAY + ';white-space:nowrap;}',
     '#lok-leads-page .lq-step{display:inline-flex;background:' + SNOW + ';border:1px solid ' + BORDER + ';border-radius:9px;padding:2px;gap:2px;}',
     '#lok-leads-page .lq-step button{font:700 11px/1.2 ' + FONT + ';padding:5px 9px;border-radius:7px;color:' + DUSK + ';cursor:pointer;background:transparent;border:none;}',
-    '#lok-leads-page .lq-step button.on{background:#fff;color:' + INK + ';box-shadow:0 1px 3px rgba(26,24,41,.12);}',
-    '#lok-leads-page .lq-step button.won.on{background:' + GREEN_L + ';color:' + GREEN + ';}',
-    '#lok-leads-page .lq-step button.closed.on{background:#EEEDF6;color:' + DUSK + ';}',
+    // Active step is FILLED so the state reads at a glance (F 2026-09-17: the white-on-
+    // white 'on' state was invisible): replied = violet, won = green, closed = dusk.
+    '#lok-leads-page .lq-step button.on{font-weight:800;box-shadow:none;}',
+    '#lok-leads-page .lq-step button.replied.on{background:' + VIOLET + ';color:#fff;}',
+    '#lok-leads-page .lq-step button.won.on{background:' + GREEN + ';color:#fff;}',
+    '#lok-leads-page .lq-step button.closed.on{background:' + DUSK + ';color:#fff;}',
+    // Closed group: folded by default, one line with a Show/Hide toggle
+    '#lok-leads-page .lq-fold{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid ' + BORDER + ';border-radius:12px;padding:12px 14px;margin-top:6px;}',
+    '#lok-leads-page .lq-fold b{font-size:13.5px;color:' + INK + ';}',
+    '#lok-leads-page .lq-fold span{font-size:12px;color:' + GRAY + ';}',
+    '#lok-leads-page .lq-fold button{margin-left:auto;font:700 12.5px/1.2 ' + FONT + ';color:' + VIOLET + ';background:' + VIOLET_L + ';border:none;border-radius:8px;padding:8px 12px;cursor:pointer;}',
+    '#lok-leads-page .lq-closed .lq-row{opacity:.85;}',
+    '#lok-leads-page .lq-del{font:600 12px/1.2 ' + FONT + ';color:' + GRAY + ';background:none;border:1px solid ' + BORDER + ';border-radius:8px;padding:6px 10px;cursor:pointer;white-space:nowrap;}',
+    '#lok-leads-page .lq-del.arm{color:#fff;background:#B42318;border-color:#B42318;}',
     '#lok-leads-page .lq-step button:focus-visible{outline:2px solid ' + VIOLET + ';outline-offset:1px;}',
     // channels
     '#lok-leads-page .lq-chs{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;}',
@@ -271,8 +282,16 @@
       l.prior = prior;
     });
     var repeatN = inquiries.filter(function (l) { return l.prior.length; }).length;
-    var needs = inquiries.filter(function (l) { return l.status === 'new'; }).sort(function (a, b) { return a.t - b.t; });
-    var rest = inquiries.filter(function (l) { return l.status !== 'new'; }).sort(function (a, b) { return b.t - a.t; });
+    // Three groups: needs a reply (new, oldest first) / everything else (replied,
+    // won) / closed (folded away, F 2026-09-17: 'archive, delete or hide closed').
+    var needs, rest, closed;
+    function partition() {
+      needs = inquiries.filter(function (l) { return l.status === 'new'; }).sort(function (a, b) { return a.t - b.t; });
+      rest = inquiries.filter(function (l) { return l.status !== 'new' && l.status !== 'closed'; }).sort(function (a, b) { return b.t - a.t; });
+      closed = inquiries.filter(function (l) { return l.status === 'closed'; }).sort(function (a, b) { return b.t - a.t; });
+    }
+    partition();
+    var showClosed = false;
     var rt = replyTime(inquiries);
 
     mount.innerHTML = '';
@@ -325,8 +344,10 @@
     // ── needs a reply ──
     var needsHost = el('div');
     var restHost = el('div');
+    var closedHost = el('div');
     mount.appendChild(needsHost);
     mount.appendChild(restHost);
+    mount.appendChild(closedHost);
 
     function paintNeeds() {
       needsHost.innerHTML = '';
@@ -352,6 +373,22 @@
       rest.forEach(function (l) { list.appendChild(leadRow(l)); });
       restHost.appendChild(list);
     }
+    function paintClosed() {
+      closedHost.innerHTML = '';
+      if (!closed.length) return;
+      var fold = el('div', 'lq-fold');
+      fold.appendChild(html('b', null, 'Closed'));
+      fold.appendChild(el('span', null, closed.length + (closed.length === 1 ? ' lead' : ' leads') + ' you have finished with. Reopen one with the buttons, or delete it for good.'));
+      var tg = el('button', null, showClosed ? 'Hide' : 'Show'); tg.type = 'button';
+      tg.setAttribute('aria-expanded', showClosed ? 'true' : 'false');
+      tg.addEventListener('click', function () { showClosed = !showClosed; paintClosed(); });
+      fold.appendChild(tg);
+      closedHost.appendChild(fold);
+      if (!showClosed) return;
+      var list = el('div', 'lq-list lq-closed');
+      closed.forEach(function (l) { list.appendChild(leadRow(l, true)); });
+      closedHost.appendChild(list);
+    }
     function refreshStats() {
       s1.querySelector('.v').textContent = String(needs.length);
       s1.querySelector('.s').textContent = needs.length
@@ -360,14 +397,20 @@
       s1.className = 'lq-stat' + (needs.length ? ' hot' : '');
     }
     // move a lead between the two groups after a status change
+    function repaintAll() { partition(); paintNeeds(); paintRest(); paintClosed(); refreshStats(); }
     function moveLead(l, status) {
       var prev = l.status; l.status = status;
-      needs = inquiries.filter(function (x) { return x.status === 'new'; }).sort(function (a, b) { return a.t - b.t; });
-      rest = inquiries.filter(function (x) { return x.status !== 'new'; }).sort(function (a, b) { return b.t - a.t; });
-      paintNeeds(); paintRest(); refreshStats();
+      repaintAll();
       setStatus(l, status).then(function (res) {
-        if (res && res.error) { l.status = prev; needs = inquiries.filter(function (x) { return x.status === 'new'; }); rest = inquiries.filter(function (x) { return x.status !== 'new'; }); paintNeeds(); paintRest(); refreshStats(); }
+        if (res && res.error) { l.status = prev; repaintAll(); }
       });
+    }
+    // Delete = only from the Closed group, two taps (Delete -> Delete for good),
+    // and only when the client exposes it (the DELETE policy is SQL-gated).
+    function deleteLead(l) {
+      var A = window.LokaliAPI && window.LokaliAPI.leads;
+      if (!A || typeof A.deleteInquiry !== 'function') return Promise.resolve({ error: 'unavailable' });
+      return A.deleteInquiry(l.id).then(function (res) { return res || {}; }).catch(function (e) { return { error: e }; });
     }
 
     function leadCard(l) {
@@ -417,7 +460,7 @@
       return card;
     }
 
-    function leadRow(l) {
+    function leadRow(l, inClosed) {
       var row = el('div', 'lq-row');
       row.appendChild(html('div', 'lq-ic', strokeIcon(CH.inquiry.icon)));
       var body = el('div');
@@ -433,22 +476,35 @@
       var step = el('div', 'lq-step'); step.setAttribute('role', 'group'); step.setAttribute('aria-label', 'Status');
       ['replied', 'won', 'closed'].forEach(function (s) {
         var b = el('button', s + (l.status === s ? ' on' : ''), s.charAt(0).toUpperCase() + s.slice(1)); b.type = 'button';
+        b.setAttribute('aria-pressed', l.status === s ? 'true' : 'false');
         b.addEventListener('click', function () {
           if (l.status === s) return;
-          var prev = l.status; l.status = s;
-          Array.prototype.forEach.call(step.children, function (x) { x.classList.toggle('on', x === b); });
-          setStatus(l, s).then(function (res) {
-            if (res && res.error) { l.status = prev; Array.prototype.forEach.call(step.children, function (x) { x.classList.toggle('on', x.classList.contains(prev)); }); }
-          });
+          moveLead(l, s);   // repaints every group: Closed <-> Everything else
         });
         step.appendChild(b);
       });
       row.appendChild(step);
+      if (inClosed && window.LokaliAPI && window.LokaliAPI.leads && typeof window.LokaliAPI.leads.deleteInquiry === 'function') {
+        row.style.gridTemplateColumns = '28px minmax(0,1fr) auto auto auto';
+        var d = el('button', 'lq-del', 'Delete'); d.type = 'button'; d.setAttribute('aria-label', 'Delete this lead for good');
+        var armed = false, timer = null;
+        d.addEventListener('click', function () {
+          if (!armed) { armed = true; d.classList.add('arm'); d.textContent = 'Delete for good'; timer = setTimeout(function () { armed = false; d.classList.remove('arm'); d.textContent = 'Delete'; }, 4000); return; }
+          clearTimeout(timer); d.disabled = true; d.textContent = 'Deleting';
+          deleteLead(l).then(function (res) {
+            if (res && res.error) { d.disabled = false; armed = false; d.classList.remove('arm'); d.textContent = 'Delete'; return; }
+            inquiries = inquiries.filter(function (x) { return x !== l; });
+            repaintAll();
+          });
+        });
+        row.appendChild(d);
+      }
       return row;
     }
 
     paintNeeds();
     paintRest();
+    paintClosed();
 
     // ── how people reached you (30 days) ──
     var by = {};
