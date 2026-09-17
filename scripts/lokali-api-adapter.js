@@ -753,6 +753,22 @@
     // card shows it as the small avatar, and the cover's job is their WORK.
     // Returns { data: { covers: { [vendors_id]: {url, fx, fy, list} } } } —
     // url/fx/fy = the picked cover (pin honored); list = the whole candidate
+    // Shopper trust signals (2026-09-17): { stats: { [vendorId]: {saves, recs,
+    // reply_fast, ships, delivers, pickup, remote} } }. Never rejects and never
+    // errors — an absent RPC (pre-SQL tag) or a failed call yields an empty
+    // map, so cards simply render without the second pill row.
+    trustStats: function (ids) {
+      var empty = { data: { stats: {} }, error: null, status: 200 };
+      var S = window.LokaliSupabaseAPI;
+      if (!Array.isArray(ids) || !ids.length || !S || !S.vendors || typeof S.vendors.trustStats !== 'function') return Promise.resolve(empty);
+      var idNums = ids.map(Number).filter(function (n) { return !isNaN(n); });
+      return S.vendors.trustStats(idNums).then(function (res) {
+        var d = res && res.data, map = {};
+        if (!res || res.error || !d || d.ok !== true || !Array.isArray(d.stats)) return empty;
+        d.stats.forEach(function (r) { if (r && r.id != null) map[String(r.id)] = r; });
+        return { data: { stats: map }, error: null, status: 200 };
+      }, function () { return empty; });
+    },
     // chain (pick first, deduped by URL, capped) for the Pro/Featured card
     // carousel (F 2026-09-01). Old callers reading only url/fx/fy are
     // untouched.

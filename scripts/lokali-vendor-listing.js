@@ -901,6 +901,104 @@
   // card instantly). Spec: docs/neighbor-referral-spec.md. Design: mockup
   // Variant A + A2 (F-approved 2026-09-01). All injected copy: PJS, no dark
   // surfaces, vendor-authored text via textContent only.
+  // ---- trust strip (F 2026-09-17, shopper mockup C) --------------------------
+  // One line under the hero with up to three EARNED segments, each with a plain
+  // explanation: "Verified person" (the owner passed Stripe Identity; people,
+  // never businesses), "Reviews from real contacts only" (the vendor has at
+  // least one public recommendation; the gate itself is fn_reviews.sql) and
+  // "Replies within a day" (vendor_trust_stats: >= 5 replies in 90 days with a
+  // median under 24h; a flag, never a duration). Nothing earned = no strip.
+  // Phones (F: collapsed): the three titles on one line + a "Why trust this?"
+  // toggle that opens the explanations. The Verified highlight row below the
+  // hero is hidden while the strip shows it, so the fact is not stated twice.
+  var TRUST_SVG = {
+    id:      '<svg viewBox="0 0 576 512" aria-hidden="true"><path fill="currentColor" d="M0 96l576 0c0-35.3-28.7-64-64-64L64 32C28.7 32 0 60.7 0 96zm0 32L0 416c0 35.3 28.7 64 64 64l448 0c35.3 0 64-28.7 64-64l0-288L0 128zM64 405.3c0-29.5 23.9-53.3 53.3-53.3l117.3 0c29.5 0 53.3 23.9 53.3 53.3c0 5.9-4.8 10.7-10.7 10.7L74.7 416c-5.9 0-10.7-4.8-10.7-10.7zM176 192a64 64 0 1 1 0 128 64 64 0 1 1 0-128zm176 16c0-8.8 7.2-16 16-16l128 0c8.8 0 16 7.2 16 16s-7.2 16-16 16l-128 0c-8.8 0-16-7.2-16-16zm0 64c0-8.8 7.2-16 16-16l128 0c8.8 0 16 7.2 16 16s-7.2 16-16 16l-128 0c-8.8 0-16-7.2-16-16zm0 64c0-8.8 7.2-16 16-16l128 0c8.8 0 16 7.2 16 16s-7.2 16-16 16l-128 0c-8.8 0-16-7.2-16-16z"/></svg>',
+    comment: '<svg viewBox="0 0 512 512" aria-hidden="true"><path fill="currentColor" d="M512 240c0 114.9-114.6 208-256 208c-37.1 0-72.3-6.4-104.1-17.9c-11.9 8.7-31.3 20.6-54.3 30.6C73.6 471.1 44.7 480 16 480c-6.5 0-12.3-3.9-14.8-9.9c-2.5-6-1.1-12.8 3.4-17.4c0 0 0 0 0 0s0 0 0 0s0 0 0 0c0 0 0 0 0 0l.3-.3c.3-.3 .7-.7 1.3-1.4c1.1-1.2 2.8-3.1 4.9-5.7c4.1-5 9.6-12.4 15.2-21.6c10-16.6 19.5-38.4 21.4-62.9C17.7 326.8 0 285.1 0 240C0 125.1 114.6 32 256 32s256 93.1 256 208z"/></svg>',
+    clock:   '<svg viewBox="0 0 512 512" aria-hidden="true"><path fill="currentColor" d="M256 0a256 256 0 1 1 0 512A256 256 0 1 1 256 0zM232 120V256c0 8 4 15.5 10.7 20l96 64c11 7.4 25.9 4.4 33.3-6.7s4.4-25.9-6.7-33.3L280 243.2V120c0-13.3-10.7-24-24-24s-24 10.7-24 24z"/></svg>'
+  };
+  function injectTrustStyles() {
+    if (document.getElementById('vl-trust-styles')) return;
+    var st = ce('style');
+    st.id = 'vl-trust-styles';
+    st.textContent = [
+      '.vl-trust{font-family:"Plus Jakarta Sans",sans-serif;margin:14px 0 4px;padding:14px 16px;background:#F7F6FC;border:1px solid #EEEDF6;border-radius:14px;}',
+      '.vl-trust-line{display:none;align-items:center;justify-content:space-between;gap:10px;}',
+      '.vl-trust-sum{font-size:13px;font-weight:600;color:#1A1829;line-height:1.4;min-width:0;}',
+      '.vl-trust-sum .dot{color:#B9B5CC;margin:0 5px;}',
+      '.vl-trust-why{font:600 12.5px/1.2 "Plus Jakarta Sans",sans-serif;color:#6002EE;background:none;border:0;padding:6px 0;cursor:pointer;white-space:nowrap;min-height:44px;}',
+      '.vl-trust-cells{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;}',
+      '.vl-trust-cell{display:flex;gap:11px;align-items:flex-start;min-width:0;}',
+      '.vl-trust-ico{width:36px;height:36px;border-radius:10px;background:#EFE5FD;color:#6002EE;display:inline-flex;align-items:center;justify-content:center;flex:none;}',
+      '.vl-trust-ico svg{width:16px;height:16px;}',
+      '.vl-trust-t{display:block;font-size:13.5px;font-weight:700;color:#1A1829;line-height:1.3;}',
+      '.vl-trust-s{display:block;font-size:12.5px;line-height:1.45;color:#4A4761;margin-top:2px;}',
+      '@media (max-width:767px){',
+      '.vl-trust{padding:10px 14px;}',
+      '.vl-trust-line{display:flex;}',
+      '.vl-trust-cells{display:none;grid-template-columns:minmax(0,1fr);gap:12px;padding-top:12px;margin-top:10px;border-top:1px solid #EEEDF6;}',
+      '.vl-trust.open .vl-trust-cells{display:grid;}',
+      '}'
+    ].join('');
+    document.head.appendChild(st);
+  }
+  function loadTrust(vid, v) {
+    if (!ONEPAGE || vid == null) return;
+    var api = window.LokaliAPI && window.LokaliAPI.vendors;
+    if (!api || typeof api.trustStats !== 'function') return; // stale cached adapter: no-op
+    api.trustStats([vid]).then(function (res) {
+      var map = res && res.data && res.data.stats;
+      var t = (map && map[String(vid)]) || null;
+      renderTrustStrip(v, t);
+    }).catch(function () {});
+  }
+  function renderTrustStrip(v, t) {
+    if (document.getElementById('vl-trust')) return;
+    var main = document.querySelector('.vl-op-main');
+    var hero = main && main.querySelector('.vl-hero');
+    if (!main || !hero) return;
+    var segs = [];
+    var verified = !!(v && (v.is_verified || v.identity_status === 'verified'));
+    var owner = String((v && v.owner_name) || '').trim().split(/\s+/)[0] || '';
+    if (verified) segs.push({ k: 'verified', ico: 'id', t: 'Verified person',
+      s: (owner || 'The owner') + ' confirmed their identity with a government ID. Lokali verifies people, not businesses.' });
+    if (t && Number(t.recs) > 0) segs.push({ k: 'reviews', ico: 'comment', t: 'Reviews from real contacts only',
+      s: 'Only shoppers who contacted ' + ((v && v.business_name) || 'this vendor') + ' through Lokali can recommend it. No stars, no anonymous ratings.' });
+    if (t && t.reply_fast === true) segs.push({ k: 'reply', ico: 'clock', t: 'Replies within a day',
+      s: 'Median first reply over the last 90 days. Shown once a vendor has answered five inquiries.' });
+    if (!segs.length) return;
+    injectTrustStyles();
+    var sec = ce('div', 'vl-trust'); sec.id = 'vl-trust';
+    sec.setAttribute('aria-label', 'Why you can trust this storefront');
+    // phone line: titles + Why trust this? toggle
+    var line = ce('div', 'vl-trust-line');
+    var sum = ce('div', 'vl-trust-sum');
+    segs.forEach(function (sg, i) {
+      if (i) { var d = ce('span', 'dot'); d.textContent = '·'; sum.appendChild(d); }
+      sum.appendChild(document.createTextNode(sg.t));
+    });
+    var why = ce('button', 'vl-trust-why'); why.type = 'button'; why.textContent = 'Why trust this?';
+    why.setAttribute('aria-expanded', 'false'); why.setAttribute('aria-controls', 'vl-trust-cells');
+    why.addEventListener('click', function () {
+      var open = sec.classList.toggle('open');
+      why.setAttribute('aria-expanded', open ? 'true' : 'false');
+      why.textContent = open ? 'Hide' : 'Why trust this?';
+    });
+    line.appendChild(sum); line.appendChild(why); sec.appendChild(line);
+    var cells = ce('div', 'vl-trust-cells'); cells.id = 'vl-trust-cells';
+    segs.forEach(function (sg) {
+      var c = ce('div', 'vl-trust-cell'); c.setAttribute('data-trust', sg.k);
+      var ic = ce('span', 'vl-trust-ico'); ic.innerHTML = TRUST_SVG[sg.ico]; // static markup only
+      var tx = ce('div');
+      var tt = ce('b', 'vl-trust-t'); tt.textContent = sg.t; tx.appendChild(tt);
+      var ss = ce('span', 'vl-trust-s'); ss.textContent = sg.s; tx.appendChild(ss);
+      c.appendChild(ic); c.appendChild(tx); cells.appendChild(c);
+    });
+    sec.appendChild(cells);
+    main.insertBefore(sec, hero.nextSibling);
+    // the highlight row says the same thing one block lower — keep one.
+    if (verified) { var hl = document.querySelector('#vl-op-sec-highlights [data-hl="verified"]'); if (hl) hl.style.display = 'none'; }
+  }
+
   var _pairOwnerVid = null;   // set by markPairingOwner() (vendors.me() match)
   var _pairSec = null;        // rendered section, so a late owner mark can mount the i
   var _pairVid = null;
@@ -2808,6 +2906,7 @@
       // server-side for non-entitled vendors; fire-and-forget).
       loadMarketing(vid);
       loadPairing(vid); // #166 neighbor referral card (after Reviews; self-hides on empty RPC)
+      loadTrust(vid, v); // trust strip under the hero (2026-09-17; self-hides when nothing is earned)
       // Log a listing view, deduped per browser session so one visit = one row
       // (the analytics page needs impressions for the views→contacts→inquiries
       // funnel). Fire-and-forget; never blocks render.

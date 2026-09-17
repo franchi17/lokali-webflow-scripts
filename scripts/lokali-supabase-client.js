@@ -390,6 +390,16 @@
 
   window.LokaliSupabaseAPI = {
     vendors: {
+      // Shopper trust signals (2026-09-17): per-vendor AGGREGATES for the
+      // Market cards, the storefront trust strip and Neighbors' picks. Anon
+      // definer RPC (patch_vendor_trust_stats.sql): saves floored under 3,
+      // approved recommendations, replies-within-a-day flag, fulfilment
+      // roll-up of ACTIVE listings. Public vendors only, 60 ids per call.
+      trustStats: function (ids) {
+        return withClient(function (c) {
+          return c.rpc('vendor_trust_stats', { p_vendor_ids: ids });
+        });
+      },
       // RLS returns the row only if it's approved + active (or owned).
       getBySlug: function (slug) {
         return withClient(function (c) {

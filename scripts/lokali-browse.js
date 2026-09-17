@@ -342,6 +342,40 @@
     ".vcard .chip-verified{background:#D2DEFF;color:#1730C9;}",
     ".vcard .chip-new{background:#C6F2DB;color:#11744A;}",
     ".vcard .chip-spotlight{background:#E2D2FF;color:#5A00E0;}",
+    // Away chip (v1.4.444 shipped it without a rule, so it inherited nothing).
+    ".vcard .chip-away{background:#FFF2DF;color:#B8471B;}",
+    // Second pill row (2026-09-17): one trust pill + one fulfilment chip.
+    ".vcard-signals{display:flex;flex-wrap:wrap;gap:6px;margin:1px 0 7px;}",
+    ".sig-pill{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;border-radius:100px;padding:3px 9px;line-height:1.3;}",
+    ".sig-ico{display:inline-flex;width:11px;height:11px;}.sig-ico svg{width:11px;height:11px;display:block;}",
+    ".sig-trust{background:#FDE8EF;color:#B3184E;}",
+    ".sig-get{background:#F3F2F8;color:#4A4761;}",
+    // Start-here band above the grid (occasions / new this week / neighbors' picks).
+    // Only on the default landing view; hidden as soon as the shopper narrows.
+    "#lk-start{display:none;font-family:'Plus Jakarta Sans',sans-serif;margin:0 0 22px;}",
+    "#lk-start.show{display:block;}",
+    ".lk-st-sec{margin-bottom:20px;}",
+    ".lk-st-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:10px;}",
+    ".lk-st-h{font-size:17px;font-weight:800;color:#1A1829;margin:0;letter-spacing:-.2px;}",
+    ".lk-st-sub{font-size:12.5px;color:#6E6A85;}",
+    ".lk-st-link{font-size:12.5px;font-weight:600;color:#6002EE;background:none;border:0;padding:0;cursor:pointer;font-family:inherit;white-space:nowrap;}",
+    ".lk-st-tiles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;}",
+    ".lk-st-tile{display:flex;flex-direction:column;gap:7px;padding:13px 13px 12px;border-radius:13px;border:0;text-align:left;cursor:pointer;font-family:inherit;min-height:44px;}",
+    ".lk-st-tile-ico{width:30px;height:30px;border-radius:9px;background:#fff;display:inline-flex;align-items:center;justify-content:center;}",
+    ".lk-st-tile-ico svg{width:14px;height:14px;}",
+    ".lk-st-tile-t{font-size:13.5px;font-weight:700;color:#1A1829;line-height:1.25;}",
+    ".lk-st-tile-s{font-size:11.5px;color:#4A4761;line-height:1.35;}",
+    ".lk-st-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;}",
+    ".lk-st-mini{display:flex;gap:10px;align-items:center;padding:10px 12px;background:#fff;border:1px solid #EEEDF6;border-radius:12px;text-decoration:none;min-width:0;}",
+    ".lk-st-mini .vcard-avatar{width:40px;height:40px;font-size:13px;}",
+    ".lk-st-mini-txt{display:flex;flex-direction:column;gap:2px;min-width:0;}",
+    ".lk-st-mini-n{font-size:13.5px;font-weight:700;color:#1A1829;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}",
+    ".lk-st-mini-c{font-size:11.5px;color:#6E6A85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}",
+    ".lk-st-mini-s{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:600;}",
+    ".lk-st-mini-s .sig-ico svg{width:10px;height:10px;}",
+    ".lk-st-mini-s.saved{color:#B3184E;}.lk-st-mini-s.new{color:#11744A;}",
+    "@media screen and (max-width:991px){.lk-st-tiles{grid-template-columns:repeat(3,minmax(0,1fr));}.lk-st-row{grid-template-columns:repeat(2,minmax(0,1fr));}}",
+    "@media screen and (max-width:560px){.lk-st-tiles{grid-template-columns:repeat(2,minmax(0,1fr));}.lk-st-row{grid-template-columns:minmax(0,1fr);}.lk-st-head{flex-wrap:wrap;}}",
     // #96 offerings — need-first: shoppers search for a service, not a business,
     // so this is the strongest text after the name. `.match` = the label that
     // made this card a search hit (promoted to front, violet).
@@ -476,6 +510,7 @@
   var _renderedCards = [];
   var _listingsByVendor = {}; // #96: vendor id -> active listing names (services first)
   var _coversByVendor = {};   // card redesign: vendor id -> {url, fx, fy} (adapter vendors.covers)
+  var _trustByVendor = {};    // shopper trust signals (2026-09-17): vendor id -> vendor_trust_stats row
 
   var activeLocationId = 'all';
   var activeCategory = 'all';
@@ -850,6 +885,7 @@
       updateCategoryCounts();
       applyFilters();
       fetchCovers();
+      fetchTrustStats();
     }, function (err) {
       console.warn('[lokali-browse] vendors fetch rejected (attempt ' + attempt + '):', err);
       return retryOrGiveUp();
@@ -876,6 +912,72 @@
         if (_allVendors.length) applyFilters();
       }).catch(function () {});
     } catch (e) {}
+  }
+
+  // ── shopper trust signals (F 2026-09-17, "build 1, 2 and 4") ─────────────
+  // One batched anon RPC (vendor_trust_stats, patch_vendor_trust_stats.sql)
+  // returns AGGREGATES only per public vendor: saves (floored to 0 under three),
+  // approved recommendations, a replies-within-a-day flag (>=5 replies in 90
+  // days, median under 24h; never a duration) and the fulfilment roll-up of the
+  // vendor's ACTIVE listings. Non-critical by design: a stale cached adapter or
+  // a pre-SQL tag leaves every card without the second pill row and hides
+  // Neighbors' picks. Chunked at the RPC's 60-id cap.
+  function fetchTrustStats() {
+    try {
+      var api = window.LokaliAPI && window.LokaliAPI.vendors;
+      if (!api || typeof api.trustStats !== 'function') return;
+      var ids = _allVendors.map(function (v) { return v.id; }).filter(function (x) { return x != null; });
+      if (!ids.length) return;
+      var chunks = [];
+      for (var i = 0; i < ids.length; i += 60) chunks.push(ids.slice(i, i + 60));
+      Promise.all(chunks.map(function (ch) { return api.trustStats(ch); })).then(function (outs) {
+        var map = {}, any = false;
+        outs.forEach(function (out) {
+          var st = out && out.data && out.data.stats;
+          if (!st || (out && out.error)) return;
+          Object.keys(st).forEach(function (k) { map[k] = st[k]; any = true; });
+        });
+        if (!any) return;
+        _trustByVendor = map;
+        if (_allVendors.length) applyFilters();
+      }).catch(function () {});
+    } catch (e) {}
+  }
+  function vTrust(v) { return (v && v.id != null && _trustByVendor[String(v.id)]) || null; }
+  // Inline FA Free 6 glyphs (house rule: no emoji, no third-party icon fonts).
+  var SIG_SVG = {
+    heart:  '<svg viewBox="0 0 512 512" aria-hidden="true"><path fill="currentColor" d="M47.6 300.4L228.3 469.1c7.5 7 17.4 10.9 27.7 10.9s20.2-3.9 27.7-10.9L464.4 300.4c30.4-28.3 47.6-68 47.6-109.5v-5.8c0-69.9-50.5-129.5-119.4-141C347 36.5 300.6 51.4 268 84L256 96 244 84c-32.6-32.6-79-47.5-124.6-39.9C50.5 55.6 0 115.2 0 185.1v5.8c0 41.5 17.2 81.2 47.6 109.5z"/></svg>',
+    clock:  '<svg viewBox="0 0 512 512" aria-hidden="true"><path fill="currentColor" d="M256 0a256 256 0 1 1 0 512A256 256 0 1 1 256 0zM232 120V256c0 8 4 15.5 10.7 20l96 64c11 7.4 25.9 4.4 33.3-6.7s4.4-25.9-6.7-33.3L280 243.2V120c0-13.3-10.7-24-24-24s-24 10.7-24 24z"/></svg>',
+    box:    '<svg viewBox="0 0 448 512" aria-hidden="true"><path fill="currentColor" d="M50.7 58.5L0 160H208V32H93.7C75.5 32 58.9 42.3 50.7 58.5zM240 160H448L397.3 58.5C389.1 42.3 372.5 32 354.3 32H240V160zm208 32H0V416c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V192z"/></svg>',
+    truck:  '<svg viewBox="0 0 640 512" aria-hidden="true"><path fill="currentColor" d="M48 0C21.5 0 0 21.5 0 48V368c0 26.5 21.5 48 48 48H64c0 53 43 96 96 96s96-43 96-96H384c0 53 43 96 96 96s96-43 96-96h32c17.7 0 32-14.3 32-32s-14.3-32-32-32V288 256 237.3c0-17-6.7-33.3-18.7-45.3L512 114.7c-12-12-28.3-18.7-45.3-18.7H416V48c0-26.5-21.5-48-48-48H48zM416 160h50.7L544 237.3V256H416V160zM112 416a48 48 0 1 1 96 0 48 48 0 1 1 -96 0zm368-48a48 48 0 1 1 0 96 48 48 0 1 1 0-96z"/></svg>',
+    bag:    '<svg viewBox="0 0 448 512" aria-hidden="true"><path fill="currentColor" d="M160 112c0-35.3 28.7-64 64-64s64 28.7 64 64v48H160V112zm-48 48H48c-26.5 0-48 21.5-48 48V416c0 53 43 96 96 96H352c53 0 96-43 96-96V208c0-26.5-21.5-48-48-48H336V112C336 50.1 285.9 0 224 0S112 50.1 112 112v48zm24 48a24 24 0 1 1 0 48 24 24 0 1 1 0-48zm152 24a24 24 0 1 1 48 0 24 24 0 1 1 -48 0z"/></svg>',
+    laptop: '<svg viewBox="0 0 640 512" aria-hidden="true"><path fill="currentColor" d="M128 32C92.7 32 64 60.7 64 96V352h64V96H512V352h64V96c0-35.3-28.7-64-64-64H128zM19.2 384C8.6 384 0 392.6 0 403.2C0 445.6 34.4 480 76.8 480H563.2c42.4 0 76.8-34.4 76.8-76.8c0-10.6-8.6-19.2-19.2-19.2H19.2z"/></svg>',
+    bolt:   '<svg viewBox="0 0 448 512" aria-hidden="true"><path fill="currentColor" d="M349.4 44.6c5.9-13.7 1.5-29.7-10.6-38.5s-28.6-8-39.9 1.8l-256 224c-10 8.8-13.6 22.9-8.9 35.3S50.7 288 64 288H175.5L98.6 467.4c-5.9 13.7-1.5 29.7 10.6 38.5s28.6 8 39.9-1.8l256-224c10-8.8 13.6-22.9 8.9-35.3s-17.3-20.7-30.6-20.7H272.5L349.4 44.6z"/></svg>'
+  };
+  function sigPill(cls, icon, text, title) {
+    var p = ce('span', 'sig-pill ' + cls);
+    var i = ce('span', 'sig-ico'); i.innerHTML = SIG_SVG[icon] || ''; // static markup only
+    p.appendChild(i);
+    p.appendChild(document.createTextNode(text));
+    if (title) p.title = title;
+    return p;
+  }
+  // Pill budget (F 2026-09-16): at most ONE trust pill (recommendations beat
+  // reply time) and ONE fulfilment chip (the first that applies) per card; the
+  // identity pill (Verified beats New) lives in the name row. Everything else
+  // is on the storefront. Nothing renders without an earned, non-zero input.
+  function signalRow(v) {
+    var t = vTrust(v);
+    if (!t) return null;
+    var row = ce('div', 'vcard-signals');
+    var recs = Number(t.recs) || 0;
+    if (recs > 0) row.appendChild(sigPill('sig-trust', 'heart', 'Recommended by ' + recs + (recs === 1 ? ' neighbor' : ' neighbors'), 'Recommendations from shoppers who contacted this vendor through Lokali'));
+    else if (t.reply_fast === true) row.appendChild(sigPill('sig-trust', 'clock', 'Replies within a day', 'Median first reply over the last 90 days'));
+    if (t.ships === true)         row.appendChild(sigPill('sig-get', 'box', 'Ships', 'Ships orders'));
+    else if (t.delivers === true) row.appendChild(sigPill('sig-get', 'truck', 'Delivers locally', 'Local delivery'));
+    else if (t.pickup === true)   row.appendChild(sigPill('sig-get', 'bag', 'Pickup', 'Pickup available'));
+    else if (t.remote === true)   row.appendChild(sigPill('sig-get', 'laptop', 'Works remotely', 'Available remotely'));
+    return row.childNodes.length ? row : null;
   }
 
   // ── portfolio carousel (F 2026-09-01, Pro/Featured only) ─────────────────
@@ -1282,10 +1384,121 @@
     sortVendors(visible);
     _lastVisibleIds = visible.map(function (v) { return v.id; });
     renderGrid(visible);
+    try { renderStartHere(); } catch (e) {}
     updateCounts(visible.length);
     updateActiveFilters();
     updateMobileIndicator();
     persistState();
+  }
+
+  // ── start-here band (F 2026-09-17, mockup D "Occasions and what's new") ──
+  // Three entry points above the grid on the DEFAULT view only (no search, no
+  // category, no toggles; the neighborhood may be set): occasion tiles that
+  // deep-link INTO the existing search/category filters (no new taxonomy —
+  // each tile is a query the #151 synonyms already answer, or a category),
+  // "New this week" (published_at within 7 days) and "Neighbors' picks"
+  // (saves >= 3 from vendor_trust_stats; the floor is server-side). A strip
+  // with nothing to show is omitted, never a skeleton.
+  var OCCASIONS = [
+    { t: 'Birthdays & parties',  s: 'toppers, cakes, decor, entertainment', q: 'party',   bg: '#FFF2DF', fg: '#9A4A00', ico: 'cake' },
+    { t: 'Weddings & showers',   s: 'dresses, videography, favors',        q: 'wedding', bg: '#EFE5FD', fg: '#4B00B5', ico: 'ring' },
+    { t: 'Holiday gifts',        s: 'handmade, custom, made to order',     cat: 'handcrafted', bg: '#FDE8EF', fg: '#9B1C4B', ico: 'gift' },
+    { t: 'Home refresh',         s: 'painting, cleaning, decorating',      cat: 'home',        bg: '#E7F6EC', fg: '#1E6B3A', ico: 'house' },
+    { t: 'Back to school',       s: 'tutoring, lessons, childcare',        cat: 'children',    bg: '#E6F0FF', fg: '#1E4B9B', ico: 'cap' },
+    { t: 'Starting a business',  s: 'plans, websites, bookkeeping',        cat: 'business',    bg: '#EEEDF6', fg: '#4A4761', ico: 'briefcase' }
+  ];
+  var OCC_SVG = {
+    cake: '<svg viewBox="0 0 448 512" aria-hidden="true"><path fill="currentColor" d="M86.4 5.5L61.8 47.5C58 53.9 56 61.2 56 68.7c0 25 20.3 45.3 45.3 45.3H112c25 0 45.3-20.3 45.3-45.3c0-7.5-2-14.8-5.8-21.2L126.9 5.5C124.5 2.1 120.6 0 116.5 0S108.5 2.1 106.1 5.5L86.4 5.5zM224 0c-2.4 0-4.8 .7-6.9 2l-19.7 41.5C193.6 50 192 57.7 192 65.5c0 25 20.3 45.3 45.3 45.3H240c25 0 45.3-20.3 45.3-45.3c0-7.8-1.6-15.5-5.4-22L260.9 2c-2.1-1.3-4.5-2-6.9-2H224zM331.5 5.5L306.9 47.5c-3.8 6.4-5.8 13.7-5.8 21.2c0 25 20.3 45.3 45.3 45.3H352c25 0 45.3-20.3 45.3-45.3c0-7.5-2-14.8-5.8-21.2L366.9 5.5C364.5 2.1 360.6 0 356.5 0s-8 2.1-10.4 5.5zM96 144c0-8.8-7.2-16-16-16s-16 7.2-16 16v48c-35.3 0-64 28.7-64 64v64c0 8.8 7.2 16 16 16s16-7.2 16-16V256c0-17.7 14.3-32 32-32H384c17.7 0 32 14.3 32 32v64c0 8.8 7.2 16 16 16s16-7.2 16-16V256c0-35.3-28.7-64-64-64V144c0-8.8-7.2-16-16-16s-16 7.2-16 16v48H240V144c0-8.8-7.2-16-16-16s-16 7.2-16 16v48H96V144zM0 400c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V352H0v48z"/></svg>',
+    ring: '<svg viewBox="0 0 512 512" aria-hidden="true"><path fill="currentColor" d="M64 208c0 31.6 12.5 60.3 32.8 81.4c-3.7-10.6-5.8-22.1-5.8-34c0-53 43-96 96-96h48v-32H128C92.7 127.4 64 165.1 64 208zM256 96c-70.7 0-128 57.3-128 128s57.3 128 128 128s128-57.3 128-128S326.7 96 256 96zm0 208c-44.2 0-80-35.8-80-80s35.8-80 80-80s80 35.8 80 80s-35.8 80-80 80zm128-96h-48v32h48c53 0 96 43 96 96c0 11.9-2.1 23.4-5.8 34c20.3-21.1 32.8-49.8 32.8-81.4c0-42.9-28.7-80.6-64-80.6z"/></svg>',
+    gift: '<svg viewBox="0 0 512 512" aria-hidden="true"><path fill="currentColor" d="M190.5 68.8L225.3 128H224 152c-22.1 0-40-17.9-40-40s17.9-40 40-40h2.2c14.9 0 28.8 7.9 36.3 20.8zM64 88c0 14.4 3.5 28 9.6 40H32c-17.7 0-32 14.3-32 32v64c0 17.7 14.3 32 32 32H480c17.7 0 32-14.3 32-32V160c0-17.7-14.3-32-32-32H438.4c6.1-12 9.6-25.6 9.6-40c0-48.6-39.4-88-88-88h-2.2c-31.9 0-61.5 16.9-77.7 44.4L256 85.5l-24.1-41C215.7 16.9 186.1 0 154.2 0H152C103.4 0 64 39.4 64 88zm288 0c0 22.1-17.9 40-40 40H288h-1.3l34.8-59.2C329.1 55.9 342.9 48 357.8 48H360c22.1 0 40 17.9 40 40zM32 288V464c0 26.5 21.5 48 48 48H224V288H32zM288 512H432c26.5 0 48-21.5 48-48V288H288V512z"/></svg>',
+    house: '<svg viewBox="0 0 576 512" aria-hidden="true"><path fill="currentColor" d="M575.8 255.5c0 18-15 32.1-32 32.1h-32l.7 160.2c0 2.7-.2 5.4-.5 8.1V472c0 22.1-17.9 40-40 40H456c-1.1 0-2.2 0-3.3-.1c-1.4 .1-2.8 .1-4.2 .1H416 392c-22.1 0-40-17.9-40-40V448 384c0-17.7-14.3-32-32-32H256c-17.7 0-32 14.3-32 32v64 24c0 22.1-17.9 40-40 40H160 128.1c-1.5 0-3-.1-4.5-.2c-1.2 .1-2.4 .2-3.6 .2H104c-22.1 0-40-17.9-40-40V360c0-.9 0-1.9 .1-2.8V287.6H32c-18 0-32-14-32-32.1c0-9 3-17 10-24L266.4 8c7-7 15-8 22-8s15 2 21 7L564.8 231.5c8 7 12 15 11 24z"/></svg>',
+    cap: '<svg viewBox="0 0 640 512" aria-hidden="true"><path fill="currentColor" d="M320 32c-8.1 0-16.1 1.4-23.7 4.1L15.8 137.4C6.3 140.9 0 149.9 0 160s6.3 19.1 15.8 22.6l57.9 20.9C57.3 229.3 48 259.8 48 291.9v28.1c0 28.4-10.8 57.7-22.3 80.8c-6.5 13-13.9 25.8-22.5 37.6C0 442.7-.9 448.3 .9 453.4s6 8.9 11.2 10.2l64 16c4.2 1.1 8.7 .3 12.4-2s6.3-6.1 7.1-10.4c8.6-42.8 4.3-81.2-2.1-108.7C90.3 344.3 86 329.8 80 316.5V291.9c0-30.2 10.2-58.7 27.9-81.5c12.9-15.5 29.6-28 49.2-35.7l157-61.7c8.2-3.2 17.5 .8 20.7 9s-.8 17.5-9 20.7l-157 61.7c-12.4 4.9-23.3 12.4-32.2 21.6l159.6 57.6c7.6 2.7 15.6 4.1 23.7 4.1s16.1-1.4 23.7-4.1L624.2 182.6c9.5-3.4 15.8-12.5 15.8-22.6s-6.3-19.1-15.8-22.6L343.7 36.1C336.1 33.4 328.1 32 320 32zM128 408c0 35.3 86 72 192 72s192-36.7 192-72L496.7 262.6 354.5 314c-11.1 4-22.8 6-34.5 6s-23.5-2-34.5-6L143.3 262.6 128 408z"/></svg>',
+    briefcase: '<svg viewBox="0 0 512 512" aria-hidden="true"><path fill="currentColor" d="M184 48H328c4.4 0 8 3.6 8 8V96H176V56c0-4.4 3.6-8 8-8zm-56 8V96H64C28.7 96 0 124.7 0 160v96H192 320 512V160c0-35.3-28.7-64-64-64H384V56c0-30.9-25.1-56-56-56H184c-30.9 0-56 25.1-56 56zM512 288H320v32c0 17.7-14.3 32-32 32H224c-17.7 0-32-14.3-32-32V288H0V416c0 35.3 28.7 64 64 64H448c35.3 0 64-28.7 64-64V288z"/></svg>'
+  };
+  var _startEl = null;
+  function isDefaultView() {
+    return !searchTerm.trim() && activeCategory === 'all' && !activeSubcats.length &&
+      !showNewOnly && !showFoundingOnly && !showVerifiedOnly;
+  }
+  function applyOccasion(o) {
+    try { if (typeof window.gtag === 'function') window.gtag('event', 'market_occasion', { occasion: o.t }); } catch (e) {}
+    if (o.cat) { setCategory(o.cat); }
+    else {
+      searchTerm = o.q;
+      var inp = findSearchInput(); if (inp) inp.value = o.q;
+      applyFilters();
+    }
+    if (_grid && _grid.scrollIntoView) _grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  function miniCard(v, kind, text) {
+    var a = ce('a', 'lk-st-mini'); a.href = vProfileHref(v);
+    a.appendChild(buildAvatar(v));
+    var txt = ce('div', 'lk-st-mini-txt');
+    var n = ce('span', 'lk-st-mini-n'); n.textContent = vName(v); txt.appendChild(n);
+    var c = ce('span', 'lk-st-mini-c'); c.textContent = vCategoryStyle(v).label || ''; txt.appendChild(c);
+    var s = ce('span', 'lk-st-mini-s ' + kind);
+    var i = ce('span', 'sig-ico'); i.innerHTML = SIG_SVG[kind === 'saved' ? 'heart' : 'bolt']; s.appendChild(i);
+    s.appendChild(document.createTextNode(text)); txt.appendChild(s);
+    a.appendChild(txt);
+    return a;
+  }
+  function stSection(title, sub, linkText, onLink) {
+    var sec = ce('section', 'lk-st-sec');
+    var head = ce('div', 'lk-st-head');
+    var h = ce('h2', 'lk-st-h'); h.textContent = title; head.appendChild(h);
+    if (linkText) {
+      var b = ce('button', 'lk-st-link'); b.type = 'button'; b.textContent = linkText;
+      b.addEventListener('click', onLink); head.appendChild(b);
+    } else if (sub) { var sp = ce('span', 'lk-st-sub'); sp.textContent = sub; head.appendChild(sp); }
+    sec.appendChild(head);
+    return sec;
+  }
+  function renderStartHere() {
+    if (!_grid || !_grid.parentNode) return;
+    if (!_startEl) {
+      _startEl = ce('div'); _startEl.id = 'lk-start';
+      var anchor = el('browse-loading') || _grid;
+      _grid.parentNode.insertBefore(_startEl, anchor);
+    }
+    if (!isDefaultView() || !_allVendors.length) { _startEl.classList.remove('show'); return; }
+    _startEl.innerHTML = '';
+    // 1. occasions
+    var occ = stSection("What's the occasion?", 'Shortcuts across categories', null, null);
+    var tiles = ce('div', 'lk-st-tiles');
+    OCCASIONS.forEach(function (o) {
+      var t = ce('button', 'lk-st-tile'); t.type = 'button';
+      t.style.background = o.bg; t.style.color = o.fg;
+      var ic = ce('span', 'lk-st-tile-ico'); ic.innerHTML = OCC_SVG[o.ico] || ''; ic.style.color = o.fg; t.appendChild(ic);
+      var tt = ce('span', 'lk-st-tile-t'); tt.textContent = o.t; t.appendChild(tt);
+      var ts = ce('span', 'lk-st-tile-s'); ts.textContent = o.s; t.appendChild(ts);
+      t.addEventListener('click', function () { applyOccasion(o); });
+      tiles.appendChild(t);
+    });
+    occ.appendChild(tiles); _startEl.appendChild(occ);
+    // 2. new this week (respects the neighborhood pick)
+    var locId = activeLocationId === 'all' ? null : String(activeLocationId);
+    var fresh = _allVendors.filter(function (v) {
+      return vIsNew(v) && (locId == null || vLocationIds(v).map(String).indexOf(locId) !== -1);
+    }).sort(function (a, b) { return vCreated(b) - vCreated(a); });
+    if (fresh.length) {
+      var nw = stSection('New this week', null, 'See everything new →', function () { setToggle('new', true); });
+      var row = ce('div', 'lk-st-row');
+      fresh.slice(0, 4).forEach(function (v) { row.appendChild(miniCard(v, 'new', 'Just opened')); });
+      nw.appendChild(row); _startEl.appendChild(nw);
+    }
+    // 3. neighbors' picks (saves floor is server-side; zero rows = no section)
+    var picks = _allVendors.filter(function (v) { var t = vTrust(v); return t && Number(t.saves) >= 3; })
+      .sort(function (a, b) { return Number(vTrust(b).saves) - Number(vTrust(a).saves); });
+    if (picks.length) {
+      var pk = stSection("Neighbors' picks", 'Most saved storefronts', null, null);
+      var prow = ce('div', 'lk-st-row');
+      picks.slice(0, 4).forEach(function (v) {
+        var n = Number(vTrust(v).saves);
+        prow.appendChild(miniCard(v, 'saved', 'Saved by ' + n + ' neighbors'));
+      });
+      pk.appendChild(prow); _startEl.appendChild(pk);
+    }
+    _startEl.classList.add('show');
   }
 
   // ── filter/sort memory (sessionStorage) ──
@@ -1551,8 +1764,9 @@
     // #86 (2026-07-18): ★ Featured badge REMOVED by decision — it mostly
     // signaled "pays more". Placement ranking (#75 plan_rank) is untouched.
     // Founding moved to the quiet foot line; Verified/New/Spotlight stay here.
+    // ONE identity pill (F 2026-09-16 pill budget): Verified beats New.
     if (vIsVerified(v))  nameRow.appendChild(nameChip('chip-verified', '✓ Verified', null, null, 'Verified'));
-    if (vIsNew(v))       nameRow.appendChild(nameChip('chip-new', 'New', ICON_BULLHORN, '#11744A', 'New this week'));
+    else if (vIsNew(v))  nameRow.appendChild(nameChip('chip-new', 'New', ICON_BULLHORN, '#11744A', 'New this week'));
     // Away mode (2026-09-17): a quiet dated chip, no greying, no ranking change.
     if (vAwayLabel(v))   nameRow.appendChild(nameChip('chip-away', 'Back ' + vAwayLabel(v), null, '#B8471B', 'Away until ' + vAwayLabel(v)));
     if (vIsSpotlight(v)) nameRow.appendChild(nameChip('chip-spotlight', '✦ Spotlight', null, null, 'Spotlight'));
@@ -1610,6 +1824,9 @@
       }
       body.appendChild(offerLine);
     }
+
+    // ── trust + fulfilment pills (2026-09-17): one of each, earned only.
+    var sig = signalRow(v); if (sig) body.appendChild(sig);
 
     var tag = ce('div', 'vcard-tagline'); tag.textContent = cardHook(v); body.appendChild(tag);
 
