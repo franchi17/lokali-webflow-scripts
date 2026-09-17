@@ -1133,6 +1133,16 @@
     setInquiryStatus: function (inquiryId, status) {
       return SAPI().leads.setInquiryStatus(inquiryId, { status: status }).then(envelope);
     },
+    // Delete = owner + status='closed' only (RLS). A silent 0-row delete (e.g. the
+    // lead was reopened in another tab) is reported as an error so the row is not
+    // dropped from the page while it still exists.
+    deleteInquiry: function (inquiryId) {
+      return SAPI().leads.deleteInquiry(inquiryId).then(function (res) {
+        var out = envelope(res);
+        if (!out.error && (!Array.isArray(res && res.data) || res.data.length === 0)) out.error = 'not_deleted';
+        return out;
+      });
+    },
     setEventStatus: function (eventId, status) {
       return SAPI().leads.setEventStatus(eventId, status).then(envelope);
     }

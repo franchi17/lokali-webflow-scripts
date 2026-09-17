@@ -1034,6 +1034,15 @@
             .update(pick(patch, ['status', 'is_read'])).eq('id', inquiryId);
         });
       },
+      // Delete a lead the vendor has finished with. RLS (patch_inquiry_delete.sql,
+      // applied 2026-09-17, D-grid 7/7) admits ONLY the owner and ONLY status='closed';
+      // anything else deletes 0 rows. The Leads page shows its Delete button only
+      // when this method exists, so shipping this method IS the feature flag.
+      deleteInquiry: function (inquiryId) {
+        return withClient(function (c) {
+          return c.from('inquiries').delete().eq('id', inquiryId).select('id');
+        });
+      },
       // Contact-click events (call/text/whatsapp/email/ig/website) for the vendor.
       events: function (vendorId) {
         return withClient(function (c) {
