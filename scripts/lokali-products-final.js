@@ -8,7 +8,9 @@ const LokaliProductsPage = (() => {
     if (document.getElementById('lok-icon-btn-delete-style')) return;
     var s = document.createElement('style');
     s.id = 'lok-icon-btn-delete-style';
-    s.textContent = '.icon-btn--delete:hover{color:#C0152F;background:#FCEBED;border-color:#F2C4CB;}';
+    s.textContent = '.icon-btn--delete:hover{color:#C0152F;background:#FCEBED;border-color:#F2C4CB;}' +
+      // Duplicate (2026-09-17): same look as Edit, in the products orange.
+      '.lok-gc .card-actions [data-action="duplicate"]{order:0;display:inline-flex;align-items:center;gap:5px;color:#B8471B;border-color:#FFDDB0;background:#fff;font-weight:600;}';
     (document.head || document.documentElement).appendChild(s);
   })();
 
@@ -792,6 +794,20 @@ const LokaliProductsPage = (() => {
         e.stopPropagation();
         openForm(product.id);
       });
+      // Duplicate (2026-09-17, F): opens the Add form prefilled from this product.
+      // Photos and the buy link are NOT copied and Live starts off, so nothing
+      // half-made goes public. Saving creates a new row through the normal path.
+      if (editBtn && !card.querySelector('[data-action="duplicate"]')) {
+        const dupBtn = document.createElement('button');
+        dupBtn.type = 'button';
+        dupBtn.className = 'icon-btn';
+        dupBtn.setAttribute('data-action', 'duplicate');
+        dupBtn.title = 'Duplicate this product';
+        dupBtn.setAttribute('aria-label', 'Duplicate this product');
+        dupBtn.innerHTML = '<svg viewBox="0 0 512 512" width="13" height="13" fill="currentColor" aria-hidden="true" style="flex-shrink:0"><path d="M288 448H64V224h64V160H64c-35.3 0-64 28.7-64 64V448c0 35.3 28.7 64 64 64H288c35.3 0 64-28.7 64-64V416H288v32zm-64-96H448c35.3 0 64-28.7 64-64V64c0-35.3-28.7-64-64-64H224c-35.3 0-64 28.7-64 64V288c0 35.3 28.7 64 64 64z"/></svg><span>Copy</span>';
+        dupBtn.addEventListener('click', (e) => { e.stopPropagation(); duplicateFrom(product); });
+        editBtn.insertAdjacentElement('afterend', dupBtn);
+      }
 
       const deleteBtn = card.querySelector('[data-action="delete"]') || card.querySelector('.icon-btn--delete');
       if (deleteBtn) deleteBtn.addEventListener('click', (e) => {
@@ -1048,6 +1064,28 @@ const LokaliProductsPage = (() => {
     }
 
     showFormView();
+  };
+
+  // Duplicate (2026-09-17): the Add form, prefilled from an existing product.
+  const duplicateFrom = (product) => {
+    if (_maxProducts != null && products.length >= _maxProducts) {
+      alert(`You've reached your ${_maxProducts}-product limit on your current plan. Upgrade to add more.`);
+      return;
+    }
+    openForm(null);
+    if (editingId !== null) return;
+    const copy = Object.assign({}, product, {
+      id: null,
+      product_name: String(product.product_name || '').trim() + ' (copy)',
+      image_url: null, image_focus_x: null, image_focus_y: null,
+      buy_url: null,
+      is_active: false,
+      is_featured_pick: false
+    });
+    populateForm(copy);
+    if (typeof lcRefreshPreview === 'function') { try { lcRefreshPreview(); } catch (e) {} }
+    const nameEl = el.fieldName();
+    if (nameEl) { try { nameEl.focus(); nameEl.select(); } catch (e) {} }
   };
 
   const populateForm = (product) => {

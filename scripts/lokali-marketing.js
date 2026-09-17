@@ -405,6 +405,7 @@
       this.cardHtml('cta') +
       (this.premium ? this.cardHtml('showcase') : this.lockedShowcaseHtml()) +
       this.qrCardHtml() +
+      this.reviewCardHtml() +
       this.neighborsCardHtml() +
       (SPOTLIGHT_CREATIVE_ENABLED && this.premium && this.spot ? this.spotlightCardHtml() : '');
     this.bind();
@@ -487,6 +488,78 @@
       a.href = URL.createObjectURL(blob);
     } else {
       a.href = window.LokaliQR.toPngDataUrl(this.qrUrl(), 1024, this.qrOpts(1024));
+    }
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    if (fmt === 'svg') setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+  };
+
+  // ---- Ask for a review (2026-09-17, F) ----------------------------------------
+  // The review link lands on the storefront with the Reviews tab open (the
+  // #reviews deep link the review-notification email already uses); the same
+  // signed-in review gate applies, so nothing new on the trust side. No lkv
+  // param: a review ask is not a QR scan and must not count as one.
+  Page.prototype.reviewUrl = function () {
+    return 'https://www.golokali.com/' + this.vendor.slug + '?src=review-ask#reviews';
+  };
+  Page.prototype.reviewSnippets = function () {
+    var name = this.vendor.business_name || 'my shop';
+    var url = 'golokali.com/' + this.vendor.slug + '#reviews';
+    return [
+      { key: 'text', title: 'Text message', text: 'Thanks again for ordering from ' + name + '! If you have a minute, a short review on my Lokali page helps neighbors find me: ' + url },
+      { key: 'email', title: 'Email', text: 'Hi,\n\nThank you again for choosing ' + name + '. If you have a minute, a short review on my Lokali page helps other neighbors find me, and I read every one.\n\n' + url + '\n\nThank you!' },
+      { key: 'note', title: 'Packaging note', text: 'Enjoyed this? A quick review at ' + url + ' helps a small local business more than you know. Thank you!' }
+    ];
+  };
+  Page.prototype.reviewCardHtml = function () {
+    if (!this.vendor.slug) return '';
+    var self = this;
+    var qr = window.LokaliQR ? '<div class="mkt-qr-code">' + window.LokaliQR.toSvg(this.reviewUrl(), this.qrOpts(148)) + '</div>' : '';
+    var rows = this.reviewSnippets().map(function (sn) {
+      return '<div class="mkt-pl" data-rv="' + sn.key + '">' +
+        '<div class="mkt-pl-body">' +
+          '<p class="mkt-pl-t">' + sn.title + '</p>' +
+          '<div class="mkt-pl-snip">' +
+            '<div class="mkt-pl-txt" data-f="pl-text">' + esc(sn.text) + '</div>' +
+            '<button type="button" class="mkt-pl-copy" data-act="copy-place" aria-label="Copy the ' + sn.title + ' version">Copy</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+    return '<div class="mkt-card" data-kind="review">' +
+      '<div class="mkt-head"><p class="mkt-h">Ask for a review</p></div>' +
+      '<p class="mkt-sub">Reviews show on your Market card, and one or two change how a stranger reads it. The best moment to ask is right after a pickup or handoff, while the good feeling is fresh.</p>' +
+      '<div class="mkt-qr-row">' + qr +
+        '<div class="mkt-qr-side">' +
+          '<p class="mkt-qr-url">Your review link: <b>golokali.com/' + esc(self.vendor.slug) + '#reviews</b></p>' +
+          '<div class="mkt-qr-btns">' +
+            '<button type="button" class="mkt-qr-dl" data-act="rv-copy-link">Copy link</button>' +
+            (window.LokaliQR ? '<button type="button" class="mkt-qr-dl" data-act="rv-png">Download QR (PNG)</button><button type="button" class="mkt-qr-dl" data-act="rv-svg">Download QR (SVG)</button>' : '') +
+          '</div>' +
+          '<p class="mkt-note">The link opens your storefront on the Reviews tab. Reviewers sign in first, and only people who actually contacted you can post, so the ask never lowers your trust.</p>' +
+        '</div>' +
+      '</div>' +
+      rows +
+    '</div>';
+  };
+  Page.prototype.copyReviewLink = function () {
+    var text = 'https://www.golokali.com/' + this.vendor.slug + '#reviews';
+    var done = function () { toast('Copied. Send it right after the handoff.'); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, function () { fallbackCopy(text); done(); });
+    } else { fallbackCopy(text); done(); }
+  };
+  Page.prototype.downloadReviewQr = function (fmt) {
+    if (!window.LokaliQR) return;
+    var name = 'lokali-review-qr-' + this.vendor.slug + '.' + fmt;
+    var a = document.createElement('a');
+    if (fmt === 'svg') {
+      var blob = new Blob([window.LokaliQR.toSvg(this.reviewUrl(), this.qrOpts(1024))], { type: 'image/svg+xml' });
+      a.href = URL.createObjectURL(blob);
+    } else {
+      a.href = window.LokaliQR.toPngDataUrl(this.reviewUrl(), 1024, this.qrOpts(1024));
     }
     a.download = name;
     document.body.appendChild(a);
@@ -918,8 +991,11 @@
       else if (act === 'qr-svg') self.downloadQr('svg');
       else if (act === 'qr-badge-l') self.setQrBadge('l');
       else if (act === 'qr-badge-own') self.setQrBadge('own');
-      // "Bring your neighbors" copy buttons
+      // "Bring your neighbors" + "Ask for a review" copy buttons (same row shape)
       else if (act === 'copy-place') self.copyPlacement(btn);
+      else if (act === 'rv-copy-link') self.copyReviewLink();
+      else if (act === 'rv-png') self.downloadReviewQr('png');
+      else if (act === 'rv-svg') self.downloadReviewQr('svg');
       // Spotlight creative (phase 2)
       else if (act === 'sc-upload') {
         var sf = btn.parentElement.querySelector('[data-f="sc-file"]');

@@ -64,6 +64,9 @@
     '#lok-leads-page .lq-info svg{width:13px;height:13px;flex-shrink:0;}',
     // stat strip
     '#lok-leads-page .lq-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:18px;}',
+    '#lok-leads-page .lq-stats.four{grid-template-columns:repeat(4,minmax(0,1fr));}',
+    '#lok-leads-page .lq-hist{font-size:12px;color:' + DUSK + ';background:' + GREEN_L + ';border-radius:8px;padding:8px 10px;margin:8px 0 0;line-height:1.5;}',
+    '#lok-leads-page .lq-hist b{color:' + GREEN + ';}',
     '#lok-leads-page .lq-stat{border:1px solid ' + BORDER + ';border-radius:12px;padding:14px 16px;background:#fff;}',
     '#lok-leads-page .lq-stat.hot{background:' + VIOLET_T + ';border-color:' + VIOLET_B + ';}',
     '#lok-leads-page .lq-stat .l{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:' + GRAY + ';}',
@@ -141,8 +144,8 @@
     '@keyframes lokLpSpin{to{transform:rotate(360deg);}}',
     // phone
     '@media(max-width:700px){',
-    '#lok-leads-page .lq-stats{grid-template-columns:1fr 1fr;}',
-    '#lok-leads-page .lq-stat:last-child{grid-column:1/-1;}',
+    '#lok-leads-page .lq-stats,#lok-leads-page .lq-stats.four{grid-template-columns:1fr 1fr;}',
+    '#lok-leads-page .lq-stats:not(.four) .lq-stat:last-child{grid-column:1/-1;}',
     '#lok-leads-page .lq-lead{grid-template-columns:minmax(0,1fr);}',
     '#lok-leads-page .lq-av{display:none;}',
     '#lok-leads-page .lq-wait{justify-self:start;order:-1;}',
@@ -213,6 +216,18 @@
     return { label: replyTimeLabel(med), n: ds.length };
   }
 
+  function ordinal(n) { var s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
+  function historyLine(l) {
+    var n = l.prior.length;
+    var parts = l.prior.slice(0, 2).map(function (o) {
+      var what = o.context ? escapeHtml(o.context) : 'a general inquiry';
+      var when = new Date(o.t).toLocaleDateString(undefined, { month: 'long' });
+      var out = o.status === 'won' ? 'won' : o.status === 'closed' ? 'closed' : o.status === 'replied' ? 'replied' : 'new';
+      return what + ' in ' + when + ' (' + out + ')';
+    });
+    return '<b>Back for the ' + ordinal(n + 1) + ' time.</b> ' + parts.join(', ') + (n > 2 ? ', and ' + (n - 2) + ' more' : '') + '.';
+  }
+
   function setStatus(lead, status) {
     var A = window.LokaliAPI && window.LokaliAPI.leads;
     if (!A || typeof A.setInquiryStatus !== 'function') return Promise.resolve({ error: 'unavailable' });
@@ -239,6 +254,23 @@
     var thisMonth = countInWindow(aInq, 0, DAY30) + countInWindow(aCon, 0, DAY30);
     var prevMonth = countInWindow(aInq, DAY30, 2 * DAY30) + countInWindow(aCon, DAY30, 2 * DAY30);
     var sinceJoin = (totals.inquiries || 0) + (totals.contacts || 0);
+    // Repeat customers (2026-09-17): same email or phone within THIS vendor's
+    // inquiries only. No cross-vendor profile is built.
+    var byKey = {};
+    inquiries.forEach(function (l) {
+      var keys = [];
+      if (l.email) keys.push('e:' + l.email.toLowerCase());
+      if (l.phone) { var d = l.phone.replace(/\D/g, ''); if (d.length >= 7) keys.push('p:' + d.slice(-10)); }
+      l._keys = keys;
+      keys.forEach(function (k) { (byKey[k] = byKey[k] || []).push(l); });
+    });
+    inquiries.forEach(function (l) {
+      var seen = {}, prior = [];
+      l._keys.forEach(function (k) { byKey[k].forEach(function (o) { if (o !== l && o.t < l.t && !seen[o.id]) { seen[o.id] = 1; prior.push(o); } }); });
+      prior.sort(function (a, b) { return b.t - a.t; });
+      l.prior = prior;
+    });
+    var repeatN = inquiries.filter(function (l) { return l.prior.length; }).length;
     var needs = inquiries.filter(function (l) { return l.status === 'new'; }).sort(function (a, b) { return a.t - b.t; });
     var rest = inquiries.filter(function (l) { return l.status !== 'new'; }).sort(function (a, b) { return b.t - a.t; });
     var rt = replyTime(inquiries);
@@ -274,6 +306,13 @@
     s3.appendChild(el('div', 'v', rt ? rt.label : 'No replies yet'));
     s3.appendChild(el('div', 's', rt ? 'Based on your last ' + (rt.n === 1 ? 'reply' : rt.n + ' replies') : 'Reply to your first lead to start the clock'));
     stats.appendChild(s3);
+    if (inquiries.length >= 10) {
+      var s4 = el('div', 'lq-stat');
+      s4.appendChild(el('div', 'l', 'Came back'));
+      s4.appendChild(el('div', 'v', repeatN + ' of ' + inquiries.length));
+      s4.appendChild(el('div', 's', 'Inquiries from someone who had contacted you before'));
+      stats.appendChild(s4); stats.classList.add('four');
+    }
     mount.appendChild(stats);
 
     // ── no inquiries at all: teach what brings one ──
@@ -343,6 +382,7 @@
       if (!l.email && !l.phone) bits.push('no contact details were left');
       bits.push('via your ' + (l.source === 'service' ? 'service page' : l.source === 'product' ? 'product page' : 'storefront'));
       body.appendChild(html('div', 'lq-about', bits.join(' · ')));
+      if (l.prior && l.prior.length) body.appendChild(html('div', 'lq-hist', historyLine(l)));
       if (l.message) body.appendChild(el('div', 'lq-msg', l.message));
       var acts = el('div', 'lq-acts');
       var primaryDone = false;
@@ -385,6 +425,7 @@
       var t2 = [];
       if (l.first_reply_at) t2.push('Replied ' + shortDate(ts(l.first_reply_at)));
       else t2.push(l.status === 'closed' ? 'Closed' : l.status.charAt(0).toUpperCase() + l.status.slice(1));
+      if (l.prior && l.prior.length) t2.push('Back for the ' + ordinal(l.prior.length + 1) + ' time');
       if (l.message) t2.push('“' + l.message + '”');
       body.appendChild(el('div', 'lq-t2', t2.join(' · ')));
       row.appendChild(body);
