@@ -247,8 +247,8 @@
     // toolbar
     '.lok-seg{display:inline-flex;align-items:center;background:#fff;border:1px solid #EEEDF6;border-radius:10px;padding:3px;gap:2px;font-family:' + LUI_FONT + ';}',
     '.lok-seg>[id^="filter-pill"]{margin:0!important;padding:0!important;background:none!important;border:none!important;height:auto!important;width:auto!important;min-width:0!important;box-shadow:none!important;display:block;}',
-    '.lok-seg>[id^="filter-pill"]>div{font:600 12.5px/1.2 ' + LUI_FONT + '!important;color:#4A4761!important;border-radius:8px!important;padding:0 12px!important;height:32px!important;display:inline-flex!important;align-items:center;gap:6px;background:transparent!important;cursor:pointer;margin:0!important;border:none!important;letter-spacing:0!important;text-transform:none!important;}',
-    '.lok-seg>.lok-seg-on>div{background:#6002EE!important;color:#fff!important;}',
+    '.lok-seg .lok-seg-b{font:600 12.5px/1.2 ' + LUI_FONT + '!important;color:#4A4761!important;border-radius:8px!important;padding:0 12px!important;height:32px!important;display:inline-flex!important;align-items:center;gap:6px;background:transparent!important;cursor:pointer;margin:0!important;border:none!important;letter-spacing:0!important;text-transform:none!important;}',
+    '.lok-seg>.lok-seg-on .lok-seg-b,.lok-seg>.lok-seg-on.lok-seg-b{background:#6002EE!important;color:#fff!important;}',
     '.lok-seg-n{font-size:11px;font-weight:700;background:rgba(26,24,41,.08);border-radius:100px;padding:1px 6px;min-width:18px;text-align:center;line-height:1.4;}',
     '.lok-seg-on .lok-seg-n{background:rgba(255,255,255,.22);}',
     '.filter-bar select,.filter-bar .select-field{font:600 12.5px/1.2 ' + LUI_FONT + '!important;border-radius:10px!important;height:38px!important;padding:0 30px 0 12px!important;background-color:#fff!important;border:1px solid #EEEDF6!important;color:#1A1829!important;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 512 512%27><path fill=%27%234A4761%27 d=%27M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z%27/></svg>")!important;background-repeat:no-repeat!important;background-position:right 10px center!important;background-size:11px!important;margin:0!important;}',
@@ -272,6 +272,7 @@
     '.lok-btn:focus-visible,.lok-gc .icon-btn:focus-visible,.lok-seg>[id^="filter-pill"]:focus-visible{outline:2px solid #6002EE;outline-offset:2px;}',
     '.lok-ghosts{display:grid;grid-template-columns:1fr 1fr;gap:10px;}',
     '.lok-ghosts .lok-gc{opacity:.75;cursor:default;}',
+    '.lok-ghosts .lok-gc-line span,.lok-ghosts .service-name{font-size:14px!important;line-height:1.4!important;}',
     // form
     '[id$="-form-view"] .form-header{position:sticky;top:0;z-index:6;background:#fff;}',
     '.lok-form-bar{position:sticky;bottom:0;z-index:6;background:#fff;border-top:.5px solid #EEEDF6;padding:10px 0!important;display:flex!important;align-items:center;gap:10px;flex-wrap:wrap;}',
@@ -435,8 +436,17 @@
         seg.appendChild(all); seg.appendChild(live); seg.appendChild(hidden);
       }
       var c = counts || {};
+      // Services wraps each pill's label in an inner div; Products' pill IS the
+      // label element. Paint whichever is the visual button and mark it, so a
+      // re-render never paints into the count span it created last time.
       function paint(pill, label, n) {
-        var inner = pill.firstElementChild || pill;
+        var inner = pill.querySelector('.lok-seg-b');
+        if (!inner) {
+          var kids = pill.children, i;
+          for (i = 0; i < kids.length; i++) { if (!kids[i].classList.contains('lok-seg-n')) { inner = kids[i]; break; } }
+          inner = inner || pill;
+          inner.classList.add('lok-seg-b');
+        }
         inner.innerHTML = luiEsc(label) + (n != null ? '<span class="lok-seg-n">' + n + '</span>' : '');
         pill.setAttribute('role', 'button'); pill.setAttribute('tabindex', '0');
       }
