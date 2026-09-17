@@ -86,8 +86,9 @@
     '#lok-analytics-section .an-up-t{font-size:13px;font-weight:600;}',
     '#lok-analytics-section .an-up-s{font-size:12px;color:' + DUSK + ';margin-top:2px;}',
     '#lok-analytics-section .an-up-btn{font:inherit;font-size:12px;font-weight:600;color:#fff;background:' + VIOLET + ';border:none;border-radius:8px;padding:8px 16px;cursor:pointer;text-decoration:none;}',
-    '#lok-analytics-section .an-insight{background:#FFFCF0;border:.5px solid #F5E6A8;border-radius:10px;padding:.85rem 1.1rem;font-size:12px;color:#8a6d1a;line-height:1.55;margin-bottom:1rem;}',
-    '#lok-analytics-section .an-insight strong{color:#6b540f;}',
+    // Insight line: was a yellow note (#FFFCF0/#8a6d1a); F 2026-09-17 'not a fan of the yellow' -> the soft violet tint the dashboard uses.
+    '#lok-analytics-section .an-insight{background:' + VIOLET_L + ';border:.5px solid #E5D4FD;border-radius:10px;padding:.85rem 1.1rem;font-size:12px;color:' + DUSK + ';line-height:1.55;margin-bottom:1rem;}',
+    '#lok-analytics-section .an-insight strong{color:' + INK + ';}',
     // Storefront checkup (2026-09-16). Design notes in the mockup artifact:
     // endowed progress (meter shows credit already earned), goal gradient
     // (count remaining, not a percent), Hick's law (3 open items by default),
