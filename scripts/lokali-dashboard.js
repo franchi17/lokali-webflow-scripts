@@ -342,6 +342,8 @@
     el.style.backgroundImage = url ? 'url("' + luiThumb(url, 640).replace(/"/g, '%22') + '")' : '';
   }
 
+  // page cue: /vendor-dashboard/products paints the list UI orange (see LUI_CSS)
+  if (document.body && /^\/vendor-dashboard\/products(\/|$)/.test(String(window.location.pathname || ''))) document.body.classList.add('lok-pg-product');
   window.LokaliListingUI = {
     css: function () {
       if (/^\/vendor-dashboard\/products(\/|$)/.test(String(window.location.pathname || ''))) document.body.classList.add('lok-pg-product');
