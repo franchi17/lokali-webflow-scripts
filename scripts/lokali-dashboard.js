@@ -182,6 +182,344 @@
   }
   try { window.LokaliCheckup = buildCheckup; } catch (e) {}
 
+
+  // ─── Listings pages UI (2026-09-17, F-approved v2 mockup) ─────────────────
+  // Shared by lokali-services-final.js and lokali-products-final.js (both
+  // registered page scripts; this plain sitewide tag loads first). The Webflow
+  // row template stays the data carrier: each cloned row is rebuilt here as a
+  // storefront-shaped PHOTO CARD, the three filter buttons become one
+  // segmented control with counts, Featured picks lead the grid via CSS
+  // order (DOM order, and so drag-to-reorder + sort_order, are untouched), the
+  // empty state shows the three steps to a live listing, and the form gets a
+  // live "what shoppers see" preview plus sticky header and save bar.
+  // Everything is idempotent and degrades to the old row when a hook is missing.
+  var LUI_FONT = '"Plus Jakarta Sans",-apple-system,sans-serif';
+  var LUI_CSS = [
+    // grid
+    '.lok-grid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:stretch;}',
+    '.lok-grid>[id$="-empty-state"],.lok-grid>[id$="-empty-filtered"],.lok-grid>.lok-gsec{grid-column:1/-1;}',
+    '.lok-gsec{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0 -4px;font-family:' + LUI_FONT + ';}',
+    '.lok-gsec h3{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#8E8BA6;margin:0;}',
+    '.lok-gsec span{font-size:11.5px;color:#8E8BA6;}',
+    '.lok-gsec.lead{order:-3;}.lok-gsec.rest{order:-1;}',
+    '.lok-gspot{order:-2;border:1.5px dashed #E5D4FD;border-radius:14px;min-height:180px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;font-family:' + LUI_FONT + ';}',
+    '.lok-gspot b{font-size:13px;font-weight:700;color:#6002EE;}',
+    '.lok-gspot span{font-size:12px;color:#6E6A85;max-width:22ch;margin-top:4px;line-height:1.5;}',
+    // card
+    '.lok-gc{display:flex!important;flex-direction:column;background:#fff;border:.5px solid #EEEDF6;border-radius:14px;overflow:hidden;margin:0!important;padding:0!important;position:relative;transform:none!important;box-shadow:none!important;min-width:0;cursor:pointer;font-family:' + LUI_FONT + ';}',
+    '.lok-gc:hover{transform:none!important;border-color:#C8C6D8;box-shadow:0 4px 18px rgba(96,2,238,.08)!important;}',
+    '.lok-gc.is-pick{order:-2;}',
+    '.lok-gc.is-off .lok-gc-cover,.lok-gc.is-off .lok-gc-body{opacity:.62;}',
+    '.lok-gc .card-divider,.lok-gc .service-category,.lok-gc .product-category,.lok-gc .service-description,.lok-gc .product-description,.lok-gc .product-stock,.lok-gc .product-price-note,.lok-gc .remote-badge,.lok-gc .shipping-badge,.lok-gc [data-field="product-delivery-badge"],.lok-gc .status-pill{display:none!important;}',
+    '.lok-gc-cover{position:relative;aspect-ratio:4/3;background:#EEEDF6 center/cover no-repeat;}',
+    '.lok-gc-cover.ph{background:linear-gradient(135deg,#F3EBFF,#FFF1E3);display:flex;align-items:center;justify-content:center;color:#8E8BA6;}',
+    '.lok-gc-cover.ph svg{width:26px;height:26px;}',
+    '.lok-gc-corner{position:absolute;top:8px;left:8px;display:flex;gap:6px;}',
+    '.lok-gc-cr{position:absolute;top:8px;right:8px;}',
+    '.lok-gc-chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;border-radius:100px;padding:3px 9px;line-height:1.4;white-space:nowrap;background:rgba(255,255,255,.92);}',
+    '.lok-gc-chip.on{color:#1D6A45;}.lok-gc-chip.off{color:#6E6A85;}.lok-gc-chip.pick{color:#6002EE;}',
+    '.lok-gc-chip svg{width:11px;height:11px;}',
+    '.lok-gc .drag-handle{opacity:1!important;visibility:visible!important;width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,.92);display:flex;align-items:center;justify-content:center;color:#8E8BA6;cursor:grab;margin:0;}',
+    '.lok-gc .drag-handle svg{width:12px;height:12px;}',
+    '.lok-gc-body{padding:12px 12px 10px;display:flex;flex-direction:column;gap:6px;flex:1;min-width:0;}',
+    '.lok-gc .service-info,.lok-gc .product-info{display:block;min-width:0;}',
+    '.lok-gc .service-name,.lok-gc .product-name{font-size:14px;font-weight:700;color:#1A1829;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:normal;}',
+    '.lok-gc-line{display:flex;align-items:center;justify-content:space-between;gap:8px;}',
+    '.lok-gc .service-price,.lok-gc .product-price,.lok-gc .product-price-row{font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;color:#1A1829;margin:0;display:block;}',
+    '.lok-gc .lok-gc-noprice{color:#8E8BA6!important;font-weight:500!important;}',
+    '.lok-gc-stat{font-size:11.5px;color:#6E6A85;white-space:nowrap;}',
+    '.lok-gc-stat b{color:#1A1829;font-weight:700;}',
+    '.lok-gc-meta{display:flex;gap:6px;flex-wrap:wrap;}',
+    '.lok-tagc{display:inline-flex;align-items:center;font-size:11px;font-weight:600;border-radius:100px;padding:2px 8px;background:#EEEDF6;color:#4A4761;white-space:nowrap;line-height:1.5;}',
+    '.lok-tagc.spec{background:#F3EBFF;color:#6002EE;}.lok-tagc.warn{background:#FFF1E3;color:#9a4d00;}.lok-tagc.way{background:#E7EEFF;color:#2643B0;}',
+    '.lok-gc .card-actions{opacity:1!important;visibility:visible!important;display:flex;gap:6px;margin-top:auto;padding-top:8px;border-top:.5px solid #EEEDF6;position:static;}',
+    '.lok-gc .card-actions .icon-btn{height:32px;min-width:32px;padding:0 10px;border-radius:8px;border:.5px solid #EEEDF6;background:#F7F6FC;color:#4A4761;display:inline-flex;align-items:center;justify-content:center;gap:6px;font:600 12px/1 ' + LUI_FONT + ';cursor:pointer;opacity:1!important;visibility:visible!important;}',
+    '.lok-gc .card-actions [data-action="edit"]{order:0;color:#6002EE;border-color:#E5D4FD;background:#fff;}',
+    '.lok-gc .card-actions [data-action="feature"]{order:1;}',
+    '.lok-gc .card-actions [data-action="delete"]{order:2;margin-left:auto;padding:0;width:32px;}',
+    '.lok-gc .card-actions .icon-btn svg{width:12px;height:12px;flex-shrink:0;}',
+    '.lok-gc-bl{white-space:nowrap;}',
+    // toolbar
+    '.lok-seg{display:inline-flex;align-items:center;background:#fff;border:1px solid #EEEDF6;border-radius:10px;padding:3px;gap:2px;font-family:' + LUI_FONT + ';}',
+    '.lok-seg>[id^="filter-pill"]{margin:0!important;padding:0!important;background:none!important;border:none!important;height:auto!important;width:auto!important;min-width:0!important;box-shadow:none!important;display:block;}',
+    '.lok-seg>[id^="filter-pill"]>div{font:600 12.5px/1.2 ' + LUI_FONT + '!important;color:#4A4761!important;border-radius:8px!important;padding:0 12px!important;height:32px!important;display:inline-flex!important;align-items:center;gap:6px;background:transparent!important;cursor:pointer;margin:0!important;border:none!important;letter-spacing:0!important;text-transform:none!important;}',
+    '.lok-seg>.lok-seg-on>div{background:#6002EE!important;color:#fff!important;}',
+    '.lok-seg-n{font-size:11px;font-weight:700;background:rgba(26,24,41,.08);border-radius:100px;padding:1px 6px;min-width:18px;text-align:center;line-height:1.4;}',
+    '.lok-seg-on .lok-seg-n{background:rgba(255,255,255,.22);}',
+    '.filter-bar select,.filter-bar .select-field{font:600 12.5px/1.2 ' + LUI_FONT + '!important;border-radius:10px!important;height:38px!important;padding:0 30px 0 12px!important;background-color:#fff!important;border:1px solid #EEEDF6!important;color:#1A1829!important;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 512 512%27><path fill=%27%234A4761%27 d=%27M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z%27/></svg>")!important;background-repeat:no-repeat!important;background-position:right 10px center!important;background-size:11px!important;margin:0!important;}',
+    '.lok-order-hint{font-size:11.5px;color:#8E8BA6;font-family:' + LUI_FONT + ';}',
+    // header
+    '.lok-hdl{display:flex;flex-direction:column;gap:2px;}',
+    '.lok-hdl .text-block-33{font-size:22px!important;font-weight:800!important;color:#1A1829!important;letter-spacing:-.01em;line-height:1.2!important;margin:0!important;font-family:' + LUI_FONT + '!important;}',
+    '.lok-hdl [id$="-active-count"],.lok-hdl [id$="-active-count"] *{font-size:12.5px!important;color:#6E6A85!important;font-weight:500!important;font-family:' + LUI_FONT + '!important;margin:0!important;}',
+    '#services-add-btn,#products-add-btn{background:#6002EE!important;border-color:#6002EE!important;color:#fff!important;border-radius:9px!important;font-family:' + LUI_FONT + '!important;font-weight:700!important;}',
+    '#services-add-btn *,#products-add-btn *{color:#fff!important;}',
+    // empty state
+    '.lok-empty{display:grid;grid-template-columns:1.1fr 1fr;gap:20px;align-items:center;background:#fff;border:.5px dashed #E5D4FD;border-radius:14px;padding:22px;text-align:left;font-family:' + LUI_FONT + ';}',
+    '.lok-empty h3{font-size:16px;font-weight:800;margin:0 0 8px;color:#1A1829;}',
+    '.lok-steps{list-style:none;margin:0 0 14px;padding:0;display:grid;gap:8px;}',
+    '.lok-steps li{display:grid;grid-template-columns:24px 1fr;gap:10px;align-items:start;font-size:12.5px;color:#4A4761;line-height:1.5;}',
+    '.lok-steps li i{width:24px;height:24px;border-radius:50%;background:#F3EBFF;color:#6002EE;font-style:normal;font-weight:800;font-size:11px;display:flex;align-items:center;justify-content:center;}',
+    '.lok-steps li b{color:#1A1829;}',
+    '.lok-btns{display:flex;gap:8px;flex-wrap:wrap;}',
+    '.lok-btn{display:inline-flex;align-items:center;gap:8px;min-height:38px;padding:8px 14px;border-radius:9px;font:700 13px/1.2 ' + LUI_FONT + ';border:1px solid #E5D4FD;background:#fff;color:#6002EE;cursor:pointer;}',
+    '.lok-btn.primary{background:#6002EE;color:#fff;border-color:#6002EE;}',
+    '.lok-btn:focus-visible,.lok-gc .icon-btn:focus-visible,.lok-seg>[id^="filter-pill"]:focus-visible{outline:2px solid #6002EE;outline-offset:2px;}',
+    '.lok-ghosts{display:grid;grid-template-columns:1fr 1fr;gap:10px;}',
+    '.lok-ghosts .lok-gc{opacity:.75;cursor:default;}',
+    // form
+    '[id$="-form-view"] .form-header{position:sticky;top:0;z-index:6;background:#fff;}',
+    '.lok-form-bar{position:sticky;bottom:0;z-index:6;background:#fff;border-top:.5px solid #EEEDF6;padding:10px 0!important;display:flex!important;align-items:center;gap:10px;flex-wrap:wrap;}',
+    '.lok-form-msg{font-size:12.5px;color:#6E6A85;margin-right:auto;font-family:' + LUI_FONT + ';display:none;}',
+    '.lok-form-bar.dirty .lok-form-msg{display:block;}',
+    '#lok-lc-preview{background:#F7F6FC;border:.5px solid #EEEDF6;border-radius:12px;padding:12px 14px;margin:0 0 18px;display:grid;grid-template-columns:220px 1fr;gap:16px;align-items:center;font-family:' + LUI_FONT + ';}',
+    '#lok-lc-preview .lab{grid-column:1/-1;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#8E8BA6;}',
+    '#lok-lc-preview .lok-gc{cursor:default;}',
+    '#lok-lc-preview ul{list-style:none;margin:0;padding:0;font-size:12px;color:#4A4761;}',
+    '#lok-lc-preview li{display:flex;gap:8px;align-items:center;padding:3px 0;line-height:1.5;}',
+    '#lok-lc-preview li svg{width:13px;height:13px;flex-shrink:0;}',
+    '#lok-lc-preview li.ok svg{color:#1D6A45;}#lok-lc-preview li.todo svg{color:#8E8BA6;}',
+    '@media(max-width:991px){.lok-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.lok-gc .card-actions .icon-btn{height:44px;min-width:44px;}.lok-gc .drag-handle{width:44px;height:44px;}}',
+    '@media(max-width:560px){.lok-grid{grid-template-columns:1fr;}.lok-empty,.lok-ghosts,#lok-lc-preview{grid-template-columns:1fr;}}'
+  ].join('');
+  var LUI_ICO = {
+    photo: '<svg viewBox="0 0 512 512" fill="currentColor" aria-hidden="true"><path d="M0 96C0 60.7 28.7 32 64 32H448c35.3 0 64 28.7 64 64V416c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V96zM323.8 202.5c-4.5-6.6-11.9-10.5-19.8-10.5s-15.4 3.9-19.8 10.5l-87 127.6L170.7 297c-4.6-5.7-11.5-9-18.7-9s-14.2 3.3-18.7 9l-64 80c-5.8 7.2-6.9 17.1-2.9 25.4s12.4 13.6 21.6 13.6h96 32H424c8.9 0 17.1-4.9 21.2-12.8s3.6-17.4-1.4-24.7l-120-176zM112 192a48 48 0 1 0 0-96 48 48 0 1 0 0 96z"/></svg>',
+    star: '<svg viewBox="0 0 576 512" fill="currentColor" aria-hidden="true"><path d="M316.9 18C311.6 7 300.4 0 288.1 0s-23.4 7-28.8 18L195 150.3 51.4 171.5c-12 1.8-22 10.2-25.7 21.7s-.7 24.2 7.9 32.7L137.8 329 113.2 474.7c-2 12 3 24.2 12.9 31.3s23 8 33.8 2.3l128.3-68.5 128.3 68.5c10.8 5.7 23.9 4.9 33.8-2.3s14.9-19.3 12.9-31.3L438.5 329 542.7 225.9c8.6-8.5 11.7-21.2 7.9-32.7s-13.7-19.9-25.7-21.7L381.2 150.3 316.9 18z"/></svg>',
+    ok: '<svg viewBox="0 0 512 512" fill="currentColor" aria-hidden="true"><path d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM369 209L241 337c-9.4 9.4-24.6 9.4-33.9 0l-64-64c-9.4-9.4-9.4-24.6 0-33.9s24.6-9.4 33.9 0l47 47L335 175c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9z"/></svg>',
+    todo: '<svg viewBox="0 0 512 512" fill="currentColor" aria-hidden="true"><path d="M464 256A208 208 0 1 0 48 256a208 208 0 1 0 416 0zM0 256a256 256 0 1 1 512 0A256 256 0 1 1 0 256z"/></svg>'
+  };
+  function luiEsc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function luiThumb(url, w) {
+    if (!url) return '';
+    try {
+      var L = window.LokaliImg;
+      if (typeof L === 'function') return L(url, w) || url;
+      if (L && typeof L.thumb === 'function') return L.thumb(url, w) || url;
+    } catch (e) {}
+    return url;
+  }
+  function luiEl(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
+  function luiChip(text, cls) { var s = luiEl('span', 'lok-tagc' + (cls ? ' ' + cls : '')); s.textContent = text; return s; }
+  function luiCoverBg(el, url) {
+    el.className = 'lok-gc-cover' + (url ? '' : ' ph');
+    var keep = el.querySelectorAll('.lok-gc-corner,.lok-gc-cr');
+    el.innerHTML = url ? '' : LUI_ICO.photo;
+    for (var i = 0; i < keep.length; i++) el.appendChild(keep[i]);
+    el.style.backgroundImage = url ? 'url("' + luiThumb(url, 640).replace(/"/g, '%22') + '")' : '';
+  }
+
+  window.LokaliListingUI = {
+    css: function () {
+      if (document.getElementById('lok-lui-css')) return;
+      var st = document.createElement('style'); st.id = 'lok-lui-css'; st.textContent = LUI_CSS;
+      document.head.appendChild(st);
+    },
+    // Rebuild one cloned Webflow row as a photo card. o: { kind, imgUrl,
+    // hasPrice, spec, lead, ways:[], live, pick, editLabel }
+    card: function (card, o) {
+      if (!card) return;
+      o = o || {};
+      this.css();
+      card.classList.add('lok-gc');
+      card.classList.toggle('is-pick', !!o.pick);
+      card.classList.toggle('is-off', !o.live);
+      var cover = card.querySelector('.lok-gc-cover');
+      if (!cover) {
+        cover = luiEl('div', 'lok-gc-cover');
+        cover.appendChild(luiEl('div', 'lok-gc-corner'));
+        cover.appendChild(luiEl('div', 'lok-gc-cr'));
+        card.insertBefore(cover, card.firstChild);
+      }
+      luiCoverBg(cover, o.imgUrl || '');
+      var corner = cover.querySelector('.lok-gc-corner');
+      corner.innerHTML = (o.pick ? '<span class="lok-gc-chip pick">' + LUI_ICO.star + 'Pick</span>' : '') +
+        '<span class="lok-gc-chip ' + (o.live ? 'on">Live' : 'off">Hidden') + '</span>';
+      var handle = card.querySelector('.drag-handle');
+      var cr = cover.querySelector('.lok-gc-cr');
+      if (handle && handle.parentNode !== cr) { handle.setAttribute('title', 'Drag to reorder'); cr.appendChild(handle); }
+      var body = card.querySelector('.lok-gc-body');
+      if (!body) {
+        body = luiEl('div', 'lok-gc-body');
+        card.appendChild(body);
+        var info = card.querySelector('.service-info, .product-info');
+        if (info) body.appendChild(info);
+        var line = luiEl('div', 'lok-gc-line');
+        var price = card.querySelector('.product-price-row') || card.querySelector('.service-price, .product-price');
+        if (price) line.appendChild(price);
+        line.appendChild(luiEl('span', 'lok-gc-stat'));
+        body.appendChild(line);
+        body.appendChild(luiEl('div', 'lok-gc-meta'));
+        var acts = card.querySelector('.card-actions');
+        if (acts) body.appendChild(acts);
+      }
+      var meta = body.querySelector('.lok-gc-meta');
+      meta.innerHTML = '';
+      if (o.spec) meta.appendChild(luiChip(o.spec, 'spec'));
+      if (!o.imgUrl) meta.appendChild(luiChip('No photo yet', 'warn'));
+      if (!o.hasPrice) meta.appendChild(luiChip('No price yet', 'warn'));
+      if (o.lead) meta.appendChild(luiChip(o.lead));
+      (o.ways || []).forEach(function (w) { if (w) meta.appendChild(luiChip(w, 'way')); });
+      var priceEl = card.querySelector('.service-price, .product-price');
+      if (priceEl) {
+        if (!o.hasPrice) { priceEl.textContent = 'Add a price'; priceEl.classList.add('lok-gc-noprice'); }
+        else priceEl.classList.remove('lok-gc-noprice');
+      }
+      var stat = body.querySelector('.lok-gc-stat');
+      if (stat) stat.textContent = o.live ? '' : 'Not on your storefront';
+      var edit = card.querySelector('[data-action="edit"]');
+      if (edit) {
+        var lbl = edit.querySelector('.lok-gc-bl');
+        if (!lbl) { lbl = luiEl('span', 'lok-gc-bl'); edit.appendChild(lbl); }
+        lbl.textContent = (!o.imgUrl || !o.hasPrice) ? 'Finish this' : 'Edit';
+      }
+      var del = card.querySelector('[data-action="delete"]');
+      if (del) { del.setAttribute('title', o.live ? 'Hide from your storefront' : 'Remove'); del.setAttribute('aria-label', o.live ? 'Hide from your storefront' : 'Remove'); }
+    },
+    // After the whole list renders. picks = number of pick cards, cap = plan cap,
+    // featured = plan can pick. Section headers + empty spots ride CSS order.
+    afterRender: function (stack, o) {
+      if (!stack) return;
+      o = o || {};
+      this.css();
+      stack.classList.add('lok-grid');
+      var olds = stack.querySelectorAll('.lok-gsec,.lok-gspot');
+      for (var i = 0; i < olds.length; i++) olds[i].parentNode.removeChild(olds[i]);
+      var picks = o.picks || 0, cap = o.cap || 0;
+      if (picks > 0 && o.customOrder) {
+        var lead = luiEl('div', 'lok-gsec lead', '<h3>Leading your storefront</h3><span>Featured picks show first. Up to ' + cap + '.</span>');
+        var rest = luiEl('div', 'lok-gsec rest', '<h3>Everything else</h3><span>In your order. Drag a card to move it.</span>');
+        stack.appendChild(lead); stack.appendChild(rest);
+        if (o.featured && cap > picks) {
+          var left = cap - picks;
+          var spot = luiEl('div', 'lok-gspot', '<b>' + left + (left === 1 ? ' more spot' : ' more spots') + '</b><span>Star any listing below and it leads your storefront.</span>');
+          stack.appendChild(spot);
+        }
+      }
+    },
+    // Fill "N views" on each card from the analytics rows this vendor can read.
+    paintStats: function (stack, rows, source) {
+      if (!stack) return;
+      var now = Date.now(), DAY = 86400000, byItem = {};
+      (rows || []).forEach(function (r) {
+        if (!r || r.source !== source || r.item_id == null) return;
+        var t = typeof r.created_at === 'number' ? r.created_at : Date.parse(r.created_at || '');
+        if (!t || now - t > 30 * DAY) return;
+        byItem[String(r.item_id)] = (byItem[String(r.item_id)] || 0) + 1;
+      });
+      var attr = source === 'product' ? 'data-product-id' : 'data-service-id';
+      var cards = stack.querySelectorAll('.lok-gc[' + attr + ']');
+      for (var i = 0; i < cards.length; i++) {
+        var c = cards[i], stat = c.querySelector('.lok-gc-stat');
+        if (!stat || c.classList.contains('is-off')) continue;
+        var n = byItem[String(c.getAttribute(attr))] || 0;
+        stat.innerHTML = '<b>' + n + '</b> ' + (n === 1 ? 'view' : 'views');
+        stat.setAttribute('title', 'Last 30 days');
+      }
+    },
+    // The three Webflow filter buttons become one segmented control.
+    segmented: function (pills, counts) {
+      this.css();
+      var all = pills.all, live = pills.live, hidden = pills.hidden;
+      if (!all || !live || !hidden) return;
+      var seg = document.getElementById('lok-seg');
+      if (!seg) {
+        seg = luiEl('div', 'lok-seg'); seg.id = 'lok-seg'; seg.setAttribute('role', 'group'); seg.setAttribute('aria-label', 'Show');
+        all.parentNode.insertBefore(seg, all);
+        seg.appendChild(all); seg.appendChild(live); seg.appendChild(hidden);
+      }
+      var c = counts || {};
+      function paint(pill, label, n) {
+        var inner = pill.firstElementChild || pill;
+        inner.innerHTML = luiEsc(label) + (n != null ? '<span class="lok-seg-n">' + n + '</span>' : '');
+        pill.setAttribute('role', 'button'); pill.setAttribute('tabindex', '0');
+      }
+      paint(all, 'All', c.all); paint(live, 'Live', c.live); paint(hidden, 'Hidden', c.hidden);
+    },
+    // Count line moves under the page title; hint text shortened.
+    header: function (titleEl, countEl, hintEl) {
+      this.css();
+      if (titleEl && countEl && !titleEl.closest('.lok-hdl')) {
+        var box = luiEl('div', 'lok-hdl');
+        titleEl.parentNode.insertBefore(box, titleEl);
+        box.appendChild(titleEl); box.appendChild(countEl);
+      }
+      if (hintEl) hintEl.classList.add('lok-order-hint');
+    },
+    // host: the Webflow empty-state block. o: { kind, onAdd, onImport }
+    emptyState: function (host, o) {
+      if (!host) return;
+      o = o || {};
+      this.css();
+      if (host.getAttribute('data-lok-lui') === '1') return;
+      host.setAttribute('data-lok-lui', '1');
+      var isP = o.kind === 'product', noun = isP ? 'product' : 'service';
+      host.innerHTML =
+        '<div class="lok-empty"><div>' +
+          '<h3>Add your first ' + noun + '</h3>' +
+          '<ul class="lok-steps">' +
+            '<li><i>1</i><span><b>One photo.</b> Phone photos are fine. Natural light, plain background.</span></li>' +
+            '<li><i>2</i><span><b>A name and a price.</b> "Ask for a quote" counts as a price.</span></li>' +
+            '<li><i>3</i><span><b>Save.</b> It is live on your storefront the moment you do. Everything else can come later.</span></li>' +
+          '</ul>' +
+          '<div class="lok-btns"><button type="button" class="lok-btn primary" data-lui-add>Add a ' + noun + '</button>' +
+          (isP && o.onImport ? '<button type="button" class="lok-btn" data-lui-import>Import from Etsy or Shopify</button>' : '') + '</div>' +
+        '</div><div class="lok-ghosts">' +
+          '<div class="lok-gc"><div class="lok-gc-cover" style="background-image:linear-gradient(135deg,#d9c7f5,#f7d2b8)"><div class="lok-gc-corner"><span class="lok-gc-chip on">Live</span></div></div><div class="lok-gc-body"><div class="service-name">Your first ' + noun + '</div><div class="lok-gc-line"><span style="font-weight:700">' + (isP ? '$24' : 'from $60') + '</span></div><div class="lok-gc-meta"><span class="lok-tagc way">' + (isP ? 'Pickup' : 'About a week') + '</span></div></div></div>' +
+          '<div class="lok-gc"><div class="lok-gc-cover ph">' + LUI_ICO.photo + '</div><div class="lok-gc-body"><div class="service-name" style="color:#8E8BA6">The next one</div><div class="lok-gc-line"><span class="lok-gc-noprice">Price</span></div></div></div>' +
+        '</div></div>';
+      host.style.background = 'transparent'; host.style.border = 'none'; host.style.padding = '0';
+      var a = host.querySelector('[data-lui-add]'); if (a && o.onAdd) a.addEventListener('click', o.onAdd);
+      var im = host.querySelector('[data-lui-import]'); if (im && o.onImport) im.addEventListener('click', o.onImport);
+    },
+    // Form: sticky save bar with a dirty message; returns nothing.
+    formBar: function (formView, saveBtn) {
+      if (!formView || !saveBtn || !saveBtn.parentElement) return;
+      this.css();
+      var bar = saveBtn.parentElement;
+      if (bar.classList.contains('lok-form-bar')) return;
+      bar.classList.add('lok-form-bar');
+      var msg = luiEl('span', 'lok-form-msg'); msg.textContent = 'Changes are not saved yet.';
+      bar.insertBefore(msg, bar.firstChild);
+      formView.addEventListener('input', function () { bar.classList.add('dirty'); });
+      formView.addEventListener('change', function () { bar.classList.add('dirty'); });
+      saveBtn.addEventListener('click', function () { bar.classList.remove('dirty'); });
+    },
+    // Form: "What shoppers see" card above the fields. Returns { update(state) }.
+    // state: { name, price, hasPrice, spec, lead, imgUrl, ways:[], live }
+    preview: function (formView, header) {
+      if (!formView) return { update: function () {}, reset: function () {} };
+      this.css();
+      var box = document.getElementById('lok-lc-preview');
+      if (!box) {
+        box = luiEl('div');
+        box.id = 'lok-lc-preview';
+        box.innerHTML = '<div class="lab">What shoppers see</div>' +
+          '<div class="lok-gc"><div class="lok-gc-cover ph"><div class="lok-gc-corner"><span class="lok-gc-chip on">Live</span></div>' + LUI_ICO.photo + '</div>' +
+          '<div class="lok-gc-body"><div class="service-name"></div><div class="lok-gc-line"><span class="lok-pv-price" style="font-weight:700"></span></div><div class="lok-gc-meta"></div></div></div>' +
+          '<ul></ul>';
+        if (header && header.parentNode === formView) formView.insertBefore(box, header.nextSibling);
+        else formView.insertBefore(box, formView.firstChild);
+      }
+      var cover = box.querySelector('.lok-gc-cover'), n = box.querySelector('.service-name'), p = box.querySelector('.lok-pv-price'), meta = box.querySelector('.lok-gc-meta'), ul = box.querySelector('ul'), chip = box.querySelector('.lok-gc-chip');
+      return {
+        update: function (s) {
+          s = s || {};
+          n.textContent = s.name || 'Untitled listing';
+          p.textContent = s.hasPrice ? (s.price || '') : 'Add a price';
+          p.style.color = s.hasPrice ? '' : '#8E8BA6';
+          chip.className = 'lok-gc-chip ' + (s.live === false ? 'off' : 'on'); chip.textContent = s.live === false ? 'Hidden' : 'Live';
+          luiCoverBg(cover, s.imgUrl || '');
+          meta.innerHTML = '';
+          if (s.spec) meta.appendChild(luiChip(s.spec, 'spec'));
+          if (s.lead) meta.appendChild(luiChip(s.lead));
+          (s.ways || []).forEach(function (w) { if (w) meta.appendChild(luiChip(w, 'way')); });
+          var items = [[!!s.imgUrl, 'Photo'], [!!s.hasPrice, 'Price'], [!!s.spec, 'Specialty tag, so it shows in filters']];
+          ul.innerHTML = items.map(function (it) { return '<li class="' + (it[0] ? 'ok' : 'todo') + '">' + (it[0] ? LUI_ICO.ok : LUI_ICO.todo) + luiEsc(it[1]) + '</li>'; }).join('');
+        }
+      };
+    }
+  };
+
   window.LokaliDashboard = {
 
     requireAuth: function () {

@@ -505,7 +505,7 @@
         // decision (#86, 2026-07-18) — it named a billing tier customers don't
         // care about and competed with the Founding badge. Featured's real
         // deliverables are ranking, photo depth, and features-first rollout.
-        ut.appendChild(el('div', 'an-up-s', 'Featured vendors rank at the top of their category, show more photos, and get every new Lokali feature first.'));
+        ut.appendChild(el('div', 'an-up-s', 'Featured vendors rank at the top of their category, show more photos, and get everything Lokali offers.'));
       } else {
         ut.appendChild(el('div', 'an-up-t', 'Show customers more of your work'));
         ut.appendChild(el('div', 'an-up-s', 'Pro adds a photo gallery across the top of your storefront, 3 photos per listing, bookings straight from your page, and the Verified badge.'));

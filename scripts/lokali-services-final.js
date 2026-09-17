@@ -562,20 +562,9 @@ const LokaliServicesPage = (() => {
 
   const applyPillStyle = (pill, selected) => {
     if (!pill) return;
-    const inner = pill.firstElementChild || pill;
-    if (selected) {
-      pill.classList.add('filter-pill-selected');
-      inner.style.setProperty('background', '#6002EE', 'important');
-      inner.style.setProperty('background-color', '#6002EE', 'important');
-      inner.style.setProperty('color', '#FFFFFF', 'important');
-      inner.style.setProperty('border-color', 'transparent', 'important');
-    } else {
-      pill.classList.remove('filter-pill-selected');
-      inner.style.removeProperty('background');
-      inner.style.removeProperty('background-color');
-      inner.style.removeProperty('color');
-      inner.style.removeProperty('border-color');
-    }
+    // Segmented control (LokaliListingUI): classes only, no inline colors.
+    pill.classList.toggle('filter-pill-selected', !!selected);
+    pill.classList.toggle('lok-seg-on', !!selected);
   };
 
   const setStatusFilter = (val) => {
@@ -647,6 +636,7 @@ const LokaliServicesPage = (() => {
     if (loadFailed) return; // load-error card is up — don't paint the empty state over it
     const stack = el.stack();
     const emptyNew = el.emptyState();
+    if (emptyNew && window.LokaliListingUI) window.LokaliListingUI.emptyState(emptyNew, { kind: 'service', onAdd: () => el.addBtn()?.click() });
     const emptyFiltered = el.emptyStateFiltered();
     if (!stack) return;
 
@@ -698,14 +688,14 @@ const LokaliServicesPage = (() => {
         // Pro/Featured store an "unlimited" cap as a large sentinel (e.g. 99999999).
         // Don't render the raw number — show that the plan is uncapped.
         countEl.textContent =
-          `${activeCount} active service${activeCount === 1 ? '' : 's'} · unlimited on your plan`;
+          `${activeCount} live on your storefront · unlimited on your plan`;
       } else if (_maxServices != null) {
         const remaining = Math.max(0, _maxServices - totalCount);
         countEl.textContent =
           `${totalCount} of ${_maxServices} services · ${remaining} slot${remaining === 1 ? '' : 's'} left`;
       } else {
         countEl.textContent =
-          `${activeCount} active service${activeCount === 1 ? '' : 's'} · ${totalCount} total`;
+          `${activeCount} of ${totalCount} live on your storefront`;
       }
     }
 
@@ -735,7 +725,7 @@ const LokaliServicesPage = (() => {
           'font-family:"Plus Jakarta Sans",sans-serif;font-size:13px;color:#6B6580;' +
           'margin:2px 0 10px;line-height:1.5;';
         orderHint.textContent =
-          'Drag cards to reorder. Your first 5 lead your public page. New services start at the top.';
+          'New services start at the top. Drag a card to move it.';
         stack.parentNode.insertBefore(orderHint, stack);
       }
       if (orderHint) orderHint.style.display = '';
@@ -866,8 +856,21 @@ const LokaliServicesPage = (() => {
       card.addEventListener('dragover',  onDragOver);
       card.addEventListener('drop',      onDrop);
 
+      if (window.LokaliListingUI) window.LokaliListingUI.card(card, {
+        kind: 'service', imgUrl: service.image_url || '', hasPrice: !!formatPrice(service),
+        spec: lcSpecLabel(service.subcategory), lead: service.lead_time || '',
+        ways: [service.remote ? 'Remote' : ''], live: isServiceActive(service), pick: service.is_featured_pick === true
+      });
       stack.appendChild(card);
     });
+    if (window.LokaliListingUI) {
+      const LUI = window.LokaliListingUI;
+      const liveN = services.filter(isServiceActive).length;
+      LUI.afterRender(stack, { picks: services.filter((x) => x.is_featured_pick === true).length, cap: 5, featured: _isFeaturedPlan, customOrder: (el.sortSelect()?.value || 'custom') === 'custom' });
+      LUI.segmented({ all: el.pillAll(), live: el.pillActive(), hidden: el.pillInactive() }, { all: services.length, live: liveN, hidden: services.length - liveN });
+      LUI.header(document.querySelector('#services-list-view .text-block-33'), el.activeCount(), document.getElementById('services-order-hint'));
+      lcPaintViews();
+    }
 
     reorderFooterAfterStack(stack);
 
@@ -966,6 +969,76 @@ const LokaliServicesPage = (() => {
     if (section) section.style.display = 'none';
   };
 
+  // ── Listings UI (2026-09-17): photo cards, segmented filter, preview ──────
+  // Rendering lives in window.LokaliListingUI (lokali-dashboard.js); these
+  // readers hand it this page's state.
+  let _lcPreview = null, _lcPreviewWired = false, _lcViews = null, _lcViewsP = null;
+  const lcSpecLabel = (slug) => {
+    if (!slug) return '';
+    const hit = (_subcatList || []).find((r) => r.slug === slug);
+    return hit ? hit.label : String(slug).replace(/[-_]+/g, ' ').replace(/^\w/, (c) => c.toUpperCase());
+  };
+  const lcCoverUrl = () => {
+    const g = document.querySelector('#lok-service-gallery-body img[data-photo-idx="0"]');
+    if (g && g.getAttribute('src')) return g.getAttribute('src');
+    const t = el.imgThumb();
+    if (t && t.style.display !== 'none') {
+      if (String(t.tagName).toUpperCase() === 'IMG' && t.getAttribute('src')) return t.getAttribute('src');
+      const m = /url\("?([^")]+)"?\)/.exec(t.style.backgroundImage || '');
+      if (m) return m[1];
+    }
+    return '';
+  };
+  const lcPreviewPrice = () => {
+    const key = readPriceTypeFromSelect();
+    const cents = (v) => { const n = parseFloat(String(v ?? '').replace(/[$,\s]/g, '')); return isNaN(n) ? 0 : Math.round(n * 100); };
+    if (key === 'quote') return 'Get a quote';
+    const fake = { price_type: key, price_cents: cents(el.fieldPrice()?.value), price_min_cents: cents(el.fieldPriceStarting()?.value) || cents(el.fieldPriceMin()?.value), price_max_cents: cents(el.fieldPriceMax()?.value) };
+    if (key === 'fixed' && !(fake.price_cents > 0)) return '';
+    if (key === 'starting_at' && !(fake.price_min_cents > 0)) return '';
+    if (key === 'range' && !(fake.price_min_cents > 0 && fake.price_max_cents > 0)) return '';
+    return formatPrice(fake) || '';
+  };
+  const lcWays = () => [el.fieldRemote()?.checked ? 'Remote' : ''];
+  const lcRefreshPreview = () => {
+    if (!_lcPreview) return;
+    const price = lcPreviewPrice();
+    _lcPreview.update({ name: el.fieldName()?.value, price, hasPrice: !!price, spec: lcSpecLabel(_selectedSubcat), lead: _leadTime || '', imgUrl: lcCoverUrl(), ways: lcWays(), live: el.fieldIsActive() ? !!el.fieldIsActive().checked : true });
+  };
+  const lcMountPreview = () => {
+    const LUI = window.LokaliListingUI; if (!LUI) return;
+    const fv = el.formView(); if (!fv) return;
+    _lcPreview = LUI.preview(fv, fv.querySelector('.form-header'));
+    LUI.formBar(fv, el.saveBtn());
+    if (!_lcPreviewWired) {
+      _lcPreviewWired = true;
+      fv.addEventListener('input', lcRefreshPreview);
+      fv.addEventListener('change', lcRefreshPreview);
+      fv.addEventListener('click', () => setTimeout(lcRefreshPreview, 60));
+      if (window.MutationObserver) {
+        let tick = null;
+        new MutationObserver((ms) => {
+          const pv = document.getElementById('lok-lc-preview');
+          if (!ms.some((m) => !(pv && pv.contains(m.target)))) return;   // ignore our own preview repaint
+          clearTimeout(tick); tick = setTimeout(lcRefreshPreview, 80);
+        }).observe(fv, { childList: true, subtree: true, attributes: true, attributeFilter: ['src', 'style'] });
+      }
+    }
+    setTimeout(lcRefreshPreview, 0);
+    setTimeout(lcRefreshPreview, 500);
+  };
+  const lcPaintViews = () => {
+    const paint = () => window.LokaliListingUI && window.LokaliListingUI.paintStats(el.stack(), _lcViews || [], 'service');
+    if (_lcViews) { paint(); return; }
+    if (!_lcViewsP) {
+      const A = window.LokaliAPI;
+      _lcViewsP = (A && A.leads && A.leads.analytics ? A.leads.analytics() : Promise.resolve(null))
+        .then((r) => { const d = r && !r.error ? (r.data != null ? r.data : r) : null; _lcViews = (d && d.views) || []; })
+        .catch(() => { _lcViews = []; });
+    }
+    _lcViewsP.then(paint);
+  };
+
   const showFormView = () => {
     el.listView()?.style && (el.listView().style.display = 'none');
     el.formView()?.style && (el.formView().style.display = 'block');
@@ -977,6 +1050,7 @@ const LokaliServicesPage = (() => {
     ensureLeadTimeUI();    // #78
     syncLeadInput();
     renderLeadPresets();
+    lcMountPreview();
   };
 
   const openForm = (serviceId = null) => {

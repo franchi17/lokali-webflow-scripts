@@ -498,20 +498,9 @@ const LokaliProductsPage = (() => {
 
   const applyPillStyle = (pill, selected) => {
     if (!pill) return;
-    const inner = pill.firstElementChild || pill;
-    if (selected) {
-      pill.classList.add('filter-pill-selected');
-      inner.style.setProperty('background', '#FF8D00', 'important');
-      inner.style.setProperty('background-color', '#FF8D00', 'important');
-      inner.style.setProperty('color', '#FFFFFF', 'important');
-      inner.style.setProperty('border-color', 'transparent', 'important');
-    } else {
-      pill.classList.remove('filter-pill-selected');
-      inner.style.removeProperty('background');
-      inner.style.removeProperty('background-color');
-      inner.style.removeProperty('color');
-      inner.style.removeProperty('border-color');
-    }
+    // Segmented control (LokaliListingUI): classes only, no inline colors.
+    pill.classList.toggle('filter-pill-selected', !!selected);
+    pill.classList.toggle('lok-seg-on', !!selected);
   };
 
   const setStatusFilter = (val) => {
@@ -583,6 +572,7 @@ const LokaliProductsPage = (() => {
     if (loadFailed) return; // load-error card is up — don't paint the empty state over it
     const stack = el.stack();
     const emptyNew = el.emptyState();
+    if (emptyNew && window.LokaliListingUI) window.LokaliListingUI.emptyState(emptyNew, { kind: 'product', onAdd: () => el.addBtn()?.click(), onImport: () => document.getElementById('lok-import-btn')?.click() });
     const emptyFiltered = el.emptyStateFiltered();
     if (!stack) return;
 
@@ -639,14 +629,14 @@ const LokaliProductsPage = (() => {
         // Pro/Featured store an "unlimited" cap as a large sentinel (e.g. 99999999).
         // Don't render the raw number — show that the plan is uncapped.
         countEl.textContent =
-          `${activeCount} active product${activeCount === 1 ? '' : 's'} · unlimited on your plan`;
+          `${activeCount} live on your storefront · unlimited on your plan`;
       } else if (_maxProducts != null) {
         const remaining = Math.max(0, _maxProducts - totalCount);
         countEl.textContent =
           `${totalCount} of ${_maxProducts} products · ${remaining} slot${remaining === 1 ? '' : 's'} left`;
       } else {
         countEl.textContent =
-          `${activeCount} active product${activeCount === 1 ? '' : 's'} · ${totalCount} total`;
+          `${activeCount} of ${totalCount} live on your storefront`;
       }
     }
 
@@ -672,7 +662,7 @@ const LokaliProductsPage = (() => {
           'font-family:"Plus Jakarta Sans",sans-serif;font-size:13px;color:#6B6580;' +
           'margin:2px 0 10px;line-height:1.5;';
         orderHint.textContent =
-          'Drag cards to reorder. Your first 6 lead your public page. New products start at the top.';
+          'New products start at the top. Drag a card to move it.';
         stack.parentNode.insertBefore(orderHint, stack);
       }
       if (orderHint) orderHint.style.display = '';
@@ -820,8 +810,22 @@ const LokaliProductsPage = (() => {
       card.addEventListener('dragover',  onDragOver);
       card.addEventListener('drop',      onDrop);
 
+      if (window.LokaliListingUI) window.LokaliListingUI.card(card, {
+        kind: 'product', imgUrl: product.image_url || '', hasPrice: !!formatPrice(product),
+        spec: lcSpecLabel(product.subcategory), lead: product.lead_time || '',
+        ways: [product.shipping_offered ? 'Ships' : '', product.delivery_offered ? 'Delivery' : '', product.pickup_only ? 'Pickup' : '', product.buy_url ? 'Buy link' : ''],
+        live: isProductActive(product), pick: product.is_featured_pick === true
+      });
       stack.appendChild(card);
     });
+    if (window.LokaliListingUI) {
+      const LUI = window.LokaliListingUI;
+      const liveN = products.filter(isProductActive).length;
+      LUI.afterRender(stack, { picks: products.filter((x) => x.is_featured_pick === true).length, cap: 6, featured: _isFeaturedPlan, customOrder: (el.sortSelect()?.value || 'custom') === 'custom' });
+      LUI.segmented({ all: el.pillAll(), live: el.pillActive(), hidden: el.pillInactive() }, { all: products.length, live: liveN, hidden: products.length - liveN });
+      LUI.header(document.querySelector('#products-list-view .text-block-33'), el.activeCount(), document.getElementById('products-order-hint'));
+      lcPaintViews();
+    }
 
     reorderFooterAfterStack(stack);
 
@@ -933,6 +937,71 @@ const LokaliProductsPage = (() => {
     if (section) section.style.display = 'none';
   };
 
+  // ── Listings UI (2026-09-17): photo cards, segmented filter, preview ──────
+  // Rendering lives in window.LokaliListingUI (lokali-dashboard.js); these
+  // readers hand it this page's state.
+  let _lcPreview = null, _lcPreviewWired = false, _lcViews = null, _lcViewsP = null;
+  const lcSpecLabel = (slug) => {
+    if (!slug) return '';
+    const hit = (_subcatList || []).find((r) => r.slug === slug);
+    return hit ? hit.label : String(slug).replace(/[-_]+/g, ' ').replace(/^\w/, (c) => c.toUpperCase());
+  };
+  const lcCoverUrl = () => {
+    const g = document.querySelector('#lok-product-gallery-body img[data-photo-idx="0"]');
+    if (g && g.getAttribute('src')) return g.getAttribute('src');
+    const t = el.imgThumb();
+    if (t && t.style.display !== 'none') {
+      if (String(t.tagName).toUpperCase() === 'IMG' && t.getAttribute('src')) return t.getAttribute('src');
+      const m = /url\("?([^")]+)"?\)/.exec(t.style.backgroundImage || '');
+      if (m) return m[1];
+    }
+    return '';
+  };
+  const lcPreviewPrice = () => {
+    if (el.fieldQuoteBased()?.checked) return 'Quote';
+    const n = priceFromInput(el.fieldPrice()?.value);
+    return n > 0 ? formatPrice({ price: n }) : '';
+  };
+  const lcWays = () => [el.fieldShipping()?.checked ? 'Ships' : '', el.fieldDelivery()?.checked ? 'Delivery' : '', el.fieldPickupOnly()?.checked ? 'Pickup' : '', readBuyUrl() ? 'Buy link' : ''];
+  const lcRefreshPreview = () => {
+    if (!_lcPreview) return;
+    const price = lcPreviewPrice();
+    _lcPreview.update({ name: el.fieldName()?.value, price, hasPrice: !!price, spec: lcSpecLabel(_selectedSubcat), lead: _leadTime || '', imgUrl: lcCoverUrl(), ways: lcWays(), live: el.fieldIsActive() ? !!el.fieldIsActive().checked : true });
+  };
+  const lcMountPreview = () => {
+    const LUI = window.LokaliListingUI; if (!LUI) return;
+    const fv = el.formView(); if (!fv) return;
+    _lcPreview = LUI.preview(fv, fv.querySelector('.form-header'));
+    LUI.formBar(fv, el.saveBtn());
+    if (!_lcPreviewWired) {
+      _lcPreviewWired = true;
+      fv.addEventListener('input', lcRefreshPreview);
+      fv.addEventListener('change', lcRefreshPreview);
+      fv.addEventListener('click', () => setTimeout(lcRefreshPreview, 60));
+      if (window.MutationObserver) {
+        let tick = null;
+        new MutationObserver((ms) => {
+          const pv = document.getElementById('lok-lc-preview');
+          if (!ms.some((m) => !(pv && pv.contains(m.target)))) return;   // ignore our own preview repaint
+          clearTimeout(tick); tick = setTimeout(lcRefreshPreview, 80);
+        }).observe(fv, { childList: true, subtree: true, attributes: true, attributeFilter: ['src', 'style'] });
+      }
+    }
+    setTimeout(lcRefreshPreview, 0);
+    setTimeout(lcRefreshPreview, 500);
+  };
+  const lcPaintViews = () => {
+    const paint = () => window.LokaliListingUI && window.LokaliListingUI.paintStats(el.stack(), _lcViews || [], 'product');
+    if (_lcViews) { paint(); return; }
+    if (!_lcViewsP) {
+      const A = window.LokaliAPI;
+      _lcViewsP = (A && A.leads && A.leads.analytics ? A.leads.analytics() : Promise.resolve(null))
+        .then((r) => { const d = r && !r.error ? (r.data != null ? r.data : r) : null; _lcViews = (d && d.views) || []; })
+        .catch(() => { _lcViews = []; });
+    }
+    _lcViewsP.then(paint);
+  };
+
   const showFormView = () => {
     el.listView()?.style && (el.listView().style.display = 'none');
     el.formView()?.style && (el.formView().style.display = 'block');
@@ -945,6 +1014,7 @@ const LokaliProductsPage = (() => {
     ensureLeadTimeUI();    // #78
     syncLeadInput(_legacyTurnaroundDays);
     renderLeadPresets();
+    lcMountPreview();
   };
 
   const openForm = (productId = null) => {
