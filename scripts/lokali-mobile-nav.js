@@ -183,8 +183,18 @@
       '#lok-row1-cta{display:none;}',
       '@media screen and (min-width:360px) and (max-width:767px){',
       'html.lok-row2 #lok-row1-cta{display:inline-flex;align-items:center;min-height:36px;box-sizing:border-box;',
-      'padding:0 12px;margin-right:10px;border:1.5px solid #6002EE;border-radius:100px;color:#6002EE;background:transparent;',
-      'font-family:"Plus Jakarta Sans",system-ui,sans-serif;font-size:12.5px;font-weight:600;line-height:1;text-decoration:none;white-space:nowrap;}',
+      'padding:0 10px;margin-right:6px;border:1.5px solid #6002EE;border-radius:100px;color:#6002EE;background:transparent;',
+      'font-family:"Plus Jakarta Sans",system-ui,sans-serif;font-size:12px;font-weight:600;line-height:1;text-decoration:none;white-space:nowrap;flex:0 0 auto;}',
+      // Signed-out fit (measured live at 375: the 84px Login button pushed the row
+      // 15px past the container and the CTA squeezed the logo). Login becomes a
+      // compact text link with a 44px tap height; NO display rule here, auth-nav
+      // hides it inline once signed in. The logo never shrinks.
+      'html.lok-row2 .header-right-side a.button-6{padding:0 2px 0 8px!important;height:44px;box-sizing:border-box;line-height:42px;font-size:14px;flex:0 0 auto;}',
+      // Webflow gives the logo LINK a fixed 170px box with the image at 70% of it;
+      // pin the box to the 106px the logo already renders at on phones so the
+      // spare 64px goes to the right-hand group instead of empty space.
+      'html.lok-row2 .header-logo-link{flex:0 0 106px;width:106px!important;max-width:none;}',
+      'html.lok-row2 .header-logo-link .header-logo{width:106px;max-width:100%!important;}',
       'html.lok-row2 .header-right-side:has(.lok-acct) #lok-row1-cta{display:none;}',
       '}',
       '@media screen and (min-width:992px) and (max-width:1149px){',

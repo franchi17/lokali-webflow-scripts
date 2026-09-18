@@ -428,6 +428,17 @@
     ".lk-st-mini-s.saved{color:#B3184E;}.lk-st-mini-s.new{color:#11744A;}",
     "@media screen and (max-width:991px){.lk-st-tiles{grid-template-columns:repeat(3,minmax(0,1fr));}.lk-st-row{grid-template-columns:repeat(2,minmax(0,1fr));}}",
     "@media screen and (max-width:560px){.lk-st-tiles{grid-template-columns:repeat(2,minmax(0,1fr));}.lk-st-row{grid-template-columns:minmax(0,1fr);}.lk-st-head{flex-wrap:wrap;}}",
+    // #179 follow-up (F 2026-09-18): on phones the band stacked 3 rows of tiles +
+    // 4 full-width minis (~700px) between the filters and the first vendor. Each
+    // group becomes ONE swipeable row that bleeds to the screen edge, so the next
+    // item peeks in as the scroll cue (same pattern as the category chips).
+    "@media screen and (max-width:560px){",
+    ".lk-st-tiles,.lk-st-row{display:flex;gap:10px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;scroll-snap-type:x proximity;scroll-padding-left:32px;margin:0 -32px;padding:2px 32px 4px;}",
+    ".lk-st-tiles::-webkit-scrollbar,.lk-st-row::-webkit-scrollbar{display:none;}",
+    ".lk-st-tile{flex:0 0 148px;scroll-snap-align:start;}",
+    ".lk-st-mini{flex:0 0 236px;scroll-snap-align:start;}",
+    ".lk-st-sec{margin-bottom:16px;}",
+    "}",
     // #96 offerings — need-first: shoppers search for a service, not a business,
     // so this is the strongest text after the name. `.match` = the label that
     // made this card a search hit (promoted to front, violet).
