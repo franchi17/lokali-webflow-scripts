@@ -360,7 +360,10 @@
     ".lk-occ-ico{width:36px;height:36px;border-radius:10px;background:#fff;display:inline-flex;align-items:center;justify-content:center;flex:none;}",
     ".lk-occ-ico svg{width:16px;height:16px;}",
     ".lk-occ-txt{display:flex;flex-direction:column;min-width:0;flex:1 1 auto;}",
-    ".lk-occ-t{font-size:15px;font-weight:700;color:#1A1829;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}",
+    ".lk-occ-t{font-size:15px;font-weight:700;color:#1A1829;line-height:1.25;white-space:normal;overflow-wrap:break-word;}",
+    // Narrow phones: the name wraps rather than truncating, and the decorative
+    // icon steps aside so every name fits in two lines at 320px.
+    "@media screen and (max-width:400px){#lk-occ-bar .lk-occ-ico{display:none;}#lk-occ-bar{padding-left:14px;}}",
     ".lk-occ-n{font-size:12.5px;color:#4A4761;line-height:1.35;}",
     ".lk-occ-clear{display:inline-flex;align-items:center;gap:7px;flex:none;min-height:44px;padding:0 16px;border-radius:100px;border:1px solid #E4D6FF;background:#fff;color:#6002EE;font:700 13.5px/1 'Plus Jakarta Sans',sans-serif;cursor:pointer;}",
     ".lk-occ-clear:hover{background:#F3EBFF;}",
@@ -897,6 +900,7 @@
       if (!subcatDataPresent()) { activeSubcats = []; _rawRestoredSubcats = null; }
       renderSubcatRow();
       updateCategoryCounts();
+      _vendorsReady = true;
       applyFilters();
       fetchCovers();
       fetchTrustStats();
@@ -1358,7 +1362,15 @@
   function applyFilters() {
     // A shortcut lives only while its own filter is still applied: editing the
     // search or picking another category turns it into an ordinary filter state.
-    if (_occ && !occMatches(_occ)) _occ = null;
+    if (_occ && !occMatches(_occ)) {
+      var droppedK = _occ.k;
+      _occ = null;
+      var hsD = occHistoryState();
+      if (hsD && hsD.lkMarket === 'occ' && hsD.occ === droppedK) {
+        occMarkEntry('cleared');                 // a Back/Forward reload never re-applies it
+        if (_occPushedHere) _occAbandoned = true;
+      }
+    }
     var q = searchTerm.toLowerCase().trim();
     var toks = searchTokens(q);
     _searchScores = {};
@@ -1463,6 +1475,9 @@
   var _occPushedHere = false;    // THIS document pushed the 'occ' entry (history.back() stays same-document)
   var _occClearViaBack = false;  // Clear button asked for history.back()
   var _occBarEl = null;
+  var _occAbandoned = false;    // the shortcut was undone by another control while on the 'occ' entry this document pushed
+  var _vendorsReady = false;    // first vendor load rendered (popstate before that only adjusts state)
+  var _refSynced = false;       // init's syncFilterUI ran (the location map exists)
   function occMatches(o) {
     if (!o) return false;
     if (o.q) return searchTerm.trim().toLowerCase() === o.q;
@@ -1512,15 +1527,25 @@
     if (!o) return;
     if (!fromHistory) {
       try { if (typeof window.gtag === 'function') window.gtag('event', 'market_occasion', { occasion: o.t }); } catch (e) {}
+      // #110 category engagement: category tiles still count as a category view.
+      try { if (o.cat && typeof window.gtag === 'function') window.gtag('event', 'market_filter', { category: o.cat }); } catch (e) {}
     }
     _occ = o;
+    _occAbandoned = false;
     occSetFilters(o);
     syncFilterUI();   // sidebar category, toggles, search box (shadow DOM), subcat row
     applyFilters();   // grid + bar + band + persisted state
     if (!fromHistory) {
       // The tile tap reads as "going to a results page", so give it an entry:
       // the current one is marked as the way back, the new one names the shortcut.
-      try { occMarkEntry('base'); window.history.pushState({ lkMarket: 'occ', occ: o.k }, ''); _occPushedHere = true; } catch (e) {}
+      // Already on a shortcut entry (one left by hand, or restored after a
+      // reload)? Reuse it: the entry behind it is the main Market already, and
+      // stacking another one would leave a Back press that does nothing.
+      try {
+        var hsA = occHistoryState();
+        if (hsA && (hsA.lkMarket === 'occ' || hsA.lkMarket === 'cleared')) occMarkEntry('occ', o.k);
+        else { occMarkEntry('base'); window.history.pushState({ lkMarket: 'occ', occ: o.k }, ''); _occPushedHere = true; }
+      } catch (e) {}
     }
     scrollToNode(_occBarEl, !fromHistory);
     focusQuietly(_occBarEl);
@@ -1530,19 +1555,22 @@
   // position; land after it so the tiles are what the shopper sees.
   function returnToMarket(method, smooth, defer) {
     var prev = _occ;
+    _occAbandoned = false;
     clearFiltersToMarket();
     syncFilterUI();
     applyFilters();
     try { if (prev && typeof window.gtag === 'function') window.gtag('event', 'market_occasion_clear', { occasion: prev.t, method: method }); } catch (e) {}
     var land = function () {
-      var target = _startEl && _startEl.classList.contains('show') ? _startEl : _grid;
-      scrollToNode(target, smooth);
-      focusQuietly(prev && _startEl ? _startEl.querySelector('[data-occ="' + prev.k + '"]') : null);
+      var shown = _startEl && _startEl.classList.contains('show');
+      scrollToNode(shown ? _startEl : _grid, smooth);
+      // The tapped tile (or the New link); the first tile if that section is gone.
+      if (shown && prev) focusQuietly(_startEl.querySelector('[data-occ="' + prev.k + '"]') || _startEl.querySelector('.lk-st-tile'));
     };
     if (defer) setTimeout(function () { (window.requestAnimationFrame || setTimeout)(land); }, 0);
     else land();
   }
   function clearOccasion() {
+    if (_occClearViaBack) return;   // a Clear-driven Back is in flight; a second back() would leave the Market
     var st = occHistoryState();
     // Same-document back: pops the entry the tile pushed, so the stack stays
     // clean and the Back gesture afterwards leaves the Market as expected.
@@ -1560,18 +1588,35 @@
       }, 1000);
       return;
     }
-    // Entry restored after a reload / arrived by link: clear in place, and mark
-    // it so a later Forward never re-applies what the shopper cleared.
+    // This page was loaded AT the shortcut entry (a reload, or Back from a
+    // storefront that missed the page cache). Clear in place for instant
+    // feedback, mark the entry so Forward never re-applies it, then step back
+    // over it: the entry behind a shortcut entry is always the main Market.
     returnToMarket('button', true, false);
-    if (st && st.lkMarket === 'occ') occMarkEntry('cleared');
+    if (st && st.lkMarket === 'occ') {
+      occMarkEntry('cleared');
+      try { window.history.back(); } catch (e) {}
+    }
   }
   function onMarketPopState(e) {
     var st = e && e.state;
     if (!st || typeof st !== 'object' || !st.lkMarket) return;   // not ours
     var viaButton = _occClearViaBack;
     _occClearViaBack = false;
+    if (!_vendorsReady) {
+      // Still loading: adjust state only. The first vendor render paints it,
+      // and syncFilterUI waits for the location map so the neighborhood survives.
+      if (st.lkMarket === 'base') clearFiltersToMarket();
+      else if (st.lkMarket === 'occ') { var o0 = occByKey(st.occ); if (o0) { clearFiltersToMarket(); _occ = o0; occSetFilters(o0); } }
+      if (_refSynced) syncFilterUI();
+      persistState();
+      return;
+    }
     if (st.lkMarket === 'base') {
       if (!isDefaultView() || _occ) returnToMarket(viaButton ? 'button' : 'back', viaButton, true);
+      // The shopper already undid the shortcut by hand, so this entry shows the
+      // same main Market: keep going, one Back gesture should leave.
+      else if (_occAbandoned && !viaButton) { _occAbandoned = false; try { window.history.back(); } catch (err) {} }
     } else if (st.lkMarket === 'occ') {
       var o = occByKey(st.occ);
       if (o) { clearFiltersToMarket(); applyOccasion(o, true); }
@@ -1589,7 +1634,10 @@
     try { var ne = window.performance && window.performance.getEntriesByType ? window.performance.getEntriesByType('navigation') : null; nav = (ne && ne[0] && ne[0].type) || ''; } catch (e) {}
     if (nav !== 'back_forward') return;
     if (st.lkMarket === 'base' && _occ) clearFiltersToMarket();
-    else if (st.lkMarket === 'occ') { var o = occByKey(st.occ); if (o) { clearFiltersToMarket(); _occ = o; occSetFilters(o); } }
+    // A remembered view that already carries this shortcut (plus any extra
+    // filters the shopper added) is authoritative; only re-apply it when the
+    // session no longer has it (Forward after backing out, with a reload).
+    else if (st.lkMarket === 'occ' && !(_occ && _occ.k === st.occ)) { var o = occByKey(st.occ); if (o) { clearFiltersToMarket(); _occ = o; occSetFilters(o); } }
   }
   var XMARK_SVG = '<svg viewBox="0 0 384 512" aria-hidden="true"><path fill="currentColor" d="M342.6 150.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 210.7 86.6 105.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L146.7 256 41.4 361.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192 301.3 297.4 406.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.3 256 342.6 150.6z"/></svg>';
   function renderOccasionBar(count) {
@@ -2333,6 +2381,7 @@
         if (!restored && !deep.location) resolveInitialLocation(); // else saved/URL default
         populateLocationSelect();
         syncFilterUI();
+        _refSynced = true;
         if (!deep.location) applyRegionDefault(); // #44 — but never override an explicit deep-linked area
         return fetchVendors();
       })
