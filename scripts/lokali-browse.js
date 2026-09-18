@@ -325,6 +325,11 @@
     ".browse-hero .browse-hero-inner{max-width:976px;}",
     ".browse-hero{border-bottom:0;padding-top:28px;padding-bottom:0;}",
     ".browse-body{padding-top:18px;}",
+    // Wide desktops (F 2026-09-18: "a lot of space on the left and right"): the
+    // 1040px Designer box grows to 1424 (hero inner keeps its 32px inset) and the
+    // vendor grid takes a third column so cards hold their ~350px size instead
+    // of ballooning. Tiles/new-this-week rows are fr grids and just stretch.
+    "@media screen and (min-width:1440px){.browse-body{max-width:1424px;}.browse-hero .browse-hero-inner{max-width:1360px;}#browse-vendor-grid{grid-template-columns:repeat(3,minmax(0,1fr));}}",
     ".browse-hero .browse-hero-sub,.browse-hero .result-meta{display:none;}",
     "html.lk-hood-moved .browse-hero .form-block-7{display:none;}",
     "@media screen and (max-width:767px){html.lok-row2 .browse-hero .search-bar{display:none;}.browse-hero{padding-top:20px;}.browse-body{padding-top:14px;}}",
