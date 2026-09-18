@@ -1,7 +1,7 @@
 /*
   Lokali — header dropdowns (nav injection): "Features" + "Resources".
 
-  Adds a "Features" item (after The Market) revealing the two audience feature
+  Adds a "Features" item (after About) revealing the two audience feature
   pages, and a "Resources" item (after Pricing) revealing the vendor-resources
   guide pages. Injected by JS (same established pattern as lokali-auth-nav.js /
   lokali-availability.js) so the shared Webflow header component is never
@@ -36,7 +36,7 @@
       marker: 'lok-dd-feat',
       label: 'Features',
       href: '/features',
-      anchor: 'a[href*="/the-market"]',
+      anchor: 'a[href*="/about"]',
       links: [
         { href: '/for-customers', label: 'For customers' },
         { href: '/for-vendors',   label: 'For vendors' }
