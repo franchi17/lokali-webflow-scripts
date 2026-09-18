@@ -1390,7 +1390,8 @@
       if (showNewOnly && !vIsNew(v)) return false;
       if (showFoundingOnly && !vIsFounding(v)) return false;
       if (showVerifiedOnly && !vIsVerified(v)) return false;
-      if (q) {
+      var occTerms = _occ && _occ.terms;
+      if (q || occTerms) {
         // #96: search covers what vendors OFFER — subcategory labels, active
         // listing names, and the full description — not just
         // name/tagline/category label. Fields join on '\n' (a trimmed query
@@ -1404,8 +1405,19 @@
           .concat(vSubcatLabels(v)).concat(vSubcatKeywords(v)).join('\n').toLowerCase();
         var h2 = h1 + '\n' + vListingNames(v).join('\n').toLowerCase();
         var h3 = h2 + '\n' + String(vDescription(v) || '').toLowerCase();
-        var sc = searchScore(h1, h2, h3, q, toks);
-        if (!sc) return false;
+        var sc = 0;
+        if (q) { sc = searchScore(h1, h2, h3, q, toks); if (!sc) return false; }
+        if (occTerms) {
+          // Any word wins; its best band ranks the card (a typed search, when
+          // present, stays the primary rank).
+          var best = 0;
+          for (var oi = 0; oi < occTerms.length && best < 6; oi++) {
+            var ot = occTerms[oi];
+            best = Math.max(best, searchScore(h1, h2, h3, ot, searchTokens(ot)));
+          }
+          if (!best) return false;
+          if (!q) sc = best;
+        }
         _searchScores[String(v.id)] = sc;
       }
       return true;
@@ -1430,8 +1442,15 @@
   // (saves >= 3 from vendor_trust_stats; the floor is server-side). A strip
   // with nothing to show is omitted, never a skeleton.
   var OCCASIONS = [
-    { k: 'party',    t: 'Birthdays & parties',  s: 'toppers, cakes, decor, entertainment', q: 'party',   bg: '#FFF2DF', fg: '#9A4A00', ico: 'cake' },
-    { k: 'wedding',  t: 'Weddings & showers',   s: 'dresses, videography, favors',        q: 'wedding', bg: '#EFE5FD', fg: '#4B00B5', ico: 'ring' },
+    // terms = the tile matches a vendor when ANY of these words matches, with
+    // the Market's own search rules (tags + their synonyms, listing names,
+    // description). F 2026-09-18 "do option 3": 'party' alone missed the home
+    // bakers, whose synonyms say "birthday cake". Avoid words the light stemmer
+    // turns noisy: 'shower' -> 'show', 'dress' -> 'dres' (matches "address"),
+    // 'entertainer' -> 'entertain' (matches the whole Events & Entertainment
+    // category label).
+    { k: 'party',    t: 'Birthdays & parties',  s: 'toppers, cakes, decor, entertainment', terms: ['party', 'birthday', 'cake', 'balloon'], bg: '#FFF2DF', fg: '#9A4A00', ico: 'cake' },
+    { k: 'wedding',  t: 'Weddings & showers',   s: 'dresses, videography, favors',        terms: ['wedding', 'bridal', 'engagement', 'baby shower', 'bridal shower', 'gown'], bg: '#EFE5FD', fg: '#4B00B5', ico: 'ring' },
     { k: 'gifts',    t: 'Holiday gifts',        s: 'handmade, custom, made to order',     cat: 'handcrafted', bg: '#FDE8EF', fg: '#9B1C4B', ico: 'gift' },
     { k: 'home',     t: 'Home refresh',         s: 'painting, cleaning, decorating',      cat: 'home',        bg: '#E7F6EC', fg: '#1E6B3A', ico: 'house' },
     { k: 'school',   t: 'Back to school',       s: 'tutoring, lessons, childcare',        cat: 'children',    bg: '#E6F0FF', fg: '#1E4B9B', ico: 'cap' },
@@ -1455,7 +1474,7 @@
   };
   var _startEl = null;
   function isDefaultView() {
-    return !searchTerm.trim() && activeCategory === 'all' && !activeSubcats.length &&
+    return !searchTerm.trim() && !(_occ && _occ.terms) && activeCategory === 'all' && !activeSubcats.length &&
       !showNewOnly && !showFoundingOnly && !showVerifiedOnly;
   }
   // ── occasion bar + way back (F 2026-09-18: "allow people to clear the
@@ -1480,6 +1499,7 @@
   var _refSynced = false;       // init's syncFilterUI ran (the location map exists)
   function occMatches(o) {
     if (!o) return false;
+    if (o.terms) return true;          // its own filter; typing in the search box narrows it
     if (o.q) return searchTerm.trim().toLowerCase() === o.q;
     if (o.cat) return activeCategory === o.cat;
     if (o.toggle === 'new') return showNewOnly === true;
@@ -1763,6 +1783,9 @@
     showNewOnly = !!s.n; showFoundingOnly = !!s.f; showVerifiedOnly = !!s.v;
     searchTerm = s.q || '';
     _occ = s.o ? occByKey(s.o) : null; // validated against the filters on the first render
+    // Sessions saved by v1.4.450 kept the tile's single word in the search box
+    // ('party' / 'wedding'); the word list now carries it, so drop the echo.
+    if (_occ && _occ.terms && searchTerm && _occ.terms.indexOf(searchTerm.trim().toLowerCase()) !== -1) searchTerm = '';
     // #96 — restore subcategory picks, sanitized to real slugs OF the restored
     // category (a stale/foreign slug would silently filter everything out).
     // The raw list is kept so the sanitize can re-run when the LIVE taxonomy
@@ -1873,7 +1896,7 @@
   // it, so these targeted text swaps can't touch the live Brevo capture.
   var _emptyOrig = null; // original Webflow title/sub, captured before first rewrite
   function structuralEmpty() {
-    return !searchTerm && !showNewOnly && !showFoundingOnly && !showVerifiedOnly;
+    return !searchTerm && !(_occ && _occ.terms) && !showNewOnly && !showFoundingOnly && !showVerifiedOnly;
   }
   function categoryLabel() {
     if (activeCategory === 'all') return '';
@@ -2031,11 +2054,15 @@
     if (subLabels.length) {
       var q = searchTerm.toLowerCase().trim();
       var matchIdx = -1;
-      if (q) {
+      // A typed search explains the card; with none, the occasion's words do
+      // (Bakeamania under Birthdays & parties highlights "Home-based baker").
+      var qList = q ? [q] : ((_occ && _occ.terms) ? _occ.terms : []);
+      for (var qi = 0; qi < qList.length && matchIdx === -1; qi++) {
+        var qq = qList[qi];
         // #151: phrase hit preferred, else any token hit (same tolerance as the filter).
-        var qt = searchTokens(q);
+        var qt = searchTokens(qq);
         for (var ni = 0; ni < subLabels.length && matchIdx === -1; ni++) {
-          if (subLabels[ni].toLowerCase().indexOf(q) !== -1) matchIdx = ni;
+          if (subLabels[ni].toLowerCase().indexOf(qq) !== -1) matchIdx = ni;
         }
         // #151 step 2: a keyword hit ("cpa" → Bookkeeping) promotes and
         // highlights that pill too, so the synonym explains the result.
@@ -2197,7 +2224,7 @@
     renderCategoryChips();
     var btn = el('browse-mobile-filter-btn');
     if (!btn) return;
-    btn.classList.toggle('has-filters', activeCategory !== 'all' || activeSubcats.length > 0 || showNewOnly || showFoundingOnly || showVerifiedOnly || activeLocationId !== 'all' || !!searchTerm);
+    btn.classList.toggle('has-filters', activeCategory !== 'all' || activeSubcats.length > 0 || showNewOnly || showFoundingOnly || showVerifiedOnly || activeLocationId !== 'all' || !!searchTerm || !!(_occ && _occ.terms));
   }
 
   // ── setters ──
