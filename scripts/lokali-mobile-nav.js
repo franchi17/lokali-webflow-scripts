@@ -39,8 +39,8 @@
   }
 
   var LINKS = [
-    { label: 'About',           href: '/about' },
     { label: 'The Market',      href: '/the-market' },
+    { label: 'About',           href: '/about' },
     // Features = link + tap-to-expand audience pages (mirrors the desktop
     // "Features" dropdown from lokali-resources-nav.js; the label lands on
     // the /features chooser).
