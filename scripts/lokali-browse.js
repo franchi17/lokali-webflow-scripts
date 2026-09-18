@@ -353,6 +353,19 @@
     // Start-here band above the grid (occasions / new this week / neighbors' picks).
     // Only on the default landing view; hidden as soon as the shopper narrows.
     "#lk-start{display:none;font-family:'Plus Jakarta Sans',sans-serif;margin:0 0 22px;}",
+    // Occasion bar (2026-09-18): names the shortcut above the results with a
+    // 44px Clear button; tinted with the tile the shopper tapped.
+    "#lk-occ-bar{display:none;align-items:center;gap:12px;font-family:'Plus Jakarta Sans',sans-serif;border-radius:14px;padding:10px 10px 10px 12px;margin:0 0 16px;outline:none;}",
+    "#lk-occ-bar.show{display:flex;}",
+    ".lk-occ-ico{width:36px;height:36px;border-radius:10px;background:#fff;display:inline-flex;align-items:center;justify-content:center;flex:none;}",
+    ".lk-occ-ico svg{width:16px;height:16px;}",
+    ".lk-occ-txt{display:flex;flex-direction:column;min-width:0;flex:1 1 auto;}",
+    ".lk-occ-t{font-size:15px;font-weight:700;color:#1A1829;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}",
+    ".lk-occ-n{font-size:12.5px;color:#4A4761;line-height:1.35;}",
+    ".lk-occ-clear{display:inline-flex;align-items:center;gap:7px;flex:none;min-height:44px;padding:0 16px;border-radius:100px;border:1px solid #E4D6FF;background:#fff;color:#6002EE;font:700 13.5px/1 'Plus Jakarta Sans',sans-serif;cursor:pointer;}",
+    ".lk-occ-clear:hover{background:#F3EBFF;}",
+    ".lk-occ-clear:focus-visible{outline:2px solid #6002EE;outline-offset:2px;}",
+    ".lk-occ-x{display:inline-flex;width:12px;height:12px;}.lk-occ-x svg{width:12px;height:12px;display:block;}",
     "#lk-start.show{display:block;}",
     ".lk-st-sec{margin-bottom:20px;}",
     ".lk-st-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:10px;}",
@@ -782,6 +795,7 @@
       out.search = true;
     }
 
+    if (out.category || out.search) _occ = null; // an explicit link is not a tile tap
     if (out.location || out.category || out.search) {
       persistState(); // the deep-linked view becomes the remembered view
       try {
@@ -1342,6 +1356,9 @@
   }
   var _lastVisibleIds = [];   // demand signals: what the last filter pass matched
   function applyFilters() {
+    // A shortcut lives only while its own filter is still applied: editing the
+    // search or picking another category turns it into an ordinary filter state.
+    if (_occ && !occMatches(_occ)) _occ = null;
     var q = searchTerm.toLowerCase().trim();
     var toks = searchTokens(q);
     _searchScores = {};
@@ -1385,6 +1402,7 @@
     _lastVisibleIds = visible.map(function (v) { return v.id; });
     renderGrid(visible);
     try { renderStartHere(); } catch (e) {}
+    try { renderOccasionBar(visible.length); } catch (e) {}
     updateCounts(visible.length);
     updateActiveFilters();
     updateMobileIndicator();
@@ -1400,13 +1418,21 @@
   // (saves >= 3 from vendor_trust_stats; the floor is server-side). A strip
   // with nothing to show is omitted, never a skeleton.
   var OCCASIONS = [
-    { t: 'Birthdays & parties',  s: 'toppers, cakes, decor, entertainment', q: 'party',   bg: '#FFF2DF', fg: '#9A4A00', ico: 'cake' },
-    { t: 'Weddings & showers',   s: 'dresses, videography, favors',        q: 'wedding', bg: '#EFE5FD', fg: '#4B00B5', ico: 'ring' },
-    { t: 'Holiday gifts',        s: 'handmade, custom, made to order',     cat: 'handcrafted', bg: '#FDE8EF', fg: '#9B1C4B', ico: 'gift' },
-    { t: 'Home refresh',         s: 'painting, cleaning, decorating',      cat: 'home',        bg: '#E7F6EC', fg: '#1E6B3A', ico: 'house' },
-    { t: 'Back to school',       s: 'tutoring, lessons, childcare',        cat: 'children',    bg: '#E6F0FF', fg: '#1E4B9B', ico: 'cap' },
-    { t: 'Starting a business',  s: 'plans, websites, bookkeeping',        cat: 'business',    bg: '#EEEDF6', fg: '#4A4761', ico: 'briefcase' }
+    { k: 'party',    t: 'Birthdays & parties',  s: 'toppers, cakes, decor, entertainment', q: 'party',   bg: '#FFF2DF', fg: '#9A4A00', ico: 'cake' },
+    { k: 'wedding',  t: 'Weddings & showers',   s: 'dresses, videography, favors',        q: 'wedding', bg: '#EFE5FD', fg: '#4B00B5', ico: 'ring' },
+    { k: 'gifts',    t: 'Holiday gifts',        s: 'handmade, custom, made to order',     cat: 'handcrafted', bg: '#FDE8EF', fg: '#9B1C4B', ico: 'gift' },
+    { k: 'home',     t: 'Home refresh',         s: 'painting, cleaning, decorating',      cat: 'home',        bg: '#E7F6EC', fg: '#1E6B3A', ico: 'house' },
+    { k: 'school',   t: 'Back to school',       s: 'tutoring, lessons, childcare',        cat: 'children',    bg: '#E6F0FF', fg: '#1E4B9B', ico: 'cap' },
+    { k: 'business', t: 'Starting a business',  s: 'plans, websites, bookkeeping',        cat: 'business',    bg: '#EEEDF6', fg: '#4A4761', ico: 'briefcase' }
   ];
+  // "See everything new" in the band is the same kind of shortcut: it gets the
+  // same bar, Clear button and Back-gesture behavior as the occasion tiles.
+  var NEW_SHORTCUT = { k: 'new', t: 'New this week', toggle: 'new', bg: '#EAFAF2', fg: '#11744A', ico: 'bolt' };
+  function occByKey(k) {
+    if (k === NEW_SHORTCUT.k) return NEW_SHORTCUT;
+    for (var i = 0; i < OCCASIONS.length; i++) if (OCCASIONS[i].k === k) return OCCASIONS[i];
+    return null;
+  }
   var OCC_SVG = {
     cake: '<svg viewBox="0 0 448 512" aria-hidden="true"><path fill="currentColor" d="M86.4 5.5L61.8 47.5C58 53.9 56 61.2 56 68.7c0 25 20.3 45.3 45.3 45.3H112c25 0 45.3-20.3 45.3-45.3c0-7.5-2-14.8-5.8-21.2L126.9 5.5C124.5 2.1 120.6 0 116.5 0S108.5 2.1 106.1 5.5L86.4 5.5zM224 0c-2.4 0-4.8 .7-6.9 2l-19.7 41.5C193.6 50 192 57.7 192 65.5c0 25 20.3 45.3 45.3 45.3H240c25 0 45.3-20.3 45.3-45.3c0-7.8-1.6-15.5-5.4-22L260.9 2c-2.1-1.3-4.5-2-6.9-2H224zM331.5 5.5L306.9 47.5c-3.8 6.4-5.8 13.7-5.8 21.2c0 25 20.3 45.3 45.3 45.3H352c25 0 45.3-20.3 45.3-45.3c0-7.5-2-14.8-5.8-21.2L366.9 5.5C364.5 2.1 360.6 0 356.5 0s-8 2.1-10.4 5.5zM96 144c0-8.8-7.2-16-16-16s-16 7.2-16 16v48c-35.3 0-64 28.7-64 64v64c0 8.8 7.2 16 16 16s16-7.2 16-16V256c0-17.7 14.3-32 32-32H384c17.7 0 32 14.3 32 32v64c0 8.8 7.2 16 16 16s16-7.2 16-16V256c0-35.3-28.7-64-64-64V144c0-8.8-7.2-16-16-16s-16 7.2-16 16v48H240V144c0-8.8-7.2-16-16-16s-16 7.2-16 16v48H96V144zM0 400c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V352H0v48z"/></svg>',
     ring: '<svg viewBox="0 0 512 512" aria-hidden="true"><path fill="currentColor" d="M64 208c0 31.6 12.5 60.3 32.8 81.4c-3.7-10.6-5.8-22.1-5.8-34c0-53 43-96 96-96h48v-32H128C92.7 127.4 64 165.1 64 208zM256 96c-70.7 0-128 57.3-128 128s57.3 128 128 128s128-57.3 128-128S326.7 96 256 96zm0 208c-44.2 0-80-35.8-80-80s35.8-80 80-80s80 35.8 80 80s-35.8 80-80 80zm128-96h-48v32h48c53 0 96 43 96 96c0 11.9-2.1 23.4-5.8 34c20.3-21.1 32.8-49.8 32.8-81.4c0-42.9-28.7-80.6-64-80.6z"/></svg>',
@@ -1420,15 +1446,179 @@
     return !searchTerm.trim() && activeCategory === 'all' && !activeSubcats.length &&
       !showNewOnly && !showFoundingOnly && !showVerifiedOnly;
   }
-  function applyOccasion(o) {
-    try { if (typeof window.gtag === 'function') window.gtag('event', 'market_occasion', { occasion: o.t }); } catch (e) {}
-    if (o.cat) { setCategory(o.cat); }
-    else {
-      searchTerm = o.q;
-      var inp = findSearchInput(); if (inp) inp.value = o.q;
-      applyFilters();
+  // ── occasion bar + way back (F 2026-09-18: "allow people to clear the
+  // occasion search on phones and go back to the main market page") ──────
+  // Tapping a tile scrolled the shopper past the search box, and nothing near
+  // the results said what was applied or how to undo it (search terms never get
+  // an applied-filter chip, the search island has no clear button, the "All"
+  // chip only resets category, and the phone's Back gesture LEFT the Market).
+  // Now: (1) a bar right above the results names the shortcut in the tile's
+  // own colors with a 44px Clear button (applied filters shown where the
+  // results are, with a direct way to remove them); (2) the tap adds a history
+  // entry, so Back returns to the main Market instead of leaving it. The tiles
+  // only exist on the default view, so "undo the shortcut" and "back to the
+  // main Market" are the same state: every filter off, neighborhood and sort
+  // kept. History entries carry { lkMarket: 'base' | 'occ' | 'cleared' }.
+  var _occ = null;               // the active shortcut (null = none)
+  var _occPushedHere = false;    // THIS document pushed the 'occ' entry (history.back() stays same-document)
+  var _occClearViaBack = false;  // Clear button asked for history.back()
+  var _occBarEl = null;
+  function occMatches(o) {
+    if (!o) return false;
+    if (o.q) return searchTerm.trim().toLowerCase() === o.q;
+    if (o.cat) return activeCategory === o.cat;
+    if (o.toggle === 'new') return showNewOnly === true;
+    return false;
+  }
+  function occSetFilters(o) {           // state only — the caller renders
+    if (o.q) searchTerm = o.q;
+    else if (o.cat) { if (o.cat !== activeCategory) { activeSubcats = []; _rawRestoredSubcats = null; } activeCategory = o.cat; }
+    else if (o.toggle === 'new') showNewOnly = true;
+  }
+  function clearFiltersToMarket() {    // state only: the default view, neighborhood + sort kept
+    _occ = null;
+    searchTerm = ''; activeCategory = 'all'; activeSubcats = []; _rawRestoredSubcats = null;
+    showNewOnly = false; showFoundingOnly = false; showVerifiedOnly = false;
+  }
+  function occHistoryState() { var st = null; try { st = window.history.state; } catch (e) {} return st && typeof st === 'object' ? st : null; }
+  function occMarkEntry(mark, key) {
+    try {
+      var st = occHistoryState(), next = {};
+      if (st) for (var k in st) if (Object.prototype.hasOwnProperty.call(st, k)) next[k] = st[k];
+      next.lkMarket = mark;
+      if (key) next.occ = key; else delete next.occ;
+      window.history.replaceState(next, '');
+    } catch (e) {}
+  }
+  function prefersReducedMotion() {
+    try { return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) { return false; }
+  }
+  // Desktop pins the site header (lokali-sticky-nav.js, >=992px), so a plain
+  // scrollIntoView parks the target UNDER it; phones leave the header alone.
+  function headerOffset() {
+    var h = document.querySelector('.header-wrapper.w-nav');
+    var desk = false; try { desk = window.matchMedia('(min-width: 992px)').matches; } catch (e) {}
+    return (desk && h ? h.getBoundingClientRect().height : 0) + 12;
+  }
+  function scrollToNode(node, smooth) {
+    if (!node) return;
+    var y = node.getBoundingClientRect().top + (window.pageYOffset || document.documentElement.scrollTop || 0) - headerOffset();
+    y = Math.max(0, Math.round(y));
+    try { window.scrollTo({ top: y, behavior: smooth && !prefersReducedMotion() ? 'smooth' : 'auto' }); }
+    catch (e) { window.scrollTo(0, y); }
+  }
+  function focusQuietly(node) { if (!node || !node.focus) return; try { node.focus({ preventScroll: true }); } catch (e) { node.focus(); } }
+  function applyOccasion(o, fromHistory) {
+    if (!o) return;
+    if (!fromHistory) {
+      try { if (typeof window.gtag === 'function') window.gtag('event', 'market_occasion', { occasion: o.t }); } catch (e) {}
     }
-    if (_grid && _grid.scrollIntoView) _grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    _occ = o;
+    occSetFilters(o);
+    syncFilterUI();   // sidebar category, toggles, search box (shadow DOM), subcat row
+    applyFilters();   // grid + bar + band + persisted state
+    if (!fromHistory) {
+      // The tile tap reads as "going to a results page", so give it an entry:
+      // the current one is marked as the way back, the new one names the shortcut.
+      try { occMarkEntry('base'); window.history.pushState({ lkMarket: 'occ', occ: o.k }, ''); _occPushedHere = true; } catch (e) {}
+    }
+    scrollToNode(_occBarEl, !fromHistory);
+    focusQuietly(_occBarEl);
+  }
+  // Back to the main Market. method: 'button' | 'back'. `defer` = we are inside
+  // a popstate, where the browser may still apply the entry's saved scroll
+  // position; land after it so the tiles are what the shopper sees.
+  function returnToMarket(method, smooth, defer) {
+    var prev = _occ;
+    clearFiltersToMarket();
+    syncFilterUI();
+    applyFilters();
+    try { if (prev && typeof window.gtag === 'function') window.gtag('event', 'market_occasion_clear', { occasion: prev.t, method: method }); } catch (e) {}
+    var land = function () {
+      var target = _startEl && _startEl.classList.contains('show') ? _startEl : _grid;
+      scrollToNode(target, smooth);
+      focusQuietly(prev && _startEl ? _startEl.querySelector('[data-occ="' + prev.k + '"]') : null);
+    };
+    if (defer) setTimeout(function () { (window.requestAnimationFrame || setTimeout)(land); }, 0);
+    else land();
+  }
+  function clearOccasion() {
+    var st = occHistoryState();
+    // Same-document back: pops the entry the tile pushed, so the stack stays
+    // clean and the Back gesture afterwards leaves the Market as expected.
+    if (_occPushedHere && st && st.lkMarket === 'occ') {
+      _occClearViaBack = true;
+      window.history.back();
+      // Safety net: if no popstate arrives, clear in place (and mark the entry
+      // only if the Back really did not happen, so the 'base' entry keeps its mark).
+      setTimeout(function () {
+        if (!_occClearViaBack) return;
+        _occClearViaBack = false;
+        var cur = occHistoryState();
+        returnToMarket('button', true, false);
+        if (cur && cur.lkMarket === 'occ') occMarkEntry('cleared');
+      }, 1000);
+      return;
+    }
+    // Entry restored after a reload / arrived by link: clear in place, and mark
+    // it so a later Forward never re-applies what the shopper cleared.
+    returnToMarket('button', true, false);
+    if (st && st.lkMarket === 'occ') occMarkEntry('cleared');
+  }
+  function onMarketPopState(e) {
+    var st = e && e.state;
+    if (!st || typeof st !== 'object' || !st.lkMarket) return;   // not ours
+    var viaButton = _occClearViaBack;
+    _occClearViaBack = false;
+    if (st.lkMarket === 'base') {
+      if (!isDefaultView() || _occ) returnToMarket(viaButton ? 'button' : 'back', viaButton, true);
+    } else if (st.lkMarket === 'occ') {
+      var o = occByKey(st.occ);
+      if (o) { clearFiltersToMarket(); applyOccasion(o, true); }
+    }
+  }
+  // Cross-document arrivals (the page was discarded between entries, e.g. a
+  // reload at the shortcut entry and then Back): the remembered sessionStorage
+  // view would otherwise re-show the shortcut the shopper just backed out of.
+  // Only BACK/FORWARD arrivals are reconciled; a reload or a link keeps the
+  // remembered view exactly as before this feature.
+  function reconcileHistoryOnLoad() {
+    var st = occHistoryState();
+    if (!st || !st.lkMarket) return;
+    var nav = '';
+    try { var ne = window.performance && window.performance.getEntriesByType ? window.performance.getEntriesByType('navigation') : null; nav = (ne && ne[0] && ne[0].type) || ''; } catch (e) {}
+    if (nav !== 'back_forward') return;
+    if (st.lkMarket === 'base' && _occ) clearFiltersToMarket();
+    else if (st.lkMarket === 'occ') { var o = occByKey(st.occ); if (o) { clearFiltersToMarket(); _occ = o; occSetFilters(o); } }
+  }
+  var XMARK_SVG = '<svg viewBox="0 0 384 512" aria-hidden="true"><path fill="currentColor" d="M342.6 150.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 210.7 86.6 105.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L146.7 256 41.4 361.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192 301.3 297.4 406.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.3 256 342.6 150.6z"/></svg>';
+  function renderOccasionBar(count) {
+    if (!_grid || !_grid.parentNode) return;
+    if (!_occBarEl) {
+      _occBarEl = ce('div'); _occBarEl.id = 'lk-occ-bar';
+      _occBarEl.setAttribute('tabindex', '-1');
+      _occBarEl.setAttribute('role', 'region');
+      if (_startEl && _startEl.parentNode) _startEl.parentNode.insertBefore(_occBarEl, _startEl.nextSibling);
+      else _grid.parentNode.insertBefore(_occBarEl, el('browse-loading') || _grid);
+    }
+    if (!_occ) { _occBarEl.classList.remove('show'); _occBarEl.innerHTML = ''; return; }
+    var o = _occ;
+    _occBarEl.innerHTML = '';
+    _occBarEl.style.background = o.bg;
+    _occBarEl.setAttribute('aria-label', o.t);
+    var ic = ce('span', 'lk-occ-ico'); ic.style.color = o.fg; ic.innerHTML = OCC_SVG[o.ico] || SIG_SVG[o.ico] || ''; // static markup only
+    _occBarEl.appendChild(ic);
+    var tx = ce('div', 'lk-occ-txt');
+    var t = ce('span', 'lk-occ-t'); t.textContent = o.t; tx.appendChild(t);
+    var n = ce('span', 'lk-occ-n'); n.textContent = count === 1 ? '1 vendor' : (count + ' vendors'); tx.appendChild(n);
+    _occBarEl.appendChild(tx);
+    var b = ce('button', 'lk-occ-clear'); b.type = 'button';
+    b.setAttribute('aria-label', 'Clear ' + o.t + ' and show the whole Market');
+    var bx = ce('span', 'lk-occ-x'); bx.innerHTML = XMARK_SVG; b.appendChild(bx);
+    b.appendChild(document.createTextNode('Clear'));
+    b.addEventListener('click', clearOccasion);
+    _occBarEl.appendChild(b);
+    _occBarEl.classList.add('show');
   }
   function miniCard(v, kind, text) {
     var a = ce('a', 'lk-st-mini'); a.href = vProfileHref(v);
@@ -1457,7 +1647,7 @@
     if (!_grid || !_grid.parentNode) return;
     if (!_startEl) {
       _startEl = ce('div'); _startEl.id = 'lk-start';
-      var anchor = el('browse-loading') || _grid;
+      var anchor = _occBarEl || el('browse-loading') || _grid;
       _grid.parentNode.insertBefore(_startEl, anchor);
     }
     if (!isDefaultView() || !_allVendors.length) { _startEl.classList.remove('show'); return; }
@@ -1466,7 +1656,7 @@
     var occ = stSection("What's the occasion?", 'Shortcuts across categories', null, null);
     var tiles = ce('div', 'lk-st-tiles');
     OCCASIONS.forEach(function (o) {
-      var t = ce('button', 'lk-st-tile'); t.type = 'button';
+      var t = ce('button', 'lk-st-tile'); t.type = 'button'; t.setAttribute('data-occ', o.k);
       t.style.background = o.bg; t.style.color = o.fg;
       var ic = ce('span', 'lk-st-tile-ico'); ic.innerHTML = OCC_SVG[o.ico] || ''; ic.style.color = o.fg; t.appendChild(ic);
       var tt = ce('span', 'lk-st-tile-t'); tt.textContent = o.t; t.appendChild(tt);
@@ -1481,7 +1671,8 @@
       return vIsNew(v) && (locId == null || vLocationIds(v).map(String).indexOf(locId) !== -1);
     }).sort(function (a, b) { return vCreated(b) - vCreated(a); });
     if (fresh.length) {
-      var nw = stSection('New this week', null, 'See everything new →', function () { setToggle('new', true); });
+      var nw = stSection('New this week', null, 'See everything new →', function () { applyOccasion(NEW_SHORTCUT); });
+      var nwLink = nw.querySelector('.lk-st-link'); if (nwLink) nwLink.setAttribute('data-occ', NEW_SHORTCUT.k);
       var row = ce('div', 'lk-st-row');
       fresh.slice(0, 4).forEach(function (v) { row.appendChild(miniCard(v, 'new', 'Just opened')); });
       nw.appendChild(row); _startEl.appendChild(nw);
@@ -1509,7 +1700,8 @@
         // Persist the RAW restored list while it's still authoritative — else
         // an interim baked-only sanitize would permanently drop a DB-only pick.
         sc: _rawRestoredSubcats || activeSubcats,
-        n: showNewOnly, f: showFoundingOnly, v: showVerifiedOnly, q: searchTerm
+        n: showNewOnly, f: showFoundingOnly, v: showVerifiedOnly, q: searchTerm,
+        o: _occ ? _occ.k : null
       }));
     } catch (e) {}
   }
@@ -1522,6 +1714,7 @@
     if (s.s) activeSort = s.s;
     showNewOnly = !!s.n; showFoundingOnly = !!s.f; showVerifiedOnly = !!s.v;
     searchTerm = s.q || '';
+    _occ = s.o ? occByKey(s.o) : null; // validated against the filters on the first render
     // #96 — restore subcategory picks, sanitized to real slugs OF the restored
     // category (a stale/foreign slug would silently filter everything out).
     // The raw list is kept so the sanitize can re-run when the LIVE taxonomy
@@ -1885,12 +2078,14 @@
     if (!strip) return;
     strip.innerHTML = '';
     if (activeLocationId !== 'all' && _locationsById[activeLocationId]) addChip(strip, _locationsById[activeLocationId].name, function () { setLocation('all'); });
-    if (activeCategory !== 'all') { var c = CAT_BY_ID[SLUG_TO_ID[activeCategory]]; addChip(strip, c ? c.label : activeCategory, function () { setCategory('all'); }); }
+    var occOwnsCat = !!(_occ && _occ.cat && _occ.cat === activeCategory);
+    var occOwnsNew = !!(_occ && _occ.toggle === 'new');
+    if (activeCategory !== 'all' && !occOwnsCat) { var c = CAT_BY_ID[SLUG_TO_ID[activeCategory]]; addChip(strip, c ? c.label : activeCategory, function () { setCategory('all'); }); }
     activeSubcats.forEach(function (sl) { // #96
       var sc = SUBCAT_BY_SLUG[sl];
       addChip(strip, sc ? sc.label : sl, function () { toggleSubcat(sl); });
     });
-    if (showNewOnly)      addChip(strip, 'New this week',    function () { setToggle('new', false); });
+    if (showNewOnly && !occOwnsNew) addChip(strip, 'New this week', function () { setToggle('new', false); });
     if (showFoundingOnly) addChip(strip, 'Founding vendors', function () { setToggle('founding', false); });
     if (showVerifiedOnly) addChip(strip, 'Verified',         function () { setToggle('verified', false); });
   }
@@ -2134,6 +2329,7 @@
       .catch(function (err) { console.warn('[lokali-browse] ref data load failed, continuing:', err); })
       .then(function () {
         var deep = applyDeepLink(); // CAT-LINK — external filtered entry; wins over session + default
+        reconcileHistoryOnLoad();   // occasion shortcut: Back/Forward arrivals after the page was discarded
         if (!restored && !deep.location) resolveInitialLocation(); // else saved/URL default
         populateLocationSelect();
         syncFilterUI();
@@ -2153,6 +2349,7 @@
   // while it was empty (e.g. mid-load) and then returns via the browser Back button,
   // the page is restored from a snapshot and init() does NOT re-run — leaving a blank,
   // vendor-less grid. Re-fetch on bfcache restore whenever no cards are showing.
+  window.addEventListener('popstate', onMarketPopState);
   window.addEventListener('pageshow', function (e) {
     if (!e.persisted) return;
     if (!window.LokaliAPI || !_grid) return;
