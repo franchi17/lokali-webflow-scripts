@@ -645,6 +645,45 @@
     return row;
   }
 
+  // Icon-only mode with a fly-out input, scoped to a media query + form selector.
+  function squeeze(media, sel) {
+    return [
+      media,
+      sel + '{margin-right:6px;}',
+      sel + ' input{display:none;}',
+      sel + ' button{position:static;transform:none;width:44px;height:44px;}',
+      sel + '.lok-hs-open input{display:block;position:absolute;right:0;top:50%;',
+      'transform:translateY(-50%);width:260px;background:#fff;border-color:var(--lokali-primary,#6002ee);',
+      'z-index:9;box-shadow:0 6px 18px rgba(20,10,60,.12);}',
+      sel + '.lok-hs-open button{position:absolute;right:4px;top:50%;transform:translateY(-50%);',
+      'width:34px;height:34px;z-index:10;}',
+      '}'
+    ].join('');
+  }
+
+  // Width breakpoints cannot know how wide the right side is (signed in vs out,
+  // name length), so measure: if the inline field would sit within 20px of the
+  // last nav link, fall back to the magnifier. Measured with the class OFF so
+  // the answer never depends on the current mode (no flip-flopping).
+  function fitHeaderSearch(form) {
+    var open = form.classList.contains('lok-hs-open');
+    if (open && document.activeElement && form.contains(document.activeElement)) return;
+    form.classList.remove('lok-hs-tight');
+    var tight = false;
+    var inp = form.querySelector('input');
+    if (inp && getComputedStyle(inp).display !== 'none') {
+      var links = document.querySelectorAll('.header-wrapper .header-nav-link, .header-wrapper .lok-res-trig');
+      var edge = 0;
+      for (var i = 0; i < links.length; i++) {
+        var r = links[i].getBoundingClientRect();
+        if (r.width && r.right > edge && !form.contains(links[i])) edge = r.right;
+      }
+      tight = edge > 0 && form.getBoundingClientRect().left - edge < 20;
+    }
+    form.classList.toggle('lok-hs-tight', tight);
+    if (ON_MARKET) document.documentElement.classList.toggle('lok-mkt-hs', !tight);
+  }
+
   function buildHeaderSearch() {
     if (document.getElementById('lok-hdr-search')) return;
     var right = document.querySelector('.header-right-side');
@@ -676,17 +715,14 @@
         // 1350 -> 1380 on 2026-09-02 to pay for the 26px wider resting field) -
         // magnifier only, and a click flies the input out OVER the links
         // (absolute, right-anchored).
-        '@media screen and (min-width:1150px) and (max-width:1379px){',
-        '#lok-hdr-search{margin-right:6px;}',
-        '#lok-hdr-search input{display:none;}',
-        '#lok-hdr-search button{position:static;transform:none;width:44px;height:44px;}',
-        '#lok-hdr-search.lok-hs-open input{display:block;position:absolute;right:0;top:50%;',
-        'transform:translateY(-50%);width:260px;background:#fff;border-color:var(--lokali-primary,#6002ee);',
-        'z-index:9;box-shadow:0 6px 18px rgba(20,10,60,.12);}',
-        '#lok-hdr-search.lok-hs-open button{position:absolute;right:4px;top:50%;transform:translateY(-50%);',
-        'width:34px;height:34px;z-index:10;}',
-        '}',
+        squeeze('@media screen and (min-width:1150px) and (max-width:1379px){', '#lok-hdr-search'),
         '@media screen and (max-width:1379px){#lok-hdr-search.lok-hs-market{display:none!important;}}',
+        // Same squeeze at ANY desktop width once fitHeaderSearch() measures a
+        // collision (2026-09-18: signed in, the bell + account chip + "Open your
+        // storefront" make the right side ~250px wider than the signed-out header
+        // the 1380 line was tuned on, and the field sat on top of "Contact us").
+        squeeze('@media screen and (min-width:1150px){', '#lok-hdr-search.lok-hs-tight'),
+        '#lok-hdr-search.lok-hs-market.lok-hs-tight{display:none!important;}',
         // Burger range (matches F5 above): icon only, 44px target; the drawer field takes over.
         '@media screen and (max-width:1149px){',
         '#lok-hdr-search{margin-right:0;}',
@@ -746,6 +782,20 @@
       if (ev.key === 'Escape') form.classList.remove('lok-hs-open');
     });
     right.insertBefore(form, right.firstChild);
+
+    var raf = 0;
+    function refit() {
+      if (raf) return;
+      raf = requestAnimationFrame(function () { raf = 0; fitHeaderSearch(form); });
+    }
+    refit();
+    window.addEventListener('resize', refit);
+    window.addEventListener('load', refit);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(refit);
+    // auth-nav swaps Login for the bell + account chip after the session resolves.
+    if (window.MutationObserver) {
+      new MutationObserver(refit).observe(right, { childList: true, subtree: true, characterData: true });
+    }
   }
 
   function init() {
