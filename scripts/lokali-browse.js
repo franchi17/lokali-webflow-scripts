@@ -301,8 +301,16 @@
     // vendor's WORK, never the logo — the avatar carries identity), tagline in
     // the vendor's voice, need-first offerings line, one Visit-storefront CTA.
     // Contact buttons moved to the storefront; the card's job is earning the click.
-    ".vcard{background:#fff;border:.5px solid #EEEDF6;border-radius:14px;padding:0;cursor:pointer;transition:all .15s;position:relative;overflow:hidden;font-family:'Plus Jakarta Sans',sans-serif;box-shadow:0 2px 10px rgba(96,2,238,.05);}",
-    ".vcard:hover{border-color:#D4AAFD;box-shadow:0 4px 16px rgba(96,2,238,.10);transform:translateY(-1px);}",
+    // Card edges 2026-09-18 (F: 'the cards get lost'): 1px #DEDAEE + a tight contact
+    // shadow. The old .5px #EEEDF6 drew at half strength on 1x screens and the .05
+    // violet blur sat below what the eye notices, so white-background covers had
+    // no top edge. prefers-contrast users get a 3:1 edge (block below).
+    ".vcard{background:#fff;border:1px solid #DEDAEE;border-radius:14px;padding:0;cursor:pointer;transition:all .15s;position:relative;overflow:hidden;font-family:'Plus Jakarta Sans',sans-serif;box-shadow:0 1px 2px rgba(40,32,90,.08),0 4px 14px rgba(40,32,90,.06);}",
+    ".vcard:hover{border-color:#D4AAFD;box-shadow:0 2px 4px rgba(40,32,90,.08),0 10px 24px rgba(96,2,238,.10);transform:translateY(-1px);}",
+    "@media (prefers-contrast:more){.vcard{border-color:#837E9B;}}",
+    // Gutter wider than the card's 14px inner padding so spacing separates cards too.
+    "#browse-vendor-grid{gap:20px;}",
+    ".browse-sidebar{border:1px solid #E4E2F0;}",
     ".vcard-spotlight{border-color:rgba(96,2,238,.2);}",
     // Cover: real photo when the vendor has one (gallery -> service -> product,
     // resolved by the adapter), else the branded gradient + initials mark.
@@ -310,6 +318,8 @@
     // full-width single-column card gets 200px in the 767px block below.
     ".vcard-cover{height:165px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#E9E1FA 0%,#F9E7DC 55%,#FDF3EC 100%);}",
     ".vcard-cover-img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;display:block;transition:opacity .65s ease;}",
+    // Hairline under the cover: a white product photo keeps an edge above the text.
+    ".vcard-cover::after{content:'';position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 -1px 0 rgba(40,32,90,.08);}",
     ".vcard-cover-mark{font-size:32px;font-weight:800;color:rgba(96,2,238,.16);letter-spacing:2px;user-select:none;}",
     // Portfolio carousel (Pro/Featured, F 2026-09-01): crossfading cover layers
     // + quiet position dots. Dots sit under the pill/heart z-wise and stay tiny.
@@ -382,7 +392,7 @@
     ".lk-st-tile-t{font-size:13.5px;font-weight:700;color:#1A1829;line-height:1.25;}",
     ".lk-st-tile-s{font-size:11.5px;color:#4A4761;line-height:1.35;}",
     ".lk-st-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;}",
-    ".lk-st-mini{display:flex;gap:10px;align-items:center;padding:10px 12px;background:#fff;border:1px solid #EEEDF6;border-radius:12px;text-decoration:none;min-width:0;}",
+    ".lk-st-mini{display:flex;gap:10px;align-items:center;padding:10px 12px;background:#fff;border:1px solid #DEDAEE;border-radius:12px;text-decoration:none;min-width:0;box-shadow:0 1px 2px rgba(40,32,90,.08);}",
     ".lk-st-mini .vcard-avatar{width:40px;height:40px;font-size:13px;}",
     ".lk-st-mini-txt{display:flex;flex-direction:column;gap:2px;min-width:0;}",
     ".lk-st-mini-n{font-size:13.5px;font-weight:700;color:#1A1829;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}",
