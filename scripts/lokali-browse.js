@@ -312,6 +312,32 @@
     "#browse-vendor-grid{gap:20px;}",
     ".browse-sidebar{border:1px solid #E4E2F0;}",
     ".vcard-spotlight{border-color:rgba(96,2,238,.2);}",
+    // #179 ground + compact hero (F 2026-09-18). #F2F1F9 = F's grey nudged so the
+    // muted #6E6A85 keeps AA (4.61:1; #EEEDF6 = 4.45) - the band Apple/Facebook
+    // put behind white cards. The hero keeps the eyebrow + H1 only, on the same
+    // ground (no white band); subline + the duplicate 'N vendors found' go at
+    // every size. The hero search box hides only where a header field replaces
+    // it (classes set by lokali-mobile-nav.js, so an old nav pin changes nothing).
+    // .section-18 too: .browse-body is a 1040px box, so without it the grey stops
+    // short and the page shows white flanks beside it on wide screens.
+    ".browse-body,.browse-hero,.section-18{background:#F2F1F9;}",
+    // Title lines up with the grid below (body = 1040 box - 2x32 padding = 976).
+    ".browse-hero .browse-hero-inner{max-width:976px;}",
+    ".browse-hero{border-bottom:0;padding-top:28px;padding-bottom:0;}",
+    ".browse-body{padding-top:18px;}",
+    ".browse-hero .browse-hero-sub,.browse-hero .result-meta{display:none;}",
+    "html.lk-hood-moved .browse-hero .form-block-7{display:none;}",
+    "@media screen and (max-width:767px){html.lok-row2 .browse-hero .search-bar{display:none;}.browse-hero{padding-top:20px;}.browse-body{padding-top:14px;}}",
+    "@media screen and (min-width:1380px){html.lok-mkt-hs .browse-hero .search-bar{display:none;}}",
+    // Neighborhood picker: lilac fill + violet text (F). #E6DBFD is the lightest
+    // lilac that clears 3x the visibility threshold on the ground.
+    "#lk-hood-side{margin-bottom:1.5rem;}",
+    "#lk-hood-side .lk-filter-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:#6E6A85;margin-bottom:.6rem;}",
+    // select#id beats the generic select rules further down (2 ids vs 1).
+    "#lk-hood-side select#location-select,#lk-hood-side select#browse-location{width:100%;margin:0;padding:0 32px 0 12px;background-position:right 12px center;text-overflow:ellipsis;}",
+    "@media screen and (min-width:1150px){#lk-hood-side select#location-select,#lk-hood-side select#browse-location{font-size:14px;min-height:42px;}}",
+    "@media screen and (max-width:991px){#browse-mobile-sort{gap:8px;}#browse-mobile-sort>select#location-select,#browse-mobile-sort>select#browse-location{flex:1 1 0;min-width:0;width:auto;margin:0;}#browse-mobile-filter-btn{flex:0 0 auto;white-space:nowrap;}}",
+    "@media screen and (max-width:767px){#lk-sort-wrap{display:none!important;}#browse-mobile-sort>select#location-select,#browse-mobile-sort>select#browse-location{padding:0 32px 0 12px;background-position:right 12px center;text-overflow:ellipsis;}.browse-hero .text-block-116{font-size:21px;line-height:1.25;}}",
     // Cover: real photo when the vendor has one (gallery -> service -> product,
     // resolved by the adapter), else the branded gradient + initials mark.
     // 116px -> 165px (F 2026-09-01: photos were too squat to read); mobile's
@@ -454,7 +480,7 @@
     ".browse-empty-cta:hover{background:#3100b3;color:#fff;}",
     // Active-filter chips (no Webflow styles exist for them) — pill matching the
     // sidebar's .filter-item.active; the × is a real button with a 32px hit area.
-    ".active-filter-chip{display:inline-flex;align-items:center;font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:500;background:#F3EBFF;color:#6002EE;border:1px solid #E4D6FF;border-radius:100px;padding:2px 2px 2px 12px;min-height:28px;box-sizing:border-box;margin:2px 6px 2px 0;}",
+    ".active-filter-chip{display:inline-flex;align-items:center;font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:500;background:#E6DBFD;color:#6002EE;border:1px solid #C4A8F7;border-radius:100px;padding:2px 2px 2px 12px;min-height:28px;box-sizing:border-box;margin:2px 6px 2px 0;}",
     ".active-filter-chip .remove-x{-webkit-appearance:none;appearance:none;background:none;border:none;font-family:inherit;font-size:15px;line-height:1;color:#6002EE;cursor:pointer;padding:0;width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;}",
     ".active-filter-chip .remove-x:hover{background:rgba(96,2,238,.1);}",
     // Mobile Filter button 'filters active' cue (.has-filters set in JS).
@@ -474,8 +500,9 @@
     "background-repeat:no-repeat;background-position:right 14px center;background-size:13px;cursor:pointer;",
     "transition:border-color .15s ease,box-shadow .15s ease;}",
     "select#browse-sort,select#browse-mobile-sort{background-color:#fff;}",
-    "select#location-select,select#browse-location{background-color:#F7F6FC;}",
-    "select#browse-sort:hover,select#location-select:hover,select#browse-location:hover,select#browse-mobile-sort:hover{border-color:#C9BFEA;}",
+    "select#location-select,select#browse-location{background-color:#E6DBFD;border-color:#C4A8F7;color:#6002EE;}",
+    "select#browse-sort:hover,select#browse-mobile-sort:hover{border-color:#C9BFEA;}",
+    "select#location-select:hover,select#browse-location:hover{border-color:#A883F3;}",
     "select#browse-sort:focus,select#location-select:focus,select#browse-location:focus,select#browse-mobile-sort:focus{outline:none;border-color:#6002EE;box-shadow:0 0 0 3px rgba(96,2,238,.12);}",
     "select#browse-sort::-ms-expand,select#location-select::-ms-expand{display:none;}",
     // The sort control matches its external "Sort by" label (F: dropdown font
@@ -1459,16 +1486,16 @@
     // turns noisy: 'shower' -> 'show', 'dress' -> 'dres' (matches "address"),
     // 'entertainer' -> 'entertain' (matches the whole Events & Entertainment
     // category label).
-    { k: 'party',    t: 'Birthdays & parties',  s: 'toppers, cakes, decor, entertainment', terms: ['party', 'birthday', 'cake', 'balloon'], bg: '#FFF2DF', fg: '#9A4A00', ico: 'cake' },
-    { k: 'wedding',  t: 'Weddings & showers',   s: 'dresses, videography, favors',        terms: ['wedding', 'bridal', 'engagement', 'baby shower', 'bridal shower', 'gown'], bg: '#EFE5FD', fg: '#4B00B5', ico: 'ring' },
-    { k: 'gifts',    t: 'Holiday gifts',        s: 'handmade, custom, made to order',     cat: 'handcrafted', bg: '#FDE8EF', fg: '#9B1C4B', ico: 'gift' },
-    { k: 'home',     t: 'Home refresh',         s: 'painting, cleaning, decorating',      cat: 'home',        bg: '#E7F6EC', fg: '#1E6B3A', ico: 'house' },
-    { k: 'school',   t: 'Back to school',       s: 'tutoring, lessons, childcare',        cat: 'children',    bg: '#E6F0FF', fg: '#1E4B9B', ico: 'cap' },
-    { k: 'business', t: 'Starting a business',  s: 'plans, websites, bookkeeping',        cat: 'business',    bg: '#EEEDF6', fg: '#4A4761', ico: 'briefcase' }
+    { k: 'party',    t: 'Birthdays & parties',  s: 'toppers, cakes, decor, entertainment', terms: ['party', 'birthday', 'cake', 'balloon'], bg: '#F9E4C8', fg: '#9A4A00', ico: 'cake' },
+    { k: 'wedding',  t: 'Weddings & showers',   s: 'dresses, videography, favors',        terms: ['wedding', 'bridal', 'engagement', 'baby shower', 'bridal shower', 'gown'], bg: '#E6DBFD', fg: '#4B00B5', ico: 'ring' },
+    { k: 'gifts',    t: 'Holiday gifts',        s: 'handmade, custom, made to order',     cat: 'handcrafted', bg: '#F7D3E0', fg: '#9B1C4B', ico: 'gift' },
+    { k: 'home',     t: 'Home refresh',         s: 'painting, cleaning, decorating',      cat: 'home',        bg: '#D3EBDB', fg: '#1E6B3A', ico: 'house' },
+    { k: 'school',   t: 'Back to school',       s: 'tutoring, lessons, childcare',        cat: 'children',    bg: '#D0E0FA', fg: '#1E4B9B', ico: 'cap' },
+    { k: 'business', t: 'Starting a business',  s: 'plans, websites, bookkeeping',        cat: 'business',    bg: '#DDDAEC', fg: '#4A4761', ico: 'briefcase' }
   ];
   // "See everything new" in the band is the same kind of shortcut: it gets the
   // same bar, Clear button and Back-gesture behavior as the occasion tiles.
-  var NEW_SHORTCUT = { k: 'new', t: 'New this week', toggle: 'new', bg: '#EAFAF2', fg: '#11744A', ico: 'bolt' };
+  var NEW_SHORTCUT = { k: 'new', t: 'New this week', toggle: 'new', bg: '#CFECDC', fg: '#11744A', ico: 'bolt' };
   function occByKey(k) {
     if (k === NEW_SHORTCUT.k) return NEW_SHORTCUT;
     for (var i = 0; i < OCCASIONS.length; i++) if (OCCASIONS[i].k === k) return OCCASIONS[i];
@@ -1812,6 +1839,14 @@
   // The live page renders #browse-search inside a code-island's OPEN shadow
   // root — getElementById can't see it, but shadowRoot scans can. Light-DOM
   // markup (older pages) resolves first.
+  // #179: the header's search fields (lokali-mobile-nav.js: phone row 2, inline
+  // field >=1380px) drive this page live too. They carry data-lk-market-search
+  // (not the id, which must stay unique) and every box mirrors the term.
+  function allSearchInputs() {
+    var out = [].slice.call(document.querySelectorAll('input[data-lk-market-search]'));
+    var main = findSearchInput(); if (main) out.push(main);
+    return out;
+  }
   function findSearchInput() {
     var direct = el('browse-search');
     if (direct) return direct;
@@ -1828,7 +1863,8 @@
   // lands in the input once it exists.
   function syncSearchBox(attempt) {
     var search = findSearchInput();
-    if (search) { if (search.value !== searchTerm) search.value = searchTerm; return; }
+    allSearchInputs().forEach(function (b) { if (b.value !== searchTerm) b.value = searchTerm; });
+    if (search) return;
     if (searchTerm && attempt < 5) setTimeout(function () { syncSearchBox(attempt + 1); }, 1000);
   }
   // Webflow-owned div controls: add button semantics + Enter/Space activation.
@@ -2285,6 +2321,40 @@
     document.body.style.overflow = '';
   }
 
+  // #179 (F 2026-09-18): the neighborhood picker leaves the hero. <=991px it
+  // leads the Filter row (location is the first thing a local shopper sets, so
+  // it stays visible instead of hiding in the drawer); >=992px it is the first
+  // control of the sidebar. The <select> node itself moves, so its change
+  // listener and the Webflow-filled options ride along. Sits BESIDE
+  // #browse-filter-panel, never inside: renderFilterPanel() wipes that mount.
+  function placeHoodPicker(loc) {
+    if (!loc) return;
+    var row = el('browse-mobile-sort'), panel = el('browse-filter-panel');
+    if (row && row.tagName === 'SELECT') row = row.parentNode;
+    var side = null;
+    if (panel && panel.parentNode) {
+      side = ce('div'); side.id = 'lk-hood-side';
+      var lab = ce('div', 'lk-filter-label'); lab.textContent = 'Neighborhood';
+      side.appendChild(lab);
+      panel.parentNode.insertBefore(side, panel);
+    }
+    loc.setAttribute('aria-label', 'Neighborhood');
+    var fbtn = el('browse-mobile-filter-btn');
+    var ftxt = fbtn ? fbtn.querySelector('div:not([class*=image]),span') : null;
+    var ftxt0 = ftxt ? ftxt.textContent : '';
+    var wide = window.matchMedia('(min-width: 992px)'), phone = window.matchMedia('(max-width: 767px)');
+    function place() {
+      if (wide.matches && side) { if (loc.parentNode !== side) side.appendChild(loc); }
+      else if (row) { if (loc.parentNode !== row) row.insertBefore(loc, row.firstChild); }
+      // Phones fit two controls in the row: Sort lives in the drawer (it always
+      // has), so the button says what it opens.
+      if (ftxt) ftxt.textContent = phone.matches ? 'Filter & sort' : ftxt0;
+    }
+    place();
+    [wide, phone].forEach(function (m) { if (m.addEventListener) m.addEventListener('change', place); else if (m.addListener) m.addListener(place); });
+    document.documentElement.classList.add('lk-hood-moved');
+  }
+
   // ── events (search/location/mobile/drawer; category/toggle/sort bound during render) ──
   function bindEvents() {
     // Search binds at the DOCUMENT level, not on the element: the live input
@@ -2314,13 +2384,15 @@
     }, 800);
     document.addEventListener('input', function (e) {
       var t = (e.composedPath && e.composedPath()[0]) || e.target;
-      if (!t || t.id !== 'browse-search') return;
+      if (!t || (t.id !== 'browse-search' && !(t.hasAttribute && t.hasAttribute('data-lk-market-search')))) return;
       searchTerm = t.value || '';
+      allSearchInputs().forEach(function (b) { if (b !== t && b.value !== searchTerm) b.value = searchTerm; });
       applySearch();
       gaSearch();
     }, true);
     var loc = locSelectEl();
     if (loc) loc.addEventListener('change', function () { setLocation(loc.value); });
+    placeHoodPicker(loc);
     var msel = sortSelectEl(); if (msel) msel.addEventListener('change', function () { setSort(msel.value); });
     // F 2026-09-02: "Sort" moves OUT of the dropdown - the Webflow options are
     // authored as "Sort: Newest" etc.; strip the prefix so the control reads

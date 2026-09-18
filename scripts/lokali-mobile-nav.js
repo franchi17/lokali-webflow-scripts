@@ -19,6 +19,25 @@
   // called by the header magnifier in its <=1149px icon mode.
   var openMenuToSearch = null;
 
+  // #179 (F 2026-09-18): phones get a TWO-ROW header on shopper pages. Row 1 =
+  // logo + account (scrolls away); row 2 = burger + a full-width search pill
+  // that pins to the top once row 1 is gone. Pages where a shopper search is
+  // noise keep the single row: the vendor dashboard, auth and checkout.
+  var ROW2_SKIP = /^\/(vendor-dashboard|login|sign-up|checkout|paypal-checkout|order-confirmation|401)(\/|$)/;
+  var ON_MARKET = /^\/the-market\/?$/.test(location.pathname);
+  var SEARCH_SVG = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4.2-4.2"/></svg>';
+  // On The Market the field filters the grid live (lokali-browse.js listens for
+  // data-lk-market-search); anywhere else it lands on the Market with ?q=.
+  function wireSearchForm(form, inp) {
+    if (ON_MARKET) inp.setAttribute('data-lk-market-search', '1');
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      if (ON_MARKET) { try { inp.blur(); } catch (e2) {} return; }
+      var q = (inp.value || '').trim();
+      window.location.href = '/the-market' + (q ? '?q=' + encodeURIComponent(q) : '');
+    });
+  }
+
   var LINKS = [
     { label: 'About',           href: '/about' },
     { label: 'The Market',      href: '/the-market' },
@@ -130,6 +149,44 @@
       // found and wired, so the desktop nav can never be hidden without a working burger.
       // The signed-in account chip is safe: auth-nav inserts it beside the Login button inside
       // .header-right-side, which stays visible (verified live at 1024 — Login remains shown).
+      // #179 two-row phone header. Everything is scoped to html.lok-row2 (set only
+      // once row 2 exists), so a page without it keeps the one-row header intact.
+      '#lok-row2{display:none;}',
+      '@media screen and (max-width:767px){',
+      'html.lok-row2 .header-wrapper{padding-top:10px!important;padding-bottom:2px!important;}',
+      'html.lok-row2 .header-wrapper .hamburger-menu-wrapper{display:none!important;}',
+      'html.lok-row2 #lok-hdr-search,html.lok-row2 #lok-mnav-search{display:none!important;}',
+      'html.lok-row2 #lok-row2{display:flex;align-items:center;gap:12px;position:relative;box-sizing:border-box;',
+      'padding:4px 32px 10px;background:var(--snow,#F7F6FC);border-bottom:1px solid #E4E2F0;',
+      'font-family:"Plus Jakarta Sans",system-ui,sans-serif;}',
+      // Pinned: equal 10px above and below the pill (F), soft shadow, safe-area aware.
+      'html.lok-row2 #lok-row2.lok-row2-fixed{position:fixed;top:0;left:0;right:0;z-index:140;',
+      'padding-top:calc(10px + env(safe-area-inset-top,0px));box-shadow:0 6px 18px rgba(40,32,90,.08);}',
+      'html.lok-row2.lok-mnav-open #lok-row2{z-index:9999;}',
+      'html.lok-row2{scroll-padding-top:76px;}',
+      '#lok-row2-burger{flex:0 0 44px;width:44px;height:44px;margin-left:-7px;display:flex;align-items:center;',
+      'justify-content:center;background:none;border:none;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent;}',
+      '#lok-row2-burger:focus-visible,#lok-row2-form input:focus-visible{outline:2px solid #6002EE;outline-offset:2px;}',
+      '#lok-row2-form{flex:1 1 auto;min-width:0;display:flex;align-items:center;height:46px;box-sizing:border-box;',
+      'background:#fff;border:1.5px solid #CFC6F2;border-radius:100px;padding:0 5px 0 18px;margin:0;}',
+      '#lok-row2-form:focus-within{border-color:#6002EE;}',
+      '#lok-row2-form input{flex:1 1 auto;min-width:0;height:100%;border:none;outline:none;background:transparent;',
+      'padding:0;margin:0;font-family:"Plus Jakarta Sans",system-ui,sans-serif;font-size:16px;color:#343A40;',
+      '-webkit-appearance:none;appearance:none;}',
+      '#lok-row2-form input::placeholder{color:#6E6A85;}',
+      '#lok-row2-form input::-webkit-search-cancel-button{-webkit-appearance:none;}',
+      '#lok-row2-form button{flex:0 0 36px;width:36px;height:36px;border-radius:50%;border:none;padding:0;',
+      'display:flex;align-items:center;justify-content:center;background:var(--lokali-primary,#6002ee);color:#fff;cursor:pointer;}',
+      // Signed-out row 1 keeps the vendor CTA on phones (F: keep "Become a vendor").
+      // auth-nav inserts .lok-acct when signed in, which hides it again.
+      '}',
+      '#lok-row1-cta{display:none;}',
+      '@media screen and (min-width:360px) and (max-width:767px){',
+      'html.lok-row2 #lok-row1-cta{display:inline-flex;align-items:center;min-height:36px;box-sizing:border-box;',
+      'padding:0 12px;margin-right:10px;border:1.5px solid #6002EE;border-radius:100px;color:#6002EE;background:transparent;',
+      'font-family:"Plus Jakarta Sans",system-ui,sans-serif;font-size:12.5px;font-weight:600;line-height:1;text-decoration:none;white-space:nowrap;}',
+      'html.lok-row2 .header-right-side:has(.lok-acct) #lok-row1-cta{display:none;}',
+      '}',
       '@media screen and (min-width:992px) and (max-width:1149px){',
       '.header-bottom-wrapper{display:none!important;}',
       '.header-btn-hidden-on-tablet{display:none!important;}',
@@ -374,11 +431,14 @@
     var backdrop = document.createElement('div');
     backdrop.id = 'lok-mnav-backdrop';
 
+    var row2 = buildRow2(nav, function () { toggle(); });
+
     document.body.appendChild(backdrop);
     document.body.appendChild(panel);
 
     function position() {
-      var bottom = Math.round(nav.getBoundingClientRect().bottom);
+      var anchor = (row2 && getComputedStyle(row2).display !== 'none') ? row2 : nav;
+      var bottom = Math.round(anchor.getBoundingClientRect().bottom);
       if (bottom < 0) bottom = 0;
       document.documentElement.style.setProperty('--lok-h', bottom + 'px');
       panel.style.top = bottom + 'px';
@@ -388,6 +448,8 @@
       if (open) position();
       document.documentElement.classList.toggle('lok-mnav-open', open);
       btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      var bb2 = document.getElementById('lok-row2-burger');
+      if (bb2) bb2.setAttribute('aria-expanded', open ? 'true' : 'false');
       btn.classList.toggle('w--open', open);
       // Focus follows the panel: first link on open, back to the button on close
       // (Escape/backdrop included) — else keyboard focus stays behind the backdrop.
@@ -410,7 +472,8 @@
     };
 
     function isHamburgerVisible() {
-      return getComputedStyle(btn).display !== 'none';
+      if (getComputedStyle(btn).display !== 'none') return true;
+      return !!(row2 && getComputedStyle(row2).display !== 'none');
     }
 
     function toggle() {
@@ -500,9 +563,80 @@
   // collapses to a 44px magnifier that opens the drawer with its search field
   // focused (one tap instead of burger-then-field). Skipped on /the-market:
   // the page's own search box is already on screen and two boxes would fight.
+  function buildRow2(nav, onBurger) {
+    if (ROW2_SKIP.test(location.pathname)) return null;
+    var host = nav.classList.contains('header-wrapper') ? nav : (document.querySelector('.header-wrapper') || nav);
+    if (!host.parentNode) return null;
+    var row = document.createElement('div');
+    row.id = 'lok-row2';
+    var bb = document.createElement('button');
+    bb.type = 'button';
+    bb.id = 'lok-row2-burger';
+    bb.setAttribute('aria-label', 'Menu');
+    bb.setAttribute('aria-expanded', 'false');
+    bb.innerHTML = '<span class="lok-burger" aria-hidden="true"><span></span><span></span></span>';
+    bb.addEventListener('click', function (e) {
+      e.preventDefault();
+      onBurger();
+      bb.setAttribute('aria-expanded', document.documentElement.classList.contains('lok-mnav-open') ? 'true' : 'false');
+    });
+    var form = document.createElement('form');
+    form.id = 'lok-row2-form';
+    form.setAttribute('role', 'search');
+    var inp = document.createElement('input');
+    inp.type = 'search';
+    inp.name = 'q';
+    inp.placeholder = 'What do you need?';
+    inp.setAttribute('aria-label', 'Search the market');
+    inp.setAttribute('enterkeyhint', 'search');
+    inp.autocomplete = 'off';
+    var sb = document.createElement('button');
+    sb.type = 'submit';
+    sb.setAttribute('aria-label', 'Search');
+    sb.innerHTML = SEARCH_SVG;
+    form.appendChild(inp);
+    form.appendChild(sb);
+    wireSearchForm(form, inp);
+    row.appendChild(bb);
+    row.appendChild(form);
+    host.parentNode.insertBefore(row, host.nextSibling);
+
+    // Placeholder keeps the page from jumping while row 2 is pinned (same
+    // fixed + placeholder pattern as lokali-sticky-nav.js; position:sticky
+    // breaks under ancestor overflow rules).
+    var ph = document.createElement('div');
+    ph.id = 'lok-row2-ph';
+    ph.style.display = 'none';
+    row.parentNode.insertBefore(ph, row.nextSibling);
+    var PHONE = window.matchMedia('(max-width: 767px)');
+    var pinned = false;
+    function onScroll() {
+      var want = PHONE.matches && host.getBoundingClientRect().bottom <= 0;
+      if (want === pinned) return;
+      pinned = want;
+      if (want) { ph.style.height = row.offsetHeight + 'px'; ph.style.display = 'block'; }
+      else ph.style.display = 'none';
+      row.classList.toggle('lok-row2-fixed', want);
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+
+    // Signed-out vendor CTA for row 1 (hidden by CSS once auth-nav adds the account chip).
+    var right = document.querySelector('.header-right-side');
+    if (right && !document.getElementById('lok-row1-cta')) {
+      var cta = document.createElement('a');
+      cta.id = 'lok-row1-cta';
+      cta.href = '/sign-up';
+      cta.textContent = 'Become a vendor';
+      right.insertBefore(cta, right.firstChild);
+    }
+    document.documentElement.classList.add('lok-row2');
+    onScroll();
+    return row;
+  }
+
   function buildHeaderSearch() {
     if (document.getElementById('lok-hdr-search')) return;
-    if (/^\/the-market\/?$/.test(location.pathname)) return;
     var right = document.querySelector('.header-right-side');
     if (!right) return;
     if (!document.getElementById('lok-hdr-search-css')) {
@@ -542,6 +676,7 @@
         '#lok-hdr-search.lok-hs-open button{position:absolute;right:4px;top:50%;transform:translateY(-50%);',
         'width:34px;height:34px;z-index:10;}',
         '}',
+        '@media screen and (max-width:1379px){#lok-hdr-search.lok-hs-market{display:none!important;}}',
         // Burger range (matches F5 above): icon only, 44px target; the drawer field takes over.
         '@media screen and (max-width:1149px){',
         '#lok-hdr-search{margin-right:0;}',
@@ -566,8 +701,16 @@
     sb.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4.2-4.2"/></svg>';
     form.appendChild(inp);
     form.appendChild(sb);
+    // #179: on The Market only the inline (>=1380px) field shows - it replaces the
+    // hero box and filters live; below that the hero box (or phone row 2) serves.
+    if (ON_MARKET) {
+      inp.setAttribute('data-lk-market-search', '1');
+      form.classList.add('lok-hs-market');
+      document.documentElement.classList.add('lok-mkt-hs');
+    }
     form.addEventListener('submit', function (e) {
       e.preventDefault();
+      if (ON_MARKET && getComputedStyle(inp).display !== 'none') { try { inp.blur(); } catch (e3) {} return; }
       // Icon mode (input hidden): the tap means "let me search", not "submit
       // an empty query". Burger widths hand off to the drawer's focused field;
       // the 1150-1379 squeeze expands the fly-out input in place instead.
