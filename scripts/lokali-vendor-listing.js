@@ -600,9 +600,14 @@
     '.vl-op-pop b{display:block;font-weight:700;color:#1A1829;margin-bottom:2px;}',
     // website beside the contact buttons (the Details card is retired)
     '#vl-op-web{border-top:1px solid #EEEDF6;margin-top:14px;padding-top:12px;font-family:"Plus Jakarta Sans",sans-serif;}',
-    '#vl-op-web span{display:block;font-size:14px;font-weight:700;color:#1A1829;margin-bottom:8px;}',
-    '#vl-op-web a{display:block;line-height:25px;min-height:43px;padding:8px 12px;box-sizing:border-box;border:.5px solid #EEEDF6;border-radius:8px;background:#fff;color:#5F51B8;font-size:13px;font-weight:600;text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
-    '#vl-op-web a:hover{background:#F3EBFF;}',
+    '.vl-op-web-k{display:block;font-size:14px;font-weight:700;color:#1A1829;margin-bottom:8px;}',
+    // same chip as .vl-op-pay-chip so the card reads as one family
+    '.vl-op-web-chip{display:inline-flex;align-items:center;gap:8px;max-width:100%;box-sizing:border-box;border:1px solid #E4DFF6;background:#fff;border-radius:12px;padding:9px 14px;font:600 13.5px/1.2 "Plus Jakarta Sans",sans-serif;color:#5F51B8;text-decoration:none;transition:background .12s;}',
+    '.vl-op-web-chip:hover{background:#F3EBFF;}',
+    '.vl-op-web-l{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
+    '.vl-op-web-out{flex:none;display:inline-flex;color:#8E86C9;margin-left:2px;}',
+    '.vl-op-web-out svg{width:12px;height:12px;display:block;}',
+    '@media (max-width:767px){.vl-op-web-chip{min-height:44px;}}',
     '.vl-more{display:none;}',
     '.vl-ph-ov{display:none;}',
     '@media (min-width:768px){',
@@ -2497,11 +2502,24 @@
     if (!card || !v || !v.website_url || document.getElementById('vl-op-web')) return;
     var u = String(v.website_url).trim();
     var wrap = ce('div'); wrap.id = 'vl-op-web';
-    var k = ce('span'); k.textContent = 'Website'; wrap.appendChild(k);
-    var a = ce('a');
+    // A chip like "Ways to pay" above it (icon, label, leaves-the-site arrow),
+    // not a bordered box holding a raw URL, which read as a text field (F 09-19).
+    // Many vendors' "website" IS their Instagram: say so, with the handle.
+    var bare = u.replace(/^https?:\/\//i, '').replace(/^www\./i, '').replace(/[\/?#]+$/, '');
+    var ig = bare.match(/^instagram\.com\/([A-Za-z0-9._]{1,30})$/i);
+    var k = ce('span', 'vl-op-web-k'); k.textContent = ig ? 'Instagram' : 'Website'; wrap.appendChild(k);
+    var a = ce('a', 'vl-op-web-chip');
     a.href = /^https?:\/\//i.test(u) ? u : 'https://' + u;
     a.target = '_blank'; a.rel = 'noopener';
-    a.textContent = u.replace(/^https?:\/\//i, '').replace(/^www\./i, '').replace(/\/$/, '');
+    a.appendChild(maskIcon(ig ? ICON_IG : ICON_GLOBE, '#5F51B8', 15));
+    var lbl = ce('span', 'vl-op-web-l');
+    lbl.textContent = ig ? '@' + ig[1] : bare.replace(/\/.*$/, ''); // a plain site shows its domain, as the hero link always has
+    a.appendChild(lbl);
+    var out = ce('span', 'vl-op-web-out');
+    out.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>'; // static markup only
+    a.appendChild(out);
+    a.setAttribute('aria-label', (ig ? 'Instagram, @' + ig[1] : 'Website, ' + bare) + ' (opens in a new tab)');
+    a.title = bare;
     trackChannel(a, 'website');
     wrap.appendChild(a);
     card.appendChild(wrap);
