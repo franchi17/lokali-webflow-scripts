@@ -571,10 +571,18 @@
     'html.vl-op .vl-card-img::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;background:rgba(40,32,90,.10);pointer-events:none;}',
     '.vl-op-card,.vl-host-card,html.vl-op .vl-rev,html.vl-op .vl-mkt-show{' + OP_EDGE + '}',
     '.vl-op-sec{border-bottom-color:#E4E2F0;}',
+    // About -> Report link -> neighbor card drew THREE hairlines in 110px (the
+    // report row's own, the section's, the neighbor section's). One is enough.
+    'html.vl-op .vl-vreport{margin-top:18px;padding-top:0;border-top:0;}',
+    'html.vl-op .vl-vreport-link{font-size:12.5px;padding:10px 0;color:#6E6A85;}',
+    'html.vl-op .vl-op-sec:has(+ .vl-pair-sec){border-bottom:0;padding-bottom:20px;}',
+    'html.vl-op .vl-pair-sec{margin-top:0;border-top-color:#E4E2F0;}',
     '.vl-trust{background:#fff !important;border-color:#DEDAEE !important;}',
     '@media (prefers-contrast:more){html.vl-op .vl-card,.vl-op-card,.vl-host-card,html.vl-op .vl-rev,#vl-op-nav,#vl-op-sec-highlights{border-color:#837E9B !important;}}',
     // jump links: in-flow, solid, labelled. Every section stays open below it.
-    '#vl-op-nav{position:sticky;top:calc(var(--vl-op-top,0px) + 8px);z-index:40;display:flex;align-items:center;width:fit-content;max-width:100%;gap:2px;overflow:visible;margin:20px 0 0;padding:5px 8px;background:#fff;-webkit-backdrop-filter:none;backdrop-filter:none;border-radius:999px;-webkit-mask-image:none !important;mask-image:none !important;' + OP_EDGE + '}',
+    '#vl-op-navbar{position:sticky;top:var(--vl-op-top,0px);z-index:40;background:#F7F6FC;padding:10px 0 8px;margin:12px 0 0;}',
+    '#vl-op-navbar::after{content:"";position:absolute;left:0;right:0;top:100%;height:12px;background:linear-gradient(#F7F6FC,rgba(247,246,252,0));pointer-events:none;}',
+    '#vl-op-nav{position:static;display:flex;align-items:center;width:fit-content;max-width:100%;gap:2px;overflow:visible;margin:0;padding:5px 8px;background:#fff;-webkit-backdrop-filter:none;backdrop-filter:none;border-radius:999px;-webkit-mask-image:none !important;mask-image:none !important;' + OP_EDGE + '}',
     '#vl-op-nav::before{content:"On this page";font:700 10.5px/1 "Plus Jakarta Sans",sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#6E6A85;padding:0 8px 0 8px;white-space:nowrap;}',
     '#vl-op-nav a{overflow:hidden;text-overflow:ellipsis;}',
     '#vl-op-nav a:focus-visible,.vl-op-info:focus-visible,.vl-more:focus-visible,.vl-ph-btn:focus-visible,#vl-op-web a:focus-visible{outline:2px solid #6002EE;outline-offset:2px;}',
@@ -626,7 +634,8 @@
     'html.vl-op .vl-bg{padding-left:0 !important;padding-right:0 !important;}',
     'html.vl-op .vl-page{padding-left:16px;padding-right:16px;}',
     // four chips that fit the screen; opNavSync drops the least useful past 4
-    '#vl-op-nav{position:sticky;left:auto;right:auto;display:flex;width:100%;box-sizing:border-box;justify-content:space-between;margin:16px 0 0;padding:4px;}',
+    '#vl-op-navbar{margin:8px -16px 0;padding:8px 16px 6px;}',
+    '#vl-op-nav{position:static;left:auto;right:auto;display:flex;width:100%;box-sizing:border-box;justify-content:space-between;margin:0;padding:4px;}',
     '#vl-op-nav::before{display:none;}',
     '#vl-op-nav a{flex:1 1 auto;min-width:0;text-align:center;padding:10px 6px;font-size:12.5px;}',
     '#vl-op-nav a.vl-nav-drop{display:none !important;}',
@@ -763,7 +772,13 @@
     // Redesign 2026-09-19: the jump links sit in the left column right above the
     // first offer section (hero, glance card and the Meet row land above them
     // as they render), in flow and sticky, instead of fading in over the name.
-    main.insertBefore(nav, main.firstChild);
+    // The capsule rides inside a full-column sticky bar painted in the page's
+    // own Snow ground (no line, no shadow, so it never reads as a band): page
+    // text used to show through around the floating capsule as it scrolled
+    // under it (F 2026-09-19, screenshot: "Invitations · Labels" behind the links).
+    var navBar = ce('div'); navBar.id = 'vl-op-navbar';
+    navBar.appendChild(nav);
+    main.insertBefore(navBar, main.firstChild);
 
     // #76 design pass: the identity block (name/logo/badges/tagline) becomes
     // the first item of the left column so the sticky contact card sits beside
@@ -873,7 +888,8 @@
       if (card.previousElementSibling !== after) main.insertBefore(card, after.nextSibling);
     } else {
       if (card.parentNode !== rail) rail.appendChild(card);
-      if (meet && nav && nav.parentNode === main && meet.nextElementSibling !== nav) main.insertBefore(meet, nav);
+      var navBar = nav && nav.parentNode && nav.parentNode.id === 'vl-op-navbar' ? nav.parentNode : null;
+      if (meet && navBar && navBar.parentNode === main && meet.nextElementSibling !== navBar) main.insertBefore(meet, navBar);
     }
   }
 
@@ -1522,7 +1538,8 @@
     // vendor's use case — this week's listing should open the storefront).
     // Redesign 2026-09-19: "first" now means first BELOW the jump links; the
     // glance card and the Meet row above them are .vl-op-sec too.
-    var first = (nav && nav.parentNode === main) ? nav.nextSibling : main.querySelector('.vl-op-sec');
+    var navBar = nav && nav.parentNode && nav.parentNode.id === 'vl-op-navbar' ? nav.parentNode : null;
+    var first = (navBar && navBar.parentNode === main) ? navBar.nextSibling : main.querySelector('.vl-op-sec');
     if (first) main.insertBefore(sec, first);
     else main.appendChild(sec);
     if (nav) {
