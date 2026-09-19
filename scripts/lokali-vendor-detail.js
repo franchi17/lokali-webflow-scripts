@@ -79,6 +79,387 @@
     return el ? el.getAttribute('data-vd-type') : null;
   }
 
+
+  // ---- item page redesign (F 2026-09-19; mockup JkznYGARd6qZmwGDz2CvhL) ------
+  // One template serves /service and /product-detail, so one pass covers both.
+  // What it does: (1) the main button opens the Lokali message form instead of
+  // a mailto (item inquiries never reached the Leads inbox, and the button did
+  // nothing without a mail app); (2) desktop = two columns on the storefront's
+  // 1,120px frame: 4:3 photo with EVERY thumbnail visible + description capped
+  // near 66 characters on the left, a contact box that stays in view on the
+  // right; (3) phones = edge-to-edge photo, a pinned Inquire / Call bar, 16px
+  // gutters, a six-line description with Read more; (4) each fact said ONCE as
+  // a check row (the chips and the details table said them two or three
+  // times); (5) "Run by {owner}" with their photo; (6) Text / WhatsApp / Call
+  // in the storefront's exact pill styles (those live in the Designer on
+  // /vendor only, so they are restated here). The ground stays Snow.
+  var V2_EDGE = 'border:1px solid #DEDAEE;box-shadow:0 1px 2px rgba(40,32,90,.08),0 4px 14px rgba(40,32,90,.06);';
+  var V2_FONT = '"Plus Jakarta Sans",system-ui,sans-serif';
+  var V2_CSS = [
+    'html.vd2 .vd-page{max-width:1120px !important;width:100% !important;box-sizing:border-box;padding-left:24px;padding-right:24px;margin-left:auto;margin-right:auto;}',
+    'html.vd2 .vd-wrap{background:transparent !important;border:0 !important;box-shadow:none !important;border-radius:0 !important;overflow:visible !important;padding:0 !important;}',
+    'html.vd2 .vd-body{display:none !important;}', // emptied by v2Layout; its parts now live in the grid
+    '.vd2-grid{display:grid;grid-template-columns:minmax(0,1fr) 348px;gap:40px;align-items:start;font-family:' + V2_FONT + ';}',
+    '.vd2-main{min-width:0;}',
+    '.vd2-rail{position:sticky;top:calc(var(--vd2-top,0px) + 14px);min-width:0;}',
+    '.vd2-box{background:#fff;border-radius:18px;padding:22px;display:flex;flex-direction:column;gap:14px;' + V2_EDGE + '}',
+    'html.vd2 .vd-top{display:block !important;margin:0 !important;}',
+    'html.vd2 .vd-name{font:800 24px/1.2 ' + V2_FONT + ' !important;color:#1A1829;margin:0 0 4px !important;}',
+    'html.vd2 .vd-price{font:800 20px/1.25 ' + V2_FONT + ' !important;color:#1A1829;text-align:left !important;margin:0 !important;}',
+    'html.vd2 #vd-tags,html.vd2 #vd-meta,html.vd2 .vd-divider,html.vd2 .vd-cta-label,html.vd2 #vd-pips,html.vd2 #vd-lead-chip{display:none !important;}',
+    // facts: each one once
+    '.vd2-facts{display:flex;flex-direction:column;gap:9px;margin:0 !important;padding:0 !important;list-style:none;}',
+    '.vd2-fact{margin:0 !important;padding:0 !important;list-style:none;}',
+    '.vd2-facts:empty{display:none;}',
+    '.vd2-fact{display:flex;gap:10px;align-items:flex-start;font:400 13.5px/1.45 ' + V2_FONT + ';color:#4A4761;}',
+    '.vd2-fact svg{flex:none;width:18px;height:18px;margin-top:1px;color:#6002EE;}',
+    '.vd2-fact b{color:#1A1829;font-weight:600;}',
+    // the one main button (Webflow's orange / violet variants keep their colour)
+    'html.vd2 .vd-cta{display:block !important;background:transparent !important;border:0 !important;padding:0 !important;margin:0 !important;}',
+    'html.vd2 .vd-cta-btn{display:flex !important;align-items:center;justify-content:center;width:100% !important;box-sizing:border-box;min-height:50px;border-radius:10px;font:600 15px/1.2 ' + V2_FONT + ';text-decoration:none;margin:0;cursor:pointer;}',
+    'html.vd2 #vd-buy-btn{margin-bottom:10px !important;}',
+    // pills: the storefront's exact styles (read off golokali.com 2026-09-19)
+    '.vd2-ch{display:flex;gap:8px;}',
+    '.vd2-ch:empty{display:none;}',
+    '.vd2-pill{flex:1 1 0;min-width:0;display:flex;align-items:center;justify-content:center;gap:7px;min-height:44px;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:.5px solid #C8C6D8;background:#fff;color:#1A1829;font:500 14px/1 ' + V2_FONT + ';text-decoration:none;transition:transform .12s,box-shadow .12s;}',
+    '.vd2-pill:hover{transform:translateY(-1px);box-shadow:0 3px 10px rgba(26,24,41,.08);}',
+    '.vd2-pill svg{flex:none;display:block;}',
+    '.vd2-pill-wa{background:#EDFAF3;color:#1A6640;border-color:#A8DFC4;}',
+    '.vd2-pill-call{background:#F0F4FF;color:#1A3099;border-color:#BDC8F5;}',
+    '.vd2-note{margin:0;font:400 12.5px/1.5 ' + V2_FONT + ';color:#6E6A85;}',
+    '.vd2-box a:focus-visible,.vd2-box button:focus-visible,.vd2-thumb:focus-visible,.vd2-more:focus-visible,#vd2-bar button:focus-visible,#vd2-bar a:focus-visible{outline:2px solid #6002EE;outline-offset:2px;}',
+    // sections in the left column
+    '.vd2-sec{margin-top:30px;}',
+    '.vd2-h{font:700 19px/1.3 ' + V2_FONT + ';color:#1A1829;margin:0 0 10px;}',
+    'html.vd2 #vd-desc{max-width:66ch;font:400 15px/1.7 ' + V2_FONT + ';color:#4A4761;white-space:pre-line;margin:0;overflow-wrap:anywhere;}',
+    // vendor block: a person, not a logo
+    'html.vd2 .vd-vendor-mini{display:flex !important;align-items:center;gap:14px;flex-wrap:wrap;background:#fff;border-radius:16px;padding:16px 18px;margin:0 !important;' + V2_EDGE + '}',
+    'html.vd2 .vd-mini-avatar{width:56px !important;height:56px !important;min-width:56px;border-radius:50%;overflow:hidden;flex:none;}',
+    'html.vd2 .vd-mini-name{font:700 16px/1.3 ' + V2_FONT + ';color:#1A1829;}',
+    'html.vd2 .vd-mini-cat{font:500 13px/1.4 ' + V2_FONT + ';color:#6E6A85;background:none !important;padding:0 !important;}',
+    'html.vd2 .vd-mini-link{margin-left:auto;font:700 14px/1 ' + V2_FONT + ';color:#6002EE;text-decoration:none;white-space:nowrap;padding:12px 0;}',
+    '.vd2-trust{display:inline-flex;align-items:center;gap:6px;margin-top:4px;font:600 12.5px/1.3 ' + V2_FONT + ';color:#4B2A9A;}',
+    '.vd2-trust svg{width:13px;height:13px;flex:none;}',
+    // gallery: one 4:3 stage; thumbnails ALL visible beside it (Baymard: hidden
+    // extra photos are missed by 50-80% of shoppers)
+    '.vd2-galrow{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;}',
+    '.vd2-galrow.vd2-has-thumbs{grid-template-columns:68px minmax(0,1fr);}',
+    '.vd2-stage{position:relative;min-width:0;}',
+    'html.vd2 #vd-gallery{display:flex !important;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch;gap:0 !important;width:100%;height:auto !important;aspect-ratio:4/3;border-radius:16px;border:1px solid #DEDAEE;box-sizing:border-box;padding:0 !important;margin:0 !important;background:#F3EBFF;}',
+    'html.vd2 #vd-gallery::-webkit-scrollbar{display:none;}',
+    'html.vd2 #vd-gallery .vd-frame{flex:0 0 100% !important;width:100% !important;min-width:0 !important;height:100% !important;margin:0 !important;border-radius:0 !important;scroll-snap-align:start;overflow:hidden;}',
+    'html.vd2 #vd-gallery .vd-frame img{width:100% !important;height:100% !important;object-fit:cover;display:block;}',
+    '.vd2-thumbs{display:flex;flex-direction:column;gap:8px;}',
+    '.vd2-thumb{width:68px;height:68px;padding:0;border-radius:10px;border:1px solid #DEDAEE;background:#fff;overflow:hidden;cursor:pointer;flex:none;}',
+    '.vd2-thumb img{width:100%;height:100%;object-fit:cover;display:block;}',
+    '.vd2-thumb[aria-current="true"]{outline:2px solid #6002EE;outline-offset:1px;}',
+    '.vd2-cnt{display:none;position:absolute;right:12px;bottom:12px;background:rgba(255,255,255,.95);color:#1A1829;border-radius:999px;padding:6px 10px;font:700 11.5px/1 ' + V2_FONT + ';font-variant-numeric:tabular-nums;pointer-events:none;}',
+    // More-from cards take the crisper edge too
+    'html.vd2 .lok-more-card{' + V2_EDGE + '}',
+    'html.vd2 .lok-more{margin-top:36px;}',
+    '.vd2-more{display:none;}',
+    '#vd2-bar{display:none;}',
+    '@media (max-width:991px){.vd2-grid{grid-template-columns:minmax(0,1fr) 312px;gap:28px;}}',
+    '@media (max-width:767px){',
+    'html.vd2 .vd-bg{padding-left:0 !important;padding-right:0 !important;}',
+    'html.vd2 .vd-page{padding-left:16px;padding-right:16px;}',
+    '.vd2-grid{display:flex;flex-direction:column;gap:0;}',
+    '.vd2-rail{position:static;order:0;margin-top:14px;}',
+    '.vd2-main{display:contents;}', // lets the photo sit above the box and the text below it
+    '.vd2-galrow{order:-1;margin:0 -16px;}',
+    '.vd2-galrow.vd2-has-thumbs{grid-template-columns:minmax(0,1fr);}',
+    '.vd2-thumbs{display:none;}',
+    '.vd2-cnt{display:block;}',
+    'html.vd2 #vd-gallery{border-radius:0;border-left:0;border-right:0;}',
+    '.vd2-sec{order:1;margin-top:24px;}',
+    '.vd2-box{padding:16px;border-radius:14px;gap:12px;}',
+    'html.vd2 .vd-name{font-size:22px !important;}',
+    'html.vd2 .vd-price{font-size:18px !important;}',
+    // the pinned bar carries the main button on phones
+    'html.vd2 .vd2-box .vd-cta{display:none !important;}',
+    '.vd2-h{font-size:17px;}',
+    'html.vd2 #vd-desc{font-size:14.5px;line-height:1.65;}',
+    'html.vd2 #vd-desc.vd2-clamp:not(.vd2-open){display:-webkit-box !important;-webkit-line-clamp:6;-webkit-box-orient:vertical;overflow:hidden;}',
+    '.vd2-more{display:inline-block;background:none;border:0;padding:12px 0;min-height:44px;color:#6002EE;font:700 13.5px/1 ' + V2_FONT + ';cursor:pointer;}',
+    'html.vd2 .vd-mini-link{margin-left:0;flex-basis:100%;}',
+    '.lok-pgrow{margin-bottom:12px !important;}',
+    'html.vd2 body{padding-bottom:76px;}',
+    '#vd2-bar{position:fixed;left:0;right:0;bottom:0;z-index:60;display:flex;gap:10px;background:#fff;border-top:1px solid #EEEDF6;padding:10px 14px calc(10px + env(safe-area-inset-bottom));box-shadow:0 -6px 20px rgba(26,24,41,.08);}',
+    '#vd2-bar button,#vd2-bar a{flex:1 1 0;min-width:0;font:600 15px/1.2 ' + V2_FONT + ';border-radius:10px;min-height:46px;display:flex;align-items:center;justify-content:center;cursor:pointer;text-decoration:none;border:0;padding:0 10px;}',
+    '#vd2-bar .vd2-bar-main{background:#6002EE;color:#fff;}',
+    '#vd2-bar .vd2-bar-main.vd2-bar-orange{background:#FF6B00;}',
+    '#vd2-bar .vd2-bar-side{flex:0 0 104px;background:#fff;color:#1A1829;border:1px solid #EEEDF6;}',
+    '#vd2-bar .vd2-bar-buy{background:#fff;color:#1A1829;border:1px solid #DEDAEE;}',
+    'html.vd2 #lok-totop{bottom:calc(84px + env(safe-area-inset-bottom)) !important;}',
+    '}'
+  ].join('');
+
+  var V2_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10" stroke-width="1.6" opacity=".35"/><polyline points="16.5 9 10.8 15 7.5 11.8"/></svg>';
+  var V2_ICON = { // the storefront pills' own glyphs
+    sms: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+    call: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.18h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.77a16 16 0 0 0 5.55 5.55l.91-.91a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>',
+    shield: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11.2 14.2 15.2 10"/></svg>'
+  };
+  var _v2 = false;
+  function v2Phone() { return window.matchMedia('(max-width:767px)').matches; }
+  function v2el(tag, cls) { var e = document.createElement(tag); if (cls) e.className = cls; return e; }
+
+  function v2Layout(isProduct) {
+    var wrap = document.querySelector('.vd-wrap');
+    var body = document.querySelector('.vd-body');
+    var gallery = $('vd-gallery');
+    if (_v2 || !wrap || !body || !gallery) return;
+    _v2 = true;
+    document.documentElement.classList.add('vd2');
+    var st = document.createElement('style'); st.id = 'vd2-css'; st.textContent = V2_CSS;
+    (document.head || document.documentElement).appendChild(st);
+
+    var grid = v2el('div', 'vd2-grid'), main = v2el('div', 'vd2-main'), rail = v2el('div', 'vd2-rail'), box = v2el('div', 'vd2-box');
+    // photo stage (+ thumbnails, added by v2Gallery once the photos are known)
+    var galrow = v2el('div', 'vd2-galrow'); galrow.id = 'vd2-galrow';
+    var stage = v2el('div', 'vd2-stage');
+    wrap.insertBefore(grid, wrap.firstChild);
+    stage.appendChild(gallery);
+    var cnt = v2el('div', 'vd2-cnt'); cnt.id = 'vd2-cnt'; cnt.setAttribute('aria-hidden', 'true'); stage.appendChild(cnt);
+    galrow.appendChild(stage);
+    main.appendChild(galrow);
+    // description
+    var desc = $('vd-desc');
+    if (desc) {
+      var ds = v2el('section', 'vd2-sec'); ds.id = 'vd2-sec-desc';
+      var dh = v2el('h2', 'vd2-h'); dh.textContent = isProduct ? 'About this product' : 'About this service';
+      ds.appendChild(dh); ds.appendChild(desc); main.appendChild(ds);
+    }
+    // vendor
+    var mini = document.querySelector('.vd-vendor-mini');
+    if (mini) {
+      var vs = v2el('section', 'vd2-sec'); vs.id = 'vd2-sec-vendor';
+      var vh = v2el('h2', 'vd2-h'); vh.textContent = 'Meet the vendor';
+      vs.appendChild(vh); vs.appendChild(mini); main.appendChild(vs);
+    }
+    // contact box: name + price, facts, button(s), pills, note
+    var top = document.querySelector('.vd-top'); if (top) box.appendChild(top);
+    var facts = v2el('ul', 'vd2-facts'); facts.id = 'vd2-facts'; box.appendChild(facts);
+    var cta = document.querySelector('.vd-cta'); if (cta) box.appendChild(cta);
+    var ch = v2el('div', 'vd2-ch'); ch.id = 'vd2-ch'; box.appendChild(ch);
+    var note = v2el('p', 'vd2-note'); note.id = 'vd2-note'; box.appendChild(note);
+    rail.appendChild(box);
+    grid.appendChild(main); grid.appendChild(rail);
+    // our own template line carried an em dash; the box says it better anyway
+    var sub = $('vd-cta-sub'); if (sub) sub.textContent = 'Send a message and they will reply to you directly.';
+
+    // sticky offset = the fixed site header (it only turns fixed after scrolling)
+    var setTop = function () {
+      var hdr = document.querySelector('.header-wrapper');
+      var fixed = hdr && getComputedStyle(hdr).position === 'fixed';
+      document.documentElement.style.setProperty('--vd2-top', (fixed ? hdr.offsetHeight : 0) + 'px');
+    };
+    var q = false;
+    window.addEventListener('scroll', function () { if (q) return; q = true; setTimeout(function () { q = false; setTop(); }, 80); }, { passive: true });
+    window.addEventListener('resize', setTop);
+    setTop();
+  }
+
+  // facts: [{ b: 'Made to order', t: 'Lead time: 2 weeks' }, ...] — textContent only
+  function v2Facts(rows) {
+    var ul = $('vd2-facts'); if (!ul) return;
+    ul.innerHTML = '';
+    (rows || []).forEach(function (r) {
+      if (!r || !r.b) return;
+      var li = v2el('li', 'vd2-fact');
+      li.innerHTML = V2_CHECK; // static markup only
+      var s = v2el('span'); var b = v2el('b'); b.textContent = r.b; s.appendChild(b);
+      if (r.t) s.appendChild(document.createTextNode(' ' + r.t));
+      li.appendChild(s); ul.appendChild(li);
+    });
+  }
+
+  // thumbnails + counter; the stage is the existing snap strip
+  function v2Gallery(list) {
+    var gallery = $('vd-gallery'), row = $('vd2-galrow'), cnt = $('vd2-cnt');
+    if (!_v2 || !gallery || !row) return;
+    var old = $('vd2-thumbs'); if (old) old.parentNode.removeChild(old);
+    row.classList.remove('vd2-has-thumbs');
+    if (cnt) cnt.style.display = 'none';
+    if (!list || list.length < 2) return;
+    var thumbs = v2el('div', 'vd2-thumbs'); thumbs.id = 'vd2-thumbs';
+    thumbs.setAttribute('role', 'group'); thumbs.setAttribute('aria-label', 'Photos');
+    var btns = [];
+    list.forEach(function (src, i) {
+      var b = v2el('button', 'vd2-thumb'); b.type = 'button';
+      b.setAttribute('aria-label', 'Show photo ' + (i + 1) + ' of ' + list.length);
+      var im = document.createElement('img'); imgSet(im, src, 240); im.alt = ''; // at most a handful of 240px tiles: no lazy-load, they must paint at once
+      b.appendChild(im);
+      b.addEventListener('click', function () {
+        // smooth only when it can actually run (a background tab or a
+        // reduced-motion setting never finishes the animation)
+        var calm = document.hidden || (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+        var left = i * gallery.clientWidth;
+        if (calm || typeof gallery.scrollTo !== 'function') { gallery.scrollLeft = left; setTimeout(sync, 0); }
+        else gallery.scrollTo({ left: left, behavior: 'smooth' });
+      });
+      thumbs.appendChild(b); btns.push(b);
+    });
+    row.insertBefore(thumbs, row.firstChild);
+    row.classList.add('vd2-has-thumbs');
+    function sync() {
+      var idx = Math.max(0, Math.min(list.length - 1, Math.round(gallery.scrollLeft / (gallery.clientWidth || 1))));
+      btns.forEach(function (b, i) { if (i === idx) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current'); });
+      if (cnt) cnt.textContent = (idx + 1) + ' / ' + list.length;
+    }
+    if (cnt) cnt.style.display = '';
+    gallery.addEventListener('scroll', sync, { passive: true });
+    sync();
+  }
+
+  // phones: six lines + Read more (class only when rendered on a phone, CSS
+  // gated to phones too, so a desktop reader never meets clamped text)
+  function v2Clamp() {
+    var d = $('vd-desc');
+    if (!_v2 || !d || d.__vd2 || !v2Phone()) return;
+    d.__vd2 = true; d.classList.add('vd2-clamp');
+    (window.requestAnimationFrame || setTimeout)(function () {
+      if (d.scrollHeight <= d.clientHeight + 8) { d.classList.remove('vd2-clamp'); return; }
+      var b = v2el('button', 'vd2-more'); b.type = 'button'; b.textContent = 'Read more';
+      b.addEventListener('click', function () { d.classList.add('vd2-open'); if (b.parentNode) b.parentNode.removeChild(b); });
+      d.parentNode.insertBefore(b, d.nextSibling);
+    });
+  }
+
+  // The message form is lokali-inquiry.js (the storefront's). It is not in the
+  // site footer, so load it from wherever THIS script was served, then announce
+  // the vendor the way the storefront does; a hidden mount keeps its own
+  // "Send a message" button out of sight (ours is the page's main button).
+  function v2LoadInquiry(v, vendorId) {
+    if (!document.getElementById('lok-inquiry-mount')) {
+      var m = v2el('div'); m.id = 'lok-inquiry-mount'; m.style.display = 'none';
+      document.body.appendChild(m);
+    }
+    window.LOKALI_LOADED_VENDOR = { id: v.id != null ? v.id : vendorId, name: v.business_name || '', away_until: v.away_until || null, away_note: v.away_note || '', away_accepts_inquiries: v.away_accepts_inquiries !== false };
+    try { document.dispatchEvent(new CustomEvent('lokali:vendor-loaded', { detail: window.LOKALI_LOADED_VENDOR })); } catch (e) {}
+    if (window.LokaliInquiry || document.getElementById('lok-inq-loader')) return;
+    var scripts = document.getElementsByTagName('script'), mine = null;
+    for (var i = 0; i < scripts.length; i++) { if (/lokali-vendor-detail\.js/.test(scripts[i].src || '')) { mine = scripts[i]; break; } }
+    if (!mine) return;
+    var s = document.createElement('script');
+    s.id = 'lok-inq-loader';
+    s.src = mine.src.replace(/lokali-vendor-detail\.js.*$/, 'lokali-inquiry.js');
+    s.defer = true;
+    document.body.appendChild(s);
+  }
+
+  function v2Track(vendorId, type, isProduct) {
+    try {
+      if (window.LokaliAPI && window.LokaliAPI.leads && vendorId != null) window.LokaliAPI.leads.trackEvent(vendorId, type, isProduct ? 'product' : 'service');
+      if (typeof window.gtag === 'function') window.gtag('event', 'lead_click', { channel: type, vendor_id: String(vendorId) });
+    } catch (e) {}
+  }
+  function v2Digits(raw) { // same rule as the storefront's normPhone()
+    var s = String(raw || '').trim(), d = digits(s);
+    if (!d) return '';
+    return d.length === 10 ? '1' + d : d;
+  }
+
+  // Text / WhatsApp / Call under the same vendor switches as the storefront
+  function v2Channels(v, vendorId, itemName, isProduct) {
+    var host = $('vd2-ch'); if (!host) return null;
+    host.innerHTML = '';
+    var phone = v2Digits(v.phone_number);
+    if (!phone) return null;
+    var copy = 'Hi ' + (v.business_name || 'there') + ", I found you on Lokali and I'm interested in " + (itemName ? '"' + itemName + '"' : (isProduct ? 'your product' : 'your service')) + '.';
+    function pill(cls, label, icon, href, type, blank) {
+      var a = v2el('a', 'vd2-pill ' + cls);
+      a.href = href; // built from digits + a fixed template, never raw vendor text
+      if (blank) { a.target = '_blank'; a.rel = 'noopener'; }
+      if (icon) a.innerHTML = icon; // static markup only
+      a.appendChild(document.createTextNode(label));
+      a.addEventListener('click', function () { v2Track(vendorId, type, isProduct); });
+      host.appendChild(a);
+      return a;
+    }
+    if (v.text_messages) pill('vd2-pill-sms', 'Text', V2_ICON.sms, 'sms:+' + phone + '?body=' + encodeURIComponent(copy), 'sms');
+    if (v.whatsapp_messages) pill('vd2-pill-wa', 'WhatsApp', '', 'https://wa.me/' + phone + '?text=' + encodeURIComponent(copy), 'whatsapp', true);
+    var call = null;
+    if (v.phone_calls !== false) call = pill('vd2-pill-call', 'Call', V2_ICON.call, 'tel:+' + phone, 'call');
+    return call;
+  }
+
+  function v2Contact(v, vendorId, itemName, isProduct) {
+    if (!_v2) return false;
+    var cta = $('vd-cta-btn');
+    if (!cta) return false;
+    var vid = v.id != null ? v.id : vendorId;
+    v2LoadInquiry(v, vid);
+    var email = v.contact_email;
+    cta.setAttribute('href', '#');
+    cta.setAttribute('role', 'button');
+    cta.addEventListener('click', function (ev) {
+      ev.preventDefault();
+      if (window.LokaliInquiry && typeof window.LokaliInquiry.open === 'function') {
+        window.LokaliInquiry.open(((isProduct ? 'Product: ' : 'Service: ') + (itemName || '')).slice(0, 200));
+        // a head start on the message; the shopper can type over it
+        setTimeout(function () {
+          var ta = document.getElementById('lok-inq-msg');
+          if (ta && !ta.value && itemName) ta.value = "Hi! I'm interested in " + itemName + '.';
+        }, 0);
+        return;
+      }
+      // the form script failed to load: the old mailto beats a dead button
+      if (email) {
+        v2Track(vid, 'email', isProduct);
+        window.location.href = 'mailto:' + email + '?subject=' + encodeURIComponent('I found you on Lokali: inquiry about ' + (itemName || (isProduct ? 'your product' : 'your service')));
+      }
+    });
+    var callPill = v2Channels(v, vid, itemName, isProduct);
+    var note = $('vd2-note');
+    if (note) note.textContent = 'Your message goes to ' + (v.business_name || 'the vendor') + ' through Lokali. They reply to you directly.';
+    v2Bar(cta, callPill);
+    return true;
+  }
+
+  // pinned bar (phones): proxies the REAL controls so tracking stays in one place
+  function v2Bar(cta, callPill) {
+    if (document.getElementById('vd2-bar')) return;
+    var bar = v2el('div'); bar.id = 'vd2-bar';
+    var buy = $('vd-buy-btn');
+    if (buy) {
+      var bb = v2el('button', 'vd2-bar-buy'); bb.type = 'button';
+      bb.textContent = (buy.textContent || 'Buy online').trim();
+      bb.addEventListener('click', function () { buy.click(); });
+      bar.appendChild(bb);
+    }
+    var mainBtn = v2el('button', 'vd2-bar-main' + (/orange/.test(cta.className) ? ' vd2-bar-orange' : '')); mainBtn.type = 'button';
+    mainBtn.textContent = (cta.textContent || 'Inquire').trim();
+    mainBtn.addEventListener('click', function () { cta.click(); });
+    bar.appendChild(mainBtn);
+    if (callPill && !buy) {
+      var cb = v2el('button', 'vd2-bar-side'); cb.type = 'button'; cb.textContent = 'Call';
+      cb.addEventListener('click', function () { callPill.click(); });
+      bar.appendChild(cb);
+    }
+    document.body.appendChild(bar);
+  }
+
+  // "Run by Monica" with her photo; business + category on the second line
+  function v2Owner(v, catName) {
+    if (!_v2) return;
+    var owner = String(v.owner_name || '').trim().split(/\s+/)[0];
+    var nameEl = $('vd-mini-name'), catEl = $('vd-mini-cat');
+    if (owner && nameEl) {
+      nameEl.textContent = 'Run by ' + owner;
+      if (catEl) { catEl.textContent = [v.business_name, catName].filter(Boolean).join(' · '); show(catEl, true); }
+      var ph = imgUrl(v.owner_photo), av = $('vd-mini-avatar-img');
+      if (ph && av) { imgSet(av, ph, 240); av.alt = owner; av.style.display = 'block'; }
+    }
+    var link = $('vd-mini-link'); if (link) link.textContent = 'Visit the storefront →';
+    if ((v.is_verified || v.identity_status === 'verified') && catEl && catEl.parentNode && !$('vd2-trust')) {
+      var t = v2el('div', 'vd2-trust'); t.id = 'vd2-trust';
+      t.innerHTML = V2_ICON.shield; // static markup only
+      t.appendChild(document.createTextNode('Verified person'));
+      catEl.parentNode.appendChild(t);
+    }
+  }
+
   // Hard failure / 404 after the retry budget: the template ships a full demo
   // item (name, price, description, gallery) that would otherwise render as
   // real — hide it and say so. backHref/backLabel default to The Market.
@@ -88,6 +469,7 @@
       root = document.querySelector('main') || document.body;
     }
     for (var i = 0; i < root.children.length; i++) root.children[i].style.display = 'none';
+    var deadBar = document.getElementById('vd2-bar'); if (deadBar && deadBar.parentNode) deadBar.parentNode.removeChild(deadBar);
     var card = document.createElement('div');
     card.style.cssText = 'max-width:520px;margin:64px auto 96px;padding:40px 32px;text-align:center;' +
       'background:linear-gradient(180deg,#faf7ff 0%,#fff 70%);border:1px solid #eee9fb;border-radius:20px;' +
@@ -300,6 +682,7 @@
     });
     if (pips) pips.style.display = list.length < 2 ? 'none' : '';
     wireGallery(gallery, pips);
+    v2Gallery(list); // redesign: every thumbnail visible beside the 4:3 stage
   }
 
   function wireGallery(strip, pips) {
@@ -440,7 +823,12 @@
       if (av && photo) imgSet(av, photo, 240); // CLEAN-P23
       else if (av) av.style.display = 'none';
       // CTA -> mailto
+      v2Owner(v, catName);
       var cta = $('vd-cta-btn');
+      // Redesign 2026-09-19: the button opens the Lokali message form (Leads
+      // inbox) instead of a mailto. The mailto below is the legacy path, kept
+      // for the day the redesigned layout cannot mount.
+      if (v2Contact(v, vendorId, itemName, isProduct)) return v;
       if (cta && v.contact_email) {
         var subj = 'I found you on Lokali: inquiry about ' + (itemName || (isProduct ? 'your product' : 'your service'));
         var body = "Hi " + (v.business_name || 'there') + ", I found your listing on Lokali and I'm interested in " +
@@ -815,6 +1203,21 @@
         hideMetaRow('vd-meta-k1');
       }
       var v2 = $('vd-meta-v2'); if (v2 && priceEl) v2.textContent = priceEl.textContent;
+      (function () { // each fact once, as a check row beside the button
+        var rows = [];
+        if (s.remote) rows.push({ b: 'Available remotely' });
+        if (s.duration_minutes != null) rows.push({ b: 'Duration:', t: $('vd-meta-v1') ? $('vd-meta-v1').textContent : '' });
+        if (sLead) rows.push({ b: 'Lead time:', t: sLead });
+        var areasEl = $('vd-areas');
+        if (areasEl) {
+          var names = [];
+          for (var ai = 0; ai < areasEl.children.length; ai++) { var nm = (areasEl.children[ai].textContent || '').trim(); if (nm) names.push(nm); }
+          if (!names.length && (areasEl.textContent || '').trim()) names.push(areasEl.textContent.trim());
+          if (names.length) rows.push({ b: 'Serves:', t: names.join(', ') });
+        }
+        v2Facts(rows);
+        v2Clamp();
+      })();
       fetchPhotos('services', SERVICE_PHOTOS_PATH, (s.id != null ? s.id : id), imgUrl(s.image_url || s.image))
         .then(function (imgs) { buildGallery(imgs, name); }); // #97: item name = alt
       renderVideo(s.video_url);
@@ -905,13 +1308,21 @@
       fulfil = fulfil.charAt(0).toUpperCase() + fulfil.slice(1);
       setText('vd-meta-v2', fulfil);
       setText('vd-meta-v3', p.is_custom ? 'Made to order' : 'Standard');
+      (function () { // each fact once, as a check row beside the button
+        var rows = [];
+        if (p.is_custom) rows.push({ b: 'Made to order' });
+        if (pLead) rows.push({ b: 'Lead time:', t: pLead });
+        if (fulfilParts.length) rows.push({ b: 'How you get it:', t: fulfil });
+        v2Facts(rows);
+        v2Clamp();
+      })();
       fetchPhotos('products', PRODUCT_PHOTOS_PATH, (p.id != null ? p.id : id), imgUrl(p.image_url || p.image))
         .then(function (imgs) { buildGallery(imgs, name); }); // #97: item name = alt
       renderVideo(p.video_url);
       var vid = vendorParam || p.vendors_id || p.vendor_id;
       emitItemView(vid, 'product', p.id != null ? p.id : id);
+      mountBuyLink(p, vid); // #172 (before fillVendor: the phone bar mirrors it)
       var vendorP = fillVendor(vid, name, true);
-      mountBuyLink(p, vid); // #172
       mountItemNav('products', p.id != null ? p.id : id, vid, vendorP); // #174
     };
     if (vendorParam) {
@@ -976,6 +1387,7 @@
     if (!window.LokaliAPI) { console.warn('[lokali-vendor-detail] LokaliAPI not loaded'); return; }
     // Prefer the clean URL; fall back to the legacy ?id=&vendor= query params.
     var info = pathItem();
+    try { v2Layout(info ? info.kind === 'products' : pageType() === 'product'); } catch (e) { console.warn('[vd] v2 layout failed', e); }
     if (info) { hydrateFromSlug(info); return; }
     var type = pageType();
     var p = params();
