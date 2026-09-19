@@ -23,7 +23,7 @@
   var FONT = "'Plus Jakarta Sans',sans-serif";
   // Chart series colors, validated with the dataviz palette checker (light):
   // views = soft orange, contacts = violet, searches = teal. Fixed by entity.
-  var C_VIEWS = '#E8863A', C_CONTACTS = '#6B3FD4', C_SEARCH = '#2E9E83';
+  var C_VIEWS = '#FF8D00', C_CONTACTS = '#6002EE', C_SEARCH = '#2E9E83';
   var RANGES = [[7, '7 days'], [30, '30 days'], [90, '90 days']];
   var NEW_DAYS = 14;          // a storefront this young is "New", not "Not seen"
   var SEARCH_MIN = 10;        // below this many searches, "matched no search" says nothing
@@ -92,7 +92,7 @@
       ".lki-sub{font-size:13px;color:#6B6880;margin:4px 0 0;}" +
       ".lki-range{display:inline-flex;background:#fff;border:1px solid #E4E2F0;border-radius:999px;padding:3px;}" +
       ".lki-range button{font-size:13px;font-weight:600;color:#6B6880;background:transparent;border:0;border-radius:999px;padding:7px 14px;cursor:pointer;}" +
-      ".lki-range button.is-on{background:#F3EBFF;color:#4A12B8;}" +
+      ".lki-range button.is-on{background:#EEE6FF;color:#6002EE;}" +
       ".lki-card{background:#fff;border:1px solid #E8E5F3;border-radius:16px;padding:18px 20px;margin:0 0 16px;}" +
       ".lki-card-h{font-size:15px;font-weight:700;margin:0;}" +
       ".lki-card-s{font-size:12.5px;color:#6B6880;margin:3px 0 14px;line-height:1.5;}" +
@@ -132,15 +132,15 @@
       /* vendor table */
       ".lki-tools{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 12px;}" +
       ".lki-chip{font-size:12.5px;font-weight:600;color:#4A4761;background:#F7F6FC;border:1px solid #E8E5F3;border-radius:999px;padding:6px 12px;cursor:pointer;display:inline-flex;gap:6px;align-items:center;}" +
-      ".lki-chip.is-on{background:#F3EBFF;border-color:#D9C6FA;color:#4A12B8;}" +
+      ".lki-chip.is-on{background:#EEE6FF;border-color:#D9C6FA;color:#6002EE;}" +
       ".lki-chip span{font-weight:700;font-size:11px;color:#8E8BA6;}" +
       ".lki-chip.is-on span{color:#6B3FD4;}" +
       ".lki-spacer{flex:1;}" +
-      ".lki-link{font-size:12.5px;font-weight:600;color:#4A12B8;background:none;border:0;padding:6px 4px;cursor:pointer;display:inline-flex;gap:6px;align-items:center;text-decoration:none;}" +
+      ".lki-link{font-size:12.5px;font-weight:600;color:#6002EE;background:none;border:0;padding:6px 4px;cursor:pointer;display:inline-flex;gap:6px;align-items:center;text-decoration:none;}" +
       ".lki-thead,.lki-row{display:grid;grid-template-columns:minmax(200px,2.4fr) repeat(5,minmax(64px,1fr)) 24px;gap:8px;align-items:center;}" +
       ".lki-thead{font-size:11.5px;font-weight:600;color:#8E8BA6;padding:0 10px 8px;}" +
       ".lki-thead button{all:unset;cursor:pointer;display:inline-flex;gap:4px;align-items:center;justify-content:flex-end;width:100%;font-family:" + FONT + ";}" +
-      ".lki-thead button.is-sort{color:#4A12B8;}" +
+      ".lki-thead button.is-sort{color:#6002EE;}" +
       ".lki-thead button .lki-ico{font-size:9px;}" +
       ".lki-thead div:first-child button{justify-content:flex-start;}" +
       ".lki-v{border-top:1px solid #F1EFF8;}" +
@@ -194,10 +194,10 @@
       ".lki-h-n{font-size:22px;font-weight:700;letter-spacing:-.02em;margin:4px 0 2px;}" +
       ".lki-h-r{font-size:12.5px;color:#4A4761;line-height:1.5;margin:0 0 8px;}" +
       ".lki-h details{margin-top:auto;font-size:12px;color:#6B6880;line-height:1.55;}" +
-      ".lki-h summary{cursor:pointer;font-weight:600;color:#4A12B8;list-style:none;}" +
+      ".lki-h summary{cursor:pointer;font-weight:600;color:#6002EE;list-style:none;}" +
       ".lki-h summary::-webkit-details-marker{display:none;}" +
       ".lki-h details p{margin:6px 0 0;}" +
-      ".lki-h details a{color:#4A12B8;}" +
+      ".lki-h details a{color:#6002EE;}" +
       /* funnel */
       ".lki-fn{display:grid;grid-template-columns:150px 1fr 90px;gap:10px;align-items:center;padding:6px 0;font-size:13px;}" +
       ".lki-fn-bar{height:22px;border-radius:4px;background:#F1EFF8;overflow:hidden;}" +
@@ -213,6 +213,12 @@
       ".lki-gaps li{font-size:13px;line-height:1.55;color:#4A4761;margin:0 0 8px;}" +
       ".lki-gaps ul{margin:0;padding-left:18px;}" +
       "@media (max-width:760px){.lki-fn{grid-template-columns:110px 1fr 70px;}}" +
+      ".lki-secbar{position:sticky;z-index:15;display:flex;gap:6px;overflow-x:auto;background:#F7F6FC;padding:8px 0;margin:0 0 8px;scrollbar-width:none;}" +
+      ".lki-secbar::-webkit-scrollbar{display:none;}" +
+      ".lki-secbar button{flex:0 0 auto;font-size:12.5px;font-weight:600;color:#4A4761;background:#fff;border:1px solid #E8E5F3;border-radius:999px;padding:0 13px;min-height:36px;cursor:pointer;white-space:nowrap;}" +
+      ".lki-secbar button:hover{background:#EEE6FF;color:#6002EE;border-color:#D4BFF9;}" +
+      ".lki-card{scroll-margin-top:120px;}" +
+      "@media (max-width:760px){.lki-secbar button{min-height:44px;}}" +
       ".lki-state{padding:40px 20px;text-align:center;font-size:14px;color:#6B6880;background:#fff;border:1px solid #E8E5F3;border-radius:16px;line-height:1.6;}" +
       "@media (max-width:760px){" +
         ".lki-thead{display:none;}" +
@@ -352,6 +358,7 @@
   // ── sections ───────────────────────────────────────────────
   function card(title, sub) {
     var c = el('div', 'lki-card');
+    c.setAttribute('data-lki-title', title);
     c.appendChild(el('h3', 'lki-card-h', title));
     if (sub) c.appendChild(el('p', 'lki-card-s', sub));
     return c;
@@ -960,7 +967,7 @@
   }
 
   // ── render ─────────────────────────────────────────────────
-  function render(root, d, onRange) {
+  function render(root, d, onRange, extra) {
     root.innerHTML = '';
     var t = d.totals || {};
     var live = (d.vendors || []).filter(function (v) { return v.is_public; });
@@ -1018,6 +1025,22 @@
     root.appendChild(sharesCard(d));
     var g2 = el('div', 'lki-grid2'); g2.appendChild(revenueCard(d)); g2.appendChild(demandCard(d)); root.appendChild(g2); root.appendChild(el('div', 'lki-gap'));
     root.appendChild(gapsCard(!!d.visit));
+    // #181: a section bar so the page is not one long scroll. Built from the
+    // cards that actually rendered, so it can never point at a missing section.
+    var SECTIONS = [['Health', 'Marketplace health'], ['Visitors', 'Visitors and journeys'], ['Vendors', 'Who is getting seen'], ['Demand', 'What shoppers search for'], ['Categories and areas', 'Categories: supply vs attention'], ['Growth and revenue', 'Vendor activation funnel'], ['Where people come from', 'Word of mouth']];
+    var bar = el('div', 'lki-secbar');
+    var siteHead = document.querySelector('.header-wrapper.w-nav');
+    bar.style.top = ((window.matchMedia && window.matchMedia('(min-width: 992px)').matches && siteHead ? siteHead.offsetHeight : 0)) + 'px';
+    SECTIONS.forEach(function (sx) {
+      var target = root.querySelector('[data-lki-title="' + sx[1] + '"]'); if (!target) return;
+      var b = el('button', null, sx[0]); b.type = 'button';
+      b.addEventListener('click', function () { target.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+      bar.appendChild(b);
+    });
+    if (bar.childNodes.length > 1) root.insertBefore(bar, root.children[1] || null);
+    // Host page can hand over extra cards (How people found us, QR scans, Why people left).
+    if (typeof extra === 'function') { var slot = el('div', 'lki-grid2'); slot.style.marginTop = '16px'; root.appendChild(slot); try { extra(slot); } catch (e) {} }
+
     root.appendChild(el('p', 'lki-note', 'Views exclude a vendor previewing their own storefront. Days are Central time. Numbers refresh each time you open this page.'));
   }
 
@@ -1048,7 +1071,7 @@
             : 'Insights are not available yet. If this is the first time, the admin_insights SQL patch still needs to be run in Supabase.');
           return;
         }
-        render(root, d, load);
+        render(root, d, load, opts && opts.extra);
       }).catch(function () {
         state('Could not load insights. Refresh the page. If it keeps happening, the admin_insights SQL patch may not be applied yet.');
       });
@@ -1056,5 +1079,20 @@
     load((opts && opts.days) || 30);
   }
 
-  window.LokaliAdminInsights = { mount: mount };
+  // #181: the admin home's Today and Vendors views reuse this module's reading of
+  // the data (status per storefront, takeaways) instead of re-deriving it.
+  function analyze(d) {
+    var t = d.totals || {};
+    var live = (d.vendors || []).filter(function (v) { return v.is_public; });
+    var ctx = { days: d.days, searches: t.searches || 0, median: median(live.map(function (v) { return v.views; })), hasVisit: !!d.visit };
+    var vmap = {}; ((d.visit && d.visit.vendors) || []).forEach(function (x) { vmap[x.id] = x; });
+    (d.vendors || []).forEach(function (v) { v.visit = vmap[v.id] || null; });
+    var rows = (d.vendors || []).map(function (v) {
+      return { v: v, dx: diagnose(v, ctx), reach: reached(v), internal: internal(v), score: score(v), listings: listings(v) };
+    });
+    var reach = 0, inside = 0; rows.forEach(function (r) { reach += r.reach; inside += r.internal; });
+    return { rows: rows, takeaways: takeaways(d, rows), reach: reach, internal: inside, live: live.length };
+  }
+
+  window.LokaliAdminInsights = { mount: mount, fetch: defaultFetch, analyze: analyze };
 })();

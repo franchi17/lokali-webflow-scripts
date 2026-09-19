@@ -787,6 +787,9 @@
   function renderAdminHome(mount, acc, name) {
     injectAdminCSS(); // for the fallback note if the panel data isn't loaded
 
+    // #181: with admin data loaded, the whole page is the sidebar shell.
+    if (state.admin) { renderAdminShell(mount, acc, name); return; }
+
     var band = el('div', 'lk-band');
     band.appendChild(avatarNode(acc, 'lk-avatar'));
     var who = el('div');
@@ -795,43 +798,12 @@
     band.appendChild(who);
     mount.appendChild(band);
 
-    if (state.admin) {
-      // Two views on the admin home (F 2026-09-19): the console (queues + tools)
-      // and Marketplace insights, the analytics page. Insights lives in its own
-      // file, lokali-admin-insights.js, fetched only when this account opens the
-      // tab, so no shopper or vendor ever downloads it. /account#insights deep-links.
-      var seg = el('div', 'lk-seg-wrap');
-      var bConsole = el('button', 'lk-seg', 'Console'); bConsole.type = 'button';
-      var bInsights = el('button', 'lk-seg', 'Marketplace insights'); bInsights.type = 'button';
-      seg.appendChild(bConsole); seg.appendChild(bInsights);
-      mount.appendChild(seg);
-      var consoleBox = el('div'); consoleBox.appendChild(renderAdminPanel());
-      var insightsBox = el('div'); insightsBox.style.display = 'none';
-      mount.appendChild(consoleBox); mount.appendChild(insightsBox);
-      var insightsMounted = false;
-      var showAdminView = function (which) {
-        var ins = which === 'insights';
-        bConsole.classList.toggle('is-active', !ins); bInsights.classList.toggle('is-active', ins);
-        consoleBox.style.display = ins ? 'none' : ''; insightsBox.style.display = ins ? '' : 'none';
-        mount.style.maxWidth = ins ? '1180px' : ''; // the vendor table needs more than the 760px account column
-        if (!ins || insightsMounted) return;
-        insightsMounted = true;
-        loadAdminInsights(function (ok) {
-          if (ok) window.LokaliAdminInsights.mount(insightsBox);
-          else { insightsMounted = false; insightsBox.innerHTML = ''; insightsBox.appendChild(el('p', 'lk-admin-sub', 'Marketplace insights could not load. Refresh the page and try again.')); }
-        });
-      };
-      bConsole.addEventListener('click', function () { try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} showAdminView('console'); });
-      bInsights.addEventListener('click', function () { try { history.replaceState(null, '', '#insights'); } catch (e) {} showAdminView('insights'); });
-      showAdminView(location.hash === '#insights' ? 'insights' : 'console');
-    } else {
-      // Signed into this account but the is_admin-gated data didn't load — show
-      // a note (never the shopping UI) so it isn't a blank page.
-      var note = el('div', 'lk-admin');
-      note.appendChild(el('p', 'lk-admin-sub',
-        'Admin tools aren’t loading right now. Refresh the page. If it keeps happening, your admin access may need to be re-granted in Supabase.'));
-      mount.appendChild(note);
-    }
+    // Signed into this account but the is_admin-gated data didn't load — show
+    // a note (never the shopping UI) so it isn't a blank page.
+    var note = el('div', 'lk-admin');
+    note.appendChild(el('p', 'lk-admin-sub',
+      'Admin tools aren’t loading right now. Refresh the page. If it keeps happening, your admin access may need to be re-granted in Supabase.'));
+    mount.appendChild(note);
 
     var bar = el('div', 'lk-save-bar');
     var out = el('button', 'lk-btn ghost', 'Sign out');
@@ -844,6 +816,444 @@
     });
     bar.appendChild(out);
     mount.appendChild(bar);
+  }
+
+  // ── #181 ADMIN HOME: sidebar shell (F 2026-09-19) ──────────────────────────
+  // "Make a side menu like the vendor dashboard... stay with brand colors."
+  // The rail copies the vendor dashboard's real values (Webflow "Section 11" +
+  // "Dashboard BTN"): white, 230px, 16/12 padding, 8px-radius items, 16px/500
+  // labels, #EEE6FF hover. Brand tokens from the site CSS: primary #6002EE,
+  // purple-50 #EEE6FF, orange #FF8D00, orange-50 #FFF2DF, ink #1A1829, dusk
+  // #4A4761, slate #8E8BA6, snow #F7F6FC, mist #EEEDF6. Orange stays OUT of the
+  // nav (same rule as the vendor sidebar) and marks only what needs attention.
+  // Three views: Today (what needs you + how Lokali is doing), Vendors (find one,
+  // act on them), Insights (the analysis). Every queue and tool is the SAME
+  // section code as before, re-homed; nothing about approvals changed.
+  var ASH_ICO = {
+    today: '<svg viewBox="0 0 512 512" aria-hidden="true"><path fill="currentColor" d="M121 32C91.600 32 66 52 58.900 80.500L1.900 308.400C.6 313.500 0 318.700 0 323.900V416c0 35.300 28.700 64 64 64H448c35.300 0 64-28.700 64-64V323.900c0-5.200-.6-10.400-1.900-15.500l-57-227.900C446 52 420.400 32 391 32H121zm0 64H391l48 192H387.800c-12.100 0-23.200 6.800-28.600 17.700l-14.300 28.600c-5.400 10.800-16.500 17.700-28.600 17.700H195.800c-12.100 0-23.200-6.800-28.600-17.700l-14.300-28.600c-5.400-10.800-16.500-17.700-28.600-17.700H73l48-192z"/></svg>',
+    vendors: '<svg viewBox="0 0 640 512" aria-hidden="true"><path fill="currentColor" d="M36.800 192H603.200c20.300 0 36.800-16.500 36.800-36.800c0-7.300-2.200-14.400-6.200-20.400L558.200 21.400C549.300 8 534.400 0 518.300 0H121.700c-16 0-31 8-39.900 21.400L6.200 134.700c-4 6.100-6.200 13.200-6.200 20.400C0 175.500 16.500 192 36.800 192zM64 224V384v80c0 26.500 21.500 48 48 48H336c26.500 0 48-21.500 48-48V384 224H320V384H128V224H64zm448 0V480c0 17.700 14.300 32 32 32s32-14.300 32-32V224H512z"/></svg>',
+    insights: '<svg viewBox="0 0 512 512" aria-hidden="true"><path fill="currentColor" d="M32 32c17.700 0 32 14.300 32 32V400c0 8.800 7.200 16 16 16H480c17.700 0 32 14.300 32 32s-14.300 32-32 32H80c-44.200 0-80-35.800-80-80V64C0 46.300 14.300 32 32 32zm96 96c0-17.700 14.300-32 32-32s32 14.300 32 32V320c0 17.700-14.300 32-32 32s-32-14.300-32-32V128zm128 64c17.700 0 32 14.300 32 32V320c0 17.700-14.300 32-32 32s-32-14.300-32-32V224c0-17.700 14.300-32 32-32zm96-96c0-17.700 14.300-32 32-32s32 14.300 32 32V320c0 17.700-14.300 32-32 32s-32-14.300-32-32V128z"/></svg>',
+    bars: '<svg viewBox="0 0 448 512" aria-hidden="true"><path fill="currentColor" d="M0 96C0 78.300 14.300 64 32 64H416c17.700 0 32 14.300 32 32s-14.300 32-32 32H32C14.300 128 0 113.700 0 96zM0 256c0-17.700 14.300-32 32-32H416c17.700 0 32 14.300 32 32s-14.300 32-32 32H32c-17.700 0-32-14.300-32-32zM448 416c0 17.700-14.300 32-32 32H32c-17.700 0-32-14.300-32-32s14.300-32 32-32H416c17.700 0 32 14.300 32 32z"/></svg>',
+    check: '<svg viewBox="0 0 448 512" aria-hidden="true"><path fill="currentColor" d="M438.600 105.400c12.500 12.500 12.500 32.800 0 45.300l-256 256c-12.500 12.500-32.800 12.500-45.300 0l-128-128c-12.500-12.500-12.500-32.800 0-45.300s32.800-12.500 45.300 0L160 338.700 393.400 105.400c12.500-12.500 32.800-12.500 45.300 0z"/></svg>'
+  };
+
+  function injectAdminShellCSS() {
+    if (document.getElementById('lokali-admin-shell-styles')) return;
+    var st = document.createElement('style');
+    st.id = 'lokali-admin-shell-styles';
+    var F = "'Plus Jakarta Sans',sans-serif";
+    st.textContent =
+      ".lk-ash{display:grid;grid-template-columns:230px minmax(0,1fr);gap:24px;align-items:start;font-family:" + F + ";color:#1A1829;}" +
+      ".lk-ash *{box-sizing:border-box;font-family:inherit;}" +
+      ".lk-ash-rail{position:sticky;background:#fff;border:1px solid #EEEDF6;border-radius:16px;padding:16px 12px;display:flex;flex-direction:column;min-height:520px;}" +
+      ".lk-ash-brand{display:flex;align-items:center;gap:8px;font-size:16px;font-weight:700;padding:4px 8px 14px;}" +
+      ".lk-ash-brand span{font-size:10px;font-weight:700;letter-spacing:.08em;background:#6002EE;color:#fff;border-radius:999px;padding:3px 9px;}" +
+      ".lk-ash-nav{all:unset;box-sizing:border-box;display:flex;align-items:center;width:100%;border-radius:8px;margin-bottom:1px;padding:6px 8px;cursor:pointer;font-family:" + F + ";font-size:16px;font-weight:500;line-height:26px;color:#1A1829;}" +
+      ".lk-ash-nav i{width:40px;height:40px;flex:0 0 40px;display:flex;align-items:center;justify-content:center;color:#4A4761;}" +
+      ".lk-ash-nav i svg{width:18px;height:18px;}" +
+      ".lk-ash-nav:hover{background:#EEE6FF;}" +
+      ".lk-ash-nav:focus-visible{outline:2px solid #6002EE;outline-offset:1px;}" +
+      /* current page = two signals: tint + violet, heavier label */
+      ".lk-ash-nav[aria-current='page']{background:#EEE6FF;color:#6002EE;font-weight:700;}" +
+      ".lk-ash-nav[aria-current='page'] i{color:#6002EE;}" +
+      ".lk-ash-count{margin-left:auto;font-size:11px;font-weight:700;line-height:18px;background:#FF8D00;color:#2B1500;border-radius:999px;padding:0 8px;}" +
+      ".lk-ash-count[hidden]{display:none;}" +
+      ".lk-ash-foot{margin-top:auto;padding-top:14px;border-top:1px solid #EEEDF6;display:flex;flex-direction:column;}" +
+      ".lk-ash-lbl{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#8E8BA6;padding:2px 8px 4px;}" +
+      ".lk-ash-ext{font-size:13.5px;color:#4A4761;text-decoration:none;padding:7px 8px;border-radius:8px;display:flex;justify-content:space-between;}" +
+      ".lk-ash-ext:hover{background:#EEE6FF;color:#6002EE;}" +
+      ".lk-ash-chip{display:flex;align-items:center;gap:10px;padding:10px 8px 2px;margin-top:10px;border-top:1px solid #EEEDF6;}" +
+      ".lk-ash-chip .lk-avatar{width:34px;height:34px;flex:0 0 34px;font-size:13px;}" +
+      ".lk-ash-name{font-size:13px;font-weight:700;color:#4A4761;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}" +
+      ".lk-ash-role{font-size:11px;color:#8E8BA6;}" +
+      ".lk-ash-out{all:unset;cursor:pointer;margin-left:auto;font-size:12.5px;font-weight:600;color:#6002EE;padding:8px 6px;border-radius:8px;font-family:" + F + ";}" +
+      ".lk-ash-out:hover{background:#EEE6FF;}" +
+      ".lk-ash-main{min-width:0;}" +
+      ".lk-ash-view[hidden]{display:none;}" +
+      ".lk-ash-h{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:10px;margin:2px 0 18px;}" +
+      ".lk-ash-h h2{font-size:24px;font-weight:700;letter-spacing:-.02em;margin:0;color:#1A1829;}" +
+      ".lk-ash-h p{font-size:13px;color:#8E8BA6;margin:3px 0 0;}" +
+      ".lk-ash-sec{margin:0 0 26px;}" +
+      ".lk-ash-sech{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin:0 0 10px;}" +
+      ".lk-ash-sech h3{font-size:16px;font-weight:700;margin:0;color:#1A1829;}" +
+      ".lk-ash-sech span{font-size:12.5px;color:#8E8BA6;}" +
+      ".lk-ash-sech button{all:unset;cursor:pointer;margin-left:auto;font-size:13px;font-weight:600;color:#6002EE;font-family:" + F + ";}" +
+      ".lk-ash-clear{display:flex;gap:12px;align-items:center;background:#EAFAF2;border:1px solid #BFE9D2;border-radius:14px;padding:16px 18px;color:#14623F;font-size:14.5px;font-weight:600;}" +
+      ".lk-ash-clear svg{width:18px;height:18px;flex:0 0 auto;}" +
+      ".lk-ash-clear small{display:block;font-weight:500;font-size:12.5px;color:#2D7A58;}" +
+      ".lk-ash-clear[hidden]{display:none;}" +
+      ".lk-ash-queues{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}" +
+      ".lk-ash-q{font-size:12.5px;font-weight:600;color:#4A4761;background:#fff;border:1px solid #EEEDF6;border-radius:999px;padding:5px 11px;}" +
+      ".lk-ash-q b{font-weight:700;color:#8E8BA6;margin-left:5px;}" +
+      ".lk-ash-q.on{background:#FFF2DF;border-color:#FFDDB0;color:#6B3A00;}.lk-ash-q.on b{color:#6B3A00;}" +
+      /* queue sections inside Today: full width, amber edge = needs you */
+      ".lk-ash-needs{display:flex;flex-direction:column;gap:10px;}" +
+      ".lk-ash-needs .lk-admin-section{background:#fff;border:1px solid #EEEDF6;border-left:3px solid #FF8D00;border-radius:0 14px 14px 0;}" +
+      ".lk-ash-needs .lk-admin-qcount{background:#FFF2DF;color:#6B3A00;}" +
+      ".lk-ash-pulse{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));background:#fff;border:1px solid #EEEDF6;border-radius:14px;overflow:hidden;}" +
+      ".lk-ash-kp{padding:14px 16px;border-left:1px solid #EEEDF6;}" +
+      ".lk-ash-kp:first-child{border-left:0;}" +
+      ".lk-ash-kp .l{font-size:12px;font-weight:600;color:#4A4761;}" +
+      ".lk-ash-kp .n{font-size:26px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;margin:2px 0;color:#1A1829;}" +
+      ".lk-ash-kp .d{font-size:12px;color:#8E8BA6;line-height:1.45;}" +
+      ".lk-ash-kp .d.up{color:#1A7F55;}.lk-ash-kp .d.warn{color:#9A4A12;}" +
+      ".lk-ash-list{background:#fff;border:1px solid #EEEDF6;border-radius:14px;overflow:hidden;}" +
+      ".lk-ash-li{display:flex;gap:10px;padding:11px 16px;border-top:1px solid #EEEDF6;font-size:14px;line-height:1.5;color:#1A1829;}" +
+      ".lk-ash-li:first-child{border-top:0;}" +
+      ".lk-ash-dot{width:8px;height:8px;border-radius:50%;flex:0 0 8px;margin-top:7px;background:#D4BFF9;}" +
+      ".lk-ash-dot.good{background:#5DCAA5;}.lk-ash-dot.bad{background:#FF8D00;}" +
+      ".lk-ash-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 14px;align-items:center;padding:13px 16px;border-top:1px solid #EEEDF6;}" +
+      ".lk-ash-row:first-child{border-top:0;}" +
+      ".lk-ash-row b{display:block;font-size:14.5px;font-weight:600;overflow-wrap:anywhere;}" +
+      ".lk-ash-row small{display:block;font-size:12.5px;color:#4A4761;margin-top:2px;line-height:1.45;}" +
+      ".lk-ash-meta{display:flex;flex-wrap:wrap;gap:5px 10px;align-items:center;font-size:12px;color:#8E8BA6;margin-top:4px;}" +
+      ".lk-ash-acts{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;}" +
+      ".lk-ash-btn{all:unset;box-sizing:border-box;cursor:pointer;font-family:" + F + ";font-size:13px;font-weight:600;color:#1A1829;background:#fff;border:1px solid #E4E2F0;border-radius:9px;padding:0 13px;min-height:38px;display:inline-flex;align-items:center;text-decoration:none;}" +
+      ".lk-ash-btn:hover{background:#EEE6FF;border-color:#D4BFF9;color:#6002EE;}" +
+      ".lk-ash-btn:focus-visible{outline:2px solid #6002EE;outline-offset:1px;}" +
+      ".lk-ash-btn.primary{background:#6002EE;border-color:#6002EE;color:#fff;}" +
+      ".lk-ash-btn.primary:hover{background:#3D00E0;border-color:#3D00E0;color:#fff;}" +
+      ".lk-ash-pill{font-size:11px;font-weight:700;border-radius:999px;padding:2px 9px;}" +
+      ".lk-ash-pill.working{background:#E7F7EE;color:#14623F;}.lk-ash-pill.seen{background:#EEE6FF;color:#3D00E0;}" +
+      ".lk-ash-pill.stalls,.lk-ash-pill.low,.lk-ash-pill.unseen{background:#FFF2DF;color:#6B3A00;}.lk-ash-pill.notlive{background:#EEEDF6;color:#4A4761;}" +
+      ".lk-ash-tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 12px;}" +
+      ".lk-ash-search{flex:1 1 220px;font-size:14px;border:1px solid #E4E2F0;border-radius:10px;padding:0 12px;min-height:42px;background:#fff;color:#1A1829;}" +
+      ".lk-ash-fchip{all:unset;box-sizing:border-box;cursor:pointer;font-family:" + F + ";font-size:12.5px;font-weight:600;color:#4A4761;background:#fff;border:1px solid #EEEDF6;border-radius:999px;padding:0 12px;min-height:36px;display:inline-flex;align-items:center;gap:5px;}" +
+      ".lk-ash-fchip[aria-pressed='true']{background:#EEE6FF;border-color:#D4BFF9;color:#6002EE;}" +
+      ".lk-ash-panel{margin:0 0 16px;}" +
+      ".lk-ash-panel[hidden]{display:none;}" +
+      ".lk-ash-note{font-size:13px;color:#8E8BA6;padding:14px 16px;}" +
+      ".lk-ash-bar{display:none;}" +
+      ".lk-ash-ov{display:none;}" +
+      "@media (max-width:991px){" +
+        ".lk-ash{grid-template-columns:minmax(0,1fr);gap:14px;}" +
+        ".lk-ash-bar{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #EEEDF6;border-radius:12px;padding:6px 8px 6px 14px;font-size:15px;font-weight:700;}" +
+        ".lk-ash-burger{all:unset;cursor:pointer;margin-left:auto;width:44px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:10px;color:#1A1829;}" +
+        ".lk-ash-burger:hover{background:#EEE6FF;}.lk-ash-burger svg{width:20px;height:20px;}" +
+        ".lk-ash-rail{position:fixed !important;top:0 !important;left:0;bottom:0;z-index:3000;width:270px;max-width:86vw;border-radius:0;border:0;border-right:1px solid #EEEDF6;transform:translateX(-102%);transition:transform .22s ease;overflow-y:auto;min-height:0;}" +
+        ".lk-ash.is-open .lk-ash-rail{transform:none;box-shadow:12px 0 40px rgba(74,50,140,.18);}" +
+        ".lk-ash.is-open .lk-ash-ov{display:block;position:fixed;inset:0;z-index:2999;background:rgba(74,71,97,.28);}" +
+        ".lk-ash-pulse{grid-template-columns:1fr 1fr;}" +
+        ".lk-ash-kp{border-left:0;border-top:1px solid #EEEDF6;}.lk-ash-kp:nth-child(-n+2){border-top:0;}.lk-ash-kp:nth-child(even){border-left:1px solid #EEEDF6;}" +
+        ".lk-ash-row{grid-template-columns:minmax(0,1fr);}.lk-ash-acts{justify-content:flex-start;}" +
+        /* phone targets: 44px with space between (WCAG 2.5.5 / Apple default) */
+        ".lk-ash-btn,.lk-ash-fchip,.lk-ash-search{min-height:44px;}.lk-ash-acts{gap:8px;}" +
+        ".lk-ash-h h2{font-size:21px;}" +
+      "}" +
+      "@media (prefers-reduced-motion:reduce){.lk-ash-rail{transition:none;}}";
+    document.head.appendChild(st);
+  }
+
+  // What to tell a vendor, in their words (the insights page words gaps for the admin).
+  function vendorTips(v, listingsN) {
+    var t = [];
+    if (!v.has_photo) t.push('Add a cover photo. It is the first thing people see on The Market.');
+    if (!v.n_photos) t.push('Add a few gallery photos of your work.');
+    if (!v.has_desc) t.push('Write two or three sentences about what you do and who it is for.');
+    if (!v.has_tagline) t.push('Add a short tagline under your business name.');
+    if (!v.has_tags) t.push('Pick your specialties so searches can find you.');
+    if (listingsN === 0) t.push('Add your first service or product. Your storefront goes live once you have one.');
+    else if (listingsN < 3) t.push('Add another listing or two so people have something to browse.');
+    if (!v.has_story) t.push('Fill in "Meet the owner". People buy from people.');
+    return t;
+  }
+  function nudgeMailto(v, contact, tips) {
+    var hi = contact && contact.first_name ? 'Hi ' + contact.first_name + ',' : 'Hi,';
+    var body = hi + '\n\nI was looking at ' + (v.name || 'your storefront') + ' on Lokali and spotted a few quick things that would help more neighbors find you:\n\n' +
+      tips.slice(0, 4).map(function (x) { return '- ' + x; }).join('\n') +
+      '\n\nEach takes a few minutes here: https://www.golokali.com/vendor-dashboard/dashboard\n\nHappy to help with any of it, just reply to this email.\n\nFrancesca\nLokali';
+    return 'mailto:' + encodeURIComponent(contact.email).replace(/%40/g, '@') +
+      '?subject=' + encodeURIComponent('A few quick wins for your Lokali storefront') + '&body=' + encodeURIComponent(body);
+  }
+
+  function renderAdminShell(mount, acc, name) {
+    injectAdminCSS(); injectAdminShellCSS();
+    mount.style.maxWidth = '1240px';
+    var a = state.admin, ov = a.overview;
+    var SAPI = window.LokaliSupabaseAPI;
+    function T(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
+
+    var shell = T('div', 'lk-ash');
+    var VIEWS = [['today', 'Today'], ['vendors', 'Vendors'], ['insights', 'Insights']];
+
+    // phone top bar + drawer overlay (same behaviour as the vendor dashboard)
+    var bar = T('div', 'lk-ash-bar'); var barTitle = T('span', null, 'Today'); bar.appendChild(barTitle);
+    var burger = T('button', 'lk-ash-burger'); burger.type = 'button'; burger.setAttribute('aria-label', 'Open admin menu'); burger.innerHTML = ASH_ICO.bars; bar.appendChild(burger);
+    var overlay = T('div', 'lk-ash-ov');
+    function drawer(open) { shell.classList.toggle('is-open', !!open); burger.setAttribute('aria-expanded', open ? 'true' : 'false'); }
+    burger.addEventListener('click', function () { drawer(!shell.classList.contains('is-open')); });
+    overlay.addEventListener('click', function () { drawer(false); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') drawer(false); });
+
+    // rail
+    var rail = T('nav', 'lk-ash-rail'); rail.setAttribute('aria-label', 'Admin sections');
+    var siteHead = document.querySelector('.header-wrapper.w-nav');
+    rail.style.top = ((window.matchMedia && window.matchMedia('(min-width: 992px)').matches && siteHead ? siteHead.offsetHeight : 0) + 12) + 'px';
+    var brand = T('div', 'lk-ash-brand', 'Lokali'); brand.appendChild(T('span', null, 'ADMIN')); rail.appendChild(brand);
+    var navBtns = {}, navCount = T('span', 'lk-ash-count', '0'); navCount.hidden = true;
+    VIEWS.forEach(function (vw) {
+      var b = T('button', 'lk-ash-nav'); b.type = 'button';
+      var i = document.createElement('i'); i.innerHTML = ASH_ICO[vw[0]]; b.appendChild(i);
+      b.appendChild(document.createTextNode(vw[1]));
+      if (vw[0] === 'today') b.appendChild(navCount);
+      b.addEventListener('click', function () { go(vw[0], true); });
+      navBtns[vw[0]] = b; rail.appendChild(b);
+    });
+    var foot = T('div', 'lk-ash-foot');
+    foot.appendChild(T('div', 'lk-ash-lbl', 'Open in'));
+    [['Stripe', 'https://dashboard.stripe.com/'], ['Supabase', 'https://supabase.com/dashboard/project/baacipkokiweipncavov'],
+     ['Google Analytics', 'https://analytics.google.com/'], ['Brevo', 'https://app.brevo.com/'], ['Webflow', 'https://webflow.com/dashboard']].forEach(function (x) {
+      var l = T('a', 'lk-ash-ext', x[0]); l.href = x[1]; l.target = '_blank'; l.rel = 'noopener'; l.appendChild(T('span', null, '↗')); foot.appendChild(l);
+    });
+    var chip = T('div', 'lk-ash-chip'); chip.appendChild(avatarNode(acc, 'lk-avatar'));
+    var who = T('div'); who.style.minWidth = '0'; who.appendChild(T('div', 'lk-ash-name', name)); who.appendChild(T('div', 'lk-ash-role', 'Lokali admin')); chip.appendChild(who);
+    var outBtn = T('button', 'lk-ash-out', 'Sign out'); outBtn.type = 'button';
+    outBtn.addEventListener('click', function () {
+      if (window.LokaliAuth && window.LokaliAuth.signOut) { window.LokaliAuth.signOut(); return; }
+      try { api().clearToken(); } catch (e) {}
+      window.location.href = '/login';
+    });
+    chip.appendChild(outBtn); foot.appendChild(chip); rail.appendChild(foot);
+
+    var main = T('div', 'lk-ash-main');
+    main.appendChild(bar);
+    var views = {};
+    VIEWS.forEach(function (vw) { var v = T('section', 'lk-ash-view'); v.hidden = true; views[vw[0]] = v; main.appendChild(v); });
+    shell.appendChild(rail); shell.appendChild(overlay); shell.appendChild(main);
+    mount.appendChild(shell);
+
+    // ── shared data: admin_insights(30) once, read by Today AND Vendors ─────
+    var insightsP = null, contactsP = null;
+    function insightsData() {
+      if (!insightsP) insightsP = new Promise(function (resolve) {
+        loadAdminInsights(function (ok) {
+          if (!ok || !window.LokaliAdminInsights.fetch) { resolve(null); return; }
+          window.LokaliAdminInsights.fetch(30).then(function (d) {
+            resolve(d && d.ok === true ? { d: d, an: window.LokaliAdminInsights.analyze(d) } : null);
+          }).catch(function () { resolve(null); });
+        });
+      });
+      return insightsP;
+    }
+    function contacts() {
+      if (!contactsP) contactsP = (SAPI && SAPI.admin && typeof SAPI.admin.vendorContacts === 'function')
+        ? SAPI.admin.vendorContacts().then(function (res) {
+            var m = {}, d = res && res.data; if (d && d.ok === true) (d.vendors || []).forEach(function (x) { if (x.email) m[x.id] = x; }); return m;
+          }).catch(function () { return {}; })
+        : Promise.resolve({});
+      return contactsP;
+    }
+
+    var signInHost = null;
+    function vendorActions(r, cmap) {
+      var v = r.v, acts = T('div', 'lk-ash-acts');
+      var tips = vendorTips(v, r.listings), c = cmap[v.id];
+      if (c && tips.length) { var m = T('a', 'lk-ash-btn', 'Email owner'); m.href = nudgeMailto(v, c, tips); acts.appendChild(m); }
+      else if (c) { var m2 = T('a', 'lk-ash-btn', 'Email owner'); m2.href = 'mailto:' + encodeURIComponent(c.email).replace(/%40/g, '@'); acts.appendChild(m2); }
+      if (v.name) {
+        var si = T('button', 'lk-ash-btn', 'Sign in as'); si.type = 'button';
+        si.addEventListener('click', function () { go('vendors', true); if (signInHost && signInHost.lkPrefill) signInHost.lkPrefill(v.name); });
+        acts.appendChild(si);
+      }
+      if (v.slug && v.is_public) { var o = T('a', 'lk-ash-btn', 'Open storefront'); o.href = '/' + encodeURIComponent(v.slug); o.target = '_blank'; o.rel = 'noopener'; acts.appendChild(o); }
+      return acts;
+    }
+    function vendorRow(r, cmap, withNumbers) {
+      var v = r.v, row = T('div', 'lk-ash-row'), left = T('div');
+      left.appendChild(T('b', null, v.name || 'Unnamed signup'));
+      // One line: for a storefront that is live and merely quiet, lead with the most
+      // fixable gap (the pill already says the status); otherwise say what happened.
+      var quiet = r.dx.key === 'seen' || r.dx.key === 'low';
+      left.appendChild(T('small', null, quiet && r.dx.gaps.length ? r.dx.gaps[0] : (r.dx.gaps.length && r.dx.key !== 'working' ? r.dx.summary + ' ' + r.dx.gaps[0] : r.dx.summary)));
+      var meta = T('div', 'lk-ash-meta');
+      meta.appendChild(T('span', 'lk-ash-pill ' + r.dx.key, r.dx.label));
+      if (withNumbers) {
+        meta.appendChild(T('span', null, r.v.views + (r.v.views === 1 ? ' view' : ' views')));
+        meta.appendChild(T('span', null, r.reach + (r.reach === 1 ? ' reach-out' : ' reach-outs')));
+        meta.appendChild(T('span', null, r.score + ' of 7 basics'));
+      }
+      left.appendChild(meta);
+      row.appendChild(left); row.appendChild(vendorActions(r, cmap));
+      return row;
+    }
+
+    // ── TODAY ───────────────────────────────────────────────────────────────
+    (function buildToday() {
+      var v = views.today, now = new Date(), hr = now.getHours();
+      var head = T('div', 'lk-ash-h'), hl = T('div');
+      hl.appendChild(T('h2', null, (hr < 12 ? 'Good morning, ' : hr < 18 ? 'Good afternoon, ' : 'Good evening, ') + name));
+      var dstr = ''; try { dstr = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }); } catch (e) {}
+      hl.appendChild(T('p', null, dstr)); head.appendChild(hl); v.appendChild(head);
+
+      // Needs you: the existing queue sections, most serious first.
+      var needs = T('div', 'lk-ash-sec');
+      var nh = T('div', 'lk-ash-sech'); nh.appendChild(T('h3', null, 'Needs you')); var nhint = T('span', null, ''); nh.appendChild(nhint); needs.appendChild(nh);
+      var clear = T('div', 'lk-ash-clear'); clear.hidden = true; clear.innerHTML = ASH_ICO.check;
+      var ct = T('div', null, 'Nothing needs you right now.'); ct.appendChild(T('small', null, 'You also get an email within 5 minutes of anything new.')); clear.appendChild(ct);
+      needs.appendChild(clear);
+      var grid = T('div', 'lk-ash-needs'); needs.appendChild(grid);
+      var chips = T('div', 'lk-ash-queues'); chips.setAttribute('aria-label', 'All queues'); needs.appendChild(chips);
+      v.appendChild(needs);
+
+      window.__lokAttn = { suggestions: a.queue.length, reports: (Number(ov.open_vendor_reports) || 0) + (Number(ov.open_review_reports) || 0), creatives: null, addresses: null, pairings: null };
+      function sectionTitle(sec) {
+        var t = sec.querySelector('.lk-admin-qtitle'); if (!t) return '';
+        var out = ''; t.childNodes.forEach(function (n) { if (n.nodeType === 3) out += n.textContent; }); return out.trim();
+      }
+      // Empty queues fold away but stay findable as a quiet chip with a zero.
+      function paintNeeds() {
+        var total = 0, open = 0; chips.innerHTML = '';
+        grid.querySelectorAll('.lk-admin-section').forEach(function (sec) {
+          var empty = sec.querySelector('.lk-admin-empty');
+          var loading = empty && /loading/i.test(empty.textContent || '');
+          var rows = sec.querySelectorAll('.lk-admin-row').length;
+          var quiet = !!empty && !loading && !rows && !sec.querySelector('form');
+          sec.classList.toggle('lk-collapsed', quiet);
+          var title = sectionTitle(sec); if (!title) return;
+          var q = T('span', 'lk-ash-q' + (rows ? ' on' : ''), title); q.appendChild(T('b', null, String(rows))); chips.appendChild(q);
+          total += rows; if (!quiet) open++;
+        });
+        clear.hidden = total > 0 || open > 0;
+        nhint.textContent = total ? (total === 1 ? '1 thing waiting, most serious first' : total + ' things waiting, most serious first') : '';
+        navCount.textContent = String(total); navCount.hidden = !total;
+      }
+      window.__lokPaintAttn = paintNeeds;
+      appendReportsSection(grid, ov);              // trust and safety first
+      appendAddressFlagsSection(grid);
+      appendTagSuggestionsSection(grid, a, null);
+      appendSpotlightCreativesSection(grid);
+      appendPairingFeedbackSection(grid);
+      appendSpotlightSection(grid, ov);
+      try { new MutationObserver(function () { paintNeeds(); }).observe(grid, { childList: true, subtree: true, characterData: true }); } catch (e) {}
+      setTimeout(paintNeeds, 0);
+
+      // Pulse + Worth knowing + Vendors to nudge: filled when insights arrive.
+      var pulse = T('div', 'lk-ash-sec');
+      var ph = T('div', 'lk-ash-sech'); ph.appendChild(T('h3', null, 'Pulse')); ph.appendChild(T('span', null, 'last 30 days against the 30 before'));
+      var toIns = T('button', null, 'Open Insights'); toIns.type = 'button'; toIns.addEventListener('click', function () { go('insights', true); }); ph.appendChild(toIns);
+      pulse.appendChild(ph);
+      var pbox = T('div', 'lk-ash-list'); pbox.appendChild(T('div', 'lk-ash-note', 'Loading the numbers…')); pulse.appendChild(pbox);
+      v.appendChild(pulse);
+      var know = T('div', 'lk-ash-sec'); know.hidden = true; v.appendChild(know);
+      var nudge = T('div', 'lk-ash-sec'); nudge.hidden = true; v.appendChild(nudge);
+
+      Promise.all([insightsData(), contacts()]).then(function (rs) {
+        var pack = rs[0], cmap = rs[1];
+        if (!pack) { pbox.innerHTML = ''; pbox.appendChild(T('div', 'lk-ash-note', 'The numbers could not load. Refresh the page to try again.')); return; }
+        var d = pack.d, an = pack.an, t = d.totals || {};
+        function n(x) { return (Number(x) || 0).toLocaleString('en-US'); }
+        function kp(label, value, detail, cls) {
+          var k = T('div', 'lk-ash-kp'); k.appendChild(T('div', 'l', label)); k.appendChild(T('div', 'n', value)); k.appendChild(T('div', 'd' + (cls ? ' ' + cls : ''), detail)); return k;
+        }
+        var grid4 = T('div', 'lk-ash-pulse');
+        var vd = t.views_prev > 0 ? Math.round(((t.views - t.views_prev) / t.views_prev) * 100) : null;
+        grid4.appendChild(kp('Storefront views', n(t.views), vd == null ? 'none in the 30 days before' : (vd >= 0 ? 'up ' : 'down ') + Math.abs(vd) + '% from ' + n(t.views_prev), vd != null && vd >= 0 ? 'up' : (vd != null ? 'warn' : '')));
+        var rate = t.views ? Math.round((an.reach / t.views) * 100) : 0;
+        grid4.appendChild(kp('Shopper reach-outs', n(an.reach), rate + '% of views' + (an.internal ? ' · ' + n(an.internal) + ' test clicks left out' : ''), an.reach ? '' : 'warn'));
+        var withReach = an.rows.filter(function (r) { return r.v.is_public && r.reach > 0; }).length;
+        grid4.appendChild(kp('Live storefronts seen', n(t.vendors_seen) + ' of ' + n(t.vendors_public), withReach + (withReach === 1 ? ' had' : ' had') + ' a shopper reach out'));
+        var zero = (d.search_zero || []).slice(0, 2).map(function (z) { return z.term; }).join(', ');
+        grid4.appendChild(kp('Searches that found nobody', t.searches ? n(t.searches_zero) + ' of ' + n(t.searches) : 'None', t.searches ? (zero || 'every search found someone') : 'nobody searched The Market', t.searches_zero ? 'warn' : ''));
+        pulse.replaceChild(grid4, pbox);
+
+        // drop the takeaways the Pulse tiles already say (views, reach-outs, test clicks)
+        var tk = (an.takeaways || []).filter(function (x) { return !/^Storefront views|^[\d,]+ storefront views|reach-out|reached out|contact click/i.test(x.text); }).slice(0, 3);
+        if (tk.length) {
+          var kh = T('div', 'lk-ash-sech'); kh.appendChild(T('h3', null, 'Worth knowing')); know.appendChild(kh);
+          var kl = T('div', 'lk-ash-list');
+          tk.forEach(function (x) { var li = T('div', 'lk-ash-li'); li.appendChild(T('span', 'lk-ash-dot ' + x.tone)); li.appendChild(T('span', null, x.text)); kl.appendChild(li); });
+          know.appendChild(kl); know.hidden = false;
+        }
+
+        // Most fixable first: a named signup that never went live, then the live
+        // storefronts missing the most basics. Away vendors are left alone.
+        var cand = an.rows.filter(function (r) { return r.v.name && !r.v.away && r.dx.key !== 'working' && (!r.v.is_public || r.score <= 4); });
+        cand.sort(function (x, y) { return (x.v.is_public ? x.score : -1) - (y.v.is_public ? y.score : -1) || y.v.views - x.v.views; });
+        cand = cand.slice(0, 3);
+        if (cand.length) {
+          var gh = T('div', 'lk-ash-sech'); gh.appendChild(T('h3', null, 'Vendors to nudge this week')); gh.appendChild(T('span', null, 'picked by what is most fixable'));
+          var allV = T('button', null, 'All vendors'); allV.type = 'button'; allV.addEventListener('click', function () { go('vendors', true); }); gh.appendChild(allV);
+          nudge.appendChild(gh);
+          var gl = T('div', 'lk-ash-list'); cand.forEach(function (r) { gl.appendChild(vendorRow(r, cmap, false)); }); nudge.appendChild(gl);
+          nudge.hidden = false;
+        }
+      });
+    })();
+
+    // ── VENDORS (built on first open) ───────────────────────────────────────
+    var vendorsBuilt = false;
+    function buildVendors() {
+      if (vendorsBuilt) return; vendorsBuilt = true;
+      var v = views.vendors;
+      var head = T('div', 'lk-ash-h'), hl = T('div'); hl.appendChild(T('h2', null, 'Vendors')); var sub = T('p', null, ''); hl.appendChild(sub); head.appendChild(hl);
+      var inviteBtn = T('button', 'lk-ash-btn primary', 'Invite a vendor'); inviteBtn.type = 'button'; head.appendChild(inviteBtn);
+      v.appendChild(head);
+      // Rare tool, so it opens on request instead of sitting open on the page.
+      var invitePanel = T('div', 'lk-ash-panel'); invitePanel.hidden = true; appendInviteVendorSection(invitePanel); v.appendChild(invitePanel);
+      inviteBtn.setAttribute('aria-expanded', 'false');
+      inviteBtn.addEventListener('click', function () {
+        invitePanel.hidden = !invitePanel.hidden; inviteBtn.setAttribute('aria-expanded', invitePanel.hidden ? 'false' : 'true');
+        inviteBtn.textContent = invitePanel.hidden ? 'Invite a vendor' : 'Close invite';
+        if (!invitePanel.hidden) { var f = invitePanel.querySelector('input'); if (f) f.focus(); }
+      });
+
+      var tools = T('div', 'lk-ash-tools');
+      var search = T('input', 'lk-ash-search'); search.type = 'search'; search.id = 'lk-ash-vsearch'; search.placeholder = 'Find a vendor by name'; search.setAttribute('aria-label', 'Find a vendor by name');
+      tools.appendChild(search); v.appendChild(tools);
+      var list = T('div', 'lk-ash-list'); list.appendChild(T('div', 'lk-ash-note', 'Loading vendors…')); v.appendChild(list);
+      var tool = T('div', 'lk-ash-sec'); tool.style.marginTop = '22px'; appendSignInAsSection(tool); signInHost = tool.querySelector('.lk-admin-section'); v.appendChild(tool);
+
+      Promise.all([insightsData(), contacts()]).then(function (rs) {
+        var pack = rs[0], cmap = rs[1];
+        if (!pack) { list.innerHTML = ''; list.appendChild(T('div', 'lk-ash-note', 'Vendors could not load. Refresh the page to try again.')); return; }
+        var rows = pack.an.rows, filt = 'all';
+        sub.textContent = rows.length + ' accounts · ' + pack.an.live + ' live on The Market · numbers are the last 30 days';
+        var F = [['all', 'All'], ['working', 'Working'], ['seen', 'Getting seen'], ['stalls', 'Seen, no contact'], ['low', 'Low visibility'], ['unseen', 'Not seen'], ['notlive', 'Not live']];
+        var fbtns = [];
+        F.forEach(function (f) {
+          var cnt = f[0] === 'all' ? rows.length : rows.filter(function (r) { return r.dx.key === f[0]; }).length;
+          if (!cnt) return;
+          var b = T('button', 'lk-ash-fchip', f[1]); b.type = 'button'; b.appendChild(T('span', null, String(cnt))); b.setAttribute('aria-pressed', f[0] === 'all' ? 'true' : 'false');
+          b.addEventListener('click', function () { filt = f[0]; fbtns.forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); }); paint(); });
+          fbtns.push(b); tools.appendChild(b);
+        });
+        function paint() {
+          var q = (search.value || '').trim().toLowerCase(); list.innerHTML = '';
+          var show = rows.filter(function (r) { return (filt === 'all' || r.dx.key === filt) && String(r.v.name || 'unnamed signup').toLowerCase().indexOf(q) >= 0; });
+          if (!show.length) { list.appendChild(T('div', 'lk-ash-note', q ? 'No vendor matches "' + search.value.trim() + '".' : 'No vendors in this group.')); return; }
+          show.forEach(function (r) { list.appendChild(vendorRow(r, cmap, true)); });
+        }
+        search.addEventListener('input', paint);
+        paint();
+      });
+    }
+
+    // ── INSIGHTS (mounted on first open) ────────────────────────────────────
+    var insightsBuilt = false;
+    function buildInsights() {
+      if (insightsBuilt) return; insightsBuilt = true;
+      var host = views.insights; host.appendChild(T('div', 'lk-ash-note', 'Loading Insights…'));
+      loadAdminInsights(function (ok) {
+        if (!ok) { insightsBuilt = false; host.innerHTML = ''; host.appendChild(T('div', 'lk-ash-note', 'Insights could not load. Refresh the page and try again.')); return; }
+        window.LokaliAdminInsights.mount(host, { extra: function (slot) {
+          // Analysis that used to sit in the Console: it belongs with the analysis.
+          appendAcquisitionSection(slot); appendQrScansSection(slot); appendExitSurveySection(slot, ov);
+        } });
+      });
+    }
+
+    function go(view, push) {
+      if (!views[view]) view = 'today';
+      VIEWS.forEach(function (vw) {
+        views[vw[0]].hidden = vw[0] !== view;
+        if (vw[0] === view) { navBtns[vw[0]].setAttribute('aria-current', 'page'); barTitle.textContent = vw[1]; } else navBtns[vw[0]].removeAttribute('aria-current');
+      });
+      if (view === 'vendors') buildVendors();
+      if (view === 'insights') buildInsights();
+      drawer(false);
+      if (push) { try { history.replaceState(null, '', view === 'today' ? location.pathname + location.search : '#' + view); } catch (e) {} try { window.scrollTo(0, 0); } catch (e2) {} }
+    }
+    go((location.hash || '').replace('#', '') || 'today', false);
   }
 
   // Fetch lokali-admin-insights.js from the same pinned release as this file
@@ -1056,6 +1466,25 @@
     var grid = zAttn.grid;
     paintAttn();   // now that the pill exists, stamp the count on it
 
+    appendTagSuggestionsSection(grid, a, function (left) { if (_pendingStatNum) _pendingStatNum.textContent = String(left); });
+
+    appendReportsSection(zAttn.grid, ov);
+    appendAddressFlagsSection(zAttn.grid);   // #147
+    appendSpotlightCreativesSection(zAttn.grid);
+    appendPairingFeedbackSection(zAttn.grid); // #166 neighbor-referral flags + suggestions
+    appendSpotlightSection(zAttn.grid, ov);
+    appendInviteVendorSection(zTools.grid);   // #168
+    appendSignInAsSection(zTools.grid);       // #171
+    appendAcquisitionSection(zIns.grid);  // #156
+    appendQrScansSection(zIns.grid);
+    appendExitSurveySection(zIns.grid, ov);
+    return wrap;
+  }
+
+  // Tag suggestions queue. Moved out of renderAdminPanel unchanged (#181) so the
+  // admin home's Today view can host the very same section. onLeft(n) reports
+  // how many are still waiting after each decision.
+  function appendTagSuggestionsSection(grid, a, onLeft) {
     var sugSec = el('div', 'lk-admin-section' + (a.queue.length ? ' lk-admin-section-wide' : ''));
     var qt = el('div', 'lk-admin-qtitle');
     qt.appendChild(document.createTextNode('Tag suggestions'));
@@ -1107,7 +1536,7 @@
             l2.style.color = approve ? '#1A6640' : '#8E8BA6';
             var left = Math.max(0, parseInt(qc.textContent, 10) - 1);
             qc.textContent = String(left);
-            if (_pendingStatNum) _pendingStatNum.textContent = String(left);
+            if (onLeft) onLeft(left);
             // Reviewed rows leave the queue after the result has been read —
             // they don't linger dimmed for the rest of the session.
             setTimeout(function () {
@@ -1135,18 +1564,6 @@
       sugSec.appendChild(row);
     });
     grid.appendChild(sugSec);
-
-    appendReportsSection(zAttn.grid, ov);
-    appendAddressFlagsSection(zAttn.grid);   // #147
-    appendSpotlightCreativesSection(zAttn.grid);
-    appendPairingFeedbackSection(zAttn.grid); // #166 neighbor-referral flags + suggestions
-    appendSpotlightSection(zAttn.grid, ov);
-    appendInviteVendorSection(zTools.grid);   // #168
-    appendSignInAsSection(zTools.grid);       // #171
-    appendAcquisitionSection(zIns.grid);  // #156
-    appendQrScansSection(zIns.grid);
-    appendExitSurveySection(zIns.grid, ov);
-    return wrap;
   }
 
   // ── #131: abuse reports in the admin panel ─────────────────
@@ -1326,6 +1743,13 @@
     form.appendChild(btn);
     var out = el('div'); out.style.cssText = 'flex-basis:100%;font-size:13px;color:#6B6880;display:flex;flex-wrap:wrap;gap:10px;align-items:center;';
     form.appendChild(out);
+    // #181: a vendor row's "Sign in as" fills this in and brings it into view. The
+    // admin still presses the button and answers the named confirm below.
+    host.lkPrefill = function (who) {
+      fEmail.value = String(who || ''); out.textContent = '';
+      try { host.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
+      setTimeout(function () { try { btn.focus(); } catch (e) {} }, 350);
+    };
     var ERR = {
       email_invalid: 'That email doesn’t look right.',
       no_account: 'No Lokali account with that email yet. They need to sign up first (or use Invite a vendor).',

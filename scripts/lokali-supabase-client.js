@@ -1525,6 +1525,11 @@
       visitInsights: function (days) {
         return withClient(function (c) { return c.rpc('admin_visit_insights', { p_days: days || 30 }); });
       },
+      // #181 admin home: owner email per vendor for the "Email owner" action
+      // (patch_admin_vendor_contacts.sql). Optional: without it the button is hidden.
+      vendorContacts: function () {
+        return withClient(function (c) { return c.rpc('admin_vendor_contacts'); });
+      },
       // #168 — admin invites a vendor: account created for them + storefront
       // basics pre-filled; Supabase emails the invite. Admin-checked server-side.
       inviteVendor: function (payload) {
