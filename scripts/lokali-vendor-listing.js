@@ -591,6 +591,12 @@
     '.vl-op-info[aria-expanded="true"]{background:#6002EE;color:#fff;}',
     '.vl-op-pop{display:none;position:relative;max-width:440px;margin:-4px 0 16px;background:#fff;border:1px solid #CFC3F2;border-radius:12px;padding:12px 14px;box-shadow:0 6px 22px rgba(40,32,90,.14);font:400 13px/1.5 "Plus Jakarta Sans",sans-serif;color:#4A4761;}',
     '.vl-op-pop.open{display:block;}',
+    // the Founding pill is its own explainer: a small "i" says it can be opened
+    'html.vl-op .vl-badge-row .vl-badge.vl-badge-info{cursor:pointer;position:relative;}',
+    'html.vl-op .vl-badge-info::after{content:"";position:absolute;top:-8px;right:0;bottom:-8px;left:0;}',
+    'html.vl-op .vl-badge-info:focus-visible{outline:2px solid #6002EE;outline-offset:2px;}',
+    '.vl-badge-i{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;border:1.2px solid currentColor;font:700 9.5px/1 "Plus Jakarta Sans",sans-serif;margin-left:1px;opacity:.85;}',
+    '#vl-founding-pop{margin:10px 0 2px;border-color:#EFDFA8;}',
     '.vl-op-pop b{display:block;font-weight:700;color:#1A1829;margin-bottom:2px;}',
     // website beside the contact buttons (the Details card is retired)
     '#vl-op-web{border-top:1px solid #EEEDF6;margin-top:14px;padding-top:12px;font-family:"Plus Jakarta Sans",sans-serif;}',
@@ -619,17 +625,16 @@
     '#vl-op-nav a.vl-nav-drop{display:none !important;}',
     // the one-line strip already names these two; never say a thing twice
     'html.vl-has-trust #vl-op-sec-highlights [data-hl="verified"],html.vl-has-trust #vl-op-sec-highlights [data-hl="reply"]{display:none;}',
-    // ...and the Founding pill sits right above, so its cell is phone-redundant too
-    '#vl-op-sec-highlights [data-hl="founding"]{display:none;}',
-    '#vl-op-sec-highlights:not(:has(.vl-op-hl:not([data-hl="founding"]))){display:none;}',
-    'html.vl-has-trust #vl-op-sec-highlights:not(:has(.vl-op-hl:not([data-hl="founding"]):not([data-hl="verified"]):not([data-hl="reply"]))){display:none;}',
+    'html.vl-has-trust #vl-op-sec-highlights:not(:has(.vl-op-hl:not([data-hl="verified"]):not([data-hl="reply"]))){display:none;}',
     // identity block: logo beside the name (it sat on a row of its own)
     'html.vl-op .vl-op-main .vl-hero{display:block;}',
     'html.vl-op .vl-op-main .vl-hero .vl-avatar{float:left;width:52px !important;height:52px !important;min-width:52px !important;margin:2px 12px 8px 0;}',
     'html.vl-op .vl-op-main .vl-hero .vl-avatar-txt{font-size:18px !important;}',
     'html.vl-op .vl-op-main .vl-hero .vl-name{font-size:22px;line-height:1.2;}',
     'html.vl-op #vl-tagline{font-size:14.5px;line-height:1.4;margin:2px 0 0;}',
-    'html.vl-op .vl-badge-row{clear:both;padding-top:4px;}',
+    'html.vl-op .vl-badge-row{clear:both;padding-top:4px;gap:6px;}',
+    // the pill's "i" costs ~19px: trim chip padding so two chips still share a row at 375
+    'html.vl-op .vl-badge-row .vl-badge,html.vl-op .vl-cat-pill{padding:0 9px;gap:5px;font-size:12px;}',
     '#vl-op-sec-highlights{grid-template-columns:minmax(0,1fr);margin-top:12px;}',
     '#vl-op-sec-highlights .vl-op-hl{box-shadow:0 1px 0 #ECE9F5;}',
     // two short cards per row, services and products alike; the card is the tap target
@@ -994,11 +999,43 @@
     el.appendChild(ico); el.appendChild(txt);
     sec.appendChild(el);
   }
+  // One open/close behaviour for every info popover: click or tap (never hover
+  // only, which does nothing on touch), outside click and Esc close, focus
+  // returns to the trigger.
+  function opWirePop(btn, pop) {
+    function set(open) { pop.classList.toggle('open', open); btn.setAttribute('aria-expanded', open ? 'true' : 'false'); }
+    btn.setAttribute('aria-expanded', 'false');
+    btn.setAttribute('aria-controls', pop.id);
+    btn.addEventListener('click', function (ev) { ev.stopPropagation(); set(!pop.classList.contains('open')); });
+    btn.addEventListener('keydown', function (ev) {
+      if (btn.tagName !== 'BUTTON' && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); set(!pop.classList.contains('open')); }
+    });
+    document.addEventListener('click', function (ev) { if (!pop.contains(ev.target)) set(false); });
+    document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape' && pop.classList.contains('open')) { set(false); btn.focus(); } });
+  }
+
+  function mountFoundingInfo(v) {
+    var pill = document.getElementById('vl-badge-founding');
+    var row = pill && pill.closest ? pill.closest('.vl-badge-row') : null;
+    if (!pill || !row || document.getElementById('vl-founding-pop')) return;
+    var yr = v.created_at ? new Date(v.created_at).getFullYear() : null;
+    var pop = ce('div', 'vl-op-pop'); pop.id = 'vl-founding-pop'; pop.setAttribute('role', 'note');
+    var pb = ce('b'); pb.textContent = 'Founding vendor'; pop.appendChild(pb);
+    pop.appendChild(document.createTextNode("One of Lokali's 50 founding vendors. Part of the Lokali community" + (yr ? ' since ' + yr : '') + '.'));
+    pill.classList.add('vl-badge-info');
+    pill.setAttribute('role', 'button'); pill.setAttribute('tabindex', '0');
+    pill.setAttribute('aria-label', 'Founding vendor, what this means');
+    var i = ce('span', 'vl-badge-i'); i.setAttribute('aria-hidden', 'true'); i.textContent = 'i';
+    pill.appendChild(i);
+    opWirePop(pill, pop);
+    row.parentNode.insertBefore(pop, row.nextSibling);
+  }
+
   function renderHighlights(v) {
-    if (v.is_founding_member) {
-      var yr = v.created_at ? new Date(v.created_at).getFullYear() : null;
-      opAddHighlight({ key: 'founding', url: ICON_CROWN, tint: '#9A6B00', bg: '#FFF4DC', t: 'Founding vendor', s: 'Part of the Lokali community' + (yr ? ' since ' + yr : '') });
-    }
+    // F 2026-09-19: "Founding vendor" is said ONCE, by the pill beside the name
+    // (it was also a glance-card cell and the first words of the Meet line:
+    // three times on one screen). The pill explains itself on tap instead.
+    if (v.is_founding_member) mountFoundingInfo(v);
     if (v.is_verified || v.identity_status === 'verified') {
       opAddHighlight({ key: 'verified', svg: OP_CHECK_SVG, t: 'Identity verified', s: 'Identity confirmed by Lokali' });
     }
@@ -2814,7 +2851,6 @@
     b.textContent = name ? 'Run by ' + name : ('Meet ' + (v.business_name || 'the vendor'));
     txt.appendChild(b);
     var subBits = [];
-    if (v.is_founding_member) subBits.push('Founding vendor');
     if (v.created_at) { var yr = new Date(v.created_at).getFullYear(); if (yr) subBits.push('On Lokali since ' + yr); }
     if (langs) subBits.push('Speaks ' + langs);
     if (subBits.length) {
@@ -3655,14 +3691,10 @@
     var btn = ce('button', 'vl-op-info'); btn.id = 'vl-rev-info'; btn.type = 'button';
     btn.textContent = 'i';
     btn.setAttribute('aria-label', 'How recommendations work');
-    btn.setAttribute('aria-expanded', 'false'); btn.setAttribute('aria-controls', 'vl-rev-pop');
     var pop = ce('div', 'vl-op-pop'); pop.id = 'vl-rev-pop'; pop.setAttribute('role', 'note');
     var pb = ce('b'); pb.textContent = 'Reviews from real contacts only'; pop.appendChild(pb);
     pop.appendChild(document.createTextNode('Only shoppers who contacted ' + (vendorName || 'this vendor') + ' through Lokali can recommend it. No stars, no anonymous ratings.'));
-    function set(open) { pop.classList.toggle('open', open); btn.setAttribute('aria-expanded', open ? 'true' : 'false'); }
-    btn.addEventListener('click', function (ev) { ev.stopPropagation(); set(!pop.classList.contains('open')); });
-    document.addEventListener('click', function (ev) { if (!pop.contains(ev.target)) set(false); });
-    document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape' && pop.classList.contains('open')) { set(false); btn.focus(); } });
+    opWirePop(btn, pop);
     h.appendChild(btn);
     h.parentNode.insertBefore(pop, h.nextSibling);
   }
