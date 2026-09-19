@@ -563,7 +563,9 @@
   // sections in the order offer -> person -> contact. Nothing scrolls sideways.
   var OP_EDGE = 'border:1px solid #DEDAEE;box-shadow:0 1px 2px rgba(40,32,90,.08),0 4px 14px rgba(40,32,90,.06);';
   var OP_V2_CSS = [
-    'html.vl-op .vl-bg{background:#F2F1F9 !important;}',
+    // Ground stays Snow #F7F6FC (the Designer's own .vl-bg). The Market's #F2F1F9
+    // was tried here 2026-09-19 and F reverted it the same day: the lilac
+    // neighbor-referral card (#F6F0FF) got lost on it. Do not re-tint this page.
     'html.vl-op .vl-card{background:#fff;' + OP_EDGE.replace(/;/g, ' !important;') + '}',
     // pale product photos keep an edge against the white card body
     'html.vl-op .vl-card-img::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;background:rgba(40,32,90,.10);pointer-events:none;}',
