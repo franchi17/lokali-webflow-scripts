@@ -577,6 +577,15 @@
     'html.vl-op .vl-vreport-link{font-size:12.5px;padding:10px 0;color:#6E6A85;}',
     'html.vl-op .vl-op-sec:has(+ .vl-pair-sec){border-bottom:0;padding-bottom:20px;}',
     'html.vl-op .vl-pair-sec{margin-top:0;border-top-color:#E4E2F0;}',
+    // Neighbor card = the same white card as everything else (F 2026-09-19). Its
+    // lilac tint #F6F0FF was one shade off the Snow ground, so it washed out,
+    // and tinted promo boxes get skipped as ads (NN/g banner blindness). The
+    // amber eyebrow + "Paired by Lokali" still say who made the pairing.
+    'html.vl-op .vl-pair-card{background:#fff !important;' + OP_EDGE.replace(/;/g, ' !important;') + '}',
+    // Desktop: "Report this vendor" sits under the contact card (Airbnb's spot),
+    // out of the reading flow; phones keep it at the end of About (placeReport).
+    '.vl-op-rail .vl-vreport{margin:12px 0 0 !important;text-align:center;}',
+    '.vl-op-rail .vl-vreport-box{text-align:left;max-width:none;}',
     '.vl-trust{background:#fff !important;border-color:#DEDAEE !important;}',
     '@media (prefers-contrast:more){html.vl-op .vl-card,.vl-op-card,.vl-host-card,html.vl-op .vl-rev,#vl-op-nav,#vl-op-sec-highlights{border-color:#837E9B !important;}}',
     // jump links: in-flow, solid, labelled. Every section stays open below it.
@@ -870,7 +879,22 @@
   // which put the first product ~2,000px down. Desktop keeps Meet above the
   // jump links and the card in the sticky rail. Real DOM moves (not CSS order)
   // so reading and tab order match what is on screen.
-  function placeOpCard() {
+  // The report link is about the vendor, not the About text: on desktop it
+  // lives under the contact card in the rail, on phones (where the card sits
+  // mid-page) at the end of About. Signed-in visitors only, as before.
+  function placeReport() {
+    if (!ONEPAGE) return;
+    var r = document.querySelector('.vl-vreport');
+    if (!r) return;
+    var rail = document.querySelector('.vl-op-rail');
+    var about = $('[data-vl-panel="about"]') || $('[data-vl-panel="reviews"]');
+    // always LAST in the rail: the card may be re-homed there after us
+    if (!isPhone() && rail) { if (r.parentNode !== rail || r.nextElementSibling) rail.appendChild(r); }
+    else if (about && r.parentNode !== about) about.appendChild(r);
+  }
+
+  function placeOpCard() { placeOpCardInner(); placeReport(); } // report goes in AFTER the card is home
+  function placeOpCardInner() {
     var card = document.querySelector('.vl-op-card');
     var rail = document.querySelector('.vl-op-rail');
     var main = document.querySelector('.vl-op-main');
@@ -3501,10 +3525,10 @@
     // live (pre-existing bug, surfaced during the 2026-07-07 Supabase audit).
     if (!API.reviews || !API.reviews.reportVendor) return;
     var mount = $('[data-vl-panel="about"]') || $('[data-vl-panel="reviews"]');
-    if (!mount || mount.querySelector('.vl-vreport')) return;
+    if (!mount || document.querySelector('.vl-vreport')) return; // document-wide: placeReport() may have moved it to the rail
     injectReviewStyles();
     var render = function () {
-      if (mount.querySelector('.vl-vreport')) return;
+      if (document.querySelector('.vl-vreport')) return;
       var wrap = ce('div', 'vl-vreport');
       var link = ce('button', 'vl-vreport-link');
       link.type = 'button';
@@ -3515,6 +3539,7 @@
       link.addEventListener('click', function () { openVendorReportBox(wrap, link, v.id); });
       wrap.appendChild(link);
       mount.appendChild(wrap);
+      placeReport();
     };
     // Hide from the listing's own vendor (server blocks self-reports anyway).
     if (API.vendors.me) {
