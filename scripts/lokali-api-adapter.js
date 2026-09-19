@@ -416,6 +416,75 @@
     } catch (e) {}
   }
 
+  // ── #180 phase 2: anonymous visit stream (docs/supabase/patch_visit_events.sql)
+  // A second, parallel write beside page_views / lead_events / market_search_log
+  // that carries the one thing those cannot: a visit id. It lets the admin
+  // insights page see unique visitors, repeat visits, whether a search led to a
+  // click, and how often a Market card was shown vs opened.
+  // The ids are random strings minted here. No account id, IP or user agent is
+  // sent or stored. A browser sending Global Privacy Control or Do Not Track
+  // gets NO persistent id: the visitor id then lives in sessionStorage and dies
+  // with the tab (persistent:false), so it is never counted as a returning visitor.
+  function randId() {
+    try {
+      if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+      var a = new Uint8Array(16); crypto.getRandomValues(a);
+      return Array.prototype.map.call(a, function (b) { return ('0' + b.toString(16)).slice(-2); }).join('');
+    } catch (e) { return 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 12) + 'xxxxxx'; }
+  }
+  function privacySignal() {
+    try {
+      return navigator.globalPrivacyControl === true || navigator.doNotTrack === '1' || window.doNotTrack === '1';
+    } catch (e) { return false; }
+  }
+  function stored(store, key) {
+    try {
+      var v = store.getItem(key);
+      if (!v || !/^[a-z0-9-]{16,40}$/.test(v)) { v = randId().toLowerCase(); store.setItem(key, v); }
+      return v;
+    } catch (e) { return null; }
+  }
+  var _visitMem = null; // storage blocked (private mode): one id per page load
+  function visitIds() {
+    var visit = stored(window.sessionStorage, 'lok_visit');
+    if (!visit) { _visitMem = _visitMem || randId().toLowerCase(); return { visitor: _visitMem, visit: _visitMem, persistent: false }; }
+    if (privacySignal()) return { visitor: visit, visit: visit, persistent: false };
+    var visitor = stored(window.localStorage, 'lok_visitor');
+    return visitor ? { visitor: visitor, visit: visit, persistent: true } : { visitor: visit, visit: visit, persistent: false };
+  }
+  function visitRef() {
+    try {
+      if (/[?&]via=/.test(location.search)) return 'share';
+      var r = document.referrer; if (!r) return 'direct';
+      var u = new URL(r);
+      if (u.hostname.replace(/^www\./, '') !== location.hostname.replace(/^www\./, '')) return 'external';
+      return /^\/the-market(\/|$)/.test(u.pathname) ? 'market' : 'internal';
+    } catch (e) { return 'direct'; }
+  }
+  // kind: market|search|view|contact. Fire-and-forget, keepalive (a contact click
+  // navigates to tel:/wa.me at once). The token rides along only so the server
+  // can flag a signed-in vendor/admin as internal; it is not stored.
+  function trackVisit(kind, p) {
+    try {
+      p = p || {};
+      var ids = visitIds();
+      var body = { p_visitor: ids.visitor, p_visit: ids.visit, p_kind: kind, p_persistent: ids.persistent, p_ref: visitRef() };
+      if (p.vendorId != null) body.p_vendors_id = Number(p.vendorId);
+      if (p.source) body.p_source = String(p.source);
+      if (p.itemId != null) body.p_item_id = Number(p.itemId);
+      if (p.term) body.p_term = String(p.term).slice(0, 60);
+      if (p.results != null) body.p_results = Number(p.results) || 0;
+      if (p.vendorIds) body.p_vendor_ids = p.vendorIds.slice(0, 24).map(Number);
+      var send = function (token) {
+        fetch(SUPABASE_URL + '/rest/v1/rpc/log_visit_event', {
+          method: 'POST', keepalive: true, body: JSON.stringify(body),
+          headers: { 'Content-Type': 'application/json', apikey: SUPABASE_KEY, Authorization: 'Bearer ' + (token || SUPABASE_KEY) }
+        }).catch(function () {});
+      };
+      authTokenP().then(send, function () { send(null); });
+    } catch (e) {}
+  }
+
   // ── generic single-row reads the Supabase surface doesn't expose ──────────
   function rawGetById(table, id) {
     return rawClient().then(function (c) {
@@ -1073,6 +1142,7 @@
         authTokenP().then(function (token) { keepaliveInsert('lead_events', row, token); },
                           function () { keepaliveInsert('lead_events', row, null); });
       } catch (e) {}
+      trackVisit('contact', { vendorId: vendorId, source: eventType });
     },
     trackView: function (vendorId, source, itemId) {
       try {
@@ -1080,7 +1150,11 @@
         if (itemId != null) row.item_id = itemId;
         keepaliveInsert('page_views', row, null);
       } catch (e) {}
+      trackVisit('view', { vendorId: vendorId, source: source || 'listing', itemId: itemId });
     },
+    // #180 phase 2: The Market reports what it listed ('market') and each settled
+    // search ('search') so a later storefront view in the same visit can be tied back.
+    trackVisit: trackVisit,
     getMine: function () {
       return withVendor(function (vid) {
         return Promise.all([SAPI().leads.inquiries(vid), SAPI().leads.events(vid)]).then(function (rs) {

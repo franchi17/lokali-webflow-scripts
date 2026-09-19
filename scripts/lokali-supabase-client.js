@@ -1520,6 +1520,11 @@
       insights: function (days) {
         return withClient(function (c) { return c.rpc('admin_insights', { p_days: days || 30 }); });
       },
+      // #180 phase 2 (patch_visit_events.sql): visitors, repeat visits, search to
+      // click, shown vs opened. Separate RPC; the page works without it.
+      visitInsights: function (days) {
+        return withClient(function (c) { return c.rpc('admin_visit_insights', { p_days: days || 30 }); });
+      },
       // #168 — admin invites a vendor: account created for them + storefront
       // basics pre-filled; Supabase emails the invite. Admin-checked server-side.
       inviteVendor: function (payload) {

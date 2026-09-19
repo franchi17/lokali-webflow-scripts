@@ -1412,6 +1412,24 @@
     var p = d.split('-'); return new Date(+p[0], +p[1] - 1, +p[2]).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   }
   var _lastVisibleIds = [];   // demand signals: what the last filter pass matched
+  // #180 phase 2: tell the visit stream which storefronts this pass listed (top
+  // 24, in order), so "shown on The Market but never opened" becomes measurable.
+  // Settled (1.5s) and deduped: typing or toggling filters does not spam it, and
+  // an unchanged list is not re-sent. Search passes are reported by gaSearch.
+  var _shownKey = '', _shownTimer = null;
+  function reportMarketShown() {
+    clearTimeout(_shownTimer);
+    _shownTimer = setTimeout(function () {
+      try {
+        if (String(searchTerm || '').trim().length >= 2) return;
+        var ids = _lastVisibleIds.slice(0, 24), key = ids.join(',');
+        if (!ids.length || key === _shownKey) return;
+        _shownKey = key;
+        var L = window.LokaliAPI && window.LokaliAPI.leads;
+        if (L && typeof L.trackVisit === 'function') L.trackVisit('market', { results: _lastVisibleIds.length, vendorIds: ids });
+      } catch (e) {}
+    }, 1500);
+  }
   function applyFilters() {
     // A shortcut lives only while its own filter is still applied: editing the
     // search or picking another category turns it into an ordinary filter state.
@@ -1477,6 +1495,7 @@
     });
     sortVendors(visible);
     _lastVisibleIds = visible.map(function (v) { return v.id; });
+    reportMarketShown();
     renderGrid(visible);
     try { renderStartHere(); } catch (e) {}
     try { renderOccasionBar(visible.length); } catch (e) {}
@@ -2396,6 +2415,8 @@
           var locId = activeLocationId === 'all' ? null : activeLocationId;
           S.marketing.logSearch(term, catId, locId, _lastVisibleIds.length, _lastVisibleIds.slice(0, 50)).catch(function () {});
         }
+        var L = window.LokaliAPI && window.LokaliAPI.leads;
+        if (L && typeof L.trackVisit === 'function') L.trackVisit('search', { term: term, results: _lastVisibleIds.length, vendorIds: _lastVisibleIds.slice(0, 24) });
       } catch (e) {}
     }, 800);
     document.addEventListener('input', function (e) {
