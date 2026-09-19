@@ -159,12 +159,22 @@
     'html.vd2 .lok-more{margin-top:36px;}',
     '.vd2-more{display:none;}',
     '#vd2-bar{display:none;}',
-    '@media (max-width:991px){.vd2-grid{grid-template-columns:minmax(0,1fr) 312px;gap:28px;}}',
+    // Tablets (768-991px): at 768 the photo shrank to 239px beside its thumbnail
+    // column (measured 2026-09-19). Slimmer box, thumbnails in a row UNDER the
+    // photo so the stage gets the whole column.
+    '@media (min-width:768px) and (max-width:991px){',
+    '.vd2-grid{grid-template-columns:minmax(0,1fr) 300px;gap:24px;}',
+    '.vd2-galrow.vd2-has-thumbs{grid-template-columns:minmax(0,1fr);}',
+    '.vd2-thumbs{flex-direction:row;flex-wrap:wrap;order:2;}',
+    '.vd2-thumb{width:58px;height:58px;}',
+    '.vd2-box{padding:18px;}',
+    '.vd2-pill{font-size:13px;padding:8px 6px;}',
+    '}',
     '@media (max-width:767px){',
     'html.vd2 .vd-bg{padding-left:0 !important;padding-right:0 !important;}',
     'html.vd2 .vd-page{padding-left:16px;padding-right:16px;}',
-    '.vd2-grid{display:flex;flex-direction:column;gap:0;}',
-    '.vd2-rail{position:static;order:0;margin-top:14px;}',
+    '.vd2-grid{display:flex;flex-direction:column;gap:0;align-items:stretch;}',
+    '.vd2-rail{position:static;order:0;margin-top:14px;width:100%;}', // at 600px the box shrank to its content (473 of 568)
     '.vd2-main{display:contents;}', // lets the photo sit above the box and the text below it
     '.vd2-galrow{order:-1;margin:0 -16px;}',
     '.vd2-galrow.vd2-has-thumbs{grid-template-columns:minmax(0,1fr);}',
@@ -183,6 +193,8 @@
     '.vd2-more{display:inline-block;background:none;border:0;padding:12px 0;min-height:44px;color:#6002EE;font:700 13.5px/1 ' + V2_FONT + ';cursor:pointer;}',
     'html.vd2 .vd-mini-link{margin-left:0;flex-basis:100%;}',
     '.lok-pgrow{margin-bottom:12px !important;}',
+    '#vd-back-label{display:inline-block;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom;}',
+    '@media (max-width:359px){#vd-back-label{max-width:88px;}.lok-pgrow{gap:6px !important;}}', // 320px: Back + pager stay on one line
     'html.vd2 body{padding-bottom:76px;}',
     '#vd2-bar{position:fixed;left:0;right:0;bottom:0;z-index:60;display:flex;gap:10px;background:#fff;border-top:1px solid #EEEDF6;padding:10px 14px calc(10px + env(safe-area-inset-bottom));box-shadow:0 -6px 20px rgba(26,24,41,.08);}',
     '#vd2-bar button,#vd2-bar a{flex:1 1 0;min-width:0;font:600 15px/1.2 ' + V2_FONT + ';border-radius:10px;min-height:46px;display:flex;align-items:center;justify-content:center;cursor:pointer;text-decoration:none;border:0;padding:0 10px;}',

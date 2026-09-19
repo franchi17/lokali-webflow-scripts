@@ -629,6 +629,24 @@
     '@media (max-width:767px){.vl-op-web-chip{min-height:44px;}}',
     '.vl-more{display:none;}',
     '.vl-ph-ov{display:none;}',
+    // Tablets and small laptops (768-1149px). The 332px rail + 44px gap left the
+    // left column 281px wide at 768, so three product columns meant 82px cards
+    // with clipped names (measured 2026-09-19). A slimmer rail, two columns, no
+    // "On this page" label; three columns return once the column can hold them.
+    '@media (min-width:768px) and (max-width:1149px){',
+    '.vl-op-grid{grid-template-columns:minmax(0,1fr) 300px;gap:28px;}',
+    '.vl-op-card{padding:16px;}',
+    'html.vl-op .vl-op-card .vl-ch{padding-left:6px !important;padding-right:6px !important;font-size:13px;}',
+    '#vl-op-nav::before{display:none !important;}',
+    'html.vl-op [data-vl-panel="products"] .vl-grid{grid-template-columns:repeat(2,minmax(0,1fr)) !important;gap:16px;}',
+    'html.vl-op [data-vl-panel="services"] .vl-card{grid-template-columns:150px 1fr;}',
+    '}',
+    // below 900 a two-up card is ~180px: the lead chip and the button no longer
+    // share a row, and the whole card is the link anyway (same call as phones)
+    '@media (min-width:768px) and (max-width:899px){#vl-op-nav{padding:4px;}#vl-op-nav a{padding:9px 10px;font-size:13px;}}',
+    '@media (min-width:768px) and (max-width:899px){html.vl-op [data-vl-panel="products"] .vl-card-cta{display:none;}html.vl-op [data-vl-panel="products"] .vl-card-foot{justify-content:flex-start;}}',
+    // large phones / small tablets in portrait: a third column instead of 280px cards
+    '@media (min-width:560px) and (max-width:767px){html.vl-op [data-vl-panel="services"] .vl-grid,html.vl-op [data-vl-panel="products"] .vl-grid{grid-template-columns:repeat(3,minmax(0,1fr)) !important;}}',
     '@media (min-width:768px){',
     // the strip only exists for phones now; its signals sit in the glance card
     '#vl-trust{display:none;}',
