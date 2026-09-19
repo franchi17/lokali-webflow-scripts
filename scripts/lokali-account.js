@@ -796,7 +796,34 @@
     mount.appendChild(band);
 
     if (state.admin) {
-      mount.appendChild(renderAdminPanel());
+      // Two views on the admin home (F 2026-09-19): the console (queues + tools)
+      // and Marketplace insights, the analytics page. Insights lives in its own
+      // file, lokali-admin-insights.js, fetched only when this account opens the
+      // tab, so no shopper or vendor ever downloads it. /account#insights deep-links.
+      var seg = el('div', 'lk-seg-wrap');
+      var bConsole = el('button', 'lk-seg', 'Console'); bConsole.type = 'button';
+      var bInsights = el('button', 'lk-seg', 'Marketplace insights'); bInsights.type = 'button';
+      seg.appendChild(bConsole); seg.appendChild(bInsights);
+      mount.appendChild(seg);
+      var consoleBox = el('div'); consoleBox.appendChild(renderAdminPanel());
+      var insightsBox = el('div'); insightsBox.style.display = 'none';
+      mount.appendChild(consoleBox); mount.appendChild(insightsBox);
+      var insightsMounted = false;
+      var showAdminView = function (which) {
+        var ins = which === 'insights';
+        bConsole.classList.toggle('is-active', !ins); bInsights.classList.toggle('is-active', ins);
+        consoleBox.style.display = ins ? 'none' : ''; insightsBox.style.display = ins ? '' : 'none';
+        mount.style.maxWidth = ins ? '1180px' : ''; // the vendor table needs more than the 760px account column
+        if (!ins || insightsMounted) return;
+        insightsMounted = true;
+        loadAdminInsights(function (ok) {
+          if (ok) window.LokaliAdminInsights.mount(insightsBox);
+          else { insightsMounted = false; insightsBox.innerHTML = ''; insightsBox.appendChild(el('p', 'lk-admin-sub', 'Marketplace insights could not load. Refresh the page and try again.')); }
+        });
+      };
+      bConsole.addEventListener('click', function () { try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} showAdminView('console'); });
+      bInsights.addEventListener('click', function () { try { history.replaceState(null, '', '#insights'); } catch (e) {} showAdminView('insights'); });
+      showAdminView(location.hash === '#insights' ? 'insights' : 'console');
     } else {
       // Signed into this account but the is_admin-gated data didn't load — show
       // a note (never the shopping UI) so it isn't a blank page.
@@ -817,6 +844,20 @@
     });
     bar.appendChild(out);
     mount.appendChild(bar);
+  }
+
+  // Fetch lokali-admin-insights.js from the same pinned release as this file
+  // (same sibling-URL idiom as lokali-vendor-detail.js → lokali-inquiry.js).
+  function loadAdminInsights(done) {
+    if (window.LokaliAdminInsights) { done(true); return; }
+    var scripts = document.getElementsByTagName('script'), mine = null;
+    for (var i = 0; i < scripts.length; i++) { if (/lokali-account\.js/.test(scripts[i].src || '')) { mine = scripts[i]; break; } }
+    if (!mine) { done(false); return; }
+    var s = document.createElement('script');
+    s.src = mine.src.replace(/lokali-account\.js.*$/, 'lokali-admin-insights.js');
+    s.onload = function () { done(!!window.LokaliAdminInsights); };
+    s.onerror = function () { done(false); };
+    document.body.appendChild(s);
   }
 
   // ── #96-SUGGEST: the Lokali admin panel ────────────────────

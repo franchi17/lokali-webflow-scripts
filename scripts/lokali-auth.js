@@ -47,6 +47,14 @@
   // page they go home; inline sign-ups (overlay on a browse/detail page) stay
   // put and the 'lokali:authed' event lets the pending action finish.
   var CUSTOMER_AFTER_SIGN_IN_PATH = window.LOKALI_CUSTOMER_AFTER_SIGN_IN_PATH || '/';
+  // The dedicated Lokali admin account lands on its console after sign-in (F
+  // 2026-09-19). Same single-email gate as ADMIN_ONLY_EMAIL in lokali-account.js;
+  // routing only, every admin RPC is is_admin()-gated server-side.
+  var ADMIN_AFTER_SIGN_IN_PATH = '/account';
+  var ADMIN_ONLY_EMAIL = 'francesca@golokali.com';
+  function isAdminAccount() {
+    return String((_user && _user.email) || '').trim().toLowerCase() === ADMIN_ONLY_EMAIL;
+  }
   var SIGN_IN_PATH = '/login';
   var SIGN_UP_PATH = '/sign-up';
   // Stashed by CTA flows before reaching /sign-up (or by the role gate itself):
@@ -497,7 +505,11 @@
       try {
         window.dispatchEvent(new CustomEvent('lokali:authed', { detail: { role: role } }));
       } catch (e) {}
-      if (role === 'vendor') {
+      if (isAdminAccount()) {
+        // F 2026-09-19: the admin account's home is its console on /account,
+        // not the public homepage. Same surfaces a vendor is routed from.
+        if ((isAuthPage() || isHomePath()) && redirectBudgetOk()) window.location.href = ADMIN_AFTER_SIGN_IN_PATH;
+      } else if (role === 'vendor') {
         if ((isAuthPage() || isHomePath()) && redirectBudgetOk()) window.location.href = AFTER_SIGN_IN_PATH;
       } else {
         // customer: only redirect away from a dedicated auth page; otherwise stay.

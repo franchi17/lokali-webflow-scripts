@@ -1515,6 +1515,11 @@
       signupSources: function () {
         return withClient(function (c) { return c.rpc('admin_signup_sources'); });
       },
+      // Marketplace insights page (docs/supabase/patch_admin_insights.sql). Its
+      // OWN RPC again; read-only, is_admin()-gated server-side. days = 7..180.
+      insights: function (days) {
+        return withClient(function (c) { return c.rpc('admin_insights', { p_days: days || 30 }); });
+      },
       // #168 — admin invites a vendor: account created for them + storefront
       // basics pre-filled; Supabase emails the invite. Admin-checked server-side.
       inviteVendor: function (payload) {
