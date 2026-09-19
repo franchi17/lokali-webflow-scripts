@@ -551,6 +551,123 @@
     '}'
   ].join('');
 
+
+  // ---- storefront redesign (F 2026-09-19; mockup U4EFi1SgjFu5Bt1dCFUXZY) ------
+  // Appended AFTER OP_CSS so equal-specificity rules win by source order; the
+  // older rules stay above as the record of why each thing exists. What this
+  // pass does: the Market's ground + card edges (v1.4.452 language), a solid
+  // "On this page" jump-link row that lives in the left column (it used to
+  // fade in over the vendor's name), three short product cards per row (two on
+  // phones, 16px gutters), one "at a glance" card for every earned signal,
+  // an edge-to-edge phone photo with Back / Share / Save on it, and phone
+  // sections in the order offer -> person -> contact. Nothing scrolls sideways.
+  var OP_EDGE = 'border:1px solid #DEDAEE;box-shadow:0 1px 2px rgba(40,32,90,.08),0 4px 14px rgba(40,32,90,.06);';
+  var OP_V2_CSS = [
+    'html.vl-op .vl-bg{background:#F2F1F9 !important;}',
+    'html.vl-op .vl-card{background:#fff;' + OP_EDGE.replace(/;/g, ' !important;') + '}',
+    // pale product photos keep an edge against the white card body
+    'html.vl-op .vl-card-img::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;background:rgba(40,32,90,.10);pointer-events:none;}',
+    '.vl-op-card,.vl-host-card,html.vl-op .vl-rev,html.vl-op .vl-mkt-show{' + OP_EDGE + '}',
+    '.vl-op-sec{border-bottom-color:#E4E2F0;}',
+    '.vl-trust{background:#fff !important;border-color:#DEDAEE !important;}',
+    '@media (prefers-contrast:more){html.vl-op .vl-card,.vl-op-card,.vl-host-card,html.vl-op .vl-rev,#vl-op-nav,#vl-op-sec-highlights{border-color:#837E9B !important;}}',
+    // jump links: in-flow, solid, labelled. Every section stays open below it.
+    '#vl-op-nav{position:sticky;top:calc(var(--vl-op-top,0px) + 8px);z-index:40;display:flex;align-items:center;width:fit-content;max-width:100%;gap:2px;overflow:visible;margin:20px 0 0;padding:5px 8px;background:#fff;-webkit-backdrop-filter:none;backdrop-filter:none;border-radius:999px;-webkit-mask-image:none !important;mask-image:none !important;' + OP_EDGE + '}',
+    '#vl-op-nav::before{content:"On this page";font:700 10.5px/1 "Plus Jakarta Sans",sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#6E6A85;padding:0 8px 0 8px;white-space:nowrap;}',
+    '#vl-op-nav a{overflow:hidden;text-overflow:ellipsis;}',
+    '#vl-op-nav a:focus-visible,.vl-op-info:focus-visible,.vl-more:focus-visible,.vl-ph-btn:focus-visible,#vl-op-web a:focus-visible{outline:2px solid #6002EE;outline-offset:2px;}',
+    '#vl-op-nav-contact{display:none !important;}',
+    '@media (min-width:768px){#vl-op-nav-meet{display:none !important;}}',
+    // at a glance: highlight rows become cells of ONE card that share the row
+    '#vl-op-sec-highlights{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:0;background:#fff;border-radius:16px;padding:4px 0;margin:16px 0 0;overflow:hidden;' + OP_EDGE + '}',
+    '#vl-op-sec-highlights .vl-op-hl{padding:12px 16px;box-shadow:1px 0 0 #ECE9F5;}',
+    '.vl-op-hl-ico{width:40px;height:40px;border-radius:12px;}',
+    '.vl-op-hl-ico svg{width:18px;height:18px;display:block;}',
+    '.vl-op-hl b{font-size:14px;line-height:1.3;}',
+    '.vl-op-hl span{font-size:13px;line-height:1.45;color:#4A4761;}',
+    // reviews rule lives behind an info button beside the heading (F 09-19)
+    '.vl-op-info{position:relative;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;margin-left:10px;padding:0;border-radius:50%;border:1.5px solid #6002EE;background:#fff;color:#6002EE;font:700 12.5px/1 "Plus Jakarta Sans",sans-serif;cursor:pointer;vertical-align:3px;}',
+    '.vl-op-info::after{content:"";position:absolute;top:-10px;right:-10px;bottom:-10px;left:-10px;}',
+    '.vl-op-info[aria-expanded="true"]{background:#6002EE;color:#fff;}',
+    '.vl-op-pop{display:none;position:relative;max-width:440px;margin:-4px 0 16px;background:#fff;border:1px solid #CFC3F2;border-radius:12px;padding:12px 14px;box-shadow:0 6px 22px rgba(40,32,90,.14);font:400 13px/1.5 "Plus Jakarta Sans",sans-serif;color:#4A4761;}',
+    '.vl-op-pop.open{display:block;}',
+    '.vl-op-pop b{display:block;font-weight:700;color:#1A1829;margin-bottom:2px;}',
+    // website beside the contact buttons (the Details card is retired)
+    '#vl-op-web{border-top:1px solid #EEEDF6;margin-top:14px;padding-top:12px;font-family:"Plus Jakarta Sans",sans-serif;}',
+    '#vl-op-web span{display:block;font-size:14px;font-weight:700;color:#1A1829;margin-bottom:8px;}',
+    '#vl-op-web a{display:block;line-height:25px;min-height:43px;padding:8px 12px;box-sizing:border-box;border:.5px solid #EEEDF6;border-radius:8px;background:#fff;color:#5F51B8;font-size:13px;font-weight:600;text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
+    '#vl-op-web a:hover{background:#F3EBFF;}',
+    '.vl-more{display:none;}',
+    '.vl-ph-ov{display:none;}',
+    '@media (min-width:768px){',
+    // the strip only exists for phones now; its signals sit in the glance card
+    '#vl-trust{display:none;}',
+    'html.vl-op [data-vl-panel="products"] .vl-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;}',
+    'html.vl-op [data-vl-panel="products"] .vl-card-desc{display:none;}',
+    'html.vl-op [data-vl-panel="products"] .vl-card-top{display:block;}',
+    'html.vl-op [data-vl-panel="products"] .vl-card-price{margin-top:3px;text-align:left;}',
+    'html.vl-op [data-vl-panel="products"] .vl-card-img{height:auto !important;aspect-ratio:4/3;}',
+    'html.vl-op [data-vl-panel="products"] .vl-card-foot{flex-wrap:wrap;margin-top:12px;}',
+    '}',
+    '@media (max-width:767px){',
+    'html.vl-op .vl-bg{padding-left:0 !important;padding-right:0 !important;}',
+    'html.vl-op .vl-page{padding-left:16px;padding-right:16px;}',
+    // four chips that fit the screen; opNavSync drops the least useful past 4
+    '#vl-op-nav{position:sticky;left:auto;right:auto;display:flex;width:100%;box-sizing:border-box;justify-content:space-between;margin:16px 0 0;padding:4px;}',
+    '#vl-op-nav::before{display:none;}',
+    '#vl-op-nav a{flex:1 1 auto;min-width:0;text-align:center;padding:10px 6px;font-size:12.5px;}',
+    '#vl-op-nav a.vl-nav-drop{display:none !important;}',
+    // the one-line strip already names these two; never say a thing twice
+    'html.vl-has-trust #vl-op-sec-highlights [data-hl="verified"],html.vl-has-trust #vl-op-sec-highlights [data-hl="reply"]{display:none;}',
+    // ...and the Founding pill sits right above, so its cell is phone-redundant too
+    '#vl-op-sec-highlights [data-hl="founding"]{display:none;}',
+    '#vl-op-sec-highlights:not(:has(.vl-op-hl:not([data-hl="founding"]))){display:none;}',
+    'html.vl-has-trust #vl-op-sec-highlights:not(:has(.vl-op-hl:not([data-hl="founding"]):not([data-hl="verified"]):not([data-hl="reply"]))){display:none;}',
+    // identity block: logo beside the name (it sat on a row of its own)
+    'html.vl-op .vl-op-main .vl-hero{display:block;}',
+    'html.vl-op .vl-op-main .vl-hero .vl-avatar{float:left;width:52px !important;height:52px !important;min-width:52px !important;margin:2px 12px 8px 0;}',
+    'html.vl-op .vl-op-main .vl-hero .vl-avatar-txt{font-size:18px !important;}',
+    'html.vl-op .vl-op-main .vl-hero .vl-name{font-size:22px;line-height:1.2;}',
+    'html.vl-op #vl-tagline{font-size:14.5px;line-height:1.4;margin:2px 0 0;}',
+    'html.vl-op .vl-badge-row{clear:both;padding-top:4px;}',
+    '#vl-op-sec-highlights{grid-template-columns:minmax(0,1fr);margin-top:12px;}',
+    '#vl-op-sec-highlights .vl-op-hl{box-shadow:0 1px 0 #ECE9F5;}',
+    // two short cards per row, services and products alike; the card is the tap target
+    'html.vl-op [data-vl-panel="services"] .vl-grid,html.vl-op [data-vl-panel="products"] .vl-grid{display:grid !important;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}',
+    'html.vl-op [data-vl-panel="services"] .vl-card,html.vl-op [data-vl-panel="products"] .vl-card{display:flex !important;flex-direction:column;height:auto !important;border-radius:14px;}',
+    'html.vl-op [data-vl-panel="services"] .vl-card-img,html.vl-op [data-vl-panel="products"] .vl-card-img{height:auto !important;aspect-ratio:4/3;flex:none;}',
+    'html.vl-op [data-vl-panel="services"] .vl-card-body,html.vl-op [data-vl-panel="products"] .vl-card-body{padding:10px 11px 12px !important;}',
+    'html.vl-op .vl-card-top{display:block;}',
+    'html.vl-op .vl-card-name{font-size:14px;line-height:1.3;}',
+    'html.vl-op .vl-card-price{font-size:12.5px;margin-top:3px;text-align:left;}',
+    'html.vl-op .vl-card-desc,html.vl-op .vl-card-cta{display:none;}',
+    'html.vl-op .vl-card-foot{justify-content:flex-start;margin-top:6px;}',
+    'html.vl-op .vl-card-foot .vl-card-lead{background:none;padding:0;border-radius:0;font-size:12px;color:#6E6A85;}',
+    // a lone listing takes the row instead of sitting as a half
+    'html.vl-op .vl-grid > .vl-card:only-child{grid-column:1/-1;}',
+    'html.vl-op .vl-grid > .vl-card:only-child .vl-card-img{aspect-ratio:16/9;}',
+    // long text truncates with a visible expander; headings never hide
+    '.vl-clamp:not(.vl-clamp-open){display:-webkit-box !important;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden;}',
+    '.vl-more{display:inline-block;background:none;border:0;padding:10px 0;min-height:44px;color:#6002EE;font:700 13.5px/1 "Plus Jakarta Sans",sans-serif;cursor:pointer;}',
+    // photo hero: edge to edge, controls on the photo, a counter instead of dots
+    'html.vl-ph .vl-bg{padding-top:0 !important;}',
+    'html.vl-ph #vl-portfolio{position:relative;margin:0 -16px 14px !important;}',
+    'html.vl-ph #vl-portfolio .vd-gallery{border-radius:0 !important;gap:0 !important;}',
+    'html.vl-ph #vl-portfolio .vd-frame{height:auto !important;aspect-ratio:3/2;}',
+    'html.vl-ph #vl-portfolio .vd-pips{display:none !important;}',
+    'html.vl-ph .vl-back{display:none !important;}',
+    'html.vl-ph .vl-ph-ov{display:block;position:absolute;top:0;right:0;bottom:0;left:0;pointer-events:none;font-family:"Plus Jakarta Sans",sans-serif;}',
+    '.vl-ph-l,.vl-ph-r{position:absolute;top:12px;display:flex;gap:8px;pointer-events:auto;}',
+    '.vl-ph-l{left:12px;}.vl-ph-r{right:12px;}',
+    '.vl-ph-btn{width:44px;height:44px;padding:0;border:0;border-radius:50%;background:rgba(255,255,255,.95);color:#1A1829;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(40,32,90,.22);cursor:pointer;text-decoration:none;}',
+    '.vl-ph-btn svg,.vl-ph-btn img{width:16px;height:16px;display:block;}',
+    '.vl-ph-btn .vl-heart{fill:none;stroke:currentColor;stroke-width:2;}',
+    '.vl-ph-btn.vl-ph-on{color:#6002EE;}',
+    '.vl-ph-btn.vl-ph-on .vl-heart{fill:currentColor;}',
+    '.vl-ph-cnt{position:absolute;right:12px;bottom:12px;background:rgba(255,255,255,.95);color:#1A1829;border-radius:999px;padding:6px 10px;font-size:11.5px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums;}',
+    '}'
+  ].join('');
+
   function opNavFadeSync(nav) {
     if (!nav) return;
     var max = nav.scrollWidth - nav.clientWidth - 1;
@@ -561,7 +678,7 @@
   function onepageLayout() {
     document.documentElement.classList.add('vl-op');
     if (!document.getElementById('vl-op-styles')) {
-      var st = document.createElement('style'); st.id = 'vl-op-styles'; st.textContent = OP_CSS;
+      var st = document.createElement('style'); st.id = 'vl-op-styles'; st.textContent = OP_CSS + OP_V2_CSS;
       document.head.appendChild(st);
     }
     var page = document.querySelector('.vl-page');
@@ -589,8 +706,6 @@
     var navSentinel = ce('div');
     navSentinel.style.cssText = 'height:1px;margin:0;padding:0;';
     sections.appendChild(navSentinel);
-    sections.appendChild(nav);
-    nav.classList.add('vl-op-nav-auto');
     sections.appendChild(grid);
     grid.appendChild(main); grid.appendChild(rail);
 
@@ -633,6 +748,11 @@
     nav.addEventListener('scroll', function () { opNavFadeSync(nav); }, { passive: true });
     opNavFadeSync(nav);
 
+    // Redesign 2026-09-19: the jump links sit in the left column right above the
+    // first offer section (hero, glance card and the Meet row land above them
+    // as they render), in flow and sticky, instead of fading in over the name.
+    main.insertBefore(nav, main.firstChild);
+
     // #76 design pass: the identity block (name/logo/badges/tagline) becomes
     // the first item of the left column so the sticky contact card sits beside
     // it — desktop was leaving the hero band's right half empty.
@@ -664,7 +784,8 @@
     // the sticky nav/rail/anchor offsets clear it (0 if the header ever changes).
     opSetTop();
     var t = null;
-    window.addEventListener('resize', function () { clearTimeout(t); t = setTimeout(function () { placeOpCard(); opSetTop(); opNavFadeSync(nav); }, 150); });
+    window.addEventListener('resize', function () { clearTimeout(t); t = setTimeout(function () { placeOpCard(); opSetTop(); opNavFadeSync(nav); opNavSync(); }, 150); });
+    opNavSync();
     initOpNavScroll(navSentinel, nav);
     watchAvailability(main, nav);
     loadInquiryScript();
@@ -692,20 +813,55 @@
   function onepageSectionVisible(name, vis) {
     show(document.getElementById('vl-op-sec-' + name), vis);
     show(document.getElementById('vl-op-nav-' + name), vis);
+    opNavSync();
   }
 
-  // Mobile: the contact card sits inline right after Services (Airbnb-style
-  // "seen the offer → get in touch"); desktop puts it back in the sticky rail.
+  // Phones get at most FOUR chips so the row never scrolls sideways (F 09-19;
+  // Baymard flags sideways-scrolling tabs on phones). Past four, the chips whose
+  // section is nearest the top anyway go first: Availability, then Meet.
+  function isPhone() { return window.matchMedia('(max-width:767px)').matches; }
+  function opNavSync() {
+    var nav = document.getElementById('vl-op-nav');
+    if (!nav) return;
+    var phone = isPhone();
+    var about = document.getElementById('vl-op-nav-about');
+    if (about) about.textContent = phone ? 'About' : 'About the vendor';
+    var as = $all('a', nav);
+    as.forEach(function (a) { a.classList.remove('vl-nav-drop'); });
+    if (!phone) return;
+    var live = as.filter(function (a) { return a.style.display !== 'none' && a.id !== 'vl-op-nav-contact'; });
+    ['vl-op-nav-availability', 'vl-op-nav-meet', 'vl-op-nav-showcase'].forEach(function (id) {
+      if (live.length <= 4) return;
+      var a = document.getElementById(id);
+      if (a && live.indexOf(a) !== -1) { a.classList.add('vl-nav-drop'); live.splice(live.indexOf(a), 1); }
+    });
+  }
+
+  // Phones (redesign 2026-09-19, F: "products first on phones"): the offer
+  // comes first, then the person, then the contact card: Services, Products,
+  // Meet the vendor, Get in touch. It was hero -> Meet -> card -> products,
+  // which put the first product ~2,000px down. Desktop keeps Meet above the
+  // jump links and the card in the sticky rail. Real DOM moves (not CSS order)
+  // so reading and tab order match what is on screen.
   function placeOpCard() {
     var card = document.querySelector('.vl-op-card');
     var rail = document.querySelector('.vl-op-rail');
     var main = document.querySelector('.vl-op-main');
     if (!card || !rail || !main) return;
-    if (window.matchMedia('(max-width:767px)').matches) {
-      var svc = document.getElementById('vl-op-sec-services');
-      if (svc && svc.parentNode === main && card.previousElementSibling !== svc) main.insertBefore(card, svc.nextSibling);
-    } else if (card.parentNode !== rail) {
-      rail.appendChild(card);
+    var meet = document.getElementById('vl-op-sec-meet');
+    var nav = document.getElementById('vl-op-nav');
+    if (isPhone()) {
+      var offer = document.getElementById('vl-op-sec-products') || document.getElementById('vl-op-sec-services');
+      if (!offer || offer.parentNode !== main) return;
+      var after = offer;
+      if (meet && meet.parentNode === main) {
+        if (meet.previousElementSibling !== offer) main.insertBefore(meet, offer.nextSibling);
+        after = meet;
+      }
+      if (card.previousElementSibling !== after) main.insertBefore(card, after.nextSibling);
+    } else {
+      if (card.parentNode !== rail) rail.appendChild(card);
+      if (meet && nav && nav.parentNode === main && meet.nextElementSibling !== nav) main.insertBefore(meet, nav);
     }
   }
 
@@ -762,7 +918,11 @@
   function opSetTop() {
     var hdr = document.querySelector('.header-wrapper');
     var fixed = hdr && getComputedStyle(hdr).position === 'fixed';
-    document.documentElement.style.setProperty('--vl-op-top', (fixed ? hdr.offsetHeight : 0) + 'px');
+    var top = fixed ? hdr.offsetHeight : 0;
+    // #179: on phones the pinned search row is what sits at the top of the screen.
+    var row2 = document.getElementById('lok-row2');
+    if (row2 && getComputedStyle(row2).position === 'fixed') top = Math.max(top, Math.round(row2.getBoundingClientRect().bottom));
+    document.documentElement.style.setProperty('--vl-op-top', top + 'px');
   }
 
   function initOpNavScroll(sentinel, nav) {
@@ -812,12 +972,22 @@
       if (hb) main.insertBefore(sec, hb.nextSibling);
       else main.insertBefore(sec, main.firstChild);
     }
-    if (sec.querySelector('[data-hl="' + row.key + '"]')) return;
+    var had = sec.querySelector('[data-hl="' + row.key + '"]');
+    if (had) { // a later, better-worded row for the same fact replaces the copy
+      if (row.replace) {
+        had.querySelector('b').textContent = row.t; had.querySelector('span').textContent = row.s;
+        var hi = had.querySelector('.vl-op-hl-ico'); // one icon family per card: the wording's own glyph comes with it
+        if (hi && row.svg) { hi.innerHTML = row.svg; hi.style.color = row.color || ''; hi.style.background = row.bg || ''; } // static markup only
+      }
+      return;
+    }
     var el = ce('div', 'vl-op-hl');
     el.setAttribute('data-hl', row.key);
     var ico = ce('div', 'vl-op-hl-ico');
     if (row.svg) ico.innerHTML = row.svg;            // static markup only
     else if (row.url) ico.appendChild(maskIcon(row.url, row.tint, 18));
+    if (row.color) ico.style.color = row.color;
+    if (row.bg) ico.style.background = row.bg; // tile tinted to its glyph (amber crown on cream, green on mint)
     var txt = ce('div');
     var b = ce('b'); b.textContent = row.t; txt.appendChild(b);
     var s = ce('span'); s.textContent = row.s; txt.appendChild(s);
@@ -827,7 +997,7 @@
   function renderHighlights(v) {
     if (v.is_founding_member) {
       var yr = v.created_at ? new Date(v.created_at).getFullYear() : null;
-      opAddHighlight({ key: 'founding', url: ICON_CROWN, tint: '#9A6B00', t: 'Founding vendor', s: 'Part of the Lokali community' + (yr ? ' since ' + yr : '') });
+      opAddHighlight({ key: 'founding', url: ICON_CROWN, tint: '#9A6B00', bg: '#FFF4DC', t: 'Founding vendor', s: 'Part of the Lokali community' + (yr ? ' since ' + yr : '') });
     }
     if (v.is_verified || v.identity_status === 'verified') {
       opAddHighlight({ key: 'verified', svg: OP_CHECK_SVG, t: 'Identity verified', s: 'Identity confirmed by Lokali' });
@@ -836,7 +1006,7 @@
     // card badge / sidebar toggle (lokali-browse.js NEW_WINDOW_MS).
     var newT = v.created_at ? new Date(v.created_at).getTime() : 0;
     if (newT > 0 && (Date.now() - newT) < 7 * 24 * 60 * 60 * 1000) {
-      opAddHighlight({ key: 'new', url: ICON_BULLHORN, tint: '#11744A', t: 'New this week', s: 'Just opened their storefront on The Market' });
+      opAddHighlight({ key: 'new', url: ICON_BULLHORN, tint: '#11744A', bg: '#E4F5EC', t: 'New this week', s: 'Just opened their storefront on The Market' });
     }
     // 'Books online' joins via watchAvailability() when the calendar mounts.
   }
@@ -875,6 +1045,7 @@
         if (revLink && revLink.parentNode === nav) nav.insertBefore(a, revLink);
         else nav.appendChild(a);
         opNavFadeSync(nav);
+        opNavSync();
         // "Books online" only when the widget actually rendered the booking
         // card (.av-booking = vendor has an external scheduling link). The
         // section also mounts for published HOURS alone, and until 2026-09-01
@@ -961,8 +1132,8 @@
     var owner = String((v && v.owner_name) || '').trim().split(/\s+/)[0] || '';
     if (verified) segs.push({ k: 'verified', ico: 'id', t: 'Verified person',
       s: (owner || 'The owner') + ' confirmed their identity with a government ID. Lokali verifies people, not businesses.' });
-    if (t && Number(t.recs) > 0) segs.push({ k: 'reviews', ico: 'comment', t: 'Reviews from real contacts only',
-      s: 'Only shoppers who contacted ' + ((v && v.business_name) || 'this vendor') + ' through Lokali can recommend it. No stars, no anonymous ratings.' });
+    // "Reviews from real contacts only" left the strip 2026-09-19 (F): it is an
+    // info button beside the Reviews heading now (mountReviewsInfo).
     if (t && t.reply_fast === true) segs.push({ k: 'reply', ico: 'clock', t: 'Replies within a day',
       s: 'Median first reply over the last 90 days. Shown once a vendor has answered five inquiries.' });
     if (!segs.length) return;
@@ -995,8 +1166,13 @@
     });
     sec.appendChild(cells);
     main.insertBefore(sec, hero.nextSibling);
-    // the highlight row says the same thing one block lower — keep one.
-    if (verified) { var hl = document.querySelector('#vl-op-sec-highlights [data-hl="verified"]'); if (hl) hl.style.display = 'none'; }
+    // Desktop shows the same segments as cells of the "at a glance" card (the
+    // strip is phone-only in CSS); on phones the strip wins and html.vl-has-trust
+    // hides those two cells, so neither size states a fact twice.
+    document.documentElement.classList.add('vl-has-trust');
+    segs.forEach(function (sg) {
+      opAddHighlight({ key: sg.k, svg: TRUST_SVG[sg.ico], color: '#6002EE', bg: '#EFE5FD', t: sg.t, s: sg.s, replace: true });
+    });
   }
 
   var _pairOwnerVid = null;   // set by markPairingOwner() (vendors.me() match)
@@ -1300,7 +1476,9 @@
     sec.appendChild(wrap);
     // Lead the page: first stacked section, ahead of Services (the requesting
     // vendor's use case — this week's listing should open the storefront).
-    var first = main.querySelector('.vl-op-sec');
+    // Redesign 2026-09-19: "first" now means first BELOW the jump links; the
+    // glance card and the Meet row above them are .vl-op-sec too.
+    var first = (nav && nav.parentNode === main) ? nav.nextSibling : main.querySelector('.vl-op-sec');
     if (first) main.insertBefore(sec, first);
     else main.appendChild(sec);
     if (nav) {
@@ -1314,6 +1492,7 @@
       });
       nav.insertBefore(link, nav.firstChild);
       opNavFadeSync(nav);
+      opNavSync();
     }
   }
 
@@ -1923,6 +2102,72 @@
     strip.addEventListener('mousemove', function (e) { if (!down) return; e.preventDefault(); if (Math.abs(e.pageX - sx) > 6) strip.__lokDragged = true; strip.scrollLeft = ss - (e.pageX - sx); });
   }
 
+  // Phone photo hero (redesign 2026-09-19): the strip runs edge to edge with
+  // Back / Share / Save ON the photo and a "1 / 13" counter instead of 13 dots.
+  // The buttons PROXY the real controls (same pattern as the bottom bar) so the
+  // favorites call, the share sheet and their tracking are untouched; icons are
+  // cloned from those controls so they can never drift. No photos = no hero,
+  // and the inline Share / Save in the contact card carry on as before.
+  var PH_BACK_SVG = '<svg viewBox="0 0 320 512" aria-hidden="true"><path fill="currentColor" d="M9.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l192 192c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L77.3 256 246.6 86.600c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-192 192z"/></svg>';
+  function mountPhoneHero(section, strip, count) {
+    if (section.querySelector('.vl-ph-ov')) return;
+    document.documentElement.classList.add('vl-ph');
+    var ov = ce('div', 'vl-ph-ov');
+    var l = ce('div', 'vl-ph-l'), r = ce('div', 'vl-ph-r');
+    var back = ce('a', 'vl-ph-btn');
+    var realBack = document.querySelector('.vl-back');
+    back.href = (realBack && realBack.getAttribute('href')) || '/the-market';
+    back.setAttribute('aria-label', 'Back to The Market');
+    back.innerHTML = PH_BACK_SVG; // static markup only
+    l.appendChild(back);
+    function proxy(label, find) {
+      var b = ce('button', 'vl-ph-btn'); b.type = 'button'; b.setAttribute('aria-label', label);
+      b.addEventListener('click', function (ev) { ev.stopPropagation(); var real = find(); if (real) real.click(); });
+      return b;
+    }
+    function icon(b, real) {
+      var ic = real && real.querySelector('svg, img');
+      if (ic && !b.firstChild) b.appendChild(ic.cloneNode(true));
+    }
+    function findShare() { return document.querySelector('.vl-op-card .lk-share, .vl-hero-right .lk-share'); }
+    function findSave() { return document.getElementById('vl-save'); }
+    var share = proxy('Share', findShare), save = proxy('Save vendor', findSave);
+    r.appendChild(share); r.appendChild(save);
+    function syncSave() {
+      var real = findSave();
+      var on = !!(real && real.classList.contains('vl-save-on'));
+      save.classList.toggle('vl-ph-on', on);
+      save.setAttribute('aria-pressed', on ? 'true' : 'false');
+      save.setAttribute('aria-label', on ? 'Saved' : 'Save vendor');
+    }
+    // lokali-share.js mounts its button late; a control that never shows up
+    // takes its proxy with it rather than leaving a dead circle on the photo.
+    var tries = 0;
+    var iv = setInterval(function () {
+      icon(share, findShare()); icon(save, findSave());
+      if ((share.firstChild && save.firstChild) || ++tries >= 20) {
+        clearInterval(iv);
+        if (!share.firstChild) share.style.display = 'none';
+        if (!save.firstChild) save.style.display = 'none';
+      }
+    }, 500);
+    icon(share, findShare()); icon(save, findSave());
+    var realSave = findSave();
+    if (realSave && window.MutationObserver) new MutationObserver(syncSave).observe(realSave, { attributes: true, attributeFilter: ['class'] });
+    syncSave();
+    ov.appendChild(l); ov.appendChild(r);
+    if (count > 1) {
+      var cnt = ce('div', 'vl-ph-cnt'); cnt.setAttribute('aria-hidden', 'true');
+      cnt.textContent = '1 / ' + count;
+      strip.addEventListener('scroll', function () {
+        var w = strip.offsetWidth || 1;
+        cnt.textContent = Math.min(count, Math.round(strip.scrollLeft / w) + 1) + ' / ' + count;
+      }, { passive: true });
+      ov.appendChild(cnt);
+    }
+    section.appendChild(ov);
+  }
+
   function loadPortfolio(vendorId, vendor) {
     var section = document.getElementById('vl-portfolio');
     if (!section || !vendorId || !window.LokaliAPI) return;
@@ -2103,6 +2348,7 @@
       // 'block', NOT '' — the Webflow element carries a combo class whose
       // stylesheet rule is display:none, so clearing the inline style just
       // fell back to hidden (live photos were loading invisibly, 2026-07-19).
+      if (ONEPAGE) mountPhoneHero(section, strip, photos.length);
       section.style.display = 'block';
     });
   }
@@ -2195,12 +2441,35 @@
     trackChannel(igEl, 'instagram');
     trackChannel(webBtn, 'website');
     trackChannel(document.getElementById('vl-about-website'), 'website');
+    mountOpWebsite(v);
     syncOpBar(); // ONEPAGE mobile bar mirrors the real Call/message controls
   }
 
   // ---- hero + about population ------------------------------------------
   // #80 — slim "you're viewing your own storefront" bar at the top of the
   // page, only for the listing's owner. Idempotent; soft violet, PJS.
+  // F 2026-09-19: the Details card went (Category + Member since already show
+  // higher on the page) and its one unique row, Website, moved into the contact
+  // card where it stays in view. Same 'website' lead event as the old link.
+  function mountOpWebsite(v) {
+    if (!ONEPAGE) return;
+    var old = document.getElementById('vl-about-website');
+    var oldCard = old && old.closest ? old.closest('.vl-about-card') : null;
+    if (oldCard) oldCard.style.display = 'none';
+    var card = document.querySelector('.vl-op-card');
+    if (!card || !v || !v.website_url || document.getElementById('vl-op-web')) return;
+    var u = String(v.website_url).trim();
+    var wrap = ce('div'); wrap.id = 'vl-op-web';
+    var k = ce('span'); k.textContent = 'Website'; wrap.appendChild(k);
+    var a = ce('a');
+    a.href = /^https?:\/\//i.test(u) ? u : 'https://' + u;
+    a.target = '_blank'; a.rel = 'noopener';
+    a.textContent = u.replace(/^https?:\/\//i, '').replace(/^www\./i, '').replace(/\/$/, '');
+    trackChannel(a, 'website');
+    wrap.appendChild(a);
+    card.appendChild(wrap);
+  }
+
   function injectOwnerStorefrontBar() {
     if (document.querySelector('[data-vl-ownerbar]')) return;
     var bar = ce('div');
@@ -2463,6 +2732,7 @@
 
     // about bio + website — empty must CLEAR the template's demo bio
     setText('vl-about-bio', v.business_description || '');
+    if (ONEPAGE) setTimeout(function () { opClamp(document.getElementById('vl-about-bio')); }, 0); // after renderMeetVendor re-homes it
     var web = document.getElementById('vl-about-website');
     if (web) {
       if (v.website_url) {
@@ -2619,7 +2889,19 @@
       }
       block.appendChild(bt);
       aboutPanel.insertBefore(block, aboutPanel.firstChild);
+      opClamp(block.querySelector('.vl-meet-bio'));
     }
+    // phone-only chip (CSS hides it on desktop, where Meet sits above the links)
+    var nav = document.getElementById('vl-op-nav');
+    if (nav && !document.getElementById('vl-op-nav-meet')) {
+      var ml = ce('a'); ml.id = 'vl-op-nav-meet'; ml.href = '#vl-op-sec-meet';
+      ml.textContent = name ? 'Meet ' + name.split(/\s+/)[0] : 'Meet the vendor';
+      ml.addEventListener('click', function (ev) { ev.preventDefault(); onepageScrollTo('meet'); });
+      var revL = document.getElementById('vl-op-nav-availability') || document.getElementById('vl-op-nav-reviews');
+      if (revL && revL.parentNode === nav) nav.insertBefore(ml, revL); else nav.appendChild(ml);
+    }
+    placeOpCard(); // phones: Meet belongs after the offer sections
+    opNavSync();
   }
 
   // ---- payment links (About tab) ----------------------------------------
@@ -3362,10 +3644,49 @@
     ta.focus();
   }
 
+  // "Reviews from real contacts only" as an info button beside the heading
+  // (F 2026-09-19). Opens on click/tap, never hover-only (NN/g tooltip
+  // guidelines: hover does nothing on touch); inline so it can never clip.
+  function mountReviewsInfo(vendorName) {
+    if (!ONEPAGE || document.getElementById('vl-rev-info')) return;
+    var sec = document.getElementById('vl-op-sec-reviews');
+    var h = sec && sec.querySelector('.vl-op-h');
+    if (!h) return;
+    var btn = ce('button', 'vl-op-info'); btn.id = 'vl-rev-info'; btn.type = 'button';
+    btn.textContent = 'i';
+    btn.setAttribute('aria-label', 'How recommendations work');
+    btn.setAttribute('aria-expanded', 'false'); btn.setAttribute('aria-controls', 'vl-rev-pop');
+    var pop = ce('div', 'vl-op-pop'); pop.id = 'vl-rev-pop'; pop.setAttribute('role', 'note');
+    var pb = ce('b'); pb.textContent = 'Reviews from real contacts only'; pop.appendChild(pb);
+    pop.appendChild(document.createTextNode('Only shoppers who contacted ' + (vendorName || 'this vendor') + ' through Lokali can recommend it. No stars, no anonymous ratings.'));
+    function set(open) { pop.classList.toggle('open', open); btn.setAttribute('aria-expanded', open ? 'true' : 'false'); }
+    btn.addEventListener('click', function (ev) { ev.stopPropagation(); set(!pop.classList.contains('open')); });
+    document.addEventListener('click', function (ev) { if (!pop.contains(ev.target)) set(false); });
+    document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape' && pop.classList.contains('open')) { set(false); btn.focus(); } });
+    h.appendChild(btn);
+    h.parentNode.insertBefore(pop, h.nextSibling);
+  }
+
+  // Phones: long text shows ~5 lines + "Read more" (Baymard mobile: truncate a
+  // section, never hide it). Class only when rendered on a phone, CSS gated to
+  // phones too, so a desktop visitor can never meet clamped text with no button.
+  function opClamp(el) {
+    if (!ONEPAGE || !el || el.__vlClamp || !isPhone()) return;
+    el.__vlClamp = true;
+    el.classList.add('vl-clamp');
+    (window.requestAnimationFrame || setTimeout)(function () {
+      if (el.scrollHeight <= el.clientHeight + 8) { el.classList.remove('vl-clamp'); return; }
+      var b = ce('button', 'vl-more'); b.type = 'button'; b.textContent = 'Read more';
+      b.addEventListener('click', function () { el.classList.add('vl-clamp-open'); if (b.parentNode) b.parentNode.removeChild(b); });
+      el.parentNode.insertBefore(b, el.nextSibling);
+    });
+  }
+
   function renderReviews(vendorId, vendorName) {
     var panel = $('[data-vl-panel="reviews"]');
     if (!panel) return;
     injectReviewStyles();
+    mountReviewsInfo(vendorName);
     setTabVisible('reviews', true); // always shown — never-zero "be the first" design
     var API = window.LokaliAPI;
     if (!API || !API.reviews || !API.reviews.forVendor) { ensureActiveTab(); return; }
@@ -3402,6 +3723,7 @@
         }
         panel.appendChild(sum);
         items.forEach(function (r) { panel.appendChild(reviewCard(r)); });
+        $all('.vl-rev-body', panel).forEach(opClamp);
         maybeAddReportButtons(panel, vendorId);
       } else {
         var e = ce('div', 'vl-rev-empty');
