@@ -41,6 +41,12 @@
     permits: { t: 'Office of the Governor, Texas Business Permit Office', u: 'https://gov.texas.gov/business/page/business-permits-office' },
     sbalic: { t: 'U.S. Small Business Administration, Apply for licenses and permits', u: 'https://www.sba.gov/business-guide/launch-your-business/apply-licenses-permits' },
     sbabank: { t: 'U.S. Small Business Administration, Open a business bank account', u: 'https://www.sba.gov/business-guide/launch-your-business/open-business-bank-account' },
+    // Handmade vs resold products (F 2026-09-20: split them, the rules differ).
+    fairs: { t: 'Texas Comptroller, Fairs, festivals, markets and shows', u: 'https://comptroller.texas.gov/taxes/publications/96-211.php' },
+    cpc: { t: 'Consumer Product Safety Commission, Children\'s Product Certificate', u: 'https://www.cpsc.gov/Business--Manufacturing/Testing-Certification/Childrens-Product-Certificate' },
+    smallbatch: { t: 'Consumer Product Safety Commission, Small batch manufacturers', u: 'https://www.cpsc.gov/FAQ/Small-Batch' },
+    fdacos: { t: 'FDA, Small businesses and homemade cosmetics', u: 'https://www.fda.gov/cosmetics/resources-industry-cosmetics/small-businesses-homemade-cosmetics-fact-sheet' },
+    ftctex: { t: 'Federal Trade Commission, Clothing and textile labels', u: 'https://www.ftc.gov/business-guidance/resources/threading-your-way-through-labeling-requirements-under-textile-wool-acts' },
     sbains: { t: 'U.S. Small Business Administration, Get business insurance', u: 'https://www.sba.gov/business-guide/launch-your-business/get-business-insurance' }
   };
 
@@ -59,7 +65,8 @@
   ];
   var PRODUCT = [
     { k: 'food', t: 'Food I make at home' },
-    { k: 'goods', t: 'Handmade goods or other products' }
+    { k: 'handmade', t: 'Handmade goods I make' },
+    { k: 'resale', t: 'Other products I buy and resell' }
   ];
   var SERVICE = [
     { k: 'care', t: 'Beauty, wellness or personal care' },
@@ -107,6 +114,12 @@
     if (product) {
       out.push({ id: 'tax', t: 'Apply for a Texas sales tax permit', d: 'You need one if you sell taxable items in Texas. Apply with the Texas Comptroller. There is no fee to apply.', src: ['tax'] });
     }
+    if (product && st.product === 'handmade') {
+      out.push({ id: 'madesafe', t: 'Check the rules for what you make', d: 'Most handmade goods need no license, and a few kinds carry federal rules. Anything made mainly for children 12 or younger needs a Children\'s Product Certificate, and very small makers can register with the Consumer Product Safety Commission as a small batch manufacturer, which eases some of the testing. Lotions, balms and other cosmetics need no approval before you sell them, but you are responsible for their safety and the label must show your business name and street address. Clothing and other textiles need a label with the fiber content, the country of origin and who made it.', src: ['cpc', 'smallbatch', 'fdacos', 'ftctex'] });
+    }
+    if (product && st.product === 'resale') {
+      out.push({ id: 'resale', t: 'Buy your inventory tax free', d: 'With a sales tax permit you can buy the items you resell without paying sales tax on them. Give your supplier a completed Texas resale certificate, Form 01-339. You then collect sales tax from your own customers when you sell. The same Comptroller guide covers selling at fairs, markets and shows.', src: ['fairs'] });
+    }
     if (product && st.product === 'food') {
       out.push({ id: 'handler', t: 'Take a food handler course', d: 'Anyone who runs a home food business in Texas must complete a basic food safety course for food handlers. A Food Manager Certification counts too.', src: ['dshs'] });
       out.push({ id: 'label', t: 'Label every product', d: 'Each label needs your business name, your address or a state registration number in its place, the product name, allergens, and this statement: "This product was produced in a private residence that is not subject to governmental licensing or inspection." Registering with the state lets you keep your home address off the label.', src: ['dshs'] });
@@ -130,7 +143,7 @@
   try {
     var raw = JSON.parse(localStorage.getItem(KEY) || 'null');
     if (raw && typeof raw === 'object') {
-      state.kind = raw.kind || null; state.product = raw.product || null;
+      state.kind = raw.kind || null; state.product = (raw.product && raw.product !== 'goods') ? raw.product : null; // 'goods' was split 2026-09-20
       state.service = raw.service || null; state.setup = raw.setup || null;
       state.done = (raw.done && typeof raw.done === 'object') ? raw.done : {};
     }
