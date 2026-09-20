@@ -1,0 +1,90 @@
+<!-- Followers Guide (2026-09-20). Same .lg- design system as the other vendor guides. Every
+     statement describes shipped behaviour (patch_vendor_posts.sql, lokali-followers.js,
+     lokali-vendor-listing.js renderUpdates, lokali-weekend.js, cron/saved-updates-digest).
+     No emoji, no em dashes. -->
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+  .lg-wrap{display:block;width:100%;font-family:'Plus Jakarta Sans',sans-serif;color:#1A1829;line-height:1.6;-webkit-font-smoothing:antialiased;}
+  .lg-wrap *,.lg-wrap *::before,.lg-wrap *::after{box-sizing:border-box;margin:0;padding:0;font-family:'Plus Jakarta Sans',sans-serif;}
+  .lg-hero{display:block;width:100%;background:#f8f7fc;border-bottom:1px solid rgba(0,0,0,0.1);padding:5rem 1.5rem 4rem;text-align:center;}
+  .lg-eyebrow{display:inline-block;font-size:12px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#6002EE;background:#f0e6ff;border-radius:20px;padding:4px 14px;margin-bottom:1.25rem;}
+  .lg-h1{display:block;font-size:clamp(28px,5vw,48px);font-weight:800;color:#1A1829;letter-spacing:-1px;line-height:1.15;margin:0 0 1rem;}
+  .lg-h1 span{color:#6002EE;}
+  .lg-sub{display:block;font-size:18px;color:#4a4a5a;line-height:1.65;}
+  .lg-section{display:block;width:100%;padding:3.5rem 1.5rem;border-bottom:1px solid rgba(0,0,0,0.1);}
+  .lg-section:last-of-type{border-bottom:none;}
+  .lg-section-eye{display:block;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#6B6880;margin-bottom:0.5rem;}
+  .lg-section-title{display:block;font-size:clamp(20px,3vw,26px);font-weight:800;color:#1A1829;letter-spacing:-0.4px;margin-bottom:0.75rem;line-height:1.25;}
+  .lg-section-body{display:block;font-size:17px;color:#4a4a5a;line-height:1.7;margin-bottom:2rem;}
+  .lg-section-body strong{color:#1A1829;font-weight:700;}
+  .lg-tips{display:flex;flex-direction:column;gap:12px;width:100%;}
+  .lg-tip{display:flex;align-items:flex-start;gap:14px;padding:16px 18px;background:#f0e6ff;border-radius:14px;}
+  .lg-tip-num{width:28px;height:28px;border-radius:50%;background:#6002EE;color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;}
+  .lg-tip-title{display:block;font-size:16px;font-weight:700;color:#1A1829;margin-bottom:3px;}
+  .lg-tip-body{display:block;font-size:15px;color:#4a4a5a;line-height:1.55;}
+  .lg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,200px),1fr));gap:14px;width:100%;}
+  .lg-card{border:1px solid rgba(0,0,0,0.1);border-radius:16px;background:#fff;padding:18px;}
+  .lg-card-t{display:block;font-size:15px;font-weight:700;color:#1A1829;margin-bottom:6px;}
+  .lg-card-b{font-size:14px;color:#4a4a5a;line-height:1.55;}
+  .lg-callout{background:#f0e6ff;border-radius:14px;padding:16px 18px;margin-top:18px;font-size:15px;color:#1A1829;line-height:1.55;}
+  .lg-callout.lg-warm{background:#fff1e6;}
+  .lg-callout strong{font-weight:700;}
+  .lg-wrap a{color:#6002EE;font-weight:700;text-decoration:none;}
+</style>
+
+<div class="lg-wrap">
+
+  <div class="lg-hero">
+    <div class="lg-eyebrow">Vendor Resources</div>
+    <div class="lg-h1">Followers:<br><span>keep the customers you have already won</span></div>
+    <div class="lg-sub">A happy customer walks away from your booth and cannot find you again. Followers fixes that. When a shopper saves your storefront they follow you, and a thirty-second post tells them where you will be and what is new.</div>
+  </div>
+
+  <div class="lg-section">
+    <div class="lg-section-eye">The big idea</div>
+    <div class="lg-section-title">Saving your storefront is following you</div>
+    <div class="lg-section-body">There is nothing new for a shopper to learn. The Save button on your storefront is the follow button. Your QR code and your storefront link both lead there, so every customer you meet can follow you in one tap. Followers is <strong>free on every plan</strong>.</div>
+    <div class="lg-callout"><strong>Where to find it.</strong> Open your dashboard and choose Followers, under Grow. You will see how many followers you have, how many are new this week, and how many get the weekly email.</div>
+  </div>
+
+  <div class="lg-section">
+    <div class="lg-section-eye">Posting</div>
+    <div class="lg-section-title">Four kinds of update, thirty seconds each</div>
+    <div class="lg-section-body">Pick what your update is about, fill in a line or two, and press Post. You can post up to ten times a day, and each update can be up to 280 characters.</div>
+    <div class="lg-grid">
+      <div class="lg-card"><span class="lg-card-t">Where I'll be</span><div class="lg-card-b">The place, the date and the hours. It opens on next Saturday, nine to one, so most weeks you only type the market name. Tick the box if you are there every week and you never have to post it again.</div></div>
+      <div class="lg-card"><span class="lg-card-t">New item</span><div class="lg-card-b">Something back in season, a new flavor, a new service.</div></div>
+      <div class="lg-card"><span class="lg-card-t">Orders open</span><div class="lg-card-b">Holiday pre-orders, a custom order window, a booking slot that just opened.</div></div>
+      <div class="lg-card"><span class="lg-card-t">Sold out</span><div class="lg-card-b">Saves your customers a wasted trip, and tells them when it is back.</div></div>
+    </div>
+    <div class="lg-callout lg-warm"><strong>Changed your plans?</strong> Every post has a Remove link under Your recent posts. It disappears from your storefront straight away.</div>
+  </div>
+
+  <div class="lg-section">
+    <div class="lg-section-eye">Where it shows up</div>
+    <div class="lg-section-title">One post, three places</div>
+    <div class="lg-tips">
+      <div class="lg-tip"><div class="lg-tip-num">1</div><div><span class="lg-tip-title">On your storefront, right away</span><span class="lg-tip-body">A section called Where to find you appears near the top, with your next stops for the coming two weeks and your latest update from the last thirty days. When you have nothing current, the section simply is not there.</span></div></div>
+      <div class="lg-tip"><div class="lg-tip-num">2</div><div><span class="lg-tip-title">On the This Weekend page</span><span class="lg-tip-body">Every Where I'll be post for the next nine days is listed at <a href="/this-weekend">golokali.com/this-weekend</a>, grouped by day and by place, so shoppers can see who will be at each market.</span></div></div>
+      <div class="lg-tip"><div class="lg-tip-num">3</div><div><span class="lg-tip-title">In one weekly email to your followers</span><span class="lg-tip-body">On Thursdays, in time for the weekend, Lokali sends each shopper a single email covering all the vendors they saved. One email a week at most, however many vendors they follow.</span></div></div>
+    </div>
+  </div>
+
+  <div class="lg-section">
+    <div class="lg-section-eye">Privacy</div>
+    <div class="lg-section-title">You see a number, never a name</div>
+    <div class="lg-section-body">Your Followers page shows counts only. You cannot see or export who follows you, and Lokali never shares a shopper's email with a vendor. Shoppers can switch the weekly email off with one click and still keep you saved. That promise is what makes people comfortable tapping Save in the first place.</div>
+  </div>
+
+  <div class="lg-section">
+    <div class="lg-section-eye">Getting followers</div>
+    <div class="lg-section-title">Three habits that build the list</div>
+    <div class="lg-tips">
+      <div class="lg-tip"><div class="lg-tip-num">1</div><div><span class="lg-tip-title">Put your QR code where people pay</span><span class="lg-tip-body">It opens your storefront, and the Save button is right there. Say it out loud: save me and you will know where I am next weekend.</span></div></div>
+      <div class="lg-tip"><div class="lg-tip-num">2</div><div><span class="lg-tip-title">Post your week before Thursday</span><span class="lg-tip-body">That is when the weekly email goes out, so a Wednesday post reaches people while they are planning their weekend.</span></div></div>
+      <div class="lg-tip"><div class="lg-tip-num">3</div><div><span class="lg-tip-title">Use the every week box</span><span class="lg-tip-body">If you are at the same market each Saturday, tick it once. Your storefront and the This Weekend page stay current without you lifting a finger.</span></div></div>
+    </div>
+    <div class="lg-callout">Next: <a href="/vendor-resources/review-link-guide">ask those same customers for a review</a>, or see <a href="/vendor-resources">all the guides</a>.</div>
+  </div>
+
+</div>
