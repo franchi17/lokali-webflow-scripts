@@ -57,6 +57,13 @@
   // widget stored '+' + the raw 10 national digits, so a bare 10-digit result
   // is ALWAYS a NANP number regardless of the '+' (real foreign E.164 never
   // digits-out to exactly 10 here). Heal 10-digit first, THEN trust '+'.
+  // SEC-067: the only gate on vendors.contact_email is a client-side regex on
+  // the profile form, which a direct PostgREST write skips entirely. Treat the
+  // column as untrusted wherever it becomes a URL.
+  function looksLikeEmail(s) {
+    var v = String(s == null ? '' : s).trim();
+    return v.length > 0 && v.length <= 254 && /^[^\s@<>"',;:?&#%]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(v);
+  }
   function normPhone(raw) {
     var s = String(raw || '').trim();
     var d = digits(s);
@@ -2481,8 +2488,12 @@
 
     var emailEl = document.getElementById('vl-ch-email');
     if (emailEl) {
-      if (email) {
-        emailEl.href = 'mailto:' + email +
+      // SEC-067: contact_email is owner-writable and never format-checked
+      // server-side, so an address carrying '?' or '&' would add the vendor's
+      // own bcc/body to the SHOPPER's draft. Keep the single literal '@',
+      // encode the rest, and hide the pill when it is not an address at all.
+      if (looksLikeEmail(email)) {
+        emailEl.href = 'mailto:' + encodeURIComponent(String(email).trim()).replace(/%40/g, '@') +
           '?subject=' + encodeURIComponent('I found you on Lokali: inquiry') +
           '&body=' + encodeURIComponent(foundCopy);
       } else { show(emailEl, false); }
@@ -3425,6 +3436,22 @@
       '.vl-rev-empty-title{font:600 15px/1.3 ' + FONT + ';color:#1A1829;margin-bottom:5px;}',
       '.vl-rev-empty-sub{font:400 13px/1.5 ' + FONT + ';color:#8E8BA6;}',
       '.vl-rev-cta{display:inline-block;margin-top:14px;font:600 13px/1 ' + FONT + ';color:#6002EE;text-decoration:none;}',
+      // Review-link invite card + inline composer (review link, 2026-09-19).
+      '.vl-inv{background:#F3EBFF;border:1px solid #E4DCF7;border-radius:14px;padding:18px;margin-bottom:16px;font-family:' + FONT + ';}',
+      '.vl-inv-title{font:700 16px/1.35 ' + FONT + ';color:#1A1829;margin:0 0 4px;}',
+      '.vl-inv-sub{font:500 13.5px/1.5 ' + FONT + ';color:#4A4761;margin:0 0 14px;}',
+      '.vl-inv-btn{font:700 14px/1 ' + FONT + ';background:#6002EE;color:#fff;border:0;border-radius:999px;padding:12px 20px;min-height:44px;cursor:pointer;}',
+      '.vl-inv-btn[disabled]{opacity:.6;cursor:default;}',
+      '.vl-inv-btn:focus-visible,.vl-inv-rec button:focus-visible,.vl-inv-ta:focus-visible{outline:3px solid #C9B3FA;outline-offset:2px;}',
+      '.vl-inv-rec{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 10px;}',
+      '.vl-inv-rec button{flex:1 1 140px;font:700 13.5px/1 ' + FONT + ';background:#fff;color:#4A4761;border:1px solid #DEDAEE;border-radius:999px;padding:12px 14px;min-height:44px;cursor:pointer;}',
+      '.vl-inv-rec button.sel-yes{background:#EAFAF2;border-color:#BFE6D1;color:#1D6A45;}',
+      '.vl-inv-rec button.sel-no{background:#FDF1E7;border-color:#F6D9BE;color:#8A4B14;}',
+      '.vl-inv-ta{display:block;width:100%;box-sizing:border-box;min-height:96px;font:500 14px/1.5 ' + FONT + ';color:#1A1829;background:#fff;border:1px solid #DEDAEE;border-radius:12px;padding:12px;margin:0 0 10px;resize:vertical;}',
+      '.vl-inv-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}',
+      '.vl-inv-note{font:500 12.5px/1.4 ' + FONT + ';color:#6B6880;}',
+      '.vl-inv-msg{font:600 13px/1.45 ' + FONT + ';color:#8A4B14;margin:10px 0 0;}',
+      '.vl-inv-done{font:600 14px/1.5 ' + FONT + ';color:#1D6A45;margin:0;}',
       // gamification: reviewer badge pills (status-only credibility signal),
       // the permanent gold EARLY REVIEW marker, and the NEW TO LOKALI pill
       // that reframes a sparse review section as an early-days story.
@@ -3496,6 +3523,11 @@
     if (isVerified) {
       ver.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
       ver.appendChild(document.createTextNode(' Verified contact'));
+    } else if (r.is_invited === true) {
+      // Review link (patch_review_invite.sql): admitted by the vendor's own
+      // link, not by a contact Lokali can see. Said plainly so shoppers can
+      // weigh it (F 2026-09-19).
+      ver.textContent = 'Invited by the vendor';
     } else {
       ver.textContent = 'Contacted through Lokali';
     }
@@ -3794,6 +3826,111 @@
     });
   }
 
+  // ── Review link: /{slug}?review=CODE (patch_review_invite.sql) ─────────────
+  // A vendor hands this link / QR to customers they met in person. The code is
+  // validated SERVER-side against THIS vendor; here it only decides whether to
+  // show the invite card. Kept in sessionStorage so it survives the sign-up
+  // overlay and a Google sign-in round trip back to this page.
+  var INVITE_DONE = false, INVITE_PENDING = false;
+  function inviteKey(vendorId) { return 'lokali_review_invite_' + vendorId; }
+  function reviewInviteCode(vendorId) {
+    if (INVITE_DONE) return null;
+    var code = null;
+    try {
+      var q = new URLSearchParams(window.location.search).get('review');
+      if (q && /^[a-f0-9]{10}$/.test(q)) code = q;
+    } catch (e) {}
+    try {
+      if (code) sessionStorage.setItem(inviteKey(vendorId), code);
+      else {
+        var kept = sessionStorage.getItem(inviteKey(vendorId));
+        if (kept && /^[a-f0-9]{10}$/.test(kept)) code = kept;
+      }
+    } catch (e2) {}
+    return code;
+  }
+  var INVITE_ERRORS = {
+    not_eligible: 'This review link did not work for this storefront. Ask them for a fresh link.',
+    already_reviewed: 'You have already reviewed this vendor. You can edit it under Reviews in your account.',
+    self_review: 'This is your own storefront, so you cannot review it. Share this link with your customers instead.',
+    comment_too_long: 'That review is a little long. Please trim it to 2,000 characters or fewer.',
+    unauthorized: 'Your session expired. Please sign in again and repost.'
+  };
+  function mountReviewInvite(panel, vendorId, vendorName) {
+    var code = reviewInviteCode(vendorId);
+    if (!code || !panel || panel.querySelector('.vl-inv')) return;
+    // Straight to the Supabase client (as the Marketing page does), not the
+    // adapter: the adapter's create() predates inviteCode, and keeping it out of
+    // this release keeps another session's unshipped adapter work out of it too.
+    var SB = window.LokaliSupabaseAPI;
+    if (!SB || !SB.reviews || typeof SB.reviews.create !== 'function') return;
+    var name = vendorName || 'This vendor';
+    var card = ce('div', 'vl-inv');
+    var title = ce('p', 'vl-inv-title'); title.textContent = name + ' invited you to leave a review';
+    var sub = ce('p', 'vl-inv-sub'); sub.textContent = 'It takes about a minute. Your review posts with your first name and last initial.';
+    var open = ce('button', 'vl-inv-btn'); open.type = 'button'; open.textContent = 'Write a review';
+    card.appendChild(title); card.appendChild(sub); card.appendChild(open);
+    panel.insertBefore(card, panel.firstChild);
+
+    function signedIn() { return !!(window.LokaliAuth && window.LokaliAuth.isSignedIn && window.LokaliAuth.isSignedIn()); }
+    function showComposer() {
+      if (card.querySelector('.vl-inv-rec')) return;
+      open.style.display = 'none';
+      var rec = null;
+      var row = ce('div', 'vl-inv-rec');
+      var yes = ce('button'); yes.type = 'button'; yes.textContent = 'Would recommend';
+      var no = ce('button'); no.type = 'button'; no.textContent = 'Would not';
+      yes.setAttribute('aria-pressed', 'false'); no.setAttribute('aria-pressed', 'false');
+      yes.addEventListener('click', function () { rec = true; yes.className = 'sel-yes'; no.className = ''; yes.setAttribute('aria-pressed', 'true'); no.setAttribute('aria-pressed', 'false'); });
+      no.addEventListener('click', function () { rec = false; no.className = 'sel-no'; yes.className = ''; no.setAttribute('aria-pressed', 'true'); yes.setAttribute('aria-pressed', 'false'); });
+      row.appendChild(yes); row.appendChild(no);
+      var ta = ce('textarea', 'vl-inv-ta'); ta.id = 'vl-inv-comment'; ta.maxLength = 2000;
+      ta.setAttribute('aria-label', 'Your review'); ta.placeholder = 'How was your experience? (optional)';
+      var foot = ce('div', 'vl-inv-foot');
+      var note = ce('span', 'vl-inv-note'); note.textContent = 'Shown as "Invited by the vendor".';
+      var post = ce('button', 'vl-inv-btn'); post.type = 'button'; post.textContent = 'Post review';
+      var msg = ce('p', 'vl-inv-msg'); msg.setAttribute('role', 'status'); msg.style.display = 'none';
+      foot.appendChild(note); foot.appendChild(post);
+      card.appendChild(row); card.appendChild(ta); card.appendChild(foot); card.appendChild(msg);
+      function say(t) { msg.textContent = t; msg.style.display = t ? '' : 'none'; }
+      post.addEventListener('click', function () {
+        if (rec == null) { say('Choose "Would recommend" or "Would not" first.'); return; }
+        say(''); post.disabled = true;
+        SB.reviews.create({ vendorId: vendorId, isRecommended: rec, comment: ta.value || '', inviteCode: code })
+          .then(function (res) {
+            post.disabled = false;
+            // Route answers { ok, reason } with HTTP 200 for a refusal; a
+            // transport failure arrives as res.error instead.
+            var d = (res && res.data) || {};
+            if ((res && res.error) || d.ok !== true) {
+              var why = d.reason || (res && typeof res.error === 'string' ? res.error : '') || '';
+              if (why === 'Unauthorized') why = 'unauthorized';
+              say(INVITE_ERRORS[why] || 'Something went wrong on our end and your review was not saved. Please try again.');
+              return;
+            }
+            INVITE_DONE = true;
+            try { sessionStorage.removeItem(inviteKey(vendorId)); } catch (e) {}
+            card.innerHTML = '';
+            var done = ce('p', 'vl-inv-done'); done.textContent = 'Thank you. Your review is live.';
+            card.appendChild(done);
+            setTimeout(function () { renderReviews(vendorId, vendorName); }, 1200);
+          })
+          .catch(function () { post.disabled = false; say('Something went wrong on our end and your review was not saved. Please try again.'); });
+      });
+    }
+    open.addEventListener('click', function () {
+      if (signedIn()) { showComposer(); return; }
+      INVITE_PENDING = true;
+      if (window.LokaliAuth && typeof window.LokaliAuth.openSignUp === 'function') window.LokaliAuth.openSignUp({ intent: 'customer' });
+      else window.location.href = '/login';
+    });
+    window.addEventListener('lokali:authed', function () {
+      if (INVITE_PENDING) { INVITE_PENDING = false; showComposer(); }
+    });
+    // The link exists to collect a review: land on the Reviews tab.
+    activateTab('reviews');
+  }
+
   function renderReviews(vendorId, vendorName) {
     var panel = $('[data-vl-panel="reviews"]');
     if (!panel) return;
@@ -3849,6 +3986,7 @@
       // owner lands straight on the Reviews tab where the Reply controls are).
       if ((window.location.hash || '').toLowerCase() === '#reviews') activateTab('reviews');
       else ensureActiveTab();
+      mountReviewInvite(panel, vendorId, vendorName);
     }).catch(function () {
       if ((window.location.hash || '').toLowerCase() === '#reviews') activateTab('reviews');
       else ensureActiveTab();

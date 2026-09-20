@@ -337,6 +337,12 @@
       // A miss only means the generic row shows.
       (window.LokaliSupabaseAPI.products && window.LokaliSupabaseAPI.products.listByVendor)
         ? window.LokaliSupabaseAPI.products.listByVendor(this.vendor.id).catch(function () { return null; })
+        : Promise.resolve(null),
+      // Review link code (patch_review_invite.sql). Same absent-until-the-tag +
+      // never-take-the-page-down guard: without a code the card falls back to
+      // the plain #reviews link it shipped with.
+      (window.LokaliSupabaseAPI.reviews && window.LokaliSupabaseAPI.reviews.myLink)
+        ? window.LokaliSupabaseAPI.reviews.myLink().catch(function () { return null; })
         : Promise.resolve(null)
     ]).then(function (rs) {
       var rows = (rs[0] && rs[0].data) || [];
@@ -350,6 +356,8 @@
       var pl = rs[5] && rs[5].data;                // placement_share_links payload
       self.places = (pl && pl.ok && pl.links) ? pl : null;
       self.onEtsy = sellsOnEtsy(self.vendor, (rs[6] && rs[6].data) || []);
+      var rl = rs[7] && rs[7].data;                // my_review_link payload
+      self.reviewCode = (rl && rl.ok && /^[a-f0-9]{10}$/.test(rl.code || '')) ? rl.code : null;
       self.render();
       self.loadQrLogo();
     });
@@ -496,17 +504,21 @@
     if (fmt === 'svg') setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
   };
 
-  // ---- Ask for a review (2026-09-17, F) ----------------------------------------
-  // The review link lands on the storefront with the Reviews tab open (the
-  // #reviews deep link the review-notification email already uses); the same
-  // signed-in review gate applies, so nothing new on the trust side. No lkv
-  // param: a review ask is not a QR scan and must not count as one.
+  // ---- Ask for a review (2026-09-17, F; review link 2026-09-19) ------------------
+  // The review link lands on the storefront with the Reviews tab open. With the
+  // vendor's review code (?review=CODE, patch_review_invite.sql) a customer who
+  // never used Lokali's contact buttons can post too, labeled "Invited by the
+  // vendor"; without a code it is the original gate-only link. No lkv param: a
+  // review ask is not a QR scan and must not count as one.
+  Page.prototype.reviewPath = function () {
+    return this.vendor.slug + (this.reviewCode ? '?review=' + this.reviewCode : '');
+  };
   Page.prototype.reviewUrl = function () {
-    return 'https://www.golokali.com/' + this.vendor.slug + '?src=review-ask#reviews';
+    return 'https://www.golokali.com/' + this.reviewPath() + (this.reviewCode ? '' : '?src=review-ask') + '#reviews';
   };
   Page.prototype.reviewSnippets = function () {
     var name = this.vendor.business_name || 'my shop';
-    var url = 'golokali.com/' + this.vendor.slug + '#reviews';
+    var url = 'golokali.com/' + this.reviewPath() + '#reviews';
     return [
       { key: 'text', title: 'Text message', text: 'Thanks again for ordering from ' + name + '! If you have a minute, a short review on my Lokali page helps neighbors find me: ' + url },
       { key: 'email', title: 'Email', text: 'Hi,\n\nThank you again for choosing ' + name + '. If you have a minute, a short review on my Lokali page helps other neighbors find me, and I read every one.\n\n' + url + '\n\nThank you!' },
@@ -533,19 +545,21 @@
       '<p class="mkt-sub">Reviews show on your Market card, and one or two change how a stranger reads it. The best moment to ask is right after a pickup or handoff, while the good feeling is fresh.</p>' +
       '<div class="mkt-qr-row">' + qr +
         '<div class="mkt-qr-side">' +
-          '<p class="mkt-qr-url">Your review link: <b>golokali.com/' + esc(self.vendor.slug) + '#reviews</b></p>' +
+          '<p class="mkt-qr-url">Your review link: <b style="overflow-wrap:anywhere">golokali.com/' + esc(self.reviewPath()) + '#reviews</b></p>' +
           '<div class="mkt-qr-btns">' +
             '<button type="button" class="mkt-qr-dl" data-act="rv-copy-link">Copy link</button>' +
             (window.LokaliQR ? '<button type="button" class="mkt-qr-dl" data-act="rv-png">Download QR (PNG)</button><button type="button" class="mkt-qr-dl" data-act="rv-svg">Download QR (SVG)</button>' : '') +
           '</div>' +
-          '<p class="mkt-note">The link opens your storefront on the Reviews tab. Reviewers sign in first, and only people who actually contacted you can post, so the ask never lowers your trust.</p>' +
+          '<p class="mkt-note">' + (self.reviewCode
+            ? 'The link opens your storefront on the Reviews tab. Anyone you give it to can sign in and post, including customers you met in person. Those reviews are labeled "Invited by the vendor", and reviews from people who contacted you through Lokali keep their "Verified contact" label.'
+            : 'The link opens your storefront on the Reviews tab. Reviewers sign in first, and only people who actually contacted you can post, so the ask never lowers your trust.') + '</p>' +
         '</div>' +
       '</div>' +
       rows +
     '</div>';
   };
   Page.prototype.copyReviewLink = function () {
-    var text = 'https://www.golokali.com/' + this.vendor.slug + '#reviews';
+    var text = 'https://www.golokali.com/' + this.reviewPath() + '#reviews';
     var done = function () { toast('Copied. Send it right after the handoff.'); };
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).then(done, function () { fallbackCopy(text); done(); });

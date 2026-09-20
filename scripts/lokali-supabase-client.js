@@ -437,7 +437,7 @@
             VENDOR_PUBLIC_COLS + ',' +
             'services(*),' +
             'products(*),' +
-            'reviews(id,author_name,is_recommended,is_verified_contact,comment,vendor_reply,vendor_reply_at,services_id,products_id,created_at)'
+            'reviews(id,author_name,is_recommended,is_verified_contact,is_invited,comment,vendor_reply,vendor_reply_at,services_id,products_id,created_at)'
           ).eq('slug', slug).maybeSingle();
         });
       },
@@ -628,7 +628,7 @@
             // NOTE: is_early (gamification) is deliberately NOT selected here —
             // it rides in via the review_author_badges RPC instead, so this
             // core read keeps working even before/without the gamification SQL.
-            .select('id,author_name,is_recommended,is_verified_contact,comment,vendor_reply,vendor_reply_at,services_id,products_id,created_at')
+            .select('id,author_name,is_recommended,is_verified_contact,is_invited,comment,vendor_reply,vendor_reply_at,services_id,products_id,created_at')
             .eq('vendors_id', vendorId)
             .order('created_at', { ascending: false });
         });
@@ -643,8 +643,16 @@
           isRecommended: payload.isRecommended !== false,
           comment: payload.comment || null,
           serviceId: payload.serviceId != null ? payload.serviceId : null,
-          productId: payload.productId != null ? payload.productId : null
+          productId: payload.productId != null ? payload.productId : null,
+          // Review link (patch_review_invite.sql): the vendor's own code admits a
+          // customer with no on-platform contact; validated server-side.
+          inviteCode: payload.inviteCode || null
         }, true);
+      },
+      // The signed-in vendor's own review link code (minted lazily, stable).
+      // { data: { ok, code, vendors_id, invited_reviews } | { ok:false, reason } }.
+      myLink: function () {
+        return withClient(function (c) { return c.rpc('my_review_link'); });
       },
       // Vendor replies to an approved review on their OWN listing. RLS
       // (reviews_vendor_reply / owns_vendor) permits it; the guard_review_update
@@ -668,7 +676,7 @@
           // Explicit columns = the authenticated column grant (adds user_id,
           // rating over the public list; never the flag columns).
           return c.from('reviews')
-            .select('id,vendors_id,user_id,author_name,rating,is_recommended,is_verified_contact,comment,vendor_reply,vendor_reply_at,services_id,products_id,created_at')
+            .select('id,vendors_id,user_id,author_name,rating,is_recommended,is_verified_contact,is_invited,comment,vendor_reply,vendor_reply_at,services_id,products_id,created_at')
             .eq('user_id', appUserId)
             .order('created_at', { ascending: false });
         });
