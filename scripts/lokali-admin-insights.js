@@ -1023,11 +1023,12 @@
     root.appendChild(supplyCards(d)); root.appendChild(el('div', 'lki-gap'));
     root.appendChild(behaviourCards(d)); root.appendChild(el('div', 'lki-gap'));
     root.appendChild(sharesCard(d));
+    if (d.guides) { root.appendChild(guidesCard(d)); root.appendChild(el('div', 'lki-gap')); }
     var g2 = el('div', 'lki-grid2'); g2.appendChild(revenueCard(d)); g2.appendChild(demandCard(d)); root.appendChild(g2); root.appendChild(el('div', 'lki-gap'));
     root.appendChild(gapsCard(!!d.visit));
     // #181: a section bar so the page is not one long scroll. Built from the
     // cards that actually rendered, so it can never point at a missing section.
-    var SECTIONS = [['Health', 'Marketplace health'], ['Visitors', 'Visitors and journeys'], ['Vendors', 'Who is getting seen'], ['Demand', 'What shoppers search for'], ['Categories and areas', 'Categories: supply vs attention'], ['Growth and revenue', 'Vendor activation funnel'], ['Where people come from', 'Word of mouth']];
+    var SECTIONS = [['Health', 'Marketplace health'], ['Visitors', 'Visitors and journeys'], ['Vendors', 'Who is getting seen'], ['Demand', 'What shoppers search for'], ['Categories and areas', 'Categories: supply vs attention'], ['Growth and revenue', 'Vendor activation funnel'], ['Where people come from', 'Word of mouth'], ['Guides', 'Guides and Start Here']];
     var bar = el('div', 'lki-secbar');
     var siteHead = document.querySelector('.header-wrapper.w-nav');
     bar.style.top = ((window.matchMedia && window.matchMedia('(min-width: 992px)').matches && siteHead ? siteHead.offsetHeight : 0)) + 'px';
@@ -1044,6 +1045,55 @@
     root.appendChild(el('p', 'lki-note', 'Views exclude a vendor previewing their own storefront. Days are Central time. Numbers refresh each time you open this page.'));
   }
 
+  // ---- Guides and Start Here (patch_guide_events.sql, 2026-09-20) ----------------
+  // Questions this card answers: are the guides read, does the two-link Resources
+  // menu get used, do vendors open Help from the dashboard, and does Start Here
+  // turn a reader into a sign-up. Public numbers exclude signed-in vendors/admins;
+  // the dashboard Help row is the one line only vendors can produce.
+  var GUIDE_NAMES = { start: 'Start Here', guides: 'Guides landing page', weekend: 'This Weekend' };
+  var CLICK_NAMES = { 'menu:start': 'Resources menu: Start here', 'menu:guides': 'Resources menu: Guides for vendors', 'dash:help': 'Dashboard: Help and guides', 'hub:start': 'Guides page: Start here strip' };
+  var ANSWER = { product: 'Product', service: 'Service', both: 'Product and service', food: 'home food', handmade: 'handmade', resale: 'resale',
+    care: 'personal care', trade: 'skilled trade', foodsvc: 'catering', kids: 'child care or classes', pro: 'professional', sole: 'sole owner', llc: 'LLC', unsure: 'not sure yet' };
+  function guideLabel(t) {
+    if (GUIDE_NAMES[t]) return GUIDE_NAMES[t];
+    var m = /^(guide|hub):(.+)$/.exec(t || '');
+    if (!m) return String(t || '');
+    var words = m[2].replace(/-guide$/, '').replace(/-/g, ' ');
+    return (m[1] === 'hub' ? 'Guides page card: ' : 'Guide: ') + words.charAt(0).toUpperCase() + words.slice(1);
+  }
+  function answerLabel(detail) {
+    var p = String(detail || '').split('|');
+    var bits = [ANSWER[p[0]] || p[0]];
+    if (p[1] && p[1] !== '-') bits.push(ANSWER[p[1]] || p[1]);
+    if (p[2] && p[2] !== '-') bits.push(ANSWER[p[2]] || p[2]);
+    if (p[3]) bits.push(ANSWER[p[3]] || p[3]);
+    return bits.join(', ');
+  }
+  function guidesCard(d) {
+    var gdata = d.guides;
+    var since = gdata.first_event_at ? new Date(gdata.first_event_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : null;
+    var c = card('Guides and Start Here', since
+      ? 'Counted since ' + since + '. Public numbers leave out signed-in vendors and admins.'
+      : 'Nothing recorded yet. Counting starts with the first visit after this shipped.');
+    var st = gdata.start || {};
+    var k = el('div', 'lki-kpis');
+    k.appendChild(kpi('Start Here opened', st.opened || 0, null, 'visits'));
+    k.appendChild(kpi('Checklists built', st.built || 0, null, (st.opened ? pct(st.built || 0, st.opened) : 0) + '% of those visits'));
+    k.appendChild(kpi('Tapped sign-up', st.cta || 0, null, (st.built ? pct(st.cta || 0, st.built) : 0) + '% of checklists'));
+    c.appendChild(k);
+    var g = el('div', 'lki-grid2');
+    var a = el('div'); a.appendChild(el('h4', 'lki-card-s', 'Pages read'));
+    a.appendChild(rankList((gdata.pages || []).map(function (r) { return { label: guideLabel(r.target), n: r.views, sub: plural(r.visitors || 0, 'visitor') }; }), '#6002EE', 'No guide has been opened yet.'));
+    var b = el('div'); b.appendChild(el('h4', 'lki-card-s', 'How people got there'));
+    b.appendChild(rankList((gdata.clicks || []).map(function (r) { return { label: CLICK_NAMES[r.target] || guideLabel(r.target), n: r.clicks, sub: plural(r.visitors || 0, 'visitor') }; }), '#FF6B00', 'No menu or Help clicks yet.'));
+    g.appendChild(a); g.appendChild(b); c.appendChild(g);
+    if ((gdata.start_answers || []).length) {
+      c.appendChild(el('h4', 'lki-card-s', 'Who is starting a business (Start Here answers)'));
+      c.appendChild(rankList(gdata.start_answers.map(function (r) { return { label: answerLabel(r.detail), n: r.visits }; }), '#1D6A45', ''));
+    }
+    return c;
+  }
+
   function defaultFetch(days) {
     var A = window.LokaliSupabaseAPI && window.LokaliSupabaseAPI.admin;
     if (!A || typeof A.insights !== 'function') return Promise.reject(new Error('stale_client'));
@@ -1053,7 +1103,14 @@
       // Phase 2 is optional: before its SQL patch is applied the page just omits it.
       return A.visitInsights(days).then(function (r2) {
         var v = r2 && r2.data; if (v && v.ok === true) d.visit = v; return d;
-      }).catch(function () { return d; });
+      }).catch(function () { return d; }).then(function (d2) {
+        // Guide usage is optional too: before patch_guide_events.sql is applied the
+        // RPC is missing and the card is simply omitted.
+        if (typeof A.guideInsights !== 'function') return d2;
+        return A.guideInsights(days).then(function (r3) {
+          var gi = r3 && r3.data; if (gi && gi.ok === true) d2.guides = gi; return d2;
+        }).catch(function () { return d2; });
+      });
     });
   }
 

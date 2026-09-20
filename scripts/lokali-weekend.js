@@ -61,7 +61,7 @@
       '<h1>Where to find local vendors this week</h1>' +
       '<p class="lkw-lede">Markets, pop-ups and pickups near The Woodlands, posted by the vendors themselves. Tap a vendor to see what they make.</p>' +
       inner +
-      '<p class="lkw-fine">Times come from each vendor, so check their storefront before you head out. Are you a local vendor? <a href="/sign-up">Become a vendor</a> and your weekend shows up here.</p>' +
+      '<p class="lkw-fine">Times come from each vendor, so check their storefront before you head out. Are you a local vendor? <a href="/sign-up">Open your storefront</a> and your weekend shows up here.</p>' +
       '</div></div>';
   }
 
@@ -69,7 +69,7 @@
     if (!feed.length) {
       mount.innerHTML = shell('<div class="lkw-empty"><h2>Nothing posted for this week yet</h2>' +
         '<p>Vendors add their weekend plans as they firm up, usually by Thursday. In the meantime, browse everyone on The Market.</p>' +
-        '<a class="lkw-btn" href="/the-market">Browse The Market</a><a class="lkw-btn ghost" href="/sign-up">Become a vendor</a></div>');
+        '<a class="lkw-btn" href="/the-market">Browse The Market</a><a class="lkw-btn ghost" href="/sign-up">Open your storefront</a></div>');
       return;
     }
     var days = [], byDay = {};

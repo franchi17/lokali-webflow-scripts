@@ -12,7 +12,8 @@
  * move the date. This is general information, never legal advice, and the page
  * says so. Mounts into #lokali-start; does nothing when that element is absent.
  * Copy rules: no emoji, no em dashes, Plus Jakarta Sans set explicitly, no ink
- * surfaces, and the vendor CTA stays "Become a vendor".
+ * surfaces. Vendor CTA = "Open your storefront", the live header's wording (the old
+ * "Become a vendor" rule was revoked by F on 2026-09-20).
  */
 (function () {
   'use strict';
@@ -130,7 +131,7 @@
     var seen = {};
     out = out.filter(function (s) { if (seen[s.id]) return false; seen[s.id] = 1; return true; });
 
-    out.push({ id: 'lokali', lokali: true, t: 'Create your free Lokali account', d: 'Become a vendor and your storefront goes up in about ten minutes: photos, what you offer, how to reach you, and your own QR code and review link, so the first customers you meet can find you again.', cta: { t: 'Become a vendor', u: '/sign-up' } });
+    out.push({ id: 'lokali', lokali: true, t: 'Create your free Lokali account', d: 'Open your storefront and it is up in about ten minutes: photos, what you offer, how to reach you, and your own QR code and review link, so the first customers you meet can find you again.', cta: { t: 'Open your storefront', u: '/sign-up' } });
     if (product) {
       out.push({ id: 'market', t: 'Find your first market', d: 'Local options include The Woodlands Farmers Market at Grogan\'s Mill, the Farmer\'s Market on Tamina, Gosling Sunday Market and Rayford Sunday Market. Check each market\'s site for how to apply.' });
     }
@@ -257,12 +258,21 @@
           return '<div class="lkst-help"><a href="' + h.u + '" target="_blank" rel="noopener">' + esc(h.t) + '</a><p>' + esc(h.d) + '</p></div>';
         }).join('') + '</div>' +
         '<div class="lkst-card lkst-join lkst-noprint"><div><h2>Ready for customers?</h2><p>Create your free Lokali account and put your business in front of neighbors in about ten minutes.</p></div>' +
-        '<a class="lkst-btn" href="/sign-up">Become a vendor</a></div>';
+        '<a class="lkst-btn" href="/sign-up">Open your storefront</a></div>';
     }
 
     html += '<p class="lkst-fine">This is general information, not legal advice. Fees and rules change, so follow the official source on each step. Every fact here was checked against its official page on ' + LAST_CHECKED + '. County steps are for Montgomery County. In Harris, Fort Bend or Waller County the state steps are the same and your county clerk sets the name filing fee. Your progress is saved in this browser only. Spotted something out of date? <a href="/contact-us">Tell us</a>.</p>' +
       '</div></div>';
     mount.innerHTML = html;
+    // Usage (lokali-guide-usage.js, patch_guide_events.sql): announce a built checklist.
+    // The answers come from the closed lists above, never from anything typed. The
+    // global covers a returning visitor whose saved answers render before the
+    // deferred usage script has attached its listener.
+    if (ready) {
+      var detail = { kind: state.kind, product: (state.kind !== 'service' && state.product) || '-', service: (state.kind !== 'product' && state.service) || '-', setup: state.setup };
+      window.__lokStartReady = detail;
+      try { window.dispatchEvent(new CustomEvent('lokali:start-ready', { detail: detail })); } catch (e) {}
+    }
   }
 
   mount.addEventListener('click', function (e) {

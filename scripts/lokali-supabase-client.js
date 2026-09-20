@@ -1570,6 +1570,11 @@
       visitInsights: function (days) {
         return withClient(function (c) { return c.rpc('admin_visit_insights', { p_days: days || 30 }); });
       },
+      // Guide usage (patch_guide_events.sql): /start, the guides, the Resources menu,
+      // the dashboard Help row. Separate RPC; the page works without it.
+      guideInsights: function (days) {
+        return withClient(function (c) { return c.rpc('admin_guide_insights', { p_days: days || 30 }); });
+      },
       // #181 admin home: owner email per vendor for the "Email owner" action
       // (patch_admin_vendor_contacts.sql). Optional: without it the button is hidden.
       vendorContacts: function () {
