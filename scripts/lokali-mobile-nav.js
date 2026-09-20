@@ -59,16 +59,10 @@
     // Resources = a tap-to-expand accordion of the vendor-resources guides
     // (mirrors the desktop "Resources" dropdown from lokali-resources-nav.js).
     { label: 'Resources', children: [
-      { label: 'Starting a business? Start here', href: '/start' }, // #184 (2026-09-20)
-      { label: 'Profile Photo Guide', href: '/vendor-resources/profile-photo-guide' },
-      { label: 'Categories Guide',    href: '/vendor-resources/categories-guide' },
-      { label: 'Product Photo Guide', href: '/vendor-resources/product-photo-guide' },
-      { label: 'Service Photo Guide', href: '/vendor-resources/service-photo-guide' },
-      { label: 'Availability Guide',  href: '/vendor-resources/availability-guide' },
-      // These two were in the desktop dropdown but never made it here (found 2026-09-20).
-      { label: 'Marketing Tools Guide', href: '/vendor-resources/marketing-tools-guide' },
-      { label: 'Badges & Referrals',  href: '/vendor-resources/badges-guide' },
-      { label: 'Import Guide',        href: '/vendor-resources/import-guide' }
+      // 2026-09-20 (F: "shrink it to two"): the guides moved to one landing page,
+      // /vendor-resources. Keep this list identical to lokali-resources-nav.js.
+      { label: 'Starting a business? Start here', href: '/start' },
+      { label: 'Guides for vendors', href: '/vendor-resources' }
     ] },
     { label: 'Contact us',      href: '/contact-us' },
     { label: 'Login',           href: '/login' },

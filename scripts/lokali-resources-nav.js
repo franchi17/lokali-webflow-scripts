@@ -47,20 +47,13 @@
       label: 'Resources',
       href: null, // toggle-only trigger (button)
       anchor: 'a[href*="/pricing"]',
-      // Onboarding-ish order: set up the profile, pick categories, add photos,
-      // then turn on availability. Keep labels short — they wrap on mobile.
+      // 2026-09-20 (F: "shrink it to two"): most header visitors are shoppers, so the
+      // nine vendor guides left the header for one landing page that groups them by
+      // task (/vendor-resources). Every guide is still one click from there, and the
+      // dashboard links each one in context. Add a guide on that PAGE, not here.
       links: [
-        // #184 (2026-09-20, F: "put it in the Resources tab"): the new-business
-        // checklist leads, because it is the step BEFORE any of the guides below.
         { href: '/start', label: 'Starting a business? Start here' },
-        { href: '/vendor-resources/profile-photo-guide', label: 'Profile Photo Guide' },
-        { href: '/vendor-resources/categories-guide',    label: 'Categories Guide' },
-        { href: '/vendor-resources/product-photo-guide', label: 'Product Photo Guide' },
-        { href: '/vendor-resources/service-photo-guide', label: 'Service Photo Guide' },
-        { href: '/vendor-resources/availability-guide',  label: 'Availability Guide' },
-        { href: '/vendor-resources/marketing-tools-guide', label: 'Marketing Tools Guide' },
-        { href: '/vendor-resources/badges-guide',        label: 'Badges & Referrals' },
-        { href: '/vendor-resources/import-guide',        label: 'Import Guide' }   // #173 (2026-09-12)
+        { href: '/vendor-resources', label: 'Guides for vendors' }
       ]
     }
   ];
