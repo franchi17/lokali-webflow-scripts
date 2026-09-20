@@ -59,12 +59,16 @@
     // Resources = a tap-to-expand accordion of the vendor-resources guides
     // (mirrors the desktop "Resources" dropdown from lokali-resources-nav.js).
     { label: 'Resources', children: [
+      { label: 'Starting a business? Start here', href: '/start' }, // #184 (2026-09-20)
       { label: 'Profile Photo Guide', href: '/vendor-resources/profile-photo-guide' },
       { label: 'Categories Guide',    href: '/vendor-resources/categories-guide' },
       { label: 'Product Photo Guide', href: '/vendor-resources/product-photo-guide' },
       { label: 'Service Photo Guide', href: '/vendor-resources/service-photo-guide' },
       { label: 'Availability Guide',  href: '/vendor-resources/availability-guide' },
-      { label: 'Badges & Referrals',  href: '/vendor-resources/badges-guide' }
+      // These two were in the desktop dropdown but never made it here (found 2026-09-20).
+      { label: 'Marketing Tools Guide', href: '/vendor-resources/marketing-tools-guide' },
+      { label: 'Badges & Referrals',  href: '/vendor-resources/badges-guide' },
+      { label: 'Import Guide',        href: '/vendor-resources/import-guide' }
     ] },
     { label: 'Contact us',      href: '/contact-us' },
     { label: 'Login',           href: '/login' },
@@ -121,7 +125,7 @@
       '#lok-mnav-panel .lok-mnav-accbtn{background:none;border:none;cursor:pointer;color:var(--lokali-primary,#6002ee);',
       'display:flex;align-items:center;justify-content:center;min-width:44px;padding:0 6px;}',
       '#lok-mnav-panel .lok-mnav-sub{max-height:0;overflow:hidden;transition:max-height .25s ease;}',
-      '#lok-mnav-panel .lok-mnav-grp.open .lok-mnav-sub{max-height:360px;}',
+      '#lok-mnav-panel .lok-mnav-grp.open .lok-mnav-sub{max-height:520px;}',
       '#lok-mnav-panel .lok-mnav-sub a{padding-left:20px;font-size:15px;}',
       // Hamburger -> X morph while the menu is open (two-bar hamburger; bars ~15px apart).
       // The original bars are driven by Webflow IX2 (Web Animations API) which overrides

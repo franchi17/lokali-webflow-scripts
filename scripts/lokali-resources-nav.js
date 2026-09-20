@@ -50,6 +50,9 @@
       // Onboarding-ish order: set up the profile, pick categories, add photos,
       // then turn on availability. Keep labels short — they wrap on mobile.
       links: [
+        // #184 (2026-09-20, F: "put it in the Resources tab"): the new-business
+        // checklist leads, because it is the step BEFORE any of the guides below.
+        { href: '/start', label: 'Starting a business? Start here' },
         { href: '/vendor-resources/profile-photo-guide', label: 'Profile Photo Guide' },
         { href: '/vendor-resources/categories-guide',    label: 'Categories Guide' },
         { href: '/vendor-resources/product-photo-guide', label: 'Product Photo Guide' },
@@ -97,7 +100,7 @@
       '.lok-res-li.mob .lok-res-trig{display:flex;justify-content:space-between;width:100%;}' +
       '.lok-res-li.mob .lok-res-panel{position:static;opacity:1;visibility:visible;transform:none;box-shadow:none;border:none;' +
         'background:none;padding:0 0 0 14px;margin:4px 0 0;min-width:0;max-height:0;overflow:hidden;transition:max-height .24s ease;}' +
-      '.lok-res-li.mob.open .lok-res-panel{max-height:360px;}' +
+      '.lok-res-li.mob.open .lok-res-panel{max-height:520px;}' +
       '.lok-res-li.mob .lok-res-panel a{padding:8px 6px;}';
     var s = document.createElement('style');
     s.id = 'lok-res-styles';
