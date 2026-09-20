@@ -2,9 +2,12 @@
  * lokali-account.js — customer "My Account" hub (/account).
  *
  * Renders the whole hub into a single mount element (id="lokali-account"):
- *   • Header band — "Hi, {first_name}", area · member-since, Saved/Reviews counts.
- *   • Segmented control with hash routing (#saved / #reviews / #settings) so
- *     review-reminder / vendor-reply emails can deep-link to a pane.
+ *   • Hub shell (2026-09-20 redesign): 230px sidebar at >=992px (same pattern as
+ *     the vendor dashboard + admin home), a visible tab row below that (five-across
+ *     icon bar on phones; Settings = gear button). Hash routing (#home / #badges /
+ *     #saved / #reviews / #settings) so emails can deep-link to a pane.
+ *   • Home — greeting, ONE "Your next step" card (review waiting > set your area >
+ *     browse), saved preview, badge strip, category tiles. No bare zeros anywhere.
  *   • Saved  — list rows from the favorites API (View / Contact / unsave heart).
  *   • Reviews — "Awaiting your review" (contacted-not-reviewed) + "Your reviews"
  *     (edit / delete) + an inline recommend-or-not composer. Recommend-only model
@@ -31,7 +34,7 @@
   };
 
   var MOUNT_ID = 'lokali-account';
-  var PANES = ['badges', 'saved', 'reviews', 'settings'];
+  var PANES = ['home', 'badges', 'saved', 'reviews', 'settings'];
 
   function api() { return window.LokaliAPI; }
   function hasToken() { var a = api(); return !!(a && a.getToken && a.getToken()); }
@@ -213,6 +216,7 @@
   // A picked city is normalized to "City, ST" — same shape both paths.
   function commitArea(input, city, st) {
     if (city) input.value = st ? (city + ', ' + st) : city;
+    try { input.dispatchEvent(new Event('lk-area-picked', { bubbles: true })); } catch (e) {}
   }
   function initAreaNewAC(input, places) {
     var token = null, dd = null, items = [], active = -1, timer = null;
@@ -358,16 +362,16 @@
   function injectCSS() {
     if (document.getElementById('lokali-account-styles')) return;
     var V = '#6002EE', VL = '#F3EBFF', VM = '#E5D4FD', SNOW = '#F7F6FC', INK = '#1A1829',
-        DUSK = '#4A4761', SLATE = '#8E8BA6', FOG = '#C8C6D8', BORDER = '#EEEDF6',
+        DUSK = '#4A4761', SLATE = '#6E6A85', FOG = '#C8C6D8', BORDER = '#DEDAEE',
         GREEN = '#2BB673', GREENL = '#E4F7EE', F = "'Plus Jakarta Sans',-apple-system,sans-serif";
     var s = document.createElement('style');
     s.id = 'lokali-account-styles';
     var R = '#lokali-account ';
     s.textContent = [
       R + '*{box-sizing:border-box;}',
-      '#lokali-account{font-family:' + F + ';color:' + INK + ';max-width:760px;margin:0 auto;padding:1.5rem 0 3rem;}',
+      '#lokali-account{font-family:' + F + ';color:' + INK + ';max-width:1180px;margin:0 auto;padding:1.5rem 0 3rem;}',
       // band
-      R + '.lk-band{background:#fff;border:.5px solid ' + BORDER + ';border-radius:16px;padding:22px 24px;display:flex;align-items:center;gap:16px;margin-bottom:1.5rem;}',
+      R + '.lk-band{background:#fff;border:1px solid ' + BORDER + ';border-radius:16px;padding:22px 24px;display:flex;align-items:center;gap:16px;margin-bottom:1.5rem;}',
       R + '.lk-avatar{width:52px;height:52px;border-radius:50%;background:' + V + ';color:#fff;font-size:19px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 14px rgba(96,2,238,.25);text-transform:uppercase;}',
       R + '.lk-greet{font-size:20px;font-weight:600;letter-spacing:-.3px;}',
       R + '.lk-meta{font-size:12.5px;color:' + DUSK + ';margin-top:3px;}',
@@ -375,7 +379,7 @@
       R + '.lk-stat-num{font-size:18px;font-weight:600;color:' + V + ';line-height:1;}',
       R + '.lk-stat-lbl{font-size:11px;color:' + SLATE + ';margin-top:4px;}',
       // segmented
-      R + '.lk-seg-wrap{display:inline-flex;background:#fff;border:.5px solid ' + BORDER + ';border-radius:100px;padding:4px;gap:2px;margin-bottom:1.75rem;}',
+      R + '.lk-seg-wrap{display:inline-flex;background:#fff;border:1px solid ' + BORDER + ';border-radius:100px;padding:4px;gap:2px;margin-bottom:1.75rem;}',
       R + '.lk-seg{font-family:' + F + ';font-size:13px;font-weight:600;color:' + SLATE + ';padding:8px 20px;border-radius:100px;cursor:pointer;border:none;background:none;transition:all .15s;display:flex;align-items:center;gap:6px;}',
       R + '.lk-seg:hover:not(.is-active){color:' + DUSK + ';}',
       // #39 orange → light violet (Francesca 2026-07-31: with the storefront CTA
@@ -389,7 +393,7 @@
       R + '.lk-group+.lk-group{margin-top:2.25rem;}',
       R + '.lk-group-label{font-size:11px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;color:' + SLATE + ';margin:0 0 .9rem;}',
       // saved rows
-      R + '.lk-row{display:flex;align-items:center;gap:14px;background:#fff;border:.5px solid ' + BORDER + ';border-radius:12px;padding:12px 14px;margin-bottom:10px;transition:border-color .15s;}',
+      R + '.lk-row{display:flex;align-items:center;gap:14px;background:#fff;border:1px solid ' + BORDER + ';border-radius:12px;padding:12px 14px;margin-bottom:10px;transition:border-color .15s;}',
       R + '.lk-row:hover{border-color:' + FOG + ';}',
       R + '.lk-thumb{width:46px;height:46px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#EADBFF,#D9C2FF);color:' + V + ';font-weight:700;font-size:15px;text-transform:uppercase;}',
       R + '.lk-row-info{flex:1;min-width:0;}',
@@ -400,12 +404,12 @@
       R + '.lk-btn{font-family:' + F + ';font-size:12px;font-weight:600;cursor:pointer;border-radius:8px;padding:7px 13px;transition:all .12s;border:none;}',
       R + '.lk-btn.primary{background:' + V + ';color:#fff;}',
       R + '.lk-btn.primary:hover{opacity:.88;}',
-      R + '.lk-btn.ghost{background:#fff;border:.5px solid ' + FOG + ';color:' + DUSK + ';}',
+      R + '.lk-btn.ghost{background:#fff;border:1px solid ' + FOG + ';color:' + DUSK + ';}',
       R + '.lk-btn.ghost:hover{border-color:' + V + ';color:' + V + ';}',
       R + '.lk-heart{width:30px;height:30px;border-radius:8px;border:none;background:' + SNOW + ';color:' + V + ';cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}',
       R + '.lk-heart:hover{background:' + VL + ';}',
       // awaiting
-      R + '.lk-await{background:#fff;border:.5px solid ' + BORDER + ';border-radius:12px;padding:13px 16px;display:flex;align-items:center;gap:14px;margin-bottom:10px;flex-wrap:wrap;}',
+      R + '.lk-await{background:#fff;border:1px solid ' + BORDER + ';border-radius:12px;padding:13px 16px;display:flex;align-items:center;gap:14px;margin-bottom:10px;flex-wrap:wrap;}',
       R + '.lk-await-av{width:40px;height:40px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:#fff;background:#8B5CF6;text-transform:uppercase;}',
       R + '.lk-await-info{flex:1;min-width:0;}',
       R + '.lk-await-name{font-size:14px;font-weight:600;}',
@@ -413,33 +417,33 @@
       R + '.lk-await-cta{font-family:' + F + ';font-size:12px;font-weight:600;color:' + V + ';background:' + VL + ';border:none;border-radius:8px;padding:8px 14px;cursor:pointer;flex-shrink:0;}',
       R + '.lk-await-cta:hover{background:' + VM + ';}',
       // composer
-      R + '.lk-composer{flex-basis:100%;margin-top:10px;border-top:.5px solid ' + BORDER + ';padding-top:12px;display:none;}',
+      R + '.lk-composer{flex-basis:100%;margin-top:10px;border-top:1px solid ' + BORDER + ';padding-top:12px;display:none;}',
       R + '.lk-composer.open{display:block;}',
       R + '.lk-rec{display:flex;gap:8px;margin-bottom:10px;}',
-      R + '.lk-rec button{font-family:' + F + ';font-size:12px;font-weight:600;border-radius:100px;padding:7px 14px;cursor:pointer;border:.5px solid ' + FOG + ';background:#fff;color:' + DUSK + ';}',
+      R + '.lk-rec button{font-family:' + F + ';font-size:12px;font-weight:600;border-radius:100px;padding:7px 14px;cursor:pointer;border:1px solid ' + FOG + ';background:#fff;color:' + DUSK + ';}',
       R + '.lk-rec button.sel-yes{background:' + GREENL + ';border-color:' + GREEN + ';color:' + GREEN + ';}',
       R + '.lk-rec button.sel-no{background:#FDECEC;border-color:#E0726A;color:#C0392B;}',
-      R + '.lk-ta{width:100%;font-family:' + F + ';font-size:13px;color:' + INK + ';border:.5px solid ' + FOG + ';border-radius:8px;padding:10px 12px;min-height:74px;resize:vertical;background:' + SNOW + ';}',
+      R + '.lk-ta{width:100%;font-family:' + F + ';font-size:13px;color:' + INK + ';border:1px solid ' + FOG + ';border-radius:8px;padding:10px 12px;min-height:74px;resize:vertical;background:' + SNOW + ';}',
       R + '.lk-ta:focus{outline:none;border-color:' + V + ';background:#fff;}',
       R + '.lk-composer-foot{display:flex;justify-content:flex-end;gap:8px;margin-top:10px;}',
       // my review cards
-      R + '.lk-review{background:#fff;border:.5px solid ' + BORDER + ';border-radius:12px;padding:16px 18px;margin-bottom:12px;}',
+      R + '.lk-review{background:#fff;border:1px solid ' + BORDER + ';border-radius:12px;padding:16px 18px;margin-bottom:12px;}',
       R + '.lk-review-head{font-size:13px;color:' + SLATE + ';margin-bottom:9px;}',
       R + '.lk-review-head strong{color:' + INK + ';font-weight:600;}',
       R + '.lk-review-head .when{float:right;font-size:12px;}',
       R + '.lk-rec-pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:' + GREEN + ';background:' + GREENL + ';border-radius:100px;padding:3px 10px;margin-bottom:8px;}',
       R + '.lk-rec-pill.no{color:#C0392B;background:#FDECEC;}',
       R + '.lk-review-body{font-size:13px;color:' + DUSK + ';line-height:1.6;}',
-      R + '.lk-review-foot{margin-top:11px;padding-top:11px;border-top:.5px solid ' + BORDER + ';display:flex;gap:16px;}',
+      R + '.lk-review-foot{margin-top:11px;padding-top:11px;border-top:1px solid ' + BORDER + ';display:flex;gap:16px;}',
       R + '.lk-review-foot button{font-family:' + F + ';font-size:12px;font-weight:500;color:' + SLATE + ';background:none;border:none;cursor:pointer;padding:0;}',
       R + '.lk-review-foot button:hover{color:' + V + ';}',
       // settings
-      R + '.lk-card{background:#fff;border:.5px solid ' + BORDER + ';border-radius:12px;padding:4px 20px;margin-bottom:16px;}',
-      R + '.lk-set-row{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:16px 0;border-bottom:.5px solid ' + BORDER + ';}',
+      R + '.lk-card{background:#fff;border:1px solid ' + BORDER + ';border-radius:12px;padding:4px 20px;margin-bottom:16px;}',
+      R + '.lk-set-row{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:16px 0;border-bottom:1px solid ' + BORDER + ';}',
       R + '.lk-set-row:last-child{border-bottom:none;}',
       R + '.lk-set-label{font-size:13px;font-weight:600;color:' + INK + ';}',
       R + '.lk-set-help{font-size:12px;color:' + SLATE + ';margin-top:2px;line-height:1.45;}',
-      R + '.lk-input{font-family:' + F + ';font-size:13px;color:' + INK + ';background:' + SNOW + ';border:.5px solid ' + FOG + ';border-radius:8px;padding:8px 12px;width:220px;}',
+      R + '.lk-input{font-family:' + F + ';font-size:13px;color:' + INK + ';background:' + SNOW + ';border:1px solid ' + FOG + ';border-radius:8px;padding:8px 12px;width:220px;}',
       R + '.lk-input:focus{outline:none;border-color:' + V + ';background:#fff;}',
       R + '.lk-toggle{width:40px;height:23px;border-radius:100px;background:' + FOG + ';position:relative;cursor:pointer;transition:background .18s;border:none;flex-shrink:0;}',
       R + '.lk-toggle::after{content:"";position:absolute;top:2.5px;left:2.5px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .18s;}',
@@ -447,22 +451,22 @@
       R + '.lk-toggle.on::after{transform:translateX(17px);}',
       R + '.lk-save-bar{display:flex;justify-content:flex-end;margin:1.25rem 0 2rem;}',
       // #66 Phase 1 — "Open your storefront" card (shown to people without one).
-      R + '.lk-sf{background:#fff;border:.5px solid ' + BORDER + ';border-radius:16px;padding:18px 20px;margin-bottom:1.5rem;display:flex;flex-wrap:wrap;align-items:center;gap:16px;}',
+      R + '.lk-sf{background:#fff;border:1px solid ' + BORDER + ';border-radius:16px;padding:18px 20px;margin-bottom:1.5rem;display:flex;flex-wrap:wrap;align-items:center;gap:16px;}',
       R + '.lk-sf-icon{width:46px;height:46px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:' + V + ';color:#fff;box-shadow:0 4px 14px rgba(96,2,238,.22);}',
       R + '.lk-sf-body{flex:1;min-width:0;}',
       R + '.lk-sf-title{font-size:15px;font-weight:600;letter-spacing:-.2px;}',
       R + '.lk-sf-sub{font-size:12.5px;color:' + DUSK + ';margin-top:3px;line-height:1.5;}',
       R + '.lk-sf-cta{font-family:' + F + ';font-size:12.5px;font-weight:600;color:#fff;background:#FF8D00;border:none;border-radius:9px;padding:9px 15px;cursor:pointer;flex-shrink:0;transition:opacity .12s;}',
       R + '.lk-sf-cta:hover{opacity:.9;}',
-      R + '.lk-sf-form{flex-basis:100%;margin-top:12px;padding-top:14px;border-top:.5px solid ' + VM + ';display:none;}',
+      R + '.lk-sf-form{flex-basis:100%;margin-top:12px;padding-top:14px;border-top:1px solid ' + VM + ';display:none;}',
       R + '.lk-sf.open .lk-sf-form{display:block;}',
       R + '.lk-sf.open .lk-sf-cta{display:none;}',
       R + '.lk-sf-label{font-size:12px;font-weight:600;color:' + INK + ';margin-bottom:7px;}',
-      R + '.lk-sf-in{font-family:' + F + ';font-size:14px;color:' + INK + ';background:#fff;border:.5px solid ' + FOG + ';border-radius:9px;padding:10px 13px;width:100%;max-width:360px;}',
+      R + '.lk-sf-in{font-family:' + F + ';font-size:14px;color:' + INK + ';background:#fff;border:1px solid ' + FOG + ';border-radius:9px;padding:10px 13px;width:100%;max-width:360px;}',
       R + '.lk-sf-in:focus{outline:none;border-color:' + V + ';}',
       R + '.lk-sf-foot{display:flex;gap:8px;margin-top:11px;}',
       // #66 Phase 2 — owner "switch back to storefront" strip.
-      R + '.lk-sfr{display:flex;align-items:center;gap:13px;background:#fff;border:.5px solid ' + BORDER + ';border-radius:14px;padding:13px 16px;margin-bottom:1.5rem;}',
+      R + '.lk-sfr{display:flex;align-items:center;gap:13px;background:#fff;border:1px solid ' + BORDER + ';border-radius:14px;padding:13px 16px;margin-bottom:1.5rem;}',
       R + '.lk-sfr-ic{width:38px;height:38px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:' + VL + ';color:' + V + ';}',
       R + '.lk-sfr-body{flex:1;min-width:0;}',
       R + '.lk-sfr-title{font-size:13.5px;font-weight:600;}',
@@ -470,10 +474,10 @@
       R + '.lk-sfr-cta{font-family:' + F + ';font-size:12.5px;font-weight:600;color:' + V + ';background:' + VL + ';border-radius:9px;padding:9px 14px;text-decoration:none;flex-shrink:0;transition:background .12s;}',
       R + '.lk-sfr-cta:hover{background:' + VM + ';}',
       R + '.lk-danger{color:#C0392B;}',
-      R + '.lk-btn.danger{background:#fff;border:.5px solid #E8B4AE;color:#C0392B;}',
+      R + '.lk-btn.danger{background:#fff;border:1px solid #E8B4AE;color:#C0392B;}',
       R + '.lk-btn.danger:hover{background:#FDF0EE;}',
       // empty
-      R + '.lk-empty{background:#fff;border:.5px dashed ' + FOG + ';border-radius:14px;padding:3rem 2rem;text-align:center;}',
+      R + '.lk-empty{background:#fff;border:1px dashed ' + FOG + ';border-radius:14px;padding:3rem 2rem;text-align:center;}',
       R + '.lk-empty-title{font-size:15px;font-weight:600;margin-bottom:5px;}',
       R + '.lk-empty-sub{font-size:13px;color:' + SLATE + ';margin-bottom:1.25rem;line-height:1.5;max-width:360px;margin:0 auto 1.25rem;}',
       R + '.lk-empty a,' + R + '.lk-link{color:' + V + ';font-weight:600;text-decoration:none;}',
@@ -510,7 +514,7 @@
       '}',
       // ── gamification badge cards (Explorer / Milestones / Scout / Connector).
       // Status-only, gold = earned. Palette + shapes from the design reference.
-      R + '.lkg-card{background:#fff;border:.5px solid ' + BORDER + ';border-radius:10px;padding:1.75rem;margin-top:1.75rem;font-family:' + F + ';}',
+      R + '.lkg-card{background:#fff;border:1px solid ' + BORDER + ';border-radius:10px;padding:1.75rem;margin-top:1.75rem;font-family:' + F + ';}',
       R + '.lkg-head{display:flex;align-items:center;gap:14px;margin-bottom:4px;}',
       R + '.lkg-head-text{flex:1;min-width:0;}',
       R + '.lkg-eyebrow{font-size:11px;font-weight:700;color:' + V + ';text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;}',
@@ -526,7 +530,7 @@
       R + '.lkg-hint{font-size:12px;color:' + SLATE + ';}',
       R + '.lkg-hint.almost{color:#FF6B00;font-weight:600;}',
       R + '.lkg-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}',
-      R + '.lkg-chip{display:flex;align-items:center;gap:10px;border:.5px solid ' + BORDER + ';border-radius:8px;padding:10px 12px;font-size:13px;text-decoration:none;transition:all .12s;}',
+      R + '.lkg-chip{display:flex;align-items:center;gap:10px;border:1px solid ' + BORDER + ';border-radius:8px;padding:10px 12px;font-size:13px;text-decoration:none;transition:all .12s;}',
       R + '.lkg-chip .ico{width:26px;height:26px;border-radius:7px;flex-shrink:0;display:flex;align-items:center;justify-content:center;}',
       R + '.lkg-chip.done{background:' + SNOW + ';}',
       R + '.lkg-chip.done .ico{background:' + GREENL + ';color:' + GREEN + ';}',
@@ -540,7 +544,7 @@
       R + '.lkg-chip.highlight .go{opacity:1;transform:none;color:#FF6B00;}',
       R + '.lkg-chip .nm{flex:1;font-weight:500;color:' + INK + ';min-width:0;}',
       R + '.lkg-chip .go{font-size:11.5px;font-weight:600;color:' + V + ';opacity:0;transform:translateX(-3px);transition:all .15s;flex-shrink:0;}',
-      R + '.lkg-foot{display:flex;align-items:center;gap:12px;margin-top:1.4rem;padding-top:1.25rem;border-top:.5px solid ' + BORDER + ';}',
+      R + '.lkg-foot{display:flex;align-items:center;gap:12px;margin-top:1.4rem;padding-top:1.25rem;border-top:1px solid ' + BORDER + ';}',
       R + '.lkg-dot{width:40px;height:40px;border-radius:50%;flex-shrink:0;background:' + VL + ';color:' + V + ';display:flex;align-items:center;justify-content:center;}',
       R + '.lkg-dot.earned{background:' + V + ';color:#fff;box-shadow:0 3px 10px rgba(96,2,238,.28);}',
       // Per-badge colors (badges-guide alignment): peach / rose / green tints
@@ -553,7 +557,7 @@
       R + '.lkg-dot.c-green.earned{background:#3E7C5E;color:#fff;box-shadow:0 3px 10px rgba(62,124,94,.28);}',
       R + '.lkg-foot-text{font-size:12.5px;color:' + DUSK + ';line-height:1.5;}',
       R + '.lkg-foot-text strong{font-weight:600;color:' + INK + ';}',
-      R + '.lkg-banner{display:flex;align-items:center;gap:14px;background:linear-gradient(120deg,' + VL + ' 0%,#FFF6F0 55%,#fff 90%);border:.5px solid ' + VM + ';border-radius:10px;padding:1.25rem 1.5rem;margin-top:1.75rem;font-family:' + F + ';}',
+      R + '.lkg-banner{display:flex;align-items:center;gap:14px;background:linear-gradient(120deg,' + VL + ' 0%,#FFF6F0 55%,#fff 90%);border:1px solid ' + VM + ';border-radius:10px;padding:1.25rem 1.5rem;margin-top:1.75rem;font-family:' + F + ';}',
       R + '.lkg-banner .lkg-dot{width:48px;height:48px;}',
       R + '.lkg-banner+.lkg-card{margin-top:1rem;}',
       R + '.lkg-banner-title{font-size:15px;font-weight:700;color:' + INK + ';}',
@@ -564,8 +568,8 @@
       R + '.lkg-fill{height:100%;width:0;background:' + V + ';border-radius:100px;transition:width .4s ease;}',
       R + '.lkg-nodes{position:relative;display:flex;justify-content:space-between;}',
       R + '.lkg-node{display:flex;flex-direction:column;align-items:center;gap:7px;width:140px;text-align:center;}',
-      R + '.lkg-node-dot{width:42px;height:42px;border-radius:50%;background:' + VL + ';border:1.5px dashed ' + VM + ';color:' + V + ';display:flex;align-items:center;justify-content:center;}',
-      R + '.lkg-node.earned .lkg-node-dot{background:' + V + ';border:1.5px solid ' + V + ';color:#fff;box-shadow:0 3px 10px rgba(96,2,238,.26);}',
+      R + '.lkg-node-dot{width:42px;height:42px;border-radius:50%;background:' + VL + ';border:11px dashed ' + VM + ';color:' + V + ';display:flex;align-items:center;justify-content:center;}',
+      R + '.lkg-node.earned .lkg-node-dot{background:' + V + ';border:11px solid ' + V + ';color:#fff;box-shadow:0 3px 10px rgba(96,2,238,.26);}',
       R + '.lkg-node-dot.c-peach{background:#FFF0E6;border-color:#F6C6A5;color:#B4530A;}',
       R + '.lkg-node.earned .lkg-node-dot.c-peach{background:#FF6B00;border-color:#FF6B00;color:#fff;box-shadow:0 3px 10px rgba(255,107,0,.26);}',
       R + '.lkg-node-dot.c-rose{background:#FBE9F2;border-color:#EBBBD3;color:#A63D74;}',
@@ -574,9 +578,9 @@
       R + '.lkg-node.earned .lkg-node-name{color:' + INK + ';}',
       R + '.lkg-node-req{font-size:11px;color:' + SLATE + ';}',
       // badge preview + scout list
-      R + '.lkg-preview{margin-top:1.5rem;padding-top:1.25rem;border-top:.5px solid ' + BORDER + ';}',
+      R + '.lkg-preview{margin-top:1.5rem;padding-top:1.25rem;border-top:1px solid ' + BORDER + ';}',
       R + '.lkg-preview-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:' + SLATE + ';margin-bottom:10px;}',
-      R + '.lkg-mini{background:' + SNOW + ';border:.5px solid ' + BORDER + ';border-radius:8px;padding:12px 14px;}',
+      R + '.lkg-mini{background:' + SNOW + ';border:1px solid ' + BORDER + ';border-radius:8px;padding:12px 14px;}',
       R + '.lkg-mini-top{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;}',
       R + '.lkg-mini-ava{width:28px;height:28px;border-radius:50%;flex-shrink:0;background:#EEEDF6;font-size:11px;font-weight:500;color:' + DUSK + ';display:flex;align-items:center;justify-content:center;text-transform:uppercase;}',
       R + '.lkg-mini-name{font-size:12.5px;font-weight:600;color:' + INK + ';}',
@@ -589,15 +593,168 @@
       R + '.lkg-hero .lkg-node-dot,' + R + '.lkg-hero .lkg-dot{width:48px;height:48px;}',
       R + '.lkg-hero-count{font-size:15px;font-weight:700;color:' + INK + ';}',
       R + '.lkg-hero-sub{font-size:12px;color:' + SLATE + ';margin-top:2px;}',
-      R + '.lkg-list{margin-top:1.25rem;padding-top:.25rem;border-top:.5px solid ' + BORDER + ';}',
-      R + '.lkg-lrow{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:.5px solid ' + BORDER + ';font-size:13px;}',
+      R + '.lkg-list{margin-top:1.25rem;padding-top:.25rem;border-top:1px solid ' + BORDER + ';}',
+      R + '.lkg-lrow{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid ' + BORDER + ';font-size:13px;}',
       R + '.lkg-lrow:last-child{border-bottom:none;padding-bottom:2px;}',
       R + '.lkg-lrow .vn{flex:1;font-weight:500;color:' + INK + ';min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
       R + '.lkg-lrow .ord{font-size:10.5px;font-weight:700;color:' + V + ';background:' + VL + ';border-radius:100px;padding:2px 8px;flex-shrink:0;}',
       R + '.lkg-lrow .dt{font-size:11.5px;color:' + SLATE + ';width:60px;text-align:right;flex-shrink:0;}',
-      '@media (max-width:560px){#lokali-account .lkg-grid{grid-template-columns:1fr;}#lokali-account .lkg-line{left:50px;right:50px;}}'
+      '@media (max-width:560px){#lokali-account .lkg-grid{grid-template-columns:1fr;}#lokali-account .lkg-line{left:50px;right:50px;}}',
+      // ── 2026-09-20 hub redesign: shell, Home, 44px targets, AA text ──
+      // Measured on the old page: every control < 44px, slate text 3.1-3.3:1,
+      // 11 text styles < 12px, 13px inputs (iPhone focus zoom), 760px cap.
+      R + '.lkh{display:grid;grid-template-columns:230px minmax(0,1fr);gap:24px;align-items:start;}',
+      R + '.lkh-rail{position:sticky;background:#fff;border:1px solid #EEEDF6;border-radius:16px;padding:16px 12px;display:flex;flex-direction:column;}',
+      R + '.lkh-nav{all:unset;box-sizing:border-box;display:flex;align-items:center;width:100%;border-radius:8px;margin-bottom:1px;padding:6px 8px;cursor:pointer;font-family:' + F + ';font-size:16px;font-weight:500;line-height:26px;color:' + INK + ';text-decoration:none;}',
+      R + '.lkh-nav i{width:40px;height:40px;flex:0 0 40px;display:flex;align-items:center;justify-content:center;color:' + DUSK + ';}',
+      R + '.lkh-nav i svg{width:18px;height:18px;}',
+      R + '.lkh-nav:hover{background:#EEE6FF;}',
+      R + '.lkh-nav:focus-visible,' + R + '.lkh-tab:focus-visible{outline:2px solid ' + V + ';outline-offset:1px;}',
+      R + '.lkh-nav[aria-current="page"]{background:#EEE6FF;color:' + V + ';font-weight:700;}',
+      R + '.lkh-nav[aria-current="page"] i{color:' + V + ';}',
+      R + '.lkh-n{margin-left:auto;font-size:12px;font-weight:700;line-height:20px;background:#FFF2DF;color:#8A4B00;border-radius:999px;padding:0 8px;}',
+      R + '.lkh-lbl{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:' + SLATE + ';padding:14px 8px 4px;}',
+      R + '.lkh-main{min-width:0;}',
+      R + '.lkh-tabs{display:none;}',
+      R + '.lkh-gear{display:none;}',
+      // home
+      R + '.lkh-hello{display:flex;align-items:center;gap:14px;margin-bottom:18px;}',
+      R + '.lkh-hello .lk-avatar{width:48px;height:48px;font-size:17px;box-shadow:none;}',
+      R + '.lkh-stack{display:flex;flex-direction:column;gap:18px;}',
+      R + '.lkh-stack .lk-sf,' + R + '.lkh-stack .lk-sfr{margin-bottom:0;}',
+      R + '.lkh-next{background:#EEE6FF;border:1px solid #D4BFF9;border-radius:16px;padding:18px;display:flex;align-items:center;gap:12px 20px;flex-wrap:wrap;}',
+      R + '.lkh-next-tx{flex:1 1 300px;min-width:0;}',
+      R + '.lkh-k{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#3D00E0;}',
+      R + '.lkh-next h3{margin:4px 0;font-size:18px;font-weight:700;letter-spacing:-.3px;color:' + INK + ';}',
+      R + '.lkh-next p{margin:0;font-size:14px;color:' + DUSK + ';line-height:1.5;max-width:56ch;}',
+      R + '.lkh-chips{display:flex;flex-wrap:wrap;gap:8px;flex-basis:100%;}',
+      R + '.lkh-chip{font-family:' + F + ';min-height:44px;padding:0 16px;border-radius:100px;border:1px solid #D4BFF9;background:#fff;font-size:14px;font-weight:600;color:' + INK + ';cursor:pointer;}',
+      R + '.lkh-chip:hover{border-color:' + V + ';color:' + V + ';}',
+      R + '.lkh-chip:disabled{opacity:.55;cursor:default;}',
+      R + '.lkh-cols{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:18px;align-items:start;}',
+      R + '.lkh-card{background:#fff;border:1px solid ' + BORDER + ';border-radius:16px;padding:18px;min-width:0;}',
+      R + '.lkh-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 12px;margin-bottom:14px;}',
+      R + '.lkh-head h3{margin:0;font-size:16px;font-weight:700;letter-spacing:-.2px;color:' + INK + ';}',
+      R + '.lkh-more{font-family:' + F + ';font-size:13.5px;font-weight:600;color:' + V + ';background:none;border:none;cursor:pointer;min-height:44px;padding:0 4px;margin:-12px 0;white-space:nowrap;text-decoration:none;display:inline-flex;align-items:center;}',
+      R + '.lkh-hint{margin:12px 0 0;font-size:13.5px;color:' + SLATE + ';line-height:1.5;}',
+      R + '.lkh-bdg{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;}',
+      R + '.lkh-b{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;font-size:12px;font-weight:600;color:' + SLATE + ';line-height:1.25;}',
+      R + '.lkh-b span{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#EEE6FF;color:' + V + ';border:1.5px dashed #D4BFF9;}',
+      R + '.lkh-b.on{color:' + INK + ';}',
+      R + '.lkh-b.on span{background:' + V + ';color:#fff;border:1.5px solid ' + V + ';}',
+      R + '.lkh-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;}',
+      R + '.lkh-tile{display:flex;align-items:center;gap:10px;min-height:52px;padding:8px 12px;border-radius:12px;border:1px solid #EEEDF6;background:#fff;font-size:13.5px;font-weight:600;color:' + INK + ';text-decoration:none;}',
+      R + '.lkh-tile:hover{border-color:' + V + ';}',
+      R + '.lkh-tile i{width:32px;height:32px;border-radius:9px;background:#EEE6FF;color:' + V + ';display:flex;align-items:center;justify-content:center;flex-shrink:0;}',
+      R + '.lkh-tile.done i{background:' + GREENL + ';color:#1A6640;}',
+      R + '.lkh-mini{border:1px dashed ' + BORDER + ';border-radius:14px;padding:22px 16px;text-align:center;font-size:13.5px;color:' + SLATE + ';line-height:1.5;}',
+      R + '.lkh-mini b{display:block;font-size:15px;color:' + INK + ';margin-bottom:4px;}',
+      // saved cards (rows under 992, photo cards from 992)
+      R + '.lkh-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;}',
+      R + '.lkh-grid .lk-row{margin-bottom:0;flex-wrap:nowrap;}',
+      R + '.lkh-grid .lk-thumb{width:64px;height:64px;font-size:17px;}',
+      R + '.lk-row-name a{color:inherit;text-decoration:none;}',
+      R + '.lk-row-name a:hover{color:' + V + ';}',
+      // stretched link: the whole name/category block opens the storefront (44px+ target)
+      R + '.lkh-grid .lk-row-info{position:relative;}',
+      R + '.lkh-grid .lk-row-name a::after{content:"";position:absolute;inset:-10px 0;}',
+      // Home preview rows are narrow: Message is icon-only there at every width
+      R + '.lkh-grid.two .lk-row-actions .lk-btn span,' + R + '.lkh-grid:not(.wide) .lk-row-actions .lk-btn span{display:none;}',
+      R + '.lkh-grid:not(.wide) .lk-row-actions .lk-btn{width:44px;padding:0;flex:0 0 44px;}',
+      R + '.lk-row-name{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
+      R + '.lk-row-sub{font-size:13px;}',
+      R + '.lk-sig{display:inline-block;margin-top:4px;font-size:12px;font-weight:600;color:#1A6640;background:' + GREENL + ';border-radius:100px;padding:1px 8px;}',
+      // 44px targets + readable sizes
+      R + '.lk-btn{min-height:44px;padding:0 16px;font-size:14px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;}',
+      R + '.lk-heart{width:44px;height:44px;border-radius:10px;}',
+      R + '.lk-await-cta{min-height:44px;font-size:14px;padding:0 16px;border-radius:10px;}',
+      R + '.lk-await-av{background:' + V + ';}',
+      R + '.lk-rec button{min-height:44px;padding:0 16px;font-size:14px;}',
+      R + '.lk-rec button.sel-yes,' + R + '.lk-rec-pill,' + R + '.lkg-mini-rec{color:#1A6640;}',
+      R + '.lk-rec-pill{font-size:12.5px;}',
+      R + '.lk-review-foot{gap:4px;}',
+      R + '.lk-review-foot button{min-height:44px;padding:0 10px;font-size:14px;font-weight:600;color:' + DUSK + ';}',
+      R + '.lk-review-foot button:first-child{margin-left:-10px;}',
+      R + '.lk-toggle{width:52px;height:30px;}',
+      R + '.lk-toggle::after{top:3px;left:3px;width:24px;height:24px;}',
+      R + '.lk-toggle::before{content:"";position:absolute;inset:-7px 0;}', // 44px tall hit area
+      R + '.lk-toggle.on::after{transform:translateX(22px);}',
+      R + '.lk-set-row{min-height:44px;}',
+      R + '.lk-input,' + R + '.lk-ta,' + R + '.lk-sf-in{font-size:16px;}', // <16px makes iPhone Safari zoom on focus
+      R + '.lk-input,' + R + '.lk-sf-in{min-height:44px;}',
+      R + '.lk-input{width:260px;}',
+      R + '.lk-intro{font-size:14px;max-width:62ch;}',
+      R + '.lk-group-label{font-size:12px;}',
+      R + '.lk-set-help{font-size:13px;}',
+      R + '.lk-await-sub,' + R + '.lk-review-head .when{font-size:13px;}',
+      R + '.lk-seg-count,' + R + '.lkg-eyebrow,' + R + '.lkg-chip .go,' + R + '.lkg-node-req,' + R + '.lkg-preview-label,' + R + '.lkg-mini-ava,' + R + '.lkg-badge-pill,' + R + '.lkg-mini-rec,' + R + '.lkg-lrow .ord,' + R + '.lkg-lrow .dt{font-size:12px;}',
+      R + '.lkg-lrow .dt{width:64px;}',
+      R + '.lkg-card:first-of-type{margin-top:0;}',
+      // the storefront invitation is secondary on a shopper's page: quiet orange
+      // tint with dark-orange text (white on #FF8D00 measured 2.32:1).
+      R + '.lk-sf{border-style:dashed;background:transparent;}',
+      R + '.lk-sf-icon{background:#FFF2DF;color:#8A4B00;box-shadow:none;}',
+      R + '.lk-sf-cta{background:#FFF2DF;color:#8A4B00;border:1px solid #FFDDB0;min-height:44px;font-size:14px;padding:0 16px;border-radius:10px;}',
+      R + '.lk-sf-cta:hover{opacity:1;background:#FFDDB0;}',
+      R + '.lk-sfr-cta{min-height:44px;display:inline-flex;align-items:center;font-size:14px;border-radius:10px;}',
+      // dirty-only save bar (same behaviour as the vendor Profile page)
+      R + '.lk-save-bar{position:sticky;bottom:12px;z-index:5;align-items:center;justify-content:space-between;gap:12px;background:#fff;border:1px solid #D4BFF9;border-radius:14px;padding:10px 14px;box-shadow:0 8px 24px rgba(61,0,224,.12);font-size:13.5px;color:' + DUSK + ';}',
+      R + '.lk-save-bar[hidden]{display:none;}',
+      '.lk-ac-toast{display:flex;align-items:center;gap:12px;font-size:14px;max-width:calc(100vw - 32px);}',
+      '.lk-ac-toast button{font-family:' + F + ';min-height:40px;padding:0 14px;border-radius:9px;border:none;background:#fff;color:' + V + ';font-weight:700;font-size:13.5px;cursor:pointer;margin:-4px -8px -4px 0;}',
+      '@media (min-width:992px){' +
+        '#lokali-account .lkh-grid.wide{grid-template-columns:repeat(3,minmax(0,1fr));}' +
+        '#lokali-account .lkh-grid.wide .lk-row{flex-direction:column;align-items:stretch;padding:0;overflow:hidden;gap:10px;}' +
+        '#lokali-account .lkh-grid.wide .lk-thumb{width:100%;height:130px;border-radius:0;font-size:26px;}' +
+        '#lokali-account .lkh-grid.wide .lk-row-info{padding:0 14px;flex:0 0 auto;}' +
+        '#lokali-account .lkh-grid.wide .lk-row-actions{padding:0 14px 14px;}' +
+        '#lokali-account .lkh-grid.wide .lk-row-actions .lk-btn{flex:1;}' +
+        '#lokali-account .lkh-grid.two{grid-template-columns:repeat(2,minmax(0,1fr));}' +
+      '}',
+      '@media (max-width:991px){' +
+        '#lokali-account .lkh{grid-template-columns:minmax(0,1fr);gap:0;}' +
+        '#lokali-account .lkh-rail{display:none;}' +
+        '#lokali-account .lkh-tabs{display:flex;gap:2px;position:sticky;z-index:20;background:#fff;border:1px solid #EEEDF6;border-radius:14px;padding:5px;margin-bottom:18px;}' +
+        '#lokali-account .lkh-tab{all:unset;box-sizing:border-box;position:relative;flex:0 0 auto;display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 16px;border-radius:10px;cursor:pointer;font-family:' + "'Plus Jakarta Sans',sans-serif" + ';font-size:14px;font-weight:600;color:#4A4761;white-space:nowrap;}' +
+        '#lokali-account .lkh-tab svg{width:18px;height:18px;}' +
+        '#lokali-account .lkh-tab[aria-current="page"]{background:#EEE6FF;color:#6002EE;}' +
+        '#lokali-account .lkh-gear{display:flex;margin-left:auto;}' +
+        '#lokali-account .lkh-grid.wide{grid-template-columns:repeat(2,minmax(0,1fr));}' +
+        '#lokali-account .lkh-grid .lk-row-actions .lk-btn span{display:none;}' +
+        '#lokali-account .lkh-grid .lk-row-actions .lk-btn{width:44px;padding:0;}' +
+      '}',
+      '@media (max-width:640px){' +
+        '#lokali-account .lkh-tab{flex:1 1 0;min-width:0;flex-direction:column;gap:3px;min-height:54px;padding:4px 2px;font-size:12px;}' +
+        '#lokali-account .lkh-tab .lkh-n{position:absolute;top:3px;left:calc(50% + 6px);}' +
+        '#lokali-account .lkh-cols{grid-template-columns:minmax(0,1fr);}' +
+        '#lokali-account .lkh-tiles{grid-template-columns:repeat(2,minmax(0,1fr));}' +
+        '#lokali-account .lkh-grid.wide{grid-template-columns:minmax(0,1fr);}' +
+        '#lokali-account .lkh-grid .lk-row{flex-wrap:nowrap;}' +
+        '#lokali-account .lkh-grid .lk-row-info{flex-basis:auto;}' +
+        '#lokali-account .lkh-grid .lk-row-actions{width:auto;margin-top:0;}' +
+        '#lokali-account .lkh-grid .lk-row-actions .lk-btn.primary{flex:0 0 44px;}' +
+        '#lokali-account .lkh-next .lk-btn{width:100%;}' +
+        '#lokali-account .lk-await-cta{margin-left:0;width:100%;}' +
+        '#lokali-account .lk-input{width:100%;}' +
+        '#lokali-account .lk-save-bar{bottom:8px;}' +
+      '}',
+      '@media (max-width:360px){#lokali-account .lkh-tab{padding:4px 0;}#lokali-account .lkh-bdg{gap:2px;}#lokali-account .lkh-grid .lk-thumb{width:52px;height:52px;}}'
     ].join('');
     document.head.appendChild(s);
+  }
+
+  // Toast with one action button (Undo). Stays 6s: long enough to read + reach.
+  function toastAction(msg, label, fn) {
+    var t = el('div', 'lk-ac-toast', '<span>' + esc(msg) + '</span>');
+    var b = el('button', null, esc(label)); b.type = 'button';
+    var gone = false;
+    function close() { if (gone) return; gone = true; t.classList.remove('show'); setTimeout(function () { t.remove(); }, 320); }
+    b.addEventListener('click', function () { close(); fn(); });
+    t.appendChild(b);
+    t.setAttribute('role', 'status');
+    document.body.appendChild(t);
+    requestAnimationFrame(function () { t.classList.add('show'); });
+    setTimeout(close, 6000);
   }
 
   function toast(msg) {
@@ -674,7 +831,7 @@
   // ── render: shell ──────────────────────────────────────────
   function currentPane() {
     var h = (location.hash || '').replace('#', '').toLowerCase();
-    return PANES.indexOf(h) >= 0 ? h : 'badges';
+    return PANES.indexOf(h) >= 0 ? h : 'home';
   }
 
   // The dedicated Lokali-admin account (francesca@golokali.com) uses /account
@@ -726,45 +883,56 @@
     // panel + a sign-out, and stop before any shopping/review UI is built.
     if (isAdminOnlyAccount()) { renderAdminHome(mount, acc, name); return; }
 
-    // band
-    var band = el('div', 'lk-band');
-    band.appendChild(avatarNode(acc, 'lk-avatar')); // #76 preset avatar (falls back to initials)
-    var who = el('div');
-    who.appendChild(el('div', 'lk-greet', 'Hi, ' + esc(name)));
-    who.appendChild(el('div', 'lk-meta', areaBits.join(' · ')));
-    band.appendChild(who);
-    var stats = el('div', 'lk-stats');
-    stats.appendChild(el('div', null, '<div class="lk-stat-num">' + state.saved.length + '</div><div class="lk-stat-lbl">Saved</div>'));
-    stats.appendChild(el('div', null, '<div class="lk-stat-num">' + state.mine.length + '</div><div class="lk-stat-lbl">Reviews</div>'));
-    band.appendChild(stats);
-    mount.appendChild(band);
+    // 2026-09-20 hub shell: sidebar at >=992px, visible tab row below it.
+    // Settings stays out of the tab row (five tabs max on a phone) and sits
+    // behind the gear button in the greeting; the sidebar lists everything.
+    mount.style.maxWidth = '1180px';
+    var pane = currentPane();
+    var shell = el('div', 'lkh');
+    var siteHead = document.querySelector('.header-wrapper.w-nav');
+    var headH = siteHead ? siteHead.offsetHeight : 0;
+
+    var rail = el('nav', 'lkh-rail'); rail.setAttribute('aria-label', 'Your account');
+    rail.style.top = (headH + 12) + 'px';
+    var tabs = el('nav', 'lkh-tabs'); tabs.setAttribute('aria-label', 'Your account');
+    tabs.style.top = (headH + 8) + 'px';
+    HUB_NAV.forEach(function (n) {
+      var waiting = (n[0] === 'reviews' && state.awaiting.length) ? state.awaiting.length : 0;
+      var nb = el('button', 'lkh-nav'); nb.type = 'button'; nb.setAttribute('data-nav', n[0]);
+      nb.innerHTML = '<i>' + gIco(n[2], 18) + '</i>' + esc(n[1]) + (waiting ? '<span class="lkh-n">' + waiting + '</span>' : '');
+      nb.addEventListener('click', function () { location.hash = n[0]; show(n[0]); });
+      rail.appendChild(nb);
+      if (n[0] === 'settings') return;
+      var tb = el('button', 'lkh-tab'); tb.type = 'button'; tb.setAttribute('data-nav', n[0]);
+      tb.innerHTML = gIco(n[2], 18) + esc(n[1]) + (waiting ? '<span class="lkh-n">' + waiting + '</span>' : '');
+      tb.addEventListener('click', function () { location.hash = n[0]; show(n[0]); });
+      tabs.appendChild(tb);
+    });
+    rail.appendChild(el('div', 'lkh-lbl', 'Shop'));
+    var mk = el('a', 'lkh-nav', '<i>' + gIco(GI_BAG, 18) + '</i>The Market'); mk.href = '/the-market';
+    rail.appendChild(mk);
+    if (state.hasStorefront) {
+      rail.appendChild(el('div', 'lkh-lbl', 'Sell'));
+      var sd = el('a', 'lkh-nav', '<i>' + gIco(GI_STORE, 18) + '</i>Storefront dashboard'); sd.href = '/vendor-dashboard/dashboard';
+      rail.appendChild(sd);
+    }
+    shell.appendChild(rail);
+
+    var main = el('div', 'lkh-main');
+    main.appendChild(tabs);
 
     // #96-SUGGEST — the Lokali admin panel (overview + specialty-suggestion
     // queue). Renders only when the is_admin-gated data actually loaded.
-    if (state.admin) mount.appendChild(renderAdminPanel());
-
-    // #66 — this is the person's home. People without a storefront get the
-    // "open one (free)" card (Phase 1); owners get a switch-back-to-storefront
-    // strip (Phase 2 identity switcher, person side).
-    if (!state.hasStorefront) mount.appendChild(renderStorefrontCTA());
-    else mount.appendChild(renderStorefrontReturn());
-
-    // segmented
-    var pane = currentPane();
-    var seg = el('div', 'lk-seg-wrap');
-    [['badges', 'Badges', earnedBadgeCount()], ['saved', 'Saved', state.saved.length], ['reviews', 'Reviews', state.mine.length], ['settings', 'Settings', null]].forEach(function (s) {
-      var b = el('button', 'lk-seg' + (pane === s[0] ? ' is-active' : ''));
-      b.innerHTML = esc(s[1]) + (s[2] != null ? ' <span class="lk-seg-count">' + s[2] + '</span>' : '');
-      b.addEventListener('click', function () { location.hash = s[0]; show(s[0]); });
-      seg.appendChild(b);
-    });
-    mount.appendChild(seg);
+    if (state.admin) main.appendChild(renderAdminPanel());
 
     // panes
-    mount.appendChild(renderBadges());
-    mount.appendChild(renderSaved());
-    mount.appendChild(renderReviews());
-    mount.appendChild(renderSettings());
+    main.appendChild(renderHome(acc, name, areaBits));
+    main.appendChild(renderBadges());
+    main.appendChild(renderSaved());
+    main.appendChild(renderReviews());
+    main.appendChild(renderSettings());
+    shell.appendChild(main);
+    mount.appendChild(shell);
 
     show(pane);
   }
@@ -776,9 +944,11 @@
       var node = mount.querySelector('.lk-pane[data-pane="' + p + '"]');
       if (node) node.classList.toggle('is-active', p === pane);
     });
-    var segs = mount.querySelectorAll('.lk-seg');
-    var idx = PANES.indexOf(pane);
-    for (var i = 0; i < segs.length; i++) segs[i].classList.toggle('is-active', i === idx);
+    var navs = mount.querySelectorAll('[data-nav]');
+    for (var i = 0; i < navs.length; i++) {
+      if (navs[i].getAttribute('data-nav') === pane) navs[i].setAttribute('aria-current', 'page');
+      else navs[i].removeAttribute('aria-current');
+    }
   }
 
   // ── Admin-only home (francesca@golokali.com) ──────────────
@@ -2515,6 +2685,164 @@
     return strip;
   }
 
+  // ── pane: Home (2026-09-20) ────────────────────────────────
+  // Production read that day: 23 of 24 accounts had nothing saved, 0 of 24 had
+  // set "Your area" (it sat at the bottom of Settings), 0 inquiries. So the
+  // landing view must work EMPTY and must ask for the area itself. One
+  // next-step card, never more (same idea as the vendor dashboard's).
+  // ⚠️ The six names mirror the ACTIVE rows of public.locations; The Market's
+  // #44 region default matches account.region against those names. Opening a
+  // seventh community means adding it here too.
+  var HUB_AREAS = ['The Woodlands', 'Woodforest', 'Spring', 'Tomball', 'Katy', 'Houston'];
+
+  function nextStepCard() {
+    var card = el('div', 'lkh-next');
+    var tx = el('div', 'lkh-next-tx');
+    tx.appendChild(el('div', 'lkh-k', 'Your next step'));
+    card.appendChild(tx);
+    var acc = state.account || {};
+    if (state.awaiting.length) {
+      var v = vendorOf(state.awaiting[0]);
+      tx.appendChild(el('h3', null, 'How did it go with ' + esc(vendorName(v)) + '?'));
+      tx.appendChild(el('p', null, 'You contacted them through Lokali. Two taps tells your neighbors whether you would recommend them.'));
+      var go = el('button', 'lk-btn primary', 'Share how it went'); go.type = 'button';
+      go.addEventListener('click', function () { location.hash = 'reviews'; show('reviews'); });
+      card.appendChild(go);
+    } else if (!acc.region) {
+      tx.appendChild(el('h3', null, 'Where do you shop?'));
+      tx.appendChild(el('p', null, 'Pick one and The Market shows vendors near you first. You can change it any time in Settings.'));
+      var chips = el('div', 'lkh-chips');
+      HUB_AREAS.forEach(function (city) {
+        var c = el('button', 'lkh-chip', esc(city)); c.type = 'button';
+        c.addEventListener('click', function () {
+          var all = chips.querySelectorAll('button');
+          for (var i = 0; i < all.length; i++) all[i].disabled = true;
+          var region = city + ', TX';
+          api().account.update({ region: region }).then(function (res) {
+            if (res && res.error) {
+              for (var j = 0; j < all.length; j++) all[j].disabled = false;
+              toast('Couldn’t save your area. Please try again.');
+              return;
+            }
+            state.account.region = region;
+            rerender();
+            toast('Saved. The Market now starts with ' + city + '.');
+          }, function () {
+            for (var k = 0; k < all.length; k++) all[k].disabled = false;
+            toast('Couldn’t save your area. Please try again.');
+          });
+        });
+        chips.appendChild(c);
+      });
+      card.appendChild(chips);
+    } else {
+      tx.appendChild(el('h3', null, state.saved.length ? 'See who is new near you' : 'Find your first local favorite'));
+      tx.appendChild(el('p', null, 'The Market starts with vendors near ' + esc(acc.region) + '. Tap the heart on anyone you want to come back to.'));
+      var a = el('a', 'lk-btn primary', 'Browse The Market'); a.href = '/the-market';
+      card.appendChild(a);
+    }
+    return card;
+  }
+
+  function badgeStrip() {
+    var b = state.badges || {};
+    var cats = (b.explorer && b.explorer.categories) || [];
+    var rc = (b.reviews && b.reviews.count) || 0;
+    var defs = [
+      [GI_COMPASS, 'Explorer', cats.length && cats.every(function (c) { return c && c.explored; })],
+      [GI_STAR, 'First review', rc >= 1],
+      [GI_HEART, 'Regular', rc >= 5],
+      [GI_FLAG, 'Scout', ((b.scout && b.scout.count) || 0) >= 1],
+      [GI_SHARE, 'Connector', ((b.connector && b.connector.count) || 0) >= 5]
+    ];
+    var strip = el('div', 'lkh-bdg');
+    defs.forEach(function (d) { strip.appendChild(el('div', 'lkh-b' + (d[2] ? ' on' : ''), '<span>' + gIco(d[0], 20) + '</span>' + esc(d[1]))); });
+    return strip;
+  }
+
+  function renderHome(acc, name, areaBits) {
+    var pane = el('div', 'lk-pane'); pane.setAttribute('data-pane', 'home');
+    var stack = el('div', 'lkh-stack');
+
+    // owners: the switch back to the storefront comes first
+    if (state.hasStorefront) stack.appendChild(renderStorefrontReturn());
+
+    var hello = el('div', 'lkh-hello');
+    hello.style.marginBottom = '0';
+    hello.appendChild(avatarNode(acc, 'lk-avatar')); // #76 preset avatar (falls back to initials)
+    var who = el('div');
+    who.appendChild(el('div', 'lk-greet', 'Hi, ' + esc(name)));
+    who.appendChild(el('div', 'lk-meta', areaBits.join(' · ')));
+    hello.appendChild(who);
+    var gear = el('button', 'lk-heart lkh-gear', gIco(GI_GEAR, 18)); gear.type = 'button';
+    gear.setAttribute('aria-label', 'Settings');
+    gear.addEventListener('click', function () { location.hash = 'settings'; show('settings'); });
+    hello.appendChild(gear);
+    stack.appendChild(hello);
+
+    stack.appendChild(nextStepCard());
+
+    var cols = el('div', 'lkh-cols');
+    var sc = el('div', 'lkh-card');
+    var sh = el('div', 'lkh-head'); sh.appendChild(el('h3', null, 'Saved vendors'));
+    if (state.saved.length) {
+      var all = el('button', 'lkh-more', 'See all ' + state.saved.length); all.type = 'button';
+      all.addEventListener('click', function () { location.hash = 'saved'; show('saved'); });
+      sh.appendChild(all);
+    }
+    sc.appendChild(sh);
+    if (state.saved.length) {
+      var g = el('div', 'lkh-grid'); // one column: two-up truncated vendor names at 1320px
+      state.saved.slice(0, 3).forEach(function (row) { g.appendChild(savedRow(row, true)); });
+      sc.appendChild(g);
+    } else {
+      sc.appendChild(el('div', 'lkh-mini', '<b>Nothing saved yet</b>Tap the heart on any vendor in The Market and they will wait for you here.'));
+    }
+    cols.appendChild(sc);
+
+    var bc = el('div', 'lkh-card');
+    var bh = el('div', 'lkh-head'); bh.appendChild(el('h3', null, 'Your badges'));
+    var earned = earnedBadgeCount();
+    var bm = el('button', 'lkh-more', earned ? (earned + ' of 5 earned') : 'How they work'); bm.type = 'button';
+    bm.addEventListener('click', function () { location.hash = 'badges'; show('badges'); });
+    bh.appendChild(bm); bc.appendChild(bh);
+    bc.appendChild(badgeStrip());
+    var cats = (state.badges && state.badges.explorer && state.badges.explorer.categories) || [];
+    var nExp = cats.filter(function (c) { return c && c.explored; }).length;
+    if (cats.length) {
+      bc.appendChild(el('p', 'lkh-hint', nExp >= cats.length
+        ? 'Every category explored. Status only, no perks.'
+        : (nExp ? 'You have explored ' + nExp + ' of ' + cats.length + ' categories already. ' : 'Browse any category to start your Explorer badge. ') + 'Status only, no perks.'));
+    }
+    cols.appendChild(bc);
+    stack.appendChild(cols);
+
+    if (cats.length) {
+      var ec = el('div', 'lkh-card');
+      var eh = el('div', 'lkh-head'); eh.appendChild(el('h3', null, 'Keep exploring'));
+      var em = el('a', 'lkh-more', 'Open The Market'); em.href = '/the-market'; eh.appendChild(em);
+      ec.appendChild(eh);
+      var tiles = el('div', 'lkh-tiles');
+      cats.forEach(function (c) {
+        if (!c) return;
+        var t = el('a', 'lkh-tile' + (c.explored ? ' done' : ''));
+        t.href = '/the-market?category=' + encodeURIComponent(c.slug || '');
+        t.appendChild(el('i', null, c.explored ? CHECK_ICO : catIco(c.id)));
+        var nm = el('span'); nm.textContent = c.name || ''; t.appendChild(nm);
+        tiles.appendChild(t);
+      });
+      ec.appendChild(tiles);
+      stack.appendChild(ec);
+    }
+
+    // #66 — shoppers without a storefront still get the invitation, below
+    // their own content and in the quiet style (they came here to shop).
+    if (!state.hasStorefront) stack.appendChild(renderStorefrontCTA());
+
+    pane.appendChild(stack);
+    return pane;
+  }
+
   // ── pane: Saved ────────────────────────────────────────────
   function renderSaved() {
     var pane = el('div', 'lk-pane'); pane.setAttribute('data-pane', 'saved');
@@ -2522,12 +2850,15 @@
     if (!state.saved.length) {
       pane.appendChild(emptyState('Nothing saved yet', 'When you find a vendor you like, tap the heart to keep them here for later.', 'Browse vendors', '/the-market'));
     } else {
-      state.saved.forEach(function (row) { pane.appendChild(savedRow(row)); });
+      var grid = el('div', 'lkh-grid wide');
+      state.saved.forEach(function (row) { grid.appendChild(savedRow(row)); });
+      pane.appendChild(grid);
     }
     return pane;
   }
 
-  function savedRow(row) {
+  // compact = Home preview: Message only, no unsave (that lives on Saved).
+  function savedRow(row, compact) {
     var v = vendorOf(row);
     var vid = v.id != null ? v.id : row.vendors_id;
     var r = el('div', 'lk-row');
@@ -2535,30 +2866,44 @@
     thumbPhoto(thumb, v); // upgrade to the real profile photo when there is one
     r.appendChild(thumb);
     var info = el('div', 'lk-row-info');
-    info.appendChild(el('div', 'lk-row-name', esc(vendorName(v))));
+    info.appendChild(el('div', 'lk-row-name', '<a href="' + esc(vendorHref(v)) + '">' + esc(vendorName(v)) + '</a>'));
     var sub = el('div', 'lk-row-sub');
     var cat = vendorCat(v);
     sub.innerHTML = (cat ? '<span class="cat">' + esc(cat) + '</span>' : '') + (v.city ? (cat ? ' · ' : '') + esc(v.city) : '');
     info.appendChild(sub);
     r.appendChild(info);
     var actions = el('div', 'lk-row-actions');
-    var view = el('button', 'lk-btn primary', 'View');
-    view.addEventListener('click', function () { window.location.href = vendorHref(v); });
-    var contact = el('button', 'lk-btn ghost', 'Contact');
-    // #contact lands at the listing's contact block — distinct from View.
-    contact.addEventListener('click', function () { window.location.href = vendorHref(v) + '#contact'; });
-    var heart = el('button', 'lk-heart', '<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>');
-    heart.title = 'Remove from saved';
-    heart.addEventListener('click', function () {
-      heart.disabled = true;
-      api().request('favorites', 'DELETE', '/favorites/' + encodeURIComponent(vid), null, true).then(function (res) {
-        if (res && res.error) { heart.disabled = false; toast('Could not remove'); return; }
-        state.saved = state.saved.filter(function (x) { return (vendorOf(x).id != null ? vendorOf(x).id : x.vendors_id) != vid; });
-        r.style.transition = 'opacity .2s'; r.style.opacity = '0';
-        setTimeout(function () { rerender(); toast('Removed from saved'); }, 180);
+    // Message is the action that earns the vendor a lead, so it is ALWAYS
+    // visible (the old Contact button was display:none under 640px). The
+    // vendor name + photo are the link to the storefront.
+    var msg = el('a', 'lk-btn primary', gIco(GI_MSG, 16) + '<span>Message</span>');
+    msg.href = vendorHref(v) + '#contact';
+    msg.setAttribute('aria-label', 'Message ' + vendorName(v));
+    actions.appendChild(msg);
+    if (!compact) {
+      var heart = el('button', 'lk-heart', '<svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>');
+      heart.type = 'button';
+      heart.title = 'Remove from saved';
+      heart.setAttribute('aria-label', 'Remove ' + vendorName(v) + ' from saved');
+      heart.addEventListener('click', function () {
+        heart.disabled = true;
+        var at = state.saved.indexOf(row);
+        api().request('favorites', 'DELETE', '/favorites/' + encodeURIComponent(vid), null, true).then(function (res) {
+          if (res && res.error) { heart.disabled = false; toast('Could not remove'); return; }
+          state.saved = state.saved.filter(function (x) { return x !== row; });
+          rerender();
+          // Undo re-saves through the same endpoint the heart on a listing uses.
+          toastAction('Removed ' + vendorName(v), 'Undo', function () {
+            api().request('favorites', 'POST', '/favorites', { vendors_id: vid }, true).then(function (r2) {
+              if (r2 && r2.error) { toast('Couldn’t put it back. Save them again from their page.'); return; }
+              state.saved.splice(Math.min(Math.max(at, 0), state.saved.length), 0, row);
+              rerender();
+            });
+          });
+        });
       });
-    });
-    actions.appendChild(view); actions.appendChild(contact); actions.appendChild(heart);
+      actions.appendChild(heart);
+    }
     r.appendChild(actions);
     return r;
   }
@@ -2618,6 +2963,13 @@
   var GI_HEART = '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>';
   var GI_FLAG = '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/>';
   var GI_SHARE = '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>';
+  var GI_HOME = '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/>';
+  var GI_GEAR = '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>';
+  var GI_BAG = '<path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/>';
+  var GI_STORE = '<path d="M3 9l1.5-5h15L21 9"/><path d="M4 9v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9"/><path d="M9 20v-6h6v6"/>';
+  var GI_MSG = '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>';
+  // Hub navigation, in order. Settings is rail-only (gear button elsewhere).
+  var HUB_NAV = [['home', 'Home', GI_HOME], ['saved', 'Saved', GI_HEART], ['reviews', 'Reviews', GI_STAR], ['badges', 'Badges', GI_COMPASS], ['settings', 'Settings', GI_GEAR]];
   // Category icons by seeded id (1 handcrafted … 8 home, 9 professional); unknown → tag.
   var CAT_ICOS = {
     1: 'M12 19l7-7 3 3-7 7-3-3zM18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5zM2 2l7.586 7.586M11 11a2 2 0 1 0 4 0 2 2 0 0 0-4 0z',
@@ -3081,6 +3433,15 @@
     pane.appendChild(nc);
 
     var bar = el('div', 'lk-save-bar');
+    bar.hidden = true; // appears on the first change (vendor Profile page pattern)
+    bar.appendChild(el('span', null, 'You have unsaved changes'));
+    function markDirty() { bar.hidden = false; }
+    pane.addEventListener('input', markDirty);
+    pane.addEventListener('lk-area-picked', markDirty);
+    pane.addEventListener('click', function (e) {
+      var t = e.target && e.target.closest ? e.target.closest('.lk-toggle,[data-av]') : null;
+      if (t && pc.contains(t) || t && nc.contains(t)) markDirty();
+    });
     var saveBtn = el('button', 'lk-btn primary', 'Save changes');
     saveBtn.addEventListener('click', function () {
       saveBtn.disabled = true;
@@ -3112,6 +3473,7 @@
         try {
           if (api().account.syncNewsletter) api().account.syncNewsletter();
         } catch (e) {}
+        bar.hidden = true;
         toast('Changes saved');
       });
     });
