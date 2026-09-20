@@ -852,7 +852,17 @@
     var raf = 0;
     function refit() {
       if (raf) return;
-      raf = requestAnimationFrame(function () { raf = 0; fitHeaderNav(); fitHeaderSearch(form); }); // nav first: its tier changes what the field measures against
+      raf = requestAnimationFrame(function () {
+        raf = 0;
+        // Order matters (measured live at 1440 signed out, 2026-09-20): with the nav check
+        // first, the INLINE search field caused the collision and the nav text shrank to make
+        // room for it. The field should yield first (magnifier), full-size links stay; the nav
+        // tiers only step in if the header still collides after that.
+        var de = document.documentElement;
+        de.classList.remove('lok-nav-t2'); de.classList.remove('lok-nav-t3');
+        fitHeaderSearch(form);
+        fitHeaderNav();
+      });
     }
     refit();
     window.addEventListener('resize', refit);
