@@ -243,6 +243,7 @@
     'first_name', 'last_name', 'phone_number', 'preferred_language', 'region',
     'notif_letter', 'notif_vendor_replies', 'notif_review_reminders',
     'notif_circle', // #170 The Lokali Circle (vendor-only email) opt-out
+    'notif_saved_updates', // Followers: weekly email about vendors you saved (patch_vendor_posts.sql)
     'avatar' // #76 customer-dashboard preset avatar id
   ];
   // The public vendor surface — exactly the column grant in
@@ -615,6 +616,42 @@
       // email); the route re-verifies the vendor session + row ownership.
       notifyOffered: function (waitlistId) {
         return postRoute('/availability/notify', { kind: 'offer', waitlistId: waitlistId }, true);
+      }
+    },
+    // ---- Followers: vendor updates (patch_vendor_posts.sql, 2026-09-20) --------
+    // RLS does the gating: anyone reads a live vendor's posts, only the owner
+    // writes. kind is fixed at insert; removal is a soft delete (deleted_at).
+    posts: {
+      forVendor: function (vendorId, limit) {
+        return withClient(function (c) {
+          return c.from('vendor_posts')
+            .select('id,created_at,vendors_id,kind,body,place,starts_at,ends_at,repeats_weekly')
+            .eq('vendors_id', vendorId).is('deleted_at', null)
+            .order('created_at', { ascending: false }).limit(limit || 12);
+        });
+      },
+      create: function (vendorId, f) {
+        f = f || {};
+        return withClient(function (c) {
+          return c.from('vendor_posts').insert({
+            vendors_id: vendorId, kind: f.kind, body: f.body || '',
+            place: f.place || null, starts_at: f.starts_at || null, ends_at: f.ends_at || null,
+            repeats_weekly: f.repeats_weekly === true
+          }).select('id,created_at,vendors_id,kind,body,place,starts_at,ends_at,repeats_weekly').single();
+        });
+      },
+      remove: function (postId) {
+        return withClient(function (c) {
+          return c.from('vendor_posts').update({ deleted_at: new Date().toISOString() }).eq('id', postId);
+        });
+      },
+      // Owner only: { ok, followers, new_7d, emailable }. A count, never who.
+      followerStats: function () {
+        return withClient(function (c) { return c.rpc('my_follower_stats'); });
+      },
+      // Public: upcoming "where" posts with vendor card fields, repeats rolled forward.
+      weekendFeed: function (days) {
+        return withClient(function (c) { return c.rpc('weekend_feed', { p_days: days || 9 }); });
       }
     },
     reviews: {

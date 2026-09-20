@@ -1542,6 +1542,127 @@
     else card.insertBefore(el, card.firstChild);
   }
 
+  // ── Followers: vendor updates on the storefront (patch_vendor_posts.sql) ─────
+  // "Where to find me" (upcoming stops, weekly repeats rolled forward, next 14
+  // days) plus the latest non-where update from the last 30 days. Renders
+  // NOTHING when the vendor has posted nothing current: no empty card. Saving the
+  // vendor is what subscribes a customer to the weekly email, so the card says so
+  // and its button drives the existing Save button (no second save path).
+  var UPD_LABEL = { 'new': 'New', orders: 'Orders open', soldout: 'Sold out' };
+  function updNext(p, now) {
+    var t = Date.parse(p.starts_at);
+    if (!isFinite(t)) return null;
+    if (p.repeats_weekly && t < now) t += Math.ceil((now - t) / 604800000) * 604800000;
+    return t;
+  }
+  function updWhen(p, start) {
+    var d = new Date(start);
+    var day = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    var tm = function (ms) { return new Date(ms).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }).replace(':00', ''); };
+    var out = day + ', ' + tm(start);
+    var dur = p.ends_at ? Date.parse(p.ends_at) - Date.parse(p.starts_at) : NaN;
+    if (isFinite(dur) && dur > 0) out += ' to ' + tm(start + dur);
+    return out + (p.repeats_weekly ? ' · every week' : '');
+  }
+  function injectUpdateStyles() {
+    if (document.getElementById('vl-upd-styles')) return;
+    var F = '"Plus Jakarta Sans",sans-serif';
+    var st = document.createElement('style'); st.id = 'vl-upd-styles';
+    st.textContent = [
+      '.vl-upd{background:#fff;border:1px solid #DEDAEE;border-radius:16px;padding:18px;font-family:' + F + ';}',
+      '.vl-upd-stop{display:flex;gap:12px;align-items:center;padding:10px 0;border-top:1px solid #EEEDF6;}',
+      '.vl-upd-stop:first-child{border-top:0;padding-top:0;}',
+      '.vl-upd-date{flex:none;width:48px;border-radius:12px;background:#F3EBFF;color:#6002EE;text-align:center;padding:6px 0;line-height:1.1;}',
+      '.vl-upd-date b{display:block;font:800 17px/1.1 ' + F + ';}',
+      '.vl-upd-date span{font:700 10.5px/1 ' + F + ';letter-spacing:.06em;text-transform:uppercase;}',
+      '.vl-upd-place{font:700 14.5px/1.35 ' + F + ';color:#1A1829;}',
+      '.vl-upd-sub{font:500 13px/1.45 ' + F + ';color:#6B6880;margin-top:2px;}',
+      '.vl-upd-note{background:#FFF0E6;border:1px solid #F6D9BE;border-radius:12px;padding:11px 13px;margin-top:12px;font:500 14px/1.5 ' + F + ';color:#8A4B14;overflow-wrap:anywhere;}',
+      '.vl-upd-note b{display:block;font:700 11px/1.2 ' + F + ';letter-spacing:.06em;text-transform:uppercase;margin-bottom:3px;}',
+      '.vl-upd-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:14px;}',
+      '.vl-upd-hint{font:500 12.5px/1.45 ' + F + ';color:#6B6880;flex:1 1 200px;}',
+      '.vl-upd-save{font:700 13.5px/1 ' + F + ';background:#F3EBFF;color:#6002EE;border:0;border-radius:999px;padding:11px 16px;min-height:44px;cursor:pointer;}',
+      '.vl-upd-save:focus-visible{outline:3px solid #C9B3FA;outline-offset:2px;}'
+    ].join('\n');
+    document.head.appendChild(st);
+  }
+  function renderUpdates(vendorId, vendorName) {
+    var SB = window.LokaliSupabaseAPI;
+    if (!SB || !SB.posts || typeof SB.posts.forVendor !== 'function') return; // absent until the client tag
+    SB.posts.forVendor(vendorId, 20).then(function (res) {
+      var rows = (res && Array.isArray(res.data)) ? res.data : [];
+      var main = document.querySelector('.vl-op-main');
+      if (!rows.length || !main || document.getElementById('vl-op-sec-updates')) return;
+      var now = Date.now();
+      var stops = [];
+      rows.forEach(function (p) {
+        if (p.kind !== 'where') return;
+        var n = updNext(p, now - 3 * 3600000);
+        if (n != null && n < now + 14 * 86400000 && n >= now - 3 * 3600000) stops.push({ p: p, at: n });
+      });
+      stops.sort(function (a, b) { return a.at - b.at; });
+      stops = stops.slice(0, 4);
+      var note = null;
+      for (var i = 0; i < rows.length; i++) {
+        if (rows[i].kind !== 'where' && (now - Date.parse(rows[i].created_at)) < 30 * 86400000) { note = rows[i]; break; }
+      }
+      if (!stops.length && !note) return;
+
+      injectUpdateStyles();
+      var sec = ce('section', 'vl-op-sec'); sec.id = 'vl-op-sec-updates';
+      var h = ce('h2', 'vl-op-h'); h.textContent = stops.length ? 'Where to find ' + (vendorName || 'them') : 'Latest update';
+      sec.appendChild(h);
+      var card = ce('div', 'vl-upd');
+      stops.forEach(function (s) {
+        var row = ce('div', 'vl-upd-stop');
+        var d = new Date(s.at);
+        var date = ce('div', 'vl-upd-date');
+        var wk = ce('span'); wk.textContent = d.toLocaleDateString('en-US', { weekday: 'short' });
+        var dn = ce('b'); dn.textContent = String(d.getDate());
+        date.appendChild(wk); date.appendChild(dn);
+        var txt = ce('div');
+        var pl = ce('div', 'vl-upd-place'); pl.textContent = s.p.place || '';
+        var sub = ce('div', 'vl-upd-sub'); sub.textContent = updWhen(s.p, s.at) + (s.p.body ? ' · ' + s.p.body : '');
+        txt.appendChild(pl); txt.appendChild(sub);
+        row.appendChild(date); row.appendChild(txt);
+        card.appendChild(row);
+      });
+      if (note) {
+        var nb = ce('div', 'vl-upd-note');
+        var lab = ce('b'); lab.textContent = UPD_LABEL[note.kind] || 'Update';
+        nb.appendChild(lab);
+        nb.appendChild(document.createTextNode(note.body || ''));
+        card.appendChild(nb);
+      }
+      var saveBtn = document.getElementById('vl-save');
+      if (saveBtn) {
+        var foot = ce('div', 'vl-upd-foot');
+        var hint = ce('span', 'vl-upd-hint');
+        hint.textContent = 'Save ' + (vendorName || 'this vendor') + ' and their updates arrive in one weekly email. You can turn it off any time.';
+        var sv = ce('button', 'vl-upd-save'); sv.type = 'button'; sv.textContent = 'Save to follow';
+        var sync = function () { sv.style.display = /vl-save-on/.test(saveBtn.className) ? 'none' : ''; };
+        sv.addEventListener('click', function () { saveBtn.click(); setTimeout(sync, 1500); });
+        window.addEventListener('lokali:favorites-synced', sync);
+        sync(); setTimeout(sync, 2500);
+        foot.appendChild(hint); foot.appendChild(sv);
+        card.appendChild(foot);
+      }
+      sec.appendChild(card);
+      // Lead the column, right below the jump links (same slot logic as the showcase).
+      var nav = document.getElementById('vl-op-nav');
+      var navBar = nav && nav.parentNode && nav.parentNode.id === 'vl-op-navbar' ? nav.parentNode : null;
+      var first = (navBar && navBar.parentNode === main) ? navBar.nextSibling : main.querySelector('.vl-op-sec');
+      if (first) main.insertBefore(sec, first); else main.appendChild(sec);
+      if (nav && !document.getElementById('vl-op-nav-updates')) {
+        var link = ce('a'); link.id = 'vl-op-nav-updates'; link.href = '#vl-op-sec-updates';
+        link.textContent = stops.length ? 'Find them' : 'Update';
+        link.addEventListener('click', function (ev) { ev.preventDefault(); sec.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+        nav.insertBefore(link, nav.firstChild);
+        opNavFadeSync(nav); opNavSync();
+      }
+    }).catch(function () {});
+  }
+
   function renderShowcase(s) {
     var main = document.querySelector('.vl-op-main');
     var nav = document.getElementById('vl-op-nav');
@@ -3383,6 +3504,7 @@
       fetchListWithRetry(function () { return API.products.listByVendor(vid); })
         .then(function (pres) { renderProducts(asArray(unwrap(pres)), !(pres && pres.error)); });
       renderReviews(vid, v.business_name || '');
+      renderUpdates(vid, v.business_name || '');
     });
   }
 

@@ -437,9 +437,26 @@
       else if (href.indexOf('/vendor-dashboard/products') === 0) out.products = a;
       else if (href.indexOf('/vendor-dashboard/availability') === 0) out.availability = a;
       else if (href.indexOf('/vendor-dashboard/marketing') === 0) out.marketing = a;
+      else if (href.indexOf('/vendor-dashboard/followers') === 0) out.followers = a;
       else if (href.indexOf('/vendor-dashboard/analytics') === 0 || t === 'Analytics') out.analytics = a;
       else if (href.indexOf('/vendor-dashboard/leads') === 0 || t === 'Leads') out.leads = a;
       else if (href.indexOf('view-listing') >= 0 || /^(View storefront|My Storefront|My Listing)$/.test(t)) out.storefront = a;
+    }
+    // Followers (2026-09-20): the row does not exist in the Webflow menu, and this
+    // script could only reorder rows that do. Build it once, in the menu's own
+    // markup (dashboard-btn > icon-div + text-block-17 > strong.dashboard-menu), so
+    // every existing rule styles it. Icon = the Save heart: saving IS following.
+    if (!out.followers && out.leads) {
+      var f = document.createElement('a');
+      f.href = '/vendor-dashboard/followers';
+      f.className = 'dashboard-btn w-inline-block';
+      var on = /^\/vendor-dashboard\/followers(\/|$)/.test(String(window.location.pathname || ''));
+      if (on) { f.className += ' w--current'; f.setAttribute('aria-current', 'page'); }
+      f.innerHTML = '<div class="icon-div"><svg class="dashboard-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" style="width:18px;height:18px;display:block;">' +
+        '<path fill="' + (on ? '#6002EE' : '#1A1829') + '" d="M12 20.5l-1.4-1.27C5.6 14.86 2.5 12.07 2.5 8.6 2.5 6.1 4.5 4.1 7 4.1c1.5 0 2.95.7 3.9 1.81C11.85 4.8 13.3 4.1 14.8 4.1c2.5 0 4.5 2 4.5 4.5 0 3.47-3.1 6.26-8.1 10.63L12 20.5z"/></svg></div>' +
+        '<div class="text-block-17"><strong class="dashboard-menu">Followers</strong></div>';
+      parent.insertBefore(f, out.leads.nextSibling);
+      out.followers = f;
     }
     return out;
   }
@@ -466,7 +483,7 @@
     label('store', 'Your storefront');
     move(r.profile); move(r.services); move(r.products); move(r.availability); move(r.storefront);
     label('grow', 'Grow');
-    move(r.leads); move(r.analytics); move(r.marketing);
+    move(r.leads); move(r.followers); move(r.analytics); move(r.marketing);
     // External mark on the storefront row (its href is rewritten to the live
     // storefront by lokali-dashboard.js, which also sets target=_blank).
     if (r.storefront && !r.storefront.querySelector('.lok-nav-ext')) {
