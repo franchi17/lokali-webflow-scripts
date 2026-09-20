@@ -177,9 +177,9 @@
     var d = this.draft, k = this.kind, st = this.stats;
     var kd = KINDS.filter(function (x) { return x.k === k; })[0];
     var n = st ? st.followers : 0;
-    var html = '<h1 class="lkf-h1">Followers</h1>' +
-      '<p class="lkf-lede">When a shopper saves your storefront, they follow you. Post a quick update here and it shows on your storefront right away, then goes out in one weekly email to everyone who saved you.</p>' +
-      '<div class="lkf-card"><div class="lkf-stats">' +
+    // The page title + sub-line are Webflow's own (Heading 20 + .subheader), like
+    // every other dashboard page, so this starts at the numbers.
+    var html = '<div class="lkf-card"><div class="lkf-stats">' +
         '<div class="lkf-stat"><b>' + (st ? st.followers : 0) + '</b><span>' + (n === 1 ? 'follower' : 'followers') + '</span></div>' +
         '<div class="lkf-stat"><b>' + (st ? st.new_7d : 0) + '</b><span>new this week</span></div>' +
         '<div class="lkf-stat"><b>' + (st ? st.emailable : 0) + '</b><span>get the weekly email</span></div>' +
