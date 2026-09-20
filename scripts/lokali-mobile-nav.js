@@ -152,6 +152,15 @@
       // #179 two-row phone header. Everything is scoped to html.lok-row2 (set only
       // once row 2 exists), so a page without it keeps the one-row header intact.
       '#lok-row2{display:none;}',
+      // Site footer on phones (whole-site test 2026-09-19). Links were 22-24px tall; WCAG
+      // 2.2 asks for 24 and thumbs want more, so nav links get a 36px row and the legal row
+      // 32px (F accepted a slightly longer footer). The legal row did not wrap, which pushed
+      // /login and /sign-up 46px sideways at 320px.
+      '@media screen and (max-width:767px){',
+      '.lok-ft-nav a{display:flex!important;align-items:center;min-height:36px;}',
+      '.lok-ft-legal{flex-wrap:wrap!important;row-gap:0;min-width:0!important;}', // it carried min-width:350px, wider than a 320px phone
+      '.lok-ft-legallink{display:inline-flex!important;align-items:center;min-height:32px;}',
+      '}',
       '@media screen and (max-width:767px){',
       'html.lok-row2 .header-wrapper{padding-top:10px!important;padding-bottom:2px!important;}',
       'html.lok-row2 .header-wrapper .hamburger-menu-wrapper{display:none!important;}',
@@ -693,6 +702,12 @@
       st.id = 'lok-hdr-search-css';
       st.textContent = [
         '#lok-hdr-search{display:flex;align-items:center;position:relative;margin-right:14px;}',
+        // Phones under 375px on the pages WITHOUT row 2 (login, sign-up, checkout): logo +
+        // magnifier + Login + burger ran 46px past the screen (measured 2026-09-19).
+        // Search matters least on an auth page, so it is the one that yields.
+        // (measured: still 6px over at 360, fine from 375, hence 374; a container-padding
+        // rule was tried and made it WORSE, the burger's margin is the 2px that remained)
+        '@media (max-width:374px){html:not(.lok-row2) #lok-hdr-search{display:none !important;}html:not(.lok-row2) .header-wrapper .hamburger-menu-wrapper{margin-left:6px !important;}}',
         // 16px font (iOS zoom floor) + explicit Plus Jakarta Sans (inputs never inherit it).
         // Resting width = placeholder + padding: "What do you need?" measures 146px
         // at 500/16px PJS (Safari, 2026-09-02) and the old 180px box left 126px of

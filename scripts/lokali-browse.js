@@ -296,6 +296,16 @@
 
   /* Card + filter-panel CSS — injected once so the script's UI is fully styled. */
   var CSS = [
+    // "About The Market" block (Designer classes): its columns are fixed at 280px,
+    // but with 32px page + 44px block padding the space is only 207px at 375 and
+    // 152px at 320, so the copy was CLIPPED on ordinary phones and pushed the page
+    // sideways at 320 (measured 2026-09-19). Columns may now shrink to the space,
+    // and phones give the block its padding back.
+    '.mkt-about-cols{grid-template-columns:repeat(auto-fit,minmax(min(280px,100%),1fr)) !important;}',
+    '.mkt-about-col{min-width:0;}',
+    '@media (max-width:767px){.mkt-about{padding-left:20px !important;padding-right:20px !important;}.mkt-about-p,.mkt-about-h3{overflow-wrap:anywhere;}}',
+    // the two bottom CTA cards hold a 293px width; at 320px that ran 20px off the screen
+    '@media (max-width:359px){.bottom-cta-card-cta-card-light,.bottom-cta-card-cta-card-dark{min-width:0 !important;width:100% !important;max-width:100% !important;box-sizing:border-box;}}',
     // ── card ──
     // Card redesign 2026-08-29 (Francesca's Direction A): image-led cover (the
     // vendor's WORK, never the logo — the avatar carries identity), tagline in
@@ -2042,7 +2052,7 @@
       // #97: alt DELIBERATELY empty — the business name is the card's visible
       // title right next to this avatar, so a non-empty alt would make screen
       // readers announce every vendor twice. Decorative-adjacent-text rule.
-      var img = ce('img', 'vcard-avatar-img'); imgSet(img, photo, 240); img.alt = '';
+      var img = ce('img', 'vcard-avatar-img'); imgSet(img, photo, 240); img.alt = ''; img.loading = 'lazy'; img.decoding = 'async'; // below-the-fold avatars were the Market's only eager images (12 on 09-19)
       img.addEventListener('error', function () { if (img.parentNode) avatar.removeChild(img); fillInitials(); });
       avatar.appendChild(img);
     } else {
