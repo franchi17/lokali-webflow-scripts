@@ -674,6 +674,56 @@
   // name length), so measure: if the inline field would sit within 20px of the
   // last nav link, fall back to the magnifier. Measured with the class OFF so
   // the answer never depends on the current mode (no flip-flopping).
+  // Desktop nav fit (whole-site test 2026-09-19/20). Signed OUT at 1150-1290px the centred
+  // links ran under the logo on the left AND into the magnifier on the right (-45px at 1150,
+  // clean only from 1300). Two CSS tiers fix the known case (see HDR_FIT_CSS); this measures
+  // for the cases a width cannot know, e.g. a signed-in shopper, whose right side carries the
+  // bell + account chip + "Open your storefront" at once: tier 2 at any width, and if the
+  // links STILL collide the header CTA yields (it also lives in the footer and on Home).
+  // Measured with the classes OFF first, so the answer never depends on the current mode.
+  function hdrT2(pre) { // pre = '' inside a width query, 'html.lok-nav-t2 ' when measured
+    return pre + '.header-wrapper .header-nav-list-item{padding-right:8px!important}' +
+      pre + '.header-wrapper .header-nav-link,' + pre + '.header-wrapper .lok-res-trig{font-size:14.5px!important}' +
+      pre + '.header-right-side .button-6{padding-left:10px!important;padding-right:10px!important}' +
+      pre + '.header-right-side .btn-secondary{margin-left:6px!important;padding-left:10px!important;padding-right:10px!important;font-size:14.5px!important}';
+  }
+  var HDR_FIT_CSS = [
+    '@media screen and (min-width:1150px) and (max-width:1379px){',
+    '.header-wrapper .header-nav-list-item{padding-right:12px!important}',
+    '.header-wrapper .header-nav-link,.header-wrapper .lok-res-trig{font-size:15px!important}',
+    '.header-right-side .button-6{padding-left:12px!important;padding-right:12px!important}',
+    '.header-right-side .btn-secondary{margin-left:8px!important;padding-left:12px!important;padding-right:12px!important;font-size:15px!important}',
+    '#lok-hdr-search{margin-right:0!important}',
+    '}',
+    '@media screen and (min-width:1150px) and (max-width:1199px){' + hdrT2('') + '}',
+    '@media screen and (min-width:1150px){',
+    hdrT2('html.lok-nav-t2 '),
+    'html.lok-nav-t3 .header-right-side .btn-secondary{display:none!important}',
+    '}'
+  ].join('');
+  function navCollides() {
+    var links = document.querySelectorAll('.header-wrapper .header-nav-link, .header-wrapper .lok-res-trig');
+    var L = Infinity, R = 0;
+    for (var i = 0; i < links.length; i++) {
+      var r = links[i].getBoundingClientRect();
+      if (!r.width) continue;
+      if (r.left < L) L = r.left;
+      if (r.right > R) R = r.right;
+    }
+    if (!R) return false; // burger range: the desktop links are not rendered
+    var logo = document.querySelector('.header-wrapper .header-logo-link');
+    var right = document.querySelector('.header-wrapper .header-right-side');
+    if (logo && L - logo.getBoundingClientRect().right < 8) return true;
+    return !!(right && right.getBoundingClientRect().left - R < 12);
+  }
+  function fitHeaderNav() {
+    var de = document.documentElement;
+    de.classList.remove('lok-nav-t2'); de.classList.remove('lok-nav-t3');
+    if (window.innerWidth < 1150 || !navCollides()) return;
+    de.classList.add('lok-nav-t2');
+    if (navCollides()) de.classList.add('lok-nav-t3');
+  }
+
   function fitHeaderSearch(form) {
     var open = form.classList.contains('lok-hs-open');
     if (open && document.activeElement && form.contains(document.activeElement)) return;
@@ -701,6 +751,7 @@
       var st = document.createElement('style');
       st.id = 'lok-hdr-search-css';
       st.textContent = [
+        HDR_FIT_CSS,
         '#lok-hdr-search{display:flex;align-items:center;position:relative;margin-right:14px;}',
         // Phones under 375px on the pages WITHOUT row 2 (login, sign-up, checkout): logo +
         // magnifier + Login + burger ran 46px past the screen (measured 2026-09-19).
@@ -801,7 +852,7 @@
     var raf = 0;
     function refit() {
       if (raf) return;
-      raf = requestAnimationFrame(function () { raf = 0; fitHeaderSearch(form); });
+      raf = requestAnimationFrame(function () { raf = 0; fitHeaderNav(); fitHeaderSearch(form); }); // nav first: its tier changes what the field measures against
     }
     refit();
     window.addEventListener('resize', refit);
