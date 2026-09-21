@@ -398,6 +398,15 @@
     // for every row — the Availability/Leads rows carry a plain .text-block-17
     // instead of strong.dashboard-menu and rendered a size larger.
     '.div-block-28{align-items:stretch!important;}' +
+    // 2026-09-20: with Settings, Help and Contact in the list it is ~650px tall;
+    // on a 768px-high laptop the account chip fell below the fixed sidebar's
+    // edge, out of reach. The LIST scrolls, the chip stays pinned. Desktop only:
+    // the phone drawer already scrolls as a whole (lokali-dashboard-mobile-nav.js).
+    '@media (min-width:992px){.section-11 .div-block-28{flex:1 1 auto;min-height:0;overflow-y:auto;scrollbar-width:thin;}' +
+      '.section-11 .div-block-29{flex:0 0 auto;}}' +
+    // Short laptop screens: tighten the rhythm so the whole list fits without a
+    // scrollbar (which would steal width and clip 'View storefront').
+    '@media (min-width:992px) and (max-height:820px){.div-block-28 .dashboard-btn{margin-bottom:2px !important;}.lok-nav-grp{padding-top:10px;}}' +
     '.div-block-28 .dashboard-btn{position:relative;width:100%;box-sizing:border-box;display:flex;align-items:center;}' +
     '.div-block-28 .dashboard-btn .text-block-17{flex:1 1 auto;min-width:0;font-family:\'Plus Jakarta Sans\',sans-serif;font-size:16px;font-weight:500;color:#1A1829;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}' +
     '.div-block-28 .dashboard-btn strong.dashboard-menu{font-size:16px;font-weight:500;}' +
@@ -438,6 +447,8 @@
       else if (href.indexOf('/vendor-dashboard/availability') === 0) out.availability = a;
       else if (href.indexOf('/vendor-dashboard/marketing') === 0) out.marketing = a;
       else if (href.indexOf('/vendor-dashboard/followers') === 0) out.followers = a;
+      else if (href.indexOf('/vendor-dashboard/settings') === 0) out.settings = a;
+      else if (a.getAttribute('data-lok-contact')) out.contact = a;
       else if (href.indexOf('/vendor-dashboard/analytics') === 0 || t === 'Analytics') out.analytics = a;
       else if (href.indexOf('/vendor-dashboard/leads') === 0 || t === 'Leads') out.leads = a;
       else if (href.indexOf('view-listing') >= 0 || /^(View storefront|My Storefront|My Listing)$/.test(t)) out.storefront = a;
@@ -479,6 +490,29 @@
         out.help = h;
       }
     }
+    // Settings (F 2026-09-20, settings analysis): the row lived ONLY inside the
+    // account chip at the sidebar foot (phone = menu, then your name, then
+    // Settings), while seven scripts and emails send vendors to it. The NATIVE
+    // row is moved into the main list, never rebuilt, so Webflow's w--current
+    // and its icon come along; groupMenuItems() places it.
+    if (!out.settings) {
+      var chipSettings = document.querySelector('.lok-acct:not([data-lok-acct]) .lok-acct-menu a[href^="/vendor-dashboard/settings"]');
+      if (chipSettings) out.settings = chipSettings;
+    }
+    // Contact us: leaves the chip with Settings and joins the Help group, so the
+    // chip holds only plan and identity rows. Built here like Followers; the
+    // chip's own 'Help & contact' row is hidden once this one exists.
+    if (!out.contact && out.dashboard) {
+      var c = document.createElement('a');
+      c.href = '/contact-us';
+      c.className = 'dashboard-btn w-inline-block';
+      c.setAttribute('data-lok-contact', '1');
+      c.innerHTML = '<div class="icon-div"><svg class="dashboard-icon" viewBox="0 0 24 24" fill="none" stroke="#1A1829" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="width:18px;height:18px;display:block;">' +
+        '<path d="M4 4h16a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2z"/><polyline points="22 6 12 13 2 6"/></svg></div>' +
+        '<div class="text-block-17"><strong class="dashboard-menu">Contact us</strong></div>';
+      parent.appendChild(c);
+      out.contact = c;
+    }
     return out;
   }
 
@@ -505,7 +539,12 @@
     move(r.profile); move(r.services); move(r.products); move(r.availability); move(r.storefront);
     label('grow', 'Grow');
     move(r.leads); move(r.followers); move(r.analytics); move(r.marketing);
-    if (r.help) { label('help', 'Help'); move(r.help); } // last, under its own label so it does not read as a Grow tool
+    if (r.settings) { label('account', 'Your account'); move(r.settings); }
+    if (r.help || r.contact) { label('help', 'Help'); move(r.help); move(r.contact); } // last, under its own label so it does not read as a Grow tool
+    if (r.contact) {
+      var chipHelp = document.querySelectorAll('.lok-acct:not([data-lok-acct]) .lok-acct-menu a.lok-acct-row[href*="contact"]');
+      for (var ch = 0; ch < chipHelp.length; ch++) chipHelp[ch].style.display = 'none';
+    }
     // External mark on the storefront row (its href is rewritten to the live
     // storefront by lokali-dashboard.js, which also sets target=_blank).
     if (r.storefront && !r.storefront.querySelector('.lok-nav-ext')) {

@@ -70,7 +70,7 @@
   function init() {
     if (window.LokaliDashboard && window.LokaliDashboard.requireAuth && !window.LokaliDashboard.requireAuth()) return;
     if (window.LokaliDashboard && window.LokaliDashboard.preventFormSubmit) window.LokaliDashboard.preventFormSubmit();
-    load().then(populate).then(bind).catch(function (err) {
+    load().then(populate).then(bind).then(regroup).catch(function (err) {
       console.error('[Settings] init error:', err);
     });
   }
@@ -370,7 +370,7 @@
       try {
         if (window.LokaliAPI.account.syncNewsletter) window.LokaliAPI.account.syncNewsletter();
       } catch (e) {}
-      toast('success', value ? 'Subscribed to The Neighborhood Edit.' : 'Unsubscribed from The Neighborhood Edit.');
+      flashSaved(inputEl);
     }).catch(function () {
       toast('error', 'Network error. Please try again.');
       if (inputEl) inputEl.checked = !value;
@@ -434,7 +434,7 @@
       try {
         if (window.LokaliAPI.account.syncCircle) window.LokaliAPI.account.syncCircle();
       } catch (e) {}
-      toast('success', value ? 'Subscribed to The Lokali Circle.' : 'Unsubscribed from The Lokali Circle.');
+      flashSaved(inputEl);
     }).catch(function () {
       toast('error', 'Network error. Please try again.');
       if (inputEl) inputEl.checked = !value;
@@ -451,6 +451,7 @@
         if (inputEl) inputEl.checked = !value; // revert
       } else {
         _prefs = (res.data && res.data.value) || res.data || _prefs;
+        flashSaved(inputEl);
       }
     }).catch(function () {
       toast('error', 'Network error. Please try again.');
@@ -651,6 +652,342 @@
     });
   }
 
+  // ---------------------------------------------------------------------------
+  // 2026-09-20 (F approved all five suggestions, settings analysis; mockup
+  // docs/mockups/vendor-settings-menu-2026-09-20.html) — PAGE REGROUP.
+  //   You · Your storefront · Emails · Plan and billing · Close your account
+  // Every native node is MOVED or relabelled, never rebuilt, so each id the rest
+  // of this file, lokali-billing.js (.div-block-158.stripe a) and the page's
+  // Get Verified embed (#settings-current-plan) bind to keeps working. If any
+  // anchor is missing the page is left exactly as authored in Webflow.
+  // One save model: switches save at once and say "Saved" beside themselves;
+  // the two name fields get a bar that appears only when they changed (the
+  // Profile page's pattern). The header Save button, which only ever saved the
+  // name, is hidden.
+  // ---------------------------------------------------------------------------
+  var FONT = "'Plus Jakarta Sans',sans-serif";
+  var RG_CSS =
+    '.lok-set-jump{display:flex;gap:8px;overflow-x:auto;margin:4px 0 18px;padding-bottom:2px;-webkit-overflow-scrolling:touch;}' +
+    '.lok-set-jump a{flex:0 0 auto;display:inline-flex;align-items:center;min-height:44px;padding:0 14px;border:1px solid #DEDAEE;border-radius:100px;background:#fff;' +
+      'font-family:' + FONT + ';font-size:13.5px;font-weight:700;color:#4A4761;text-decoration:none;}' +
+    '.lok-set-jump a:hover,.lok-set-jump a:focus-visible{border-color:#D4BFF9;color:#6002EE;}' +
+    '.lok-set-sec{scroll-margin-top:84px;}' +
+    '.lok-set-sub{font-family:' + FONT + ';font-size:13.5px;color:#6E6A85;margin:-4px 0 12px;}' +
+    '.lok-set-grp{font-family:' + FONT + ';font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#6E6A85;margin:18px 0 6px;}' +
+    '.lok-set-grp:first-of-type{margin-top:4px;}' +
+    '.lok-set-link{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:52px;padding:10px 14px;margin:0 0 10px;border:1px solid #DEDAEE;border-radius:12px;' +
+      'background:#F7F6FC;text-decoration:none;font-family:' + FONT + ';}' +
+    '.lok-set-link:hover,.lok-set-link:focus-visible{border-color:#D4BFF9;background:#EEE6FF;}' +
+    '.lok-set-link b{display:block;font-size:15px;font-weight:600;color:#1A1829;}' +
+    '.lok-set-link span{display:block;font-size:13px;color:#6E6A85;}' +
+    '.lok-set-link i{font-style:normal;font-size:14px;font-weight:700;color:#6002EE;flex:0 0 auto;}' +
+    '.lok-set-tog{display:flex !important;align-items:center;gap:8px;flex:0 0 auto;}' +
+    '.lok-set-saved{font-family:' + FONT + ';font-size:12.5px;font-weight:700;color:#1B7A4B;opacity:0;transition:opacity .2s;min-width:42px;text-align:right;}' +
+    '.lok-set-saved.on{opacity:1;}' +
+    '.lok-set-btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 18px;border-radius:10px;border:1px solid #D4BFF9;background:#fff;' +
+      'font-family:' + FONT + ';font-size:14px;font-weight:700;color:#6002EE;cursor:pointer;flex:0 0 auto;}' +
+    '.lok-set-btn:hover{background:#EEE6FF;}' +
+    '.lok-set-btn.pri{background:#6002EE;border-color:#6002EE;color:#fff;}.lok-set-btn.pri:hover{background:#3D00E0;}' +
+    '.lok-set-btn.quiet{border-color:#DEDAEE;color:#4A4761;}' +
+    '.lok-set-break{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:0 0 16px;margin:0 0 16px;border-bottom:1px solid #EEEDF6;}' +
+    '.lok-set-break>div{flex:1 1 240px;min-width:0;}' +
+    '.lok-set-break b{display:block;font-family:' + FONT + ';font-size:15px;font-weight:700;color:#1A1829;}' +
+    '.lok-set-break span{display:block;font-family:' + FONT + ';font-size:13.5px;color:#6E6A85;}' +
+    '#lok-set-namebar{display:none;position:sticky;bottom:12px;z-index:50;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:16px;padding:10px 12px 10px 16px;' +
+      'background:#fff;border:1px solid #D4BFF9;border-radius:14px;box-shadow:0 10px 28px rgba(38,10,80,.16);font-family:' + FONT + ';font-size:14px;font-weight:600;color:#1A1829;}' +
+    '#lok-set-namebar.on{display:flex;}' +
+    '#lok-set-namebar>span:last-child{display:flex;gap:8px;}' +
+    // Phone: the longer switch titles must wrap instead of pushing the switch
+    // off the card (the title + plan badge pair was a no-wrap flex row).
+    '.lok-set-sec .div-block-161,.lok-set-sec .div-block-164{flex-wrap:wrap;}' +
+    '.lok-set-sec .div-block-160>div:first-child,.lok-set-sec .div-block-162>div:first-child,.lok-set-sec .div-block-163>div:first-child{flex:1 1 auto;min-width:0;}' +
+    '@media (prefers-reduced-motion:reduce){.lok-set-saved{transition:none;}}';
+
+  function sectionOf(id) { var e = $(id); return e && e.closest ? e.closest('section') : null; }
+  function toggleInput(id) { var t = $(id); return t ? (t.tagName === 'INPUT' ? t : inputOf(t)) : null; }
+  function mk(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function setHeading(sec, text) {
+    var h = sec.querySelector('.section-heading');
+    if (h && !h.children.length) h.textContent = text;
+  }
+  // Retitle a switch row. Only text nodes change; the plan badge and the
+  // Pro pill that sit beside some headers are left alone.
+  function retitle(toggleId, title, desc) {
+    var t = $(toggleId); if (!t || !t.parentNode) return;
+    var row = t.parentNode;
+    var h = row.querySelector('.notifications-header, .visibility-header');
+    if (h && title) {
+      var done = false;
+      for (var i = 0; i < h.childNodes.length; i++) {
+        if (h.childNodes[i].nodeType === 3 && h.childNodes[i].nodeValue.trim()) { h.childNodes[i].nodeValue = title; done = true; break; }
+      }
+      if (!done) h.insertBefore(document.createTextNode(title), h.firstChild);
+    }
+    var d = row.querySelector('.settings-lokali-text');
+    if (d && desc != null) d.textContent = desc;
+    var input = toggleInput(toggleId);
+    if (input && title) { input.setAttribute('role', 'switch'); input.setAttribute('aria-label', title); }
+  }
+
+  // "Saved", right beside the switch that was tapped.
+  function flashSaved(inputEl) {
+    if (!inputEl || !inputEl.closest) return;
+    var lab = inputEl.closest('label'); if (!lab || !lab.parentNode) return;
+    var host = lab.parentNode;
+    var chip = host.querySelector('.lok-set-saved');
+    if (!chip) {
+      chip = mk('span', 'lok-set-saved', 'Saved');
+      chip.setAttribute('aria-live', 'polite');
+      host.classList.add('lok-set-tog');
+      host.insertBefore(chip, lab);
+    }
+    chip.classList.add('on');
+    clearTimeout(chip._t);
+    chip._t = setTimeout(function () { chip.classList.remove('on'); }, 1800);
+  }
+
+  // Name fields: the bar shows only while they differ from the saved name.
+  function nameInputs() {
+    return [inputOf(firstEl(['settings-first-name', 'First-Name-Input'])), inputOf(firstEl(['settings-last-name', 'Last-Name-Input']))];
+  }
+  function syncNameBar() {
+    var bar = $('lok-set-namebar'); if (!bar) return;
+    var n = nameInputs();
+    var dirty = (n[0] && String(n[0].value || '').trim() !== String((_user && _user.first_name) || '')) ||
+                (n[1] && String(n[1].value || '').trim() !== String((_user && _user.last_name) || ''));
+    bar.classList.toggle('on', !!dirty);
+  }
+
+  // "Need a break?" row state follows the storefront switch.
+  function syncBreakRow() {
+    var btn = $('lok-set-hide'); if (!btn) return;
+    var live = !(_vendor && _vendor.is_active === false);
+    btn.textContent = live ? 'Hide my storefront' : 'Show my storefront again';
+    var t = $('lok-set-break-title'), d = $('lok-set-break-desc');
+    if (t) t.textContent = live ? 'Need a break?' : 'Your storefront is hidden';
+    if (d) d.textContent = live
+      ? 'Hide your storefront and keep everything: your listings, your reviews and your founding spot.'
+      : 'Shoppers cannot find you right now. Everything is kept, and one tap brings it back.';
+  }
+
+  // One switch that pauses every OPTIONAL email. Customer messages are never
+  // part of it. A convenience over the switches above, not a new stored flag:
+  // it remembers which ones it turned off (this browser only) and turns those
+  // back on. Switches a plan has locked are skipped.
+  var PAUSE_KEY = 'LOKALI_EMAIL_PAUSE';
+  var PAUSE_PREFS = { 'toggle-notify-review': 'notify_review', 'toggle-notify-announcements': 'notify_announcements', 'toggle-notify-promotional': 'notify_promotional' };
+  var PAUSE_PERSON = ['toggle-notify-circle', 'toggle-notify-letter'];
+  function readPause() { try { var v = JSON.parse(localStorage.getItem(PAUSE_KEY) || 'null'); return v && v.length ? v : null; } catch (e) { return null; } }
+  function writePause(v) { try { if (v) localStorage.setItem(PAUSE_KEY, JSON.stringify(v)); else localStorage.removeItem(PAUSE_KEY); } catch (e) {} }
+  function setPaused(on, pauseInput) {
+    var snap = on ? [] : (readPause() || []);
+    var prefPayload = {}, prefInputs = [];
+    Object.keys(PAUSE_PREFS).forEach(function (id) {
+      var inp = toggleInput(id); if (!inp || inp.disabled) return;
+      if (on ? inp.checked : (snap.indexOf(id) >= 0 && !inp.checked)) {
+        if (on) snap.push(id);
+        inp.checked = !on; prefPayload[PAUSE_PREFS[id]] = !on; prefInputs.push(inp);
+      }
+    });
+    var person = [];
+    PAUSE_PERSON.forEach(function (id) {
+      var inp = toggleInput(id); if (!inp || inp.disabled) return;
+      if (on ? inp.checked : (snap.indexOf(id) >= 0 && !inp.checked)) { if (on) snap.push(id); person.push(inp); }
+    });
+    if (on && !snap.length) {
+      if (pauseInput) pauseInput.checked = false;
+      toast('info', 'Your optional emails are already off.');
+      return;
+    }
+    writePause(on ? snap : null);
+    // The three storefront preferences go in ONE write (the row may not exist
+    // yet, and parallel first inserts would race); the two person-level
+    // newsletters reuse their own handlers, which also mirror to Brevo.
+    if (prefInputs.length && window.LokaliAPI.vendors && window.LokaliAPI.vendors.updatePreferences) {
+      window.LokaliAPI.vendors.updatePreferences(prefPayload).then(function (res) {
+        if (res && res.error) throw new Error('save');
+        _prefs = (res.data && res.data.value) || res.data || _prefs;
+        prefInputs.forEach(flashSaved);
+      }).catch(function () {
+        prefInputs.forEach(function (inp) { inp.checked = on; });
+        writePause(null);
+        if (pauseInput) pauseInput.checked = !on;
+        toast('error', 'Could not save your email choices. Please try again.');
+      });
+    }
+    person.forEach(function (inp, i) {
+      setTimeout(function () {
+        inp.checked = !on; inp._lokBulk = true;
+        inp.dispatchEvent(new Event('change', { bubbles: true }));
+        inp._lokBulk = false;
+      }, 300 * i);
+    });
+    flashSaved(pauseInput);
+  }
+  function mountPauseRow(section) {
+    if ($('toggle-pause-optional')) return;
+    var anchor = $('toggle-notify-announcements');
+    var ref = anchor && anchor.closest ? anchor.closest('.div-block-160') : null;
+    if (!ref) return;
+    var row = mk('div', ref.className || 'div-block-160');
+    var txt = mk('div');
+    txt.appendChild(mk('div', 'notifications-header', 'Pause every optional email'));
+    txt.appendChild(mk('div', 'settings-lokali-text', 'Customer messages still reach you.'));
+    var embed = mk('div', anchor.className || 'w-embed');
+    embed.id = 'toggle-pause-optional';
+    // Static markup only (no interpolation), same as the sibling embeds.
+    embed.innerHTML = '<label class="lk-toggle"><input type="checkbox" /><span class="lk-toggle-track"><span class="lk-toggle-thumb"></span></span></label>';
+    row.appendChild(txt); row.appendChild(embed);
+    section.appendChild(row);
+    var input = inputOf(embed); if (!input) return;
+    input.setAttribute('role', 'switch');
+    input.setAttribute('aria-label', 'Pause every optional email');
+    var all = Object.keys(PAUSE_PREFS).concat(PAUSE_PERSON);
+    function anyOn() { return all.some(function (id) { var i = toggleInput(id); return i && !i.disabled && i.checked; }); }
+    if (readPause() && !anyOn()) input.checked = true; else writePause(null);
+    input.addEventListener('change', function () { setPaused(input.checked, input); });
+    // Turning any one back on by hand ends the pause.
+    all.forEach(function (id) {
+      var i = toggleInput(id); if (!i) return;
+      i.addEventListener('change', function () { if (!i._lokBulk && i.checked && input.checked) { input.checked = false; writePause(null); } });
+    });
+  }
+
+  function regroup() {
+    if ($('lok-set-css')) return;
+    var sYou = sectionOf('settings-email'), sPlan = sectionOf('settings-current-plan'),
+        sMail = sectionOf('toggle-notify-inquiry'), sStore = sectionOf('toggle-visibility-public'),
+        sClose = sectionOf('settings-delete');
+    if (!sYou || !sPlan || !sMail || !sStore || !sClose || !sYou.parentNode) return;
+    var st = mk('style'); st.id = 'lok-set-css'; st.textContent = RG_CSS; document.head.appendChild(st);
+    var form = sYou.parentNode;
+
+    // Order. The Get Verified card is injected by the page embed right after the
+    // plan section (it may land before or after this runs), so it follows it.
+    form.insertBefore(sStore, sYou.nextSibling);
+    form.insertBefore(sMail, sStore.nextSibling);
+    form.insertBefore(sPlan, sMail.nextSibling);
+    var verify = $('lok-verify-section');
+    if (verify) form.insertBefore(verify, sPlan.nextSibling);
+    var secs = [[sYou, 'set-you', 'You'], [sStore, 'set-storefront', 'Your storefront'], [sMail, 'set-emails', 'Emails'],
+                [sPlan, 'set-plan', 'Plan and billing'], [sClose, 'set-close', 'Close your account']];
+    var jump = mk('nav', 'lok-set-jump'); jump.setAttribute('aria-label', 'Settings sections');
+    secs.forEach(function (x) {
+      if (!x[0].id) x[0].id = x[1];
+      x[0].classList.add('lok-set-sec');
+      setHeading(x[0], x[2]);
+      var a = mk('a', '', x[2] === 'Close your account' ? 'Close account' : x[2]); a.href = '#' + x[0].id;
+      jump.appendChild(a);
+    });
+    var formWrap = form.parentNode;
+    if (formWrap && formWrap.parentNode) formWrap.parentNode.insertBefore(jump, formWrap);
+
+    // Header: the Save button only ever saved the name; the name bar replaces it.
+    var saveBtn = $('settings-save-btn'); if (saveBtn) saveBtn.style.display = 'none';
+    var sub = document.querySelector('.div-block-45 .subheader');
+    if (sub) sub.textContent = 'Your sign-in, your storefront, the emails we send and your plan.';
+
+    // You
+    var acctType = $('settings-account-type'); if (acctType && acctType.parentNode) acctType.parentNode.style.display = 'none';
+    var ce = document.querySelector('#settings-change-email .text-link'); if (ce) ce.textContent = 'Change email';
+    var cp = $('settings-change-password');
+    if (cp) {
+      var cpt = cp.querySelector('.text-link'); if (cpt) cpt.textContent = 'Change password';
+      var pwd = cp.parentNode ? cp.parentNode.querySelector('.settings-lokali-text') : null;
+      if (pwd) pwd.textContent = 'Opens the secure sign-in panel.';
+    }
+    var bar = mk('div'); bar.id = 'lok-set-namebar';
+    bar.appendChild(mk('span', '', 'You changed your name'));
+    var acts = mk('span');
+    var discard = mk('button', 'lok-set-btn quiet', 'Discard'); discard.type = 'button';
+    var save = mk('button', 'lok-set-btn pri', 'Save'); save.type = 'button';
+    acts.appendChild(discard); acts.appendChild(save); bar.appendChild(acts);
+    form.appendChild(bar);
+    nameInputs().forEach(function (inp) { if (inp) inp.addEventListener('input', syncNameBar); });
+    save.addEventListener('click', function () { saveProfile(); });
+    discard.addEventListener('click', function () {
+      var n = nameInputs();
+      if (n[0]) n[0].value = (_user && _user.first_name) || '';
+      if (n[1]) n[1].value = (_user && _user.last_name) || '';
+      syncNameBar();
+    });
+
+    // Your storefront: the three ways to step back, lightest first. The first
+    // two live on Availability and are linked, not moved.
+    var firstRow = $('toggle-visibility-public'); firstRow = firstRow ? firstRow.parentNode : null;
+    if (firstRow && firstRow.parentNode === sStore) {
+      sStore.insertBefore(mk('div', 'lok-set-sub', 'Three ways to step back, from lightest to heaviest.'), firstRow);
+      [['Not taking new clients', 'Your storefront stays up and shoppers see you are full. On Availability.'],
+       ['Away until a date', 'Shows shoppers the day you are back, then switches itself off. On Availability.']].forEach(function (l) {
+        var a = mk('a', 'lok-set-link'); a.href = '/vendor-dashboard/availability';
+        var d = mk('div'); d.appendChild(mk('b', '', l[0])); d.appendChild(mk('span', '', l[1]));
+        a.appendChild(d); a.appendChild(mk('i', '', 'Open'));
+        sStore.insertBefore(a, firstRow);
+      });
+    }
+    retitle('toggle-visibility-public', 'Show my storefront on Lokali', 'Off hides you from The Market and search, and your link shows a not available message. Nothing is deleted.');
+    retitle('toggle-visibility-reviews', 'Show reviews on my storefront', 'Off keeps collecting reviews privately.');
+    var slug = $('lok-slug-section'); if (slug) sStore.appendChild(slug);
+
+    // Emails: by who they are from, one pause switch at the end.
+    retitle('toggle-notify-inquiry', 'A customer sends you a message', 'Includes the reminder when a message is still waiting for a reply.');
+    retitle('toggle-notify-review', 'Someone leaves a review', null);
+    retitle('toggle-notify-announcements', 'Product news and tips', null);
+    retitle('toggle-notify-promotional', 'Offers and spotlight openings', null);
+    ['toggle-notify-circle', 'toggle-notify-letter'].forEach(function (id) {
+      var i = toggleInput(id); if (i) i.setAttribute('role', 'switch');
+    });
+    function rowOf(id) { var t = $(id); return t && t.parentNode && t.parentNode.parentNode === sMail ? t.parentNode : null; }
+    function put(node) { if (node) sMail.appendChild(node); }
+    put(mk('div', 'lok-set-grp', 'About your business'));
+    put(rowOf('toggle-notify-inquiry')); put(rowOf('toggle-notify-review'));
+    put(mk('div', 'lok-set-grp', 'From Lokali'));
+    put(rowOf('toggle-notify-announcements')); put(rowOf('toggle-notify-circle'));
+    put(rowOf('toggle-notify-letter')); put(rowOf('toggle-notify-promotional'));
+    mountPauseRow(sMail);
+
+    // On Free, populate() adds a 'Pro & Featured' pill that links to pricing; the
+    // native 'Pro & Featured only' badge beside it said the same thing twice.
+    Array.prototype.forEach.call(document.querySelectorAll('.lok-pro-pill'), function (pill) {
+      var r = pill.closest ? pill.closest('.div-block-160, .div-block-163') : null;
+      var badge = r ? r.querySelector('.plan-badge') : null;
+      if (badge) badge.style.display = 'none';
+    });
+
+    // Plan and billing
+    var vp = document.querySelector('#settings-view-plans .text-link'); if (vp) vp.textContent = 'Compare plans';
+    var stripeLink = document.querySelector('.div-block-158.stripe a');
+    if (stripeLink) {
+      var sl = stripeLink.querySelector('.text-link') || stripeLink;
+      sl.textContent = 'Manage billing';
+      if (!stripeLink.parentNode.querySelector('.lok-set-billnote')) {
+        stripeLink.parentNode.insertBefore(mk('div', 'settings-lokali-text lok-set-billnote', 'Cards and invoices open in Stripe, our payment partner, on a secure page.'), stripeLink);
+      }
+    }
+
+    // Close your account: the gentle option first, and a true delete sentence
+    // (the route deletes at once; nobody at Lokali reviews it).
+    var del = $('settings-delete');
+    var delRow = del ? del.parentNode : null;
+    if (delRow && delRow.parentNode === sClose) {
+      var br = mk('div', 'lok-set-break');
+      var bt = mk('div');
+      var t1 = mk('b'); t1.id = 'lok-set-break-title';
+      var t2 = mk('span'); t2.id = 'lok-set-break-desc';
+      bt.appendChild(t1); bt.appendChild(t2);
+      var hide = mk('button', 'lok-set-btn'); hide.type = 'button'; hide.id = 'lok-set-hide';
+      br.appendChild(bt); br.appendChild(hide);
+      sClose.insertBefore(br, delRow);
+      hide.addEventListener('click', function () {
+        var live = !(_vendor && _vendor.is_active === false);
+        setListingVisible(!live, toggleInput('toggle-visibility-public'));
+      });
+      syncBreakRow();
+      var dd = delRow.querySelector('.settings-lokali-text');
+      if (dd) dd.textContent = 'Removes your storefront, your listings and your sign-in right away, and cancels any subscription. This cannot be undone.';
+    }
+  }
+
   function saveProfile() {
     var fn = inputOf(firstEl(['settings-first-name', 'First-Name-Input']));
     var ln = inputOf(firstEl(['settings-last-name', 'Last-Name-Input']));
@@ -681,7 +1018,8 @@
         if (fn && !fnVal && _user.first_name) fn.value = _user.first_name;
         if (ln && !lnVal && _user.last_name) ln.value = _user.last_name;
       }
-      toast('success', kept ? 'Saved. Blank fields kept their previous value.' : 'Settings saved.');
+      toast('success', kept ? 'Saved. Blank fields kept their previous value.' : 'Name saved.');
+      syncNameBar();
     }).catch(function () {
       toast('error', 'Network error. Please try again.');
     }).then(function () { if (btn) btn.removeAttribute('disabled'); });
@@ -698,7 +1036,9 @@
       }
       if (_vendor) _vendor.is_active = visible;
       if (visInput) visInput.checked = visible;
-      toast('success', visible ? 'Your listing is live.' : 'Your listing is now hidden.');
+      flashSaved(visInput);
+      syncBreakRow();
+      toast('success', visible ? 'Your storefront is live.' : 'Your storefront is hidden. Nothing was deleted.');
     }).catch(function () {
       toast('error', 'Network error. Please try again.');
       if (visInput) visInput.checked = !visible;
