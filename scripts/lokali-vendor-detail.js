@@ -133,6 +133,11 @@
     'html.vd2 .vd-cta{display:block !important;background:transparent !important;border:0 !important;padding:0 !important;margin:0 !important;}',
     'html.vd2 .vd-cta-btn{display:flex !important;align-items:center;justify-content:center;width:100% !important;box-sizing:border-box;min-height:50px;border-radius:10px;font:600 15px/1.2 ' + V2_FONT + ';text-decoration:none;margin:0;cursor:pointer;}',
     'html.vd2 #vd-buy-btn{margin-bottom:10px !important;}',
+    // One orange button per card (F 2026-09-21): with a Buy link above it, the
+    // inquiry button drops to a white outline. #B84A00 on white = 5.2:1.
+    '#vd-buy-btn + #vd-cta-btn,#vd-buy-btn + #vd-cta-btn:hover{background:#fff !important;background-image:none !important;color:#B84A00 !important;border:1.5px solid #FF6B00 !important;box-shadow:none !important;}',
+    '#vd-buy-btn + #vd-cta-btn *{color:#B84A00 !important;}',
+    '#vd-buy-btn + #vd-cta-btn:hover{background:#FFF4EB !important;}',
     // pills: the storefront's exact styles (read off golokali.com 2026-09-19)
     '.vd2-ch{display:flex;gap:8px;}',
     '.vd2-ch:empty{display:none;}',
@@ -216,7 +221,8 @@
     '#vd2-bar .vd2-bar-main{background:#6002EE;color:#fff;}',
     '#vd2-bar .vd2-bar-main.vd2-bar-orange{background:#FF6B00;}',
     '#vd2-bar .vd2-bar-side{flex:0 0 104px;background:#fff;color:#1A1829;border:1px solid #EEEDF6;}',
-    '#vd2-bar .vd2-bar-buy{background:#fff;color:#1A1829;border:1px solid #DEDAEE;}',
+    '#vd2-bar .vd2-bar-buy{background:#FF6B00;color:#fff;}',
+    '#vd2-bar .vd2-bar-buy ~ .vd2-bar-main,#vd2-bar .vd2-bar-buy ~ .vd2-bar-main.vd2-bar-orange{background:#fff;color:#B84A00;border:1.5px solid #FF6B00;}',
     'html.vd2 #lok-totop{bottom:calc(84px + env(safe-area-inset-bottom)) !important;}',
     '}'
   ].join('');

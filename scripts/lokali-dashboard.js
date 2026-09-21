@@ -196,7 +196,7 @@
   var LUI_FONT = '"Plus Jakarta Sans",-apple-system,sans-serif';
   var LUI_CSS = [
     // grid
-    '.lok-grid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:stretch;}',
+    '.lok-grid{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px;align-items:stretch;}',
     // Everything in the stack that is not a card spans the row: the empty states, the hidden
     // template wrapper (hidden outright; the scripts clone its inner node, which still works)
     // and Webflow's footer row (count + upgrade link) which goes last.
@@ -216,7 +216,7 @@
     '.lok-gc.is-pick{order:-2;}',
     '.lok-gc.is-off .lok-gc-cover,.lok-gc.is-off .lok-gc-body{opacity:.62;}',
     '.lok-gc .card-divider,.lok-gc .service-category,.lok-gc .product-category,.lok-gc .service-description,.lok-gc .product-description,.lok-gc .product-stock,.lok-gc .product-price-note,.lok-gc .remote-badge,.lok-gc .shipping-badge,.lok-gc [data-field="product-delivery-badge"],.lok-gc .status-pill{display:none!important;}',
-    '.lok-gc-cover{position:relative;aspect-ratio:4/3;background:#EEEDF6 center/cover no-repeat;}',
+    '.lok-gc-cover{position:relative;aspect-ratio:3/2;background:#EEEDF6 center/cover no-repeat;}',
     '.lok-gc-cover.ph{background:linear-gradient(135deg,#F3EBFF,#FFF1E3);display:flex;align-items:center;justify-content:center;color:#8E8BA6;}',
     '.lok-gc-cover.ph svg{width:26px;height:26px;}',
     '.lok-gc-corner{position:absolute;top:8px;left:8px;display:flex;gap:6px;}',
