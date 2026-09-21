@@ -173,14 +173,16 @@
   // #90 publish gate — persistent "not public yet" banner INTEGRATED into the
   // Listing Strength card (decision: one place tied to the real gate, not a
   // second nag). Shows only while the storefront misses the minimum bar
-  // (category + service area + >=1 live listing); disappears on its own once
+  // (category + service area + >=1 live listing, and since 2026-09-21 a business
+  // address + description, patch_publish_gate_profile.sql); disappears on its own once
   // everything's in. While not ready, the card ignores a saved dismiss.
   function renderGateBanner(root, gateReady, bits) {
     if (!root) return;
     var el = root.querySelector('[data-ls-gate]');
-    // #147c (2026-09-10): the address no longer blocks publishing. A LIVE
-    // storefront with no address on file gets a soft note in the same slot
-    // instead of the hard "not public yet" banner.
+    // 2026-09-21: the address and description are part of the gate again, so a
+    // blocked vendor is told about them here (the #147c lesson: never let a
+    // storefront sit invisible without saying why). The soft note survives for
+    // the few storefronts the admin exempted, which can be LIVE with no address.
     var soft = gateReady && bits.address === false;
     if (gateReady && !soft) { if (el) el.parentNode.removeChild(el); return; }
     var missing = [];
@@ -188,6 +190,8 @@
     if (!bits.cats) missing.push('pick your category');
     if (!bits.locs) missing.push('set your service area');
     if (!bits.listing) missing.push('add a service or product');
+    if (bits.address === false) missing.push('add your business address (never shown to customers)');
+    if (bits.desc === false) missing.push('write your business description');
     var msg = soft
       ? 'Your storefront is live. One thing left: add your business address on your profile. It is never shown to customers; it lets us confirm you are local.'
       : 'Your storefront isn’t public yet. Customers can’t find it on The Market until you ' +
@@ -483,9 +487,10 @@
     var gCats = !!(v.categories_id && v.categories_id.length);
     var gLocs = !!(v.locations_id && v.locations_id.length);
     var gAddr = !!(v.address && String(v.address).trim());
+    var gDesc = !!(v.business_description && String(v.business_description).trim());
     var gateReady = (v.is_publish_ready != null) ? !!v.is_publish_ready
-                    : (!!v.business_name && gCats && gLocs && !!hasListing);
-    renderGateBanner(root, gateReady, { name: !!v.business_name, cats: gCats, locs: gLocs, listing: !!hasListing, address: gAddr });
+                    : (!!v.business_name && gCats && gLocs && !!hasListing && gAddr && gDesc);
+    renderGateBanner(root, gateReady, { name: !!v.business_name, cats: gCats, locs: gLocs, listing: !!hasListing, address: gAddr, desc: gDesc });
     return gateReady;
   }
 
@@ -1239,7 +1244,7 @@
     // forms (decision: reuse them rather than duplicate a mini-form here).
     steps.push(function () {
       shell('Add your first service or product',
-        'This is what customers can actually book or buy. Your storefront goes live the moment one is up.',
+        'This is what customers can actually book or buy. Your storefront goes live once one is up and your profile has your address and a description.',
         '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
           '<a href="/vendor-dashboard/services" style="flex:1;min-width:150px;text-align:center;background:#6E3CFF;color:#fff;' +
             'font-weight:700;font-size:14px;padding:12px 18px;border-radius:12px;text-decoration:none;font-family:inherit;">Add a service</a>' +

@@ -2825,6 +2825,10 @@
             row(catsOk, 'Pick your category') +
             row(locsOk, 'Set your service area') +
             row(itemsOk, 'Add at least one service or product') +
+            // 2026-09-21 gate (patch_publish_gate_profile.sql). Owner read only: the
+            // address is private, so these come from vendors.me(), never from `v`.
+            row(!!(mine.address && String(mine.address).trim()), 'Add your business address (never shown to customers)') +
+            row(!!(mine.business_description && String(mine.business_description).trim()), 'Write your business description') +
             '</ul>' +
             '<a class="vl-np-btn" href="/vendor-dashboard/dashboard">Finish setting up</a>' +
             '<span class="vl-np-sub">It goes live automatically the moment everything’s in.</span>';

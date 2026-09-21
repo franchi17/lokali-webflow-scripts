@@ -1122,7 +1122,7 @@
     if (!v.has_desc) t.push('Write two or three sentences about what you do and who it is for.');
     if (!v.has_tagline) t.push('Add a short tagline under your business name.');
     if (!v.has_tags) t.push('Pick your specialties so searches can find you.');
-    if (listingsN === 0) t.push('Add your first service or product. Your storefront goes live once you have one.');
+    if (listingsN === 0) t.push('Add your first service or product. Your storefront needs one to go live.');
     else if (listingsN < 3) t.push('Add another listing or two so people have something to browse.');
     if (!v.has_story) t.push('Fill in "Meet the owner". People buy from people.');
     return t;
