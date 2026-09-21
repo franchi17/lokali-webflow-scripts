@@ -3429,7 +3429,10 @@
     var tgLetter = toggleRow('The Neighborhood Edit', 'Our bi-monthly newsletter: vendor spotlights and what’s new on Lokali. Rare by design.', acc.notif_letter !== false);
     var tgReplies = toggleRow('Vendor replies', 'Get an email when a vendor responds to an inquiry you sent.', acc.notif_vendor_replies !== false);
     var tgRemind = toggleRow('Review reminders', 'A gentle nudge to review a vendor a few days after you contact them.', acc.notif_review_reminders === true);
-    nc.appendChild(tgLetter.row); nc.appendChild(tgReplies.row); nc.appendChild(tgRemind.row);
+    // #185: weekly email about the vendors this person saved (default ON in
+    // patch_vendor_posts.sql; the digest cron reads this flag).
+    var tgSaved = toggleRow('Updates from vendors you saved', 'One email on Thursdays when a vendor you saved posts an update or where they will be. No email on quiet weeks.', acc.notif_saved_updates !== false);
+    nc.appendChild(tgLetter.row); nc.appendChild(tgReplies.row); nc.appendChild(tgSaved.row); nc.appendChild(tgRemind.row);
     pane.appendChild(nc);
 
     var bar = el('div', 'lk-save-bar');
@@ -3452,7 +3455,8 @@
         avatar: avatarSel,
         notif_letter: tgLetter.get(),
         notif_vendor_replies: tgReplies.get(),
-        notif_review_reminders: tgRemind.get()
+        notif_review_reminders: tgRemind.get(),
+        notif_saved_updates: tgSaved.get()
       }).then(function (res) {
         saveBtn.disabled = false;
         // #129 (same defect, one line away): this toasted the raw server code too.
@@ -3468,6 +3472,7 @@
         state.account.notif_letter = tgLetter.get();
         state.account.notif_vendor_replies = tgReplies.get();
         state.account.notif_review_reminders = tgRemind.get();
+        state.account.notif_saved_updates = tgSaved.get();
         // #54 — mirror the newsletter flag to the Brevo list (best-effort; the
         // save already succeeded, so a Brevo hiccup must never surface here).
         try {

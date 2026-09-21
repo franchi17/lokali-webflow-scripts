@@ -562,7 +562,7 @@
         ut.appendChild(el('div', 'an-up-s', 'Featured vendors rank at the top of their category, show more photos, and get everything Lokali offers.'));
       } else {
         ut.appendChild(el('div', 'an-up-t', 'Show customers more of your work'));
-        ut.appendChild(el('div', 'an-up-s', 'Pro adds a photo gallery across the top of your storefront, 3 photos per listing, bookings straight from your page, and the Verified badge.'));
+        ut.appendChild(el('div', 'an-up-s', 'Pro adds a photo gallery across the top of your storefront, 5 photos per listing, bookings straight from your page, and the Verified badge.'));
       }
       up.appendChild(ut);
       var btn = el('a', 'an-up-btn', paidHist ? 'Upgrade' : 'See what Pro includes'); btn.href = '/pricing';

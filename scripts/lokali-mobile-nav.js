@@ -40,6 +40,9 @@
 
   var LINKS = [
     { label: 'The Market',      href: '/the-market' },
+    // #185: where saved vendors will be this week (weekend_feed). Sits with
+    // the Market because it is the other shopper destination.
+    { label: 'This weekend',    href: '/this-weekend' },
     { label: 'About',           href: '/about' },
     // Features = link + tap-to-expand audience pages (mirrors the desktop
     // "Features" dropdown from lokali-resources-nav.js; the label lands on
@@ -568,6 +571,21 @@
       link.setAttribute('href', '/vendor-resources/badges-guide');
       link.textContent = 'Badges & Referrals';
       li.parentNode.insertBefore(clone, li.nextSibling);
+    }
+    // #185: /this-weekend had no link anywhere. Same clone-the-row approach,
+    // placed right after The Market in the footer's first column.
+    var market = document.querySelector('.lok-ft a.lok-ft-link[href="/the-market"]');
+    if (market && !document.querySelector('.lok-ft a[href="/this-weekend"]')) {
+      var mli = market.closest('li') || market;
+      var mclone = mli.cloneNode(true);
+      var mlink = mclone.matches && mclone.matches('a') ? mclone : mclone.querySelector('a');
+      if (mlink) {
+        mlink.setAttribute('href', '/this-weekend');
+        mlink.removeAttribute('aria-current');
+        mlink.classList.remove('w--current');
+        mlink.textContent = 'This weekend';
+        mli.parentNode.insertBefore(mclone, mli.nextSibling);
+      }
     }
   }
 

@@ -304,9 +304,12 @@
     this.mount = mount;
     this.vendor = vendor;
     this.premium = premium;            // Featured? (showcase entitlement)
-    // Free plan (F 2026-09-20: the review link is for every vendor). A free Page
-    // shows ONLY the "Ask for a review" card above the plans teaser, and fetches
-    // only the review code: none of the paid RPCs are called.
+    // Free plan (F 2026-09-20: the review link AND the basic storefront QR are
+    // for every vendor; a code on a market table is distribution for Lokali, so
+    // gating it cost growth). A free Page shows the QR card + the "Ask for a
+    // review" card above the plans teaser. It fetches the review code and
+    // vendor_qr_stats only; that RPC answers {allowed:false} below Featured, so
+    // scan numbers and the own-logo badge stay paid with no SQL change.
     this.free = free === true;
     this.entries = { cta: [], showcase: [] };
     this.editing = null;               // entry id being edited, or 'new:<kind>'
@@ -322,9 +325,14 @@
     var self = this;
     if (this.free) {
       var RV = window.LokaliSupabaseAPI.reviews;
-      ((RV && RV.myLink) ? RV.myLink().catch(function () { return null; }) : Promise.resolve(null)).then(function (r) {
-        var rl = r && r.data;
+      Promise.all([
+        (RV && RV.myLink) ? RV.myLink().catch(function () { return null; }) : Promise.resolve(null),
+        API.qrStats ? API.qrStats(this.vendor.id).catch(function () { return null; }) : Promise.resolve(null)
+      ]).then(function (rs) {
+        var rl = rs[0] && rs[0].data;
         self.reviewCode = (rl && rl.ok && /^[a-f0-9]{10}$/.test(rl.code || '')) ? rl.code : null;
+        var q = rs[1] && rs[1].data;
+        self.qr = (q && q.ok) ? q : null;
         self.render();
       });
       return;
@@ -423,7 +431,7 @@
   Page.prototype.render = function () {
     this.mount.className = 'lok-mkt';
     if (this.free) {
-      this.mount.innerHTML = this.reviewCardHtml() + upsellHtml();
+      this.mount.innerHTML = this.qrCardHtml() + this.reviewCardHtml() + upsellHtml();
       this.bind();
       return;
     }
@@ -1260,7 +1268,7 @@
         var paid = rs[0] && rs[0].data === true;
         var premium = rs[1] && rs[1].data === true;
         if (paid) new Page(mount, vendor, premium);
-        else if (vendor.slug) new Page(mount, vendor, false, true);   // free: review card + teaser
+        else if (vendor.slug) new Page(mount, vendor, false, true);   // free: QR + review cards + teaser
         else renderUpsell(mount);
       });
     });

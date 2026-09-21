@@ -212,19 +212,14 @@
     // hidden tab cannot sell itself. It stays visible with a 'Featured' lock
     // pill (Featured-first rollout) and still links to the Marketing page,
     // whose upsell card is the honest landing for a Free vendor.
-    var knownFree = !!billing && !plan.top && plan.label !== 'Pro plan' &&
-                    plan.label !== 'Founding vendor';
     document.querySelectorAll('.section-11 a[href*="/vendor-dashboard/marketing"]').forEach(function (a) {
       var row = a.closest('.dashboard-btn') || a;
       row.style.display = '';
       var pill = row.querySelector('.lok-nav-lock');
-      if (knownFree && !pill) {
-        pill = document.createElement('span'); pill.className = 'lok-nav-lock';
-        // Text only: with the lock glyph the pill was 68px and 'Marketing' clipped
-        // by a pixel at the sidebar's 220px; the grey plan tag reads as locked on its own.
-        pill.textContent = 'Featured'; pill.setAttribute('aria-label', 'Featured plan feature');
-        row.appendChild(pill);
-      } else if (!knownFree && pill) pill.parentNode.removeChild(pill);
+      // F 2026-09-20: Free vendors now get real tools on this page (storefront
+      // QR + review link), so a 'Featured' lock on the row is no longer true.
+      // The pill is never added; a stale one is cleared.
+      if (pill) pill.parentNode.removeChild(pill);
     });
   }
 
