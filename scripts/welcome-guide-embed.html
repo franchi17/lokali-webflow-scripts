@@ -1,0 +1,338 @@
+<!-- Welcome Guide (2026-09-20, F approved mockup v5: docs/mockups/welcome-guide-mockup-2026-09-20.html).
+     /vendor-resources/welcome-guide. One calm page: a note, three first steps, five goals.
+     STATIC FIRST: with no script (crawlers, signed-out visitors) every feature shows with a plan
+     chip. The script only runs for a signed-in vendor: it reads the plan (LokaliAPI.plans.
+     getMyBilling), keeps that plan's features in view, folds the rest behind one "N more with
+     Pro" row per goal, and ticks the three steps from the vendor's own row + listings.
+     Plan facts = the /pricing comparison table (read 2026-09-20). Every button goes to a page
+     that exists. Two features have no button on purpose: review replies happen on the vendor's
+     own storefront, and the monthly report is an email.
+     Palette (F 2026-09-20): no orange beside violet; goals run rose, violet, sky, teal, green.
+     No emoji, no em dashes, Plus Jakarta Sans set explicitly, 44px targets, AA text. -->
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  .lwg{--ink:#1A1829;--dusk:#4A4761;--slate:#6B6880;--snow:#F7F6FC;--mist:#EEEDF6;--edge:#DEDAEE;
+    --violet:#6002EE;--violet-700:#3D00E0;--violet-50:#EEE6FF;--violet-100:#D4BFF9;
+    --rose:#A63D74;--rose-50:#FBE9F2;--rose-100:#F3C9DF;--sky:#1D5A9E;--sky-50:#E6F0FC;--sky-100:#C2DAF5;
+    --teal:#0F6B74;--teal-50:#E0F4F5;--teal-100:#B5E1E4;--green:#1A6640;--green-50:#E4F7EE;--green-100:#BFE8D2;
+    display:block;width:100%;font-family:'Plus Jakarta Sans',sans-serif;color:var(--dusk);font-size:15.5px;line-height:1.6;-webkit-font-smoothing:antialiased;background:var(--snow);padding:48px 0 64px;}
+  .lwg *,.lwg *::before,.lwg *::after{box-sizing:border-box;margin:0;padding:0;font-family:'Plus Jakarta Sans',sans-serif;}
+  .lwg-in{max-width:760px;margin:0 auto;padding:0 20px;display:flex;flex-direction:column;gap:40px;}
+  .lwg h1,.lwg h2,.lwg h3{color:var(--ink);letter-spacing:-.01em;text-wrap:balance;}
+  .lwg a:focus-visible,.lwg summary:focus-visible{outline:3px solid var(--violet-100);outline-offset:2px;border-radius:10px;}
+  .lwg [hidden]{display:none !important;}
+
+  .lwg-hello{display:flex;flex-direction:column;gap:14px;}
+  .lwg-motif{display:flex;gap:6px;}
+  .lwg-motif i{width:34px;height:8px;border-radius:99px;}
+  .lwg h1{font-size:clamp(30px,5vw,40px);font-weight:800;line-height:1.1;}
+  .lwg h1 em{font-style:normal;background:linear-gradient(transparent 64%,var(--rose-100) 64%);}
+  .lwg-lede{font-size:17px;max-width:56ch;}
+  .lwg-note{display:flex;gap:12px;align-items:center;font-size:14.5px;}
+  .lwg-note b{color:var(--ink);}
+  .lwg-note a{color:var(--violet);font-weight:700;text-decoration:none;}
+  .lwg-avatar{flex:none;width:40px;height:40px;border-radius:50%;background:var(--rose-50);color:var(--rose);font-weight:800;display:grid;place-items:center;border:1px solid var(--rose-100);}
+  .lwg-plan{display:inline-flex;flex-wrap:wrap;gap:6px 10px;align-items:center;align-self:flex-start;background:#fff;border:1px solid var(--edge);border-radius:999px;padding:8px 16px;font-size:14px;}
+  .lwg-plan b{color:var(--ink);}
+  .lwg-plan i{width:9px;height:9px;border-radius:50%;background:var(--green);}
+
+  .lwg-sec{display:flex;flex-direction:column;gap:14px;}
+  .lwg-sec h2{font-size:21px;font-weight:800;}
+  .lwg-sec>div>p{max-width:56ch;}
+
+  .lwg-start{background:#fff;border:1px solid var(--edge);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:14px;}
+  .lwg-prog{display:flex;align-items:center;gap:12px;font-size:13.5px;font-weight:700;color:var(--green);}
+  .lwg-bar{flex:1;height:8px;border-radius:99px;background:var(--green-50);overflow:hidden;}
+  .lwg-bar i{display:block;height:100%;width:0;background:var(--green);border-radius:99px;transition:width .4s;}
+  .lwg-steps{list-style:none;display:flex;flex-direction:column;gap:8px;}
+  .lwg-steps li{display:grid;grid-template-columns:28px 1fr auto;gap:4px 12px;align-items:center;padding:12px 14px;border-radius:14px;background:var(--snow);}
+  .lwg-tick{width:28px;height:28px;border-radius:50%;border:2px solid var(--green-100);display:grid;place-items:center;background:#fff;color:var(--green);font-size:13px;font-weight:800;}
+  .lwg-tick svg{display:none;width:13px;height:13px;color:#fff;}
+  .lwg-steps li.is-done .lwg-tick{background:var(--green);border-color:var(--green);}
+  .lwg-steps li.is-done .lwg-tick svg{display:block;}
+  .lwg-steps li.is-done .lwg-tick span{display:none;}
+  .lwg-steps li.is-done h3{color:var(--slate);}
+  .lwg-steps li.is-done .lwg-act{display:none;}
+  .lwg-steps h3{font-size:15.5px;font-weight:700;}
+  .lwg-steps p{grid-column:2;font-size:14px;}
+  .lwg-act{grid-column:3;grid-row:1 / span 2;display:flex;flex-direction:column;align-items:flex-end;gap:2px;}
+  .lwg-act a{font-weight:700;font-size:14px;text-decoration:none;min-height:44px;display:inline-flex;align-items:center;color:var(--violet-700);}
+  .lwg-mins{font-size:12px;font-weight:700;color:var(--slate);white-space:nowrap;}
+
+  .lwg-goals{display:flex;flex-wrap:wrap;gap:12px;}
+  .lwg-goal{flex:1 1 200px;display:flex;gap:12px;align-items:center;min-height:72px;padding:14px 16px;border-radius:16px;border:1px solid var(--line);background:var(--tint);text-decoration:none;color:var(--ink);font-weight:700;font-size:15px;line-height:1.3;}
+  .lwg-goal small{display:block;font-weight:500;font-size:12.5px;color:var(--dusk);}
+  .lwg-ico{flex:none;width:40px;height:40px;border-radius:12px;background:#fff;display:grid;place-items:center;color:var(--tone);}
+  .lwg-ico svg{width:18px;height:18px;}
+  .lwg .t-rose{--tone:var(--rose);--tint:var(--rose-50);--line:var(--rose-100);}
+  .lwg .t-violet{--tone:var(--violet-700);--tint:var(--violet-50);--line:var(--violet-100);}
+  .lwg .t-sky{--tone:var(--sky);--tint:var(--sky-50);--line:var(--sky-100);}
+  .lwg .t-teal{--tone:var(--teal);--tint:var(--teal-50);--line:var(--teal-100);}
+  .lwg .t-green{--tone:var(--green);--tint:var(--green-50);--line:var(--green-100);}
+
+  .lwg-jobs{display:flex;flex-direction:column;gap:12px;}
+  .lwg-job{background:#fff;border:1px solid var(--edge);border-radius:18px;overflow:hidden;scroll-margin-top:90px;}
+  .lwg-job>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:14px;padding:16px 18px;min-height:72px;}
+  .lwg-job>summary::-webkit-details-marker{display:none;}
+  .lwg-job>summary .lwg-ico{background:var(--tint);}
+  .lwg-job>summary h2{font-size:17.5px;font-weight:800;}
+  .lwg-sub{display:block;font-size:13.5px;color:var(--dusk);}
+  .lwg-txt{flex:1;min-width:0;}
+  .lwg-chev{flex:none;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:var(--mist);color:var(--dusk);transition:transform .2s;}
+  .lwg-chev svg{width:12px;height:12px;}
+  .lwg-job[open]>summary .lwg-chev{transform:rotate(180deg);}
+  .lwg-job[open]>summary{border-bottom:1px solid var(--mist);}
+  .lwg-item{display:grid;grid-template-columns:1fr auto;gap:2px 16px;padding:16px 18px;border-top:1px solid var(--mist);align-items:center;}
+  .lwg-items>.lwg-item:first-child{border-top:0;}
+  .lwg-item h3{font-size:15.5px;font-weight:700;display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;}
+  .lwg-item p{grid-column:1;font-size:14.5px;max-width:52ch;}
+  .lwg-item p a{color:var(--violet);font-weight:600;text-decoration:none;}
+  .lwg-chip{font-size:11.5px;font-weight:700;padding:2px 9px;border-radius:99px;background:var(--mist);color:var(--dusk);white-space:nowrap;}
+  .lwg-yours{display:inline-block;margin-top:4px;font-size:12.5px;font-weight:700;color:var(--tone);background:var(--tint);padding:2px 10px;border-radius:99px;}
+  .lwg-yours:empty{display:none;}
+  .lwg-go{grid-column:2;grid-row:1 / span 2;font-weight:700;font-size:14px;text-decoration:none;white-space:nowrap;min-height:44px;padding:0 14px;border-radius:12px;display:inline-flex;align-items:center;color:var(--tone);background:var(--tint);}
+  .lwg-more{border-top:1px dashed var(--edge);background:var(--snow);}
+  .lwg-more>summary{list-style:none;cursor:pointer;min-height:48px;padding:10px 18px;display:flex;align-items:center;gap:8px;font-weight:700;font-size:13.5px;color:var(--dusk);}
+  .lwg-more>summary::-webkit-details-marker{display:none;}
+  .lwg-more>summary::after{content:"+";margin-left:auto;font-size:18px;color:var(--slate);}
+  .lwg-more[open]>summary::after{content:"\2212";}
+  .lwg-more .lwg-item h3,.lwg-more .lwg-item p{color:var(--slate);}
+  .lwg-more .lwg-go{background:#fff;color:var(--dusk);box-shadow:inset 0 0 0 1px var(--edge);}
+  .lwg.is-mine .lwg-chip{display:none;}
+
+  .lwg-help{background:var(--rose-50);border:1px solid var(--rose-100);border-radius:18px;padding:20px;display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;justify-content:space-between;}
+  .lwg-help h2{font-size:17px;font-weight:800;}
+  .lwg-help p{font-size:14.5px;max-width:48ch;}
+  .lwg-btns{display:flex;flex-wrap:wrap;gap:10px;}
+  .lwg-btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 18px;border-radius:12px;font-weight:700;font-size:14px;text-decoration:none;}
+  .lwg-btn.is-main{background:var(--violet);color:#fff;}
+  .lwg-btn.is-quiet{background:#fff;color:var(--ink);box-shadow:inset 0 0 0 1px var(--edge);}
+  .lwg-fine{font-size:13.5px;color:var(--slate);}
+  .lwg-fine a{color:var(--violet);font-weight:600;text-decoration:none;}
+
+  @media (max-width:560px){
+    .lwg{padding:32px 0 48px;}
+    .lwg-in{gap:32px;padding:0 16px;}
+    .lwg-item{grid-template-columns:1fr;}
+    .lwg-go{grid-column:1;grid-row:auto;justify-self:start;margin-top:8px;}
+    .lwg-steps li{grid-template-columns:28px 1fr;}
+    .lwg-act{grid-column:2;grid-row:auto;flex-direction:row;align-items:center;gap:12px;}
+  }
+  @media (prefers-reduced-motion:reduce){.lwg-chev,.lwg-bar i{transition:none;}}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="lwg-i-check" viewBox="0 0 512 512" fill="currentColor"><path d="M470.6 105.4c12.5 12.5 12.5 32.8 0 45.3l-256 256c-12.5 12.5-32.8 12.5-45.3 0l-128-128c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0L192 338.7 425.4 105.4c12.5-12.5 32.8-12.5 45.3 0z"/></symbol><symbol id="lwg-i-search" viewBox="0 0 512 512" fill="currentColor"><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352a144 144 0 1 0 0-288 144 144 0 1 0 0 288z"/></symbol><symbol id="lwg-i-comment" viewBox="0 0 512 512" fill="currentColor"><path d="M512 240c0 114.9-114.6 208-256 208c-37.1 0-72.3-6.4-104.1-17.9c-11.9 8.7-31.3 20.6-54.3 30.6C73.6 471.1 44.7 480 16 480c-6.5 0-12.3-3.9-14.8-9.9c-2.5-6-1.1-12.8 3.4-17.4c0 0 0 0 0 0s0 0 0 0s0 0 0 0c0 0 0 0 0 0l.3-.3c.3-.3 .7-.7 1.3-1.4c1.1-1.2 2.8-3.1 4.9-5.7c4.1-5 9.6-12.4 15.2-21.6c10-16.6 19.5-38.4 21.4-62.9C17.7 326.8 0 285.1 0 240C0 125.1 114.6 32 256 32s256 93.1 256 208z"/></symbol><symbol id="lwg-i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11.2 14.2 15.2 10"/></symbol><symbol id="lwg-i-heart" viewBox="0 0 512 512" fill="currentColor"><path d="M47.6 300.4L228.3 469.1c7.5 7 17.4 10.9 27.7 10.9s20.2-3.9 27.7-10.9L464.4 300.4c30.4-28.3 47.6-68 47.6-109.5v-5.8c0-69.9-50.5-129.5-119.4-141C347 36.5 300.6 51.4 268 84L256 96 244 84c-32.6-32.6-79-47.5-124.6-39.9C50.5 55.6 0 115.2 0 185.1v5.8c0 41.5 17.2 81.2 47.6 109.5z"/></symbol><symbol id="lwg-i-chart" viewBox="0 0 512 512" fill="currentColor"><path d="M32 32c17.7 0 32 14.3 32 32V400c0 8.8 7.2 16 16 16H480c17.7 0 32 14.3 32 32s-14.3 32-32 32H80c-44.2 0-80-35.8-80-80V64C0 46.3 14.3 32 32 32zm96 96c0-17.7 14.3-32 32-32s32 14.3 32 32V320c0 17.7-14.3 32-32 32s-32-14.3-32-32V128zm128 64c17.7 0 32 14.3 32 32V320c0 17.7-14.3 32-32 32s-32-14.3-32-32V224c0-17.7 14.3-32 32-32zm96-96c17.7 0 32 14.3 32 32V320c0 17.7-14.3 32-32 32s-32-14.3-32-32V128c0-17.7 14.3-32 32-32z"/></symbol><symbol id="lwg-i-chev" viewBox="0 0 512 512" fill="currentColor"><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></symbol></svg>
+<div class="lwg" id="lwg"><div class="lwg-in">
+
+  <div class="lwg-hello">
+    <div class="lwg-motif" aria-hidden="true"><i style="background:#F3C9DF"></i><i style="background:#D4BFF9"></i><i style="background:#C2DAF5"></i><i style="background:#B5E1E4"></i><i style="background:#BFE8D2"></i></div>
+    <h1>Welcome to Lokali. <em>We're glad you're here.</em></h1>
+    <p class="lwg-lede">Lokali helps neighbors find you. No ads to buy, no cut of your sales, no feed to keep up with. This page shows you around. Take what you need and skip the rest.</p>
+    <div class="lwg-note"><span class="lwg-avatar" aria-hidden="true">F</span><span>Stuck on anything? <a href="/contact-us">Write to me</a> and a real person answers. <b>Francesca, founder</b></span></div>
+    <div class="lwg-plan" id="lwg-plan" hidden><i aria-hidden="true"></i><span>Your plan:</span> <b id="lwg-plan-name"></b><span id="lwg-plan-note"></span></div>
+  </div>
+
+  <div class="lwg-sec">
+    <div><h2>Start here</h2><p>Three small steps. They are what shoppers look at first.</p></div>
+    <div class="lwg-start">
+      <div class="lwg-prog" id="lwg-prog" hidden><span id="lwg-prog-t"></span><span class="lwg-bar" aria-hidden="true"><i id="lwg-bar"></i></span></div>
+      <ol class="lwg-steps">
+        <li data-step="account"><span class="lwg-tick"><span>1</span><svg aria-hidden="true"><use href="#lwg-i-check"/></svg></span><h3>Open your storefront</h3><p>Free, and no card needed.</p><span class="lwg-act"><a href="/sign-up">Open your storefront</a><span class="lwg-mins">2 min</span></span></li>
+        <li data-step="about"><span class="lwg-tick"><span>2</span><svg aria-hidden="true"><use href="#lwg-i-check"/></svg></span><h3>Tell people who you are</h3><p>A few lines about your work, and a short hello from you.</p><span class="lwg-act"><a href="/vendor-dashboard/profile#lok-sec-about">Open profile</a><span class="lwg-mins">10 min</span></span></li>
+        <li data-step="listing"><span class="lwg-tick"><span>3</span><svg aria-hidden="true"><use href="#lwg-i-check"/></svg></span><h3>Add your first listing</h3><p>One clear photo and a price is enough to begin.</p><span class="lwg-act"><a href="/vendor-dashboard/services">Add a listing</a><span class="lwg-mins">5 min</span></span></li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="lwg-sec">
+    <div><h2>What would you like to do?</h2><p>Pick one. You can come back for the others any time.</p></div>
+    <div class="lwg-goals">
+      <a class="lwg-goal t-rose" href="#lwg-found"><span class="lwg-ico"><svg aria-hidden="true"><use href="#lwg-i-search"/></svg></span><span>Get found<small>Show up when neighbors search</small></span></a>
+      <a class="lwg-goal t-violet" href="#lwg-customers"><span class="lwg-ico"><svg aria-hidden="true"><use href="#lwg-i-comment"/></svg></span><span>Get more customers<small>Messages, bookings, sales</small></span></a>
+      <a class="lwg-goal t-sky" href="#lwg-trust"><span class="lwg-ico"><svg aria-hidden="true"><use href="#lwg-i-shield"/></svg></span><span>Look established<small>Earn trust at first glance</small></span></a>
+      <a class="lwg-goal t-teal" href="#lwg-back"><span class="lwg-ico"><svg aria-hidden="true"><use href="#lwg-i-heart"/></svg></span><span>Bring people back<small>Turn a visit into a regular</small></span></a>
+      <a class="lwg-goal t-green" href="#lwg-know"><span class="lwg-ico"><svg aria-hidden="true"><use href="#lwg-i-chart"/></svg></span><span>See what's working<small>Simple numbers, no jargon</small></span></a>
+    </div>
+  </div>
+
+  <div class="lwg-jobs">
+    <details class="lwg-job t-rose" id="lwg-found" open>
+      <summary><span class="lwg-ico"><svg aria-hidden="true"><use href="#lwg-i-search"/></svg></span><span class="lwg-txt"><h2>Get found</h2><span class="lwg-sub">How shoppers come across you</span></span><span class="lwg-chev"><svg aria-hidden="true"><use href="#lwg-i-chev"/></svg></span></summary>
+      <div class="lwg-items">
+        <div class="lwg-item" data-min="free"><h3>Categories and areas <span class="lwg-chip">Every plan</span></h3><p>Pick every category and city that fits. Not sure which category? <a href="/vendor-resources/categories-guide">See the categories guide</a>.</p><a class="lwg-go" href="/vendor-dashboard/profile">Open profile</a></div>
+        <div class="lwg-item" data-min="free"><h3>Tags on your listings <span class="lwg-chip">Every plan</span></h3><p>Tags are how shoppers filter The Market. Choose the words your customers would type.</p><a class="lwg-go" href="/vendor-dashboard/services">Open services</a></div>
+        <div class="lwg-item" data-min="free" data-tier="Standard|Elevated|Top of your category"><h3>Your place in search <span class="lwg-chip">Every plan</span></h3><p>Where you appear when someone browses your category. Standard on Free, elevated on Pro, top of category on Featured.<br><span class="lwg-yours"></span></p></div>
+        <div class="lwg-item" data-min="pro"><h3>Your own web address <span class="lwg-chip">Pro and Featured</span></h3><p>golokali.com/your-name. Short enough for a business card.</p><a class="lwg-go" href="/vendor-dashboard/settings">Open settings</a></div>
+        <div class="lwg-item" data-min="pro"><h3>Spotlight <span class="lwg-chip">Pro and Featured</span></h3><p>Book a Spotlight placement to put your storefront in front of more neighbors for a set window.</p><a class="lwg-go" href="/vendor-dashboard/settings#lokali-spotlight">See Spotlight</a></div>
+      </div>
+    </details>
+
+    <details class="lwg-job t-violet" id="lwg-customers">
+      <summary><span class="lwg-ico"><svg aria-hidden="true"><use href="#lwg-i-comment"/></svg></span><span class="lwg-txt"><h2>Get more customers</h2><span class="lwg-sub">Every way a shopper can reach you or buy</span></span><span class="lwg-chev"><svg aria-hidden="true"><use href="#lwg-i-chev"/></svg></span></summary>
+      <div class="lwg-items">
+        <div class="lwg-item" data-min="free"><h3>Messages from shoppers <span class="lwg-chip">Every plan</span></h3><p>They land in your email and your dashboard. Reply, call or text in one tap.</p><a class="lwg-go" href="/vendor-dashboard/leads">Open leads</a></div>
+        <div class="lwg-item" data-min="free"><h3>Buy button <span class="lwg-chip">Every plan</span></h3><p>Already sell on Etsy, Square or your own site? Add the link to a product and shoppers can buy right away.</p><a class="lwg-go" href="/vendor-dashboard/products">Open products</a></div>
+        <div class="lwg-item" data-min="pro"><h3>Booking link and hours <span class="lwg-chip">Pro and Featured</span></h3><p>Add the calendar you already use. Your page gets a Book button. <a href="/vendor-resources/availability-guide">Read the guide</a>.</p><a class="lwg-go" href="/vendor-dashboard/availability">Open availability</a></div>
+        <div class="lwg-item" data-min="pro"><h3>Promo button <span class="lwg-chip">Pro and Featured</span></h3><p>Write a few short invitations. We show a new one every Monday. <a href="/vendor-resources/marketing-tools-guide">Ideas to borrow</a>.</p><a class="lwg-go" href="/vendor-dashboard/marketing">Open marketing</a></div>
+        <div class="lwg-item" data-min="featured"><h3>Calendar on your page <span class="lwg-chip">Featured</span></h3><p>Shoppers book without leaving your storefront.</p><a class="lwg-go" href="/vendor-dashboard/availability">Open availability</a></div>
+        <div class="lwg-item" data-min="featured"><h3>Waitlist for new clients <span class="lwg-chip">Featured</span></h3><p>Fully booked? People join a list and you invite them when a spot opens.</p><a class="lwg-go" href="/vendor-dashboard/availability">Open availability</a></div>
+        <div class="lwg-item" data-min="featured"><h3>Bring in your whole catalog <span class="lwg-chip">Featured</span></h3><p>Upload a spreadsheet and your products arrive with their photos and buy links. <a href="/vendor-resources/import-guide">Read the guide</a>.</p><a class="lwg-go" href="/vendor-dashboard/products">Open products</a></div>
+      </div>
+    </details>
+
+    <details class="lwg-job t-sky" id="lwg-trust">
+      <summary><span class="lwg-ico"><svg aria-hidden="true"><use href="#lwg-i-shield"/></svg></span><span class="lwg-txt"><h2>Look established</h2><span class="lwg-sub">What makes a first-time visitor comfortable reaching out</span></span><span class="lwg-chev"><svg aria-hidden="true"><use href="#lwg-i-chev"/></svg></span></summary>
+      <div class="lwg-items">
+        <div class="lwg-item" data-min="free"><h3>A photo people trust <span class="lwg-chip">Every plan</span></h3><p>Shoppers on Lokali pick people, not logos. <a href="/vendor-resources/profile-photo-guide">How to take one in five minutes</a>.</p><a class="lwg-go" href="/vendor-dashboard/profile">Open profile</a></div>
+        <div class="lwg-item" data-min="free" data-tier="1 photo per listing|3 photos per listing|5 photos per listing"><h3>Listing photos <span class="lwg-chip">Every plan</span></h3><p>Your first photo is the cover. 1 per listing on Free, 3 on Pro, 5 on Featured. <a href="/vendor-resources/product-photo-guide">Product photos</a> and <a href="/vendor-resources/service-photo-guide">service photos</a>.<br><span class="lwg-yours"></span></p></div>
+        <div class="lwg-item" data-min="pro" data-tier="|5 portfolio photos|15 portfolio photos"><h3>Portfolio <span class="lwg-chip">Pro and Featured</span></h3><p>A photo strip across the top of your storefront. 5 photos on Pro, 15 on Featured.<br><span class="lwg-yours"></span></p><a class="lwg-go" href="/vendor-dashboard/profile#lok-portfolio-card">Add photos</a></div>
+        <div class="lwg-item" data-min="pro"><h3>Verified badge <span class="lwg-chip">Pro and Featured</span></h3><p>Confirm your identity once through Stripe. Lokali never sees your ID.</p><a class="lwg-go" href="/vendor-dashboard/settings">Get verified</a></div>
+        <div class="lwg-item" data-min="free"><h3>Reviews <span class="lwg-chip">Every plan</span></h3><p>Every storefront collects reviews. <a href="/vendor-resources/review-link-guide">How to ask a customer you met in person</a>.</p></div>
+        <div class="lwg-item" data-min="pro"><h3>Reply to reviews <span class="lwg-chip">Pro and Featured</span></h3><p>Open your own storefront while signed in and tap Reply under a review. Your answer shows in public.</p></div>
+        <div class="lwg-item" data-min="featured"><h3>Choose what leads your page <span class="lwg-chip">Featured</span></h3><p>Put your best sellers first.</p><a class="lwg-go" href="/vendor-dashboard/services">Open services</a></div>
+        <div class="lwg-item" data-min="featured"><h3>Showcase of the week <span class="lwg-chip">Featured</span></h3><p>A banner at the top of your storefront. Write several and one runs each week.</p><a class="lwg-go" href="/vendor-dashboard/marketing">Open marketing</a></div>
+      </div>
+    </details>
+
+    <details class="lwg-job t-teal" id="lwg-back">
+      <summary><span class="lwg-ico"><svg aria-hidden="true"><use href="#lwg-i-heart"/></svg></span><span class="lwg-txt"><h2>Bring people back</h2><span class="lwg-sub">One visit is nice. A regular is a business.</span></span><span class="lwg-chev"><svg aria-hidden="true"><use href="#lwg-i-chev"/></svg></span></summary>
+      <div class="lwg-items">
+        <div class="lwg-item" data-min="free"><h3>Followers and quick posts <span class="lwg-chip">Every plan</span></h3><p>Shoppers who save your storefront follow you. Post where you will be this weekend or what is new, and it shows on your storefront and the This Weekend page. <a href="/vendor-resources/followers-guide">Read the guide</a>.</p><a class="lwg-go" href="/vendor-dashboard/followers">Open followers</a></div>
+        <div class="lwg-item" data-min="free"><h3>Your share link <span class="lwg-chip">Every plan</span></h3><p>Copy it from your dashboard and post it where your customers already are.</p><a class="lwg-go" href="/vendor-dashboard/dashboard">Open dashboard</a></div>
+        <div class="lwg-item" data-min="free"><h3>Badges and referral months <span class="lwg-chip">Every plan</span></h3><p>Invite another vendor and earn free months. <a href="/vendor-resources/badges-guide">How it works</a>.</p></div>
+        <div class="lwg-item" data-min="pro"><h3>Printable QR code <span class="lwg-chip">Pro and Featured</span></h3><p>For your market table, packaging or van. It opens your storefront.</p><a class="lwg-go" href="/vendor-dashboard/marketing">Open marketing</a></div>
+        <div class="lwg-item" data-min="featured"><h3>Your logo on the code, plus scan counts <span class="lwg-chip">Featured</span></h3><p>Make the code yours and see how many people scanned it.</p><a class="lwg-go" href="/vendor-dashboard/marketing">Open marketing</a></div>
+      </div>
+    </details>
+
+    <details class="lwg-job t-green" id="lwg-know">
+      <summary><span class="lwg-ico"><svg aria-hidden="true"><use href="#lwg-i-chart"/></svg></span><span class="lwg-txt"><h2>See what's working</h2><span class="lwg-sub">Plain numbers, no jargon</span></span><span class="lwg-chev"><svg aria-hidden="true"><use href="#lwg-i-chev"/></svg></span></summary>
+      <div class="lwg-items">
+        <div class="lwg-item" data-min="free"><h3>Dashboard home <span class="lwg-chip">Every plan</span></h3><p>Views, messages and payment taps for the last 7 days, plus your next best step.</p><a class="lwg-go" href="/vendor-dashboard/dashboard">Open dashboard</a></div>
+        <div class="lwg-item" data-min="free" data-tier="60 days of history|180 days of history|360 days of history"><h3>Insights and storefront checkup <span class="lwg-chip">Every plan</span></h3><p>A checklist of what shoppers look for, and your visits over time. 60 days of history on Free, 180 on Pro, 360 on Featured.<br><span class="lwg-yours"></span></p><a class="lwg-go" href="/vendor-dashboard/analytics">Open insights</a></div>
+        <div class="lwg-item" data-min="pro"><h3>Monthly report <span class="lwg-chip">Pro and Featured</span></h3><p>An email each month with who reached out and how. Nothing to set up. Free plans get a short preview.</p></div>
+      </div>
+    </details>
+  </div>
+
+  <div class="lwg-help">
+    <div><h2>Need a hand?</h2><p id="lwg-help-p">Write to us any time. A real person reads every message.</p></div>
+    <div class="lwg-btns"><a class="lwg-btn is-main" href="/contact-us">Contact us</a><a class="lwg-btn is-quiet" id="lwg-plans" href="/pricing">Compare plans</a></div>
+  </div>
+  <p class="lwg-fine">Want more detail on one thing? <a href="/vendor-resources">See all the short guides</a>. Still getting your business off the ground? <a href="/start">Start here</a>.</p>
+</div></div>
+
+<script>
+(function () {
+  'use strict';
+  var root = document.getElementById('lwg');
+  if (!root || root.__lwg) return;
+  root.__lwg = true;
+  var RANK = { free: 0, pro: 1, featured: 2 }, NAME = { free: 'Free', pro: 'Pro', featured: 'Featured' };
+  var jobs = [].slice.call(root.querySelectorAll('.lwg-job'));
+  function $(id) { return document.getElementById(id); }
+
+  // One goal open at a time; a goal tile (or a #hash on arrival) opens its section.
+  jobs.forEach(function (j) {
+    j.addEventListener('toggle', function () {
+      if (j.open) jobs.forEach(function (o) { if (o !== j) o.open = false; });
+    });
+  });
+  function openHash(h) {
+    var t = h && h.length > 1 && document.getElementById(h.slice(1));
+    if (t && t.classList.contains('lwg-job')) t.open = true;
+  }
+  [].forEach.call(root.querySelectorAll('.lwg-goal'), function (a) {
+    a.addEventListener('click', function () { openHash(a.getAttribute('href')); });
+  });
+  openHash(window.location.hash);
+
+  // Signed-in vendor: keep this plan's features in view, fold the rest.
+  function applyPlan(plan) {
+    var r = RANK[plan];
+    if (r == null) return;
+    root.classList.add('is-mine');
+    jobs.forEach(function (j) {
+      var list = j.querySelector('.lwg-items');
+      var items = [].slice.call(list.querySelectorAll('.lwg-item'));
+      var more = document.createElement('details');
+      more.className = 'lwg-more';
+      more.innerHTML = '<summary></summary><div class="lwg-items"></div>';
+      var locked = 0, mine = 0, needs = {};
+      items.forEach(function (it) {
+        var min = it.getAttribute('data-min'), isLocked = RANK[min] > r;
+        var tier = it.getAttribute('data-tier'), y = it.querySelector('.lwg-yours');
+        if (isLocked) {
+          locked++; needs[min] = 1;
+          more.lastChild.appendChild(it);
+          var go = it.querySelector('.lwg-go');
+          if (go) { go.textContent = min === 'pro' ? 'On Pro' : 'On Featured'; go.setAttribute('href', '/pricing'); }
+        } else {
+          mine++;
+          if (tier && y) y.textContent = 'You have: ' + tier.split('|')[r];
+        }
+      });
+      j.querySelector('.lwg-sub').textContent = mine + (mine === 1 ? ' tool' : ' tools') + ' on your plan';
+      if (locked) {
+        var who = needs.pro && needs.featured ? 'Pro or Featured' : needs.pro ? 'Pro' : 'Featured';
+        more.firstChild.textContent = locked + ' more with ' + who;
+        j.appendChild(more);
+      }
+    });
+    $('lwg-plan-name').textContent = NAME[plan];
+    $('lwg-plan-note').textContent = plan === 'free' ? 'Free forever.' : plan === 'featured' ? 'Everything here is yours.' : '';
+    $('lwg-plan').hidden = false;
+    if (plan === 'featured') {
+      $('lwg-plans').hidden = true;
+      $('lwg-help-p').textContent = 'Write to us any time. On Featured, your messages go to the front of the line.';
+    }
+  }
+
+  function setStep(key, done) {
+    var li = root.querySelector('[data-step="' + key + '"]');
+    if (li) li.classList.toggle('is-done', !!done);
+  }
+  function applySteps(v, listings) {
+    var desc = String((v && v.business_description) || '').trim();
+    setStep('account', true);
+    setStep('about', desc.length >= 80 && !!(v && v.owner_bio)); // same two tests as the dashboard checkup
+    setStep('listing', listings > 0);
+    var n = root.querySelectorAll('.lwg-steps li.is-done').length;
+    $('lwg-prog-t').textContent = n === 3 ? 'All 3 done. Nice work.' : n + ' of 3 done';
+    $('lwg-prog').hidden = false;
+    $('lwg-bar').style.width = Math.round(n / 3 * 100) + '%';
+  }
+  function count(res) {
+    var d = res && (res.data || res);
+    var rows = Array.isArray(d) ? d : (d && (d.services || d.products || d.items)) || [];
+    return rows.filter(function (x) { return x && x.is_active !== false; }).length;
+  }
+
+  // The site-wide client boots after this embed parses, so wait for it (10s cap), and do
+  // nothing at all for a signed-out visitor or a shopper account: the static page is right.
+  var tries = 0;
+  (function boot() {
+    var A = window.LokaliAuth, API = window.LokaliAPI;
+    if (!A || !A.ready || !API || !API.plans || !API.vendors) {
+      if (++tries > 40) return;
+      return setTimeout(boot, 250);
+    }
+    A.ready.then(function () {
+      if (!A.isSignedIn()) return;
+      return API.vendors.me().then(function (me) {
+        var v = me && me.data && me.data.vendor;
+        if (!v) return;
+        API.plans.getMyBilling().then(function (b) {
+          var d = b && (b.data || b);
+          applyPlan(String((d && d.plan) || 'free').toLowerCase());
+        }).catch(function () {});
+        Promise.all([
+          API.services && API.services.getMine ? API.services.getMine().catch(function () { return null; }) : null,
+          API.products && API.products.getMine ? API.products.getMine().catch(function () { return null; }) : null
+        ]).then(function (rs) { applySteps(v, count(rs[0]) + count(rs[1])); })
+          .catch(function () {});
+      });
+    }).catch(function () {});
+  })();
+})();
+</script>
