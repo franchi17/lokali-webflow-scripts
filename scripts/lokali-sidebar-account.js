@@ -59,7 +59,7 @@
     '.lok-acct .lok-acct-chip{display:flex;align-items:center;gap:10px;cursor:pointer;}' +
     '.lok-acct .lok-acct-chip .lok-acct-meta{flex:1 1 auto;min-width:0;}' +
     '.lok-acct .lok-acct-chip .lok-acct-name{font-family:\'Plus Jakarta Sans\',sans-serif;font-size:13.5px;font-weight:700;color:#2E2E3F;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}' +
-    '.lok-acct .lok-acct-chip .lok-acct-plan{font-family:\'Plus Jakarta Sans\',sans-serif;font-size:11.5px;font-weight:500;color:#8A8AA0;}' +
+    '.lok-acct .lok-acct-chip .lok-acct-plan{font-family:\'Plus Jakarta Sans\',sans-serif;font-size:12px;font-weight:500;color:#6E6A85;}' + // 2026-09-21: was 11.5px #8A8AA0 = 3.37:1
     '.lok-acct .lok-acct-caret{margin-left:auto;flex:0 0 auto;width:26px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:8px;color:#6B6B80;transition:transform .18s ease,background .12s ease,color .12s ease;}' +
     '.lok-acct .lok-acct-caret svg{width:14px;height:14px;display:block;}' +
     '.lok-acct .lok-acct-chip:hover .lok-acct-caret{background:#F3EBFF;color:#6002EE;}' +
@@ -355,7 +355,7 @@
   // Matched by href where stable and by label where the href is runtime-
   // rewritten (the storefront link becomes the live /{slug} URL). Idempotent.
   var NAV_CSS =
-    '.lok-nav-grp{font-family:\'Plus Jakarta Sans\',sans-serif;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#8E8BA6;padding:14px 8px 5px;line-height:1;}' +
+    '.lok-nav-grp{font-family:\'Plus Jakarta Sans\',sans-serif;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#6E6A85;padding:14px 8px 5px;line-height:1;}' +
     // Rows span the sidebar (Webflow lays them out shrink-to-fit, which put the
     // badge right after the word and squeezed the Marketing row); one type ramp
     // for every row — the Availability/Leads rows carry a plain .text-block-17
@@ -369,7 +369,7 @@
       '.section-11 .div-block-29{flex:0 0 auto;}}' +
     // Short laptop screens: tighten the rhythm so the whole list fits without a
     // scrollbar (which would steal width and clip 'View storefront').
-    '@media (min-width:992px) and (max-height:820px){.div-block-28 .dashboard-btn{margin-bottom:2px !important;}.lok-nav-grp{padding-top:10px;}}' +
+    '@media (min-width:992px) and (max-height:820px){.div-block-28 .dashboard-btn{margin-bottom:2px !important;}.lok-nav-grp{padding-top:8px;}}' +
     '.div-block-28 .dashboard-btn{position:relative;width:100%;box-sizing:border-box;display:flex;align-items:center;}' +
     '.div-block-28 .dashboard-btn .text-block-17{flex:1 1 auto;min-width:0;font-family:\'Plus Jakarta Sans\',sans-serif;font-size:16px;font-weight:500;color:#1A1829;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}' +
     '.div-block-28 .dashboard-btn strong.dashboard-menu{font-size:16px;font-weight:500;}' +

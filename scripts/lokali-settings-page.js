@@ -673,7 +673,7 @@
     '.lok-set-jump a:hover,.lok-set-jump a:focus-visible{border-color:#D4BFF9;color:#6002EE;}' +
     '.lok-set-sec{scroll-margin-top:84px;}' +
     '.lok-set-sub{font-family:' + FONT + ';font-size:13.5px;color:#6E6A85;margin:-4px 0 12px;}' +
-    '.lok-set-grp{font-family:' + FONT + ';font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#6E6A85;margin:18px 0 6px;}' +
+    '.lok-set-grp{font-family:' + FONT + ';font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#6E6A85;margin:18px 0 6px;}' +
     '.lok-set-grp:first-of-type{margin-top:4px;}' +
     '.lok-set-link{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:52px;padding:10px 14px;margin:0 0 10px;border:1px solid #DEDAEE;border-radius:12px;' +
       'background:#F7F6FC;text-decoration:none;font-family:' + FONT + ';}' +
@@ -712,6 +712,20 @@
     // off the card (the title + plan badge pair was a no-wrap flex row).
     '.lok-set-sec .div-block-161,.lok-set-sec .div-block-164{flex-wrap:wrap;}' +
     '.lok-set-sec .div-block-160>div:first-child,.lok-set-sec .div-block-162>div:first-child,.lok-set-sec .div-block-163>div:first-child{flex:1 1 auto;min-width:0;}' +
+    // 2026-09-21, measured on the live signed-in page (F's Chrome): bring this page to the
+    // same floor as the shopper hub: AA text, 44px tap areas, 16px fields.
+    // Slate #8E8BA6 was 3.28:1 on white; #6E6A85 is 5.17:1.
+    '.lok-set-sec .settings-header,.lok-set-sec .settings-lokali-text,.lok-set-sec .settings-lokali-text a{color:#6E6A85 !important;}' +
+    // #EE0290 was 4.16:1 at 14px; #D1007E is 5.23:1.
+    '.lok-set-sec #settings-delete .text-block-94{color:#D1007E !important;}' +
+    // Fields under 16px make iOS zoom the whole page on focus (name fields were 12px).
+    '.lok-set-sec input[type="text"],.lok-set-sec input[type="email"],.lok-set-sec input:not([type]),#lok-slug-input{font-size:16px !important;}' +
+    '#lok-slug-input{min-height:44px;box-sizing:border-box;}' +
+    // Text links were 26px tall: same look, 44px tap area.
+    '.lok-set-sec .link-block-6{display:inline-flex;align-items:center;min-height:44px;}' +
+    // Switches stay 44x24 to the eye; the hit area grows to 44px tall.
+    '.lok-set-tog label.lk-toggle{position:relative;}' +
+    '.lok-set-tog label.lk-toggle::before{content:"";position:absolute;left:0;right:0;top:-10px;bottom:-10px;}' +
     '@media (prefers-reduced-motion:reduce){.lok-set-saved{transition:none;}}';
 
   function sectionOf(id) { var e = $(id); return e && e.closest ? e.closest('section') : null; }
@@ -921,7 +935,8 @@
       if (pwd) pwd.textContent = 'Password, Google, or both. Add or remove a way to sign in.';
       var pwBlock = cp.closest ? cp.closest('.div-block-157') : null;
       var pwHead = pwBlock ? pwBlock.querySelector('.settings-header') : null;
-      if (pwHead && !pwHead.children.length) pwHead.textContent = 'How you sign in';
+      // Sibling labels (FIRST NAME, EMAIL) are TYPED in capitals in Webflow, not CSS-uppercased.
+      if (pwHead && !pwHead.children.length) pwHead.textContent = 'HOW YOU SIGN IN';
     }
     var bar = mk('div'); bar.id = 'lok-set-namebar';
     bar.appendChild(mk('span', '', 'You changed your name'));
