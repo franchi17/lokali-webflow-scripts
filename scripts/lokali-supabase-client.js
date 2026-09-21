@@ -681,6 +681,13 @@
       myLink: function () {
         return withClient(function (c) { return c.rpc('my_review_link'); });
       },
+      // SEC-074 (patch_review_link_rotate.sql): replace the code, so a link or QR
+      // that got into the wrong hands stops admitting reviews. Owner-only and
+      // session-derived server-side; takes no argument on purpose.
+      // { data: { ok, code, vendors_id } | { ok:false, reason } }.
+      rotateLink: function () {
+        return withClient(function (c) { return c.rpc('rotate_review_link'); });
+      },
       // Vendor replies to an approved review on their OWN listing. RLS
       // (reviews_vendor_reply / owns_vendor) permits it; the guard_review_update
       // trigger blocks the vendor from touching the customer's words and stamps

@@ -230,6 +230,13 @@
       '.mkt-focusframe{width:320px;max-width:100%;height:150px;border-radius:12px;overflow:hidden;border:1px solid #EEEDF6;background:#F7F6FC;box-shadow:0 2px 8px rgba(26,24,41,.08);margin-top:6px;}' +
       '.mkt-focusframe img{width:100%;height:100%;object-fit:cover;display:block;touch-action:none;cursor:grab;}' +
       '.mkt-note{font-size:12px;color:#8E8BA6;margin-top:8px;}' +
+      // "Get a new link" (SEC-074): quiet on purpose, it is a rare, destructive-ish
+      // action. #6E6A85 is 5.17:1 on white (the slate above is 3.3:1); 44px tap area.
+      '.mkt-rv-rot{margin-top:10px;font-size:12.5px;color:#6E6A85;line-height:1.5;}' +
+      '.mkt-rv-rot button{border:0;background:none;padding:0;min-height:44px;font-family:inherit;font-size:12.5px;font-weight:700;color:' + BRAND + ';cursor:pointer;text-decoration:underline;text-underline-offset:2px;}' +
+      '.mkt-rv-rot button[disabled]{opacity:.6;cursor:default;}' +
+      '.mkt-rv-rot button.warn{color:#B3261E;}' +
+      '.mkt-rv-rot button.plain{color:#6E6A85;margin-left:14px;}' +
       '.mkt-lock{text-align:center;padding:26px 18px;}' +
       '.mkt-lock p{margin:0 auto 14px;max-width:430px;font-size:13.5px;color:#8E8BA6;}' +
       '.mkt-lock .mkt-lockh{font-size:16px;font-weight:700;color:#3E3A55;margin-bottom:6px;}' +
@@ -579,10 +586,59 @@
           '<p class="mkt-note">' + (self.reviewCode
             ? 'The link opens your storefront on the Reviews tab. Anyone you give it to can sign in and post, including customers you met in person. Those reviews are labeled "Invited by the vendor", and reviews from people who contacted you through Lokali keep their "Verified contact" label.'
             : 'The link opens your storefront on the Reviews tab. Reviewers sign in first, and only people who actually contacted you can post, so the ask never lowers your trust.') + '</p>' +
+          self.rotateRowHtml() +
         '</div>' +
       '</div>' +
       rows +
     '</div>';
+  };
+  // ---- "Get a new link" (SEC-074) ---------------------------------------------
+  // The review code is a bearer token we ask vendors to PUBLISH (QR on a stall,
+  // texts, emails). If it reaches someone it should not, this replaces it: the
+  // old link and any printed QR stop admitting reviews at once. Two steps, because
+  // that is exactly what makes it costly: a vendor with 200 printed cards must
+  // not lose them to a stray tap. Shown only when there is a code to replace and
+  // the client method exists (absent-until-the-tag guard, like myLink above).
+  Page.prototype.canRotateReviewLink = function () {
+    var api = window.LokaliSupabaseAPI;
+    return !!(this.reviewCode && api && api.reviews && api.reviews.rotateLink);
+  };
+  Page.prototype.rotateRowHtml = function () {
+    if (!this.canRotateReviewLink()) return '';
+    if (!this.rotateArmed) {
+      return '<p class="mkt-rv-rot">Link or QR code in the wrong hands? <button type="button" data-act="rv-rotate">Get a new link</button></p>';
+    }
+    return '<p class="mkt-rv-rot" role="alert">Your current link and any QR code you printed will stop working for new reviews. Reviews you already have are not affected. ' +
+      '<button type="button" class="warn" data-act="rv-rotate-yes">Yes, get a new link</button>' +
+      '<button type="button" class="plain" data-act="rv-rotate-no">Keep this one</button></p>';
+  };
+  // Redraw ONLY this card: a full render() would throw away a form someone has
+  // open in another card. Clicks are delegated from the mount, so new buttons work.
+  Page.prototype.redrawReviewCard = function () {
+    var old = this.mount && this.mount.querySelector('.mkt-card[data-kind="review"]');
+    if (!old) return;
+    var box = document.createElement('div');
+    box.innerHTML = this.reviewCardHtml();
+    if (box.firstChild) old.parentNode.replaceChild(box.firstChild, old);
+  };
+  Page.prototype.rotateReviewLink = function (btn) {
+    var self = this;
+    if (self.rotating || !self.canRotateReviewLink()) return;
+    self.rotating = true;
+    if (btn) { btn.disabled = true; btn.textContent = 'Getting a new link\u2026'; }
+    var finish = function (msg) { self.rotating = false; self.rotateArmed = false; self.redrawReviewCard(); toast(msg); };
+    window.LokaliSupabaseAPI.reviews.rotateLink().then(function (res) {
+      var d = res && res.data;
+      // Same shape check as the initial load: never render a code we did not expect.
+      if (res && !res.error && d && d.ok && /^[a-f0-9]{10}$/.test(d.code || '')) {
+        self.reviewCode = d.code;
+        finish('New link ready. The old one no longer works, so reprint any QR codes.');
+      } else {
+        finish('We could not make a new link just now. Your current link still works.');
+      }
+    }).catch(function () {
+      finish('We could not make a new link just now. Your current link still works.');
+    });
   };
   Page.prototype.copyReviewLink = function () {
     var text = 'https://www.golokali.com/' + this.reviewPath() + '#reviews';
@@ -1036,6 +1092,9 @@
       else if (act === 'rv-copy-link') self.copyReviewLink();
       else if (act === 'rv-png') self.downloadReviewQr('png');
       else if (act === 'rv-svg') self.downloadReviewQr('svg');
+      else if (act === 'rv-rotate') { self.rotateArmed = true; self.redrawReviewCard(); }
+      else if (act === 'rv-rotate-no') { self.rotateArmed = false; self.redrawReviewCard(); }
+      else if (act === 'rv-rotate-yes') self.rotateReviewLink(btn);
       // Spotlight creative (phase 2)
       else if (act === 'sc-upload') {
         var sf = btn.parentElement.querySelector('[data-f="sc-file"]');
