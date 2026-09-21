@@ -1,10 +1,14 @@
 /**
  * lokali-start.js - "Start Here": the new-business checklist at /start (2026-09-20, F).
  *
- * A public, no-account page: product or service first (services are where the
+ * A public, no-account page. v3 (2026-09-20, F): WHERE comes first, one of the six
+ * live Lokali cities, which resolves to a county (PLACE below; a city that spans
+ * counties asks which one). Then product or service (services are where the
  * licenses and certifications live), then the kind, then how you are set up,
  * build a tailored checklist that mixes the OFFICIAL steps for a small business
- * in Montgomery County, Texas with the Lokali steps. Progress is kept in this
+ * in that Texas county with the Lokali steps. Only four things vary by place:
+ * the county clerk name filing, the food permit office, the SBDC and the markets.
+ * All of them live in COUNTY / CITY so the re-check is one block. Progress is kept in this
  * browser only (localStorage, try/catch) so it works signed out and prints clean.
  *
  * EVERY legal fact below was read on the official page named in its `src` on
@@ -22,12 +26,15 @@
   mount.setAttribute('data-ready', '1');
 
   var LAST_CHECKED = 'September 20, 2026';
-  var KEY = 'lokali_start_v2';
+  var KEY = 'lokali_start_v3';
   var FONT = '"Plus Jakarta Sans",sans-serif';
 
   // Every entry was opened and read on LAST_CHECKED. `t` is the link label.
   var SRC = {
     clerk: { t: 'Montgomery County Clerk, Assumed Names', u: 'https://www.mctx.org/index_clerk/public_records/assumed_names_dba/index.php' },
+    clerkharris: { t: 'Harris County Clerk, Personal Records (Assumed Names)', u: 'https://www.cclerk.hctx.net/PersonalRecords.aspx' },
+    clerkfb: { t: 'Fort Bend County Clerk, DBA/Assumed Name', u: 'https://www.fortbendcountytx.gov/government/departments/county-clerk/dba-assumed-name' },
+    clerkwaller: { t: 'Waller County Clerk, Assumed Name', u: 'https://www.co.waller.tx.us/page/CC.AssumedName' },
     sos: { t: 'Texas Secretary of State, Form 205 instructions', u: 'https://www.sos.state.tx.us/corp/instructions/205.shtml' },
     irs: { t: 'IRS, Get an employer identification number', u: 'https://www.irs.gov/businesses/small-businesses-self-employed/get-an-employer-identification-number' },
     tax: { t: 'Texas Comptroller, Sales tax permit', u: 'https://comptroller.texas.gov/taxes/sales/faq/permit.php' },
@@ -35,6 +42,10 @@
     dshs: { t: 'Texas Department of State Health Services, Cottage food production', u: 'https://www.dshs.texas.gov/retail-food-establishments/texas-cottage-food-production' },
     dshsfood: { t: 'Texas Department of State Health Services, Retail food permits', u: 'https://www.dshs.texas.gov/retail-food-establishments/permitting-information-retail-food-establishments' },
     mcfood: { t: 'Montgomery County Environmental Health, Consumer health and food', u: 'https://www.mctx.org/departments/departments_d_-_f/environmental_health/consumer_health_and_food.php' },
+    hcphfood: { t: 'Harris County Public Health, Food Safety Program', u: 'https://publichealth.harriscountytx.gov/Divisions-Offices/Divisions/Environmental-Public-Health/Food-Safety-Program' },
+    houfood: { t: 'Houston Health Department, Food permits', u: 'https://www.houstonhealth.org/services/permits/food-permits' },
+    fbfood: { t: 'Fort Bend County Environmental Health, Food establishments', u: 'https://www.fortbendcountytx.gov/government/departments/health-and-human-services/environmental-health/food-establishments' },
+    fbarea: { t: 'Fort Bend County Environmental Health, Service area', u: 'https://www.fortbendcountytx.gov/government/departments/health-and-human-services/environmental-health/service-area' },
     tdlr: { t: 'Texas Department of Licensing and Regulation, full list of licenses', u: 'https://www.tdlr.texas.gov/licenses.htm' },
     tsbpe: { t: 'Texas State Board of Plumbing Examiners', u: 'https://tsbpe.texas.gov/' },
     ccr: { t: 'Texas Health and Human Services, Become a child care provider', u: 'https://www.hhs.texas.gov/providers/child-care-regulation/become-a-provider' },
@@ -54,10 +65,68 @@
   // Free help, shown under every checklist. Same rule: opened and read on LAST_CHECKED.
   var HELP = [
     { t: 'SBA: 10 steps to start your business', d: 'The federal government\'s own walk-through, from market research to insurance.', u: 'https://www.sba.gov/business-guide/10-steps-start-your-business' },
-    { t: 'Small Business Development Center at The Woodlands', d: 'One-on-one business advising for Montgomery County, run by Sam Houston State University with SBA funding.', u: 'https://www.sbdc.uh.edu/sbdc/Sam_Houston_State_University_SBDC_at_The_Woodlands.asp' },
+    null, // the local SBDC, filled per place by help()
     { t: 'SCORE mentors', d: 'Volunteer mentors who have run businesses themselves. An SBA partner.', u: 'https://www.score.org/find-mentor' },
     { t: 'Texas Small Business Resource Portal', d: 'Five short questions, then a list of state and local resources from the Governor\'s office.', u: 'https://gov.texas.gov/business/page/small-business-portal' }
   ];
+
+  // ---- place (v3). Each county fact was read on its official page on LAST_CHECKED. ----
+  // dba = the sentence after "File an Assumed Name Certificate with the ...".
+  // food = who permits catering / food service. sbdc = the free advising center.
+  var MOBILE = ' Food trucks and other mobile vendors moved to the Texas Department of State Health Services on July 1, 2026.';
+  var CITYHALL = ' Inside any other city\'s limits, ask your city hall first, since some cities run their own.';
+  var COUNTY = {
+    montgomery: {
+      t: 'Montgomery County',
+      dba: 'Montgomery County Clerk. It costs $22.50 for one owner, plus $0.50 for each extra owner, and you sign it in front of a notary.', dbasrc: ['clerk'],
+      food: 'In Montgomery County, food establishments and temporary event booths are permitted by County Environmental Health.' + MOBILE, foodsrc: ['mcfood', 'dshsfood'],
+      sbdc: { t: 'Small Business Development Center at The Woodlands', d: 'One-on-one business advising for Montgomery County, run by Sam Houston State University with SBA funding.', u: 'https://www.sbdc.uh.edu/sbdc/Sam_Houston_State_University_SBDC_at_The_Woodlands.asp' }
+    },
+    harris: {
+      t: 'Harris County',
+      dba: 'Harris County Clerk. It costs $24 for one owner if your form is already notarized, or $25 plus a $1 witnessing fee if you sign at the clerk\'s office with your ID. Each extra owner adds $0.50. You can file by mail or at any clerk location, and the filing is good for up to ten years.', dbasrc: ['clerkharris'],
+      food: 'Harris County Public Health permits food businesses in the unincorporated parts of the county and in 23 cities that have no health department of their own. The City of Houston runs its own, the Houston Health Department. Not sure which you are in? Ask your city hall first.' + MOBILE, foodsrc: ['hcphfood', 'houfood', 'dshsfood'],
+      sbdc: { t: 'Houston Center Small Business Development Center', d: 'One-on-one business advising for Central and North Harris County, part of the University of Houston network, with SBA funding.', u: 'https://www.sbdc.uh.edu/sbdc/Houston_Center_SBDC.asp' }
+    },
+    fortbend: {
+      t: 'Fort Bend County',
+      dba: 'Fort Bend County Clerk. It costs $14 for one owner if your form is already notarized, plus $0.50 for each extra owner, or $15 plus $1.50 for each extra owner if the clerk notarizes it for you. The filing is good for up to ten years.', dbasrc: ['clerkfb'],
+      food: 'Fort Bend County Environmental Health permits food businesses in the unincorporated parts of the county.' + CITYHALL + MOBILE, foodsrc: ['fbfood', 'fbarea', 'dshsfood'],
+      sbdc: { t: 'Fort Bend County Small Business Development Center', d: 'One-on-one business advising for Fort Bend County, part of the University of Houston network, with SBA funding.', u: 'https://www.sbdc.uh.edu/sbdc/Fort_Bend_County_SBDC.asp' }
+    },
+    waller: {
+      t: 'Waller County',
+      dba: 'Waller County Clerk. It costs $12.50 including one signature, plus $0.50 for each extra signature. Sign it in front of a notary or in front of a clerk at the office, then file in person or by mail.', dbasrc: ['clerkwaller'],
+      food: 'Where no city or county office permits food businesses, the Texas Department of State Health Services does. Waller County does not list a food permit of its own, so ask your city hall first, then start with the state.' + MOBILE, foodsrc: ['dshsfood'],
+      sbdc: { t: 'Prairie View A&M University Small Business Development Center', d: 'One-on-one business advising for Waller and Grimes counties, part of the University of Houston network, with SBA funding.', u: 'https://www.sbdc.uh.edu/sbdc/Prairie_View_AM_University_SBDC.asp' }
+    }
+  };
+  // counties[0] is the default; more than one shows the county question. Katy has no
+  // default (def: false): the city itself sits in three counties.
+  var WOODLANDS_MARKETS = 'The Woodlands Farmers Market at Grogan\'s Mill, the Farmer\'s Market on Tamina, Gosling Sunday Market and Rayford Sunday Market';
+  var CITY = [
+    { k: 'woodlands', t: 'The Woodlands', counties: ['montgomery', 'harris'], markets: WOODLANDS_MARKETS },
+    { k: 'woodforest', t: 'Woodforest', counties: ['montgomery'], markets: WOODLANDS_MARKETS },
+    { k: 'houston', t: 'Houston', counties: ['harris', 'fortbend', 'montgomery'], markets: 'Urban Harvest Farmers Market, Heights Mercantile Farmers Market and the East End Farmers Market on Navigation' },
+    { k: 'spring', t: 'Spring', counties: ['harris', 'montgomery'], markets: 'Old Town Spring Farmers Market, Gosling Sunday Market and Rayford Sunday Market' },
+    { k: 'tomball', t: 'Tomball', counties: ['harris', 'montgomery'], markets: 'Tomball Farmers Market, which runs every Saturday' },
+    { k: 'katy', t: 'Katy', counties: ['harris', 'fortbend', 'waller'], def: false, markets: 'Old Katy Farmers Market, the Farmers Market on Grand Parkway and the Sunday market at LaCenterra' }
+  ];
+  function cityOf(k) { for (var i = 0; i < CITY.length; i++) if (CITY[i].k === k) return CITY[i]; return null; }
+  function countyChips(c) { return c.counties.map(function (k) { return { k: k, t: COUNTY[k].t }; }); }
+  // Houston city limits cross county lines, and so does the Houston Health Department.
+  function foodFor(st) {
+    var C = COUNTY[st.county];
+    if (st.city === 'houston') return { d: 'Inside Houston city limits, food businesses are permitted by the Houston Health Department, which also inspects caterers and temporary event booths. A Houston mailing address outside the city limits falls to your county instead.' + MOBILE, src: ['houfood'].concat(C.foodsrc.filter(function (k) { return k !== 'houfood'; })) };
+    if (st.city === 'katy' && st.county !== 'waller') return { d: 'Katy sits in three counties, so the office depends on your address. Inside Katy city limits, start with the City of Katy. Outside them, in ' + C.t + ': ' + C.food, src: C.foodsrc };
+    return { d: C.food, src: C.foodsrc };
+  }
+  // The Houston Center serves Central and North Harris, so west Harris (Katy) gets the finder.
+  function sbdcFor(st) {
+    if (st.city === 'katy' && st.county === 'harris') return { t: 'Find your Small Business Development Center', d: 'One-on-one business advising with SBA funding. The University of Houston network lists every center around Katy, including Houston, Fort Bend County and Prairie View A&M.', u: 'https://www.sbdc.uh.edu/sbdc/Find_Your_SBDC.asp' };
+    return COUNTY[st.county].sbdc;
+  }
+  function help(st) { return HELP.map(function (h) { return h || sbdcFor(st); }); }
 
   var KIND = [
     { k: 'product', t: 'A product' },
@@ -98,12 +167,13 @@
     if (setup === 'llc') {
       out.push({ id: 'llc', t: 'Form your LLC', d: 'File a Certificate of Formation (Form 205) with the Texas Secretary of State. The filing fee is $300, plus 2.7% if you pay by card. An LLC that trades under a different name registers that name with the Secretary of State, not the county.', src: ['sos'] });
     } else {
-      out.push({ id: 'dba', t: 'Register your business name', d: 'Doing business under any name other than your own? File an Assumed Name Certificate with the Montgomery County Clerk. It costs $22.50 for one owner, plus $0.50 for each extra owner, and you sign it in front of a notary.' + (setup === 'unsure' ? ' Most people start this way. An LLC costs $300 to form and is worth asking an SBDC advisor about as you grow (see Free help below).' : ''), src: ['clerk'] });
+      out.push({ id: 'dba', t: 'Register your business name', d: 'Doing business under any name other than your own? File an Assumed Name Certificate with the ' + COUNTY[st.county].dba + (setup === 'unsure' ? ' Most people start this way. An LLC costs $300 to form and is worth asking an SBDC advisor about as you grow (see Free help below).' : ''), src: COUNTY[st.county].dbasrc });
     }
     out.push({ id: 'ein', t: 'Get a tax ID number if you need one', d: 'An EIN is free and the IRS issues it online right away. You need one to hire employees or to run a partnership or corporation. As a sole owner it is optional, and it lets you hand clients an EIN instead of your Social Security number. The IRS never charges for it, so skip any site that does.', src: ['irs'] });
 
     if (service && st.service === 'foodsvc') {
-      out.push({ id: 'foodpermit', t: 'Get your food permit before you serve', d: 'Catering and other food service is not covered by the home kitchen rules. In Montgomery County, food establishments and temporary event booths are permitted by County Environmental Health. Food trucks and other mobile vendors moved to the Texas Department of State Health Services on July 1, 2026.', src: ['mcfood', 'dshsfood'] });
+      var F = foodFor(st);
+      out.push({ id: 'foodpermit', t: 'Get your food permit before you serve', d: 'Catering and other food service is not covered by the home kitchen rules. ' + F.d, src: F.src });
       out.push({ id: 'handler', t: 'Take a food handler course', d: 'Food safety training is part of every food permit. Ask the office that issues yours whether you also need a Certified Food Manager.', src: ['dshsfood'] });
     } else if (service) {
       var L = LICENSE[st.service];
@@ -133,17 +203,20 @@
 
     out.push({ id: 'lokali', lokali: true, t: 'Create your free Lokali account', d: 'Open your storefront and it is up in about ten minutes: photos, what you offer, how to reach you, and your own QR code and review link, so the first customers you meet can find you again.', cta: { t: 'Open your storefront', u: '/sign-up' } });
     if (product) {
-      out.push({ id: 'market', t: 'Find your first market', d: 'Local options include The Woodlands Farmers Market at Grogan\'s Mill, the Farmer\'s Market on Tamina, Gosling Sunday Market and Rayford Sunday Market. Check each market\'s site for how to apply.' });
+      out.push({ id: 'market', t: 'Find your first market', d: 'Local options include ' + cityOf(st.city).markets + '. Check each market\'s site for how to apply, and ask what permits and insurance they want to see.' });
     }
     out.push({ id: 'ask', lokali: true, t: 'Ask your first customers for a review', d: 'One or two reviews change how a stranger reads your storefront. Your Lokali dashboard has a review link and QR code made for handing to customers you meet in person.' });
     return out;
   }
 
   // ---- state (this browser only) ----
-  var state = { kind: null, product: null, service: null, setup: null, done: {} };
+  var state = { city: null, county: null, kind: null, product: null, service: null, setup: null, done: {} };
   try {
-    var raw = JSON.parse(localStorage.getItem(KEY) || 'null');
+    // v2 had no place question; its answers and ticks carry over and only the city is asked.
+    var raw = JSON.parse(localStorage.getItem(KEY) || localStorage.getItem('lokali_start_v2') || 'null');
     if (raw && typeof raw === 'object') {
+      var rc = cityOf(raw.city);
+      if (rc) { state.city = rc.k; state.county = (rc.counties.indexOf(raw.county) !== -1) ? raw.county : (rc.def === false ? null : rc.counties[0]); }
       state.kind = raw.kind || null; state.product = (raw.product && raw.product !== 'goods') ? raw.product : null; // 'goods' was split 2026-09-20
       state.service = raw.service || null; state.setup = raw.setup || null;
       state.done = (raw.done && typeof raw.done === 'object') ? raw.done : {};
@@ -152,7 +225,7 @@
   function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
 
   function isReady() {
-    if (!state.kind || !state.setup) return false;
+    if (!state.city || !state.county || !state.kind || !state.setup) return false;
     if (state.kind !== 'service' && !state.product) return false;
     if (state.kind !== 'product' && !state.service) return false;
     return true;
@@ -219,18 +292,26 @@
 
   function render() {
     var ready = isReady();
+    var city = cityOf(state.city);
+    var placed = !!(state.city && state.county);
     var html = '<div class="lkst"><div class="lkst-wrap">' +
       '<div><span class="lkst-eyebrow">Start here</span>' +
-      '<h1>Starting a small business in Montgomery County?</h1>' +
-      '<p class="lkst-lede">Answer a few questions and get a checklist made for what you sell: the official steps, what each one costs, the licenses to check, and where Lokali fits. It is free, and you do not need an account.</p></div>' +
-      '<div class="lkst-card"><p class="lkst-q">Are you selling a product or a service?</p>' + chips('kind', 'Product or service', KIND, state.kind) + '</div>';
-    if (state.kind === 'product' || state.kind === 'both') {
+      '<h1>Starting a small business' + (city ? ' in ' + esc(city.t) : '') + '?</h1>' +
+      '<p class="lkst-lede">Answer a few questions and get a checklist made for where you are and what you sell: the official steps, what each one costs, the licenses to check, and where Lokali fits. It is free, and you do not need an account.</p></div>' +
+      '<div class="lkst-card"><p class="lkst-q">Where are you setting up?</p><p class="lkst-hint">These are the communities Lokali serves today. Pick the one your business will call home.</p>' + chips('city', 'Your city', CITY, state.city) + '</div>';
+    if (city && city.counties.length > 1) {
+      html += '<div class="lkst-card"><p class="lkst-q">Which county is your address in?</p><p class="lkst-hint">' + (city.def === false ? esc(city.t) + ' sits in three counties, and your county decides where you file your business name.' : 'Most of ' + esc(city.t) + ' is in ' + COUNTY[city.counties[0]].t + ', so we picked it for you. Change it if your address is across the line.') + ' Your county is printed on your property tax bill and your voter registration card.</p>' + chips('county', 'Your county', countyChips(city), state.county) + '</div>';
+    }
+    if (placed) {
+      html += '<div class="lkst-card"><p class="lkst-q">Are you selling a product or a service?</p>' + chips('kind', 'Product or service', KIND, state.kind) + '</div>';
+    }
+    if (placed && (state.kind === 'product' || state.kind === 'both')) {
       html += '<div class="lkst-card"><p class="lkst-q">What kind of product?</p>' + chips('product', 'Kind of product', PRODUCT, state.product) + '</div>';
     }
-    if (state.kind === 'service' || state.kind === 'both') {
+    if (placed && (state.kind === 'service' || state.kind === 'both')) {
       html += '<div class="lkst-card"><p class="lkst-q">What kind of service?</p><p class="lkst-hint">Services are where licenses and certifications come in, so this one shapes your list the most.</p>' + chips('service', 'Kind of service', SERVICE, state.service) + '</div>';
     }
-    if (state.kind) {
+    if (placed && state.kind) {
       html += '<div class="lkst-card"><p class="lkst-q">How are you setting up?</p>' + chips('setup', 'Business setup', SETUP, state.setup) + '</div>';
     }
 
@@ -238,7 +319,7 @@
       var list = steps(state);
       var n = list.filter(function (s) { return state.done[s.id]; }).length;
       var pct = Math.round(n / list.length * 100);
-      html += '<div class="lkst-card" id="lkst-list"><div class="lkst-head"><h2>Your checklist</h2><span class="lkst-count">' + n + ' of ' + list.length + ' done</span></div>' +
+      html += '<div class="lkst-card" id="lkst-list"><div class="lkst-head"><h2>Your checklist for ' + esc(city.t) + ', ' + COUNTY[state.county].t + '</h2><span class="lkst-count">' + n + ' of ' + list.length + ' done</span></div>' +
         '<div class="lkst-bar" role="img" aria-label="' + n + ' of ' + list.length + ' steps done"><i style="width:' + pct + '%"></i></div>' +
         list.map(function (s) {
           var on = !!state.done[s.id];
@@ -254,14 +335,14 @@
         '<div class="lkst-noprint"><button type="button" class="lkst-btn ghost" data-act="print">Print this checklist</button></div>' +
         '<div class="lkst-card"><div class="lkst-head"><h2>Free help, from people who do this every day</h2></div>' +
         '<p class="lkst-hint">None of these charge you, and none of them are Lokali.</p>' +
-        HELP.map(function (h) {
+        help(state).map(function (h) {
           return '<div class="lkst-help"><a href="' + h.u + '" target="_blank" rel="noopener">' + esc(h.t) + '</a><p>' + esc(h.d) + '</p></div>';
         }).join('') + '</div>' +
         '<div class="lkst-card lkst-join lkst-noprint"><div><h2>Ready for customers?</h2><p>Create your free Lokali account and put your business in front of neighbors in about ten minutes.</p></div>' +
         '<a class="lkst-btn" href="/sign-up">Open your storefront</a></div>';
     }
 
-    html += '<p class="lkst-fine">This is general information, not legal advice. Fees and rules change, so follow the official source on each step. Every fact here was checked against its official page on ' + LAST_CHECKED + '. County steps are for Montgomery County. In Harris, Fort Bend or Waller County the state steps are the same and your county clerk sets the name filing fee. Your progress is saved in this browser only. Spotted something out of date? <a href="/contact-us">Tell us</a>.</p>' +
+    html += '<p class="lkst-fine">This is general information, not legal advice. Fees and rules change, so follow the official source on each step. Every fact here was checked against its official page on ' + LAST_CHECKED + '. County and city steps follow the place you picked, and the state and federal steps are the same everywhere in Texas. Your progress is saved in this browser only. Spotted something out of date? <a href="/contact-us">Tell us</a>.</p>' +
       '</div></div>';
     mount.innerHTML = html;
     // Usage (lokali-guide-usage.js, patch_guide_events.sql): announce a built checklist.
@@ -281,7 +362,9 @@
     if (t.getAttribute('data-act') === 'print') { window.print(); return; }
     var g = t.getAttribute('data-g'), k = t.getAttribute('data-k');
     var first = !isReady();
-    state[g] = k; save(); render();
+    state[g] = k;
+    if (g === 'city') { var c = cityOf(k); state.county = (c.def === false) ? null : c.counties[0]; }
+    save(); render();
     var again = mount.querySelector('[data-g="' + g + '"][data-k="' + k + '"]');
     if (again) again.focus();
     if (first && isReady()) {
