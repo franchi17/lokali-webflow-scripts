@@ -260,7 +260,11 @@
     }
     return Promise.all([
       api.vendors.me()
-        .then(function (res) { return (res && (res.data || res)) || {}; })
+        // vendors.me() resolves { data: { vendor: {...} } } on the Supabase adapter
+        // (the legacy client returned the row flat). Reading identity_status off
+        // the wrapper was always undefined, so every VERIFIED vendor saw
+        // 'Not verified' + a Get Verified button (F 2026-09-20, vendor 92).
+        .then(function (res) { var d = (res && (res.data || res)) || {}; return d.vendor || d; })
         .catch(function (err) {
           console.warn('[lokali-verification] vendors.me failed', err);
           return {};

@@ -681,7 +681,18 @@
     '.lok-set-link b{display:block;font-size:15px;font-weight:600;color:#1A1829;}' +
     '.lok-set-link span{display:block;font-size:13px;color:#6E6A85;}' +
     '.lok-set-link i{font-style:normal;font-size:14px;font-weight:700;color:#6002EE;flex:0 0 auto;}' +
-    '.lok-set-tog{display:flex !important;align-items:center;gap:8px;flex:0 0 auto;}' +
+    '.lok-set-tog{display:flex !important;align-items:center;justify-content:flex-end;gap:8px;flex:0 0 auto;margin:0 !important;padding:0 !important;}' +
+    // .w-embed carries clearfix ::before/::after; as flex items they put a gap to the
+    // RIGHT of the switch, so a tapped switch sat 8px left of its neighbours.
+    '.lok-set-tog::before,.lok-set-tog::after{display:none !important;content:none !important;}' +
+    '.lok-set-tog label.lk-toggle{margin:0 !important;flex:0 0 auto;}' +
+    // Billing row: the native lilac pill was built around one sentence-long link.
+    '.lok-set-sec .div-block-158.stripe{background:transparent !important;padding:0 !important;border-radius:0 !important;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;}' +
+    '.lok-set-sec .div-block-158.stripe .lok-set-billnote{flex:1 1 240px;min-width:0;}' +
+    '.lok-set-sec .div-block-158.stripe a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 18px;border:1px solid #DEDAEE;border-radius:10px;background:#fff;text-decoration:none;flex:0 0 auto;}' +
+    '.lok-set-sec .div-block-158.stripe a:hover{border-color:#D4BFF9;background:#EEE6FF;}' +
+    '.lok-set-sec .div-block-158.stripe a img{display:none;}' +
+    '.lok-set-sec .div-block-158.stripe a .text-link{font-family:' + FONT + ';font-size:14px;font-weight:700;color:#4A4761;margin:0;}' +
     '.lok-set-saved{font-family:' + FONT + ';font-size:12.5px;font-weight:700;color:#1B7A4B;opacity:0;transition:opacity .2s;min-width:42px;text-align:right;}' +
     '.lok-set-saved.on{opacity:1;}' +
     '.lok-set-btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 18px;border-radius:10px;border:1px solid #D4BFF9;background:#fff;' +
@@ -729,10 +740,11 @@
     if (input && title) { input.setAttribute('role', 'switch'); input.setAttribute('aria-label', title); }
   }
 
-  // "Saved", right beside the switch that was tapped.
-  function flashSaved(inputEl) {
-    if (!inputEl || !inputEl.closest) return;
-    var lab = inputEl.closest('label'); if (!lab || !lab.parentNode) return;
+  // Every switch host gets the same layout (and its hidden 'Saved' chip) up front,
+  // so the switches share one right edge whether or not they have been tapped.
+  function savedChip(inputEl) {
+    if (!inputEl || !inputEl.closest) return null;
+    var lab = inputEl.closest('label'); if (!lab || !lab.parentNode) return null;
     var host = lab.parentNode;
     var chip = host.querySelector('.lok-set-saved');
     if (!chip) {
@@ -741,6 +753,11 @@
       host.classList.add('lok-set-tog');
       host.insertBefore(chip, lab);
     }
+    return chip;
+  }
+  // "Saved", right beside the switch that was tapped.
+  function flashSaved(inputEl) {
+    var chip = savedChip(inputEl); if (!chip) return;
     chip.classList.add('on');
     clearTimeout(chip._t);
     chip._t = setTimeout(function () { chip.classList.remove('on'); }, 1800);
@@ -945,6 +962,7 @@
     put(rowOf('toggle-notify-announcements')); put(rowOf('toggle-notify-circle'));
     put(rowOf('toggle-notify-letter')); put(rowOf('toggle-notify-promotional'));
     mountPauseRow(sMail);
+    Array.prototype.forEach.call(document.querySelectorAll('.lok-set-sec label.lk-toggle input'), savedChip);
 
     // On Free, populate() adds a 'Pro & Featured' pill that links to pricing; the
     // native 'Pro & Featured only' badge beside it said the same thing twice.
