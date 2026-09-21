@@ -67,13 +67,26 @@
       var i = ids();
       var body = { p_visitor: i.visitor, p_visit: i.visit, p_kind: kind, p_persistent: i.persistent, p_ref: ref(), p_target: target };
       if (detail) body.p_detail = detail;
-      var token = null;
-      try { token = window.LokaliAuth && window.LokaliAuth.token ? window.LokaliAuth.token() : null; } catch (e) {}
       // keepalive: a menu click navigates away at once.
-      fetch(SUPABASE_URL + '/rest/v1/rpc/log_guide_event', {
-        method: 'POST', keepalive: true, body: JSON.stringify(body),
-        headers: { 'Content-Type': 'application/json', apikey: SUPABASE_KEY, Authorization: 'Bearer ' + (token || SUPABASE_KEY) }
-      }).catch(function () {});
+      var post = function (token) {
+        // Only a real JWT string may ride as the bearer. LokaliAuth.token() returns a
+        // PROMISE (found on staging 2026-09-20: 'Bearer [object Promise]' -> 401 on
+        // every event), so it is resolved first and anything odd falls back to the key.
+        var bearer = (typeof token === 'string' && token.split('.').length === 3) ? token : SUPABASE_KEY;
+        fetch(SUPABASE_URL + '/rest/v1/rpc/log_guide_event', {
+          method: 'POST', keepalive: true, body: JSON.stringify(body),
+          headers: { 'Content-Type': 'application/json', apikey: SUPABASE_KEY, Authorization: 'Bearer ' + bearer }
+        }).catch(function () {});
+      };
+      var t = null;
+      try { t = window.LokaliAuth && window.LokaliAuth.token ? window.LokaliAuth.token() : null; } catch (e) {}
+      if (t && typeof t.then === 'function') {
+        // Never let a slow token hold up a click that is about to navigate: race it.
+        var sent = false;
+        var once = function (tok) { if (sent) return; sent = true; post(tok); };
+        t.then(once, function () { once(null); });
+        setTimeout(function () { once(null); }, 250);
+      } else { post(t); }
     } catch (e) {}
   }
 
