@@ -104,8 +104,7 @@
     // #66 — shopping side of the identity switcher: outline cart-shopping,
     // stroke to match the other menu-row icons (no special colour here — see the
     // menu CSS; the row icon inherits the row's neutral/hover colour like the rest).
-    shopping: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>',
-    signin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-4.5 4.5L19 4l3 3-4.5 4.5M11.39 11.61a5.5 5.5 0 11-7.78 7.78 5.5 5.5 0 017.78-7.78zm0 0L15.5 7.5"/></svg>'
+    shopping: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>'
   };
 
   function addRowIcon(row, key) {
@@ -134,7 +133,6 @@
     setRowLabel(menu.querySelector('.lok-acct-upgrade'), 'Upgrade'); // #67(a)
     addRowIcon(menu.querySelector('.lok-acct-upgrade'), 'upgrade');
     addRowIcon(menu.querySelector('[data-lok-customer-row]'), 'shopping');
-    addRowIcon(menu.querySelector('[data-lok-signin-row]'), 'signin');
     Array.prototype.slice.call(menu.querySelectorAll('a.lok-acct-row')).forEach(function (a) {
       var href = (a.getAttribute('href') || '').toLowerCase();
       if (href.indexOf('contact') >= 0) addRowIcon(a, 'help');
@@ -268,40 +266,10 @@
     else menu.appendChild(a);
   }
 
-  // #30 — vendors can change how they sign in (password, email addresses)
-  // without leaving the dashboard. Opens the LokaliAuth account panel — the
-  // same one customers get from the /account "Manage sign-in" button. The
-  // auth controller (lokali-auth.js) is loaded site-wide; if it's still
-  // booting when clicked, wait briefly.
-  function openAccountPanel(tries) {
-    var a = window.LokaliAuth;
-    if (a && typeof a.openAccountPanel === 'function') { a.openAccountPanel(); return; }
-    if ((tries || 0) < 20) { setTimeout(function () { openAccountPanel((tries || 0) + 1); }, 250); return; }
-    // Retry budget spent (lokali-auth.js never loaded) — say so instead of a
-    // silently dead control (mirrors the settings-page toast).
-    var t = document.createElement('div');
-    t.textContent = 'Couldn’t open sign-in settings. Please refresh the page.';
-    t.style.cssText = 'position:fixed;top:24px;left:50%;transform:translateX(-50%);z-index:9999;' +
-      'padding:12px 20px;border-radius:999px;background:#b91c1c;color:#fff;box-shadow:0 8px 20px rgba(15,23,42,.2);' +
-      "font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:500;max-width:90vw;text-align:center;";
-    document.body.appendChild(t);
-    setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 5000);
-  }
-
-  function addManageSignInRow(wrap) {
-    var menu = wrap.querySelector('.lok-acct-menu');
-    if (!menu || menu.querySelector('[data-lok-signin-row]')) return;
-    var a = document.createElement('a');
-    a.className = 'lok-acct-row';
-    a.setAttribute('data-lok-signin-row', '1');
-    a.href = '#';
-    a.textContent = 'Manage sign-in';
-    a.addEventListener('click', function (e) { e.preventDefault(); openAccountPanel(0); });
-    var ref = menu.querySelector('[data-lok-customer-row]');
-    if (ref && ref.nextSibling) ref.parentNode.insertBefore(a, ref.nextSibling);
-    else if (ref) ref.parentNode.appendChild(a);
-    else menu.appendChild(a);
-  }
+  // 2026-09-20 (F: "shouldn't the manage sign in live on the settings tab?"): the
+  // chip's 'Manage sign-in' row (#30) is gone. It opened the same LokaliAuth account
+  // panel as 'Change email' / 'Change password' under Settings > You, and Settings is
+  // now one tap away in the main list, so the chip holds only plan and identity rows.
 
   // #67 round 4 — the mobile-nav footer embed's setClosed() fires on ANY
   // sidebar-link click WITHOUT checking the breakpoint, leaving an inline
@@ -610,7 +578,6 @@
     killStrayDrawerTransform(); // #67 round 4
     bindToggle(wrap);
     addCustomerAccountRow(wrap);
-    addManageSignInRow(wrap); // #30
     decorateMenuRows(wrap); // #51
     whenApi(function () { fetchAndHydrate(wrap, 0); });
   }
