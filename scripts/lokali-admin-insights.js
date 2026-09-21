@@ -1050,7 +1050,7 @@
   // menu get used, do vendors open Help from the dashboard, and does Start Here
   // turn a reader into a sign-up. Public numbers exclude signed-in vendors/admins;
   // the dashboard Help row is the one line only vendors can produce.
-  var GUIDE_NAMES = { start: 'Start Here', guides: 'Guides landing page', weekend: 'This Weekend' };
+  var GUIDE_NAMES = { start: 'Start Here', guides: 'Guides landing page', weekend: 'This Week' };
   var CLICK_NAMES = { 'menu:start': 'Resources menu: Start here', 'menu:guides': 'Resources menu: Guides for vendors', 'dash:help': 'Dashboard: Help and guides', 'hub:start': 'Guides page: Start here strip' };
   var ANSWER = { product: 'Product', service: 'Service', both: 'Product and service', food: 'home food', handmade: 'handmade', resale: 'resale',
     care: 'personal care', trade: 'skilled trade', foodsvc: 'catering', kids: 'child care or classes', pro: 'professional', sole: 'sole owner', llc: 'LLC', unsure: 'not sure yet' };

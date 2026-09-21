@@ -1,5 +1,7 @@
 /**
- * lokali-weekend.js - the public "This weekend" page at /this-weekend
+ * lokali-weekend.js - the public "This week" page at /this-week (renamed from
+ * "This weekend" / /this-weekend 2026-09-21, F: a week includes the weekend; the
+ * file name and the weekend_feed() RPC keep their old names)
  * (release 3 of "build it all", 2026-09-20).
  *
  * Built entirely from vendors' own "Where I'll be" posts (weekend_feed() in
@@ -57,18 +59,18 @@
   }
 
   function shell(inner) {
-    return '<div class="lkw"><div class="lkw-wrap"><span class="lkw-eyebrow">This weekend</span>' +
-      '<h1>Where to find local vendors this weekend</h1>' +
-      '<p class="lkw-lede">Markets, pop-ups and pickups near The Woodlands, posted by the vendors themselves, plus anything happening in the days before. Tap a vendor to see what they make.</p>' +
+    return '<div class="lkw"><div class="lkw-wrap"><span class="lkw-eyebrow">This week</span>' +
+      '<h1>Find your local vendors in person</h1>' +
+      '<p class="lkw-lede">Markets, pop-ups and pickups near The Woodlands over the next few days. Every listing comes straight from the vendor.</p>' +
       inner +
-      '<p class="lkw-fine">Times come from each vendor, so check their storefront before you head out. Are you a local vendor? <a href="/sign-up">Open your storefront</a> and your weekend shows up here.</p>' +
+      '<p class="lkw-fine">Plans change, so check the vendor\'s page before you head out.<br>Sell locally? <a href="/sign-up">Open your storefront</a> and your plans show up here.</p>' +
       '</div></div>';
   }
 
   function render(mount, feed) {
     if (!feed.length) {
-      mount.innerHTML = shell('<div class="lkw-empty"><h2>Nothing posted for this weekend yet</h2>' +
-        '<p>Vendors add their weekend plans as they firm up, usually by Thursday. In the meantime, browse everyone on The Market.</p>' +
+      mount.innerHTML = shell('<div class="lkw-empty"><h2>No plans posted yet</h2>' +
+        '<p>Vendors share their plans as they firm up. Until then, meet everyone on The Market.</p>' +
         '<a class="lkw-btn" href="/the-market">Browse The Market</a><a class="lkw-btn ghost" href="/sign-up">Open your storefront</a></div>');
       return;
     }

@@ -207,7 +207,7 @@
       '</div>';
 
     html += '<div class="lkf-card"><h2 class="lkf-h2">Your recent posts</h2>';
-    if (!this.posts.length) html += '<p class="lkf-sub" style="margin:6px 0 0;">Nothing posted yet. A good first one: where you will be this weekend.</p>';
+    if (!this.posts.length) html += '<p class="lkf-sub" style="margin:6px 0 0;">Nothing posted yet. A good first one: where you will be this week.</p>';
     else html += this.posts.map(function (p) {
       var title = p.kind === 'where' ? (p.place || '') : (p.body || '');
       var sub = p.kind === 'where' ? [whenText(p), p.body || ''].filter(Boolean).join(' · ') : '';

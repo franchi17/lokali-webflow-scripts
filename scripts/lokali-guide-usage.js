@@ -3,7 +3,7 @@
  * page (F 2026-09-20). Site-wide, tiny, `defer`. Backend: patch_guide_events.sql.
  *
  * Records, and ONLY records:
- *   view        /start, /vendor-resources, /vendor-resources/{guide}, /this-weekend
+ *   view        /start, /vendor-resources, /vendor-resources/{guide}, /this-week
  *   click       the two Resources menu links (desktop + phone), the dashboard
  *               "Help and guides" row, and the cards on the guides landing page
  *   start_ready a Start Here checklist was built (which answers, from a closed list)
@@ -94,7 +94,9 @@
   var path = String(location.pathname || '').replace(/\/+$/, '') || '/';
   function pageTarget() {
     if (path === '/start') return 'start';
-    if (path === '/this-weekend') return 'weekend';
+    // Target code stays 'weekend' (closed list in patch_guide_events.sql); the page
+    // itself was renamed /this-week on 2026-09-21.
+    if (path === '/this-week' || path === '/this-weekend') return 'weekend';
     if (path === '/vendor-resources') return 'guides';
     var m = /^\/vendor-resources\/([a-z0-9-]{3,40})$/.exec(path);
     return m ? 'guide:' + m[1] : null;
