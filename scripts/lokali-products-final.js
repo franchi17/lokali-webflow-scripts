@@ -2406,7 +2406,10 @@ const LokaliProductsPage = (() => {
       // Go live. A refused activation (plan-cap guard, network) leaves the item
       // in the Inactive list rather than failing the whole import.
       try {
-        const act = await window.LokaliAPI.products.setActive(newId, true);
+        // products.update, the same path the form + quick toggle use. (The adapter has
+        // no products.setActive: that call threw, was swallowed here, and every
+        // import since v1.4.413 stayed Inactive. Found 2026-09-21, Mia's Table.)
+        const act = await window.LokaliAPI.products.update(newId, { is_active: true });
         if (act && !act.error) live++;
       } catch (e) {}
     }

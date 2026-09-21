@@ -1000,7 +1000,9 @@
     // Plan and billing
     var vp = document.querySelector('#settings-view-plans .text-link'); if (vp) vp.textContent = 'Compare plans';
     var stripeLink = document.querySelector('.div-block-158.stripe a');
-    if (stripeLink) {
+    // lokali-billing.js turns this row into "Set up billing" for a comped vendor
+    // (data-lokali-setup-plan); leave its wording alone when it has.
+    if (stripeLink && !stripeLink.hasAttribute('data-lokali-setup-plan')) {
       var sl = stripeLink.querySelector('.text-link') || stripeLink;
       sl.textContent = 'Manage billing';
       if (!stripeLink.parentNode.querySelector('.lok-set-billnote')) {

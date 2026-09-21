@@ -174,10 +174,29 @@
     });
   }
 
+  // A comped vendor (paid plan, billing_provider 'internal') has no Stripe
+  // subscription, so the portal would open empty. Their Settings link starts a
+  // checkout for the plan they are already on instead (see renderCompedSetup).
+  function startSetupCheckout(btn) {
+    var plan = btn.getAttribute('data-lokali-setup-plan');
+    var interval = btn.getAttribute('data-interval') === 'year' ? 'year' : 'month';
+    setButtonBusy(btn, true);
+    postForRedirect(CHECKOUT_URL, { plan: plan, interval: interval })
+      .catch(function (err) {
+        setButtonBusy(btn, false);
+        console.error('[lokali-billing] setup checkout failed', err);
+        var msg = err && err.message && !/^Request failed/.test(err.message)
+          ? err.message
+          : 'Sorry, we could not start checkout. Please try again.';
+        alert(msg);
+      });
+  }
+
   function bindPortalButtons() {
     $all('[data-lokali-portal]').forEach(function (btn) {
       btn.addEventListener('click', function (e) {
         e.preventDefault();
+        if (btn.hasAttribute('data-lokali-setup-plan')) { startSetupCheckout(btn); return; }
         setButtonBusy(btn, true);
         postForRedirect(PORTAL_URL, {})
           .catch(function (err) {
@@ -238,6 +257,13 @@
       }
     });
 
+    // Bridge comp = entitled paid plan, no Stripe subscription behind it, and
+    // tagged comp_kind 'until_billing' (patch_mias_table_featured_comp.sql).
+    // Untagged and 'forever' comps (friends and family) are NOT asked for a card.
+    var comped = entitled && (plan === 'pro' || plan === 'featured') &&
+      b.billing_provider === 'internal' && b.comp_kind === 'until_billing';
+    renderCompedSetup(comped ? plan : null);
+
     // Highlight the active plan card.
     $all('[data-lokali-plan-card]').forEach(function (card) {
       var isCurrent = card.getAttribute('data-lokali-plan-card') === plan;
@@ -276,6 +302,52 @@
         el.style.display = 'none';
       }
     });
+  }
+
+  // Settings "Plan and billing" row for a comped vendor: the portal link becomes
+  // two checkout links (monthly / yearly) for their current plan, with a note
+  // saying why. Idempotent; lokali-settings-page.js leaves a link carrying
+  // data-lokali-setup-plan alone, so load order between the two does not matter.
+  var SETUP_NOTE = 'Your plan is on us for now. Add a card to keep it going. ' +
+    'Stripe shows the date billing starts before you confirm, and nothing is charged before then.';
+  function renderCompedSetup(plan) {
+    if (!/^\/vendor-dashboard\/settings/.test(window.location.pathname)) return;
+    var link = document.querySelector('.div-block-158.stripe a[data-lokali-portal]') ||
+      document.querySelector('.div-block-158.stripe a');
+    if (!link || !link.parentNode) return;
+    var yearly = link.parentNode.querySelector('[data-lokali-setup-yearly]');
+    if (!plan) {
+      if (link.hasAttribute('data-lokali-setup-plan')) {
+        link.removeAttribute('data-lokali-setup-plan');
+        link.removeAttribute('data-interval');
+        (link.querySelector('.text-link') || link).textContent = 'Manage billing';
+      }
+      if (yearly) yearly.parentNode.removeChild(yearly);
+      return;
+    }
+    link.setAttribute('data-lokali-setup-plan', plan);
+    link.setAttribute('data-interval', 'month');
+    (link.querySelector('.text-link') || link).textContent = 'Set up monthly billing';
+    var note = link.parentNode.querySelector('.lok-set-billnote');
+    if (!note) {
+      note = document.createElement('div');
+      note.className = 'settings-lokali-text lok-set-billnote';
+      link.parentNode.insertBefore(note, link);
+    }
+    note.textContent = SETUP_NOTE;
+    if (!yearly) {
+      yearly = link.cloneNode(true);
+      yearly.removeAttribute('id');
+      yearly.removeAttribute('data-lokali-portal');
+      yearly.setAttribute('data-lokali-setup-yearly', '');
+      yearly.setAttribute('href', '#');
+      yearly.style.marginLeft = '16px';
+      yearly.addEventListener('click', function (e) { e.preventDefault(); startSetupCheckout(yearly); });
+      link.parentNode.insertBefore(yearly, link.nextSibling);
+    }
+    yearly.setAttribute('data-lokali-setup-plan', plan);
+    yearly.setAttribute('data-interval', 'year');
+    (yearly.querySelector('.text-link') || yearly).textContent = 'Set up yearly billing';
   }
 
   function loadBilling() {

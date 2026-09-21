@@ -347,6 +347,10 @@
       plan_interval: isFree ? null : (sub.billing_interval || null),
       current_period_end: isFree ? null : toMs(sub.current_period_end || null),
       cancel_at_period_end: isFree ? false : !!sub.cancel_at_period_end,
+      // 'internal' on a paid plan = comped outside Stripe (no card on file yet);
+      // Settings uses it to offer checkout instead of the empty Stripe portal.
+      billing_provider: isFree ? null : (sub.billing_provider || null),
+      comp_kind: isFree ? null : (sub.comp_kind || null), // 'until_billing' | 'forever' | null
       subscription: {
         plan_code: plan.code || 'free',
         plan_name: plan.plan_name || 'Free',
