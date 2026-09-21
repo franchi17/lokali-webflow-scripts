@@ -450,7 +450,14 @@
       // one with a person on the other end (2026-09-17).
       var w = waiting[0];
       var first = String(w.name).trim().split(/\s+/)[0] || 'there';
-      var mailto = w.email ? 'mailto:' + w.email + '?subject=' + encodeURIComponent('Re: your ' + (w.context ? 'question about ' + w.context : 'inquiry') + ' on Lokali') + '&body=' + encodeURIComponent('Hi ' + first + ',\n\n') : '/vendor-dashboard/leads';
+      // SEC-067/SEC-063: the shopper's email is never format-validated at
+      // intake, so it can carry mailto syntax ('?bcc=', '&body=') that would
+      // rewrite the VENDOR's draft. Encode all but the one literal '@', the way
+      // lokali-leads.js:436 already does, and fall back to the Leads page when
+      // the value is not shaped like an address.
+      var okEmail = w.email && String(w.email).length <= 254 &&
+        /^[^\s@<>"',;:?&#%]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(String(w.email).trim());
+      var mailto = okEmail ? 'mailto:' + encodeURIComponent(String(w.email).trim()).replace(/%40/g, '@') + '?subject=' + encodeURIComponent('Re: your ' + (w.context ? 'question about ' + w.context : 'inquiry') + ' on Lokali') + '&body=' + encodeURIComponent('Hi ' + first + ',\n\n') : '/vendor-dashboard/leads';
       html += '<div class="lok-next"><div class="n" style="background:#FDE7F3;color:#B1006A">!</div><div>' +
         '<p class="t">Reply to ' + esc(w.name) + '</p><p class="w">' + (w.context ? esc(w.name) + ' asked about ' + esc(w.context) + '. ' : '') + esc(waitingLabel(w.t)) + '. A reply today keeps the lead warm.</p>' +
         '<a class="lok-btn" href="' + esc(mailto) + '">Reply by email →</a> <a class="lok-btn" style="background:#fff;color:#6002EE;border:1px solid #E5D4FD" href="/vendor-dashboard/leads">Open Leads →</a></div></div>';

