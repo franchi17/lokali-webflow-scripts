@@ -886,6 +886,10 @@
     form.insertBefore(sPlan, sMail.nextSibling);
     var verify = $('lok-verify-section');
     if (verify) form.insertBefore(verify, sPlan.nextSibling);
+    // lokali-billing.js mounts the Spotlight card; keep it with the plan whichever
+    // script ran first.
+    var spot = $('lokali-spotlight');
+    if (spot) form.insertBefore(spot, (verify || sPlan).nextSibling);
     var secs = [[sYou, 'set-you', 'You'], [sStore, 'set-storefront', 'Your storefront'], [sMail, 'set-emails', 'Emails'],
                 [sPlan, 'set-plan', 'Plan and billing'], [sClose, 'set-close', 'Close your account']];
     var jump = mk('nav', 'lok-set-jump'); jump.setAttribute('aria-label', 'Settings sections');

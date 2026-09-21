@@ -87,7 +87,9 @@
   function postForRedirect(url, body) {
     return postJSON(url, body).then(function (r) {
       if (!r.ok || !r.data.url) {
-        throw new Error(r.data.error || ('Request failed (' + r.status + ')'));
+        var reqErr = new Error(r.data.error || ('Request failed (' + r.status + ')'));
+        reqErr.code = r.data.code || ''; // e.g. 'prelaunch' (Spotlight purchases closed)
+        throw reqErr;
       }
       window.location.assign(r.data.url);
     });
@@ -163,6 +165,9 @@
             var msg = err && err.message && !/^Request failed/.test(err.message)
               ? err.message
               : 'Sorry, we could not start checkout. Please try again.';
+            // Spotlight purchases closed server-side: say it in our words, with no
+            // launch date (F 2026-09-21), whatever the deployed route's text says.
+            if (err && err.code === 'prelaunch' && (plan === 'spotlight' || plan === 'spotlight_home')) msg = SPOT_NOT_OPEN_MSG;
             alert(msg);
           });
       });
@@ -403,6 +408,13 @@
   // Windows may not START before public launch (decision 2026-07-20). String
   // compare works on YYYY-MM-DD; inert once launch passes (today > floor).
   var SPOT_FLOOR = '2026-10-01';
+  // F 2026-09-21: there is no "October 1 launch". Spotlight is a one-time CHARGE and
+  // nobody is charged yet, so the checkout route refuses it while
+  // founding_config.prelaunch_open is true. The note below follows THAT, not a date:
+  // flip this to true in the same release that flips prelaunch_open (the old banner
+  // keyed off SPOT_FLOOR and would have vanished on Oct 1 with booking still closed).
+  var SPOT_BOOKING_OPEN = false;
+  var SPOT_NOT_OPEN_MSG = 'Spotlight booking is not open yet. You can look at dates now, and we will let you know when booking opens. You will not be charged for anything before then.';
   var spotState = {
     tier: 'category', me: null, windowDays: 14, cutoffDays: 7,
     // Calendar picker state: viewed month (Date at day 1), per-tier busy cache
@@ -482,6 +494,7 @@
       '.lk-spotcard ul{list-style:none;padding:0;margin:0 0 16px;}' +
       '.lk-spotcard li{position:relative;padding:5px 0 5px 26px;color:#3C3550;font-size:14px;line-height:1.45;}' +
       '.lk-spotcard li:before{content:"✓";position:absolute;left:0;top:4px;width:18px;height:18px;border-radius:50%;background:var(--system--purple-50,#eee6ff);color:var(--system--primary-700,#3d00e0);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;}' +
+      '.lk-spot-closed{display:block;margin-top:6px;font-size:13px;color:#6E6A85;}' +
       '.lk-spot-prelaunch{background:var(--system--orange-50,#fff2df);color:#8a5200;border-radius:10px;padding:10px 14px;font-size:13px;line-height:1.5;margin:0 0 12px;}' +
       '.lk-cal{max-width:420px;margin:2px 0 10px;}' +
       '.lk-cal-tier{font-size:12px;font-weight:700;letter-spacing:.03em;color:var(--lokali-primary,#6002ee);margin:0 0 6px;text-transform:uppercase;}' +
@@ -573,7 +586,13 @@
     // bookings read as overlapping on the shared boundary date.
     var lastDay = new Date(start.getTime() + (spotState.windowDays - 1) * DAY_MS);
     var tier = spotState.tier;
-    if (open) {
+    if (open && !SPOT_BOOKING_OPEN) {
+      // Booking is closed server-side: show the dates are free, but no Book button
+      // that could only fail.
+      out.innerHTML =
+        '<span class="ok">✓ ' + spotRange(start, lastDay) + ' is available</span>' +
+        '<span class="lk-spot-closed">Booking is not open yet. We will let you know when it opens.</span>';
+    } else if (open) {
       out.innerHTML =
         '<span class="ok">✓ ' + spotRange(start, lastDay) + ' is available</span>' +
         '<button type="button" class="lk-spot-btn" id="lk-spot-book">Book for ' +
@@ -589,6 +608,7 @@
           var msg = err && err.message && !/^Request failed/.test(err.message)
             ? err.message
             : 'Sorry, we could not start checkout. Please try again.';
+          if (err && err.code === 'prelaunch') msg = SPOT_NOT_OPEN_MSG;
           alert(msg);
         });
       });
@@ -828,12 +848,20 @@
   function initSpotlightSettingsCard() {
     if (!/^\/vendor-dashboard\/settings/.test(window.location.pathname)) return;
     if (document.getElementById('lokali-spotlight')) return;
-    var anchor = document.querySelector('.section-12');
+    // Spotlight belongs with the plan: after the Get Verified card when it is there,
+    // else after the plan section, else (old markup) after the first card. Anchoring
+    // on the FIRST card made the position depend on whether this ran before or after
+    // the settings-page regroup (2026-09-21).
+    var planEl = document.getElementById('settings-current-plan');
+    var anchor = document.getElementById('lok-verify-section') ||
+      (planEl && planEl.closest ? planEl.closest('section') : null) ||
+      document.querySelector('.section-12');
     if (!anchor) return;
     injectSpotStyles();
 
     var sec = document.createElement('section');
-    sec.className = anchor.className;   // native settings-card look
+    var cardLook = document.querySelector('.section-12');
+    sec.className = cardLook ? cardLook.className.replace(/\blok-set-sec\b/, '').trim() : anchor.className;   // native settings-card look
     sec.id = 'lokali-spotlight';
     sec.innerHTML =
       '<div class="form-heading-div">' +
@@ -856,9 +884,9 @@
       '<div class="lk-spot-mtv" id="lk-spot-mtv" style="display:none">The Homepage Spotlight is all about ' +
         'the person behind the business, so fill in your Meet-the-Vendor info (name, photo, and a short bio) ' +
         'on <a href="/vendor-dashboard/profile">your profile</a> first.</div>' +
-      (spotTodayStr() < SPOT_FLOOR
-        ? '<div class="lk-spot-prelaunch">Lokali launches <strong>October 1, 2026</strong>. Spotlight windows start ' +
-          'from launch day. You can scout dates now; booking opens at launch.</div>'
+      (!SPOT_BOOKING_OPEN
+        ? '<div class="lk-spot-prelaunch"><strong>Spotlight booking is not open yet.</strong> You can look at dates now, ' +
+          'and we will let you know when booking opens.</div>'
         : '') +
       '<div class="lk-cal" id="lk-spot-cal"></div>' +
       '<div class="lk-spot-result" id="lk-spot-result"></div>' +
