@@ -300,10 +300,14 @@
   }
 
   // ---- page -------------------------------------------------------------------
-  function Page(mount, vendor, premium) {
+  function Page(mount, vendor, premium, free) {
     this.mount = mount;
     this.vendor = vendor;
     this.premium = premium;            // Featured? (showcase entitlement)
+    // Free plan (F 2026-09-20: the review link is for every vendor). A free Page
+    // shows ONLY the "Ask for a review" card above the plans teaser, and fetches
+    // only the review code: none of the paid RPCs are called.
+    this.free = free === true;
     this.entries = { cta: [], showcase: [] };
     this.editing = null;               // entry id being edited, or 'new:<kind>'
     // #163b: Featured vendors may put their OWN storefront logo in the QR
@@ -316,6 +320,15 @@
 
   Page.prototype.load = function () {
     var self = this;
+    if (this.free) {
+      var RV = window.LokaliSupabaseAPI.reviews;
+      ((RV && RV.myLink) ? RV.myLink().catch(function () { return null; }) : Promise.resolve(null)).then(function (r) {
+        var rl = r && r.data;
+        self.reviewCode = (rl && rl.ok && /^[a-f0-9]{10}$/.test(rl.code || '')) ? rl.code : null;
+        self.render();
+      });
+      return;
+    }
     Promise.all([
       API.list(this.vendor.id),
       API.current(this.vendor.id, 0),
@@ -409,6 +422,11 @@
 
   Page.prototype.render = function () {
     this.mount.className = 'lok-mkt';
+    if (this.free) {
+      this.mount.innerHTML = this.reviewCardHtml() + upsellHtml();
+      this.bind();
+      return;
+    }
     this.mount.innerHTML =
       this.cardHtml('cta') +
       (this.premium ? this.cardHtml('showcase') : this.lockedShowcaseHtml()) +
@@ -1217,15 +1235,17 @@
   };
 
   // ---- upsell (free plan, direct URL) -----------------------------------------
-  function renderUpsell(mount) {
-    mount.className = 'lok-mkt';
-    mount.innerHTML =
-      '<div class="mkt-card mkt-lock">' +
+  function upsellHtml() {
+    return '<div class="mkt-card mkt-lock">' +
         '<span class="mkt-cta-demo">' + esc(CTA_EXAMPLE) + '</span>' +
         '<p class="mkt-lockh">Marketing tools</p>' +
         '<p>Rotate a weekly promo button and a Showcase of the week on your storefront. You feed the list, we keep it fresh. Available on paid plans.</p>' +
         '<a class="mkt-up" href="/pricing">See plans</a>' +
       '</div>';
+  }
+  function renderUpsell(mount) {
+    mount.className = 'lok-mkt';
+    mount.innerHTML = upsellHtml();
   }
 
   // ---- boot -------------------------------------------------------------------
@@ -1240,6 +1260,7 @@
         var paid = rs[0] && rs[0].data === true;
         var premium = rs[1] && rs[1].data === true;
         if (paid) new Page(mount, vendor, premium);
+        else if (vendor.slug) new Page(mount, vendor, false, true);   // free: review card + teaser
         else renderUpsell(mount);
       });
     });
