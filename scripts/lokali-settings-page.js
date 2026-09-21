@@ -909,9 +909,15 @@
     var ce = document.querySelector('#settings-change-email .text-link'); if (ce) ce.textContent = 'Change email';
     var cp = $('settings-change-password');
     if (cp) {
-      var cpt = cp.querySelector('.text-link'); if (cpt) cpt.textContent = 'Change password';
+      // F 2026-09-20: this row is where a vendor adds or removes a way in (set a
+      // password on a Google account, connect or disconnect Google), not only
+      // where they change a password. The panel itself lives in lokali-auth.js.
+      var cpt = cp.querySelector('.text-link'); if (cpt) cpt.textContent = 'Manage sign-in';
       var pwd = cp.parentNode ? cp.parentNode.querySelector('.settings-lokali-text') : null;
-      if (pwd) pwd.textContent = 'Opens the secure sign-in panel.';
+      if (pwd) pwd.textContent = 'Password, Google, or both. Add or remove a way to sign in.';
+      var pwBlock = cp.closest ? cp.closest('.div-block-157') : null;
+      var pwHead = pwBlock ? pwBlock.querySelector('.settings-header') : null;
+      if (pwHead && !pwHead.children.length) pwHead.textContent = 'How you sign in';
     }
     var bar = mk('div'); bar.id = 'lok-set-namebar';
     bar.appendChild(mk('span', '', 'You changed your name'));

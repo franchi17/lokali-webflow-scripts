@@ -498,6 +498,7 @@
     maybeShowHeardInterstitial(routeAfterAuthCore);
   }
   function routeAfterAuthCore() {
+    if (consumeLinkReturn()) return; // back from 'Connect Google': return to the panel, not the dashboard
     fetchRole().then(function (role) {
       if (!role) return; // unprovisioned — never push into guarded pages
       if (_recoveryMode) return; // setting a new password — stay on the form
@@ -673,6 +674,17 @@
       '.lok-auth-section:first-of-type{border-top:none;padding-top:0;}',
       '.lok-auth-section h4{margin:0 0 4px;font-size:15px;font-weight:700;color:#231D3F;}',
       '.lok-auth-section .lok-auth-section-sub{margin:0 0 14px;font-size:12.5px;color:#6B6580;line-height:1.5;}',
+      // sign-in methods (password / Google) rows
+      '.lok-auth-method{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 14px;margin:0 0 8px;border:1px solid #ECE8F8;border-radius:12px;background:#F9F8FD;}',
+      '.lok-auth-method-txt{flex:1 1 180px;min-width:0;}',
+      '.lok-auth-method-txt b{display:block;font-size:14px;font-weight:700;color:#231D3F;}',
+      '.lok-auth-method-txt span{display:block;font-size:12.5px;color:#6B6580;line-height:1.45;overflow-wrap:anywhere;}',
+      '.lok-auth-method-on{color:#1B7A4B !important;font-weight:700;}',
+      '.lok-auth-method-btn{flex:0 0 auto;min-height:44px;padding:0 16px;border:1px solid #D4BFF9;border-radius:10px;background:#fff;font-family:inherit;font-size:13.5px;font-weight:700;color:#6002EE;cursor:pointer;}',
+      '.lok-auth-method-btn:hover:not([disabled]){background:#F3EBFF;}',
+      '.lok-auth-method-btn[disabled]{opacity:.6;cursor:default;}',
+      '.lok-auth-method-btn.warn{border-color:#EBC4C1;color:#B3261E;}',
+      '.lok-auth-method-btn.warn:hover:not([disabled]){background:#FDF3F2;}',
       '@media (max-width:479px){.lok-auth-card{padding:26px 18px;}.lok-auth-row{flex-direction:column;gap:0;}}'
     ].join('\n');
     document.head.appendChild(s);
@@ -1332,13 +1344,180 @@
     else renderSignUpForm(root, opts);
   }
 
-  // ── Account panel: change email + change password ─────────────────────────
+  // ── Sign-in methods (F 2026-09-20: "some people may want to decouple google or
+  // couple it later") ──────────────────────────────────────────────────────────
+  // Password and Google are two ways into ONE account. This section shows which
+  // are on and lets the person add or remove one:
+  //   - Google-only account  -> "Set a password" (updateUser({password}) is the
+  //     documented way to add email + password to an OAuth account)
+  //   - password account     -> "Connect Google" (linkIdentity; needs MANUAL
+  //     LINKING switched on in Supabase Auth, otherwise it answers with an error
+  //     and we say so)
+  //   - "Disconnect Google"  -> ONLY when Supabase reports two or more linked
+  //     identities, which is its own rule for unlinkIdentity. That is the lock-out
+  //     guard: the last way in can never be removed from here.
+  // The Google round trip leaves the page. LINK_RETURN remembers where it started
+  // so routeAfterAuthCore() can bring the person back to this panel with a result.
+  var LINK_RETURN_KEY = 'LOKALI_LINK_RETURN';
+  var LINK_NOTE_KEY = 'LOKALI_LINK_NOTE';
+  var METHODS_HASH = '#sign-in-methods';
+  // Captured at parse time: supabase-js may tidy the URL before we look.
+  var _bootAuthError = (function () {
+    try {
+      var m = /[?&#]error_description=([^&#]*)/.exec(window.location.search + window.location.hash);
+      return m ? decodeURIComponent(m[1].replace(/\+/g, ' ')) : '';
+    } catch (e) { return ''; }
+  })();
+  function ssGet(k) { try { return window.sessionStorage.getItem(k); } catch (e) { return null; } }
+  function ssSet(k, v) { try { window.sessionStorage.setItem(k, v); } catch (e) {} }
+  function ssDel(k) { try { window.sessionStorage.removeItem(k); } catch (e) {} }
+  function friendlyLinkError(err) {
+    var msg = String((err && (err.message || err.error_description)) || err || '');
+    var low = msg.toLowerCase();
+    if (low.indexOf('manual linking') >= 0) return 'Connecting Google is not switched on yet. Please contact us and we will help.';
+    if (low.indexOf('already') >= 0 && (low.indexOf('linked') >= 0 || low.indexOf('exists') >= 0)) {
+      return 'That Google account already belongs to another Lokali account. Sign in with it to use that account, or pick a different Google account.';
+    }
+    if (low.indexOf('single') >= 0 || low.indexOf('at least') >= 0) return 'Google is the only way into this account right now, so it cannot be disconnected.';
+    return friendlyAuthError(err);
+  }
+  function consumeLinkReturn() {
+    var raw = ssGet(LINK_RETURN_KEY);
+    if (!raw) return false;
+    ssDel(LINK_RETURN_KEY);
+    var st = null; try { st = JSON.parse(raw); } catch (e) {}
+    if (!st || !st.path || !st.t || (Date.now() - st.t) > 10 * 60 * 1000) return false;
+    if (!/^\/[A-Za-z0-9\-_\/]*$/.test(st.path)) return false; // same-origin path only
+    ssSet(LINK_NOTE_KEY, JSON.stringify(_bootAuthError
+      ? { ok: false, msg: friendlyLinkError(_bootAuthError) }
+      : { ok: true, msg: 'Google is connected. You can sign in with either one now.' }));
+    var here = String(window.location.pathname || '').replace(/\/+$/, '') || '/';
+    if (here === st.path) { maybeOpenMethodsPanel(true); return true; }
+    window.location.replace(st.path + METHODS_HASH);
+    return true;
+  }
+  function takeLinkNote() {
+    var raw = ssGet(LINK_NOTE_KEY); if (!raw) return null;
+    ssDel(LINK_NOTE_KEY);
+    try { return JSON.parse(raw); } catch (e) { return null; }
+  }
+  // Opens the panel when a page is loaded with #sign-in-methods (the return leg
+  // above, or a plain link from Settings). Waits briefly for the session.
+  function maybeOpenMethodsPanel(force) {
+    if (!force && window.location.hash !== METHODS_HASH) return;
+    var tries = 0;
+    (function go() {
+      if (_session && window.LokaliAuth && window.LokaliAuth.openAccountPanel) {
+        try { if (window.location.hash === METHODS_HASH) window.history.replaceState(null, '', window.location.pathname + window.location.search); } catch (e) {}
+        window.LokaliAuth.openAccountPanel();
+      } else if (tries++ < 40) setTimeout(go, 250);
+    })();
+  }
+
+  function renderSignInMethods(card, onState) {
+    var sec = el('div', 'lok-auth-section');
+    sec.appendChild(el('h4', null, 'How you sign in'));
+    sec.appendChild(el('p', 'lok-auth-section-sub', 'Use a password, Google, or both. One account either way, and you always keep at least one.'));
+    var err = errorBox(); var info = infoBox();
+    sec.appendChild(err); sec.appendChild(info);
+    var list = el('div');
+    list.appendChild(el('div', 'lok-auth-hint', 'Checking how you sign in\u2026'));
+    sec.appendChild(list);
+    card.appendChild(sec);
+    var note = takeLinkNote();
+    if (note && note.msg) showMsg(note.ok ? info : err, note.msg);
+
+    function row(title, status, on) {
+      var r = el('div', 'lok-auth-method');
+      var t = el('div', 'lok-auth-method-txt');
+      t.appendChild(el('b', null, title));
+      t.appendChild(el('span', on ? 'lok-auth-method-on' : null, status));
+      r.appendChild(t);
+      return { row: r, txt: t };
+    }
+    function draw(ids) {
+      list.innerHTML = '';
+      var google = null, emailId = null;
+      for (var i = 0; i < ids.length; i++) {
+        if (ids[i].provider === 'google' && !google) google = ids[i];
+        if (ids[i].provider === 'email' && !emailId) emailId = ids[i];
+      }
+      var meta = (_user && _user.user_metadata) || {};
+      var hasPw = !!emailId || meta.has_password === true;
+      if (typeof onState === 'function') onState({ hasPassword: hasPw, google: !!google });
+
+      var pwRow = row('Email and password', hasPw ? 'On' : 'Not set up. Add a password below to sign in without Google.', hasPw);
+      list.appendChild(pwRow.row);
+
+      var gEmail = google && google.identity_data && google.identity_data.email;
+      var gRow = row('Google', google ? ('Connected' + (gEmail ? ' as ' + gEmail : '')) : 'Not connected', !!google);
+      if (!google) {
+        var connect = el('button', 'lok-auth-method-btn', 'Connect Google'); connect.type = 'button';
+        connect.addEventListener('click', function () {
+          hideMsg(err); hideMsg(info);
+          connect.disabled = true;
+          var back = String(window.location.pathname || '/').replace(/\/+$/, '') || '/';
+          ssSet(LINK_RETURN_KEY, JSON.stringify({ path: back, t: Date.now() }));
+          readyP.then(function () {
+            if (!_client || typeof _client.auth.linkIdentity !== 'function') throw new Error('Auth is still loading. Please try again.');
+            return _client.auth.linkIdentity({
+              provider: 'google',
+              options: { redirectTo: window.location.origin + SIGN_IN_PATH, queryParams: { prompt: 'select_account' } }
+            });
+          }).then(function (res) {
+            if (res && res.error) { ssDel(LINK_RETURN_KEY); connect.disabled = false; showMsg(err, friendlyLinkError(res.error)); }
+            // success = the browser is already leaving for Google
+          }).catch(function (ex) { ssDel(LINK_RETURN_KEY); connect.disabled = false; showMsg(err, friendlyLinkError(ex)); });
+        });
+        gRow.row.appendChild(connect);
+      } else if (ids.length >= 2) {
+        var off = el('button', 'lok-auth-method-btn warn', 'Disconnect'); off.type = 'button';
+        var armed = false;
+        off.addEventListener('click', function () {
+          hideMsg(err); hideMsg(info);
+          if (!armed) { armed = true; off.textContent = 'Yes, disconnect Google'; return; }
+          off.disabled = true;
+          readyP.then(function () { return _client.auth.unlinkIdentity(google); }).then(function (res) {
+            if (res && res.error) { off.disabled = false; armed = false; off.textContent = 'Disconnect'; showMsg(err, friendlyLinkError(res.error)); return; }
+            showMsg(info, 'Google is disconnected. From now on, sign in with your email and password.');
+            load();
+          }).catch(function (ex) { off.disabled = false; armed = false; off.textContent = 'Disconnect'; showMsg(err, friendlyLinkError(ex)); });
+        });
+        gRow.row.appendChild(off);
+      } else {
+        gRow.txt.appendChild(el('span', null, hasPw
+          ? 'Google cannot be disconnected from this account from here. Contact us and we will sort it out.'
+          : 'To disconnect Google later, set a password first. You always need one way in.'));
+      }
+      list.appendChild(gRow.row);
+    }
+    function load() {
+      readyP.then(function () {
+        if (!_client || typeof _client.auth.getUserIdentities !== 'function') throw new Error('unavailable');
+        return _client.auth.getUserIdentities();
+      }).then(function (res) {
+        if (res && res.error) throw res.error;
+        draw((res && res.data && res.data.identities) || []);
+      }).catch(function () {
+        // Fall back to the identities on the session user rather than an empty panel.
+        draw((_user && _user.identities) || []);
+      });
+    }
+    load();
+    return { reload: load };
+  }
+
+  // ── Account panel: sign-in methods + change email + change password ───────
   function renderAccountPanel(root) {
     root.innerHTML = '';
     var box = el('div', 'lok-auth');
     var card = el('div', 'lok-auth-card');
     card.appendChild(el('h2', null, 'Sign-in & security'));
     card.appendChild(el('p', 'lok-auth-sub', 'Manage how you sign in to Lokali.'));
+
+    var _pwState = { hasPassword: true };
+    var _pwPaint = null;
+    var methods = renderSignInMethods(card, function (st) { _pwState = st; if (_pwPaint) _pwPaint(); });
 
     // — Change email —
     var secE = el('div', 'lok-auth-section');
@@ -1373,9 +1552,11 @@
 
     // — Change password —
     var secP = el('div', 'lok-auth-section');
-    secP.appendChild(el('h4', null, 'Change password'));
-    secP.appendChild(el('p', 'lok-auth-section-sub',
-      'If it’s been a while since you signed in, we may ask you to log in again first.'));
+    var pwTitle = el('h4', null, 'Change password');
+    secP.appendChild(pwTitle);
+    var pwSub = el('p', 'lok-auth-section-sub',
+      'If it’s been a while since you signed in, we may ask you to log in again first.');
+    secP.appendChild(pwSub);
     var errP = errorBox(); var infoP = infoBox();
     secP.appendChild(errP); secP.appendChild(infoP);
     var formP = document.createElement('form');
@@ -1385,6 +1566,17 @@
     formP.appendChild(el('div', 'lok-auth-hint', 'At least 8 characters, with an uppercase letter, a lowercase letter, a number, and a symbol.'));
     var subP = primaryBtn('Update password');
     formP.appendChild(subP);
+    // A Google-only account has no password to "change": say "Set a password".
+    _pwPaint = function () {
+      var has = _pwState.hasPassword;
+      pwTitle.textContent = has ? 'Change password' : 'Set a password';
+      pwSub.textContent = has
+        ? 'If it’s been a while since you signed in, we may ask you to log in again first.'
+        : 'Add a password so you can sign in with your email as well as Google. Google keeps working.';
+      subP._label = has ? 'Update password' : 'Set password'; // setBusy() restores from _label
+      if (!subP.disabled) subP.textContent = subP._label;
+    };
+    _pwPaint();
     formP.addEventListener('submit', function (e) {
       e.preventDefault();
       hideMsg(errP); hideMsg(infoP);
@@ -1393,12 +1585,19 @@
       setBusy(subP, true);
       readyP.then(function () {
         if (!_client) throw new Error('Auth is still loading. Please try again.');
-        return _client.auth.updateUser({ password: pw });
+        // has_password is only a wording hint for this panel (Supabase does not
+        // say whether a Google-created account has a password); never trusted
+        // for access decisions.
+        return _client.auth.updateUser({ password: pw, data: { has_password: true } });
       }).then(function (res) {
         setBusy(subP, false);
         if (res && res.error) { showMsg(errP, friendlyAuthError(res.error)); return; }
         newPass.input.value = '';
-        showMsg(infoP, 'Password updated.');
+        var wasSet = !_pwState.hasPassword;
+        if (res && res.data && res.data.user) _user = res.data.user;
+        showMsg(infoP, wasSet ? 'Password set. You can now sign in with your email and this password.' : 'Password updated.');
+        _pwPaint();
+        if (methods && methods.reload) methods.reload();
       }).catch(function (ex) { setBusy(subP, false); showMsg(errP, friendlyAuthError(ex)); });
     });
     secP.appendChild(formP);
@@ -1860,6 +2059,7 @@
         function initialKick() {
           handleAuthState();
           mountAuthUI();
+          maybeOpenMethodsPanel(false);
         }
         if (urlHasCode) setTimeout(initialKick, 800);
         else initialKick();
