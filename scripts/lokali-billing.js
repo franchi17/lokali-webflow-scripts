@@ -496,7 +496,7 @@
       // --slate — Francesca's call 2026-07-21, slate read too faint; --dusk is
       // the same token .price-body uses for the tagline under each plan price.
       '.lk-spotcard .c-name{font-weight:400;font-size:14px;text-transform:uppercase;color:var(--dusk,#4A4761);margin:0 0 14px;}' +
-      '.lk-spotcard .c-price{font-weight:800;font-size:30px;color:var(--lokali-primary,#6002ee);margin:0 0 2px;}' +
+      '.lk-spotcard .c-price{font-weight:700;font-size:30px;color:var(--lokali-primary,#6002ee);margin:0 0 2px;}' +
       '.lk-spotcard .c-per{color:#6B6580;font-size:13px;margin-bottom:12px;}' +
       '.lk-spotcard ul{list-style:none;padding:0;margin:0 0 16px;}' +
       '.lk-spotcard li{position:relative;padding:5px 0 5px 26px;color:#3C3550;font-size:14px;line-height:1.45;}' +

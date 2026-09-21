@@ -361,7 +361,7 @@
     ".vcard-cover-img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;display:block;transition:opacity .65s ease;}",
     // Hairline under the cover: a white product photo keeps an edge above the text.
     ".vcard-cover::after{content:'';position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 -1px 0 rgba(40,32,90,.08);}",
-    ".vcard-cover-mark{font-size:32px;font-weight:800;color:rgba(96,2,238,.16);letter-spacing:2px;user-select:none;}",
+    ".vcard-cover-mark{font-size:32px;font-weight:700;color:rgba(96,2,238,.16);letter-spacing:2px;user-select:none;}",
     // Portfolio carousel (Pro/Featured, F 2026-09-01): crossfading cover layers
     // + quiet position dots. Dots sit under the pill/heart z-wise and stay tiny.
     ".vcard-cover-dots{position:absolute;bottom:7px;left:50%;transform:translateX(-50%);display:flex;gap:4px;z-index:2;pointer-events:none;}",
@@ -423,7 +423,7 @@
     "#lk-start.show{display:block;}",
     ".lk-st-sec{margin-bottom:20px;}",
     ".lk-st-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:10px;}",
-    ".lk-st-h{font-size:17px;font-weight:800;color:#1A1829;margin:0;letter-spacing:-.2px;}",
+    ".lk-st-h{font-size:17px;font-weight:700;color:#1A1829;margin:0;letter-spacing:-.2px;}",
     ".lk-st-sub{font-size:12.5px;color:#6E6A85;}",
     ".lk-st-link{font-size:12.5px;font-weight:600;color:#6002EE;background:none;border:0;padding:0;cursor:pointer;font-family:inherit;white-space:nowrap;}",
     ".lk-st-tiles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;}",

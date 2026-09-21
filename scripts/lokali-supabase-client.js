@@ -430,18 +430,8 @@
             .order('business_name', { ascending: true });
         });
       },
-      // Whole listing in ONE request (vendor + services + products + approved
-      // reviews) via PostgREST embeds — replaces Xano's 3-4 separate calls.
-      getFullListing: function (slug) {
-        return withClient(function (c) {
-          return c.from('vendors').select(
-            VENDOR_PUBLIC_COLS + ',' +
-            'services(*),' +
-            'products(*),' +
-            'reviews(id,author_name,is_recommended,is_verified_contact,is_invited,comment,vendor_reply,vendor_reply_at,services_id,products_id,created_at)'
-          ).eq('slug', slug).maybeSingle();
-        });
-      },
+      // (getFullListing removed 2026-09-21, CLEAN-C33: no caller. Storefronts are
+      // rendered by the Worker + lokali-vendor-listing.js through the adapter.)
       // The caller's OWN vendor row (the dashboard's starting point). Uses the
       // get_my_vendor() RPC because a bare select would also return every public
       // listing; the RPC filters to current_app_user_id(). Returns { data, error }
@@ -885,25 +875,9 @@
         }, false);
       }
     },
-    tracking: {
-      recordView: function (vendorId, source, itemId) {
-        return withClient(function (c) {
-          return c.from('page_views').insert({
-            vendors_id: vendorId, source: source || 'listing', item_id: itemId != null ? itemId : null
-          });
-        });
-      },
-      // event_type: call|sms|whatsapp|email|instagram|website. For a signed-in
-      // customer the review-gate needs user_id stamped — best done with a DB
-      // trigger (set user_id = current_app_user_id()); wired in the auth phase.
-      recordLeadEvent: function (vendorId, eventType, source) {
-        return withClient(function (c) {
-          return c.from('lead_events').insert({
-            vendors_id: vendorId, event_type: eventType, source: source || 'listing'
-          });
-        });
-      }
-    },
+    // (tracking.recordView / recordLeadEvent removed 2026-09-21, CLEAN-C33: they were a
+    // second, uncalled write path into page_views / lead_events. The live one is
+    // keepaliveInsert in lokali-api-adapter.js.)
     // --- Vendor dashboard: own settings, leads, analytics, moderation --------
     // All owner-scoped: RLS (owns_vendor) returns/permits only the caller's rows.
     preferences: {
@@ -1501,14 +1475,8 @@
         });
       }
     },
-    // Public capture forms — go through Vercel routes (service-role insert +
-    // Brevo). Pass the form fields straight through; the route validates. Each
-    // resolves to { data: { ok, ... }, error }.
-    forms: {
-      contact: function (payload) { return postRoute('/contact', payload || {}, false); },
-      waitlist: function (payload) { return postRoute('/waitlist', payload || {}, false); },
-      interest: function (payload) { return postRoute('/interest', payload || {}, false); }
-    },
+    // (forms.contact / waitlist / interest removed 2026-09-21, CLEAN-C33: lokali-contact.js,
+    // lokali-waitlist.js and lokali-email-capture.js POST to the Vercel routes themselves.)
     // #96-LISTING — capability flags for skew detection: the pinned form
     // scripts flip instantly on re-registration, but THIS file rides the
     // 7-day @v1.4 browser cache. A form must only mount its Specialty

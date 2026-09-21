@@ -119,8 +119,8 @@
     '.vd2-rail{position:sticky;top:calc(var(--vd2-top,0px) + 14px);min-width:0;}',
     '.vd2-box{background:#fff;border-radius:18px;padding:22px;display:flex;flex-direction:column;gap:14px;' + V2_EDGE + '}',
     'html.vd2 .vd-top{display:block !important;margin:0 !important;}',
-    'html.vd2 .vd-name{font:800 24px/1.2 ' + V2_FONT + ' !important;color:#1A1829;margin:0 0 4px !important;}',
-    'html.vd2 .vd-price{font:800 20px/1.25 ' + V2_FONT + ' !important;color:#1A1829;text-align:left !important;margin:0 !important;}',
+    'html.vd2 .vd-name{font:700 24px/1.2 ' + V2_FONT + ' !important;color:#1A1829;margin:0 0 4px !important;}',
+    'html.vd2 .vd-price{font:700 20px/1.25 ' + V2_FONT + ' !important;color:#1A1829;text-align:left !important;margin:0 !important;}',
     'html.vd2 #vd-tags,html.vd2 #vd-meta,html.vd2 .vd-divider,html.vd2 .vd-cta-label,html.vd2 #vd-pips,html.vd2 #vd-lead-chip{display:none !important;}',
     // facts: each one once
     '.vd2-facts{display:flex;flex-direction:column;gap:9px;margin:0 !important;padding:0 !important;list-style:none;}',
@@ -502,7 +502,7 @@
       'background:linear-gradient(180deg,#faf7ff 0%,#fff 70%);border:1px solid #eee9fb;border-radius:20px;' +
       'color:#3b3654;font-family:"Plus Jakarta Sans",system-ui,sans-serif;';
     var h = document.createElement('h1');
-    h.style.cssText = 'font-size:24px;font-weight:800;color:#231d3f;margin:0 0 10px;font-family:inherit;';
+    h.style.cssText = 'font-size:24px;font-weight:700;color:#231d3f;margin:0 0 10px;font-family:inherit;';
     h.textContent = msg || 'This item isn’t available';
     var p = document.createElement('p');
     p.style.cssText = 'font-size:15px;line-height:1.6;margin:0 0 20px;';

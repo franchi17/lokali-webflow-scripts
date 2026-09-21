@@ -304,7 +304,7 @@
       if (!document.getElementById('an-dm-css')) {
         var st = document.createElement('style'); st.id = 'an-dm-css';
         st.textContent = '.an-dm{background:#fff;border:.5px solid #EEEDF6;border-radius:14px;padding:16px 18px 18px;margin-top:14px;font-family:"Plus Jakarta Sans",-apple-system,sans-serif;}' +
-          '.an-dm h3{font-size:15px;font-weight:800;margin:0 0 2px;color:#1A1829;}.an-dm .s{font-size:12px;color:#6E6A85;margin:0 0 10px;}' +
+          '.an-dm h3{font-size:15px;font-weight:700;margin:0 0 2px;color:#1A1829;}.an-dm .s{font-size:12px;color:#6E6A85;margin:0 0 10px;}' +
           '.an-dm h4{font-size:12.5px;font-weight:700;margin:12px 0 6px;color:#1A1829;}' +
           '.an-dm .bar{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;font-size:12.5px;color:#1A1829;margin:0 0 7px;}' +
           '.an-dm .bar i{display:block;height:8px;border-radius:100px;background:#F3EBFF;position:relative;margin-top:4px;}' +

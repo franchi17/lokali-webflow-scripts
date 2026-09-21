@@ -606,7 +606,7 @@
            the panel drops its padding (see injectStyles), so the inset drops here too. */
         '@media(max-width:767px){#lok-away-card{margin:0 0 14px;}}' +
         '#lok-away-card .aw-row{display:flex;align-items:center;justify-content:space-between;gap:12px;}' +
-        '#lok-away-card h3{font-size:15px;font-weight:800;margin:0 0 2px;}#lok-away-card .aw-s{font-size:12.5px;color:#6E6A85;line-height:1.5;}' +
+        '#lok-away-card h3{font-size:15px;font-weight:700;margin:0 0 2px;}#lok-away-card .aw-s{font-size:12.5px;color:#6E6A85;line-height:1.5;}' +
         '#lok-away-card .aw-sw{appearance:none;-webkit-appearance:none;width:36px;height:20px;border-radius:100px;background:#D9D5EA;position:relative;cursor:pointer;flex-shrink:0;border:none;margin:0;}' +
         '#lok-away-card .aw-sw::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.18);transition:left .15s;}' +
         '#lok-away-card .aw-sw:checked{background:#6002EE;}#lok-away-card .aw-sw:checked::after{left:18px;}' +

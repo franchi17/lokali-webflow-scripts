@@ -1838,7 +1838,7 @@ var LokaliProfilePage = (function () {
       // completeness strip
       '#lok-complete-strip{background:#fff;border:1px solid #E9E5F5;border-radius:14px;padding:12px 16px;display:flex;align-items:center;gap:14px;margin:0 0 10px;font-family:"Plus Jakarta Sans",sans-serif;flex-wrap:wrap;}',
       '#lok-complete-ring{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;}',
-      '#lok-complete-ring > div{width:32px;height:32px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font:800 10.5px/1 "Plus Jakarta Sans",sans-serif;color:#6002EE;}',
+      '#lok-complete-ring > div{width:32px;height:32px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font:700 10.5px/1 "Plus Jakarta Sans",sans-serif;color:#6002EE;}',
       // save bar — sticky inside the form column, so no sidebar math needed
       '#lok-savebar{position:sticky;bottom:10px;z-index:44;background:rgba(255,255,255,.97);border:1px solid #E9E5F5;border-radius:14px;box-shadow:0 6px 24px rgba(26,24,41,.12);padding:10px 16px;display:none;align-items:center;justify-content:space-between;gap:12px;margin-top:14px;font-family:"Plus Jakarta Sans",sans-serif;}',
       '#lok-savebar.on{display:flex;}',

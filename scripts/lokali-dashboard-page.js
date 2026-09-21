@@ -249,7 +249,7 @@
     '.lok-pill{font-size:11px;font-weight:700;border-radius:100px;padding:3px 10px;background:#F3EBFF;color:#6002EE;white-space:nowrap;line-height:1.5;}',
     '.lok-pill.ok{background:#EAFAF2;color:#1D6A45;}',
     '.lok-next{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start;padding:12px;border-radius:10px;background:#F3EBFF;}',
-    '.lok-next .n{width:28px;height:28px;border-radius:50%;background:#6002EE;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;}',
+    '.lok-next .n{width:28px;height:28px;border-radius:50%;background:#6002EE;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;}',
     '.lok-next .t{font-size:14px;font-weight:700;margin:0;color:#1A1829;line-height:1.4;}',
     '.lok-next .w{font-size:12.5px;color:#4A4761;margin:2px 0 8px;max-width:52ch;line-height:1.5;}',
     '.lok-next .lok-btn{min-height:34px;padding:6px 12px;font-size:12.5px;}',
@@ -1084,7 +1084,7 @@
           'border:none;cursor:pointer;font-size:18px;color:#9A9AB0;line-height:1;">✕</button>' +
         '<div style="font-size:12px;font-weight:700;letter-spacing:.06em;color:#6E3CFF;margin-bottom:6px;">' +
           'STEP ' + (stepIdx + 1) + ' OF ' + steps.length + '</div>' +
-        '<h3 id="lok-wz-title" style="font-size:21px;font-weight:800;color:#231d3f;margin:0 0 6px;font-family:inherit;">' + title + '</h3>' +
+        '<h3 id="lok-wz-title" style="font-size:21px;font-weight:700;color:#231d3f;margin:0 0 6px;font-family:inherit;">' + title + '</h3>' +
         '<p style="font-size:14px;line-height:1.55;margin:0 0 16px;">' + sub + '</p>' +
         '<div data-wz-body>' + bodyHtml + '</div>' +
         '<div data-wz-err aria-live="polite" style="display:none;color:#C05621;font-size:13px;margin-top:10px;"></div>' +

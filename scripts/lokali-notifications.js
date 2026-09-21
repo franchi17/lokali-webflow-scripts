@@ -57,11 +57,11 @@
         'mask:url("' + BELL_URL + '") center/contain no-repeat;}',
       // The badge is the whole point of a bell — peach/orange so it reads as
       // "new" against the violet chrome without shouting.
-      '.lok-notif-dot{position:absolute;top:5px;right:5px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:#FF8D00;color:#fff;font-size:10.5px;font-weight:800;line-height:17px;text-align:center;box-shadow:0 0 0 2px #fff;}',
+      '.lok-notif-dot{position:absolute;top:5px;right:5px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:#FF8D00;color:#fff;font-size:10.5px;font-weight:700;line-height:17px;text-align:center;box-shadow:0 0 0 2px #fff;}',
       '.lok-notif-panel{position:absolute;top:calc(100% + 8px);right:0;width:340px;max-width:calc(100vw - 32px);background:#fff;border:.5px solid #EEEDF6;border-radius:14px;box-shadow:0 12px 32px rgba(26,24,41,.14);display:none;z-index:1100;overflow:hidden;}',
       '.lok-notif.open .lok-notif-panel{display:block;}',
       '.lok-notif-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px 8px;}',
-      '.lok-notif-title{font-size:13px;font-weight:800;color:#1A1829;letter-spacing:-.2px;}',
+      '.lok-notif-title{font-size:13px;font-weight:700;color:#1A1829;letter-spacing:-.2px;}',
       '.lok-notif-clear{border:none;background:none;color:#6002EE;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;padding:4px 6px;border-radius:6px;}',
       '.lok-notif-clear:hover{background:#F7F6FC;}',
       '.lok-notif-clear[disabled]{color:#B3B1C6;cursor:default;background:none;}',

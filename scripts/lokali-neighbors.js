@@ -75,7 +75,7 @@
       '.lok-nb{font-family:"Plus Jakarta Sans",sans-serif;background:#F3EBFF;padding:56px 20px;}' +
       '.lok-nb-inner{max-width:1160px;margin:0 auto;}' +
       '.lok-nb-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:26px;flex-wrap:wrap;}' +
-      '.lok-nb-title{font-size:32px;font-weight:800;letter-spacing:-.6px;color:#1A1829;margin:0;}' +
+      '.lok-nb-title{font-size:32px;font-weight:700;letter-spacing:-.6px;color:#1A1829;margin:0;}' +
       '.lok-nb-sub{font-size:16px;color:#4A4761;margin:6px 0 0;}' +
       '.lok-nb-all{font-size:15px;font-weight:600;color:#6002EE;text-decoration:none;white-space:nowrap;}' +
       '.lok-nb-all:hover{color:#4B02BB;}' +
@@ -92,7 +92,7 @@
       '.lok-nb-initials{width:104px;height:104px;border-radius:50%;border:4px solid #F3EBFF;flex-shrink:0;' +
         'box-shadow:0 6px 16px rgba(96,2,238,.14);display:flex;align-items:center;justify-content:center;' +
         'font-size:32px;font-weight:700;color:#fff;}' +
-      '.lok-nb-name{margin-top:13px;font-size:20px;font-weight:800;color:#1A1829;}' +
+      '.lok-nb-name{margin-top:13px;font-size:20px;font-weight:700;color:#1A1829;}' +
       '.lok-nb-biz{margin-top:2px;font-size:14px;font-weight:600;color:#4A4761;}' +
       '.lok-nb-bio{margin-top:6px;font-size:13px;line-height:1.5;color:#6B6880;overflow:hidden;text-overflow:ellipsis;' +
         'display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;max-width:100%;overflow-wrap:anywhere;word-break:break-word;}' +
