@@ -1577,7 +1577,8 @@
       '.vl-upd-date span{font:700 10.5px/1 ' + F + ';letter-spacing:.06em;text-transform:uppercase;}',
       '.vl-upd-place{font:700 14.5px/1.35 ' + F + ';color:#1A1829;}',
       '.vl-upd-sub{font:500 13px/1.45 ' + F + ';color:#6B6880;margin-top:2px;}',
-      '.vl-upd-note{background:#FFF0E6;border:1px solid #F6D9BE;border-radius:12px;padding:11px 13px;margin-top:12px;font:500 14px/1.5 ' + F + ';color:#8A4B14;overflow-wrap:anywhere;}',
+      '.vl-upd-note{background:#E9F5EC;border:1px solid #C6E3CE;border-radius:12px;padding:11px 13px;margin-top:12px;font:500 14px/1.5 ' + F + ';color:#1F5A37;overflow-wrap:anywhere;}',
+      '.vl-upd-note.vl-upd-out{background:#F4F3F8;border-color:#DEDAEE;color:#4A4760;}',
       '.vl-upd-note b{display:block;font:700 11px/1.2 ' + F + ';letter-spacing:.06em;text-transform:uppercase;margin-bottom:3px;}',
       '.vl-upd-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:14px;}',
       '.vl-upd-hint{font:500 12.5px/1.45 ' + F + ';color:#6B6880;flex:1 1 200px;}',
@@ -1628,7 +1629,7 @@
         card.appendChild(row);
       });
       if (note) {
-        var nb = ce('div', 'vl-upd-note');
+        var nb = ce('div', 'vl-upd-note' + (note.kind === 'soldout' ? ' vl-upd-out' : '')); // green reads as 'available', so Sold out stays neutral
         var lab = ce('b'); lab.textContent = UPD_LABEL[note.kind] || 'Update';
         nb.appendChild(lab);
         nb.appendChild(document.createTextNode(note.body || ''));
