@@ -1166,7 +1166,11 @@
           if (iq.error) return envelope(iq);
           if (ev.error) return envelope(ev);
           var cutoff = Date.now() - THIRTY_D;
-          var inquiries = normalizeTs(iq.data || []);
+          // SEC-064: leads the vendor "deleted" are hidden, not erased (the row is the
+          // customer's proof of contact for the review gate). Filtered HERE, in JS, and
+          // not in the query: the column only exists once patch_inquiry_hide.sql is
+          // applied, and a query naming a missing column would take the whole inbox down.
+          var inquiries = normalizeTs(iq.data || []).filter(function (i) { return !i.hidden_by_vendor_at; });
           var events = normalizeTs(ev.data || []).filter(function (e) {
             if (isPaymentEvent(e)) return false; // payment clicks are a separate metric
             return typeof e.created_at === 'number' ? e.created_at >= cutoff : true;
@@ -1231,12 +1235,28 @@
     // Delete = owner + status='closed' only (RLS). A silent 0-row delete (e.g. the
     // lead was reopened in another tab) is reported as an error so the row is not
     // dropped from the page while it still exists.
+    // SEC-064: "Delete" HIDES the lead (see hideInquiry in the client). It works on
+    // both sides of the SQL apply: before patch_inquiry_hide.sql the hide call fails
+    // (no such column / no grant) and we fall back to the old hard delete; after it,
+    // hide succeeds and the hard delete is revoked server-side anyway. Hidden only
+    // counts when the row comes back STAMPED: the guard silently reverts a hide on a
+    // lead that is not closed, and that must not drop the card from the page.
     deleteInquiry: function (inquiryId) {
-      return SAPI().leads.deleteInquiry(inquiryId).then(function (res) {
-        var out = envelope(res);
-        if (!out.error && (!Array.isArray(res && res.data) || res.data.length === 0)) out.error = 'not_deleted';
-        return out;
-      });
+      var S = SAPI().leads;
+      var hardDelete = function () {
+        return S.deleteInquiry(inquiryId).then(function (res) {
+          var out = envelope(res);
+          if (!out.error && (!Array.isArray(res && res.data) || res.data.length === 0)) out.error = 'not_deleted';
+          return out;
+        });
+      };
+      if (typeof S.hideInquiry !== 'function') return hardDelete();
+      return S.hideInquiry(inquiryId).then(function (res) {
+        if (res && res.error) return hardDelete();
+        var row = Array.isArray(res && res.data) ? res.data[0] : null;
+        if (row && row.hidden_by_vendor_at) return envelope(res);
+        var out = envelope(res); out.error = 'not_deleted'; return out;
+      }, hardDelete);
     },
     setEventStatus: function (eventId, status) {
       return SAPI().leads.setEventStatus(eventId, status).then(envelope);

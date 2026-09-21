@@ -1099,6 +1099,19 @@
           return c.from('inquiries').delete().eq('id', inquiryId).select('id');
         });
       },
+      // SEC-064 (patch_inquiry_hide.sql): what the vendor's "Delete" really does once
+      // that patch is applied. The row is HIDDEN from their inbox, not erased, because
+      // the message is also the customer's proof of contact for the review gate: a hard
+      // delete let a vendor remove an unhappy customer's right to review. The server
+      // guard stamps its own time (this value is only a "set it" signal), admits only
+      // the owner and only a closed lead, and never lets it be un-hidden. Reads back
+      // the stamp so a guard-reverted no-op is visible to the caller.
+      hideInquiry: function (inquiryId) {
+        return withClient(function (c) {
+          return c.from('inquiries').update({ hidden_by_vendor_at: new Date().toISOString() })
+            .eq('id', inquiryId).select('id,hidden_by_vendor_at');
+        });
+      },
       // Contact-click events (call/text/whatsapp/email/ig/website) for the vendor.
       events: function (vendorId) {
         return withClient(function (c) {
