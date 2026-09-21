@@ -414,6 +414,13 @@
   // flip this to true in the same release that flips prelaunch_open (the old banner
   // keyed off SPOT_FLOOR and would have vanished on Oct 1 with booking still closed).
   var SPOT_BOOKING_OPEN = false;
+  // F 2026-09-21: Spotlight is HIDDEN for now ("introduce that later when we actually
+  // feel it makes sense"). 0 bookings and 0 waitlist rows existed when this was set.
+  // false = the Settings card is never mounted; nothing else is removed (SQL, checkout,
+  // homepage / Market slots and the admin queue all stay and render nothing without a
+  // booking). To bring it back: set this true, restore the content listed in TODO #192,
+  // and decide SPOT_BOOKING_OPEN above.
+  var SPOT_ENABLED = false;
   var SPOT_NOT_OPEN_MSG = 'Spotlight booking is not open yet. You can look at dates now, and we will let you know when booking opens. You will not be charged for anything before then.';
   var spotState = {
     tier: 'category', me: null, windowDays: 14, cutoffDays: 7,
@@ -846,6 +853,7 @@
   }
 
   function initSpotlightSettingsCard() {
+    if (!SPOT_ENABLED) return;
     if (!/^\/vendor-dashboard\/settings/.test(window.location.pathname)) return;
     if (document.getElementById('lokali-spotlight')) return;
     // Spotlight belongs with the plan: after the Get Verified card when it is there,
@@ -956,6 +964,7 @@
 
   // ---- /pricing add-on cards ----------------------------------------------------
   function initPricingSpotlightCards() {
+    if (!SPOT_ENABLED) return; // Spotlight hidden for now (F 2026-09-21), see SPOT_ENABLED
     if (!/^\/pricing(\/|$)/.test(window.location.pathname)) return;
     if (document.getElementById('lk-spot-pricing')) return;
     var wrap = document.querySelector('.pricing-tier-wrapper');
