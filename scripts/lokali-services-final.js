@@ -1805,7 +1805,11 @@ const LokaliServicesPage = (() => {
            ?? (Array.isArray(result.data?.records) ? result.data.records[0]?.id : null) ?? null);
 
       // Photos. First staged photo is already the cover (set above).
-      if (newId != null && _isProPlan && _pendingGalleryPhotos.length) {
+      // Every plan attaches its staged photos (the DB cap trigger is the limit).
+      // Was gated on _isProPlan from the Free = 1 photo era: after the 2026-09-20
+      // cap change (Free 2 / Pro 5 / Featured 10) a Free vendor could stage a
+      // second photo, see '2 of 2', and lose it on Save (F, 2026-09-22).
+      if (newId != null && _pendingGalleryPhotos.length) {
         for (let i = 0; i < _pendingGalleryPhotos.length; i++) {
           try { await window.LokaliAPI.services.addPhoto(newId, _pendingGalleryPhotos[i].url, i); } catch (e) {}
         }
