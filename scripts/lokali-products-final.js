@@ -111,6 +111,7 @@ const LokaliProductsPage = (() => {
   let _maxProducts = null;
   let _maxProductPhotos = null;   // gallery cap (Free=1, Pro=3, Featured=5 — #82)
   let _isProPlan = false;
+  let _hasGallery = false;  // cap > 1: the gallery is the photo widget (2026-09-22; was Pro-only)
   let _isFeaturedPlan = false;   // FEAT-PICKS: the star toggle is a Featured-plan perk         // gallery is a Pro/Featured perk
   let _imagePreviewObjectUrl = null;
 
@@ -228,7 +229,7 @@ const LokaliProductsPage = (() => {
     // the image AFTER the lock note rendered with no URL — so create it then.
     const pv = document.getElementById('lok-product-cover-preview');
     if (pv) { pv.src = url; }
-    else if (!_isProPlan) {
+    else if (!_hasGallery) {
       const gbody = document.getElementById('lok-product-gallery-body');
       if (gbody) { _coverViews = []; renderCoverPreview(gbody, url, true); }
     }
@@ -947,7 +948,7 @@ const LokaliProductsPage = (() => {
     // Pro/Featured: the gallery is the only photo widget and its first photo is the
     // cover, so hide the standalone "Product image" field to avoid two competing
     // photo areas. Free keeps it (the gallery is locked for them).
-    if (!_isProPlan) return;
+    if (!_hasGallery) return;
     const anchor = el.imgThumb() || el.imgPlaceholder() || el.imgInput();
     if (!anchor) return;
     let section = anchor;
@@ -1425,12 +1426,12 @@ const LokaliProductsPage = (() => {
       '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" style="flex-shrink:0;"><circle cx="12" cy="12" r="9" stroke="#ee6002" stroke-width="2"/><path d="M12 11v5M12 8h.01" stroke="#ee6002" stroke-width="2" stroke-linecap="round"/></svg>' +
       'Photo size &amp; tips guide</a>';
 
-    // Locked for Free plans
-    if (!_isProPlan) {
+    // Locked: plan allows a single photo per listing (no plan does since 2026-09-20)
+    if (!_hasGallery) {
       body.innerHTML = title +
         '<div style="color:#4A4761;font-size:14px;line-height:1.5;">' +
-        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" fill="currentColor" aria-hidden="true" focusable="false" style="width:1em;height:1em;vertical-align:-.125em;flex-shrink:0;"><path d="M144 144l0 48 160 0 0-48c0-44.2-35.8-80-80-80s-80 35.8-80 80zM80 192l0-48C80 64.5 144.5 0 224 0s144 64.5 144 144l0 48 16 0c35.3 0 64 28.7 64 64l0 192c0 35.3-28.7 64-64 64L64 512c-35.3 0-64-28.7-64-64L0 256c0-35.3 28.7-64 64-64l16 0z"/></svg> Add a <strong>photo gallery</strong> with Pro &amp; Featured: 3 photos per' +
-        ' product on Pro, 5 on Featured, so customers see more before they buy.</div>';
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" fill="currentColor" aria-hidden="true" focusable="false" style="width:1em;height:1em;vertical-align:-.125em;flex-shrink:0;"><path d="M144 144l0 48 160 0 0-48c0-44.2-35.8-80-80-80s-80 35.8-80 80zM80 192l0-48C80 64.5 144.5 0 224 0s144 64.5 144 144l0 48 16 0c35.3 0 64 28.7 64 64l0 192c0 35.3-28.7 64-64 64L64 512c-35.3 0-64-28.7-64-64L0 256c0-35.3 28.7-64 64-64l16 0z"/></svg> Add a <strong>photo gallery</strong> with Pro &amp; Featured: 5 photos per' +
+        ' listing on Pro, 10 on Featured, so customers see more before they buy.</div>';
       // #149: Free vendors still have a card crop to control (their standalone
       // image). Same WYSIWYG preview; drag persists on release in edit mode.
       _coverViews = [];
@@ -1454,6 +1455,17 @@ const LokaliProductsPage = (() => {
     _galleryPhotos = (Array.isArray(raw) ? raw : (raw?.items || raw?.records || raw?.data || []))
       .filter(p => p && p.is_active !== false)
       .sort((a, b) => (a.sort_order ?? 9999) - (b.sort_order ?? 9999));
+    // Legacy cover (2026-09-22): a listing made while its plan allowed ONE photo has
+    // its photo as the standalone image_url and no gallery row. Register that photo
+    // as gallery photo 1 before anything else happens, so a newly added photo sits
+    // BESIDE it instead of replacing it (syncCoverFromGallery makes photo 1 the cover).
+    if (!_galleryPhotos.length) {
+      const legacy = _mainImageUrl || (products.find(x => x.id === productId) || {}).image_url || null;
+      if (legacy && /^https:\/\//.test(legacy)) {
+        const seeded = await window.LokaliAPI.products.addPhoto(productId, legacy, 0);
+        if (seeded && !seeded.error && seeded.data) _galleryPhotos = [Object.assign({ image_url: legacy, sort_order: 0 }, seeded.data)];
+      }
+    }
 
     const cap = _maxProductPhotos || 1;
     const count = _galleryPhotos.length;
@@ -1672,7 +1684,7 @@ const LokaliProductsPage = (() => {
   // and this matches existing save behavior — no field is dropped). Only runs
   // after add/delete/reorder, never on initial open, so a legacy cover is safe.
   const syncCoverFromGallery = async () => {
-    if (!_isProPlan || !editingId) return;
+    if (!_hasGallery || !editingId) return;
     const prod = products.find(p => p.id === editingId);
     const desired = _galleryPhotos.length ? _galleryPhotos[0].image_url : null;
     if (prod && prod.image_url === desired) return;
@@ -1827,7 +1839,7 @@ const LokaliProductsPage = (() => {
       // Edit mode reads the attached gallery; add mode reads ONLY the staged photos
       // (gated on editingId since 2026-09-01 — the attached list belongs to the
       // last-edited product and must never become a NEW product's cover).
-      if (_isProPlan) {
+      if (_hasGallery) {
         if (editingId && Array.isArray(_galleryPhotos) && _galleryPhotos.length) {
           imageUrl = _galleryPhotos[0].image_url || imageUrl;
         } else if (!editingId && _pendingGalleryPhotos.length) {
@@ -2552,7 +2564,8 @@ const LokaliProductsPage = (() => {
       _isFeaturedPlan = planCode === 'featured'; // FEAT-PICKS
       _maxProductPhotos = billing?.features?.max_product_photos
                        ?? billing?.subscription?.max_product_photos
-                       ?? (_isFeaturedPlan ? 5 : _isProPlan ? 3 : 1);
+                       ?? (_isFeaturedPlan ? 10 : _isProPlan ? 5 : 2);
+      _hasGallery = (_maxProductPhotos || 0) > 1;
       try {
         sessionStorage.setItem(PLAN_CACHE_KEY, JSON.stringify({ pro: _isProPlan, feat: _isFeaturedPlan, maxPhotos: _maxProductPhotos, maxItems: _maxProducts }));
       } catch (e) {}
@@ -2564,7 +2577,8 @@ const LokaliProductsPage = (() => {
       try { cached = JSON.parse(sessionStorage.getItem(PLAN_CACHE_KEY) || 'null'); } catch (e) {}
       _isProPlan = cached ? !!cached.pro : false;
       _isFeaturedPlan = cached ? !!cached.feat : false; // FEAT-PICKS
-      _maxProductPhotos = cached ? (cached.maxPhotos ?? (_isFeaturedPlan ? 5 : _isProPlan ? 3 : 1)) : 1;
+      _maxProductPhotos = cached ? (cached.maxPhotos ?? (_isFeaturedPlan ? 10 : _isProPlan ? 5 : 2)) : 2;
+      _hasGallery = (_maxProductPhotos || 0) > 1;
       _maxProducts = cached ? (cached.maxItems ?? null) : null;
     }
 
