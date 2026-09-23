@@ -138,6 +138,11 @@
     '#vd-buy-btn + #vd-cta-btn,#vd-buy-btn + #vd-cta-btn:hover,#vd-book-btn + #vd-cta-btn,#vd-book-btn + #vd-cta-btn:hover{background:#fff !important;background-image:none !important;color:#B84A00 !important;border:1.5px solid #FF6B00 !important;box-shadow:none !important;}',
     '#vd-buy-btn + #vd-cta-btn *,#vd-book-btn + #vd-cta-btn *{color:#B84A00 !important;}',
     '#vd-buy-btn + #vd-cta-btn:hover,#vd-book-btn + #vd-cta-btn:hover{background:#FFF4EB !important;}',
+    // Book now lives on SERVICE pages, whose CTA is the violet variant: the outline
+    // follows it (no orange beside violet, F). #6002EE on white = 6.3:1.
+    '#vd-book-btn + #vd-cta-btn,#vd-book-btn + #vd-cta-btn:hover{color:#6002EE !important;border-color:#6002EE !important;}',
+    '#vd-book-btn + #vd-cta-btn *{color:#6002EE !important;}',
+    '#vd-book-btn + #vd-cta-btn:hover{background:#F3EBFF !important;}',
     // pills: the storefront's exact styles (read off golokali.com 2026-09-19)
     '.vd2-ch{display:flex;gap:8px;}',
     '.vd2-ch:empty{display:none;}',
@@ -223,6 +228,8 @@
     '#vd2-bar .vd2-bar-side{flex:0 0 104px;background:#fff;color:#1A1829;border:1px solid #EEEDF6;}',
     '#vd2-bar .vd2-bar-buy{background:#FF6B00;color:#fff;}',
     '#vd2-bar .vd2-bar-buy ~ .vd2-bar-main,#vd2-bar .vd2-bar-buy ~ .vd2-bar-main.vd2-bar-orange{background:#fff;color:#B84A00;border:1.5px solid #FF6B00;}',
+    '#vd2-bar .vd2-bar-buy.vd2-bar-book{background:#6002EE;}',
+    '#vd2-bar .vd2-bar-book ~ .vd2-bar-main{color:#6002EE;border-color:#6002EE;}',
     'html.vd2 #lok-totop{bottom:calc(84px + env(safe-area-inset-bottom)) !important;}',
     '}'
   ].join('');
@@ -456,7 +463,7 @@
     var bar = v2el('div'); bar.id = 'vd2-bar';
     var buy = $('vd-buy-btn') || $('vd-book-btn');
     if (buy) {
-      var bb = v2el('button', 'vd2-bar-buy'); bb.type = 'button';
+      var bb = v2el('button', 'vd2-bar-buy' + (buy.id === 'vd-book-btn' ? ' vd2-bar-book' : '')); bb.type = 'button';
       bb.textContent = (buy.textContent || 'Buy online').trim();
       bb.addEventListener('click', function () { buy.click(); });
       bar.appendChild(bb);
@@ -970,7 +977,7 @@
         });
         var bar = document.getElementById('vd2-bar');
         if (bar && !bar.querySelector('.vd2-bar-buy')) {
-          var bb = v2el('button', 'vd2-bar-buy'); bb.type = 'button';
+          var bb = v2el('button', 'vd2-bar-buy vd2-bar-book'); bb.type = 'button';
           bb.textContent = 'Book now';
           bb.addEventListener('click', function () { btn.click(); });
           bar.insertBefore(bb, bar.firstChild);
