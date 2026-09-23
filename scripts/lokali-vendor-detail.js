@@ -132,12 +132,12 @@
     // the one main button (Webflow's orange / violet variants keep their colour)
     'html.vd2 .vd-cta{display:block !important;background:transparent !important;border:0 !important;padding:0 !important;margin:0 !important;}',
     'html.vd2 .vd-cta-btn{display:flex !important;align-items:center;justify-content:center;width:100% !important;box-sizing:border-box;min-height:50px;border-radius:10px;font:600 15px/1.2 ' + V2_FONT + ';text-decoration:none;margin:0;cursor:pointer;}',
-    'html.vd2 #vd-buy-btn{margin-bottom:10px !important;}',
+    'html.vd2 #vd-buy-btn,html.vd2 #vd-book-btn{margin-bottom:10px !important;}',
     // One orange button per card (F 2026-09-21): with a Buy link above it, the
     // inquiry button drops to a white outline. #B84A00 on white = 5.2:1.
-    '#vd-buy-btn + #vd-cta-btn,#vd-buy-btn + #vd-cta-btn:hover{background:#fff !important;background-image:none !important;color:#B84A00 !important;border:1.5px solid #FF6B00 !important;box-shadow:none !important;}',
-    '#vd-buy-btn + #vd-cta-btn *{color:#B84A00 !important;}',
-    '#vd-buy-btn + #vd-cta-btn:hover{background:#FFF4EB !important;}',
+    '#vd-buy-btn + #vd-cta-btn,#vd-buy-btn + #vd-cta-btn:hover,#vd-book-btn + #vd-cta-btn,#vd-book-btn + #vd-cta-btn:hover{background:#fff !important;background-image:none !important;color:#B84A00 !important;border:1.5px solid #FF6B00 !important;box-shadow:none !important;}',
+    '#vd-buy-btn + #vd-cta-btn *,#vd-book-btn + #vd-cta-btn *{color:#B84A00 !important;}',
+    '#vd-buy-btn + #vd-cta-btn:hover,#vd-book-btn + #vd-cta-btn:hover{background:#FFF4EB !important;}',
     // pills: the storefront's exact styles (read off golokali.com 2026-09-19)
     '.vd2-ch{display:flex;gap:8px;}',
     '.vd2-ch:empty{display:none;}',
@@ -454,7 +454,7 @@
   function v2Bar(cta, callPill) {
     if (document.getElementById('vd2-bar')) return;
     var bar = v2el('div'); bar.id = 'vd2-bar';
-    var buy = $('vd-buy-btn');
+    var buy = $('vd-buy-btn') || $('vd-book-btn');
     if (buy) {
       var bb = v2el('button', 'vd2-bar-buy'); bb.type = 'button';
       bb.textContent = (buy.textContent || 'Buy online').trim();
@@ -931,6 +931,55 @@
     } catch (e) {}
   }
 
+  // Book now on a SERVICE page (F 2026-09-23, first asked for by The Fairytale
+  // Spa): the vendor's storefront booking link (#157, Pro/Featured, any https
+  // host) becomes a "Book now" button above Inquire, the same shape as the
+  // product Buy button, so a shopper on a package can book without going back
+  // to the storefront. The link is read through the same anon RPC the
+  // storefront card uses (availability_booking_link, null when off the plan).
+  // Async, so the phone bar may already exist: it gets its mirror here too.
+  function mountBookLink(vendorId) {
+    try {
+      if (document.getElementById('vd-book-btn') || vendorId == null) return;
+      var av = window.LokaliSupabaseAPI && window.LokaliSupabaseAPI.availability;
+      if (!av || typeof av.bookingLink !== 'function') return;
+      av.bookingLink(vendorId).then(function (res) {
+        var raw = res && !res.error ? res.data : null;
+        if (!raw || document.getElementById('vd-book-btn')) return;
+        var u;
+        try { u = new URL(String(raw).trim()); } catch (e) { return; }
+        if (u.protocol !== 'https:') return;
+        var cta = $('vd-cta-btn');
+        if (!cta || !cta.parentNode) return;
+        var btn = cta.cloneNode(true);
+        btn.id = 'vd-book-btn';
+        btn.querySelectorAll('[id]').forEach(function (n) { n.removeAttribute('id'); });
+        var textHost = btn;
+        while (textHost.children && textHost.children.length === 1) textHost = textHost.children[0];
+        textHost.textContent = 'Book now';
+        btn.href = u.href;               // property, never string-built markup
+        btn.target = '_blank';
+        btn.rel = 'noopener';
+        btn.setAttribute('aria-label', 'Book now (opens in a new tab)');
+        btn.style.marginBottom = '10px';
+        cta.parentNode.insertBefore(btn, cta);
+        btn.addEventListener('click', function () {
+          if (window.LokaliAPI && window.LokaliAPI.leads) {
+            window.LokaliAPI.leads.trackEvent(vendorId, 'booking_link', 'service');
+          }
+        });
+        var bar = document.getElementById('vd2-bar');
+        if (bar && !bar.querySelector('.vd2-bar-buy')) {
+          var bb = v2el('button', 'vd2-bar-buy'); bb.type = 'button';
+          bb.textContent = 'Book now';
+          bb.addEventListener('click', function () { btn.click(); });
+          bar.insertBefore(bb, bar.firstChild);
+          var side = bar.querySelector('.vd2-bar-side'); if (side) side.parentNode.removeChild(side);
+        }
+      }).catch(function () {});
+    } catch (e) {}
+  }
+
   // ---- #174 item-to-item browsing ---------------------------------------
   // A shopper on one item could only leave through the back link, so
   // comparing two of a vendor's listings meant a round trip through the
@@ -1256,6 +1305,7 @@
       renderVideo(s.video_url);
       var vid = vendorParam || s.vendors_id || s.vendor_id;
       emitItemView(vid, 'service', s.id != null ? s.id : id);
+      mountBookLink(vid); // Book now above Inquire when the storefront has a booking link
       var vendorP = fillVendor(vid, name, false);
       mountItemNav('services', s.id != null ? s.id : id, vid, vendorP); // #174
     });

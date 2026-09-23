@@ -116,7 +116,8 @@
   // enter the "Leads" KPI or the follow-up inbox — they get their own count.
   // #172: buy_link = a tap on a product's external checkout button (Etsy etc.)
   // — purchase intent, so it rides with the payment clicks, never the inbox.
-  var PAYMENT_EVENT_TYPES = { venmo: 1, cashapp: 1, paypal: 1, other_pay: 1, zelle: 1, buy_link: 1 };
+  // booking_link (2026-09-23) = a tap on a service page's Book now button: same intent.
+  var PAYMENT_EVENT_TYPES = { venmo: 1, cashapp: 1, paypal: 1, other_pay: 1, zelle: 1, buy_link: 1, booking_link: 1 };
   function isPaymentEvent(e) { return !!(e && PAYMENT_EVENT_TYPES[e.event_type]); }
 
   // ── payment-handle normalization ──────────────────────────────────────────

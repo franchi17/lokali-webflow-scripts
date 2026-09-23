@@ -462,8 +462,8 @@
     // Payment clicks — taps on the vendor's Venmo/Cash App/PayPal/other pay links.
     // A distinct, high-intent signal; deliberately NOT folded into Leads.
     // 76a: the detail line breaks the 30-day count down per method.
-    var PAY_LABELS = { venmo: 'Venmo', cashapp: 'Cash App', paypal: 'PayPal', zelle: 'Zelle', other_pay: 'Other link', buy_link: 'Buy link' }; // buy_link = #172 product checkout button
-    var payDetail = 'taps to pay you or buy from your store';
+    var PAY_LABELS = { venmo: 'Venmo', cashapp: 'Cash App', paypal: 'PayPal', zelle: 'Zelle', other_pay: 'Other link', buy_link: 'Buy link', booking_link: 'Book now' }; // buy_link = #172 product checkout button; booking_link = service-page Book now (2026-09-23)
+    var payDetail = 'taps to pay you, buy from your store or book';
     if (pay30 > 0) {
       var payNow = Date.now(), payCounts = {};
       pay.forEach(function (e) {
@@ -474,7 +474,7 @@
         }
       });
       var payBits = [];
-      ['venmo', 'cashapp', 'paypal', 'zelle', 'other_pay', 'buy_link'].forEach(function (k) {
+      ['venmo', 'cashapp', 'paypal', 'zelle', 'other_pay', 'buy_link', 'booking_link'].forEach(function (k) {
         if (payCounts[k]) payBits.push(PAY_LABELS[k] + ' ' + payCounts[k]);
       });
       if (payBits.length) payDetail = payBits.join(' · ');

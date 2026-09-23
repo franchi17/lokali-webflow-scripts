@@ -496,7 +496,7 @@
 
   // ── What happened: the last 8 human events + the month's busiest day ────
   var CONTACT_VERB = { call: 'tapped Call', sms: 'tapped Text', whatsapp: 'tapped WhatsApp', email: 'tapped Email', instagram: 'opened your Instagram', website: 'opened your website' };
-  var PAY_VERB = { venmo: 'tapped your Venmo', cashapp: 'tapped your Cash App', paypal: 'tapped your PayPal', zelle: 'copied your Zelle', buy_link: 'clicked Buy on a product', other_pay: 'tapped your pay link' };
+  var PAY_VERB = { venmo: 'tapped your Venmo', cashapp: 'tapped your Cash App', paypal: 'tapped your PayPal', zelle: 'copied your Zelle', buy_link: 'clicked Buy on a product', booking_link: 'clicked Book now on a service', other_pay: 'tapped your pay link' };
   var DOW = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   var DOW3 = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   var MON3 = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
