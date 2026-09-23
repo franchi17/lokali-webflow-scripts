@@ -232,7 +232,7 @@
     '.lok-gc-line{display:flex;align-items:center;justify-content:space-between;gap:8px;}',
     '.lok-gc-top{align-items:flex-start;}',
     '.lok-gc-top .lok-gc-stat{flex-shrink:0;padding-top:1px;}',
-    '.lok-gc .service-price,.lok-gc .product-price,.lok-gc .product-price-row{font-size:13px;font-weight:500;font-variant-numeric:tabular-nums;white-space:nowrap;color:#4A4761;margin:0;display:block;line-height:1.4;}',
+    '.lok-gc .service-price,.lok-gc .product-price,.lok-gc .product-price-row{font-size:13px;font-weight:500;font-variant-numeric:tabular-nums;white-space:nowrap;color:#4A4761;margin:0;display:block;line-height:1.4;text-align:left;min-width:0;width:auto;justify-self:start;}', // text-align/min-width: the pages' legacy row-layout <style> gives .service-price a 64px right-aligned box, which left the number floating in the card (F 2026-09-23)
     '.lok-gc .lok-gc-noprice{color:#8E8BA6!important;font-weight:500!important;}',
     '.lok-gc-stat{font-size:11.5px;color:#6E6A85;white-space:nowrap;}',
     '.lok-gc-stat b{color:#1A1829;font-weight:700;}',
