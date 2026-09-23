@@ -1310,7 +1310,10 @@
       fetchPhotos('services', SERVICE_PHOTOS_PATH, (s.id != null ? s.id : id), imgUrl(s.image_url || s.image))
         .then(function (imgs) { buildGallery(imgs, name); }); // #97: item name = alt
       renderVideo(s.video_url);
-      var vid = vendorParam || s.vendors_id || s.vendor_id;
+      // SEC-079: the service's own owner wins; ?vendor= is only a fallback. With the
+      // param first, /service?id=<A's service>&vendor=<B> showed A's service under B's
+      // card, inquiry form and Book now link.
+      var vid = s.vendors_id || s.vendor_id || vendorParam;
       emitItemView(vid, 'service', s.id != null ? s.id : id);
       mountBookLink(vid); // Book now above Inquire when the storefront has a booking link
       var vendorP = fillVendor(vid, name, false);
@@ -1409,7 +1412,7 @@
       fetchPhotos('products', PRODUCT_PHOTOS_PATH, (p.id != null ? p.id : id), imgUrl(p.image_url || p.image))
         .then(function (imgs) { buildGallery(imgs, name); }); // #97: item name = alt
       renderVideo(p.video_url);
-      var vid = vendorParam || p.vendors_id || p.vendor_id;
+      var vid = p.vendors_id || p.vendor_id || vendorParam; // SEC-079: owner first
       emitItemView(vid, 'product', p.id != null ? p.id : id);
       mountBuyLink(p, vid); // #172 (before fillVendor: the phone bar mirrors it)
       var vendorP = fillVendor(vid, name, true);
