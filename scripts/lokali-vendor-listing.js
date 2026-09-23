@@ -28,6 +28,45 @@
   };
 
   var currentVendorId = null; // set during hydrate(); used to build detail-page links
+  // Book now on service cards (F 2026-09-23, The Fairytale Spa): when the storefront
+  // has a booking link (#157, Pro/Featured), every service card's pill reads 'Book
+  // now' and opens that link in a new tab; the rest of the card still opens the
+  // item page. Probed once per storefront; cards built before the answer arrives
+  // are relabeled by applyBookNow().
+  var _bookUrl = null;
+  function probeBookingLink(vid) {
+    try {
+      var av = window.LokaliSupabaseAPI && window.LokaliSupabaseAPI.availability;
+      if (!av || typeof av.bookingLink !== 'function') return;
+      av.bookingLink(vid).then(function (res) {
+        var raw = res && !res.error ? res.data : null;
+        if (!raw) return;
+        var u; try { u = new URL(String(raw).trim()); } catch (e) { return; }
+        if (u.protocol !== 'https:') return;
+        _bookUrl = u.href;
+        applyBookNow();
+      }).catch(function () {});
+    } catch (e) {}
+  }
+  function wireBookNow(pill) {
+    if (!pill || !_bookUrl || pill.getAttribute('data-book') === '1') return;
+    pill.setAttribute('data-book', '1');
+    pill.textContent = 'Book now';
+    pill.setAttribute('role', 'link');
+    pill.setAttribute('aria-label', 'Book now (opens in a new tab)');
+    pill.addEventListener('click', function (e) {
+      e.preventDefault(); e.stopPropagation();
+      if (window.LokaliAPI && window.LokaliAPI.leads && currentVendorId != null) {
+        window.LokaliAPI.leads.trackEvent(currentVendorId, 'booking_link', 'listing');
+      }
+      window.open(_bookUrl, '_blank', 'noopener');
+    });
+  }
+  function applyBookNow() {
+    if (!_bookUrl) return;
+    var pills = document.querySelectorAll('a.vl-card[href*="/services/"] .vl-card-cta');
+    for (var i = 0; i < pills.length; i++) wireBookNow(pills[i]);
+  }
   var currentVendorSlug = null; // set during hydrate(); used to build clean item/about URLs
   var openAboutOnLoad = false; // true when the URL is /{slug}/about — open the About tab once loaded
 
@@ -1957,6 +1996,7 @@
     // FEAT-PICKS: a small "Vendor's pick" chip on hand-picked items — makes the
     // curation visible to customers (and the perk visible to vendors). Static
     // markup only; positioned over the tinted image block.
+    if (opts.book) wireBookNow(a.querySelector('.vl-card-cta'));
     if (opts.pick) {
       var pickChip = document.createElement('div');
       pickChip.className = 'vl-card-pick';
@@ -2072,7 +2112,8 @@
         focusX: s.image_focus_x, focusY: s.image_focus_y,   // #149
         tint: IMG_TINTS[i % IMG_TINTS.length],
         pick: s.is_featured_pick === true, // FEAT-PICKS
-        cta: p.quote ? 'Request quote' : 'Inquire',
+        cta: _bookUrl ? 'Book now' : (p.quote ? 'Request quote' : 'Inquire'),
+        book: !!_bookUrl,
         lead: leadText(s),
         href: itemHref('services', s)
       });
@@ -3504,6 +3545,7 @@
         }
       } catch (e) {}
       loadPortfolio(vid, v);
+      probeBookingLink(vid); // Book now pills on service cards
       fetchListWithRetry(function () { return API.services.listByVendor(vid); })
         .then(function (sres) { renderServices(asArray(unwrap(sres)), !(sres && sres.error)); });
       fetchListWithRetry(function () { return API.products.listByVendor(vid); })
