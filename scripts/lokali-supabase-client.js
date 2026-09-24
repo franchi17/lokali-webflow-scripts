@@ -255,12 +255,29 @@
     'website_url,instagram_url,locations_id,categories_id,subcategories,profile_photo,' + // subcategories = #96
 
     'owner_name,owner_bio,owner_photo,owner_languages,' +
-    'text_messages,whatsapp_messages,phone_calls,phone_number,phone_visible,contact_email,' +
+    'text_messages,whatsapp_messages,phone_calls,phone_visible,' +
     'created_at,is_active,slug,is_founding_member,' +
     'is_spotlight,spotlight_until,is_verified,is_featured,plan_rank,' +
-    'venmo_username,cashapp_cashtag,paypalme_slug,other_pay_url,other_pay_label,zelle_contact,' +
     'is_publish_ready,' +  // #90 publish gate — listing page renders a "not public yet" state on false
     'away_until,away_note,away_accepts_inquiries'; // away mode (patch_dashboard_additions.sql 2026-09-17): storefront banner + inquiry form note
+  // SEC-080 (2026-09-24): contact + payment fields are NOT table columns for
+  // browser roles any more (one anon select used to return every vendor's
+  // email/phone). They come from vendor_public_contact(id), one vendor per call,
+  // throttled per IP server-side (owner/admin never throttled), and are merged
+  // onto the row so every consumer sees the same shape as before. Over the
+  // limit (or RPC missing/failing) the keys are simply absent = no contact shown.
+  var VENDOR_CONTACT_KEYS = ['contact_email', 'phone_number', 'venmo_username', 'cashapp_cashtag',
+    'paypalme_slug', 'zelle_contact', 'other_pay_url', 'other_pay_label'];
+  function withVendorContact(c, res) {
+    if (!res || res.error || !res.data || res.data.id == null) return res;
+    return c.rpc('vendor_public_contact', { p_vendors_id: res.data.id }).then(function (r) {
+      var d = r && !r.error && r.data;
+      if (d && typeof d === 'object' && !d.limited) {
+        VENDOR_CONTACT_KEYS.forEach(function (k) { if (k in d) res.data[k] = d[k]; });
+      }
+      return res;
+    }, function () { return res; });
+  }
   // Photo-gallery kind -> its table + parent-id column.
   var PHOTO_TABLES = {
     service: { table: 'service_photos', parent: 'services_id' },
@@ -404,12 +421,14 @@
       // RLS returns the row only if it's approved + active (or owned).
       getBySlug: function (slug) {
         return withClient(function (c) {
-          return c.from('vendors').select(VENDOR_PUBLIC_COLS).eq('slug', slug).maybeSingle();
+          return c.from('vendors').select(VENDOR_PUBLIC_COLS).eq('slug', slug).maybeSingle()
+            .then(function (res) { return withVendorContact(c, res); });
         });
       },
       getById: function (id) {
         return withClient(function (c) {
-          return c.from('vendors').select(VENDOR_PUBLIC_COLS).eq('id', id).maybeSingle();
+          return c.from('vendors').select(VENDOR_PUBLIC_COLS).eq('id', id).maybeSingle()
+            .then(function (res) { return withVendorContact(c, res); });
         });
       },
       // Browse / "the market" page. Optional filters by category, location, and
@@ -449,7 +468,8 @@
           // Read-back is the public column list (a bare .select() would expand
           // to * and trip the column-scoped grant). Full-row needs → vendors.me().
           return c.from('vendors').update(pick(fields, VENDOR_EDITABLE))
-            .eq('id', vendorId).select(VENDOR_PUBLIC_COLS).maybeSingle();
+            .eq('id', vendorId).select(VENDOR_PUBLIC_COLS).maybeSingle()
+            .then(function (res) { return withVendorContact(c, res); }); // SEC-080: owner = never throttled
         });
       },
       // Change the custom profile URL (Pro/Featured). Server validates format,
