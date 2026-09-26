@@ -740,11 +740,13 @@
     var S2 = section('core', { num: 2, title: 'Name and price', need: true });
     b = take(blockOf(ids.name)); if (b) S2.body.appendChild(b);
     b = take(blockOf(ids.priceType || ids.price)); if (b) S2.body.appendChild(b);
-    // 3 Details (folded on add)
-    // products: the description is required on save, so Details is never folded away there
+    // 3 Details — always an open numbered card. It used to fold into a one-line
+    // "Add details" strip on a new service, which read as a footnote between
+    // cards 2 and 4 and got missed (F 2026-09-26, building Engaged Minds).
+    // products: the description is required on save, so it is marked needed there.
     var S3 = isP
       ? section('details', { num: 3, title: 'Details', need: true })
-      : section('details', { num: 3, title: 'Details', optional: true, fold: 'Add details', foldSub: 'description, specialty tag, lead time, video' });
+      : section('details', { num: 3, title: 'Details', optional: true });
     b = take(blockOf(ids.desc)); if (b) S3.body.appendChild(b);
     var vid = take(byId(hosts.video)); if (vid) S3.body.appendChild(vid);
     var buy = take(byId(hosts.buy)); if (buy) S3.body.appendChild(buy);
@@ -847,7 +849,6 @@
     }
     api.reset = function (editing) {
       settle();
-      S3.el.classList.toggle('is-folded', !editing && !isP);
       var bar = fv.querySelector('.lok-form-bar');
       if (bar) {
         var base = bar.querySelector('.lok-form-msg-base');
