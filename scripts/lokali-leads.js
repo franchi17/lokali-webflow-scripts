@@ -357,6 +357,11 @@
     if (thisMonth >= 5 || prevMonth >= 5) {
       var diff = thisMonth - prevMonth;
       s2s.appendChild(html('span', 'lq-chip ' + (diff >= 0 ? 'up' : 'down'), (diff >= 0 ? FA.up : FA.down) + (diff >= 0 ? '+' : '') + diff + ' vs last month'));
+    } else if (!(totals.inquiries || 0) && (totals.contacts || 0)) {
+      // F 2026-09-27: '3 since you joined' beside 'Your first lead usually follows...' read as a
+      // contradiction. Those 3 were contact taps (call / email / website), not inquiries: say so.
+      var ct = totals.contacts || 0;
+      s2s.appendChild(el('span', 'lq-chip quiet', ct + (ct === 1 ? ' contact tap' : ' contact taps') + ', no inquiries yet'));
     } else {
       s2s.appendChild(el('span', 'lq-chip quiet', sinceJoin + ' since you joined'));
     }
