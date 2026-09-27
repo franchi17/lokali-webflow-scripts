@@ -2684,17 +2684,13 @@
       var lbl = el && el.querySelector && el.querySelector('.vl-link-label');
       if (lbl && text) lbl.textContent = text;
     }
+    // Instagram is a PRIVATE field since #76b / 2026-09-27: Lokali collects
+    // the handle only to tag the vendor as a collaborator in its own social
+    // posts. It is never rendered here, and the href is never populated
+    // (before this the hidden link still carried the handle in the DOM).
     var igEl = document.getElementById('vl-ig');
-    var handle = v.instagram_handle || v.instagram;
-    if (igEl) {
-      if (handle) {
-        var clean = String(handle).replace(/^@/, '').replace(/^https?:\/\/(www\.)?instagram\.com\//i, '').replace(/\/$/, '');
-        igEl.href = 'https://instagram.com/' + clean;
-        igEl.target = '_blank';
-        igEl.rel = 'noopener';
-        setLinkLabel(igEl, '@' + clean);
-      } else { show(igEl, false); }
-    }
+    var handle = '';
+    if (igEl) { igEl.removeAttribute('href'); show(igEl, false); }
     var webBtn = document.getElementById('vl-website');
     if (webBtn) {
       if (v.website_url) {

@@ -1155,14 +1155,42 @@ var LokaliProfilePage = (function () {
     row.parentNode.insertBefore(clone, row.nextSibling);
   }
 
-  // #76b — Instagram funnels audience OFF Lokali: remove the input (the saved
-  // value is preserved untouched; the public page no longer renders it).
-  function _hideInstagramField() {
+  // #76b (2026-07-17) hid this input because a public Instagram link funnels
+  // shoppers OFF Lokali. 2026-09-27 (F): the field is back as a PRIVATE one.
+  // The storefront never renders it (lokali-vendor-listing.js); Lokali uses
+  // the handle only to tag the vendor as a collaborator in its "New this
+  // week" Instagram posts, so the post lands on the vendor's own profile too.
+  function _polishInstagramField() {
     var ig = document.getElementById('input-instagram') || document.getElementById('instagram');
     if (!ig) return;
-    ig.style.display = 'none';
+    ig.style.display = '';
+    ig.placeholder = '@yourhandle';
+    ig.setAttribute('autocomplete', 'off');
+    ig.setAttribute('autocapitalize', 'none');
     var h = ig.previousElementSibling;
-    if (h && /instagram/i.test(h.textContent || '')) h.style.display = 'none';
+    if (h && /instagram/i.test(h.textContent || '') && !h.querySelector('.lok-info-wrap')) {
+      h.style.display = 'flex';
+      h.style.alignItems = 'center';
+      h.textContent = 'Instagram handle (private)';
+      h.appendChild(_infoPopover('?', 'About your Instagram handle',
+        '<div style="font-weight:700;font-size:13px;color:#1A1829;margin-bottom:6px;">Only Lokali sees this</div>' +
+        '<div style="font-size:12.5px;color:#565170;line-height:1.6;">Your handle is <b>never shown on your storefront</b>. We use it when we feature you on Instagram: you are tagged as a collaborator, so the post appears on your own profile and your followers see it too. Without it we can feature you but cannot tag you.</div>'));
+    }
+    if (!document.getElementById('lok-ig-hint')) {
+      var hint = document.createElement('div');
+      hint.id = 'lok-ig-hint';
+      hint.style.cssText = 'font-family:"Plus Jakarta Sans",sans-serif;font-size:12px;color:#6B6880;margin-top:6px;line-height:1.5;';
+      hint.textContent = 'Not shown on your storefront. When Lokali features you on Instagram we tag you as a collaborator, so the post appears on your profile too.';
+      ig.parentNode.insertBefore(hint, ig.nextSibling);
+    }
+  }
+  // "@handle", "instagram.com/handle" or a full URL all save as the bare handle.
+  function _cleanIgHandle(raw) {
+    var v = String(raw == null ? '' : raw).trim();
+    if (!v) return '';
+    v = v.replace(/^https?:\/\//i, '').replace(/^(www\.)?instagram\.com\//i, '').replace(/^@+/, '');
+    v = v.split(/[\/?#\s]/)[0];
+    return v.slice(0, 30);
   }
 
   // ---- #76 page flow: storefront header + sticky jump-nav + reorder --------
@@ -2356,7 +2384,7 @@ var LokaliProfilePage = (function () {
     _injectPortfolioCard();
     _injectCardPhotoCard();
     _injectPhoneCallsCheckbox();
-    _hideInstagramField();
+    _polishInstagramField();
     _polishLogoSection();
     _polishEmailField();
     _reorderProfileSections();
@@ -2824,7 +2852,7 @@ var LokaliProfilePage = (function () {
       business_name:        _getValueByAnyId(['input-business-name', 'business-name', 'business_name']),
       business_description: businessDescription,
       tagline:              _getValueByAnyId(['input-tagline', 'tagline', 'business-tagline', 'business_tagline']),
-      instagram_handle:     _getValueByAnyId(['input-instagram', 'instagram', 'instagram-handle', 'instagram_handle', 'instagram_url']),
+      instagram_handle:     _cleanIgHandle(_getValueByAnyId(['input-instagram', 'instagram', 'instagram-handle', 'instagram_handle', 'instagram_url'])),
       website_url:          _getValueByAnyId(['input-website', 'website', 'website_url']),
       venmo_username:       _getValueByAnyId(['input-venmo']),
       cashapp_cashtag:      _getValueByAnyId(['input-cashapp']),
