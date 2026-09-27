@@ -1235,6 +1235,15 @@
     setInquiryStatus: function (inquiryId, status) {
       return SAPI().leads.setInquiryStatus(inquiryId, { status: status }).then(envelope);
     },
+    // #194 "Business from Lokali": the vendor's rough figure for a Won lead, in
+    // CENTS (null clears it). A value over $1,000,000 or below 0 is refused by the
+    // DB check constraint (23514) and surfaces here as an error, on purpose.
+    // The Leads page shows this only when the method exists (feature flag).
+    setInquiryWorth: function (inquiryId, cents) {
+      var v = (cents == null || cents === '') ? null : Math.round(Number(cents));
+      if (v != null && !isFinite(v)) return Promise.resolve({ data: null, error: 'invalid', status: 400 });
+      return SAPI().leads.setInquiryStatus(inquiryId, { won_value_cents: v }).then(envelope);
+    },
     // Delete = owner + status='closed' only (RLS). A silent 0-row delete (e.g. the
     // lead was reopened in another tab) is reported as an error so the row is not
     // dropped from the page while it still exists.

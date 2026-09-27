@@ -118,6 +118,20 @@
     '#lok-leads-page .lq-step button.replied.on{background:' + VIOLET + ';color:#fff;}',
     '#lok-leads-page .lq-step button.won.on{background:' + GREEN + ';color:#fff;}',
     '#lok-leads-page .lq-step button.closed.on{background:' + DUSK + ';color:#fff;}',
+    // #194 worth line under a Won row: full width, one question, tap-sized
+    '#lok-leads-page .lq-stats.five{grid-template-columns:repeat(5,minmax(0,1fr));}',
+    '#lok-leads-page .lq-worth{grid-column:1/-1;display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:-4px 0 2px 40px;font:500 12.5px/1.4 ' + FONT + ';color:' + DUSK + ';}',
+    '#lok-leads-page .lq-worth b{color:' + GREEN + ';font-weight:700;}',
+    '#lok-leads-page .lq-worth .in{display:inline-flex;align-items:center;border:1px solid ' + VIOLET_B + ';border-radius:9px;background:#fff;padding:0 0 0 10px;min-height:36px;}',
+    '#lok-leads-page .lq-worth .in span{color:' + GRAY + ';font-weight:600;}',
+    '#lok-leads-page .lq-worth input{width:92px;border:none;outline:none;background:transparent;font:700 14px/1 ' + FONT + ';color:' + INK + ';padding:8px 6px;min-height:34px;}',
+    '#lok-leads-page .lq-worth input:focus-visible{outline:none;}',
+    '#lok-leads-page .lq-worth .in:focus-within{border-color:' + VIOLET + ';box-shadow:0 0 0 2px ' + VIOLET_L + ';}',
+    '#lok-leads-page .lq-worth .go{font:700 12.5px/1.2 ' + FONT + ';color:#fff;background:' + GREEN + ';border:none;border-radius:8px;padding:9px 12px;min-height:36px;cursor:pointer;}',
+    '#lok-leads-page .lq-worth .go:disabled{opacity:.6;cursor:default;}',
+    '#lok-leads-page .lq-worth .lnk{font:600 12px/1.2 ' + FONT + ';color:' + GRAY + ';background:none;border:none;padding:8px 4px;min-height:36px;cursor:pointer;text-decoration:underline;text-underline-offset:2px;}',
+    '#lok-leads-page .lq-worth .err{color:#B42318;font-weight:600;flex-basis:100%;}',
+    '#lok-leads-page .lq-worth .go:focus-visible,#lok-leads-page .lq-worth .lnk:focus-visible{outline:2px solid ' + VIOLET + ';outline-offset:2px;}',
     // Closed group: folded by default, one line with a Show/Hide toggle
     '#lok-leads-page .lq-fold{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid ' + BORDER + ';border-radius:12px;padding:12px 14px;margin-top:6px;}',
     '#lok-leads-page .lq-fold b{font-size:13.5px;color:' + INK + ';}',
@@ -155,7 +169,7 @@
     '@keyframes lokLpSpin{to{transform:rotate(360deg);}}',
     // phone
     '@media(max-width:700px){',
-    '#lok-leads-page .lq-stats,#lok-leads-page .lq-stats.four{grid-template-columns:1fr 1fr;}',
+    '#lok-leads-page .lq-stats,#lok-leads-page .lq-stats.four,#lok-leads-page .lq-stats.five{grid-template-columns:1fr 1fr;}',
     '#lok-leads-page .lq-stats:not(.four) .lq-stat:last-child{grid-column:1/-1;}',
     '#lok-leads-page .lq-lead{grid-template-columns:minmax(0,1fr);}',
     '#lok-leads-page .lq-av{display:none;}',
@@ -163,6 +177,8 @@
     '#lok-leads-page .lq-btn{min-height:44px;}',
     '#lok-leads-page .lq-row{grid-template-columns:24px minmax(0,1fr);row-gap:6px;}',
     '#lok-leads-page .lq-row .lq-when,#lok-leads-page .lq-row .lq-step{grid-column:2;justify-self:start;}',
+    '#lok-leads-page .lq-worth{margin-left:36px;}',
+    '#lok-leads-page .lq-worth .go,#lok-leads-page .lq-worth .lnk,#lok-leads-page .lq-worth .in{min-height:44px;}',
     '#lok-leads-page .lq-empty{grid-template-columns:1fr;}',
     '#lok-leads-page .lq-hint{margin-left:0;flex-basis:100%;}',
     '}'
@@ -245,6 +261,30 @@
     return A.setInquiryStatus(lead.id, status).then(function (res) { return res || {}; }).catch(function (e) { return { error: e }; });
   }
 
+  // #194: write the rough worth of a Won lead (cents; null clears). Only when the
+  // adapter exposes it — shipping the method IS the feature flag.
+  function worthEnabled() {
+    var A = window.LokaliAPI && window.LokaliAPI.leads;
+    return !!(A && typeof A.setInquiryWorth === 'function');
+  }
+  function setWorth(lead, cents) {
+    var A = window.LokaliAPI && window.LokaliAPI.leads;
+    if (!A || typeof A.setInquiryWorth !== 'function') return Promise.resolve({ error: 'unavailable' });
+    return A.setInquiryWorth(lead.id, cents).then(function (res) { return res || {}; }).catch(function (e) { return { error: e }; });
+  }
+  function money(cents) {
+    var d = Math.round(cents) / 100;
+    var whole = Math.abs(d - Math.round(d)) < 0.005;
+    return '$' + d.toLocaleString('en-US', { minimumFractionDigits: whole ? 0 : 2, maximumFractionDigits: 2 });
+  }
+  // "125", "$1,250", "89.50" -> cents; null when blank; NaN when nonsense
+  function parseDollars(str) {
+    var t = String(str || '').replace(/[$,\s]/g, '');
+    if (!t) return null;
+    if (!/^\d+(\.\d{0,2})?$/.test(t)) return NaN;
+    return Math.round(parseFloat(t) * 100);
+  }
+
   // ── render ──
   function render(mount, leadsData, analytics) {
     var inquiries = ((leadsData && leadsData.inquiries) || []).map(function (i) {
@@ -254,7 +294,9 @@
         email: looksLikeEmail(i.customer_email) ? String(i.customer_email).trim() : '',
         phone: String(i.customer_phone || '').trim(),
         message: String(i.message || '').trim(), context: String(i.context || '').trim(),
-        source: i.source || 'listing', first_reply_at: i.first_reply_at || null, created_at: i.created_at
+        source: i.source || 'listing', first_reply_at: i.first_reply_at || null, created_at: i.created_at,
+        // #194 Business from Lokali: self-reported worth of a Won lead (cents) + server stamp
+        worth: (i.won_value_cents == null ? null : Number(i.won_value_cents)), won_at: i.won_at || null
       };
     });
     var events = (leadsData && leadsData.events_30d) || [];
@@ -332,6 +374,35 @@
       s4.appendChild(el('div', 's', 'Inquiries from someone who had contacted you before'));
       stats.appendChild(s4); stats.classList.add('four');
     }
+    // #194 Business from Lokali: confirmed sum of what Won leads were worth, and the
+    // number of Won leads with no amount yet, kept apart (never blended). Appears once
+    // anything was won (also mid-visit, after the first Won tap); self-reported.
+    var s5 = null;
+    function paintWorthStat() {
+      if (!worthEnabled()) return;
+      var wonLeads = inquiries.filter(function (l) { return l.status === 'won'; });
+      if (!wonLeads.length) {
+        if (s5) { stats.removeChild(s5); s5 = null; stats.classList.remove('five'); stats.classList.toggle('four', stats.children.length === 4); }
+        return;
+      }
+      var wonSum = 0, unvalued = 0;
+      wonLeads.forEach(function (l) { if (l.worth != null) wonSum += l.worth; else unvalued++; });
+      var valued = wonLeads.length - unvalued;
+      if (!s5) {
+        s5 = el('div', 'lq-stat');
+        s5.appendChild(el('div', 'l', 'Business from Lokali'));
+        s5.appendChild(el('div', 'v', ''));
+        s5.appendChild(el('div', 's', ''));
+        stats.appendChild(s5);
+        stats.classList.remove('four');
+        stats.classList.add(stats.children.length === 5 ? 'five' : 'four');
+      }
+      s5.querySelector('.v').textContent = wonSum ? money(wonSum) : wonLeads.length + (wonLeads.length === 1 ? ' win' : ' wins');
+      s5.querySelector('.s').textContent = wonSum
+        ? valued + ' won ' + (valued === 1 ? 'lead' : 'leads') + ' you put a number on' + (unvalued ? ', ' + unvalued + ' still without one' : '')
+        : 'Add what each win was worth to see a total';
+    }
+    paintWorthStat();
     mount.appendChild(stats);
 
     // ── no inquiries at all: teach what brings one ──
@@ -397,9 +468,10 @@
       s1.className = 'lq-stat' + (needs.length ? ' hot' : '');
     }
     // move a lead between the two groups after a status change
-    function repaintAll() { partition(); paintNeeds(); paintRest(); paintClosed(); refreshStats(); }
+    function repaintAll() { partition(); paintNeeds(); paintRest(); paintClosed(); refreshStats(); paintWorthStat(); }
     function moveLead(l, status) {
       var prev = l.status; l.status = status;
+      if (status === 'won' && l.worth == null) { l._askWorth = true; l._skipWorth = false; }   // #194: ask at the moment of the win
       repaintAll();
       setStatus(l, status).then(function (res) {
         if (res && res.error) { l.status = prev; repaintAll(); }
@@ -460,6 +532,57 @@
       return card;
     }
 
+    // #194: one question under a Won row. Value known -> "Worth $125 · Edit".
+    // Unknown -> the input (skippable for this visit; it comes back next load,
+    // by design: an unvalued Won lead is the gap the dashboard tile reports).
+    function worthLine(l) {
+      var w = el('div', 'lq-worth');
+      if (l.worth != null && !l._editWorth) {
+        w.appendChild(html('span', null, 'Worth <b>' + money(l.worth) + '</b> to you'));
+        var ed = el('button', 'lnk', 'Edit'); ed.type = 'button';
+        ed.addEventListener('click', function () { l._editWorth = true; l._askWorth = true; repaintAll(); });
+        w.appendChild(ed);
+        return w;
+      }
+      if (l._skipWorth) {
+        var add = el('button', 'lnk', 'Add what it was worth'); add.type = 'button';
+        add.addEventListener('click', function () { l._skipWorth = false; l._askWorth = true; repaintAll(); });
+        w.appendChild(add);
+        return w;
+      }
+      w.appendChild(el('span', null, l.worth != null ? 'Update the amount:' : 'Nice one. Roughly what was it worth to you?'));
+      var box = el('span', 'in');
+      box.appendChild(el('span', null, '$'));
+      var inp = document.createElement('input');
+      inp.type = 'text'; inp.inputMode = 'decimal'; inp.autocomplete = 'off';
+      inp.placeholder = l.worth != null ? String(Math.round(l.worth) / 100) : '0';
+      inp.setAttribute('aria-label', 'Amount this lead was worth, in dollars');
+      if (l.worth != null) inp.value = String(Math.round(l.worth) / 100);
+      box.appendChild(inp);
+      w.appendChild(box);
+      var go = el('button', 'go', 'Save'); go.type = 'button';
+      var skip = el('button', 'lnk', l.worth != null ? 'Cancel' : 'Skip for now'); skip.type = 'button';
+      var err = el('span', 'err', ''); err.style.display = 'none';
+      function fail(msg) { err.textContent = msg; err.style.display = ''; go.disabled = false; go.textContent = 'Save'; }
+      function submit() {
+        var cents = parseDollars(inp.value);
+        if (cents !== cents) return fail('Numbers only, like 125 or 89.50');
+        if (cents != null && cents > 100000000) return fail('That is over $1,000,000. Double-check the amount.');
+        go.disabled = true; go.textContent = 'Saving';
+        setWorth(l, cents).then(function (res) {
+          if (res && res.error) return fail('Could not save. Try again.');
+          l.worth = cents; l._editWorth = false; l._askWorth = false;
+          repaintAll();
+        });
+      }
+      go.addEventListener('click', submit);
+      inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); submit(); } });
+      skip.addEventListener('click', function () { l._editWorth = false; l._askWorth = false; if (l.worth == null) l._skipWorth = true; repaintAll(); });
+      w.appendChild(go); w.appendChild(skip); w.appendChild(err);
+      if (l._askWorth) setTimeout(function () { try { inp.focus(); } catch (e) {} }, 0);
+      return w;
+    }
+
     function leadRow(l, inClosed) {
       var row = el('div', 'lq-row');
       row.appendChild(html('div', 'lq-ic', strokeIcon(CH.inquiry.icon)));
@@ -484,6 +607,7 @@
         step.appendChild(b);
       });
       row.appendChild(step);
+      if (l.status === 'won' && worthEnabled()) row.appendChild(worthLine(l));
       if (inClosed && window.LokaliAPI && window.LokaliAPI.leads && typeof window.LokaliAPI.leads.deleteInquiry === 'function') {
         row.style.gridTemplateColumns = '28px minmax(0,1fr) auto auto auto';
         var d = el('button', 'lq-del', 'Delete'); d.type = 'button'; d.setAttribute('aria-label', 'Delete this lead for good');

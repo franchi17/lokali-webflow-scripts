@@ -290,8 +290,10 @@
     '.lok-qa-ic{width:34px;height:34px;border-radius:10px;background:#F3EBFF;color:#6002EE;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin:0;}',
     '.lok-qa-ic svg{width:15px;height:15px;}',
     '.quick-actions-card .div-block-171{min-width:0;}',
-    '@media(max-width:900px){.lok-kpis{grid-template-columns:1fr 1fr;}#lok-cols{grid-template-columns:1fr;}}',
-    '@media(max-width:480px){.lok-kpis{grid-template-columns:1fr;}.lok-btn{min-height:44px;}.lok-also li a{min-height:44px;}}'
+    '.lok-kpis.five{grid-template-columns:repeat(5,minmax(0,1fr));}',
+    '@media(max-width:1100px){.lok-kpis.five{grid-template-columns:1fr 1fr 1fr;}}',
+    '@media(max-width:900px){.lok-kpis,.lok-kpis.five{grid-template-columns:1fr 1fr;}#lok-cols{grid-template-columns:1fr;}}',
+    '@media(max-width:480px){.lok-kpis,.lok-kpis.five{grid-template-columns:1fr;}.lok-btn{min-height:44px;}.lok-also li a{min-height:44px;}}'
   ].join('');
   function injectHomeStyles() {
     if (document.getElementById('lok-home-css')) return;
@@ -401,7 +403,28 @@
       '<div class="lok-krow"><h2 class="lok-kvalue"' + (valueId ? ' id="' + valueId + '"' : '') + '>' + value + '</h2>' + (extra || '') + '</div>' +
       chip + '<div class="lok-kdetail">' + detail + '</div></div>';
   }
-  function renderTiles(leadsData, shares) {
+  // #194 Business from Lokali: what the vendor said their Won leads were worth
+  // (inquiries.won_value_cents, from leads.getMine). Confirmed sum and the count
+  // still without an amount are shown apart, never blended. Self-reported.
+  function moneyOf(cents) {
+    var d = Math.round(cents) / 100, whole = Math.abs(d - Math.round(d)) < 0.005;
+    return '$' + d.toLocaleString('en-US', { minimumFractionDigits: whole ? 0 : 2, maximumFractionDigits: 2 });
+  }
+  function wonTile(rows) {
+    var won = (rows || []).filter(function (i) { return i.status === 'won'; });
+    if (!won.length) return '';
+    var sum = 0, unvalued = 0;
+    won.forEach(function (i) { if (i.won_value_cents != null) sum += Number(i.won_value_cents); else unvalued++; });
+    var valued = won.length - unvalued;
+    var chip = sum
+      ? '<span class="lok-delta up">' + valued + (valued === 1 ? ' win' : ' wins') + ' with an amount</span>'
+      : '<span class="lok-delta new">' + won.length + (won.length === 1 ? ' win' : ' wins') + ', no amounts yet</span>';
+    var detail = unvalued
+      ? '<a href="/vendor-dashboard/leads" style="color:#6002EE;font-weight:600;text-decoration:none">' + unvalued + ' won ' + (unvalued === 1 ? 'lead' : 'leads') + ' still ' + (unvalued === 1 ? 'needs' : 'need') + ' an amount →</a>'
+      : 'What you told us your wins were worth';
+    return tile('Business from Lokali · all time', null, sum ? moneyOf(sum) : String(won.length), '', chip, detail);
+  }
+  function renderTiles(leadsData, shares, wonRows) {
     var box = document.querySelector('.div-block-41');
     if (!box) return;
     var L = leadsData || {};
@@ -413,8 +436,9 @@
     var unread = (L.totals && L.totals.unread) || 0;
     var sh = shares && shares.ok ? shares : null;
     var landings = sh ? (Number(sh.landings) || 0) : 0, sharers = sh ? (Number(sh.unique_sharers) || 0) : 0;
-    box.className = 'lok-kpis';
-    box.innerHTML =
+    var extra = wonTile(wonRows);
+    box.className = 'lok-kpis' + (extra ? ' five' : '');
+    box.innerHTML = extra +
       tile('Views · last 7 days', 'stat-profile-views', v7, sparkline(views), deltaChip(v7, vPrev), 'Storefront and listing opens') +
       tile('Leads · last 7 days', 'stat-profile-complete', l7, '',
         unread ? '<span class="lok-delta new">' + unread + ' unread</span>' : deltaChip(l7, lPrev), 'Inquiries and contact taps') +
@@ -993,7 +1017,7 @@
     var gateReady = nextStepCard(v, hasListing, ck, x.waiting);
     if (gateReady == null) gateReady = !!v.is_publish_ready;
     renderHeader(v, x.billing, gateReady);
-    renderTiles(leadsData, x.shares);
+    renderTiles(leadsData, x.shares, x.wonRows);
     renderFeed(leadsData, x.reviews, gateReady, !!(x.billing && x.billing.plan && x.billing.plan !== 'free'));
     renderQuickActions(services, products, leadsData);
 
@@ -1351,7 +1375,8 @@
           cfg: data(x[2]),
           shares: data(x[3]),
           reviews: toArr(data(x[4])),
-          waiting: waitingLeads(data(x[5]))
+          waiting: waitingLeads(data(x[5])),
+          wonRows: ((data(x[5]) || {}).inquiries) || []   // #194: full rows carry won_value_cents
         });
         maybeRunWizard(v); // #90 first-run setup wizard (one-shot, flag-gated)
       });

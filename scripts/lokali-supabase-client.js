@@ -1104,10 +1104,13 @@
             .eq('vendors_id', vendorId).order('created_at', { ascending: false });
         });
       },
+      // won_value_cents (#194, patch_won_value.sql 2026-09-27): what a Won lead was
+      // worth, in CENTS. The grant is column-scoped to exactly these three; won_at
+      // is trigger-owned and the guard ignores a value on a lead that is not won.
       setInquiryStatus: function (inquiryId, patch) {
         return withClient(function (c) {
           return c.from('inquiries')
-            .update(pick(patch, ['status', 'is_read'])).eq('id', inquiryId);
+            .update(pick(patch, ['status', 'is_read', 'won_value_cents'])).eq('id', inquiryId);
         });
       },
       // Delete a lead the vendor has finished with. RLS (patch_inquiry_delete.sql,
