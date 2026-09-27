@@ -120,6 +120,13 @@
     '#lok-analytics-section .an-ck-more[aria-expanded="false"] svg{transform:rotate(-90deg);}',
     '#lok-analytics-section .an-ck-done{margin-top:6px;border-top:.5px dashed ' + BORDER + ';padding-top:10px;}',
     '#lok-analytics-section .an-ck-plan{font-size:11px;color:' + SLATE + ';margin-top:12px;}',
+    // Get featured (2026-09-27): the two things Lokali's weekly "New this week"
+    // Instagram post needs from a vendor. Soft violet tint, never a lock/tease.
+    '#lok-analytics-section .an-ck-feat{margin-top:14px;background:' + VIOLET_L + ';border:.5px solid #E5D4FD;border-radius:10px;padding:12px 14px;}',
+    '#lok-analytics-section .an-ck-feat-t{font-size:12px;font-weight:700;color:' + INK + ';margin-bottom:2px;}',
+    '#lok-analytics-section .an-ck-feat-w{font-size:12px;color:' + DUSK + ';line-height:1.5;margin-bottom:8px;max-width:62ch;}',
+    '#lok-analytics-section .an-ck-feat .an-ck-row{border-bottom:none;padding:6px 0;}',
+    '#lok-analytics-section .an-ck-feat .an-ck-fix{background:#fff;}',
     '@media(max-width:720px){#lok-analytics-section .an-ck-row{grid-template-columns:22px 1fr;}#lok-analytics-section .an-ck-fix{grid-column:2;justify-self:start;min-height:44px;padding:8px 14px;}#lok-analytics-section .an-ck-more{min-height:44px;}}',
     '@media(prefers-reduced-motion:reduce){#lok-analytics-section .an-ck-more svg{transition:none;}}',
     '@media(max-width:720px){#lok-analytics-section .an-grid{grid-template-columns:1fr;}#lok-analytics-section .an-two{grid-template-columns:1fr;}}',
@@ -344,8 +351,10 @@
   // script) so the dashboard home and this page read ONE copy. A missing
   // global (old cached bundle) just hides the card.
   function buildCheckup(v, services, products, photos, cfg, billing) {
-    if (typeof window.LokaliCheckup !== 'function') return { items: [], open: [], done: [], total: 0, paidPlan: false };
-    return window.LokaliCheckup(v, services, products, photos, cfg, billing);
+    if (typeof window.LokaliCheckup !== 'function') return { items: [], open: [], done: [], total: 0, paidPlan: false, vendor: v };
+    var ck = window.LokaliCheckup(v, services, products, photos, cfg, billing) || {};
+    ck.vendor = v; // featuredNote() reads owner_photo + instagram_url off the raw row
+    return ck;
   }
 
   var CK_ICON_OPEN = '<svg viewBox="0 0 512 512" fill="currentColor" aria-hidden="true"><path d="M464 256A208 208 0 1 0 48 256a208 208 0 1 0 416 0zM0 256a256 256 0 1 1 512 0A256 256 0 1 1 0 256z"/></svg>';
@@ -426,10 +435,33 @@
       card.appendChild(ckToggle(ck.open.length ? ck.done.length + ' already in place' : 'the ' + ck.total + ' checks', dl, false));
       card.appendChild(dl);
     }
+    card.appendChild(featuredNote(ck.vendor));
     if (!ck.paidPlan) {
       card.appendChild(el('div', 'an-ck-plan', 'Gallery, booking link and Verified checks appear once those features are on your plan.'));
     }
     return card;
+  }
+
+  // "Get featured" (F 2026-09-27): Lokali posts the week's new storefronts on
+  // Instagram every Tuesday. Two vendor-side things make that post land: a
+  // photo of the owner (faces get far more engagement than logos) and a
+  // private Instagram handle (so the vendor can be tagged as a collaborator
+  // and the post appears on their own profile). Existence checks only.
+  function featuredNote(v) {
+    v = v || {};
+    var hasFace = !!(v.owner_photo && String(v.owner_photo).trim());
+    var hasIg = !!((v.instagram_url || v.instagram_handle || v.instagram || '') && String(v.instagram_url || v.instagram_handle || v.instagram).trim());
+    var box = el('div', 'an-ck-feat');
+    box.setAttribute('role', 'region'); box.setAttribute('aria-label', 'Get featured on Instagram');
+    box.appendChild(el('div', 'an-ck-feat-t', 'Get featured on Lokali\u2019s Instagram'));
+    box.appendChild(el('div', 'an-ck-feat-w', (hasFace && hasIg)
+      ? 'Every Tuesday we post the week\u2019s new storefronts. You\u2019re set: we can show your face and tag you so the post appears on your profile too.'
+      : 'Every Tuesday we post the week\u2019s new storefronts. Two things make yours land better:'));
+    var ul = el('ul', 'an-ck-list');
+    ul.appendChild(ckRow({ done: hasFace, title: 'A photo of you', why: 'Posts with a face get far more attention than a logo, and shoppers trust a person.', action: 'Add your photo', href: '/vendor-dashboard/profile#lok-about-you' }));
+    ul.appendChild(ckRow({ done: hasIg, title: 'Your Instagram handle', why: 'Private, never shown on your storefront. It lets us tag you as a collaborator so the post lands on your profile too.', action: 'Add your handle', href: '/vendor-dashboard/profile#lok-field-input-instagram' }));
+    box.appendChild(ul);
+    return box;
   }
 
   function render(mount, data, services, products, vendor, billing, photos, cfg) {

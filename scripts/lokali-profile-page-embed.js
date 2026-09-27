@@ -2367,7 +2367,20 @@ var LokaliProfilePage = (function () {
       if (!_rfHashDone) {
         var hh = (location.hash || '').replace(/^#/, '');
         var ht = hh && /^lok-/.test(hh) ? document.getElementById(hh) : null;
-        if (ht) { _rfHashDone = true; setTimeout(function () { _rfExpandAndGo(ht); }, 60); }
+        // #lok-field-<inputId> (Insights "Get featured", 2026-09-27): expand
+        // whichever collapsed section holds that input, scroll to it, focus it.
+        var fm = hh && hh.match(/^lok-field-(.+)$/);
+        var fEl = fm ? document.getElementById(fm[1]) : null;
+        if (fEl) {
+          _rfHashDone = true;
+          setTimeout(function () {
+            var sec = fEl.parentNode;
+            while (sec && sec !== document.body && !sec._lokExpand) sec = sec.parentNode;
+            if (sec && sec._lokExpand) sec._lokExpand();
+            fEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            try { fEl.focus({ preventScroll: true }); } catch (e0) { fEl.focus(); }
+          }, 60);
+        } else if (ht) { _rfHashDone = true; setTimeout(function () { _rfExpandAndGo(ht); }, 60); }
       }
     } catch (e) { console.warn('[ProfilePage] refresh layer skipped:', e); }
   }
