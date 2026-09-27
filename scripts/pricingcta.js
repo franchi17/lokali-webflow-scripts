@@ -44,7 +44,7 @@
         note.style.cssText = 'margin:0 18px 18px;background:#F3EBFF;border:1px solid #D4AAFD;color:#3C1D66;' +
           'border-radius:12px;padding:12px 18px;font:600 15px/1.5 "Plus Jakarta Sans",sans-serif;text-align:center;' +
           'opacity:0;transition:opacity .35s;';
-        note.textContent = 'You’re claiming a founding spot. Pick Pro or Featured below to lock in your founding rate (first 3 months free).';
+        note.textContent = 'You’re claiming a founding spot. Pick Pro or Featured below to lock in today’s rate for as long as you stay. Nothing is charged until billing starts.';
         plansSec.insertBefore(note, plansSec.firstChild);
       }
       requestAnimationFrame(function () { note.style.opacity = '1'; });
