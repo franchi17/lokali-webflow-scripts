@@ -250,9 +250,13 @@
   // patch_vendor_columns.sql (Xano's public |pick). select('*') on vendors
   // FAILS for browser roles by design; the owner's full row comes from the
   // get_my_vendor() RPC (security definer), never a table select.
+  // SEC-083 (2026-09-28): instagram_url is NOT selected here any more. Since
+  // v1.4.513 the profile form promises the handle is private (collab tagging
+  // only), so it left the browser grant (patch_sec083_revoke_instagram.sql).
+  // Owners still get it from get_my_vendor(); the storefront never rendered it.
   var VENDOR_PUBLIC_COLS =
     'id,business_name,business_description,business_tagline,' +
-    'website_url,instagram_url,locations_id,categories_id,subcategories,profile_photo,' + // subcategories = #96
+    'website_url,locations_id,categories_id,subcategories,profile_photo,' + // subcategories = #96
 
     'owner_name,owner_bio,owner_photo,owner_languages,' +
     'text_messages,whatsapp_messages,phone_calls,phone_visible,' +

@@ -715,7 +715,16 @@
         return SAPI().vendors.updateProfile(vid, fields).then(function (res) {
           invalidateMe();
           var out = envelope(res);
-          if (!out.error) { normalizeTs(out.data); vendorAliases(out.data); }
+          if (!out.error) {
+            normalizeTs(out.data);
+            // SEC-083: the read-back is the PUBLIC column list, which no longer
+            // carries instagram_url (private field). Echo what was just saved so
+            // the form's in-memory row stays complete until the next me().
+            if (out.data && typeof out.data === 'object' && !('instagram_url' in out.data) && fields.instagram_url !== undefined) {
+              out.data.instagram_url = fields.instagram_url;
+            }
+            vendorAliases(out.data);
+          }
           return out;
         });
       });
