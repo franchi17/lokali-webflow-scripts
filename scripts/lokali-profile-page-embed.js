@@ -3025,9 +3025,10 @@ var LokaliProfilePage = (function () {
     if (!document.getElementById('lok-addr-info-css')) {
       var st = document.createElement('style'); st.id = 'lok-addr-info-css';
       st.textContent =
-        '.lok-addr-info{font-family:"Plus Jakarta Sans",sans-serif;font-size:12px;color:#6C6880;margin:6px 0 0;display:flex;align-items:center;gap:6px;position:relative;}' +
+        '.lok-addr-info{font-family:"Plus Jakarta Sans",sans-serif;font-size:12px;color:#6C6880;margin:6px 0 0;display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;position:relative;}' +
         '.lok-addr-info-btn{display:inline-flex;align-items:center;gap:5px;background:none;border:none;padding:0;font:inherit;color:#6002EE;cursor:pointer;}' +
         '.lok-addr-info-btn svg{flex:none;}' +
+        '.lok-addr-pob{flex:1 1 100%;color:#6C6880;}' +
         '.lok-addr-pop{display:none;position:absolute;left:0;top:calc(100% + 8px);z-index:50;max-width:360px;background:#fff;border:1px solid #E4DEF4;border-radius:12px;box-shadow:0 8px 28px rgba(26,24,41,.12);padding:12px 14px;font-size:12.5px;line-height:1.5;color:#3E3A55;}' +
         '.lok-addr-info.open .lok-addr-pop,.lok-addr-info:hover .lok-addr-pop{display:block;}' +
         '.lok-addr-note{font-family:"Plus Jakarta Sans",sans-serif;font-size:12px;color:#9A5B00;background:#FFF6E5;border:1px solid #FFE2A8;border-radius:8px;padding:8px 10px;margin-top:8px;display:none;}';
@@ -3046,6 +3047,13 @@ var LokaliProfilePage = (function () {
     });
     document.addEventListener('click', function (e) { if (!row.contains(e.target)) row.classList.remove('open'); });
     row.appendChild(btn); row.appendChild(pop);
+    // PO Box (2026-09-28): the Google suggestions list never shows a box, so a
+    // vendor typing one sees five wrong street addresses. Nothing here requires
+    // picking one — /address/resolve keeps the typed box and geolocates its
+    // city/ZIP — but say so, or they assume boxes are refused.
+    var pob = document.createElement('span'); pob.className = 'lok-addr-pob';
+    pob.textContent = 'Have a PO Box? Type it in full with city, state and ZIP, and ignore the suggestions.';
+    row.appendChild(pob);
     var note = document.createElement('div'); note.className = 'lok-addr-note'; note.id = 'lok-addr-note';
     var host = input.parentNode;
     if (host) { host.insertBefore(row, input.nextSibling); host.insertBefore(note, row.nextSibling); }
