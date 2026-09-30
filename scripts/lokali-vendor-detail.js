@@ -837,7 +837,8 @@
       var CAT_NAMES = {
         1: 'Handmade & Custom', 2: 'Business Services', 3: 'Beauty',
         4: 'Children & Education', 5: 'Events & Entertainment', 6: 'Food',
-        7: 'Health & Wellness', 8: 'Home & Property', 9: 'Professional Services'
+        7: 'Health & Wellness', 8: 'Home & Property', 9: 'Professional Services',
+        10: 'Clothing & Accessories' // #196
       };
       var catId = Array.isArray(v.categories_id) ? v.categories_id[0] : v.categories_id;
       var catName = (catId != null) ? CAT_NAMES[catId] : null;

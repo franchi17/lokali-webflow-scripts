@@ -64,7 +64,8 @@
     6: { label: 'Food',                    bg: '#FFF3EA', fg: '#FF6B00', icon: '6a186b067365d964abee8918_utensils-solid.png' },
     7: { label: 'Wellness',                bg: '#EAFAF2', fg: '#1D6A45', icon: '6a186b06cfcb6c4d6d1e1cf7_heart-regular.png' },
     8: { label: 'Home & Property',         bg: '#E7F4F2', fg: '#1F6E66', icon: '6a186b06a37dcea6514f15f9_house-regular.png' },
-    9: { label: 'Professional Services',   bg: '#EEF3F8', fg: '#2C5470', icon: '6a89a66cb52c25150db94d06_user-tie-solid.svg' }
+    9: { label: 'Professional Services',   bg: '#EEF3F8', fg: '#2C5470', icon: '6a89a66cb52c25150db94d06_user-tie-solid.svg' },
+    10: { label: 'Clothing & Accessories',  bg: '#FBEFF3', fg: '#8C2F52', icon: '6abd9355de203b3b78d6083e_shirt-solid.svg' } // #196
   };
 
   var INITIAL_COLORS = ['#6002EE', '#B85C2B', '#1D6A45', '#2C5470'];

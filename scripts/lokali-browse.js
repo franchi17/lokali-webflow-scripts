@@ -85,7 +85,9 @@
     7: { slug: 'wellness',    label: 'Wellness',          bg: '#EAFAF2', text: '#1D6A45' },
     8: { slug: 'home',        label: 'Home & Property',              bg: '#E7F4F2', text: '#1F6E66' },
     // #152 2026-08-22 — legal / tax / insurance / financial planning (patch_professional_services_category.sql)
-    9: { slug: 'professional', label: 'Professional Services', bg: '#EEF3F8', text: '#2C5470' }
+    9: { slug: 'professional', label: 'Professional Services', bg: '#EEF3F8', text: '#2C5470' },
+    // #196 2026-09-30 — ready-to-wear clothing + accessories (patch_clothing_accessories_category.sql)
+    10: { slug: 'fashion', label: 'Clothing & Accessories', bg: '#FBEFF3', text: '#8C2F52' }
   };
 
   // #96 — curated subcategory taxonomy, keyed by category id. Source of truth
@@ -104,12 +106,10 @@
       { slug: 'pottery-ceramics',     label: 'Pottery & ceramics' },
       { slug: 'woodworking',          label: 'Woodworking' },
       { slug: 'custom-embroidery',    label: 'Custom embroidery' },
-      { slug: 'floral-arrangements',  label: 'Floral arrangements' },
+      { slug: 'floral-arrangements',  label: 'Floral arrangements' }
       // 2026-08-19 (F): 'sewn-goods' retired — nobody searches the craft, they
       // search the product. 2026-09-02 (F): 'clothing' retired in turn for
-      // 'dresses' (patch_retire_clothing_cups_subcats.sql) — Quori & Lace
-      // sells dresses, and the product beats the category here too.
-      { slug: 'dresses',              label: 'Dresses' }
+      // 'dresses'. 2026-09-30 (#196): 'dresses' MOVED to Clothing & Accessories (10).
     ],
     2: [ // Business
       { slug: 'bookkeeping',          label: 'Bookkeeping & accounting' },
@@ -191,6 +191,16 @@
       { slug: 'notary',               label: 'Notary services' },
       { slug: 'immigration-law',      label: 'Immigration law' },
       { slug: 'real-estate-law',      label: 'Real-estate attorneys' }
+    ],
+    10: [ // Clothing & Accessories (#196) — READY TO WEAR; made-to-order stays in 1
+      { slug: 'dresses',              label: 'Dresses' },
+      { slug: 'womens-clothing',      label: "Women's clothing" },
+      { slug: 'mens-clothing',        label: "Men's clothing" },
+      { slug: 'kids-clothing',        label: "Kids' clothing" },
+      { slug: 'leather-goods',        label: 'Leather goods' },
+      { slug: 'bags-wallets',         label: 'Bags & wallets' },
+      { slug: 'accessories',          label: 'Accessories' },
+      { slug: 'boutique',             label: 'Boutique' }
     ]
   };
   var SUBCAT_BY_SLUG = {}; // slug -> { label, catId }
@@ -265,6 +275,7 @@
     { slug: 'beauty',      label: 'Beauty',            url: ASSET + '6a18f2524e31974a75003735_hair%20dryer.svg' },
     { slug: 'business',    label: 'Business',          url: ASSET + '6a18f6d4b01673d30ca9bcb8_briefcase.svg' },
     { slug: 'children',    label: 'Children',          url: ASSET + '6a18f6d4f1bbd4795f5345bc_backpack.svg' },
+    { slug: 'fashion',     label: 'Clothing & Accessories', url: ASSET + '6abd9355de203b3b78d6083e_shirt-solid.svg' }, // #196 Font Awesome shirt
     { slug: 'events',      label: 'Events & Entertainment',            url: ASSET + '6a18f6d414c76bb968f180db_balloon.svg' },
     { slug: 'food',        label: 'Food',              url: ASSET + '6a186b067365d964abee8918_utensils-solid.png' },
     { slug: 'handcrafted', label: 'Handmade & Custom', url: ASSET + '6a186b061a80eb9ba75f0d0a_scissors-solid.png' },

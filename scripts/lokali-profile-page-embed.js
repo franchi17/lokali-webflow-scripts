@@ -2551,7 +2551,8 @@ var LokaliProfilePage = (function () {
     handcrafted: _CAT_ICON_ASSET + '6a186b061a80eb9ba75f0d0a_scissors-solid.png',
     home:        _CAT_ICON_ASSET + '6a186b06a37dcea6514f15f9_house-regular.png',
     wellness:    _CAT_ICON_ASSET + '6a186b06cfcb6c4d6d1e1cf7_heart-regular.png',
-    professional: _CAT_ICON_ASSET + '6a89a66cb52c25150db94d06_user-tie-solid.svg' // #152 Font Awesome user-tie
+    professional: _CAT_ICON_ASSET + '6a89a66cb52c25150db94d06_user-tie-solid.svg', // #152 Font Awesome user-tie
+    fashion:      _CAT_ICON_ASSET + '6abd9355de203b3b78d6083e_shirt-solid.svg' // #196 Font Awesome shirt
   };
   var _categoryPillRowEl = null;
 

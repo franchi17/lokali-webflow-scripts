@@ -120,7 +120,8 @@
   var CAT_NAMES = {
     1: 'Handmade & Custom', 2: 'Business Services', 3: 'Beauty',
     4: 'Children & Education', 5: 'Events & Entertainment', 6: 'Food',
-    7: 'Health & Wellness', 8: 'Home & Property', 9: 'Professional Services'
+    7: 'Health & Wellness', 8: 'Home & Property', 9: 'Professional Services',
+    10: 'Clothing & Accessories' // #196
   };
   function vendorCat(v) {
     var c = v && (v.category || v.category_name);
@@ -2980,7 +2981,8 @@
     6: 'M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2M7 2v20M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7',
     7: 'M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z',
     8: 'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM9 22V12h6v10',
-    9: 'M3 22h18M6 18V11M10 18V11M14 18V11M18 18V11M2 9l10-6 10 6z' // Professional Services (#152)
+    9: 'M3 22h18M6 18V11M10 18V11M14 18V11M18 18V11M2 9l10-6 10 6z', // Professional Services (#152)
+    10: 'M20.38 3.46L16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z' // Clothing & Accessories (#196, shirt)
   };
   var CAT_ICO_FALLBACK = 'M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.83zM7 7h.01';
   function catIco(id) {
