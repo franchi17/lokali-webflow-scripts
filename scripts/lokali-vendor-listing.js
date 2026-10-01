@@ -3075,6 +3075,12 @@
       if (aboutH) aboutH.textContent = 'More about ' + name + ' & the business';
     }
 
+    function initialsEl(size) {
+      var el = ce('div');
+      el.style.cssText = 'width:' + size + 'px;height:' + size + 'px;border-radius:50%;background:#F3EBFF;color:#6002EE;display:flex;align-items:center;justify-content:center;font:600 ' + Math.round(size / 2.8) + 'px "Plus Jakarta Sans",sans-serif;flex:none;';
+      el.textContent = initials(name || v.business_name);
+      return el;
+    }
     function avatarEl(size) {
       var el;
       if (photo) {
@@ -3083,10 +3089,10 @@
         // initials fallback below, which "reads" the same way).
         imgSet(el, photo, 240); el.alt = name || v.business_name || ''; // CLEAN-P23
         el.style.cssText = 'width:' + size + 'px;height:' + size + 'px;border-radius:50%;object-fit:cover;flex:none;box-shadow:0 3px 10px rgba(26,24,41,.12);';
+        // 2026-10-01: blocked/failed photo -> initials circle, not alt text in a ring.
+        el.addEventListener('error', function () { if (el.parentNode) el.parentNode.replaceChild(initialsEl(size), el); });
       } else {
-        el = ce('div');
-        el.style.cssText = 'width:' + size + 'px;height:' + size + 'px;border-radius:50%;background:#F3EBFF;color:#6002EE;display:flex;align-items:center;justify-content:center;font:600 ' + Math.round(size / 2.8) + 'px "Plus Jakarta Sans",sans-serif;flex:none;';
-        el.textContent = initials(name || v.business_name);
+        el = initialsEl(size);
       }
       return el;
     }

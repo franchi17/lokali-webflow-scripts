@@ -197,6 +197,17 @@
       imgSet(img, photoUrl, 240);
       img.alt = headline;
       img.loading = 'lazy';
+      // 2026-10-01: a blocked/failed photo (corporate web filters refuse the
+      // young api.golokali.com host while Webflow's CDN loads fine) used to
+      // leave the alt text jammed inside the empty ring. Fall back to the
+      // same initials circle a photo-less vendor gets.
+      img.addEventListener('error', function () {
+        var ini = document.createElement('div');
+        ini.className = 'lok-nb-initials';
+        ini.style.backgroundColor = INITIAL_COLORS[idx % INITIAL_COLORS.length];
+        ini.textContent = initials(headline);
+        if (wrap.parentNode) wrap.parentNode.replaceChild(ini, wrap);
+      });
       wrap.appendChild(img);
       a.appendChild(wrap);
     } else {

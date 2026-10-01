@@ -489,7 +489,10 @@
       nameEl.textContent = 'Run by ' + owner;
       if (catEl) { catEl.textContent = [v.business_name, catName].filter(Boolean).join(' · '); show(catEl, true); }
       var ph = imgUrl(v.owner_photo), av = $('vd-mini-avatar-img');
-      if (ph && av) { imgSet(av, ph, 240); av.alt = owner; av.style.display = 'block'; }
+      if (ph && av) {
+        imgSet(av, ph, 240); av.alt = owner; av.style.display = 'block';
+        av.addEventListener('error', function () { av.style.display = 'none'; }); // 2026-10-01: blocked photo -> no alt text in the ring
+      }
     }
     var link = $('vd-mini-link'); if (link) link.textContent = 'Visit the storefront →';
     if ((v.is_verified || v.identity_status === 'verified') && catEl && catEl.parentNode && !$('vd2-trust')) {
@@ -861,8 +864,10 @@
         av = realAv;
       }
       var photo = imgUrl(v.profile_photo);
-      if (av && photo) imgSet(av, photo, 240); // CLEAN-P23
-      else if (av) av.style.display = 'none';
+      if (av && photo) {
+        imgSet(av, photo, 240); // CLEAN-P23
+        av.addEventListener('error', function () { av.style.display = 'none'; }); // 2026-10-01: blocked photo -> no alt text in the ring
+      } else if (av) av.style.display = 'none';
       // CTA -> mailto
       v2Owner(v, catName);
       var cta = $('vd-cta-btn');
