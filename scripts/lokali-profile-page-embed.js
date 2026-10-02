@@ -1184,6 +1184,50 @@ var LokaliProfilePage = (function () {
       ig.parentNode.insertBefore(hint, ig.nextSibling);
     }
   }
+  // 2026-10-02 (F punchlist 9): a LinkedIn field, PUBLIC, right after the
+  // website input (no Webflow edit: the heading + input are cloned from the
+  // website pair so they inherit its classes). Gated on the client capability
+  // so a stale cached client (no linkedin_url in VENDOR_EDITABLE) never shows
+  // a field whose value pick() would silently strip. Idempotent.
+  function _injectLinkedinField() {
+    if (document.getElementById('lok-linkedin-input')) return;
+    if (!(window.LokaliSupabaseAPI && window.LokaliSupabaseAPI.capabilities && window.LokaliSupabaseAPI.capabilities.vendorLinkedin)) return;
+    var web = document.getElementById('input-website') || document.getElementById('website') || document.getElementById('website_url');
+    if (!web || !web.parentNode) return;
+    var head = web.previousElementSibling;
+    var headIsLabel = head && /website/i.test(head.textContent || '') && !head.matches('input,textarea,select');
+    var hint = document.createElement('div');
+    hint.id = 'lok-linkedin-hint';
+    hint.style.cssText = 'font-family:"Plus Jakarta Sans",sans-serif;font-size:12px;color:#6B6880;margin-top:6px;line-height:1.5;';
+    hint.textContent = 'Shown on your storefront next to your website. Paste your profile or company page, for example linkedin.com/in/yourname.';
+    var input = web.cloneNode(false);
+    input.id = 'lok-linkedin-input';
+    input.name = 'linkedin_url';
+    input.value = '';
+    input.placeholder = 'linkedin.com/in/yourname';
+    input.setAttribute('autocomplete', 'url');
+    input.setAttribute('autocapitalize', 'none');
+    input.setAttribute('maxlength', '300');
+    input.removeAttribute('data-name');
+    input.removeAttribute('required');
+    var label = null;
+    if (headIsLabel) {
+      label = head.cloneNode(true);
+      label.removeAttribute('id');
+      label.removeAttribute('for');
+      var pop = label.querySelector('.lok-info-wrap'); if (pop) pop.parentNode.removeChild(pop);
+      label.textContent = 'LinkedIn (optional)';
+      label.style.marginTop = '14px';
+    }
+    // Insert after the website input and whatever hint already follows it.
+    var after = web;
+    while (after.nextElementSibling && /lok-.*-hint|lok-field-note/.test(after.nextElementSibling.id || after.nextElementSibling.className || '')) after = after.nextElementSibling;
+    var ref = after.nextSibling;
+    if (label) web.parentNode.insertBefore(label, ref);
+    web.parentNode.insertBefore(input, ref);
+    web.parentNode.insertBefore(hint, ref);
+    if (_vendor && _vendor.linkedin_url) input.value = _vendor.linkedin_url;
+  }
   // "@handle", "instagram.com/handle" or a full URL all save as the bare handle.
   function _cleanIgHandle(raw) {
     var v = String(raw == null ? '' : raw).trim();
@@ -2398,6 +2442,7 @@ var LokaliProfilePage = (function () {
     _injectCardPhotoCard();
     _injectPhoneCallsCheckbox();
     _polishInstagramField();
+    _injectLinkedinField(); // 2026-10-02 (F punchlist 9)
     _polishLogoSection();
     _polishEmailField();
     _reorderProfileSections();
@@ -2419,6 +2464,7 @@ var LokaliProfilePage = (function () {
     _setTextValueAnyId(['input-tagline', 'tagline', 'business-tagline', 'business_tagline'], _v('tagline', 'business_tagline', 'businessTagline'));
     _setTextValueAnyId(['input-instagram', 'instagram', 'instagram-handle', 'instagram_handle', 'instagram_url'], _v('instagram_url', 'instagram_handle', 'instagram'));
     _setTextValueAnyId(['input-website', 'website', 'website_url'], _v('website_url', 'websiteUrl'));
+    _setTextValueAnyId(['lok-linkedin-input'], _v('linkedin_url')); // 2026-10-02
     _setTextValueAnyId(['input-venmo'], _v('venmo_username'));
     _setTextValueAnyId(['input-cashapp'], _v('cashapp_cashtag'));
     _setTextValueAnyId(['input-paypal'], _v('paypalme_slug'));
@@ -2868,6 +2914,9 @@ var LokaliProfilePage = (function () {
       tagline:              _getValueByAnyId(['input-tagline', 'tagline', 'business-tagline', 'business_tagline']),
       instagram_handle:     _cleanIgHandle(_getValueByAnyId(['input-instagram', 'instagram', 'instagram-handle', 'instagram_handle', 'instagram_url'])),
       website_url:          _getValueByAnyId(['input-website', 'website', 'website_url']),
+      // 2026-10-02 LinkedIn (public). Only sent when the injected field exists,
+      // so a stale cached embed can never null out a saved link.
+      linkedin_url:         document.getElementById('lok-linkedin-input') ? _getValueByAnyId(['lok-linkedin-input']) : undefined,
       venmo_username:       _getValueByAnyId(['input-venmo']),
       cashapp_cashtag:      _getValueByAnyId(['input-cashapp']),
       paypalme_slug:        _getValueByAnyId(['input-paypal']),
@@ -2937,6 +2986,7 @@ var LokaliProfilePage = (function () {
       tagline:              payload.tagline != null ? String(payload.tagline) : '',
       instagram_handle:     payload.instagram_handle != null ? String(payload.instagram_handle) : '',
       website_url:          payload.website_url != null ? String(payload.website_url) : '',
+      linkedin_url:         payload.linkedin_url === undefined ? undefined : String(payload.linkedin_url == null ? '' : payload.linkedin_url), // 2026-10-02
       venmo_username:       payload.venmo_username != null ? String(payload.venmo_username) : '',
       cashapp_cashtag:      payload.cashapp_cashtag != null ? String(payload.cashapp_cashtag) : '',
       paypalme_slug:        payload.paypalme_slug != null ? String(payload.paypalme_slug) : '',

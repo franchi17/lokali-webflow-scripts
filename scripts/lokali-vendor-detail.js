@@ -492,6 +492,7 @@
       if (ph && av) {
         imgSet(av, ph, 240); av.alt = owner; av.style.display = 'block';
         av.addEventListener('error', function () { av.style.display = 'none'; }); // 2026-10-01: blocked photo -> no alt text in the ring
+        makeZoomable(av, ph, owner); // 2026-10-02 (F punchlist 10): tap to enlarge
       }
     }
     var link = $('vd-mini-link'); if (link) link.textContent = 'Visit the storefront →';
@@ -686,6 +687,20 @@
     return _lbApi;
   }
   function openLightbox(urls, start, label) { ensureLightbox().open(urls, start, label); }
+  // 2026-10-02 (F punchlist 10): a vendor photo (logo, owner) opens FULL-SIZE in
+  // the same lightbox the gallery uses. `full` is the raw storage URL, never
+  // img.src (that is the 240px render-endpoint copy). Keyboard: Enter/Space.
+  function makeZoomable(img, full, label) {
+    if (!img || !full || img.getAttribute('data-lok-zoom')) return;
+    img.setAttribute('data-lok-zoom', '1');
+    img.style.cursor = 'zoom-in';
+    img.setAttribute('role', 'button');
+    img.setAttribute('tabindex', '0');
+    img.setAttribute('aria-label', 'Enlarge photo' + (label ? ': ' + label : ''));
+    var go = function (e) { if (e) e.preventDefault(); if (img.style.display === 'none') return; openLightbox([full], 0, label || ''); };
+    img.addEventListener('click', go);
+    img.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') go(e); });
+  }
 
   // ---- gallery ----------------------------------------------------------
   // #97 alt text: `label` = the item name. vendor_photos rows carry no caption
@@ -867,6 +882,7 @@
       if (av && photo) {
         imgSet(av, photo, 240); // CLEAN-P23
         av.addEventListener('error', function () { av.style.display = 'none'; }); // 2026-10-01: blocked photo -> no alt text in the ring
+        makeZoomable(av, photo, v.business_name); // 2026-10-02 (F punchlist 10): tap to enlarge
       } else if (av) av.style.display = 'none';
       // CTA -> mailto
       v2Owner(v, catName);
@@ -939,6 +955,42 @@
       btn.addEventListener('click', function () {
         if (window.LokaliAPI && window.LokaliAPI.leads && vendorId != null) {
           window.LokaliAPI.leads.trackEvent(vendorId, 'buy_link', 'product');
+        }
+      });
+    } catch (e) {}
+  }
+
+  // Visit website on a SERVICE page (2026-10-02, F punchlist 4): the service's
+  // own link_url (patch_service_link.sql, the vendor's page about THIS
+  // service) becomes a "Visit website" button above Inquire, the same shape as
+  // the product Buy button. Book now (async, below) inserts itself before the
+  // CTA too and therefore lands ABOVE this one: Book now, Visit website, Inquire.
+  // Click logged as lead_events.event_type = 'service_link'.
+  function mountServiceLink(s, vendorId) {
+    try {
+      if (document.getElementById('vd-link-btn')) return;
+      var raw = s && s.link_url;
+      if (!raw) return;
+      var u;
+      try { u = new URL(String(raw).trim()); } catch (e) { return; }
+      if (u.protocol !== 'https:') return;
+      var cta = $('vd-cta-btn');
+      if (!cta || !cta.parentNode) return;
+      var btn = cta.cloneNode(true);
+      btn.id = 'vd-link-btn';
+      btn.querySelectorAll('[id]').forEach(function (n) { n.removeAttribute('id'); });
+      var textHost = btn;
+      while (textHost.children && textHost.children.length === 1) textHost = textHost.children[0];
+      textHost.textContent = 'Visit website';
+      btn.href = u.href;               // property, never string-built markup
+      btn.target = '_blank';
+      btn.rel = 'noopener';
+      btn.setAttribute('aria-label', 'Visit website (opens in a new tab)');
+      btn.style.marginBottom = '10px';
+      cta.parentNode.insertBefore(btn, cta);
+      btn.addEventListener('click', function () {
+        if (window.LokaliAPI && window.LokaliAPI.leads && vendorId != null) {
+          window.LokaliAPI.leads.trackEvent(vendorId, 'service_link', 'service');
         }
       });
     } catch (e) {}
@@ -1042,6 +1094,7 @@
     if (kind === 'services') {
       var t = String(it.price_type || '').toLowerCase();
       if (t === 'quote' || t === 'get_a_quote' || it.is_quote_based) return 'Get a quote';
+      if (t === 'free') return 'Free'; // 2026-10-02 patch_service_free_price.sql
       if (it.price_min_cents != null && it.price_max_cents != null && it.price_min_cents !== it.price_max_cents) {
         return cents(it.price_min_cents) + '–' + cents(it.price_max_cents);
       }
@@ -1272,6 +1325,7 @@
       var t = (s.price_type || '').toLowerCase();
       if (priceEl) {
         if (t === 'quote' || s.is_quote_based) { priceEl.textContent = 'Get a quote'; priceEl.classList.add('vd-price-quote'); }
+        else if (t === 'free') priceEl.textContent = 'Free'; // 2026-10-02: a no-cost service reads as a price, not a quote
         else if (s.price_min_cents != null) priceEl.textContent = 'From ' + cents(s.price_min_cents);
         else if (s.price_cents != null) priceEl.textContent = (t === 'from' || t === 'starting' ? 'From ' : '') + cents(s.price_cents);
         else if (s.price_note) { priceEl.textContent = s.price_note; priceEl.classList.add('vd-price-quote'); }
@@ -1321,6 +1375,7 @@
       // card, inquiry form and Book now link.
       var vid = s.vendors_id || s.vendor_id || vendorParam;
       emitItemView(vid, 'service', s.id != null ? s.id : id);
+      mountServiceLink(s, vid); // 2026-10-02: Visit website above Inquire (sync, so Book now lands above it)
       mountBookLink(vid); // Book now above Inquire when the storefront has a booking link
       var vendorP = fillVendor(vid, name, false);
       mountItemNav('services', s.id != null ? s.id : id, vid, vendorP); // #174

@@ -196,6 +196,7 @@
     'text_messages', 'whatsapp_messages', 'phone_calls', // phone_calls = #76c call preference
     'phone_number', 'phone_visible',
     'contact_email', 'address',
+    'linkedin_url', // 2026-10-02: PUBLIC LinkedIn profile/company URL (patch_linkedin_url.sql; shape-checked, linkedin.com only)
     'card_photo_url', // market-card cover pin (patch_card_photo.sql) — picker on the profile page
     // #147/SEC-050: the six address geo columns were REMOVED 2026-08-24 —
     // written server-side by /address/resolve (service role) and REVOKED from
@@ -211,6 +212,7 @@
     'service_name', 'service_description', 'duration_minutes', 'is_active',
     'remote', 'sort_order', 'price_type', 'price_cents', 'price_min_cents',
     'price_max_cents', 'price_note', 'image_url', 'video_url', 'slug',
+    'link_url',    // 2026-10-02: per-service website link (https only; shape-checked by patch_service_link.sql)
     'subcategory', // #96-LISTING: one optional taxonomy slug per listing
     'lead_time',   // #78: free-text per-item lead time (display only)
     'is_featured_pick', // FEAT-PICKS: Featured-plan shop window (cap+plan gate = DB trigger)
@@ -434,6 +436,17 @@
           return c.from('vendors').select(VENDOR_PUBLIC_COLS).eq('id', id).maybeSingle()
             .then(function (res) { return withVendorContact(c, res); });
         });
+      },
+      // 2026-10-02: the vendor's public LinkedIn URL, read on its OWN so the
+      // storefront never 42501s on every vendor read if this script goes live
+      // before patch_linkedin_url.sql grants the column (the SEC-083 ordering
+      // lesson, inverted). Resolves { data: url|null } and NEVER rejects.
+      publicLinkedin: function (id) {
+        return withClient(function (c) {
+          return c.from('vendors').select('linkedin_url').eq('id', id).maybeSingle()
+            .then(function (res) { return { data: res && !res.error && res.data ? (res.data.linkedin_url || null) : null }; })
+            .catch(function () { return { data: null }; });
+        }).catch(function () { return { data: null }; });
       },
       // Browse / "the market" page. Optional filters by category, location, and
       // a name search. RLS still limits to approved+active, so the list is
@@ -1530,7 +1543,7 @@
     // selector when the LOADED client actually whitelists the column —
     // otherwise pick() would strip it and the save would silently drop the
     // vendor's choice under a success toast.
-    capabilities: { listingSubcategory: true, itemLeadTime: true, productBuyLink: true, linkFetch: true }, // itemLeadTime = #78 (lead_time in both EDITABLE lists); productBuyLink = #172 (buy_url in PRODUCT_EDITABLE)
+    capabilities: { listingSubcategory: true, itemLeadTime: true, productBuyLink: true, linkFetch: true, serviceLink: true, servicePriceFree: true, vendorLinkedin: true }, // serviceLink / servicePriceFree / vendorLinkedin = punchlist 2026-10-02 (link_url + price_type 'free' + linkedin_url) // itemLeadTime = #78 (lead_time in both EDITABLE lists); productBuyLink = #172 (buy_url in PRODUCT_EDITABLE)
     // #96-SUGGEST — admin surface (is_admin()-gated server-side; non-admins
     // get { ok:false } — safe to call from any session).
     // #137 — the notification feed behind the header bell. All three RPCs are

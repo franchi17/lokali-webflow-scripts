@@ -59,7 +59,14 @@ const LokaliServicesPage = (() => {
       '#services-form-view .form-text-header .lok-req{color:#E0245E;font-weight:700;}' +
       // Description box was cramped (~2 visible lines for a 5000-char field) —
       // give it real room and let vendors drag it taller (Francesca 2026-07-20).
-      '#services-form-view #service-description{min-height:180px!important;resize:vertical;}';
+      '#services-form-view #service-description{min-height:180px!important;resize:vertical;}' +
+      // 2026-10-02 (F punchlist 3): typed text in the Webflow-styled inputs read
+      // light grey, as if it were still the placeholder. Pin the VALUE colour to
+      // the dashboard ink and keep the placeholder visibly lighter so the two
+      // states stay distinct (AA: #1A1829 on white 16:1, #8E8BA6 placeholder).
+      '#services-form-view input.w-input,#services-form-view textarea.w-input,#services-form-view select.w-select,' +
+      '#services-form-view input[type=text],#services-form-view input[type=number],#services-form-view textarea{color:#1A1829!important;opacity:1!important;-webkit-text-fill-color:#1A1829!important;}' +
+      '#services-form-view input::placeholder,#services-form-view textarea::placeholder{color:#8E8BA6!important;opacity:1!important;-webkit-text-fill-color:#8E8BA6!important;}';
     (document.head || document.documentElement).appendChild(s);
   })();
 
@@ -137,10 +144,25 @@ const LokaliServicesPage = (() => {
     if (v === 'starting_at' || v === 'starting' || v === 'start' || v === 'starts_at' || v === 'starts') return 'starting_at';
     if (v === 'range' || v === 'price_range' || v === 'rance') return 'range';
     if (v === 'quote' || v === 'custom_quote' || v === 'custom' || v === 'get_a_quote') return 'quote';
+    if (v === 'free' || v === 'no_cost' || v === 'free_of_charge' || v === 'no_charge') return 'free'; // 2026-10-02
     return String(raw).trim();
   };
 
-  const KNOWN_PRICE_KEYS = new Set(['fixed', 'starting_at', 'range', 'quote']);
+  // 'free' (2026-10-02, patch_service_free_price.sql): a no-cost service. The
+  // Webflow select has no such option, so ensureFreeOption() appends one at
+  // init, gated on the client capability (a stale client would let the save
+  // through to a CHECK violation otherwise).
+  const KNOWN_PRICE_KEYS = new Set(['fixed', 'starting_at', 'range', 'quote', 'free']);
+  const freeSupported = () => !!window.LokaliSupabaseAPI?.capabilities?.servicePriceFree;
+  const ensureFreeOption = () => {
+    const sel = el.fieldPriceType();
+    if (!sel || !freeSupported()) return;
+    if ([...sel.options].some(o => normalizePriceType(o.value) === 'free')) return;
+    const opt = document.createElement('option');
+    opt.value = 'free';
+    opt.textContent = 'Free';
+    sel.appendChild(opt);
+  };
 
   const canonicalPriceTypeKey = (valueRaw, labelRaw) => {
     let k = normalizePriceType(valueRaw);
@@ -496,6 +518,7 @@ const LokaliServicesPage = (() => {
       case 'starting_at': return 'From ' + fmt(service.price_min_cents);
       case 'range':       return fmt(service.price_min_cents) + ' \u2013 ' + fmt(service.price_max_cents);
       case 'quote':       return 'Get a quote';
+      case 'free':        return 'Free';
       default:            return '';
     }
   };
@@ -1013,6 +1036,7 @@ const LokaliServicesPage = (() => {
     const key = readPriceTypeFromSelect();
     const cents = (v) => { const n = parseFloat(String(v ?? '').replace(/[$,\s]/g, '')); return isNaN(n) ? 0 : Math.round(n * 100); };
     if (key === 'quote') return 'Get a quote';
+    if (key === 'free') return 'Free';
     const fake = { price_type: key, price_cents: cents(el.fieldPrice()?.value), price_min_cents: cents(el.fieldPriceStarting()?.value) || cents(el.fieldPriceMin()?.value), price_max_cents: cents(el.fieldPriceMax()?.value) };
     if (key === 'fixed' && !(fake.price_cents > 0)) return '';
     if (key === 'starting_at' && !(fake.price_min_cents > 0)) return '';
@@ -1173,6 +1197,7 @@ const LokaliServicesPage = (() => {
     }
     renderGallery(service.id);
     setVideoUrl(service.video_url);
+    setLinkUrl(service.link_url);   // 2026-10-02 website link
   };
 
   const resetForm = () => {
@@ -1200,6 +1225,7 @@ const LokaliServicesPage = (() => {
     _pendingSubcatLabels = [];
     renderGallery(null);
     setVideoUrl('');
+    setLinkUrl('');   // 2026-10-02 website link
   };
 
   const revokeImagePreviewUrl = () => {
@@ -1268,6 +1294,54 @@ const LokaliServicesPage = (() => {
   const videoInput = () => { videoHost(); return document.getElementById('lok-service-video-input'); };
   const readVideoUrl = () => (videoInput()?.value || '').trim();
   const setVideoUrl = (v) => { const inp = videoInput(); if (inp) inp.value = v || ''; markVideoValidity(); };
+
+  // ---------------------------------------------------------------------------
+  // Per-service website link (2026-10-02, F punchlist 4; patch_service_link.sql).
+  // Same shape as the product Buy link (#172): the vendor pastes the page about
+  // THIS service on their own site; the item page renders a "Visit website"
+  // button above Inquire (below Book now when the storefront has one) and the
+  // click is logged as lead_events.event_type = 'service_link'. Gated on the
+  // client capability so a stale cached client never shows a field whose value
+  // would silently drop.
+  // ---------------------------------------------------------------------------
+  const LINK_URL_RE = /^https:\/\/[^\s"'<>`\\]+$/;
+  const LINK_MAXLEN = 500;
+  const isValidLinkUrl = (u) => { const s = String(u || '').trim(); return LINK_URL_RE.test(s) && s.length <= LINK_MAXLEN; };
+  const LINK_HINT = 'Have a page about this service on your own site (a program page, class schedule or sign-up form)? Paste it and shoppers get a "Visit website" button. Leave blank to keep Inquire only.';
+  let _linkUiMounted = false;
+
+  const markLinkValidity = () => {
+    const inp = document.getElementById('lok-service-link-input');
+    const hint = document.getElementById('lok-service-link-hint');
+    if (!inp) return;
+    const v = inp.value.trim();
+    const bad = v && !isValidLinkUrl(v);
+    inp.style.borderColor = bad ? '#E4739A' : '#E6E4F0';
+    if (hint) { hint.style.color = bad ? '#B1006A' : '#8E8BA6'; hint.textContent = bad ? 'Enter a full https:// link with no spaces (or leave blank).' : LINK_HINT; }
+  };
+
+  const linkHost = () => {
+    let host = document.getElementById('lok-service-link');
+    if (host) return host;
+    if (!window.LokaliSupabaseAPI?.capabilities?.serviceLink) return null;
+    const anchorEl = videoHost();
+    if (!anchorEl) return null;
+    host = document.createElement('div');
+    host.id = 'lok-service-link';
+    host.style.cssText = 'margin-top:16px;font-family:"Plus Jakarta Sans",system-ui,sans-serif;white-space:normal;';
+    host.innerHTML =
+      '<div style="font-size:13px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;color:#4A4761;margin-bottom:8px;">Website link <span style="font-weight:500;text-transform:none;color:#8E8BA6;">· optional</span></div>' +
+      '<input id="lok-service-link-input" type="url" inputmode="url" autocomplete="off" spellcheck="false" maxlength="' + LINK_MAXLEN + '" placeholder="https://www.yoursite.com/this-service" style="width:100%;box-sizing:border-box;padding:11px 13px;border:1px solid #E6E4F0;border-radius:10px;font-size:14px;font-family:inherit;color:#1A1829;background:#fff;" />' +
+      '<div id="lok-service-link-hint" style="font-size:12px;color:#8E8BA6;margin-top:6px;line-height:1.5;">' + LINK_HINT + '</div>';
+    anchorEl.insertAdjacentElement('afterend', host);
+    const inp = host.querySelector('#lok-service-link-input');
+    if (inp) inp.addEventListener('input', markLinkValidity);
+    _linkUiMounted = true;
+    return host;
+  };
+  const linkInput = () => { linkHost(); return document.getElementById('lok-service-link-input'); };
+  const readLinkUrl = () => (linkInput()?.value || '').trim();
+  const setLinkUrl = (v) => { const inp = linkInput(); if (inp) inp.value = v || ''; markLinkValidity(); };
 
   // ---------------------------------------------------------------------------
   // Per-service photo gallery (Pro & Featured). Self-mounting — no Webflow edits.
@@ -1683,6 +1757,14 @@ const LokaliServicesPage = (() => {
     // value so background autosaves don't fail — the explicit Save blocks it via validate().
     const vurl = readVideoUrl();
     if (vurl === '' || isValidVideoUrl(vurl)) payload.video_url = vurl;
+    // 2026-10-02 website link: '' clears (sent as NULL: the SQL shape check
+    // rejects an empty string), a valid https link sets it, an invalid one is
+    // omitted so background autosaves never fail; explicit Save blocks it.
+    if (_linkUiMounted) {
+      const lurl = readLinkUrl();
+      if (lurl === '') payload.link_url = null;
+      else if (isValidLinkUrl(lurl)) payload.link_url = lurl;
+    }
 
     // #96-LISTING — only when the selector actually mounted; otherwise the key
     // is omitted entirely and the saved value is left alone (a taxonomy-fetch
@@ -1700,7 +1782,11 @@ const LokaliServicesPage = (() => {
     if (!payload.price_type)    return 'Please select a price type.';
     if (readVideoUrl() && !isValidVideoUrl(readVideoUrl()))
       return 'Your video link must be a YouTube or Vimeo URL (or leave it blank).';
+    if (readLinkUrl() && !isValidLinkUrl(readLinkUrl()))
+      return 'Your website link must be a full https:// address with no spaces (or leave it blank).';
 
+    if (payload.price_type === 'free' && !freeSupported())
+      return 'Free services are not available yet. Please refresh the page and try again.';
     if (payload.price_type === 'fixed' && !payload.price_cents)
       return 'Please enter a price.';
     if (payload.price_type === 'starting_at' && !payload.price_min_cents)
@@ -2177,6 +2263,7 @@ const LokaliServicesPage = (() => {
     paintSaveBtn(el.saveBtn()); // #142 FA icon + ALL-CAPS label from first paint
     el.deleteBtn()?.addEventListener('click', () => handleDeactivate(editingId));
 
+    ensureFreeOption(); // 2026-10-02: "Free" joins the price-type select (no Webflow edit)
     const onPriceTypeChange = () => syncPriceWrapsFromSelect();
     el.fieldPriceType()?.addEventListener('change', onPriceTypeChange);
     el.fieldPriceType()?.addEventListener('input', onPriceTypeChange);

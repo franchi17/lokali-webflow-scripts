@@ -14,6 +14,12 @@
  * Reads the current plan via LokaliAPI.plans.getMyBilling() to render UI state.
  * Entitlement itself is granted server-side by the Stripe webhook — this script is UI only.
  *
+ * 2026-10-02 in-app plan picker: on /vendor-dashboard* every <a href="/pricing">
+ * (no hash, or #plans) opens window.LokaliUpgrade.open() instead, a modal with the
+ * current plan, Pro/Featured cards, a Monthly/Yearly toggle and one button straight
+ * to checkout (or the Stripe portal for a downgrade). #upgrade in the URL opens it
+ * too. Add data-lokali-no-upgrade-modal to a link to opt it out.
+ *
  * ── Webflow wiring (add these attributes/IDs in the Designer) ──────────────────
  * UPGRADE BUTTONS:  add  data-lokali-checkout  +  data-plan="pro|featured|spotlight"
  *                   (interval comes from the toggle below; or hard-set data-interval="year")
@@ -1073,6 +1079,436 @@
     host.insertAdjacentElement('afterend', sec);
   }
 
+  // ── In-app plan picker (2026-10-02) ──────────────────────────────────────────
+  // F: "Make it easy and less confusing for businesses to upgrade. Right now it
+  // takes them to the pricing page, which is confusing because the copy doesn't
+  // change." Every dashboard Upgrade link is a plain <a href="/pricing">; on
+  // /vendor-dashboard* a capture-phase click listener (bindUpgradeIntercept)
+  // turns those into this modal: current plan, the plans above it with price +
+  // highlights, a Monthly/Yearly toggle, and ONE button per plan that goes
+  // straight to payment via LokaliBilling.checkout(). Links to a pricing
+  // SECTION (#compare, #faq, #versus) pass through untouched. Public surface:
+  // window.LokaliUpgrade.open(opts) / close().
+  //
+  // Facts below mirror the live /pricing table (via welcome-guide-embed.html,
+  // 2026-09-20) and docs/lokali-vendor-billing-stripe-guide.md section 2.1.
+  // No em dashes, no emoji (FA check SVG only), Plus Jakarta Sans set explicitly.
+  var UP_RANK = { free: 0, pro: 1, featured: 2 };
+  var UP_PRICES = {
+    pro: { month: 20, year: 192 },
+    featured: { month: 50, year: 480 }
+  };
+  var UP_HIGHLIGHTS = {
+    pro: [
+      'Elevated place in your category',
+      'Your own web address, golokali.com/your-name',
+      '5 photos per listing and a 5-photo portfolio',
+      'Verified badge and replies to reviews',
+      'Booking link, promo button and a monthly report'
+    ],
+    featured: [
+      'Everything in Pro',
+      'Top of your category',
+      '10 photos per listing and a 15-photo portfolio',
+      'Calendar on your page, plus a waitlist',
+      'Catalog import, showcase banner and your logo on your QR code'
+    ]
+  };
+  var UP_CHECK_SVG = '<svg viewBox="0 0 512 512" aria-hidden="true" focusable="false"><path fill="currentColor" d="M470.6 105.4c12.5 12.5 12.5 32.8 0 45.3l-256 256c-12.5 12.5-32.8 12.5-45.3 0l-128-128c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0L192 338.7 425.4 105.4c12.5-12.5 32.8-12.5 45.3 0z"/></svg>';
+  var UP_CLOSE_SVG = '<svg viewBox="0 0 384 512" aria-hidden="true" focusable="false"><path fill="currentColor" d="M342.6 150.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 210.7 86.6 105.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L146.7 256 41.4 361.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192 301.3l105.4 105.4c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.3 256l105.3-105.4z"/></svg>';
+  var UP_GENERIC_ERR = 'Sorry, we could not start checkout. Please try again.';
+  var UP_PORTAL_ERR = 'Sorry, we could not open billing management. Please try again.';
+
+  // Palette = the values lokali-inquiry.js already uses (violet #6002EE / #4D02BE,
+  // text #1A1530, muted #6B6680, border #E2E0EC); soft lavender tints, no ink.
+  var UP_CSS = [
+    '#lok-up-overlay{position:fixed;inset:0;z-index:100000;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(26,21,48,.45);font-family:"Plus Jakarta Sans",sans-serif;-webkit-font-smoothing:antialiased;}',
+    '#lok-up-overlay.is-open{display:flex;}',
+    '#lok-up-card{position:relative;box-sizing:border-box;width:100%;max-width:760px;max-height:92vh;overflow:auto;padding:28px 28px 22px;border-radius:16px;background:#fff;color:#1A1530;font-family:"Plus Jakarta Sans",sans-serif;box-shadow:0 20px 60px rgba(26,21,48,.28);}',
+    '#lok-up-card *{box-sizing:border-box;font-family:inherit;}',
+    '#lok-up-title{margin:0 0 4px;padding-right:44px;font-size:22px;line-height:1.25;font-weight:700;color:#1A1530;}',
+    '#lok-up-sub{margin:0 0 18px;font-size:14px;line-height:1.5;color:#4A4761;}',
+    '#lok-up-close{position:absolute;top:14px;right:14px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;border:0;border-radius:10px;background:transparent;color:#4A4761;cursor:pointer;}',
+    '#lok-up-close:hover{background:#F2F1F9;}',
+    '#lok-up-close svg{width:16px;height:16px;}',
+    '#lok-up-close:focus-visible,.lok-up-btn:focus-visible,.lok-up-seg button:focus-visible,#lok-up-compare:focus-visible,#lok-up-manage:focus-visible{outline:2px solid #6002EE;outline-offset:2px;}',
+    '.lok-up-seg{display:inline-flex;align-items:center;gap:4px;margin:0 0 18px;padding:4px;border-radius:12px;background:#F2F1F9;}',
+    '.lok-up-seg button{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 16px;border:0;border-radius:9px;background:transparent;color:#4A4761;font-size:14px;font-weight:600;cursor:pointer;}',
+    '.lok-up-seg button[aria-pressed="true"]{background:#6002EE;color:#fff;}',
+    '.lok-up-seg .lok-up-save{font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;background:#EDE5FF;color:#4D02BE;}',
+    '.lok-up-seg button[aria-pressed="true"] .lok-up-save{background:rgba(255,255,255,.2);color:#fff;}',
+    '#lok-up-error{display:none;margin:0 0 14px;padding:10px 12px;border-radius:8px;background:#FEF3F2;color:#C0392B;font-size:13px;line-height:1.45;}',
+    '#lok-up-error.is-on{display:block;}',
+    '.lok-up-freerow{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 14px;padding:12px 16px;border:1px solid #E2E0EC;border-radius:12px;background:#FAF9FD;font-size:14px;color:#4A4761;}',
+    '.lok-up-freerow strong{color:#1A1530;font-weight:700;}',
+    '.lok-up-cards{display:grid;grid-template-columns:1fr;gap:14px;}',
+    '@media (min-width:640px){.lok-up-cards{grid-template-columns:1fr 1fr;}}',
+    '.lok-up-plan{position:relative;display:flex;flex-direction:column;padding:20px 18px 18px;border:1px solid #E2E0EC;border-radius:14px;background:#fff;}',
+    '.lok-up-plan.is-reco{border-color:#6002EE;background:#F7F3FF;box-shadow:0 0 0 1px #6002EE inset;}',
+    '.lok-up-plan.is-current{background:#FAF9FD;}',
+    '.lok-up-chip{position:absolute;top:-11px;left:16px;padding:3px 10px;border-radius:999px;background:#6002EE;color:#fff;font-size:11.5px;font-weight:700;letter-spacing:.2px;}',
+    '.lok-up-name{margin:0 0 6px;font-size:17px;font-weight:700;color:#1A1530;}',
+    '.lok-up-price{display:flex;align-items:baseline;gap:4px;margin:0;color:#1A1530;}',
+    '.lok-up-price b{font-size:30px;line-height:1;font-weight:800;}',
+    '.lok-up-price span{font-size:14px;color:#4A4761;}',
+    '.lok-up-billed{margin:4px 0 0;min-height:18px;font-size:12.5px;color:#6B6680;}',
+    '.lok-up-list{list-style:none;margin:14px 0 18px;padding:0;display:grid;gap:8px;flex:1;}',
+    '.lok-up-list li{display:flex;align-items:flex-start;gap:9px;font-size:13.5px;line-height:1.4;color:#1A1530;}',
+    '.lok-up-list svg{flex:none;width:14px;height:14px;margin-top:3px;color:#6002EE;}',
+    '.lok-up-btn{display:flex;align-items:center;justify-content:center;width:100%;min-height:44px;padding:10px 16px;border:0;border-radius:10px;background:#6002EE;color:#fff;font-size:15px;font-weight:600;cursor:pointer;transition:background .15s;}',
+    '.lok-up-btn:hover{background:#4D02BE;}',
+    '.lok-up-btn.is-second{background:#fff;color:#4D02BE;border:1.5px solid #6002EE;}',
+    '.lok-up-btn.is-second:hover{background:#F7F3FF;}',
+    '.lok-up-btn[disabled]{cursor:default;background:#F2F1F9;color:#6B6680;border:1px solid #E2E0EC;}',
+    '.lok-up-btn[aria-busy="true"]{opacity:.7;cursor:progress;}',
+    '.lok-up-foot{margin:18px 0 0;padding-top:14px;border-top:1px solid #E2E0EC;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;font-size:13px;color:#4A4761;}',
+    '.lok-up-foot a{color:#4D02BE;font-weight:600;text-decoration:underline;text-underline-offset:2px;}',
+    '#lok-up-manage{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 16px;border:1.5px solid #6002EE;border-radius:10px;background:#fff;color:#4D02BE;font-size:14px;font-weight:600;cursor:pointer;}',
+    '#lok-up-manage:hover{background:#F7F3FF;}',
+    '#lok-up-loading{padding:24px 0;font-size:14px;color:#6B6680;}',
+    // Phone: a full-width sheet rising from the bottom, 16px gutters, cards stacked.
+    '@media (max-width:639px){#lok-up-overlay{align-items:flex-end;padding:0;}#lok-up-card{max-width:none;max-height:94vh;border-radius:16px 16px 0 0;padding:22px 16px calc(16px + env(safe-area-inset-bottom));}#lok-up-title{font-size:20px;}.lok-up-foot{flex-direction:column;align-items:stretch;text-align:center;}}'
+  ].join('');
+
+  var upState = { overlay: null, lastFocus: null, interval: 'month', billing: null, busy: false, source: '' };
+
+  function injectUpgradeStyles() {
+    if (document.getElementById('lok-up-styles')) return;
+    var s = document.createElement('style');
+    s.id = 'lok-up-styles';
+    s.textContent = UP_CSS;
+    document.head.appendChild(s);
+  }
+
+  function upAll(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
+
+  function upEsc(str) {
+    return String(str == null ? '' : str).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  function upFocusables() {
+    var card = upState.overlay && upState.overlay.querySelector('#lok-up-card');
+    if (!card) return [];
+    var els = card.querySelectorAll('button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])');
+    var vis = [];
+    for (var i = 0; i < els.length; i++) {
+      if (els[i].offsetParent !== null && els[i].tabIndex !== -1) vis.push(els[i]);
+    }
+    return vis;
+  }
+
+  function buildUpgradeOverlay() {
+    if (upState.overlay) return upState.overlay;
+    injectUpgradeStyles();
+    var overlay = document.createElement('div');
+    overlay.id = 'lok-up-overlay';
+    overlay.innerHTML =
+      '<div id="lok-up-card" role="dialog" aria-modal="true" aria-labelledby="lok-up-title">' +
+        '<h2 id="lok-up-title">Choose your plan</h2>' +
+        '<p id="lok-up-sub"></p>' +
+        '<div id="lok-up-body"><div id="lok-up-loading">Loading your plan...</div></div>' +
+        '<button id="lok-up-close" type="button" aria-label="Close">' + UP_CLOSE_SVG + '</button>' +
+      '</div>';
+    document.body.appendChild(overlay);
+
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) closeUpgrade(); });
+    overlay.querySelector('#lok-up-close').addEventListener('click', closeUpgrade);
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && overlay.classList.contains('is-open')) closeUpgrade();
+    });
+    // aria-modal promises focus cannot leave the card: wrap Tab within it.
+    overlay.addEventListener('keydown', function (e) {
+      if (e.key !== 'Tab') return;
+      var vis = upFocusables();
+      if (!vis.length) return;
+      var first = vis[0], last = vis[vis.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      else if (!overlay.contains(document.activeElement)) { e.preventDefault(); first.focus(); }
+    });
+    upState.overlay = overlay;
+    return overlay;
+  }
+
+  function upShowError(msg) {
+    var el = upState.overlay && upState.overlay.querySelector('#lok-up-error');
+    if (!el) return;
+    el.textContent = msg || '';
+    el.classList.toggle('is-on', !!msg); // role=alert announces it
+  }
+
+  function upPeriodEndText(b) {
+    var ts = b && b.current_period_end;
+    if (!ts) return '';
+    if (ts < 1e12) ts = ts * 1000;
+    return new Date(ts).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+  }
+
+  // "You're on Free." / "You're on Pro, billed monthly." / comped + trial variants.
+  function upSubtitle(b) {
+    var plan = (b.plan || 'free').toLowerCase();
+    var label = PLAN_LABELS[plan] || 'Free';
+    var status = (b.plan_status || '').toLowerCase();
+    var when = upPeriodEndText(b);
+    if (plan === 'free' || !UP_RANK[plan]) return 'You’re on Free.';
+    var top = plan === 'featured' ? ', our top plan' : '';
+    var comped = b.billing_provider === 'internal' &&
+      (b.comp_kind === 'until_billing' || b.comp_kind === 'forever');
+    if (comped) {
+      return 'Your ' + label + ' plan is on us' + (when ? ' until ' + when : ' for now') + '.';
+    }
+    if (status === 'trialing' && when) {
+      return 'You’re on ' + label + top + '. Your free trial runs until ' + when + '.';
+    }
+    var iv = b.plan_interval === 'year' ? 'yearly' : (b.plan_interval === 'month' ? 'monthly' : '');
+    if (b.cancel_at_period_end && when) {
+      return 'You’re on ' + label + top + '. It ends on ' + when + '.';
+    }
+    return 'You’re on ' + label + top + (iv ? ', billed ' + iv : '') + '.';
+  }
+
+  function upPriceHtml(plan, interval) {
+    var p = UP_PRICES[plan];
+    if (interval === 'year') {
+      return '<p class="lok-up-price"><b>$' + (p.year / 12) + '</b><span>/mo</span></p>' +
+        '<p class="lok-up-billed">billed $' + p.year + ' a year</p>';
+    }
+    return '<p class="lok-up-price"><b>$' + p.month + '</b><span>/mo</span></p>' +
+      '<p class="lok-up-billed">billed monthly</p>';
+  }
+
+  function upCardHtml(plan, current, interval, reco) {
+    var rank = UP_RANK[plan], cur = UP_RANK[current] || 0;
+    var label = PLAN_LABELS[plan];
+    var btn;
+    if (rank === cur) {
+      btn = '<button class="lok-up-btn" type="button" disabled>Current plan</button>';
+    } else if (rank > cur) {
+      var verb = cur === 0 ? 'Get ' : 'Upgrade to ';
+      btn = '<button class="lok-up-btn" type="button" data-lok-up-plan="' + plan + '">' + verb + label + '</button>';
+    } else {
+      btn = '<button class="lok-up-btn is-second" type="button" data-lok-up-switch="' + plan + '">Switch to ' + label + '</button>';
+    }
+    var items = UP_HIGHLIGHTS[plan].map(function (t) {
+      return '<li>' + UP_CHECK_SVG + '<span>' + upEsc(t) + '</span></li>';
+    }).join('');
+    return '<div class="lok-up-plan' + (reco ? ' is-reco' : '') + (rank === cur ? ' is-current' : '') + '" data-lok-up-card="' + plan + '">' +
+      (reco ? '<span class="lok-up-chip">Recommended</span>' : '') +
+      '<h3 class="lok-up-name">' + label + '</h3>' +
+      '<div class="lok-up-pricewrap">' + upPriceHtml(plan, interval) + '</div>' +
+      '<ul class="lok-up-list">' + items + '</ul>' +
+      btn +
+    '</div>';
+  }
+
+  function renderUpgrade() {
+    var overlay = upState.overlay;
+    var b = upState.billing || {};
+    var plan = (b.plan || 'free').toLowerCase();
+    if (!UP_RANK[plan]) plan = 'free';
+    var status = (b.plan_status || '').toLowerCase();
+    // A lapsed paid plan (not active/trialing/past_due) reads as Free elsewhere.
+    if (plan !== 'free' && status && status !== 'active' && status !== 'trialing' && status !== 'past_due' && status !== 'paused') plan = 'free';
+    var iv = upState.interval;
+    var stripeBilled = plan !== 'free' && b.billing_provider && b.billing_provider !== 'internal';
+
+    overlay.querySelector('#lok-up-sub').textContent = upSubtitle(b);
+
+    var html = '';
+    html += '<div class="lok-up-seg" role="group" aria-label="Billing period">' +
+      '<button type="button" data-lok-up-iv="month" aria-pressed="' + (iv === 'month') + '">Monthly</button>' +
+      '<button type="button" data-lok-up-iv="year" aria-pressed="' + (iv === 'year') + '">Yearly <span class="lok-up-save">2 months free</span></button>' +
+    '</div>';
+    html += '<div id="lok-up-error" role="alert"></div>';
+    if (plan === 'free') {
+      html += '<div class="lok-up-freerow"><span><strong>Free</strong>, what you have now</span><span>$0</span></div>';
+    }
+    html += '<div class="lok-up-cards">' +
+      upCardHtml('pro', plan, iv, plan === 'free') +
+      upCardHtml('featured', plan, iv, plan === 'pro') +
+    '</div>';
+    html += '<div class="lok-up-foot">' +
+      '<span>Nothing is charged before January 1, 2027. Cancel anytime. ' +
+        '<a id="lok-up-compare" href="/pricing#compare">Compare every feature</a></span>' +
+      (stripeBilled ? '<button id="lok-up-manage" type="button">Manage billing</button>' : '') +
+    '</div>';
+
+    var body = overlay.querySelector('#lok-up-body');
+    body.innerHTML = html;
+
+    upAll('[data-lok-up-iv]', body).forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        if (upState.busy) return;
+        upState.interval = btn.getAttribute('data-lok-up-iv') === 'year' ? 'year' : 'month';
+        renderUpgrade();
+        var again = body.querySelector('[data-lok-up-iv="' + upState.interval + '"]');
+        if (again) again.focus();
+      });
+    });
+    upAll('[data-lok-up-plan]', body).forEach(function (btn) {
+      btn.addEventListener('click', function () { upStartCheckout(btn, btn.getAttribute('data-lok-up-plan')); });
+    });
+    upAll('[data-lok-up-switch]', body).forEach(function (btn) {
+      btn.addEventListener('click', function () { upOpenPortal(btn, 'Opening billing...'); });
+    });
+    var manage = body.querySelector('#lok-up-manage');
+    if (manage) manage.addEventListener('click', function () { upOpenPortal(manage, 'Opening billing...'); });
+  }
+
+  function upSetBusy(btn, busyText) {
+    upState.busy = true;
+    upAll('.lok-up-btn, #lok-up-manage, [data-lok-up-iv]', upState.overlay).forEach(function (el) {
+      if (el !== btn) el.disabled = true;
+    });
+    btn.dataset.lokUpPrev = btn.textContent;
+    btn.textContent = busyText;
+    btn.setAttribute('aria-busy', 'true');
+    btn.disabled = true;
+  }
+
+  function upClearBusy() {
+    upState.busy = false;
+    renderUpgrade(); // restores every button from state
+  }
+
+  function upErrorMessage(err, fallback) {
+    return err && err.message && !/^Request failed/.test(err.message) ? err.message : fallback;
+  }
+
+  function upStartCheckout(btn, plan) {
+    if (upState.busy) return;
+    var interval = upState.interval;
+    upShowError('');
+    upSetBusy(btn, 'Opening secure checkout...');
+    // Same GA4 funnel event pricingcta.js fires (#110); source tells them apart.
+    try {
+      if (typeof window.gtag === 'function') {
+        window.gtag('event', 'begin_checkout', { plan: plan, interval: interval, source: 'upgrade_modal' });
+      }
+    } catch (e) {}
+    window.LokaliBilling.checkout(plan, interval).catch(function (err) {
+      console.error('[lokali-billing] upgrade modal checkout failed', err);
+      upClearBusy();
+      upShowError(upErrorMessage(err, UP_GENERIC_ERR));
+      if (err && err.code === 'already_on_plan' && window.LokaliAPI && window.LokaliAPI.plans &&
+          window.LokaliAPI.plans.invalidateBilling) {
+        window.LokaliAPI.plans.invalidateBilling(); // our cached plan was stale
+      }
+    });
+  }
+
+  function upOpenPortal(btn, busyText) {
+    if (upState.busy) return;
+    upShowError('');
+    upSetBusy(btn, busyText);
+    window.LokaliBilling.portal().catch(function (err) {
+      console.error('[lokali-billing] upgrade modal portal failed', err);
+      upClearBusy();
+      upShowError(UP_PORTAL_ERR);
+    });
+  }
+
+  function openUpgrade(opts) {
+    opts = opts || {};
+    var overlay = buildUpgradeOverlay();
+    if (overlay.classList.contains('is-open')) return;
+    upState.lastFocus = document.activeElement;
+    upState.source = opts.source || '';
+    upState.busy = false;
+    upState.billing = null;
+    overlay.querySelector('#lok-up-sub').textContent = '';
+    overlay.querySelector('#lok-up-body').innerHTML = '<div id="lok-up-loading">Loading your plan...</div>';
+    overlay.classList.add('is-open');
+    document.body.style.overflow = 'hidden';
+    overlay.querySelector('#lok-up-close').focus();
+
+    var api = window.LokaliAPI && window.LokaliAPI.plans && window.LokaliAPI.plans.getMyBilling
+      ? window.LokaliAPI.plans.getMyBilling()
+      : Promise.reject(new Error('plans api unavailable'));
+    api.then(function (res) {
+      var data = (res && (res.data || res)) || {};
+      upState.billing = data;
+      var paidIv = data.plan_interval === 'year' ? 'year' : 'month';
+      upState.interval = opts.interval === 'year' || opts.interval === 'month'
+        ? opts.interval
+        : ((data.plan || 'free') !== 'free' ? paidIv : 'month');
+      if (!overlay.classList.contains('is-open')) return;
+      renderUpgrade();
+      var first = upFocusables()[0];
+      if (first) first.focus();
+    }).catch(function (err) {
+      console.warn('[lokali-billing] upgrade modal: plan lookup failed', err);
+      if (!overlay.classList.contains('is-open')) return;
+      overlay.querySelector('#lok-up-body').innerHTML =
+        '<div id="lok-up-error" role="alert" class="is-on">We could not load your plan just now. ' +
+        '<a id="lok-up-compare" href="/pricing#compare">See every plan on the pricing page</a>.</div>';
+    });
+  }
+
+  function closeUpgrade() {
+    var overlay = upState.overlay;
+    if (!overlay || !overlay.classList.contains('is-open')) return;
+    overlay.classList.remove('is-open');
+    document.body.style.overflow = '';
+    var lf = upState.lastFocus;
+    upState.lastFocus = null;
+    if (lf && typeof lf.focus === 'function' && document.contains(lf)) {
+      try { lf.focus(); } catch (e) {}
+    }
+  }
+
+  // An <a> that points at the pricing page's PLANS (no hash, "#" or "#plans"):
+  // the modal replaces it. Section links (#compare, #faq, #versus) pass through.
+  function upIsPlansLink(a) {
+    if (!a || a.hasAttribute('data-lokali-no-upgrade-modal')) return false;
+    var u;
+    try { u = new URL(a.getAttribute('href') || '', window.location.href); } catch (e) { return false; }
+    if (u.origin !== window.location.origin) return false;
+    if (!/^\/pricing\/?$/.test(u.pathname)) return false;
+    var h = (u.hash || '').toLowerCase();
+    return h === '' || h === '#' || h === '#plans';
+  }
+
+  function upIsVendor() {
+    var A = window.LokaliAuth;
+    return !!(A && typeof A.role === 'function' && A.role() === 'vendor');
+  }
+
+  // Capture phase on purpose: lokali-settings-page.js binds its own click handler
+  // on #settings-view-plans that sets window.location, and a bubble-phase listener
+  // would run after the navigation had already started. Stopping propagation here
+  // keeps that element handler from firing at all.
+  function bindUpgradeIntercept() {
+    if (!/^\/vendor-dashboard(\/|$)/.test(window.location.pathname)) return;
+    document.addEventListener('click', function (e) {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      var t = e.target;
+      var a = t && t.closest ? t.closest('a[href]') : null;
+      if (!a || !upIsPlansLink(a) || !upIsVendor()) return;
+      e.preventDefault();
+      e.stopPropagation();
+      var src = a.id || a.className || 'link';
+      openUpgrade({ source: String(src).split(' ')[0] });
+    }, true);
+  }
+
+  // #upgrade in the URL opens the picker (e.g. from an email or a dashboard link);
+  // waits briefly for the role stamp since the acct cache may still be cold.
+  function openUpgradeFromHash() {
+    if (window.location.hash !== '#upgrade') return;
+    if (!/^\/vendor-dashboard(\/|$)/.test(window.location.pathname)) return;
+    var waited = 0;
+    var iv = setInterval(function () {
+      waited += 250;
+      if (upIsVendor()) { clearInterval(iv); openUpgrade({ source: 'hash' }); return; }
+      if (waited >= 10000) clearInterval(iv);
+    }, 250);
+  }
+
+  window.LokaliUpgrade = { open: openUpgrade, close: closeUpgrade };
+
   // ── boot ────────────────────────────────────────────────────────────────────────
   function waitForDeps(cb) {
     var checks = 0;
@@ -1089,6 +1525,7 @@
     tagSettingsPortalLink();
     bindPortalButtons();
     initPricingSpotlightCards();   // #88 — static cards, no auth needed
+    bindUpgradeIntercept();        // dashboard Upgrade links -> in-app plan picker
     waitForDeps(function () {
       // Resume runs on ANY page — a fresh signup can land anywhere.
       resumePendingCheckout();
@@ -1097,6 +1534,7 @@
         loadBilling();
         handleReturnFromStripe();
       }
+      openUpgradeFromHash();       // /vendor-dashboard/...#upgrade opens the picker
     });
   }
 

@@ -124,6 +124,17 @@
       if (show === false) return;
       items.push({ key: key, done: !!done, title: done ? doneTitle : openTitle, why: why, action: action, href: href });
     }
+    // 2026-10-02: the address FIRST while it is blank. It is part of the
+    // publish gate (patch_publish_gate_profile.sql) so nothing else on this
+    // list matters until it is in; the few admin-exempted storefronts get the
+    // same row with the blocking claim dropped. Never shown to customers.
+    var hasAddr = !!(v.address && String(v.address).trim());
+    add('address', hasAddr,
+      'Add your business address (never shown to customers)', 'Business address on file',
+      (v.publish_gate_exempt === true
+        ? 'Private. We use it only to confirm you are in the neighborhood you list under. A home address is fine.'
+        : 'Your storefront stays off The Market until this is in. Private: we use it only to confirm you are in the neighborhood you list under. A home address is fine.'),
+      'Add address', CK_PROFILE + '#lok-sec-business');
     add('price', noPrice === 0,
       'Add a price to ' + (noPrice === listings ? 'your ' : '') + n(noPrice, 'listing'), 'Every listing shows a price',
       'Shoppers skip listings with no price. "Starting at" or "Ask for a quote" both count.',

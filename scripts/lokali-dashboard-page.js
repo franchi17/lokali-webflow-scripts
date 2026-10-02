@@ -185,15 +185,27 @@
     // the few storefronts the admin exempted, which can be LIVE with no address.
     var soft = gateReady && bits.address === false;
     if (gateReady && !soft) { if (el) el.parentNode.removeChild(el); return; }
+    // 2026-10-02: every missing item is a LINK to the exact place it gets
+    // fixed (F: vendors did not know to go back to the profile for the
+    // address). Section anchors are the ones the profile embed expands on
+    // load (#lok-sec-business, #lok-sec-about); listings go to /services.
+    var PROF = '/vendor-dashboard/profile';
+    var A_STYLE = 'color:#6E3CFF;text-decoration:underline;font-weight:600;';
+    function esc(s) {
+      return String(s).replace(/[&<>"']/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+      });
+    }
+    function link(text, href) { return '<a href="' + esc(href) + '" style="' + A_STYLE + '">' + esc(text) + '</a>'; }
     var missing = [];
-    if (!bits.name) missing.push('name your storefront'); // #101 — signup-path vendors start nameless
-    if (!bits.cats) missing.push('pick your category');
-    if (!bits.locs) missing.push('set your service area');
-    if (!bits.listing) missing.push('add a service or product');
-    if (bits.address === false) missing.push('add your business address (never shown to customers)');
-    if (bits.desc === false) missing.push('write your business description');
+    if (!bits.name) missing.push(link('name your storefront', PROF + '#lok-sec-business')); // #101 — signup-path vendors start nameless
+    if (!bits.cats) missing.push(link('pick your category', PROF + '#lok-sec-business'));
+    if (!bits.locs) missing.push(link('set your service area', PROF + '#lok-sec-business'));
+    if (!bits.listing) missing.push(link('add a service or product', '/vendor-dashboard/services'));
+    if (bits.address === false) missing.push(link('add your business address', PROF + '#lok-sec-business') + ' (never shown to customers)');
+    if (bits.desc === false) missing.push(link('write your business description', PROF + '#lok-sec-about'));
     var msg = soft
-      ? 'Your storefront is live. One thing left: add your business address on your profile. It is never shown to customers; it lets us confirm you are local.'
+      ? 'Your storefront is live. One thing left: add your business address on your ' + link('profile', PROF + '#lok-sec-business') + '. It is never shown to customers; it lets us confirm you are local.'
       : 'Your storefront isn’t public yet. Customers can’t find it on The Market until you ' +
         (missing.length ? missing.join(' · ') : 'finish setup') + '.';
     if (!el) {
@@ -208,7 +220,7 @@
       (soft ? 'background:#F4F1FC;border:1px solid #DDD5F5;color:#4A3C7A;'
             : 'background:#FDF1E7;border:1px solid #F6D9BE;color:#8A4B14;');
     var m = el.querySelector('[data-ls-gate-msg]');
-    if (m) m.textContent = msg;
+    if (m) m.innerHTML = msg; // every dynamic piece above went through esc()
     // The gate outranks a saved dismiss — a hidden card can't warn anyone.
     root.style.display = '';
   }
@@ -519,8 +531,8 @@
   }
 
   // ── What happened: the last 8 human events + the month's busiest day ────
-  var CONTACT_VERB = { call: 'tapped Call', sms: 'tapped Text', whatsapp: 'tapped WhatsApp', email: 'tapped Email', instagram: 'opened your Instagram', website: 'opened your website' };
-  var PAY_VERB = { venmo: 'tapped your Venmo', cashapp: 'tapped your Cash App', paypal: 'tapped your PayPal', zelle: 'copied your Zelle', buy_link: 'clicked Buy on a product', booking_link: 'clicked Book now on a service', other_pay: 'tapped your pay link' };
+  var CONTACT_VERB = { call: 'tapped Call', sms: 'tapped Text', whatsapp: 'tapped WhatsApp', email: 'tapped Email', instagram: 'opened your Instagram', website: 'opened your website', linkedin: 'opened your LinkedIn' };
+  var PAY_VERB = { venmo: 'tapped your Venmo', cashapp: 'tapped your Cash App', paypal: 'tapped your PayPal', zelle: 'copied your Zelle', buy_link: 'clicked Buy on a product', booking_link: 'clicked Book now on a service', service_link: 'clicked Visit website on a service', other_pay: 'tapped your pay link' };
   var DOW = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   var DOW3 = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   var MON3 = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -1125,7 +1137,7 @@
               'font-family:inherit;font-size:14px;color:#9A9AB0;text-decoration:underline;">Skip for now</button>' +
             (opts.noContinue ? '' :
               '<button data-wz-next style="background:#6E3CFF;color:#fff;border:none;cursor:pointer;font-family:inherit;' +
-              'font-weight:700;font-size:14px;padding:10px 22px;border-radius:999px;">Continue</button>') +
+              'font-weight:700;font-size:14px;padding:10px 22px;border-radius:999px;">' + (opts.nextLabel || 'Continue') + '</button>') +
           '</div>' +
         '</div>';
       card.querySelector('[data-wz-x]').addEventListener('click', close);
@@ -1264,11 +1276,92 @@
       loadAreas();
     });
 
+    // Step: business address (2026-10-02, F: "make people add their address
+    // when they first get to their dashboard"). The publish gate has needed it
+    // since 2026-09-21 (patch_publish_gate_profile.sql), but the wizard sent
+    // vendors straight to listings and nobody went back to the profile for
+    // it. Same server-side resolve as the profile embed (SEC-050): the route
+    // writes the formatted text + geo itself with the service role; the
+    // owner-grant write below is the text-only fallback when the route is
+    // down or unreachable, so a geocoder outage never blocks the vendor.
+    if (!(v.address && String(v.address).trim())) steps.push(function () {
+      var body = shell('Where is your business based?',
+        'Never shown to customers. We use it to confirm you’re in the neighborhood you list under. A home address is fine.',
+        '<input data-wz-addr type="text" maxlength="300" autocomplete="street-address" ' +
+          'placeholder="123 Main St, The Woodlands, TX 77380" aria-label="Business address" ' +
+          'style="font-family:inherit;font-size:15px;color:#3b3654;background:#FAF7FF;border:1.5px solid #E4DCF7;' +
+          'border-radius:12px;padding:11px 14px;width:100%;box-sizing:border-box;">',
+        { nextLabel: 'Save and continue' });
+      var input = body.querySelector('[data-wz-addr]');
+      var btn = card.querySelector('[data-wz-next]');
+      setTimeout(function () { try { input.focus(); } catch (e) {} }, 60);
+      var ADDR_API = ((typeof window.LOKALI_BILLING_BASE === 'string' && window.LOKALI_BILLING_BASE)
+          ? window.LOKALI_BILLING_BASE
+          : 'https://lokali-api.vercel.app/api/lokali').replace(/\/$/, '') + '/address/resolve';
+      // Mirrors _resolveAddress in lokali-profile-page-embed.js: {ok:true,
+      // formatted?} on success, {ok:false, message} on a refused address
+      // (non-US, bare PO Box, not found), and a plain {ok:true} on any
+      // route/network failure so the save proceeds text-only.
+      function resolveAddr(addr) {
+        var AU = window.LokaliAuth;
+        if (!AU || typeof AU.token !== 'function' || typeof fetch !== 'function') return Promise.resolve({ ok: true });
+        var timeout = new Promise(function (res) { setTimeout(function () { res({ ok: true }); }, 10000); });
+        var lookup = AU.token().then(function (jwt) {
+          if (!jwt) return { ok: true };
+          return fetch(ADDR_API, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + jwt },
+            body: JSON.stringify({ address: addr })
+          }).then(function (res) {
+            if (!res.ok) return { ok: true };
+            return res.json().then(function (d) {
+              if (!d || typeof d.ok !== 'boolean') return { ok: true };
+              if (!d.ok) return { ok: false, message: d.message || 'We couldn’t verify that address. Check it and try again, or use Skip for now.' };
+              return { ok: true, formatted: d.formatted || null };
+            });
+          });
+        }).catch(function () { return { ok: true }; });
+        return Promise.race([lookup, timeout]);
+      }
+      function busy(on) {
+        btn.disabled = !!on;
+        btn.style.opacity = on ? '.6' : '';
+        btn.textContent = on ? 'Saving…' : 'Save and continue';
+      }
+      btn.addEventListener('click', function () {
+        var addr = (input.value || '').trim();
+        if (!addr) { showErr('Enter your address (or use Skip for now).'); return; }
+        if (btn.disabled) return;
+        busy(true);
+        resolveAddr(addr).then(function (r) {
+          if (!r.ok) { busy(false); showErr(r.message); return; }
+          var finalAddr = r.formatted || addr;
+          // The gate only needs non-blank text; write it through the owner
+          // grant so a down route still leaves the address on file.
+          return SB.vendors.updateProfile(v.id, { address: finalAddr }).then(function (res) {
+            if (res && res.error) { busy(false); showErr('Could not save. Try again.'); return; }
+            v.address = finalAddr;
+            next();
+          });
+        }).catch(function () { busy(false); showErr('Could not save. Try again.'); });
+      });
+    });
+
     // Step: first listing — out-and-back CTA into the real add-service/product
     // forms (decision: reuse them rather than duplicate a mini-form here).
     steps.push(function () {
+      // Name what is still missing for the gate, each as a deep link, so the
+      // last step never leaves a vendor guessing where the profile fields are.
+      var needAddr = !(v.address && String(v.address).trim());
+      var needDesc = !(v.business_description && String(v.business_description).trim());
+      var left = [];
+      if (needAddr) left.push('your address');
+      if (needDesc) left.push('a description');
+      var profHref = '/vendor-dashboard/profile#' + (needAddr ? 'lok-sec-business' : 'lok-sec-about');
+      var profLink = '<a href="' + profHref + '" style="color:#6E3CFF;text-decoration:underline;font-weight:600;">profile</a>';
       shell('Add your first service or product',
-        'This is what customers can actually book or buy. Your storefront goes live once one is up and your profile has your address and a description.',
+        'This is what customers can actually book or buy. Your storefront goes live once a listing is up' +
+          (left.length ? ' and your ' + profLink + ' has ' + left.join(' and ') : '') + '.',
         '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
           '<a href="/vendor-dashboard/services" style="flex:1;min-width:150px;text-align:center;background:#6E3CFF;color:#fff;' +
             'font-weight:700;font-size:14px;padding:12px 18px;border-radius:12px;text-decoration:none;font-family:inherit;">Add a service</a>' +

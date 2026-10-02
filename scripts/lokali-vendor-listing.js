@@ -24,7 +24,9 @@
     down: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="currentColor" aria-hidden="true" focusable="false" style="width:1em;height:1em;vertical-align:-.125em;flex-shrink:0;"><path d="M313.4 479.1c26-5.2 42.9-30.5 37.7-56.5l-2.3-11.4c-5.3-26.7-15.1-52.1-28.8-75.2l144 0c26.5 0 48-21.5 48-48c0-18.5-10.5-34.6-25.9-42.6C497 236.6 504 223.1 504 208c0-23.4-16.8-42.9-38.9-47.1c4.4-7.3 6.9-15.8 6.9-24.9c0-21.3-13.9-39.4-33.1-45.6c.7-3.3 1.1-6.8 1.1-10.4c0-26.5-21.5-48-48-48l-97.5 0c-19 0-37.5 5.6-53.3 16.1L202.7 73.8C176 91.6 160 121.6 160 153.7l0 38.3 0 48 0 24.9c0 29.2 13.3 56.7 36 75l7.4 5.9c26.5 21.2 44.6 51 51.2 84.2l2.3 11.4c5.2 26 30.5 42.9 56.5 37.7zM32 384l64 0c17.7 0 32-14.3 32-32l0-224c0-17.7-14.3-32-32-32L32 96C14.3 96 0 110.3 0 128L0 352c0 17.7 14.3 32 32 32z"/></svg>',
     store: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512" fill="currentColor" aria-hidden="true" focusable="false" style="width:40px;height:40px;vertical-align:-.125em;flex-shrink:0;"><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7l-86.8-68 0-17.1 0-131.4c-4 1-8 1.8-12.3 2.3c0 0 0 0-.1 0c-5.3 .7-10.7 1.1-16.2 1.1c-12.4 0-24.3-1.9-35.4-5.3l0 100.3L301.2 210.7c7-4.4 13.3-9.7 18.8-15.7c15.9 17.6 39.1 29 65.2 29c26.2 0 49.3-11.4 65.2-29c16 17.6 39.1 29 65.2 29c4.1 0 8.1-.3 12.1-.8c55.5-7.4 81.8-72.5 52.1-119.4L522.3 13.1C517.2 5 508.1 0 498.4 0L141.6 0c-9.7 0-18.8 5-23.9 13.1l-22.7 36L38.8 5.1zm73.4 218.1c4 .5 8.1 .8 12.1 .8c11 0 21.4-2 31-5.6L48.9 134.5c-6.1 40.6 19.5 82.8 63.3 88.7zM160 384l0-133.4c-11.2 3.5-23.2 5.4-35.6 5.4c-5.5 0-11-.4-16.3-1.1l-.1 0c-4.1-.6-8.1-1.3-12-2.3L96 384l0 64c0 35.3 28.7 64 64 64l320 0c12.9 0 24.8-3.8 34.9-10.3L365.5 384 160 384z"/></svg>',
     hourglass: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" fill="currentColor" aria-hidden="true" focusable="false" style="width:40px;height:40px;vertical-align:-.125em;flex-shrink:0;color:#B5793B;"><path d="M32 0C14.3 0 0 14.3 0 32S14.3 64 32 64l0 11c0 42.4 16.9 83.1 46.9 113.1L146.7 256 78.9 323.9C48.9 353.9 32 394.6 32 437l0 11c-17.7 0-32 14.3-32 32s14.3 32 32 32l32 0 256 0 32 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l0-11c0-42.4-16.9-83.1-46.9-113.1L237.3 256l67.9-67.9c30-30 46.9-70.7 46.9-113.1l0-11c17.7 0 32-14.3 32-32s-14.3-32-32-32L320 0 64 0 32 0zM96 75l0-11 192 0 0 11c0 19-5.6 37.4-16 53L112 128c-10.3-15.6-16-34-16-53zm16 309c3.5-5.3 7.6-10.3 12.1-14.9L192 301.3l67.9 67.9c4.6 4.6 8.6 9.6 12.1 14.9L112 384z"/></svg>',
-    search: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="currentColor" aria-hidden="true" focusable="false" style="width:40px;height:40px;vertical-align:-.125em;flex-shrink:0;"><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352a144 144 0 1 0 0-288 144 144 0 1 0 0 288z"/></svg>'
+    search: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="currentColor" aria-hidden="true" focusable="false" style="width:40px;height:40px;vertical-align:-.125em;flex-shrink:0;"><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352a144 144 0 1 0 0-288 144 144 0 1 0 0 288z"/></svg>',
+    // 2026-10-02: LinkedIn brand mark (FA "linkedin"), sized like the 13px masked globe/IG icons beside it.
+    linkedin: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" fill="currentColor" aria-hidden="true" focusable="false" style="width:13px;height:13px;flex-shrink:0;"><path d="M416 32H31.9C14.3 32 0 46.5 0 64.3v383.4C0 465.5 14.3 480 31.9 480H416c17.6 0 32-14.5 32-32.3V64.3c0-17.8-14.4-32.3-32-32.3zM135.4 416H69V202.2h66.5V416zm-33.2-243c-21.3 0-38.5-17.3-38.5-38.5S80.9 96 102.2 96c21.2 0 38.5 17.3 38.5 38.5 0 21.3-17.2 38.5-38.5 38.5zm282.1 243h-66.4V312c0-24.8-.5-56.7-34.5-56.7-34.6 0-39.9 27-39.9 54.9V416h-66.4V202.2h63.7v29.2h.9c8.9-16.8 30.6-34.5 62.9-34.5 67.2 0 79.7 44.3 79.7 101.9V416z"/></svg>'
   };
 
   var currentVendorId = null; // set during hydrate(); used to build detail-page links
@@ -282,11 +284,26 @@
     }
     var webA = makeMetaLink('vl-website', ICON_GLOBE, 'Website');
     var igA = makeMetaLink('vl-ig', ICON_IG, 'Instagram');
+    // 2026-10-02 (F punchlist 9): LinkedIn, a PUBLIC link beside the website.
+    // No Webflow element exists for it, so build the anchor here (hidden until
+    // initContact() has the URL). Icon = Font Awesome linkedin brand, inline SVG
+    // (the globe/IG siblings are masked PNG assets; same 13px box, same violet).
+    var liA = null;
+    if (webA) {
+      liA = ce('a', 'vl-meta-link');
+      liA.id = 'vl-linkedin';
+      liA.innerHTML = LK_FA.linkedin;
+      var liLbl = ce('span', 'vl-link-label');
+      liLbl.textContent = 'LinkedIn';
+      liA.appendChild(liLbl);
+      liA.style.display = 'none';
+    }
     var meta = document.querySelector('.vl-meta');
     if (meta && (webA || igA)) {
       var lrow = ce('div', 'vl-links-row');
       lrow.id = 'vl-links-row';
       if (webA) lrow.appendChild(webA);
+      if (liA) lrow.appendChild(liA);
       if (igA) lrow.appendChild(igA);
       meta.appendChild(lrow);
     }
@@ -1938,6 +1955,7 @@
   function servicePrice(s) {
     var t = (s.price_type || '').toLowerCase();
     if (t === 'quote' || t === 'get_a_quote' || s.is_quote_based) return { text: 'Get a quote', quote: true };
+    if (t === 'free') return { text: 'Free', quote: false }; // 2026-10-02 patch_service_free_price.sql
     if (s.price_min_cents != null && s.price_max_cents != null && s.price_min_cents !== s.price_max_cents) {
       return { text: cents(s.price_min_cents) + '–' + cents(s.price_max_cents), quote: false };
     }
@@ -2116,7 +2134,9 @@
         focusX: s.image_focus_x, focusY: s.image_focus_y,   // #149
         tint: IMG_TINTS[i % IMG_TINTS.length],
         pick: s.is_featured_pick === true, // FEAT-PICKS
-        cta: _bookUrl ? 'Book now' : (p.quote ? 'Request quote' : 'Inquire'),
+        // 2026-10-02: a service with its own website link reads "Visit website"
+        // (same promise-what-the-page-delivers rule as the product "Buy online").
+        cta: _bookUrl ? 'Book now' : (/^https:\/\/\S+$/.test(String(s.link_url || '')) ? 'Visit website' : (p.quote ? 'Request quote' : 'Inquire')),
         book: !!_bookUrl,
         lead: leadText(s),
         href: itemHref('services', s)
@@ -2343,6 +2363,21 @@
     return _lbApi;
   }
   function openLightbox(urls, start, label) { ensureLightbox().open(urls, start, label); }
+  // 2026-10-02 (F punchlist 10): a vendor photo (logo, owner) opens FULL-SIZE in
+  // the same lightbox the portfolio uses. `full` is the raw storage URL, never
+  // img.src (that is the 240px render-endpoint copy). Keyboard: Enter/Space.
+  // A photo that failed (initials fallback hides the img) never opens.
+  function makeZoomable(img, full, label) {
+    if (!img || !full || img.getAttribute('data-lok-zoom')) return;
+    img.setAttribute('data-lok-zoom', '1');
+    img.style.cursor = 'zoom-in';
+    img.setAttribute('role', 'button');
+    img.setAttribute('tabindex', '0');
+    img.setAttribute('aria-label', 'Enlarge photo' + (label ? ': ' + label : ''));
+    var go = function (e) { if (e) e.preventDefault(); if (img.style.display === 'none' || !img.parentNode) return; openLightbox([full], 0, label || ''); };
+    img.addEventListener('click', go);
+    img.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') go(e); });
+  }
 
   // ---- portfolio gallery (Pro/Featured only) -----------------------------
   // Ceiling = the TOP tier's entitlement (plan.max_vendor_photos: Free 0 / Pro
@@ -2710,6 +2745,28 @@
     // Neither link → drop the whole row (kills its top margin).
     var linksRow = document.getElementById('vl-links-row');
     if (linksRow && !v.website_url && !handle) show(linksRow, false);
+    // 2026-10-02 (F punchlist 9): LinkedIn is read on its own (never 42501s a
+    // vendor read if the column grant lags the script) and lights up the hero
+    // link + the one-page chip once it arrives. Clicks log as channel 'linkedin'.
+    var liEl = document.getElementById('vl-linkedin');
+    if (liEl) trackChannel(liEl, 'linkedin');
+    (function () {
+      var sapi = window.LokaliSupabaseAPI && window.LokaliSupabaseAPI.vendors;
+      if (!sapi || typeof sapi.publicLinkedin !== 'function' || v.id == null) return;
+      sapi.publicLinkedin(v.id).then(function (res) {
+        var url = res && typeof res.data === 'string' ? res.data.trim() : '';
+        if (!/^https:\/\/([a-z0-9-]+\.)*linkedin\.com\/\S+$/i.test(url)) return;
+        if (liEl) {
+          liEl.href = url;
+          liEl.target = '_blank';
+          liEl.rel = 'noopener';
+          liEl.setAttribute('aria-label', 'LinkedIn (opens in a new tab)');
+          show(liEl, true);
+          if (linksRow) show(linksRow, true);
+        }
+        mountOpLinkedin(v, url);
+      }).catch(function () {});
+    })();
 
     trackChannel(emailEl, 'email');
     trackChannel(smsEl, 'sms');
@@ -2758,6 +2815,37 @@
     trackChannel(a, 'website');
     wrap.appendChild(a);
     card.appendChild(wrap);
+  }
+
+  // 2026-10-02 (F punchlist 9): the LinkedIn chip in the one-page contact card,
+  // the same family as the website chip above it (shares #vl-op-web when the
+  // vendor has a website; builds the wrap when they only have LinkedIn).
+  function mountOpLinkedin(v, url) {
+    var card = document.querySelector('.vl-op-card');
+    if (!card || !url || document.getElementById('vl-op-linkedin')) return;
+    var wrap = document.getElementById('vl-op-web');
+    if (!wrap) {
+      wrap = ce('div'); wrap.id = 'vl-op-web';
+      var k = ce('span', 'vl-op-web-k'); k.textContent = 'LinkedIn'; wrap.appendChild(k);
+      card.appendChild(wrap);
+    } else {
+      var k2 = wrap.querySelector('.vl-op-web-k');
+      if (k2 && k2.textContent === 'Website') k2.textContent = 'Website and LinkedIn';
+    }
+    var a = ce('a', 'vl-op-web-chip');
+    a.id = 'vl-op-linkedin';
+    a.href = url;
+    a.target = '_blank'; a.rel = 'noopener';
+    a.style.marginTop = wrap.querySelector('.vl-op-web-chip') ? '8px' : '';
+    var ico = ce('span'); ico.innerHTML = LK_FA.linkedin; ico.style.cssText = 'display:inline-flex;color:#5F51B8;'; ico.firstChild.style.width = '15px'; ico.firstChild.style.height = '15px';
+    a.appendChild(ico);
+    var lbl = ce('span', 'vl-op-web-l'); lbl.textContent = 'LinkedIn'; a.appendChild(lbl);
+    var out = ce('span', 'vl-op-web-out');
+    out.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>'; // static markup only
+    a.appendChild(out);
+    a.setAttribute('aria-label', 'LinkedIn (opens in a new tab)');
+    trackChannel(a, 'linkedin');
+    wrap.appendChild(a);
   }
 
   function injectOwnerStorefrontBar() {
@@ -2972,6 +3060,7 @@
       av.style.display = '';
       imgSet(av, photo, 240); // CLEAN-P23 — before the error handler
       av.addEventListener('error', showInitials);
+      makeZoomable(av, photo, v.business_name); // 2026-10-02 (F punchlist 10): tap the logo to enlarge
     } else {
       showInitials();
     }
@@ -3094,6 +3183,7 @@
         el.style.cssText = 'width:' + size + 'px;height:' + size + 'px;border-radius:50%;object-fit:cover;flex:none;box-shadow:0 3px 10px rgba(26,24,41,.12);';
         // 2026-10-01: blocked/failed photo -> initials circle, not alt text in a ring.
         el.addEventListener('error', function () { if (el.parentNode) el.parentNode.replaceChild(initialsEl(size), el); });
+        makeZoomable(el, photo, name || v.business_name); // 2026-10-02 (F punchlist 10): tap the owner photo to enlarge
       } else {
         el = initialsEl(size);
       }

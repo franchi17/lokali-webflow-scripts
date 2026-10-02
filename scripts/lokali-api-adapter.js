@@ -117,7 +117,8 @@
   // #172: buy_link = a tap on a product's external checkout button (Etsy etc.)
   // — purchase intent, so it rides with the payment clicks, never the inbox.
   // booking_link (2026-09-23) = a tap on a service page's Book now button: same intent.
-  var PAYMENT_EVENT_TYPES = { venmo: 1, cashapp: 1, paypal: 1, other_pay: 1, zelle: 1, buy_link: 1, booking_link: 1 };
+  // service_link (2026-10-02) = a tap on a service page's Visit website button: same intent.
+  var PAYMENT_EVENT_TYPES = { venmo: 1, cashapp: 1, paypal: 1, other_pay: 1, zelle: 1, buy_link: 1, booking_link: 1, service_link: 1 };
   function isPaymentEvent(e) { return !!(e && PAYMENT_EVENT_TYPES[e.event_type]); }
 
   // ── payment-handle normalization ──────────────────────────────────────────
@@ -638,7 +639,14 @@
       // Same key normalization the Xano client did (category_id→categories_id
       // array, tagline/instagram alias keys). The Supabase client's
       // VENDOR_EDITABLE whitelist drops anything non-writable.
-      var categoryId = payload.category_id != null ? payload.category_id : payload.categories_id;
+      // 2026-10-02: the ARRAY wins when the embed sends one. The profile form
+      // sends both (scalar category_id = the picker, categories_id = the saved
+      // array with element 0 swapped), and letting the scalar win here
+      // collapsed every multi-category vendor (Quori {1,10}, Prairie View
+      // {4,8,2,9}) back to one category on each profile save.
+      var categoryId = Array.isArray(payload.categories_id) && payload.categories_id.length
+        ? payload.categories_id
+        : (payload.category_id != null ? payload.category_id : payload.categories_id);
       // A present-but-invalid payment field fails the save with a field-named
       // error (the form renders envelope errors) — never a silent '' write
       // under a success toast. Empty string stays a deliberate clear.
@@ -657,8 +665,27 @@
           !normalizePayUrl(payload.other_pay_url)) {
         payErr = 'The payment link must be a valid https:// URL. It was not saved.';
       }
+      // 2026-10-02 LinkedIn (public): "in/x", "linkedin.com/in/x" or a full URL
+      // all save as https://www.linkedin.com/…; any other host is refused with
+      // a field-named error. '' clears (sent as NULL: the shape CHECK rejects
+      // an empty string). undefined = key absent (stale cached embed): leave alone.
+      var linkedinOut;
+      if (!payErr && payload.linkedin_url !== undefined) {
+        var liRaw = String(payload.linkedin_url == null ? '' : payload.linkedin_url).trim().replace(/^@+/, '');
+        if (!liRaw) linkedinOut = null;
+        else {
+          if (/^(in|company|school|pub)\//i.test(liRaw)) liRaw = 'https://www.linkedin.com/' + liRaw;
+          else if (!/^https?:\/\//i.test(liRaw)) liRaw = 'https://' + liRaw;
+          liRaw = liRaw.replace(/^http:\/\//i, 'https://');
+          var liOk = false;
+          try { var liU = new URL(liRaw); liOk = liU.protocol === 'https:' && /(^|\.)linkedin\.com$/i.test(liU.hostname) && liU.pathname.length > 1; if (liOk) liRaw = liU.href; } catch (e) { liOk = false; }
+          if (!liOk || /[\s"'<>`\\]/.test(liRaw) || liRaw.length > 300) payErr = 'The LinkedIn link must be a linkedin.com profile or company page (for example linkedin.com/in/yourname). It was not saved.';
+          else linkedinOut = liRaw;
+        }
+      }
       if (payErr) return Promise.resolve(fail(payErr, 400));
       var fields = {
+        linkedin_url: payload.linkedin_url === undefined ? undefined : linkedinOut,
         business_name: payload.business_name != null ? String(payload.business_name) : '',
         business_description: payload.business_description != null ? String(payload.business_description) : '',
         business_tagline: payload.business_tagline != null ? String(payload.business_tagline)
