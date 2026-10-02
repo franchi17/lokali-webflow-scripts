@@ -527,6 +527,9 @@
     'html.vl-op [data-vl-panel="products"] .vl-card-img{height:170px !important;}',
     'html.vl-op [data-vl-panel="services"] .vl-card-img{width:100% !important;height:100% !important;min-height:150px;border-radius:0 !important;}',
     'html.vl-op [data-vl-panel="services"] .vl-card-img img{width:100%;height:100%;object-fit:cover;display:block;}',
+    // Products too (2026-10-01): without cover the flex-centred 4:3 box clipped a
+    // natural-height image to its middle band and the #149 focal point never applied.
+    'html.vl-op [data-vl-panel="products"] .vl-card-img img{width:100%;height:100%;object-fit:cover;display:block;}',
     'html.vl-op [data-vl-panel="services"] .vl-card-body{padding:16px 18px;display:flex;flex-direction:column;}',
     // Products: keep vertical cards but let them breathe in a 2-up grid.
     'html.vl-op [data-vl-panel="products"] .vl-grid{display:grid !important;grid-template-columns:1fr 1fr;gap:16px;width:100%;}',
