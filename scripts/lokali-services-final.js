@@ -1070,7 +1070,7 @@ const LokaliServicesPage = (() => {
         }).observe(fv, { childList: true, subtree: true, attributes: true, attributeFilter: ['src', 'style'] });
       }
     }
-    if (!_lcOrg) _lcOrg = LUI.organize(fv, { kind: 'service', ids: { img: 'service-img-input', name: 'service-name', desc: 'service-description', priceType: 'service-price-type', active: 'service-is-active', remote: 'service-remote' }, hosts: { gallery: 'lok-service-gallery', video: 'lok-service-video' } });
+    if (!_lcOrg) _lcOrg = LUI.organize(fv, { kind: 'service', ids: { img: 'service-img-input', name: 'service-name', desc: 'service-description', priceType: 'service-price-type', active: 'service-is-active', remote: 'service-remote' }, hosts: { gallery: 'lok-service-gallery', video: 'lok-service-video', buy: 'lok-service-link' } }); // buy = Website link host (2026-10-03): the organiser's settle() only pulls hosts.video + hosts.buy into Details, so without this the link field stayed in the hidden raw grid
     if (_lcOrg && _lcOrg.reset) _lcOrg.reset(!!editingId);
     setTimeout(lcRefreshPreview, 0);
     setTimeout(lcRefreshPreview, 500);
