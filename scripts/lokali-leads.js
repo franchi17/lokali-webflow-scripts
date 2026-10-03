@@ -22,6 +22,13 @@
  *     first lead (window.LokaliCheckup, shared with the dashboard home).
  * Replies stay off-platform (email / phone); Lokali never sees the messages.
  *
+ * 2026-10-03 spam (F): a "Spam" tap on a new lead sets status 'spam' (same
+ *   status grant as the stepper). Spam leads sit in their own folded group under
+ *   Closed with "Not spam" (back to needs-a-reply) and Delete. They are left out
+ *   of every count on this page. Server side (patch_inquiry_spam_mark.sql): two
+ *   different vendors marking the same address within 30 days blocks the sender
+ *   at intake; one vendor alone never blocks anyone.
+ *
  * See docs/vendor-leads-analytics-maintainer-guide.md for the full data model.
  */
 (function () {
@@ -100,6 +107,9 @@
     '#lok-leads-page .lq-btn svg{width:13px;height:13px;flex-shrink:0;}',
     '#lok-leads-page .lq-btn:focus-visible{outline:2px solid ' + VIOLET + ';outline-offset:2px;}',
     '#lok-leads-page .lq-ghost{font:500 12px/1.4 ' + FONT + ';color:' + GRAY + ';margin-left:auto;text-decoration:underline;text-underline-offset:2px;cursor:pointer;background:none;border:none;padding:6px 0;}',
+    '#lok-leads-page .lq-ghost + .lq-ghost{margin-left:14px;}',
+    '#lok-leads-page .lq-fold.spam{background:' + SNOW + ';}',
+    '#lok-leads-page .lq-notspam{font:600 12px/1.2 ' + FONT + ';color:' + VIOLET + ';background:' + VIOLET_L + ';border:none;border-radius:8px;padding:6px 10px;cursor:pointer;white-space:nowrap;}',
     // everything-else rows
     '#lok-leads-page .lq-list{background:#fff;border:1px solid ' + BORDER + ';border-radius:14px;padding:0 14px;}',
     '#lok-leads-page .lq-row{display:grid;grid-template-columns:28px minmax(0,1fr) auto auto;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid ' + BORDER + ';}',
@@ -176,7 +186,7 @@
     '#lok-leads-page .lq-wait{justify-self:start;order:-1;}',
     '#lok-leads-page .lq-btn{min-height:44px;}',
     '#lok-leads-page .lq-row{grid-template-columns:24px minmax(0,1fr);row-gap:6px;}',
-    '#lok-leads-page .lq-row .lq-when,#lok-leads-page .lq-row .lq-step{grid-column:2;justify-self:start;}',
+    '#lok-leads-page .lq-row .lq-when,#lok-leads-page .lq-row .lq-step,#lok-leads-page .lq-row .lq-notspam{grid-column:2;justify-self:start;}',
     '#lok-leads-page .lq-worth{margin-left:36px;}',
     '#lok-leads-page .lq-worth .go,#lok-leads-page .lq-worth .lnk,#lok-leads-page .lq-worth .in{min-height:44px;}',
     '#lok-leads-page .lq-empty{grid-template-columns:1fr;}',
@@ -326,15 +336,17 @@
     var repeatN = inquiries.filter(function (l) { return l.prior.length; }).length;
     // Three groups: needs a reply (new, oldest first) / everything else (replied,
     // won) / closed (folded away, F 2026-09-17: 'archive, delete or hide closed').
-    var needs, rest, closed;
+    // Plus spam (2026-10-03): folded under Closed, out of every count.
+    var needs, rest, closed, spam;
     function partition() {
       needs = inquiries.filter(function (l) { return l.status === 'new'; }).sort(function (a, b) { return a.t - b.t; });
-      rest = inquiries.filter(function (l) { return l.status !== 'new' && l.status !== 'closed'; }).sort(function (a, b) { return b.t - a.t; });
+      rest = inquiries.filter(function (l) { return l.status !== 'new' && l.status !== 'closed' && l.status !== 'spam'; }).sort(function (a, b) { return b.t - a.t; });
       closed = inquiries.filter(function (l) { return l.status === 'closed'; }).sort(function (a, b) { return b.t - a.t; });
+      spam = inquiries.filter(function (l) { return l.status === 'spam'; }).sort(function (a, b) { return b.t - a.t; });
     }
     partition();
-    var showClosed = false;
-    var rt = replyTime(inquiries);
+    var showClosed = false, showSpam = false;
+    var rt = replyTime(inquiries.filter(function (l) { return l.status !== 'spam'; }));
 
     mount.innerHTML = '';
 
@@ -421,9 +433,11 @@
     var needsHost = el('div');
     var restHost = el('div');
     var closedHost = el('div');
+    var spamHost = el('div');
     mount.appendChild(needsHost);
     mount.appendChild(restHost);
     mount.appendChild(closedHost);
+    mount.appendChild(spamHost);
 
     function paintNeeds() {
       needsHost.innerHTML = '';
@@ -462,8 +476,24 @@
       closedHost.appendChild(fold);
       if (!showClosed) return;
       var list = el('div', 'lq-list lq-closed');
-      closed.forEach(function (l) { list.appendChild(leadRow(l, true)); });
+      closed.forEach(function (l) { list.appendChild(leadRow(l, 'closed')); });
       closedHost.appendChild(list);
+    }
+    function paintSpam() {
+      spamHost.innerHTML = '';
+      if (!spam.length) return;
+      var fold = el('div', 'lq-fold spam');
+      fold.appendChild(html('b', null, 'Spam'));
+      fold.appendChild(el('span', null, spam.length + (spam.length === 1 ? ' message' : ' messages') + ' you marked as spam. If another vendor marks the same sender, Lokali blocks them.'));
+      var tg = el('button', null, showSpam ? 'Hide' : 'Show'); tg.type = 'button';
+      tg.setAttribute('aria-expanded', showSpam ? 'true' : 'false');
+      tg.addEventListener('click', function () { showSpam = !showSpam; paintSpam(); });
+      fold.appendChild(tg);
+      spamHost.appendChild(fold);
+      if (!showSpam) return;
+      var list = el('div', 'lq-list lq-closed');
+      spam.forEach(function (l) { list.appendChild(leadRow(l, 'spam')); });
+      spamHost.appendChild(list);
     }
     function refreshStats() {
       s1.querySelector('.v').textContent = String(needs.length);
@@ -473,7 +503,7 @@
       s1.className = 'lq-stat' + (needs.length ? ' hot' : '');
     }
     // move a lead between the two groups after a status change
-    function repaintAll() { partition(); paintNeeds(); paintRest(); paintClosed(); refreshStats(); paintWorthStat(); }
+    function repaintAll() { partition(); paintNeeds(); paintRest(); paintClosed(); paintSpam(); refreshStats(); paintWorthStat(); }
     function moveLead(l, status) {
       var prev = l.status; l.status = status;
       if (status === 'won' && l.worth == null) { l._askWorth = true; l._skipWorth = false; }   // #194: ask at the moment of the win
@@ -530,6 +560,9 @@
       var g = el('button', 'lq-ghost', 'No reply needed'); g.type = 'button';
       g.addEventListener('click', function () { moveLead(l, 'closed'); });
       acts.appendChild(g);
+      var sp = el('button', 'lq-ghost', 'Spam'); sp.type = 'button'; sp.setAttribute('aria-label', 'Mark this message as spam');
+      sp.addEventListener('click', function () { moveLead(l, 'spam'); });
+      acts.appendChild(sp);
       body.appendChild(acts);
       card.appendChild(body);
       var w = waitLabel(l.t);
@@ -588,21 +621,28 @@
       return w;
     }
 
-    function leadRow(l, inClosed) {
+    function leadRow(l, group) {
+      var inClosed = group === 'closed', inSpam = group === 'spam';
       var row = el('div', 'lq-row');
       row.appendChild(html('div', 'lq-ic', strokeIcon(CH.inquiry.icon)));
       var body = el('div');
       body.appendChild(html('div', 'lq-t1', escapeHtml(l.name) + (l.context ? ' <span>asked about</span> ' + escapeHtml(l.context) : ' <span>sent a general inquiry</span>')));
       var t2 = [];
       if (l.first_reply_at) t2.push('Replied ' + shortDate(ts(l.first_reply_at)));
-      else t2.push(l.status === 'closed' ? 'Closed' : l.status.charAt(0).toUpperCase() + l.status.slice(1));
+      else t2.push(l.status === 'closed' ? 'Closed' : l.status === 'spam' ? 'Marked as spam' : l.status.charAt(0).toUpperCase() + l.status.slice(1));
       if (l.prior && l.prior.length) t2.push('Back for the ' + ordinal(l.prior.length + 1) + ' time');
       if (l.message) t2.push('“' + l.message + '”');
       body.appendChild(el('div', 'lq-t2', t2.join(' · ')));
       row.appendChild(body);
       row.appendChild(el('div', 'lq-when', shortDate(l.t)));
       var step = el('div', 'lq-step'); step.setAttribute('role', 'group'); step.setAttribute('aria-label', 'Status');
-      ['replied', 'won', 'closed'].forEach(function (s) {
+      if (inSpam) {
+        // A spam row has no stepper: the one way out is "Not spam", which puts it
+        // back under Needs a reply (status new) and clears the server-side mark.
+        var ns = el('button', 'lq-notspam', 'Not spam'); ns.type = 'button';
+        ns.addEventListener('click', function () { moveLead(l, 'new'); });
+        step.className = ''; step.appendChild(ns);
+      } else ['replied', 'won', 'closed'].forEach(function (s) {
         var b = el('button', s + (l.status === s ? ' on' : ''), s.charAt(0).toUpperCase() + s.slice(1)); b.type = 'button';
         b.setAttribute('aria-pressed', l.status === s ? 'true' : 'false');
         b.addEventListener('click', function () {
@@ -613,7 +653,7 @@
       });
       row.appendChild(step);
       if (l.status === 'won' && worthEnabled()) row.appendChild(worthLine(l));
-      if (inClosed && window.LokaliAPI && window.LokaliAPI.leads && typeof window.LokaliAPI.leads.deleteInquiry === 'function') {
+      if ((inClosed || inSpam) && window.LokaliAPI && window.LokaliAPI.leads && typeof window.LokaliAPI.leads.deleteInquiry === 'function') {
         row.style.gridTemplateColumns = '28px minmax(0,1fr) auto auto auto';
         var d = el('button', 'lq-del', 'Delete'); d.type = 'button'; d.setAttribute('aria-label', 'Delete this lead for good');
         var armed = false, timer = null;
@@ -634,10 +674,11 @@
     paintNeeds();
     paintRest();
     paintClosed();
+    paintSpam();
 
     // ── how people reached you (30 days) ──
     var by = {};
-    inquiries.forEach(function (l) { if (Date.now() - l.t < DAY30) by.inquiry = (by.inquiry || 0) + 1; });
+    inquiries.forEach(function (l) { if (l.status !== 'spam' && Date.now() - l.t < DAY30) by.inquiry = (by.inquiry || 0) + 1; });
     events.forEach(function (e) {
       if (Date.now() - ts(e.created_at) >= DAY30) return;
       var ty = e.event_type || 'website';
