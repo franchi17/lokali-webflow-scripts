@@ -506,6 +506,19 @@
       adminAcceptAddress: function (vendorId) {
         return withClient(function (c) { return c.rpc('admin_accept_address', { p_vendors_id: vendorId }); });
       },
+      // #201 admin: inquiry_blocklist review (patch_inquiry_sender_cap.sql).
+      // is_admin()-gated server-side; { data: { ok, blocks:[…] } }.
+      adminInquiryBlocks: function () {
+        return withClient(function (c) { return c.rpc('admin_inquiry_blocks'); });
+      },
+      // "Keep blocked": stamps reviewed_at so the strip stops counting it.
+      adminInquiryBlockReview: function (email) {
+        return withClient(function (c) { return c.rpc('admin_inquiry_block_review', { p_email: email }); });
+      },
+      // "Not spam": drops the block and restores the auto-marked rows to new.
+      adminInquiryUnblock: function (email) {
+        return withClient(function (c) { return c.rpc('admin_inquiry_unblock', { p_email: email }); });
+      },
       // Hide / restore the caller's own listing (is_active isn't column-granted;
       // set_vendor_active is the only path). Returns { data: { ok, is_active } }.
       deactivate: function () {

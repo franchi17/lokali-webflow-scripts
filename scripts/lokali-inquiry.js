@@ -247,7 +247,13 @@
       btn.textContent = 'Send message';
       if (res && res.error) {
         var isAway = res.status === 409 || /\baway\b/i.test(String(res.error));
+        // #201: the route answers 429 {reason:'rate_limited'} for every cap
+        // (per IP, per vendor, across vendors, 2 per vendor per hour, blocklist).
+        // Say so plainly instead of "HTTP 429", and do not invite a retry: a
+        // 4th try inside the hour marks the earlier messages as spam.
+        var capped = res.data && res.data.reason === 'rate_limited';
         showError(isAway ? 'This vendor is away right now and not taking messages. Please check back after their return date.' :
+          capped ? 'You\u2019ve reached the hourly limit for messages on Lokali. Anything you already sent has reached the vendor, and they can reply by email. Please wait an hour before sending more.' :
           (res.error === 'Request failed' ? 'Something went wrong. Please try again.' : res.error));
         return;
       }

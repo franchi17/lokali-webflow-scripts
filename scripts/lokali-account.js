@@ -1266,7 +1266,7 @@
       var chips = T('div', 'lk-ash-queues'); chips.setAttribute('aria-label', 'All queues'); needs.appendChild(chips);
       v.appendChild(needs);
 
-      window.__lokAttn = { suggestions: a.queue.length, reports: (Number(ov.open_vendor_reports) || 0) + (Number(ov.open_review_reports) || 0), creatives: null, addresses: null, pairings: null };
+      window.__lokAttn = { suggestions: a.queue.length, reports: (Number(ov.open_vendor_reports) || 0) + (Number(ov.open_review_reports) || 0), creatives: null, addresses: null, pairings: null, blocks: null };
       function sectionTitle(sec) {
         var t = sec.querySelector('.lk-admin-qtitle'); if (!t) return '';
         var out = ''; t.childNodes.forEach(function (n) { if (n.nodeType === 3) out += n.textContent; }); return out.trim();
@@ -1291,6 +1291,7 @@
       window.__lokPaintAttn = paintNeeds;
       appendReportsSection(grid, ov);              // trust and safety first
       appendAddressFlagsSection(grid);
+      appendBlockedSendersSection(grid);           // #201
       appendTagSuggestionsSection(grid, a, null);
       appendSpotlightCreativesSection(grid);
       appendPairingFeedbackSection(grid);
@@ -1528,7 +1529,7 @@
     attn.setAttribute('data-lk-attn', '');
     attn.style.cssText = 'display:flex;flex-wrap:wrap;align-items:center;gap:8px;background:#FFF6E5;border:1px solid #FFE2A8;border-radius:12px;padding:10px 14px;margin:0 0 16px;font-size:13px;color:#6B4A00;';
     wrap.appendChild(attn);
-    window.__lokAttn = { suggestions: a.queue.length, reports: (Number(ov.open_vendor_reports) || 0) + (Number(ov.open_review_reports) || 0), creatives: null, addresses: null, pairings: null };
+    window.__lokAttn = { suggestions: a.queue.length, reports: (Number(ov.open_vendor_reports) || 0) + (Number(ov.open_review_reports) || 0), creatives: null, addresses: null, pairings: null, blocks: null };
     function paintAttn() {
       var c = window.__lokAttn; var parts = [];
       if (c.reports) parts.push(c.reports + (c.reports === 1 ? ' report' : ' reports'));
@@ -1536,8 +1537,9 @@
       if (c.creatives) parts.push(c.creatives + (c.creatives === 1 ? ' ad creative' : ' ad creatives'));
       if (c.addresses) parts.push(c.addresses + (c.addresses === 1 ? ' address flag' : ' address flags'));
       if (c.pairings) parts.push(c.pairings + (c.pairings === 1 ? ' pairing message' : ' pairing messages'));
+      if (c.blocks) parts.push(c.blocks + (c.blocks === 1 ? ' blocked sender' : ' blocked senders'));
       attn.innerHTML = '';
-      var total = (c.reports || 0) + (c.suggestions || 0) + (c.creatives || 0) + (c.addresses || 0) + (c.pairings || 0);
+      var total = (c.reports || 0) + (c.suggestions || 0) + (c.creatives || 0) + (c.addresses || 0) + (c.pairings || 0) + (c.blocks || 0);
       if (typeof navCount !== 'undefined') { navCount.textContent = String(total); navAttn.className = total ? 'lk-nav-attn' : 'lk-nav-clear'; }
       if (!parts.length) { attn.style.background = '#EAFAF2'; attn.style.borderColor = '#BFE9D2'; attn.style.color = '#1A6640'; attn.innerHTML = LK_FA.check + ' Nothing needs your approval right now.'; return; }
       attn.style.background = '#FFF6E5'; attn.style.borderColor = '#FFE2A8'; attn.style.color = '#6B4A00';
@@ -1641,6 +1643,7 @@
 
     appendReportsSection(zAttn.grid, ov);
     appendAddressFlagsSection(zAttn.grid);   // #147
+    appendBlockedSendersSection(zAttn.grid);  // #201
     appendSpotlightCreativesSection(zAttn.grid);
     appendPairingFeedbackSection(zAttn.grid); // #166 neighbor-referral flags + suggestions
     appendSpotlightSection(zAttn.grid, ov);
@@ -1748,6 +1751,80 @@
 
   // #147 — vendors whose address resolved OUTSIDE every area they list (> 50 mi).
   // Its own RPC (admin_address_flags) — admin_overview() stays untouched.
+  // ── #201: blocked inquiry senders (patch_inquiry_sender_cap.sql) ──────────
+  // Addresses on inquiry_blocklist: automatic (kept sending past the 2-per-hour
+  // cap to one vendor, or two vendors marked the same address Spam) and manual.
+  // Own RPC, never admin_overview() (the 2026-08-16 blank-section lesson).
+  // Unreviewed automatic blocks count in the strip; "Keep blocked" clears one,
+  // "Not spam" lifts the block and puts the auto-marked messages back.
+  function appendBlockedSendersSection(wrap) {
+    var API = window.LokaliSupabaseAPI && window.LokaliSupabaseAPI.vendors;
+    if (!API || !API.adminInquiryBlocks) return;
+    var host = el('div', 'lk-admin-section');
+    wrap.appendChild(host);
+    function draw(rows) {
+      host.innerHTML = '';
+      host.className = 'lk-admin-section' + (rows.length ? ' lk-admin-section-wide' : '');
+      var open = rows.filter(function (r) { return r.auto && !r.reviewed_at; }).length;
+      if (window.__lokAttn) { window.__lokAttn.blocks = open; if (window.__lokPaintAttn) window.__lokPaintAttn(); }
+      var t = el('div', 'lk-admin-qtitle');
+      t.appendChild(document.createTextNode('Blocked senders'));
+      t.appendChild(el('span', 'lk-admin-qcount', String(open)));
+      host.appendChild(t);
+      host.appendChild(el('p', 'lk-admin-sub',
+        'Email addresses that can no longer send inquiries. Automatic blocks come from a sender who kept writing past two messages an hour to one vendor, or from two vendors marking the same address Spam. Keep blocked clears it from this count. Not spam lifts the block and puts the auto-marked messages back in the vendor’s inbox.'));
+      if (!rows.length) { host.appendChild(el('div', 'lk-admin-empty', 'No blocked senders.')); return; }
+      rows.forEach(function (r) {
+        var row = el('div', 'lk-admin-row');
+        var meta = el('div', 'lk-admin-row-meta');
+        var l1 = el('div', 'lk-admin-row-l1'); l1.textContent = r.email || '';
+        var l2 = el('div', 'lk-admin-row-l2');
+        var why = r.auto ? (String(r.note || '').indexOf('kept sending') >= 0 ? 'kept sending past the hourly cap' : 'marked Spam by two vendors') : 'blocked by hand';
+        var spam = Number(r.spam_rows) || 0;
+        l2.textContent = why + (r.vendors ? ' · wrote to ' + r.vendors : '') +
+          ' · ' + spam + (spam === 1 ? ' message' : ' messages') + ' in Spam' +
+          (r.created_at ? ' · ' + fmtSpotDay(r.created_at) : '') + (r.reviewed_at ? ' · reviewed' : '');
+        meta.appendChild(l1); meta.appendChild(l2);
+        if (r.sample) {
+          // Sender-written text: textContent only, never markup.
+          var q = el('div', 'lk-admin-row-l2'); q.style.fontStyle = 'italic'; q.textContent = '“' + r.sample + '”';
+          meta.appendChild(q);
+        }
+        row.appendChild(meta);
+        if (r.auto && !r.reviewed_at && API.adminInquiryBlockReview) {
+          var keep = document.createElement('button'); keep.type = 'button'; keep.className = 'lk-admin-approve'; keep.textContent = 'Keep blocked';
+          keep.onclick = function () { act(keep, API.adminInquiryBlockReview(r.email), 'Keep blocked'); };
+          row.appendChild(keep);
+        }
+        if (API.adminInquiryUnblock) {
+          var un = document.createElement('button'); un.type = 'button'; un.className = 'lk-admin-decline'; un.textContent = 'Not spam';
+          un.onclick = function () {
+            if (!window.confirm('Lift the block on ' + r.email + '? Messages this block hid go back to the vendor as new.')) return;
+            act(un, API.adminInquiryUnblock(r.email), 'Not spam');
+          };
+          row.appendChild(un);
+        }
+        host.appendChild(row);
+      });
+    }
+    function act(btn, p, label) {
+      btn.disabled = true; btn.textContent = '…';
+      p.then(function (res) {
+        var d = res && res.data;
+        if ((res && res.error) || !d || d.ok !== true) { btn.disabled = false; btn.textContent = label; return; }
+        load();
+      }).catch(function () { btn.disabled = false; btn.textContent = label; });
+    }
+    function load() {
+      API.adminInquiryBlocks().then(function (res) {
+        var d = (res && res.data) || {};
+        if (d.ok !== true) return;                 // not admin / RPC missing
+        draw(Array.isArray(d.blocks) ? d.blocks : []);
+      });
+    }
+    load();
+  }
+
   function appendAddressFlagsSection(wrap) {
     var API = window.LokaliSupabaseAPI && window.LokaliSupabaseAPI.vendors;
     if (!API || !API.adminAddressFlags) return;
