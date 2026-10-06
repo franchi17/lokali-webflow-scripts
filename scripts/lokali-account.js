@@ -1369,11 +1369,14 @@
         if (!invitePanel.hidden) { var f = invitePanel.querySelector('input'); if (f) f.focus(); }
       });
 
+      // Sign in as a vendor sits at the top (F 2026-10-06): it is the tool used
+      // most on this view, and a vendor row's "Sign in as" scrolls up to it.
+      var tool = T('div', 'lk-ash-sec'); tool.style.margin = '0 0 22px'; appendSignInAsSection(tool); signInHost = tool.querySelector('.lk-admin-section'); v.appendChild(tool);
+
       var tools = T('div', 'lk-ash-tools');
       var search = T('input', 'lk-ash-search'); search.type = 'search'; search.id = 'lk-ash-vsearch'; search.placeholder = 'Find a vendor by name'; search.setAttribute('aria-label', 'Find a vendor by name');
       tools.appendChild(search); v.appendChild(tools);
       var list = T('div', 'lk-ash-list'); list.appendChild(T('div', 'lk-ash-note', 'Loading vendors…')); v.appendChild(list);
-      var tool = T('div', 'lk-ash-sec'); tool.style.marginTop = '22px'; appendSignInAsSection(tool); signInHost = tool.querySelector('.lk-admin-section'); v.appendChild(tool);
 
       Promise.all([insightsData(), contacts()]).then(function (rs) {
         var pack = rs[0], cmap = rs[1];
@@ -1463,7 +1466,7 @@
       ".lk-admin-section-wide{grid-column:1/-1;}" +
       ".lk-admin-qtitle{font-size:14px;font-weight:700;color:#1A1829;margin:0 0 4px;display:flex;align-items:center;gap:8px;}" +
       ".lk-admin-qcount{font-size:10.5px;font-weight:600;background:#F3EBFF;color:#6002EE;border-radius:100px;padding:1px 8px;}" +
-      ".lk-admin-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 0;border-top:.5px solid #EEEDF6;}" +
+      ".lk-admin-row,.lk-admin-row-done{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 0;border-top:.5px solid #EEEDF6;}" +
       ".lk-admin-row-meta{flex:1;min-width:170px;}" +
       ".lk-admin-row-l1{font-size:13.5px;font-weight:600;color:#1A1829;}" +
       ".lk-admin-row-l1 span{color:#8E8BA6;}" +
@@ -1765,17 +1768,29 @@
     function draw(rows) {
       host.innerHTML = '';
       host.className = 'lk-admin-section' + (rows.length ? ' lk-admin-section-wide' : '');
-      var open = rows.filter(function (r) { return r.auto && !r.reviewed_at; }).length;
+      // Open = not yet reviewed, whether the block was automatic or made by hand
+      // (F 2026-10-06: a hand block still needs a way to say "yes, spam").
+      var open = rows.filter(function (r) { return !r.reviewed_at; }).length;
       if (window.__lokAttn) { window.__lokAttn.blocks = open; if (window.__lokPaintAttn) window.__lokPaintAttn(); }
       var t = el('div', 'lk-admin-qtitle');
       t.appendChild(document.createTextNode('Blocked senders'));
       t.appendChild(el('span', 'lk-admin-qcount', String(open)));
       host.appendChild(t);
       host.appendChild(el('p', 'lk-admin-sub',
-        'Email addresses that can no longer send inquiries. Automatic blocks come from a sender who kept writing past two messages an hour to one vendor, or from two vendors marking the same address Spam. Keep blocked clears it from this count. Not spam lifts the block and puts the auto-marked messages back in the vendor’s inbox.'));
+        'Email addresses that can no longer send inquiries. Automatic blocks come from a sender who kept writing past two messages an hour to one vendor, or from two vendors marking the same address Spam. Spam keeps the block and clears it from this count. Not spam lifts the block and puts the auto-marked messages back in the vendor’s inbox.'));
       if (!rows.length) { host.appendChild(el('div', 'lk-admin-empty', 'No blocked senders.')); return; }
+      // Reviewed blocks stay listed for reference but fold under a disclosure and
+      // use a different class, so the Today chip and nav count see only open rows.
+      var done = rows.filter(function (r) { return r.reviewed_at; });
+      var doneBox = null;
+      if (done.length) {
+        doneBox = document.createElement('details');
+        var sm = document.createElement('summary'); sm.className = 'lk-admin-row-l2'; sm.style.cssText = 'cursor:pointer;padding:10px 0 2px;';
+        sm.textContent = 'Reviewed, still blocked (' + done.length + ')'; doneBox.appendChild(sm);
+      }
+      if (!open) host.appendChild(el('div', 'lk-admin-empty', 'Nothing waiting. Every block has been reviewed.'));
       rows.forEach(function (r) {
-        var row = el('div', 'lk-admin-row');
+        var row = el('div', r.reviewed_at ? 'lk-admin-row-done' : 'lk-admin-row');
         var meta = el('div', 'lk-admin-row-meta');
         var l1 = el('div', 'lk-admin-row-l1'); l1.textContent = r.email || '';
         var l2 = el('div', 'lk-admin-row-l2');
@@ -1791,9 +1806,10 @@
           meta.appendChild(q);
         }
         row.appendChild(meta);
-        if (r.auto && !r.reviewed_at && API.adminInquiryBlockReview) {
-          var keep = document.createElement('button'); keep.type = 'button'; keep.className = 'lk-admin-approve'; keep.textContent = 'Keep blocked';
-          keep.onclick = function () { act(keep, API.adminInquiryBlockReview(r.email), 'Keep blocked'); };
+        if (!r.reviewed_at && API.adminInquiryBlockReview) {
+          var keep = document.createElement('button'); keep.type = 'button'; keep.className = 'lk-admin-approve'; keep.textContent = 'Spam';
+          keep.title = 'Yes, spam. Keep the block and clear it from the count.';
+          keep.onclick = function () { act(keep, API.adminInquiryBlockReview(r.email), 'Spam'); };
           row.appendChild(keep);
         }
         if (API.adminInquiryUnblock) {
@@ -1804,8 +1820,9 @@
           };
           row.appendChild(un);
         }
-        host.appendChild(row);
+        if (r.reviewed_at) doneBox.appendChild(row); else host.appendChild(row);
       });
+      if (doneBox) host.appendChild(doneBox);
     }
     function act(btn, p, label) {
       btn.disabled = true; btn.textContent = '…';
