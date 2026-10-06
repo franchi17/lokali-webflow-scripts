@@ -917,6 +917,30 @@
   // event, which Insights groups with the payment clicks — never a contact
   // lead and never a review-gate event.
   var BUY_HOST_LABELS = { 'etsy.com': 'Etsy', 'amazon.com': 'Amazon', 'ebay.com': 'eBay', 'faire.com': 'Faire' };
+  // Outbound attribution (F 2026-10-06): every link that sends a shopper to
+  // the vendor's OWN site (Buy, Visit website, Book now, website chip, promo /
+  // Showcase links) carries utm_source=lokali so the vendor sees Lokali as a
+  // referrer in their Etsy / Shopify / Squarespace / GA analytics. Social
+  // profile hosts are left untouched (no analytics there; a querystring on a
+  // profile URL only looks odd). A URL that already carries utm_source is left
+  // alone. Returns the href to set; never throws, falls back to the input.
+  var UTM_SKIP_HOSTS = ['instagram.com', 'facebook.com', 'linkedin.com', 'tiktok.com', 'x.com', 'twitter.com', 'youtube.com', 'threads.net'];
+  function lkOutboundHref(href, campaign) {
+    try {
+      var u = new URL(String(href));
+      if (u.protocol !== 'https:') return href;
+      var host = u.hostname.replace(/^www\./, '').toLowerCase();
+      for (var i = 0; i < UTM_SKIP_HOSTS.length; i++) {
+        var k = UTM_SKIP_HOSTS[i];
+        if (host === k || host.slice(-(k.length + 1)) === '.' + k) return href;
+      }
+      if (u.searchParams.has('utm_source')) return href;
+      u.searchParams.set('utm_source', 'lokali');
+      u.searchParams.set('utm_medium', 'referral');
+      u.searchParams.set('utm_campaign', campaign || 'storefront');
+      return u.href;
+    } catch (e) { return href; }
+  }
   function buyHostLabel(u) {
     var host = String(u.hostname || '').replace(/^www\./, '').toLowerCase();
     var keys = Object.keys(BUY_HOST_LABELS);
@@ -946,7 +970,7 @@
       var brand = buyHostLabel(u);
       var label = brand ? 'Buy on ' + brand : 'Buy online';
       textHost.textContent = label;
-      btn.href = u.href;               // property, never string-built markup
+      btn.href = lkOutboundHref(u.href, 'product'); // property, never string-built markup
       btn.target = '_blank';
       btn.rel = 'noopener';
       btn.setAttribute('aria-label', label + ' (opens in a new tab)');
@@ -982,7 +1006,7 @@
       var textHost = btn;
       while (textHost.children && textHost.children.length === 1) textHost = textHost.children[0];
       textHost.textContent = 'Visit website';
-      btn.href = u.href;               // property, never string-built markup
+      btn.href = lkOutboundHref(u.href, 'service'); // property, never string-built markup
       btn.target = '_blank';
       btn.rel = 'noopener';
       btn.setAttribute('aria-label', 'Visit website (opens in a new tab)');
@@ -1022,7 +1046,7 @@
         var textHost = btn;
         while (textHost.children && textHost.children.length === 1) textHost = textHost.children[0];
         textHost.textContent = 'Book now';
-        btn.href = u.href;               // property, never string-built markup
+        btn.href = lkOutboundHref(u.href, 'booking'); // property, never string-built markup
         btn.target = '_blank';
         btn.rel = 'noopener';
         btn.setAttribute('aria-label', 'Book now (opens in a new tab)');

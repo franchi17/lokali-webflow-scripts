@@ -1568,6 +1568,30 @@
     }).catch(function () {});
   }
 
+  // Outbound attribution (F 2026-10-06): every link that sends a shopper to
+  // the vendor's OWN site (Buy, Visit website, Book now, website chip, promo /
+  // Showcase links) carries utm_source=lokali so the vendor sees Lokali as a
+  // referrer in their Etsy / Shopify / Squarespace / GA analytics. Social
+  // profile hosts are left untouched (no analytics there; a querystring on a
+  // profile URL only looks odd). A URL that already carries utm_source is left
+  // alone. Returns the href to set; never throws, falls back to the input.
+  var UTM_SKIP_HOSTS = ['instagram.com', 'facebook.com', 'linkedin.com', 'tiktok.com', 'x.com', 'twitter.com', 'youtube.com', 'threads.net'];
+  function lkOutboundHref(href, campaign) {
+    try {
+      var u = new URL(String(href));
+      if (u.protocol !== 'https:') return href;
+      var host = u.hostname.replace(/^www\./, '').toLowerCase();
+      for (var i = 0; i < UTM_SKIP_HOSTS.length; i++) {
+        var k = UTM_SKIP_HOSTS[i];
+        if (host === k || host.slice(-(k.length + 1)) === '.' + k) return href;
+      }
+      if (u.searchParams.has('utm_source')) return href;
+      u.searchParams.set('utm_source', 'lokali');
+      u.searchParams.set('utm_medium', 'referral');
+      u.searchParams.set('utm_campaign', campaign || 'storefront');
+      return u.href;
+    } catch (e) { return href; }
+  }
   // Belt to the DB's braces (marketing_entries_url_https): never let a
   // non-https value become an href, whatever the row history.
   function mktSafeUrl(u) {
@@ -1581,7 +1605,7 @@
     cta.url = mktSafeUrl(cta.url);
     if (cta.url) {
       el = ce('a', 'vl-mkt-cta');
-      el.href = cta.url;
+      el.href = lkOutboundHref(cta.url, 'promo');
       el.target = '_blank';
       el.rel = 'noopener';
     } else {
@@ -1757,7 +1781,7 @@
     s.url = mktSafeUrl(s.url);
     if (s.url) {
       var a = ce('a', 'vl-mkt-show-link');
-      a.href = s.url;
+      a.href = lkOutboundHref(s.url, 'showcase');
       a.target = '_blank';
       a.rel = 'noopener';
       a.textContent = s.link_label || 'Take a look';
@@ -2734,7 +2758,7 @@
     if (webBtn) {
       if (v.website_url) {
         var wbu = v.website_url;
-        webBtn.href = /^https?:\/\//i.test(wbu) ? wbu : 'https://' + wbu;
+        webBtn.href = lkOutboundHref(/^https?:\/\//i.test(wbu) ? wbu : 'https://' + wbu, 'storefront');
         webBtn.target = '_blank';
         webBtn.rel = 'noopener';
         // Instagram-bio style: show the bare domain, not a generic "Website".
@@ -2801,7 +2825,7 @@
     var ig = bare.match(/^instagram\.com\/([A-Za-z0-9._]{1,30})$/i);
     var k = ce('span', 'vl-op-web-k'); k.textContent = ig ? 'Instagram' : 'Website'; wrap.appendChild(k);
     var a = ce('a', 'vl-op-web-chip');
-    a.href = /^https?:\/\//i.test(u) ? u : 'https://' + u;
+    a.href = lkOutboundHref(/^https?:\/\//i.test(u) ? u : 'https://' + u, 'storefront');
     a.target = '_blank'; a.rel = 'noopener';
     a.appendChild(maskIcon(ig ? ICON_IG : ICON_GLOBE, '#5F51B8', 15));
     var lbl = ce('span', 'vl-op-web-l');
@@ -3120,7 +3144,7 @@
     if (web) {
       if (v.website_url) {
         var u = v.website_url; var href = /^https?:\/\//i.test(u) ? u : 'https://' + u;
-        web.href = href; web.textContent = u.replace(/^https?:\/\//i, '').replace(/\/$/, '');
+        web.href = lkOutboundHref(href, 'storefront'); web.textContent = u.replace(/^https?:\/\//i, '').replace(/\/$/, '');
         web.target = '_blank';
         web.rel = 'noopener';
       } else { web.textContent = '—'; web.removeAttribute('href'); }
