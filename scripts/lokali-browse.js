@@ -1962,14 +1962,19 @@
     // hit; tier rank still orders everything within each band. A-Z / Newest
     // are the visitor's explicit choice and stay literal.
     // Default = "Featured first" (F 2026-09-02): exactly the pricing-page
-    // promise - Featured > Pro > Free via rank()'s dominant tier band - with
-    // spotlight/founding/verified only breaking ties INSIDE a tier, then
-    // newest arrival. A search phrase hit still outranks everything.
-    else list.sort(function (a, b) { return sscore(b) - sscore(a) || rank(b) - rank(a) || (vCreated(b) - vCreated(a)); });
+    // promise - Featured > Pro > Free via the tier band - and INSIDE a tier
+    // the newest arrival leads (F 2026-10-06: a store that just went live
+    // must be seen first within its class, so the newest Featured tops the
+    // Market and the newest Pro tops the Pro band). Spotlight/founding/
+    // verified only break a same-day/same-stamp tie after that. A search
+    // phrase hit still outranks everything.
+    else list.sort(function (a, b) { return sscore(b) - sscore(a) || vTier(b) - vTier(a) || (vCreated(b) - vCreated(a)) || rank(b) - rank(a); });
   }
   function sscore(v) { return _searchScores[String(v.id)] || 0; }
   // Paid tier is the dominant band — Featured > Pro > Free outright (×8 clears
-  // the max 4+2+1=7 of the signals below, which break ties within a band).
+  // the max 4+2+1=7 of the signals below). Under the default sort the tier is
+  // compared on its own and arrival date comes before these badges; rank()
+  // is the final tiebreaker only.
   function rank(v) { return vTier(v) * 8 + (vIsSpotlight(v) ? 4 : 0) + (vIsFounding(v) ? 2 : 0) + (vIsVerified(v) ? 1 : 0); }
 
   function renderGrid(list) {
