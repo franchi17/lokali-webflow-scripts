@@ -29,6 +29,13 @@
  * sees only "your code is getting scanned" with NO count (scans are recorded
  * for Pro too — the upgrade teaser; the count is hidden server-side).
  *
+ * #197 "Your launch post" card (2026-10-07): the 1080x1080 "Now on Lokali" square
+ * from the launch kit, drawn on a canvas in the browser (the kit's cron cannot
+ * render Plus Jakarta Sans) so every vendor can download it from here. Same
+ * design as docs/marketing/launch-kit/now-on-lokali.html: business name,
+ * category + area line, golokali.com/slug pill, wordmark. Needs no new RPC:
+ * category/location names come from the public lookups already granted.
+ *
  * "Bring your neighbors" card (2026-09-17): three STABLE ?via= links, one per
  * placement (Etsy shop About, packaging insert, email signature), minted by
  * placement_share_links() (patch_placement_links.sql) on top of the existing
@@ -230,6 +237,10 @@
       '.mkt-focusframe{width:320px;max-width:100%;height:150px;border-radius:12px;overflow:hidden;border:1px solid #EEEDF6;background:#F7F6FC;box-shadow:0 2px 8px rgba(26,24,41,.08);margin-top:6px;}' +
       '.mkt-focusframe img{width:100%;height:100%;object-fit:cover;display:block;touch-action:none;cursor:grab;}' +
       '.mkt-note{font-size:12px;color:#8E8BA6;margin-top:8px;}' +
+      '.mkt-post-row{display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;}' +
+      '.mkt-post-prev{flex:0 0 auto;width:188px;height:188px;border:1px solid #ECE8F8;border-radius:12px;overflow:hidden;background:#F7F6FC;line-height:0;}' +
+      '.mkt-post-prev canvas{width:188px;height:188px;display:block;}' +
+      '.mkt-post-cap{margin:10px 0 0;background:#F7F6FC;border:1px solid #ECE8F8;border-radius:10px;padding:10px 12px;font-size:13px;color:#3E3A55;line-height:1.5;white-space:pre-wrap;}' +
       // "Get a new link" (SEC-074): quiet on purpose, it is a rare, destructive-ish
       // action. #6E6A85 is 5.17:1 on white (the slate above is 3.3:1); 44px tap area.
       '.mkt-rv-rot{margin-top:10px;font-size:12.5px;color:#6E6A85;line-height:1.5;}' +
@@ -438,8 +449,9 @@
   Page.prototype.render = function () {
     this.mount.className = 'lok-mkt';
     if (this.free) {
-      this.mount.innerHTML = this.qrCardHtml() + this.reviewCardHtml() + upsellHtml();
+      this.mount.innerHTML = this.qrCardHtml() + this.reviewCardHtml() + this.postCardHtml() + upsellHtml();
       this.bind();
+      this.drawPost();
       return;
     }
     this.mount.innerHTML =
@@ -447,9 +459,11 @@
       (this.premium ? this.cardHtml('showcase') : this.lockedShowcaseHtml()) +
       this.qrCardHtml() +
       this.reviewCardHtml() +
+      this.postCardHtml() +
       this.neighborsCardHtml() +
       (SPOTLIGHT_CREATIVE_ENABLED && this.premium && this.spot ? this.spotlightCardHtml() : '');
     this.bind();
+    this.drawPost();
   };
 
   // ---- #163 Your QR code ------------------------------------------------------
@@ -535,6 +549,151 @@
     a.click();
     document.body.removeChild(a);
     if (fmt === 'svg') setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+  };
+
+  // ---- #197 Your launch post ---------------------------------------------------
+  // The square is drawn into a <canvas> after render (fonts + wordmark are async),
+  // at 1080px and shown scaled; the download hands over the full-size PNG.
+  var WORDMARK = 'https://cdn.prod.website-files.com/6989095758ae17edfc424d30/698b5bd9a395418e4c895175_Lokali%20Logo.png'; // CORS: allow-origin *
+  var _lookups = null;
+  function lookups() {
+    if (_lookups) return _lookups;
+    var api = window.LokaliSupabaseAPI;
+    var d = (api && api.data) || {};
+    _lookups = Promise.all([
+      d.categories ? d.categories().catch(function () { return null; }) : null,
+      d.locations ? d.locations().catch(function () { return null; }) : null
+    ]).then(function (rs) {
+      var cats = {}, locs = {};
+      ((rs[0] && rs[0].data) || []).forEach(function (c) { cats[c.id] = c.category_name; });
+      ((rs[1] && rs[1].data) || []).forEach(function (l) { locs[l.id] = l.location_name; });
+      return { cats: cats, locs: locs };
+    });
+    return _lookups;
+  }
+
+  Page.prototype.postCardHtml = function () {
+    if (!this.vendor.slug || !document.createElement('canvas').getContext) return '';
+    return '<div class="mkt-card" data-kind="post">' +
+      '<div class="mkt-head"><p class="mkt-h">Your launch post</p></div>' +
+      '<p class="mkt-sub">A square image made for your storefront. Post it once on Instagram or Facebook, pin it, and you are done.</p>' +
+      '<div class="mkt-post-row">' +
+        '<div class="mkt-post-prev"><canvas id="mkt-post-canvas" width="1080" height="1080" aria-label="Now on Lokali: ' + esc(this.vendor.business_name || '') + '"></canvas></div>' +
+        '<div class="mkt-qr-side">' +
+          '<div class="mkt-qr-btns"><button type="button" class="mkt-qr-dl" data-act="post-png">Download image (PNG)</button>' +
+          '<button type="button" class="mkt-qr-dl" data-act="post-copy">Copy caption</button></div>' +
+          '<div class="mkt-post-cap" id="mkt-post-cap">' + esc(this.postCaption()) + '</div>' +
+          '<p class="mkt-note">1080 x 1080, the size Instagram and Facebook want. The caption is a starting point, say it your way.</p>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  };
+
+  Page.prototype.postCaption = function () {
+    var name = this.vendor.business_name || 'We';
+    return name + ' is now on Lokali, the marketplace for local businesses. ' +
+      'See what we offer, send us a message, or leave a review at golokali.com/' + this.vendor.slug + '. ' +
+      'And if you are a neighbor with a business of your own, there is a free storefront waiting for you too.';
+  };
+
+  // Text wrap that fits the business name: starts at 96px, shrinks until it
+  // takes at most two lines of 900px, then shrinks further for three.
+  function fitName(ctx, text, maxW, maxLines, size, min) {
+    for (var s = size; s >= min; s -= 4) {
+      ctx.font = '800 ' + s + 'px "Plus Jakarta Sans", Helvetica, Arial, sans-serif';
+      var words = text.split(/\s+/), lines = [], cur = '';
+      for (var i = 0; i < words.length; i++) {
+        var t = cur ? cur + ' ' + words[i] : words[i];
+        if (ctx.measureText(t).width <= maxW || !cur) cur = t; else { lines.push(cur); cur = words[i]; }
+      }
+      if (cur) lines.push(cur);
+      var tooWide = lines.some(function (l) { return ctx.measureText(l).width > maxW; });
+      if (lines.length <= maxLines && !tooWide) return { lines: lines, size: s };
+    }
+    return { lines: [text], size: min };
+  }
+
+  Page.prototype.drawPost = function () {
+    var cv = document.getElementById('mkt-post-canvas');
+    if (!cv) return Promise.resolve(null);
+    var self = this, v = this.vendor, W = 1080;
+    var fontsReady = (document.fonts && document.fonts.load)
+      ? Promise.all([document.fonts.load('800 96px "Plus Jakarta Sans"'), document.fonts.load('700 30px "Plus Jakarta Sans"'), document.fonts.load('600 30px "Plus Jakarta Sans"')]).catch(function () {})
+      : Promise.resolve();
+    var logo = new Promise(function (res) {
+      var im = new Image(); im.crossOrigin = 'anonymous';
+      im.onload = function () { res(im); }; im.onerror = function () { res(null); };
+      im.src = WORDMARK;
+    });
+    return Promise.all([fontsReady, logo, lookups()]).then(function (rs) {
+      var img = rs[1], lk = rs[2];
+      var catIds = Array.isArray(v.categories_id) ? v.categories_id : (v.categories_id != null ? [v.categories_id] : []);
+      var locIds = Array.isArray(v.locations_id) ? v.locations_id : (v.locations_id != null ? [v.locations_id] : []);
+      var cat = catIds.length ? (lk.cats[catIds[0]] || '') : '';
+      var loc = locIds.length ? (lk.locs[locIds[0]] || '') : '';
+      var sub = cat ? (loc ? cat + ' in ' + loc + ' and nearby' : cat) : (loc ? 'Local business in ' + loc + ' and nearby' : 'A local business, now on Lokali');
+      var ctx = cv.getContext('2d');
+      ctx.clearRect(0, 0, W, W);
+      ctx.fillStyle = '#F7F6FC'; ctx.fillRect(0, 0, W, W);
+      // soft blobs, same as the kit's square
+      function blob(x, y, r, c) { ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fillStyle = c; ctx.fill(); }
+      blob(W + 220 - 310, -240 + 310, 310, '#EFE5FD');
+      blob(-150 + 190, W + 150 - 190, 190, '#FCE8F1');
+      blob(W - 120 - 110, W + 90 - 110, 110, '#E0F5F1');
+      ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+      var name = fitName(ctx, v.business_name || 'Your business', 900, 3, 96, 56);
+      var lh = name.size * 1.02, nameH = name.lines.length * lh;
+      var subH = 30 * 1.3, pillH = 76;
+      var block = 26 + 26 + nameH + 26 + subH + 44 + pillH;  // eyebrow + gap + name + gap + sub + gap + pill
+      var y = (W - block) / 2 - 20;
+      ctx.fillStyle = BRAND;
+      ctx.font = '700 26px "Plus Jakarta Sans", Helvetica, Arial, sans-serif';
+      var eyebrow = 'NOW ON LOKALI';
+      // letter-spacing by hand (canvas letterSpacing is not everywhere yet)
+      var sp = 26 * 0.14, ew = 0, chars = eyebrow.split('');
+      chars.forEach(function (ch) { ew += ctx.measureText(ch).width + sp; });
+      var ex = (W - ew + sp) / 2; ctx.textAlign = 'left';
+      chars.forEach(function (ch) { ctx.fillText(ch, ex, y + 26); ex += ctx.measureText(ch).width + sp; });
+      ctx.textAlign = 'center';
+      y += 26 + 26;
+      ctx.fillStyle = '#2E2A3B';
+      ctx.font = '800 ' + name.size + 'px "Plus Jakarta Sans", Helvetica, Arial, sans-serif';
+      name.lines.forEach(function (l, i) { ctx.fillText(l, W / 2, y + name.size * 0.9 + i * lh); });
+      y += nameH + 26;
+      ctx.fillStyle = '#625C75';
+      ctx.font = '600 30px "Plus Jakarta Sans", Helvetica, Arial, sans-serif';
+      if (ctx.measureText(sub).width > 900) { ctx.font = '600 24px "Plus Jakarta Sans", Helvetica, Arial, sans-serif'; }
+      ctx.fillText(sub, W / 2, y + 30);
+      y += subH + 44;
+      ctx.font = '700 30px "Plus Jakarta Sans", Helvetica, Arial, sans-serif';
+      var url = 'golokali.com/' + v.slug, pw = ctx.measureText(url).width + 72;
+      ctx.fillStyle = BRAND;
+      ctx.beginPath();
+      var px = (W - pw) / 2, r = pillH / 2;
+      ctx.moveTo(px + r, y); ctx.lineTo(px + pw - r, y); ctx.arc(px + pw - r, y + r, r, -Math.PI / 2, Math.PI / 2);
+      ctx.lineTo(px + r, y + pillH); ctx.arc(px + r, y + r, r, Math.PI / 2, -Math.PI / 2); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.fillText(url, W / 2, y + pillH / 2 + 11);
+      if (img && img.naturalHeight) {
+        var h = 54, w = img.naturalWidth * (h / img.naturalHeight);
+        ctx.drawImage(img, (W - w) / 2, W - 64 - h, w, h);
+      } else {
+        ctx.fillStyle = BRAND; ctx.font = '800 36px "Plus Jakarta Sans", Helvetica, Arial, sans-serif';
+        ctx.fillText('Lokali', W / 2, W - 64);
+      }
+      return cv;
+    }).catch(function (e) { console.warn('[marketing] post draw failed', e); return null; });
+  };
+
+  Page.prototype.downloadPost = function () {
+    var cv = document.getElementById('mkt-post-canvas');
+    if (!cv) return;
+    var self = this;
+    this.drawPost().then(function () {
+      var a = document.createElement('a');
+      try { a.href = cv.toDataURL('image/png'); } catch (e) { toast('The image could not be exported in this browser.'); return; }
+      a.download = 'now-on-lokali-' + self.vendor.slug + '.png';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    });
   };
 
   // ---- Ask for a review (2026-09-17, F; review link 2026-09-19) ------------------
@@ -1083,6 +1242,8 @@
         if (f) f.click();
       }
       // #163 QR code downloads
+      else if (act === 'post-png') self.downloadPost();
+      else if (act === 'post-copy') { var capEl = document.getElementById('mkt-post-cap'); if (capEl) { fallbackCopy(capEl.textContent); toast('Caption copied'); } }
       else if (act === 'qr-png') self.downloadQr('png');
       else if (act === 'qr-svg') self.downloadQr('svg');
       else if (act === 'qr-badge-l') self.setQrBadge('l');
