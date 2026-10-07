@@ -79,7 +79,7 @@
 
   // Load supabase-js (ESM) from jsDelivr — the same CDN the rest of the Lokali
   // scripts already ship from — and build the singleton client.
-  window.LokaliSupabaseReady = import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm')
+  window.LokaliSupabaseReady = import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/+esm')
     .then(function (mod) {
       var createClient = mod.createClient;
       var client = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
