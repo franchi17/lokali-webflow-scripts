@@ -125,7 +125,10 @@
         }
         form.style.display = 'none';
         if (data.attending) {
-          show('ok', '<b>You’re on the list, ' + esc(data.name.split(/\s+/)[0]) + '.</b> See you on November 5. A confirmation is on its way to ' + esc(data.email) + '. <a href="' + EV.calendar + '" target="_blank" rel="noopener">Add it to your calendar</a>.');
+          var first = esc(data.name.split(/\s+/)[0]);
+          var nudge = data.storefront === 'live' ? '' :
+            ' <br><br><b>One more thing.</b> The printed booth card and review cards are made from live storefronts around October 30. Open yours by then and your kit will be on the table waiting for you. It is free and takes about twenty minutes: <a href="/sign-up">open a storefront</a>.';
+          show('ok', '<b>You’re on the list, ' + first + '.</b> See you on November 5. A confirmation is on its way to ' + esc(data.email) + '. <a href="' + EV.calendar + '" target="_blank" rel="noopener">Add it to your calendar</a>.' + nudge);
         } else {
           show('ok', '<b>Thanks for letting me know.</b> You’ll hear about the next one.');
         }
