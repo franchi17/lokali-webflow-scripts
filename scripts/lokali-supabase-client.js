@@ -515,6 +515,10 @@
       adminInquiryBlockReview: function (email) {
         return withClient(function (c) { return c.rpc('admin_inquiry_block_review', { p_email: email }); });
       },
+      // #195 admin: gathering RSVPs for one event (patch_event_rsvps.sql). is_admin()-gated.
+      adminEventRsvps: function (eventKey) {
+        return withClient(function (c) { return c.rpc('admin_event_rsvps', { p_event: eventKey }); });
+      },
       // "Not spam": drops the block and restores the auto-marked rows to new.
       adminInquiryUnblock: function (email) {
         return withClient(function (c) { return c.rpc('admin_inquiry_unblock', { p_email: email }); });

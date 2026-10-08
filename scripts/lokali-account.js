@@ -1292,6 +1292,7 @@
       appendReportsSection(grid, ov);              // trust and safety first
       appendAddressFlagsSection(grid);
       appendBlockedSendersSection(grid);           // #201
+      appendRsvpSection(grid);                     // #195
       appendTagSuggestionsSection(grid, a, null);
       appendSpotlightCreativesSection(grid);
       appendPairingFeedbackSection(grid);
@@ -1754,6 +1755,55 @@
 
   // #147 — vendors whose address resolved OUTSIDE every area they list (> 50 mi).
   // Its own RPC (admin_address_flags) — admin_overview() stays untouched.
+
+  // ── #195: gathering RSVPs (patch_event_rsvps.sql, /rsvp page) ─────────────
+  // Not a queue: nothing here "needs" F, so rows use the -done class and do not
+  // count in the strip. Yes list first, with the storefront answer, so the
+  // seating chart can be drafted straight from it. "Copy list" = one line per
+  // RSVP for a spreadsheet or the chart.
+  var RSVP_EVENT = 'nov5-2026';
+  function appendRsvpSection(wrap) {
+    var API = window.LokaliSupabaseAPI && window.LokaliSupabaseAPI.vendors;
+    if (!API || !API.adminEventRsvps) return;
+    var host = el('div', 'lk-admin-section');
+    wrap.appendChild(host);
+    var SF = { live: 'storefront live', not_yet: 'setting up a storefront', none: 'no storefront yet' };
+    function draw(d) {
+      host.innerHTML = '';
+      var rows = (d && d.rows) || [];
+      host.className = 'lk-admin-section' + (rows.length ? ' lk-admin-section-wide' : '');
+      var t = el('div', 'lk-admin-qtitle');
+      t.appendChild(document.createTextNode('Gathering RSVPs, November 5'));
+      t.appendChild(el('span', 'lk-admin-qcount', String(d ? d.yes : 0)));
+      host.appendChild(t);
+      host.appendChild(el('p', 'lk-admin-sub', (d ? d.yes : 0) + ' coming, ' + (d ? d.no : 0) + ' can’t make it. From golokali.com/rsvp; a second submit from the same email updates the first.'));
+      if (!rows.length) { host.appendChild(el('div', 'lk-admin-empty', 'No RSVPs yet. They land here the moment the invite goes out.')); return; }
+      var copy = document.createElement('button');
+      copy.type = 'button'; copy.className = 'lk-admin-decline'; copy.textContent = 'Copy list';
+      copy.addEventListener('click', function () {
+        var txt = rows.map(function (r) { return [r.attending ? 'YES' : 'no', r.name, r.business || r.vendor_name || '', r.email, SF[r.storefront] || r.storefront, r.slug ? 'golokali.com/' + r.slug : ''].join('\t'); }).join('\n');
+        var okc = function () { copy.textContent = 'Copied'; setTimeout(function () { copy.textContent = 'Copy list'; }, 1800); };
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(okc, function () {});
+      });
+      host.appendChild(copy);
+      rows.forEach(function (r) {
+        var row = el('div', 'lk-admin-row-done');
+        var meta = el('div', 'lk-admin-row-meta');
+        var l1 = el('div', 'lk-admin-row-l1');
+        l1.textContent = (r.attending ? 'Yes · ' : 'No · ') + (r.name || '') + (r.business ? ' · ' + r.business : (r.vendor_name ? ' · ' + r.vendor_name : ''));
+        var l2 = el('div', 'lk-admin-row-l2');
+        var when = ''; try { when = new Date(r.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); } catch (e) {}
+        l2.textContent = (SF[r.storefront] || r.storefront || '') + (r.slug ? ' · golokali.com/' + r.slug : ' · not matched to a storefront') + ' · ' + (r.email || '') + (when ? ' · ' + when : '');
+        meta.appendChild(l1); meta.appendChild(l2); row.appendChild(meta); host.appendChild(row);
+      });
+    }
+    host.appendChild(el('div', 'lk-admin-empty', 'Loading RSVPs…'));
+    API.adminEventRsvps(RSVP_EVENT).then(function (res) {
+      var d = res && res.data;
+      if (!d || d.ok === false) { host.innerHTML = ''; host.appendChild(el('div', 'lk-admin-empty', 'RSVPs could not be loaded.')); return; }
+      draw(d);
+    }).catch(function () { host.innerHTML = ''; host.appendChild(el('div', 'lk-admin-empty', 'RSVPs could not be loaded.')); });
+  }
   // ── #201: blocked inquiry senders (patch_inquiry_sender_cap.sql) ──────────
   // Addresses on inquiry_blocklist: automatic (kept sending past the 2-per-hour
   // cap to one vendor, or two vendors marked the same address Spam) and manual.

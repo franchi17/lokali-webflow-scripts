@@ -1,0 +1,133 @@
+/* lokali-rsvp.js — RSVP page for vendor gatherings (#195, first use: Nov 5 2026).
+ *
+ * The /rsvp Webflow page is a DUPLICATE of /contact-us (made 2026-10-08 via the API, which
+ * cannot build page bodies): it ships with the contact header + form markup and the
+ * lok-cf-* styles. This script, loaded by the site footer's path-gated loader on /rsvp only,
+ * rewrites that section into the RSVP form (same classes, so the page CSS styles it), owns
+ * the submit (capture + stopImmediatePropagation, like lokali-contact.js), POSTs JSON to
+ * /api/lokali/rsvp, and prefills name / email / business for a signed-in vendor.
+ * Event key = ?e= (default nov5-2026). Fields: name, email, business, attending, storefront.
+ * No "what do you need help with": that is for the room (F 2026-10-08).
+ */
+(function () {
+  'use strict';
+  if (!/^\/rsvp(\/|$)/.test(String(window.location.pathname || ''))) return;
+
+  var ENDPOINT = (function () {
+    var base = window.LOKALI_VERCEL_API_BASE ||
+      (window.LOKALI_AUTH_SYNC_URL ? String(window.LOKALI_AUTH_SYNC_URL).replace(/\/(auth-sync|clerk-sync)\/?$/, '') : '');
+    if (base) return base.replace(/\/$/, '') + '/rsvp';
+    return 'https://lokali-api.vercel.app/api/lokali/rsvp';
+  })();
+
+  var EVENTS = {
+    'nov5-2026': {
+      eyebrow: "You're invited",
+      title: "Lokali's first Vendor Circle gathering",
+      body: 'Thursday, November 5, 5 p.m. - 7 p.m. at Mia’s Table, 18450 I-45 South, Shenandoah. Vendors only. Let me know by October 29.',
+      calendar: 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=Lokali%20Vendor%20Circle%20gathering%20at%20Mia%27s%20Table&dates=20261105T230000Z/20261106T010000Z&location=Mia%27s%20Table%2C%2018450%20I-45%20S%2C%20Shenandoah%2C%20TX%2077384&details=Lokali%27s%20first%20Vendor%20Circle%20gathering.%20Vendors%20only.'
+    }
+  };
+  var key = (function () { try { return (new URLSearchParams(window.location.search).get('e') || 'nov5-2026').toLowerCase(); } catch (e) { return 'nov5-2026'; } })();
+  var EV = EVENTS[key] || EVENTS['nov5-2026']; if (!EVENTS[key]) key = 'nov5-2026';
+
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s == null ? '' : s).replace(/[<>&"]/g, function (c) { return { '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]; }); }
+
+  function init() {
+    var form = $('lokali-contact-form');
+    if (!form) return;
+    // header copy (the duplicated contact page's intro section)
+    var sec = document.querySelector('.section-14');
+    if (sec) {
+      var th = sec.querySelector('.title-header'), tt = sec.querySelector('._24px-title'), tb = sec.querySelector('.body');
+      if (th) th.textContent = EV.eyebrow;
+      if (tt) tt.textContent = EV.title;
+      if (tb) tb.textContent = EV.body;
+    }
+    try { document.title = 'RSVP | Lokali'; } catch (e) {}
+
+    form.id = 'lokali-rsvp-form'; form.setAttribute('name', 'lokali-rsvp-form'); form.removeAttribute('data-lokali-contact');
+    form.innerHTML =
+      '<div class="lok-cf-row">' +
+        '<div class="lok-cf-field"><label for="rs-name" class="lok-cf-label">Your name</label><input class="lok-cf-input w-input" maxlength="100" name="name" id="rs-name" type="text" placeholder="First and last" required autocomplete="name"></div>' +
+        '<div class="lok-cf-field"><label for="rs-email" class="lok-cf-label">Email</label><input class="lok-cf-input w-input" maxlength="200" name="email" id="rs-email" type="email" placeholder="you@example.com" required autocomplete="email"></div>' +
+      '</div>' +
+      '<div class="lok-cf-field"><label for="rs-business" class="lok-cf-label">Your business</label><input class="lok-cf-input w-input" maxlength="120" name="business" id="rs-business" type="text" placeholder="The name customers know" autocomplete="organization"></div>' +
+      '<div class="lok-cf-field"><label for="rs-attending" class="lok-cf-label">Will you be there?</label><select id="rs-attending" name="attending" class="lok-cf-select w-select" required><option value="">Choose one</option><option value="yes">Yes, count me in</option><option value="no">I can’t make it this time</option></select></div>' +
+      '<div class="lok-cf-field"><label for="rs-storefront" class="lok-cf-label">Is your storefront live on Lokali?</label><select id="rs-storefront" name="storefront" class="lok-cf-select w-select" required><option value="">Choose one</option><option value="live">Yes, it’s live</option><option value="not_yet">Not yet, I’m setting it up</option><option value="none">I don’t have one yet</option></select>' +
+        '<p class="lok-cf-hint">The gathering is for Lokali vendors. If a friend forwarded this and you’d like a storefront, <a href="/sign-up">it’s free to open one</a>.</p></div>' +
+      '<input id="rs-submit" type="submit" class="lok-cf-btn w-button" value="Save my seat">';
+
+    var done = $('cf-success'), err = $('cf-error');
+    if (done) { done.id = 'rs-success'; done.style.display = 'none'; }
+    if (err) { err.id = 'rs-error'; err.style.display = 'none'; }
+
+    // honeypot (injected, like the contact form)
+    var hp = document.createElement('input');
+    hp.type = 'text'; hp.name = 'website'; hp.tabIndex = -1; hp.setAttribute('autocomplete', 'off'); hp.setAttribute('aria-hidden', 'true');
+    hp.style.cssText = 'position:absolute;left:-9999px;top:-9999px;height:0;width:0;opacity:0;';
+    form.appendChild(hp);
+
+    form.addEventListener('submit', function (e) { e.preventDefault(); e.stopImmediatePropagation(); submit(form, hp); }, true);
+
+    // prefill for a signed-in vendor (best effort, never blocks the form)
+    try {
+      if (window.LokaliSupabaseReady && window.LokaliSupabaseReady.then) {
+        window.LokaliSupabaseReady.then(function () {
+          var API = window.LokaliSupabaseAPI && window.LokaliSupabaseAPI.vendors;
+          if (!API || !API.me) return;
+          return API.me().then(function (r) {
+            var v = r && r.data; if (!v || !v.id) return;
+            if ($('rs-business') && !$('rs-business').value) $('rs-business').value = v.business_name || '';
+            if ($('rs-name') && !$('rs-name').value) $('rs-name').value = v.owner_name || '';
+            if ($('rs-email') && !$('rs-email').value) $('rs-email').value = v.contact_email || '';
+            if ($('rs-storefront') && !$('rs-storefront').value && v.slug && v.is_active !== false) $('rs-storefront').value = 'live';
+          });
+        }).catch(function () {});
+      }
+    } catch (e) {}
+  }
+
+  function show(which, text) {
+    var ok = $('rs-success'), bad = $('rs-error');
+    if (ok) { ok.style.display = which === 'ok' ? 'block' : 'none'; if (which === 'ok' && text) ok.innerHTML = text; }
+    if (bad) { bad.style.display = which === 'bad' ? 'block' : 'none'; if (which === 'bad' && text) bad.textContent = text; }
+  }
+
+  function submit(form, hp) {
+    show(null);
+    if (hp && hp.value) return;
+    var data = {
+      event: key,
+      name: ($('rs-name') || {}).value || '', email: ($('rs-email') || {}).value || '',
+      business: ($('rs-business') || {}).value || '',
+      attending: (($('rs-attending') || {}).value || '') === 'yes',
+      storefront: ($('rs-storefront') || {}).value || ''
+    };
+    data.name = data.name.trim(); data.email = data.email.trim(); data.business = data.business.trim();
+    if (!data.name) return show('bad', 'Please enter your name.');
+    if (!data.email || data.email.indexOf('@') < 1) return show('bad', 'Please enter a valid email address.');
+    if (!(($('rs-attending') || {}).value)) return show('bad', 'Let me know if you can make it.');
+    if (!data.storefront) return show('bad', 'One more: is your storefront live on Lokali?');
+    var btn = $('rs-submit'), label = btn ? btn.value : null;
+    if (btn) { btn.disabled = true; btn.value = 'Saving…'; }
+    fetch(ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
+      .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+      .then(function (res) {
+        if (btn) { btn.disabled = false; btn.value = label; }
+        if (!res.ok) {
+          return show('bad', res.j && res.j.error === 'rate_limited' ? 'Too many tries in a row. Give it an hour, or reply to the invite email.' : 'Something went wrong. Please try again, or reply to the invite email with a yes.');
+        }
+        form.style.display = 'none';
+        if (data.attending) {
+          show('ok', '<b>You’re on the list, ' + esc(data.name.split(/\s+/)[0]) + '.</b> See you on November 5. A confirmation is on its way to ' + esc(data.email) + '. <a href="' + EV.calendar + '" target="_blank" rel="noopener">Add it to your calendar</a>.');
+        } else {
+          show('ok', '<b>Thanks for letting me know.</b> You’ll hear about the next one.');
+        }
+      })
+      .catch(function () { if (btn) { btn.disabled = false; btn.value = label; } show('bad', 'Something went wrong. Please try again, or reply to the invite email with a yes.'); });
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
