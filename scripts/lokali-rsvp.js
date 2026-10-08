@@ -74,10 +74,14 @@
     // prefill for a signed-in vendor (best effort, never blocks the form)
     try {
       if (window.LokaliSupabaseReady && window.LokaliSupabaseReady.then) {
-        window.LokaliSupabaseReady.then(function () {
+        window.LokaliSupabaseReady.then(function (c) {
           var API = window.LokaliSupabaseAPI && window.LokaliSupabaseAPI.vendors;
-          if (!API || !API.me) return;
-          return API.me().then(function (r) {
+          if (!API || !API.me || !c || !c.auth || !c.auth.getSession) return;
+          // only ask for the profile when there IS a session: signed out, get_my_vendor() is a 401
+          return c.auth.getSession().then(function (sr) {
+            if (!sr || !sr.data || !sr.data.session) return;
+            return API.me();
+          }).then(function (r) {
             var v = r && r.data; if (!v || !v.id) return;
             if ($('rs-business') && !$('rs-business').value) $('rs-business').value = v.business_name || '';
             if ($('rs-name') && !$('rs-name').value) $('rs-name').value = v.owner_name || '';
