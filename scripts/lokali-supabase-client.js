@@ -1636,6 +1636,38 @@
       // emailed. Open it in a PRIVATE window — same browser = replaces your session.
       signInAs: function (payload) {
         return postRoute('/admin/sign-in-as', payload || {}, true);
+      },
+      // #208 — prospect follow-ups (docs/supabase/patch_prospects.sql). The
+      // list/save/status/markSent RPCs are is_admin()-gated server-side; the
+      // three routes (draft / card / send) verify is_admin on app_user and hold
+      // the Anthropic + Brevo keys. Every call resolves to { data, error }.
+      prospects: function () {
+        return withClient(function (c) { return c.rpc('admin_prospects_list'); });
+      },
+      prospectSave: function (p) {
+        return withClient(function (c) { return c.rpc('admin_prospect_save', { p: p || {} }); });
+      },
+      prospectStatus: function (id, status) {
+        return withClient(function (c) { return c.rpc('admin_prospect_status', { p_id: id, p_status: status }); });
+      },
+      // F sent it herself (Instagram DM / text): stamp touch 1 or 2 without an email.
+      prospectMarkSent: function (id, touch, subject, body) {
+        return withClient(function (c) { return c.rpc('admin_prospect_mark_sent', { p_id: id, p_touch: touch, p_subject: subject || null, p_body: body || null }); });
+      },
+      prospectDelete: function (id) {
+        return withClient(function (c) { return c.rpc('admin_prospect_delete', { p_id: id }); });
+      },
+      // Claude writes the two notes in F's voice and stores them on the row.
+      prospectDraft: function (id) {
+        return postRoute('/admin/prospect-draft', { prospect_id: id }, true);
+      },
+      // Business-card photo (base64, downscaled by the panel) -> contact fields.
+      prospectCard: function (base64, mediaType) {
+        return postRoute('/admin/prospect-card', { image: base64, media_type: mediaType }, true);
+      },
+      // Sends the approved text as a plain email from francesca@ and stamps the touch.
+      prospectSend: function (id, touch, subject, body) {
+        return postRoute('/admin/prospect-send', { prospect_id: id, touch: touch, subject: subject, body: body }, true);
       }
     },
     // #96-SUGGEST — subcategory taxonomy + the vendor suggestion pipeline.
