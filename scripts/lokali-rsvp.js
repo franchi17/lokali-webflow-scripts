@@ -25,7 +25,7 @@
       eyebrow: "You're invited",
       title: "Lokali's first Vendor Circle gathering",
       body: 'Thursday, November 5, 5 p.m. - 7 p.m. at Mia’s Table, 18450 I-45 South, Shenandoah. Vendors only. Let me know by October 29.',
-      photo: 'https://cdn.jsdelivr.net/gh/franchi17/lokali-webflow-scripts@d440ff25790f/assets/mias-table-shakes.jpg',
+      photo: 'https://cdn.jsdelivr.net/gh/franchi17/lokali-webflow-scripts@4169b72f4493/assets/mias-table-shakes.jpg',
       day: 'Thursday', date: 'November 5', time: '5 p.m. - 7 p.m.',
       venue: 'Mia\u2019s Table', address: '18450 I-45 South, Shenandoah',
       caps: 'Vendors only \u00b7 Mia\u2019s menu if you\u2019re hungry',
