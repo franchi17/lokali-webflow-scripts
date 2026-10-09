@@ -357,8 +357,13 @@
   }
   function luiEl(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
   function luiChip(text, cls) { var s = luiEl('span', 'lok-tagc' + (cls ? ' ' + cls : '')); s.textContent = text; return s; }
-  function luiCoverBg(el, url) {
+  // pos (2026-10-09, #149 follow-up): the listing's focal point as 'X% Y%'. The dashboard
+  // cards + the 'What shoppers see' preview paint the cover as a CSS background, so
+  // without this they always showed the CENTRED crop while the storefront honoured
+  // the drag (F: 'why is the image not changing to the new positioning?').
+  function luiCoverBg(el, url, pos) {
     el.className = 'lok-gc-cover' + (url ? '' : ' ph');
+    el.style.backgroundPosition = pos || 'center';
     var keep = el.querySelectorAll('.lok-gc-corner,.lok-gc-cr');
     el.innerHTML = url ? '' : LUI_ICO.photo;
     for (var i = 0; i < keep.length; i++) el.appendChild(keep[i]);
@@ -390,7 +395,7 @@
         cover.appendChild(luiEl('div', 'lok-gc-cr'));
         card.insertBefore(cover, card.firstChild);
       }
-      luiCoverBg(cover, o.imgUrl || '');
+      luiCoverBg(cover, o.imgUrl || '', o.focus || '');
       var corner = cover.querySelector('.lok-gc-corner');
       corner.innerHTML = (o.pick ? '<span class="lok-gc-chip pick">' + LUI_ICO.star + 'Pick</span>' : '') +
         '<span class="lok-gc-chip ' + (o.live ? 'on">Live' : 'off">Hidden') + '</span>';
@@ -587,7 +592,7 @@
           p.textContent = s.hasPrice ? (s.price || '') : 'Add a price';
           p.style.color = s.hasPrice ? '' : '#8E8BA6';
           chip.className = 'lok-gc-chip ' + (s.live === false ? 'off' : 'on'); chip.textContent = s.live === false ? 'Hidden' : 'Live';
-          luiCoverBg(cover, s.imgUrl || '');
+          luiCoverBg(cover, s.imgUrl || '', s.focus || '');
           meta.innerHTML = '';
           if (s.spec) meta.appendChild(luiChip(s.spec, 'spec'));
           if (s.lead) meta.appendChild(luiChip(s.lead));

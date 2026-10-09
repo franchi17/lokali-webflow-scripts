@@ -245,8 +245,12 @@ const LokaliProductsPage = (() => {
   // before this file's pin moves (#101 ship order).
   let _imgFocus = null;
   let _mainImageUrl = null;   // #149: current main-image URL, for the card preview
+  const lcFocusPos = (r) => (r && r.image_focus_x != null && r.image_focus_y != null) ? (r.image_focus_x + '% ' + r.image_focus_y + '%') : '';
   const applyFocusPreview = () => {
     paintCoverViews();               // gallery thumb + card preview stay in sync
+    // 2026-10-09: the 'What shoppers see' card paints its cover as a background; move it too.
+    const pv = document.querySelector('#lok-lc-preview .lok-gc-cover');
+    if (pv) pv.style.backgroundPosition = _imgFocus ? (_imgFocus.x + '% ' + _imgFocus.y + '%') : 'center';
     const thumb = el.imgThumb();
     if (!thumb) return;
     const pos = _imgFocus ? (_imgFocus.x + '% ' + _imgFocus.y + '%') : 'center';
@@ -830,7 +834,7 @@ const LokaliProductsPage = (() => {
       card.addEventListener('drop',      onDrop);
 
       if (window.LokaliListingUI) window.LokaliListingUI.card(card, {
-        kind: 'product', imgUrl: product.image_url || '', hasPrice: !!formatPrice(product),
+        kind: 'product', imgUrl: product.image_url || '', focus: lcFocusPos(product), hasPrice: !!formatPrice(product),
         spec: lcSpecLabel(product.subcategory), lead: product.lead_time || '',
         ways: [product.shipping_offered ? 'Ships' : '', product.delivery_offered ? 'Delivery' : '', product.pickup_only ? 'Pickup' : '', product.buy_url ? 'Buy link' : ''],
         live: isProductActive(product), pick: product.is_featured_pick === true
@@ -989,7 +993,7 @@ const LokaliProductsPage = (() => {
     const price = lcPreviewPrice();
     const imgUrl0 = lcCoverUrl();
     if (_lcOrg && _lcOrg.update) _lcOrg.update({ photos: (_galleryPhotos && _galleryPhotos.length) || (imgUrl0 ? 1 : 0), photoCap: lcPhotoCap(), imgUrl: imgUrl0, name: el.fieldName()?.value, price, hasPrice: !!price, spec: lcSpecLabel(_selectedSubcat) });
-    _lcPreview.update({ name: el.fieldName()?.value, price, hasPrice: !!price, spec: lcSpecLabel(_selectedSubcat), lead: _leadTime || '', imgUrl: lcCoverUrl(), ways: lcWays(), live: el.fieldIsActive() ? !!el.fieldIsActive().checked : true });
+    _lcPreview.update({ name: el.fieldName()?.value, price, hasPrice: !!price, spec: lcSpecLabel(_selectedSubcat), lead: _leadTime || '', imgUrl: lcCoverUrl(), focus: _imgFocus ? (_imgFocus.x + '% ' + _imgFocus.y + '%') : '', ways: lcWays(), live: el.fieldIsActive() ? !!el.fieldIsActive().checked : true });
   };
   const lcMountPreview = () => {
     const LUI = window.LokaliListingUI; if (!LUI) return;
