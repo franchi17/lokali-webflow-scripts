@@ -1257,6 +1257,7 @@
     var comped = b.billing_provider === 'internal' &&
       (b.comp_kind === 'until_billing' || b.comp_kind === 'forever');
     if (comped) {
+      if (b.comp_kind === 'forever') return 'Your ' + label + ' plan is on us, for good.';
       return 'Your ' + label + ' plan is on us' + (when ? ' until ' + when : ' for now') + '.';
     }
     if (status === 'trialing' && when) {
