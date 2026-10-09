@@ -1032,7 +1032,7 @@
             }).then(function (res) { return res.json().catch(function () { return {}; }).then(function (d) { return { ok: res.ok, status: res.status, data: d || {} }; }); })
             .then(function (r) {
               if (r.ok && r.data.url) {
-                if (window.LokaliAPI && window.LokaliAPI.leads && vendorId != null) { try { window.LokaliAPI.leads.trackEvent(vendorId, 'buy_lokali', 'product'); } catch (e) {} }
+                if (window.LokaliAPI && window.LokaliAPI.leads && vendorId != null) { try { window.LokaliAPI.leads.trackEvent(vendorId, 'buy_lokali', 'product', { kind: 'product', id: p.id }); } catch (e) {} }
                 window.location.assign(r.data.url); return;
               }
               var code = r.data.error || '';
@@ -1079,7 +1079,7 @@
       cta.parentNode.insertBefore(btn, cta);
       btn.addEventListener('click', function () {
         if (window.LokaliAPI && window.LokaliAPI.leads && vendorId != null) {
-          window.LokaliAPI.leads.trackEvent(vendorId, 'buy_link', 'product');
+          window.LokaliAPI.leads.trackEvent(vendorId, 'buy_link', 'product', { kind: 'product', id: p.id }); // #206 price snapshot
         }
       });
     } catch (e) {}
@@ -1115,7 +1115,7 @@
       cta.parentNode.insertBefore(btn, cta);
       btn.addEventListener('click', function () {
         if (window.LokaliAPI && window.LokaliAPI.leads && vendorId != null) {
-          window.LokaliAPI.leads.trackEvent(vendorId, 'service_link', 'service');
+          window.LokaliAPI.leads.trackEvent(vendorId, 'service_link', 'service', { kind: 'service', id: s.id }); // #206 price snapshot
         }
       });
     } catch (e) {}
@@ -1128,7 +1128,7 @@
   // to the storefront. The link is read through the same anon RPC the
   // storefront card uses (availability_booking_link, null when off the plan).
   // Async, so the phone bar may already exist: it gets its mirror here too.
-  function mountBookLink(vendorId) {
+  function mountBookLink(vendorId, serviceId) {
     try {
       if (document.getElementById('vd-book-btn') || vendorId == null) return;
       var av = window.LokaliSupabaseAPI && window.LokaliSupabaseAPI.availability;
@@ -1155,7 +1155,7 @@
         cta.parentNode.insertBefore(btn, cta);
         btn.addEventListener('click', function () {
           if (window.LokaliAPI && window.LokaliAPI.leads) {
-            window.LokaliAPI.leads.trackEvent(vendorId, 'booking_link', 'service');
+            window.LokaliAPI.leads.trackEvent(vendorId, 'booking_link', 'service', serviceId != null ? { kind: 'service', id: serviceId } : null); // #206 price snapshot
           }
         });
         var bar = document.getElementById('vd2-bar');
@@ -1501,7 +1501,7 @@
       var vid = s.vendors_id || s.vendor_id || vendorParam;
       emitItemView(vid, 'service', s.id != null ? s.id : id);
       mountServiceLink(s, vid); // 2026-10-02: Visit website above Inquire (sync, so Book now lands above it)
-      mountBookLink(vid); // Book now above Inquire when the storefront has a booking link
+      mountBookLink(vid, s.id != null ? s.id : id); // Book now above Inquire when the storefront has a booking link
       var vendorP = fillVendor(vid, name, false);
       mountItemNav('services', s.id != null ? s.id : id, vid, vendorP); // #174
     });
