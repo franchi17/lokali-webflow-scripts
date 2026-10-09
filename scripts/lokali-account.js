@@ -1628,8 +1628,13 @@
         var meta = T('div', 'lk-ash-meta'); var pl = pill(r); meta.appendChild(T('span', 'lk-ash-pill ' + pl[0], pl[1]));
         meta.appendChild(T('span', null, r.channel === 'email' ? (r.email || 'email') : r.channel === 'instagram' ? '@' + (r.instagram || '?') : 'text ' + (r.phone || '')));
         if (r.met_where || r.met_on) meta.appendChild(T('span', null, (r.met_where ? r.met_where + ' · ' : '') + fmtDate(r.met_on)));
-        if (r.touch1_at) meta.appendChild(T('span', null, 'Note 1 ' + fmtDate(r.touch1_at)));
-        if (r.touch2_at) meta.appendChild(T('span', null, 'Note 2 ' + fmtDate(r.touch2_at)));
+        // #208b: what Brevo saw happen to each note. Opens are "likely": Apple Mail fetches the pixel for everyone.
+        function fate(n) {
+          var b = r['sent' + n + '_bounced_at'], c = r['sent' + n + '_clicked_at'], o = r['sent' + n + '_opened_at'], d = r['sent' + n + '_delivered_at'];
+          if (b) return ', bounced'; if (c) return ', clicked the link'; if (o) return ', likely opened'; if (d) return ', delivered'; return '';
+        }
+        if (r.touch1_at) { var f1 = T('span', null, 'Note 1 ' + fmtDate(r.touch1_at) + (r.channel === 'email' ? fate(1) : '')); if (r.sent1_bounced_at) f1.style.color = '#9A4A12'; meta.appendChild(f1); }
+        if (r.touch2_at) { var f2 = T('span', null, 'Note 2 ' + fmtDate(r.touch2_at) + (r.channel === 'email' ? fate(2) : '')); if (r.sent2_bounced_at) f2.style.color = '#9A4A12'; meta.appendChild(f2); }
         if (r.vendor_slug) { var a = T('a', null, '/' + r.vendor_slug); a.href = '/' + r.vendor_slug; a.target = '_blank'; a.rel = 'noopener'; meta.appendChild(a); }
         left.appendChild(meta); row.appendChild(left);
         var acts = T('div', 'lk-ash-acts');
