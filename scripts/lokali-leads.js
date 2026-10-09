@@ -148,6 +148,8 @@
     '#lok-leads-page .lq-fold span{font-size:12px;color:' + GRAY + ';}',
     '#lok-leads-page .lq-fold button{margin-left:auto;font:700 12.5px/1.2 ' + FONT + ';color:' + VIOLET + ';background:' + VIOLET_L + ';border:none;border-radius:8px;padding:8px 12px;cursor:pointer;}',
     '#lok-leads-page .lq-closed .lq-row{opacity:.85;}',
+    '#lok-leads-page .lq-row.lq-flash{background:' + VIOLET_L + ';box-shadow:0 0 0 6px ' + VIOLET_L + ';border-radius:10px;transition:background .9s ease,box-shadow .9s ease;}',
+    '#lok-leads-page .lq-t2 .lq-said{color:' + GREEN + ';font-weight:700;}',
     '#lok-leads-page .lq-del{font:600 12px/1.2 ' + FONT + ';color:' + GRAY + ';background:none;border:1px solid ' + BORDER + ';border-radius:8px;padding:6px 10px;cursor:pointer;white-space:nowrap;}',
     '#lok-leads-page .lq-del.arm{color:#fff;background:#B42318;border-color:#B42318;}',
     '#lok-leads-page .lq-step button:focus-visible{outline:2px solid ' + VIOLET + ';outline-offset:1px;}',
@@ -306,7 +308,9 @@
         message: String(i.message || '').trim(), context: String(i.context || '').trim(),
         source: i.source || 'listing', first_reply_at: i.first_reply_at || null, created_at: i.created_at,
         // #194 Business from Lokali: self-reported worth of a Won lead (cents) + server stamp
-        worth: (i.won_value_cents == null ? null : Number(i.won_value_cents)), won_at: i.won_at || null
+        worth: (i.won_value_cents == null ? null : Number(i.won_value_cents)), won_at: i.won_at || null,
+        // #206: the shopper's own answer from the follow-up email (hired | not_hired | null)
+        shopper: i.shopper_outcome || null
       };
     });
     var events = (leadsData && leadsData.events_30d) || [];
@@ -624,6 +628,7 @@
     function leadRow(l, group) {
       var inClosed = group === 'closed', inSpam = group === 'spam';
       var row = el('div', 'lq-row');
+      row.id = 'inq-' + l.id;   // nudge emails deep-link here (#inq-<id>)
       row.appendChild(html('div', 'lq-ic', strokeIcon(CH.inquiry.icon)));
       var body = el('div');
       body.appendChild(html('div', 'lq-t1', escapeHtml(l.name) + (l.context ? ' <span>asked about</span> ' + escapeHtml(l.context) : ' <span>sent a general inquiry</span>')));
@@ -632,7 +637,11 @@
       else t2.push(l.status === 'closed' ? 'Closed' : l.status === 'spam' ? 'Marked as spam' : l.status.charAt(0).toUpperCase() + l.status.slice(1));
       if (l.prior && l.prior.length) t2.push('Back for the ' + ordinal(l.prior.length + 1) + ' time');
       if (l.message) t2.push('“' + l.message + '”');
-      body.appendChild(el('div', 'lq-t2', t2.join(' · ')));
+      var t2el = el('div', 'lq-t2', t2.join(' · '));
+      // #206: the shopper answered the two-week follow-up. Shown as their words, never auto-moves the lead.
+      if (l.shopper === 'hired') t2el.appendChild(html('span', 'lq-said', ' · Shopper confirmed they hired you'));
+      else if (l.shopper === 'not_hired') t2el.appendChild(el('span', null, ' · Shopper went another way'));
+      body.appendChild(t2el);
       row.appendChild(body);
       row.appendChild(el('div', 'lq-when', shortDate(l.t)));
       var step = el('div', 'lq-step'); step.setAttribute('role', 'group'); step.setAttribute('aria-label', 'Status');
@@ -706,6 +715,49 @@
       });
       mount.appendChild(chs);
     }
+
+    // #206 deep links from the "did this turn into a job?" email (2026-10-09):
+    //   /vendor-dashboard/leads?inq=<id>&won=<cents>   mark Won with that rough worth
+    //   /vendor-dashboard/leads?inq=<id>&won=ask       mark Won, open the amount box
+    //   /vendor-dashboard/leads?inq=<id>&closed=1      it did not work out -> Closed
+    //   /vendor-dashboard/leads#inq-<id>               just scroll to it (lead nudges)
+    // The query is stripped after one use so a reload never re-applies it; a lead
+    // that is already Won is never changed, only shown.
+    (function applyDeepLink() {
+      var qs, hash = '';
+      try { qs = new URLSearchParams(window.location.search); hash = String(window.location.hash || ''); } catch (e) { return; }
+      var id = qs.get('inq') || (/^#inq-(\d+)$/.test(hash) ? hash.slice(5) : null);
+      if (!id) return;
+      var lead = inquiries.filter(function (l) { return String(l.id) === String(id); })[0];
+      var won = qs.get('won'), closed = qs.get('closed');
+      if (qs.has('inq') || qs.has('won') || qs.has('closed')) {
+        try { history.replaceState(null, '', window.location.pathname + '#inq-' + id); } catch (e) {}
+      }
+      function reveal() {
+        var row = document.getElementById('inq-' + id);
+        if (!row) return;
+        try { row.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) { row.scrollIntoView(); }
+        row.classList.add('lq-flash');
+        setTimeout(function () { row.classList.remove('lq-flash'); }, 2600);
+      }
+      if (!lead) { reveal(); return; }
+      if (lead.status === 'spam') { reveal(); return; }
+      if (won != null && lead.status !== 'won') {
+        var n = Math.round(Number(won));   // the email link carries CENTS
+        var cents = (won !== 'ask' && isFinite(n) && n > 0 && n <= 100000000) ? n : null;
+        var prev = lead.status; lead.status = 'won';
+        if (cents != null && lead.worth == null) lead.worth = cents; else if (lead.worth == null) lead._askWorth = true;
+        repaintAll(); reveal();
+        // status first, then the amount: the guard only keeps a value on a row that IS won
+        setStatus(lead, 'won').then(function (res) {
+          if (res && res.error) { lead.status = prev; lead.worth = (cents != null ? null : lead.worth); repaintAll(); return; }
+          if (cents != null) setWorth(lead, cents).then(function (r2) { if (r2 && r2.error) { lead.worth = null; lead._askWorth = true; repaintAll(); } });
+        });
+        return;
+      }
+      if (closed === '1' && lead.status !== 'closed' && lead.status !== 'won') { moveLead(lead, 'closed'); reveal(); return; }
+      reveal();
+    })();
   }
 
   // First-storefront empty state: the three checkup items that bring a lead,

@@ -118,7 +118,8 @@
   // — purchase intent, so it rides with the payment clicks, never the inbox.
   // booking_link (2026-09-23) = a tap on a service page's Book now button: same intent.
   // service_link (2026-10-02) = a tap on a service page's Visit website button: same intent.
-  var PAYMENT_EVENT_TYPES = { venmo: 1, cashapp: 1, paypal: 1, other_pay: 1, zelle: 1, buy_link: 1, booking_link: 1, service_link: 1 };
+  // buy_lokali (#205, 2026-10-09) = a tap on Buy on Lokali that reached Stripe Checkout: same intent.
+  var PAYMENT_EVENT_TYPES = { venmo: 1, cashapp: 1, paypal: 1, other_pay: 1, zelle: 1, buy_link: 1, booking_link: 1, service_link: 1, buy_lokali: 1 };
   function isPaymentEvent(e) { return !!(e && PAYMENT_EVENT_TYPES[e.event_type]); }
 
   // ── payment-handle normalization ──────────────────────────────────────────
@@ -416,10 +417,12 @@
         Authorization: 'Bearer ' + (token || SUPABASE_KEY),
         Prefer: 'return=minimal'
       };
-      fetch(SUPABASE_URL + '/rest/v1/' + table, {
+      // Resolves true when PostgREST accepted the row (callers that add optional
+      // columns use it to retry bare); never rejects.
+      return fetch(SUPABASE_URL + '/rest/v1/' + table, {
         method: 'POST', headers: headers, keepalive: true, body: JSON.stringify(row)
-      }).catch(function () {});
-    } catch (e) {}
+      }).then(function (res) { return !!(res && res.ok); }, function () { return false; });
+    } catch (e) { return Promise.resolve(false); }
   }
 
   // ── #180 phase 2: anonymous visit stream (docs/supabase/patch_visit_events.sql)
@@ -1174,16 +1177,29 @@
       if (payload.website) return Promise.resolve({ data: { ok: true }, error: null, status: 200 });
       return SAPI().inquiries.submit(vendorId, payload).then(envelope);
     },
-    trackEvent: function (vendorId, eventType, source) {
+    trackEvent: function (vendorId, eventType, source, item) {
       // Fire-and-forget with keepalive, exactly like the Xano client — this
       // write feeds the review gate, and the page often navigates to tel:/wa.me
       // immediately. Signed-in callers carry the Supabase access token so the
       // DB trigger stamps user_id (the gate key); anonymous falls back to the
       // anon insert.
+      // #206 (2026-10-09): an optional item {kind:'product'|'service', id} rides
+      // along on Buy / Book / Visit-website taps. The server snapshots the item's
+      // price into amount_cents (patch_lead_attribution.sql); the browser never
+      // sends an amount. Before the patch is applied the two columns do not exist
+      // and PostgREST would reject the row, so the insert is retried bare on failure.
       try {
         var row = { vendors_id: vendorId, event_type: eventType, source: source || 'listing' };
-        authTokenP().then(function (token) { keepaliveInsert('lead_events', row, token); },
-                          function () { keepaliveInsert('lead_events', row, null); });
+        if (item && item.id != null && (item.kind === 'product' || item.kind === 'service')) {
+          row.item_kind = item.kind; row.item_id = Number(item.id);
+        }
+        var send = function (token) {
+          keepaliveInsert('lead_events', row, token).then(function (ok) {
+            if (ok || row.item_kind == null) return;
+            keepaliveInsert('lead_events', { vendors_id: row.vendors_id, event_type: row.event_type, source: row.source }, token);
+          });
+        };
+        authTokenP().then(send, function () { send(null); });
       } catch (e) {}
       trackVisit('contact', { vendorId: vendorId, source: eventType });
     },
