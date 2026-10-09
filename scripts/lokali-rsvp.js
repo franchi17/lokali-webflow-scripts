@@ -127,6 +127,16 @@
 
     form.addEventListener('submit', function (e) { e.preventDefault(); e.stopImmediatePropagation(); submit(form, hp); }, true);
 
+    // prefill from the confirmation email's change links (?email=&name=&business=&sf=&a=yes|no):
+    // a second submit for the same email UPDATES the row, so "change my answer" is one tap.
+    try {
+      var q = new URLSearchParams(window.location.search);
+      var setv = function (id, v) { var el = $(id); if (el && v && !el.value) el.value = v; };
+      setv('rs-name', q.get('name')); setv('rs-email', q.get('email')); setv('rs-business', q.get('business'));
+      var sf = q.get('sf'); if (sf && ['live','not_yet','none'].indexOf(sf) >= 0 && $('rs-storefront')) $('rs-storefront').value = sf;
+      var a = q.get('a'); if (a && $('rs-attending')) $('rs-attending').value = a === 'no' ? 'no' : 'yes';
+      if (q.get('email') && $('rs-submit')) $('rs-submit').value = a === 'no' ? 'Save: I can\u2019t make it' : 'Save my answer';
+    } catch (e) {}
     // prefill for a signed-in vendor (best effort, never blocks the form)
     try {
       if (window.LokaliSupabaseReady && window.LokaliSupabaseReady.then) {
@@ -196,7 +206,7 @@
             ' <br><br><b>One more thing.</b> The printed booth card and review cards are made from live storefronts around October 30. Open yours by then and your kit will be on the table waiting for you. It is free and takes about twenty minutes: <a href="/sign-up">open a storefront</a>.';
           show('ok', '<b>You’re on the list, ' + first + '.</b> See you on November 5. A confirmation is on its way to ' + esc(data.email) + '. <a href="' + EV.calendar + '" target="_blank" rel="noopener">Add it to your calendar</a>.' + nudge);
         } else {
-          show('ok', '<b>Thanks for letting me know.</b> You’ll hear about the next one.');
+          show('ok', '<b>Thanks for letting me know.</b> You’ll hear about the next one. Plans change again? <a href="/rsvp?a=yes&email=' + encodeURIComponent(data.email) + '&name=' + encodeURIComponent(data.name) + '&business=' + encodeURIComponent(data.business) + '&sf=' + encodeURIComponent(data.storefront) + '">Count me back in</a>.');
         }
       })
       .catch(function () { if (btn) { btn.disabled = false; btn.value = label; } show('bad', 'Something went wrong. Please try again, or reply to the invite email with a yes.'); });
