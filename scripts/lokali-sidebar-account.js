@@ -414,6 +414,7 @@
       else if (a.getAttribute('data-lok-contact')) out.contact = a;
       else if (href.indexOf('/vendor-dashboard/analytics') === 0 || t === 'Analytics') out.analytics = a;
       else if (href.indexOf('/vendor-dashboard/leads') === 0 || t === 'Leads') out.leads = a;
+      else if (href.indexOf('/vendor-dashboard/orders') === 0 || t === 'Orders') out.orders = a;
       else if (href.indexOf('view-listing') >= 0 || /^(View storefront|My Storefront|My Listing)$/.test(t)) out.storefront = a;
     }
     // Followers (2026-09-20): the row does not exist in the Webflow menu, and this
@@ -431,6 +432,20 @@
         '<div class="text-block-17"><strong class="dashboard-menu">Followers</strong></div>';
       parent.insertBefore(f, out.leads.nextSibling);
       out.followers = f;
+    }
+    // Orders (#205, 2026-10-09): on-site checkout orders. Built here like
+    // Followers (no Webflow row). Icon: Font Awesome Free 6 'bag-shopping'.
+    if (!out.orders && out.leads) {
+      var od = document.createElement('a');
+      od.href = '/vendor-dashboard/orders';
+      od.className = 'dashboard-btn w-inline-block';
+      var onOrders = /^\/vendor-dashboard\/orders(\/|$)/.test(String(window.location.pathname || ''));
+      if (onOrders) { od.className += ' w--current'; od.setAttribute('aria-current', 'page'); }
+      od.innerHTML = '<div class="icon-div"><svg class="dashboard-icon" viewBox="0 0 448 512" aria-hidden="true" focusable="false" style="width:18px;height:18px;display:block;">' +
+        '<path fill="' + (onOrders ? '#6002EE' : '#1A1829') + '" d="M160 112c0-35.3 28.7-64 64-64s64 28.7 64 64v48H160V112zm-48 48H48c-26.5 0-48 21.5-48 48V416c0 53 43 96 96 96H352c53 0 96-43 96-96V208c0-26.5-21.5-48-48-48H336V112C336 50.1 285.9 0 224 0S112 50.1 112 112v48zm24 48a24 24 0 1 1 0 48 24 24 0 1 1 0-48zm152 24a24 24 0 1 1 48 0 24 24 0 1 1 -48 0z"/></svg></div>' +
+        '<div class="text-block-17"><strong class="dashboard-menu">Orders</strong></div>';
+      parent.insertBefore(od, out.leads.nextSibling);
+      out.orders = od;
     }
     // Help and guides (2026-09-20): one row that opens the guides landing page in
     // a NEW tab, so a vendor mid-edit never loses unsaved work. Same build-it-here
@@ -501,7 +516,7 @@
     label('store', 'Your storefront');
     move(r.profile); move(r.services); move(r.products); move(r.availability); move(r.storefront);
     label('grow', 'Grow');
-    move(r.leads); move(r.followers); move(r.analytics); move(r.marketing);
+    move(r.leads); move(r.orders); move(r.followers); move(r.analytics); move(r.marketing);
     if (r.settings) { label('account', 'Your account'); move(r.settings); }
     if (r.help || r.contact) { label('help', 'Help'); move(r.help); move(r.contact); } // last, under its own label so it does not read as a Grow tool
     if (r.contact) {

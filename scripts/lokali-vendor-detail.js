@@ -950,6 +950,107 @@
     }
     return '';
   }
+  // #205 on-site checkout: "Buy on Lokali". The product page asks the public
+  // RPC product_checkout_options(id) (live vendor with checkout on, priced,
+  // in stock) and, when available, mounts the primary button ABOVE Inquire and
+  // above any external Buy link. Tapping it opens a small sheet: quantity,
+  // how you get it (only what the product offers), running total, then
+  // "Continue to payment" posts to checkout/session and follows Stripe's
+  // hosted page. Card details are never typed on golokali.com.
+  var CHECKOUT_BASE = ((typeof window !== 'undefined' && window.LOKALI_BILLING_BASE)
+    ? String(window.LOKALI_BILLING_BASE) : 'https://lokali-api.vercel.app/api/lokali').replace(/\/$/, '');
+  function money(cents) { var d = (cents || 0) / 100; return '$' + d.toLocaleString('en-US', { minimumFractionDigits: (d % 1) ? 2 : 0, maximumFractionDigits: 2 }); }
+  function mountLokaliBuy(p, vendorId) {
+    try {
+      if (!p || p.id == null || document.getElementById('vd-lok-buy')) return;
+      var c = window.LokaliSupabase;
+      if (!c || typeof c.rpc !== 'function') return;
+      var cta = $('vd-cta-btn');
+      if (!cta || !cta.parentNode) return;
+      c.rpc('product_checkout_options', { p_products_id: p.id }).then(function (r) {
+        var opt = r && r.data;
+        if (!opt || !opt.available || r.error) return;
+        var ways = [];
+        if (opt.pickup) ways.push({ k: 'pickup', label: 'Pickup', sub: 'arrange with the vendor', cents: 0 });
+        if (opt.delivery) ways.push({ k: 'delivery', label: 'Local delivery', sub: 'arrange with the vendor', cents: 0 });
+        if (opt.shipping) ways.push({ k: 'shipping', label: 'Shipping', sub: money(opt.shipping_cents) + ' flat', cents: opt.shipping_cents || 0 });
+        if (!ways.length) return;
+        if (!document.getElementById('vd-lok-buy-css')) {
+          var st = document.createElement('style'); st.id = 'vd-lok-buy-css';
+          st.textContent = '#vd-lok-sheet{font-family:"Plus Jakarta Sans",system-ui,sans-serif;background:#FFF;border:1px solid #DEDAEE;border-radius:16px;padding:16px;margin:0 0 12px;box-shadow:0 10px 30px rgba(26,24,41,.08);color:#1A1829;}' +
+            '#vd-lok-sheet .lb-h{font-size:15px;font-weight:700;margin:0 0 10px;}#vd-lok-sheet .lb-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:8px 0;font-size:14px;}' +
+            '#vd-lok-sheet select{font-family:inherit;font-size:14px;padding:8px 10px;border:1px solid #DEDAEE;border-radius:10px;background:#fff;color:#1A1829;min-height:44px;}' +
+            '#vd-lok-sheet .lb-way{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid #DEDAEE;border-radius:12px;cursor:pointer;margin:6px 0;min-height:44px;}#vd-lok-sheet .lb-way.on{border-color:#6002EE;background:#F3EBFF;}' +
+            '#vd-lok-sheet .lb-way input{margin:0;accent-color:#6002EE;}#vd-lok-sheet .lb-way small{color:#6E6A85;font-size:12px;margin-left:auto;}' +
+            '#vd-lok-sheet .lb-total{display:flex;justify-content:space-between;font-weight:700;font-size:15px;border-top:1px solid #EEEDF6;padding-top:10px;margin-top:10px;}' +
+            '#vd-lok-sheet .lb-go{display:block;width:100%;margin-top:12px;min-height:46px;border:0;border-radius:999px;background:#6002EE;color:#fff;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;}#vd-lok-sheet .lb-go[disabled]{opacity:.6;cursor:default;}' +
+            '#vd-lok-sheet .lb-note{font-size:12px;color:#6E6A85;margin-top:8px;line-height:1.5;}#vd-lok-sheet .lb-err{font-size:13px;color:#B1006A;margin-top:8px;display:none;}' +
+            '#vd-lok-sheet .lb-x{background:none;border:0;font-family:inherit;font-size:13px;color:#6E6A85;cursor:pointer;padding:6px 0;}';
+          document.head.appendChild(st);
+        }
+        var btn = cta.cloneNode(true);
+        btn.id = 'vd-lok-buy';
+        btn.querySelectorAll('[id]').forEach(function (n) { n.removeAttribute('id'); });
+        var th = btn; while (th.children && th.children.length === 1) th = th.children[0];
+        th.textContent = 'Buy on Lokali';
+        btn.removeAttribute('href'); btn.removeAttribute('target'); btn.removeAttribute('rel');
+        btn.setAttribute('role', 'button'); btn.setAttribute('aria-label', 'Buy on Lokali, pay securely with a card');
+        btn.style.marginBottom = '10px';
+        cta.parentNode.insertBefore(btn, cta);
+        var sheet = null;
+        btn.addEventListener('click', function (e) {
+          e.preventDefault();
+          if (sheet) { sheet.style.display = sheet.style.display === 'none' ? '' : 'none'; return; }
+          sheet = document.createElement('div'); sheet.id = 'vd-lok-sheet';
+          var qtyOpts = ''; for (var i = 1; i <= Math.max(1, Math.min(20, opt.max_quantity || 1)); i++) qtyOpts += '<option value="' + i + '">' + i + '</option>';
+          sheet.innerHTML = '<div class="lb-h">Buy ' + escapeText(p.product_name || p.name || 'this item') + '</div>' +
+            '<div class="lb-row"><span>Quantity</span><select id="vd-lok-qty" aria-label="Quantity">' + qtyOpts + '</select></div>' +
+            '<div style="font-size:13px;font-weight:600;color:#4A4761;margin-top:6px;">How you get it</div>' +
+            ways.map(function (w, i) { return '<label class="lb-way' + (i === 0 ? ' on' : '') + '"><input type="radio" name="vd-lok-way" value="' + w.k + '"' + (i === 0 ? ' checked' : '') + '> <span>' + w.label + '</span><small>' + w.sub + '</small></label>'; }).join('') +
+            '<div class="lb-total"><span>Total before tax</span><span id="vd-lok-total"></span></div>' +
+            '<button type="button" class="lb-go" id="vd-lok-go">Continue to payment</button>' +
+            '<div class="lb-err" id="vd-lok-err"></div>' +
+            '<div class="lb-note">Secure card payment by Stripe. You pay ' + escapeText(vendorNameForSheet()) + ' directly; Lokali never sees your card.</div>' +
+            '<button type="button" class="lb-x" id="vd-lok-x">Not now</button>';
+          btn.insertAdjacentElement('afterend', sheet);
+          var qty = sheet.querySelector('#vd-lok-qty'), total = sheet.querySelector('#vd-lok-total'), go = sheet.querySelector('#vd-lok-go'), err = sheet.querySelector('#vd-lok-err');
+          function way() { var r = sheet.querySelector('input[name="vd-lok-way"]:checked'); return r ? r.value : ways[0].k; }
+          function wayCents() { var k = way(); for (var i = 0; i < ways.length; i++) if (ways[i].k === k) return ways[i].cents; return 0; }
+          function paint() { total.textContent = money((opt.unit_amount_cents * Number(qty.value || 1)) + wayCents()); sheet.querySelectorAll('.lb-way').forEach(function (l) { l.classList.toggle('on', l.querySelector('input').checked); }); }
+          qty.addEventListener('change', paint);
+          sheet.querySelectorAll('input[name="vd-lok-way"]').forEach(function (r) { r.addEventListener('change', paint); });
+          paint();
+          sheet.querySelector('#vd-lok-x').addEventListener('click', function () { sheet.style.display = 'none'; });
+          go.addEventListener('click', function () {
+            go.disabled = true; go.textContent = 'One moment'; err.style.display = 'none';
+            var headers = { 'Content-Type': 'application/json' };
+            var tokenP = (window.LokaliAuth && typeof window.LokaliAuth.token === 'function') ? Promise.resolve().then(function () { return window.LokaliAuth.token(); }).catch(function () { return null; }) : Promise.resolve(null);
+            tokenP.then(function (jwt) {
+              if (jwt) headers['Authorization'] = 'Bearer ' + jwt;
+              return fetch(CHECKOUT_BASE + '/checkout/session', { method: 'POST', headers: headers,
+                body: JSON.stringify({ products_id: p.id, quantity: Number(qty.value || 1), fulfilment: way(), return_url: window.location.href }) });
+            }).then(function (res) { return res.json().catch(function () { return {}; }).then(function (d) { return { ok: res.ok, status: res.status, data: d || {} }; }); })
+            .then(function (r) {
+              if (r.ok && r.data.url) {
+                if (window.LokaliAPI && window.LokaliAPI.leads && vendorId != null) { try { window.LokaliAPI.leads.trackEvent(vendorId, 'buy_lokali', 'product'); } catch (e) {} }
+                window.location.assign(r.data.url); return;
+              }
+              var code = r.data.error || '';
+              var msg = code === 'out_of_stock' ? 'Only ' + (r.data.available || 0) + ' left. Pick a smaller quantity.'
+                : code === 'rate_limited' ? 'Too many attempts from this connection. Try again in a bit.'
+                : code === 'checkout_not_available' ? 'This vendor is not taking card payments right now. Use Inquire instead.'
+                : 'Checkout is unavailable right now. Use Inquire and the vendor will sort it out.';
+              err.textContent = msg; err.style.display = '';
+              go.disabled = false; go.textContent = 'Continue to payment';
+            }).catch(function () { err.textContent = 'Checkout is unavailable right now. Use Inquire instead.'; err.style.display = ''; go.disabled = false; go.textContent = 'Continue to payment'; });
+          });
+        });
+      }).catch(function () {});
+    } catch (e) {}
+  }
+  function vendorNameForSheet() { var lv = window.LOKALI_LOADED_VENDOR; if (lv && lv.name) return lv.name; var n = $('vd-mini-name'); var t = n ? (n.textContent || '').trim() : ''; return t || 'the vendor'; }
+  function escapeText(v) { return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
   function mountBuyLink(p, vendorId) {
     try {
       if (document.getElementById('vd-buy-btn')) return;
@@ -1499,6 +1600,7 @@
       renderVideo(p.video_url);
       var vid = p.vendors_id || p.vendor_id || vendorParam; // SEC-079: owner first
       emitItemView(vid, 'product', p.id != null ? p.id : id);
+      mountLokaliBuy(p, vid); // #205 Buy on Lokali (async; lands above the Buy link + Inquire)
       mountBuyLink(p, vid); // #172 (before fillVendor: the phone bar mirrors it)
       var vendorP = fillVendor(vid, name, true);
       mountItemNav('products', p.id != null ? p.id : id, vid, vendorP); // #174

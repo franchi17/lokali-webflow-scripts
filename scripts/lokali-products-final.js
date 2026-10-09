@@ -104,6 +104,39 @@ const LokaliProductsPage = (() => {
     row.insertAdjacentElement('afterend', clone);
   })();
 
+  // #205 on-site checkout: a flat shipping price next to the "Ships" box. Only
+  // meaningful when the vendor takes payment on Lokali; the public page offers
+  // shipping at checkout only when BOTH shipping_offered and a price are set.
+  // Dollars in the box, cents in the column (products.shipping_cents).
+  (function ensureShippingPriceRow() {
+    if (!window.LokaliSupabaseAPI?.capabilities?.onsiteCheckout) return;
+    var node = document.getElementById('product-shipping');
+    if (!node) return;
+    var input = (node.tagName === 'INPUT' && node.type === 'checkbox') ? node : (node.querySelector ? node.querySelector('input[type="checkbox"]') : null);
+    if (!input || document.getElementById('lok-product-ship-price')) return;
+    var row = input.closest('.w-checkbox') || input.parentElement;
+    if (!row) return;
+    var host = document.createElement('div');
+    host.id = 'lok-product-ship-row';
+    host.style.cssText = 'display:none;margin:4px 0 10px 26px;font-family:"Plus Jakarta Sans",system-ui,sans-serif;';
+    host.innerHTML =
+      '<label for="lok-product-ship-price" style="display:block;font-size:12px;font-weight:600;color:#4A4761;margin-bottom:4px;">Flat shipping price for Lokali checkout</label>' +
+      '<div style="display:flex;align-items:center;gap:8px;"><span style="color:#8E8BA6;font-size:14px;">$</span>' +
+      '<input id="lok-product-ship-price" type="number" inputmode="decimal" min="0" max="500" step="0.01" placeholder="0.00" style="width:120px;box-sizing:border-box;padding:9px 11px;border:1px solid #E6E4F0;border-radius:10px;font-size:14px;font-family:inherit;color:#1A1829;background:#fff;" /></div>' +
+      '<div style="font-size:12px;color:#8E8BA6;margin-top:5px;line-height:1.5;">Charged once per order when a shopper picks shipping at checkout. Leave blank and shipping stays an Inquire conversation.</div>';
+    row.insertAdjacentElement('afterend', host);
+    var sync = function () { host.style.display = input.checked ? '' : 'none'; };
+    input.addEventListener('change', sync);
+    sync();
+  })();
+  const shipPriceInput = () => document.getElementById('lok-product-ship-price');
+  const readShipCents = () => {
+    const inp = shipPriceInput(); if (!inp) return undefined;
+    const v = String(inp.value || '').trim(); if (v === '') return null;
+    const n = Math.round(parseFloat(v) * 100); return (isFinite(n) && n >= 0 && n <= 50000) ? n : undefined;
+  };
+  const setShipCents = (c) => { const inp = shipPriceInput(); if (!inp) return; inp.value = (c == null) ? '' : (c / 100).toFixed(2); const sh = document.getElementById('product-shipping'); const ev = sh && (sh.tagName === 'INPUT' ? sh : sh.querySelector && sh.querySelector('input[type="checkbox"]')); if (ev) ev.dispatchEvent(new Event('change')); };
+
   let products     = [];
   let editingId    = null;
   let imageRemoved = false;
@@ -1127,6 +1160,7 @@ const LokaliProductsPage = (() => {
     renderGallery(product.id);
     setVideoUrl(product.video_url);
     setBuyUrl(product.buy_url);   // #172
+    setShipCents(product.shipping_cents); // #205
   };
 
   const resetForm = () => {
@@ -1159,6 +1193,7 @@ const LokaliProductsPage = (() => {
     renderGallery(null);
     setVideoUrl('');
     setBuyUrl('');   // #172
+    setShipCents(null); // #205
   };
 
   const revokeImagePreviewUrl = () => {
@@ -1746,6 +1781,12 @@ const LokaliProductsPage = (() => {
     // #172 Buy link: same shape — '' clears (sent as NULL: the SQL shape check
     // rejects an empty string), a valid https link sets it, an invalid one is
     // omitted so background autosaves never fail; explicit Save blocks it.
+    // #205 shipping price: '' clears (null), a valid amount sets it, an invalid
+    // one is omitted (same autosave-safe shape as the Buy link).
+    if (shipPriceInput()) {
+      const sc = readShipCents();
+      if (sc !== undefined) payload.shipping_cents = sc;
+    }
     if (_buyUiMounted) {
       const burl = readBuyUrl();
       if (burl === '') payload.buy_url = null;
