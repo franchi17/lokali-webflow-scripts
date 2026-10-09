@@ -1004,6 +1004,7 @@
     today: '<svg viewBox="0 0 512 512" aria-hidden="true"><path fill="currentColor" d="M121 32C91.600 32 66 52 58.900 80.500L1.900 308.400C.6 313.500 0 318.700 0 323.900V416c0 35.300 28.700 64 64 64H448c35.300 0 64-28.700 64-64V323.900c0-5.200-.6-10.400-1.900-15.500l-57-227.900C446 52 420.400 32 391 32H121zm0 64H391l48 192H387.800c-12.100 0-23.200 6.800-28.600 17.700l-14.300 28.600c-5.400 10.800-16.500 17.700-28.600 17.700H195.800c-12.100 0-23.200-6.800-28.600-17.700l-14.300-28.600c-5.400-10.800-16.500-17.700-28.600-17.700H73l48-192z"/></svg>',
     vendors: '<svg viewBox="0 0 640 512" aria-hidden="true"><path fill="currentColor" d="M36.800 192H603.200c20.300 0 36.800-16.500 36.800-36.800c0-7.300-2.200-14.400-6.200-20.400L558.200 21.400C549.300 8 534.400 0 518.300 0H121.700c-16 0-31 8-39.900 21.400L6.200 134.700c-4 6.100-6.200 13.200-6.200 20.400C0 175.500 16.500 192 36.800 192zM64 224V384v80c0 26.500 21.500 48 48 48H336c26.500 0 48-21.500 48-48V384 224H320V384H128V224H64zm448 0V480c0 17.700 14.300 32 32 32s32-14.300 32-32V224H512z"/></svg>',
     insights: '<svg viewBox="0 0 512 512" aria-hidden="true"><path fill="currentColor" d="M32 32c17.700 0 32 14.300 32 32V400c0 8.800 7.200 16 16 16H480c17.700 0 32 14.300 32 32s-14.300 32-32 32H80c-44.200 0-80-35.800-80-80V64C0 46.300 14.300 32 32 32zm96 96c0-17.700 14.300-32 32-32s32 14.300 32 32V320c0 17.700-14.300 32-32 32s-32-14.300-32-32V128zm128 64c17.700 0 32 14.300 32 32V320c0 17.700-14.300 32-32 32s-32-14.300-32-32V224c0-17.700 14.300-32 32-32zm96-96c0-17.700 14.300-32 32-32s32 14.300 32 32V320c0 17.700-14.300 32-32 32s-32-14.300-32-32V128z"/></svg>',
+    prospects: '<svg viewBox="0 0 512 512" aria-hidden="true"><path fill="currentColor" d="M48 64C21.5 64 0 85.5 0 112c0 15.1 7.1 29.3 19.2 38.4L236.8 313.6c11.4 8.5 27 8.5 38.4 0L492.8 150.4c12.1-9.1 19.2-23.3 19.2-38.4c0-26.5-21.5-48-48-48H48zM0 176V384c0 35.3 28.7 64 64 64H448c35.3 0 64-28.7 64-64V176L294.4 339.2c-22.8 17.1-54 17.1-76.8 0L0 176z"/></svg>',
     bars: '<svg viewBox="0 0 448 512" aria-hidden="true"><path fill="currentColor" d="M0 96C0 78.300 14.300 64 32 64H416c17.700 0 32 14.300 32 32s-14.300 32-32 32H32C14.300 128 0 113.700 0 96zM0 256c0-17.700 14.300-32 32-32H416c17.700 0 32 14.300 32 32s-14.300 32-32 32H32c-17.700 0-32-14.300-32-32zM448 416c0 17.700-14.300 32-32 32H32c-17.700 0-32-14.300-32-32s14.300-32 32-32H416c17.700 0 32 14.300 32 32z"/></svg>',
     check: '<svg viewBox="0 0 448 512" aria-hidden="true"><path fill="currentColor" d="M438.600 105.400c12.500 12.500 12.500 32.800 0 45.300l-256 256c-12.500 12.500-32.800 12.500-45.300 0l-128-128c-12.500-12.500-12.500-32.800 0-45.300s32.800-12.500 45.300 0L160 338.700 393.400 105.400c12.500-12.500 32.800-12.500 45.300 0z"/></svg>'
   };
@@ -1096,6 +1097,28 @@
       ".lk-ash-note{font-size:13px;color:#8E8BA6;padding:14px 16px;}" +
       ".lk-ash-bar{display:none;}" +
       ".lk-ash-ov{display:none;}" +
+      /* #208 Prospects view */
+      ".lk-ash-pform{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px 12px;background:#fff;border:1px solid #EEEDF6;border-radius:14px;padding:16px;}" +
+      ".lk-ash-pf{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:600;color:#4A4761;min-width:0;}" +
+      ".lk-ash-pf.full{grid-column:1/-1;}" +
+      ".lk-ash-pf .lk-ash-search{flex:none;width:100%;}" +
+      "textarea.lk-ash-search{padding:10px 12px;min-height:auto;line-height:1.5;resize:vertical;font-family:inherit;}" +
+      "select.lk-ash-search{font-family:inherit;}" +
+      ".lk-ash-psnap{flex-direction:row;flex-wrap:wrap;align-items:center;gap:10px;font-weight:500;color:#8E8BA6;}" +
+      ".lk-ash-pform .lk-ash-acts{flex-direction:row;flex-wrap:wrap;align-items:center;gap:8px;}" +
+      ".lk-ash-psnap .lk-ash-btn.is-busy{opacity:.6;pointer-events:none;}" +
+      ".lk-ash-pmsg{font-size:13px;color:#4A4761;}" +
+      ".lk-ash-prow{grid-template-columns:minmax(0,1fr) auto;}" +
+      ".lk-ash-pdetail{grid-column:1/-1;border-top:1px dashed #EEEDF6;padding-top:12px;display:flex;flex-direction:column;gap:10px;}" +
+      ".lk-ash-pdetail .lk-ash-sech{margin:0;}" +
+      ".lk-ash-pdetail .lk-ash-search{flex:none;width:100%;}" +
+      ".lk-ash-btn[hidden],.lk-ash-search[hidden]{display:none;}" +
+      ".lk-ash-pnote{margin:0;font-size:13.5px;color:#4A4761;background:#F7F6FC;border-radius:10px;padding:10px 12px;}" +
+      ".lk-ash-pbody{font-size:14.5px;}" +
+      ".lk-ash-pwhen{margin:0;font-size:12.5px;color:#8E8BA6;}" +
+      ".lk-ash-psent{font-size:13px;color:#4A4761;}.lk-ash-psent summary{cursor:pointer;font-weight:600;color:#6002EE;}" +
+      ".lk-ash-psent pre{white-space:pre-wrap;font-family:inherit;font-size:13px;background:#F7F6FC;border-radius:10px;padding:10px 12px;margin:6px 0 10px;}" +
+      ".lk-ash-pmore{padding-top:4px;border-top:1px solid #EEEDF6;}" +
       "@media (max-width:991px){" +
         ".lk-ash{grid-template-columns:minmax(0,1fr);gap:14px;}" +
         ".lk-ash-bar{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #EEEDF6;border-radius:12px;padding:6px 8px 6px 14px;font-size:15px;font-weight:700;}" +
@@ -1145,7 +1168,7 @@
     function T(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
 
     var shell = T('div', 'lk-ash');
-    var VIEWS = [['today', 'Today'], ['vendors', 'Vendors'], ['insights', 'Insights']];
+    var VIEWS = [['today', 'Today'], ['vendors', 'Vendors'], ['prospects', 'Prospects'], ['insights', 'Insights']];
 
     // phone top bar + drawer overlay (same behaviour as the vendor dashboard)
     var bar = T('div', 'lk-ash-bar'); var barTitle = T('span', null, 'Today'); bar.appendChild(barTitle);
@@ -1418,6 +1441,329 @@
       });
     }
 
+    // ── PROSPECTS (#208, mounted on first open) ─────────────────────────────
+    // People F met who have not signed up yet. One row each; two notes written
+    // in her voice from the detail she typed; she reads, edits, taps Send. Email
+    // goes out as francesca@ through the route; Instagram / text she sends by
+    // hand and marks. Ten days after note 1, note 2 comes due; after that the
+    // row goes quiet on its own (never a third). Sign-ups are matched nightly.
+    var prospectsBuilt = false;
+    function buildProspects() {
+      if (prospectsBuilt) return; prospectsBuilt = true;
+      var v = views.prospects;
+      var head = T('div', 'lk-ash-h'), hl = T('div'); hl.appendChild(T('h2', null, 'Prospects'));
+      var sub = T('p', null, 'People you met who have not opened a storefront yet.'); hl.appendChild(sub); head.appendChild(hl);
+      var addBtn = T('button', 'lk-ash-btn primary', 'Add a prospect'); addBtn.type = 'button'; head.appendChild(addBtn);
+      v.appendChild(head);
+      if (!SAPI || !SAPI.admin || !SAPI.admin.prospects) { v.appendChild(T('div', 'lk-ash-note', 'The prospect tools need the newer client script.')); return; }
+      var A = SAPI.admin;
+
+      var ERR = {
+        not_admin: 'Only the admin can do that.', rpc_unavailable: 'The database side is not installed yet (patch_prospects.sql).',
+        no_key: 'The note writer is not set up yet (ANTHROPIC_API_KEY). Write the note yourself below.',
+        draft_failed: 'The notes could not be written this time. Try again, or write them yourself below.',
+        read_failed: 'Could not read that card. Type the details in.', image_too_large: 'That photo is too big. Try again a little closer.',
+        send_failed: 'Brevo refused the send. Is francesca@golokali.com a verified sender in Brevo? Nothing was stamped.',
+        stamp_failed: 'The email WENT OUT but the row could not be stamped. Press "Mark as sent" so it is not sent twice.',
+        already_sent: 'That note already went out.', closed: 'This prospect is closed; reopen it first.',
+        em_dash: 'There is an em dash in the text. Replace it with a comma or a period.', email_required: 'An email address is needed for the email channel.',
+        business_name_required: 'Business name is required.', not_email_channel: 'This one is Instagram or text: copy the note and send it yourself.'
+      };
+      function errText(e) { return ERR[e] || ('Something went wrong (' + e + ').'); }
+      function fmtDate(s) { if (!s) return ''; try { var d = /^\d{4}-\d{2}-\d{2}$/.test(String(s)) ? new Date(s + 'T12:00:00') : new Date(s); return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); } catch (e) { return ''; } }
+      function daysUntil(s) { if (!s) return null; return Math.ceil((new Date(s).getTime() - Date.now()) / 86400000); }
+      function esc(s) { return String(s == null ? '' : s); }
+
+      // ── add / edit form (one panel, re-used for edits) ──────────────────
+      var panel = T('div', 'lk-ash-panel'); panel.hidden = true; v.appendChild(panel);
+      var form = document.createElement('form'); form.setAttribute('novalidate', ''); form.className = 'lk-ash-pform';
+      var editingId = null;
+      function fld(label, name, type, ph, max, full) {
+        var w = T('label', 'lk-ash-pf'); w.appendChild(T('span', null, label));
+        var i = document.createElement(type === 'textarea' ? 'textarea' : type === 'select' ? 'select' : 'input');
+        if (type !== 'textarea' && type !== 'select') i.type = type;
+        i.name = name; i.className = 'lk-ash-search'; if (ph) i.placeholder = ph; if (max) i.maxLength = max; if (type === 'textarea') i.rows = 3;
+        if (full) w.classList.add('full');
+        w.appendChild(i); form.appendChild(w); return i;
+      }
+      // Snap a card: phone camera -> downscale -> route -> fields pre-filled.
+      var snapW = T('div', 'lk-ash-pf full lk-ash-psnap');
+      var snapBtn = T('label', 'lk-ash-btn', 'Snap a business card'); var snapIn = document.createElement('input'); snapIn.type = 'file'; snapIn.accept = 'image/*'; snapIn.setAttribute('capture', 'environment'); snapIn.hidden = true; snapBtn.appendChild(snapIn);
+      var snapMsg = T('span', null, 'Point the camera at their card and the fields fill in. Then add the one thing you remember about them.');
+      snapW.appendChild(snapBtn); snapW.appendChild(snapMsg); form.appendChild(snapW);
+      var fFirst = fld('First name', 'first_name', 'text', 'e.g. Stacey', 60);
+      var fBiz = fld('Business *', 'business_name', 'text', 'e.g. Kona Ice', 120);
+      var fEmail = fld('Email', 'email', 'email', 'name@business.com', 254);
+      var fPhone = fld('Phone', 'phone', 'tel', '(832) 555-0100', 40);
+      var fIg = fld('Instagram', 'instagram', 'text', 'handle, no @', 60);
+      var fChan = fld('Reach them by', 'channel', 'select');
+      [['email', 'Email (sent for you)'], ['instagram', 'Instagram DM (you send)'], ['text', 'Text message (you send)']].forEach(function (o) { var op = document.createElement('option'); op.value = o[0]; op.textContent = o[1]; fChan.appendChild(op); });
+      var fCat = fld('Kind of business', 'category_id', 'select');
+      var o0 = document.createElement('option'); o0.value = ''; o0.textContent = 'Pick one'; fCat.appendChild(o0);
+      Object.keys(CAT_NAMES).forEach(function (id) { var o = document.createElement('option'); o.value = id; o.textContent = CAT_NAMES[id]; fCat.appendChild(o); });
+      var fWhere = fld('Where you met', 'met_where', 'text', 'e.g. MCHC mixer at Lupita’s', 160);
+      var fWhen = fld('When', 'met_on', 'date'); try { fWhen.valueAsDate = new Date(); } catch (e) {}
+      var fOffer = fld('The offer', 'offer', 'select');
+      [['either', 'Sign up, or I set it up for them'], ['build', 'I build it for them'], ['self', 'They sign up themselves']].forEach(function (o) { var op = document.createElement('option'); op.value = o[0]; op.textContent = o[1]; fOffer.appendChild(op); });
+      var fNote = fld('The one thing you remember about them *', 'note', 'textarea', 'What you talked about, what they make, what made you smile. This is what makes the note sound like you.', 1000, true);
+      var acts = T('div', 'lk-ash-pf full lk-ash-acts'); acts.style.justifyContent = 'flex-start';
+      var saveBtn = T('button', 'lk-ash-btn primary', 'Save and write the notes'); saveBtn.type = 'submit';
+      var cancelBtn = T('button', 'lk-ash-btn', 'Cancel'); cancelBtn.type = 'button';
+      var fmsg = T('span', 'lk-ash-pmsg', '');
+      acts.appendChild(saveBtn); acts.appendChild(cancelBtn); acts.appendChild(fmsg); form.appendChild(acts);
+      panel.appendChild(form);
+
+      function openForm(row) {
+        editingId = row ? row.id : null;
+        form.reset(); try { fWhen.valueAsDate = new Date(); } catch (e) {}
+        if (row) {
+          fFirst.value = esc(row.first_name); fBiz.value = esc(row.business_name); fEmail.value = esc(row.email); fPhone.value = esc(row.phone);
+          fIg.value = esc(row.instagram); fChan.value = row.channel || 'email'; fCat.value = row.category_id != null ? String(row.category_id) : '';
+          fWhere.value = esc(row.met_where); if (row.met_on) fWhen.value = String(row.met_on).slice(0, 10); fOffer.value = row.offer || 'either'; fNote.value = esc(row.note);
+        }
+        saveBtn.textContent = row ? 'Save changes' : 'Save and write the notes';
+        fmsg.textContent = ''; panel.hidden = false; addBtn.textContent = 'Close'; addBtn.setAttribute('aria-expanded', 'true');
+        try { panel.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) {}
+        (row ? fNote : fFirst).focus();
+      }
+      function closeForm() { panel.hidden = true; editingId = null; addBtn.textContent = 'Add a prospect'; addBtn.setAttribute('aria-expanded', 'false'); }
+      addBtn.addEventListener('click', function () { if (panel.hidden) openForm(null); else closeForm(); });
+      cancelBtn.addEventListener('click', closeForm);
+
+      // Downscale the card photo on the phone before it travels (long edge 1400px, JPEG).
+      function shrink(file) {
+        return new Promise(function (resolve, reject) {
+          var url = URL.createObjectURL(file), img = new Image();
+          img.onload = function () {
+            try {
+              var w = img.naturalWidth, h = img.naturalHeight, max = 1400, s = Math.min(1, max / Math.max(w, h));
+              var c = document.createElement('canvas'); c.width = Math.round(w * s); c.height = Math.round(h * s);
+              c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+              var data = c.toDataURL('image/jpeg', 0.85); URL.revokeObjectURL(url);
+              resolve(data.split(',')[1]);
+            } catch (e) { URL.revokeObjectURL(url); reject(e); }
+          };
+          img.onerror = function () { URL.revokeObjectURL(url); reject(new Error('decode')); };
+          img.src = url;
+        });
+      }
+      snapIn.addEventListener('change', function () {
+        var f = snapIn.files && snapIn.files[0]; if (!f) return;
+        if (!A.prospectCard) { snapMsg.textContent = 'Card reading needs the newer client script.'; return; }
+        snapMsg.textContent = 'Reading the card…'; snapBtn.classList.add('is-busy');
+        shrink(f).then(function (b64) { return A.prospectCard(b64, 'image/jpeg'); }).then(function (res) {
+          snapBtn.classList.remove('is-busy'); snapIn.value = '';
+          if (!res || res.error) { snapMsg.textContent = errText(res && res.error || 'read_failed'); return; }
+          var d = res.data && res.data.fields || {};
+          if (d.first_name && !fFirst.value) fFirst.value = d.first_name;
+          if (d.business_name && !fBiz.value) fBiz.value = d.business_name;
+          if (d.email && !fEmail.value) fEmail.value = d.email;
+          if (d.phone && !fPhone.value) fPhone.value = d.phone;
+          if (d.instagram && !fIg.value) fIg.value = d.instagram;
+          if (d.email) fChan.value = 'email'; else if (d.instagram) fChan.value = 'instagram';
+          snapMsg.textContent = 'Filled in from the card. Check the spelling, then add what you remember.'; fNote.focus();
+        }).catch(function () { snapBtn.classList.remove('is-busy'); snapIn.value = ''; snapMsg.textContent = 'Could not read that photo. Type the details in.'; });
+      });
+
+      // ── list ───────────────────────────────────────────────────────────
+      var tools = T('div', 'lk-ash-tools'); v.appendChild(tools);
+      var list = T('div', 'lk-ash-list'); list.appendChild(T('div', 'lk-ash-note', 'Loading prospects…')); v.appendChild(list);
+      var rows = [], filt = 'due', openId = null, fbtns = [];
+      var GROUPS = [['due', 'Ready to send'], ['waiting', 'Waiting'], ['won', 'Replied or signed up'], ['quiet', 'Quiet'], ['all', 'All']];
+      function groupOf(r) {
+        if (r.status === 'replied' || r.status === 'signed_up') return 'won';
+        if (r.due) return 'due';
+        if (r.status === 'waiting') return 'waiting';
+        return 'quiet';
+      }
+      function pill(r) {
+        if (r.status === 'signed_up') return ['working', 'Signed up'];
+        if (r.status === 'replied') return ['working', 'Replied'];
+        if (r.status === 'declined') return ['notlive', 'Not now'];
+        if (r.status === 'quiet') return ['notlive', 'Quiet'];
+        if (r.due) return ['unseen', r.due_touch === 2 ? 'Last note due' : 'First hello due'];
+        var d = daysUntil(r.next_touch_at);
+        return ['seen', d == null ? 'Waiting' : d <= 0 ? 'Due today' : 'Note 2 in ' + d + (d === 1 ? ' day' : ' days')];
+      }
+      function paintTools() {
+        tools.innerHTML = ''; fbtns = [];
+        if (filt !== 'all' && !rows.some(function (r) { return groupOf(r) === filt; })) filt = rows.some(function (r) { return r.due; }) ? 'due' : 'all';
+        GROUPS.forEach(function (g) {
+          var cnt = g[0] === 'all' ? rows.length : rows.filter(function (r) { return groupOf(r) === g[0]; }).length;
+          if (!cnt && g[0] !== 'all') return;
+          var b = T('button', 'lk-ash-fchip', g[1]); b.type = 'button'; b.appendChild(T('span', null, String(cnt))); b.setAttribute('aria-pressed', filt === g[0] ? 'true' : 'false');
+          b.addEventListener('click', function () { filt = g[0]; fbtns.forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); }); paint(); });
+          fbtns.push(b); tools.appendChild(b);
+        });
+        var due = rows.filter(function (r) { return r.due; }).length, wait = rows.filter(function (r) { return r.status === 'waiting' && !r.due; }).length, won = rows.filter(function (r) { return r.status === 'signed_up'; }).length;
+        sub.textContent = rows.length ? (due + ' ready to send · ' + wait + ' waiting · ' + won + ' signed up') : 'People you met who have not opened a storefront yet.';
+      }
+      function load() {
+        return A.prospects().then(function (res) {
+          if (!res || res.error || !res.data || res.data.ok !== true) {
+            list.innerHTML = ''; list.appendChild(T('div', 'lk-ash-note', res && res.data && res.data.reason ? errText(res.data.reason) : 'Prospects could not load. Is patch_prospects.sql applied?')); return;
+          }
+          rows = res.data.rows || [];
+          if (filt === 'due' && !rows.some(function (r) { return r.due; }) && rows.length) filt = 'all';
+          paintTools(); paint();
+        });
+      }
+      function paint() {
+        list.innerHTML = '';
+        var show = rows.filter(function (r) { return filt === 'all' || groupOf(r) === filt; });
+        if (!show.length) { list.appendChild(T('div', 'lk-ash-note', rows.length ? 'Nothing in this group.' : 'No prospects yet. Tap "Add a prospect" after your next event.')); return; }
+        show.forEach(function (r) { list.appendChild(prow(r)); });
+      }
+      function replaceRow(row) {
+        for (var i = 0; i < rows.length; i++) if (rows[i].id === row.id) { row.vendor_slug = row.vendor_slug || rows[i].vendor_slug; rows[i] = row; break; }
+        paintTools(); paint();
+      }
+
+      function prow(r) {
+        var row = T('div', 'lk-ash-row lk-ash-prow'), left = T('div');
+        var who = (r.first_name ? r.first_name + ', ' : '') + r.business_name;
+        left.appendChild(T('b', null, who));
+        var line = r.note ? r.note : (r.met_where ? 'Met at ' + r.met_where : 'No note yet');
+        left.appendChild(T('small', null, line.length > 140 ? line.slice(0, 137) + '…' : line));
+        var meta = T('div', 'lk-ash-meta'); var pl = pill(r); meta.appendChild(T('span', 'lk-ash-pill ' + pl[0], pl[1]));
+        meta.appendChild(T('span', null, r.channel === 'email' ? (r.email || 'email') : r.channel === 'instagram' ? '@' + (r.instagram || '?') : 'text ' + (r.phone || '')));
+        if (r.met_where || r.met_on) meta.appendChild(T('span', null, (r.met_where ? r.met_where + ' · ' : '') + fmtDate(r.met_on)));
+        if (r.touch1_at) meta.appendChild(T('span', null, 'Note 1 ' + fmtDate(r.touch1_at)));
+        if (r.touch2_at) meta.appendChild(T('span', null, 'Note 2 ' + fmtDate(r.touch2_at)));
+        if (r.vendor_slug) { var a = T('a', null, '/' + r.vendor_slug); a.href = '/' + r.vendor_slug; a.target = '_blank'; a.rel = 'noopener'; meta.appendChild(a); }
+        left.appendChild(meta); row.appendChild(left);
+        var acts = T('div', 'lk-ash-acts');
+        var open = T('button', 'lk-ash-btn' + (r.due ? ' primary' : ''), openId === r.id ? 'Close' : (r.due ? 'Read and send' : 'Open')); open.type = 'button';
+        open.addEventListener('click', function () { openId = openId === r.id ? null : r.id; paint(); });
+        acts.appendChild(open); row.appendChild(acts);
+        if (openId === r.id) row.appendChild(detail(r));
+        return row;
+      }
+
+      function detail(r) {
+        var box = T('div', 'lk-ash-pdetail');
+        var msg = T('div', 'lk-ash-pmsg', '');
+        var closed = r.status === 'replied' || r.status === 'signed_up' || r.status === 'declined' || r.status === 'quiet';
+        var touch = r.due_touch || (r.touch1_at ? 2 : 1);
+        var isEmail = r.channel === 'email';
+        if (r.note) { var n = T('p', 'lk-ash-pnote'); n.appendChild(T('b', null, 'You noted: ')); n.appendChild(document.createTextNode(r.note)); box.appendChild(n); }
+
+        if (!closed) {
+          var hasDraft = !!(touch === 1 ? r.body1 : r.body2);
+          var dh = T('div', 'lk-ash-sech'); dh.appendChild(T('h3', null, touch === 1 ? 'The first hello' : 'The last note')); dh.appendChild(T('span', null, isEmail ? 'goes out from francesca@golokali.com' : 'copy it into ' + (r.channel === 'instagram' ? 'Instagram' : 'a text')));
+          var rewrite = T('button', null, hasDraft ? 'Rewrite both notes' : 'Write the notes for me'); rewrite.type = 'button'; dh.appendChild(rewrite); box.appendChild(dh);
+          var subj = document.createElement('input'); subj.className = 'lk-ash-search'; subj.placeholder = 'Subject'; subj.value = esc(touch === 1 ? r.subject1 : r.subject2); subj.maxLength = 200; subj.hidden = !isEmail;
+          var body = document.createElement('textarea'); body.className = 'lk-ash-search lk-ash-pbody'; body.rows = 11; body.maxLength = 4000; body.placeholder = hasDraft ? '' : 'No draft yet. Press "Write the notes for me", or write it here.'; body.value = esc(touch === 1 ? r.body1 : r.body2);
+          box.appendChild(subj); box.appendChild(body);
+          var when = T('p', 'lk-ash-pwhen', touch === 2 && !r.due ? 'This one is not due until ' + fmtDate(r.next_touch_at) + '. You can still send it now.' : (touch === 2 ? 'After this one the row goes quiet. No third note, ever.' : 'After this, note 2 comes due in ten days unless they reply or sign up.'));
+          box.appendChild(when);
+          var acts = T('div', 'lk-ash-acts'); acts.style.justifyContent = 'flex-start';
+          var send = T('button', 'lk-ash-btn primary', isEmail ? 'Send as Francesca' : 'Copy the note'); send.type = 'button';
+          var mark = T('button', 'lk-ash-btn', 'Mark as sent'); mark.type = 'button'; mark.hidden = isEmail;
+          var saveDraft = T('button', 'lk-ash-btn', 'Save my edits'); saveDraft.type = 'button';
+          acts.appendChild(send); acts.appendChild(mark); acts.appendChild(saveDraft); box.appendChild(acts);
+
+          function draftPayload() { var p = { id: r.id }; if (touch === 1) { p.subject1 = subj.value; p.body1 = body.value; } else { p.subject2 = subj.value; p.body2 = body.value; } return p; }
+          saveDraft.addEventListener('click', function () {
+            saveDraft.disabled = true; msg.textContent = '';
+            A.prospectSave(draftPayload()).then(function (res) { saveDraft.disabled = false; var d = res && res.data; if (!d || d.ok !== true) { msg.textContent = errText((d && d.reason) || (res && res.error) || 'save'); return; } msg.textContent = 'Saved.'; replaceRow(d.row); openId = r.id; paint(); });
+          });
+          rewrite.addEventListener('click', function () {
+            if (!A.prospectDraft) { msg.textContent = 'Needs the newer client script.'; return; }
+            if (hasDraft && !window.confirm('Replace both drafts with new ones? Your edits to them will be lost.')) return;
+            rewrite.disabled = true; rewrite.textContent = 'Writing…'; msg.textContent = '';
+            A.prospectDraft(r.id).then(function (res) {
+              rewrite.disabled = false; rewrite.textContent = 'Rewrite both notes';
+              if (!res || res.error) { msg.textContent = errText(res && res.error || 'draft_failed'); return; }
+              replaceRow(res.data.row); openId = r.id; paint();
+            });
+          });
+          function afterSent(res) {
+            send.disabled = false; send.textContent = isEmail ? 'Send as Francesca' : 'Copy the note'; mark.disabled = false;
+            var d = res && res.data;
+            if (res && res.error) { msg.textContent = errText(res.error); return; }
+            if (!d || d.ok !== true) { msg.textContent = errText((d && d.reason) || 'send_failed'); return; }
+            replaceRow(d.row); openId = null; paint();
+          }
+          send.addEventListener('click', function () {
+            var s = subj.value.trim(), b = body.value.trim();
+            if (b.length < 20) { msg.textContent = 'The note is empty.'; return; }
+            if (/[—–]/.test(s + b)) { msg.textContent = ERR.em_dash; return; }
+            if (!isEmail) {
+              var ok = false; try { navigator.clipboard.writeText(b); ok = true; } catch (e) {}
+              if (!ok) { body.select(); try { ok = document.execCommand('copy'); } catch (e2) {} }
+              msg.textContent = ok ? 'Copied. Send it, then press "Mark as sent".' : 'Select the text and copy it, then press "Mark as sent".';
+              return;
+            }
+            if (!s) { msg.textContent = 'Add a subject line.'; return; }
+            if (!window.confirm('Send this note to ' + (r.email || 'them') + ' now, from francesca@golokali.com?')) return;
+            send.disabled = true; send.textContent = 'Sending…'; msg.textContent = '';
+            A.prospectSend(r.id, touch, s, b).then(afterSent);
+          });
+          mark.addEventListener('click', function () {
+            if (!window.confirm('Mark note ' + touch + ' as sent to ' + (r.first_name || r.business_name) + '?')) return;
+            mark.disabled = true;
+            A.prospectMarkSent(r.id, touch, subj.value.trim() || null, body.value.trim() || null).then(afterSent);
+          });
+        } else {
+          var st = T('p', 'lk-ash-pwhen', r.status === 'signed_up' ? 'They signed up' + (r.signed_up_at ? ' on ' + fmtDate(r.signed_up_at) : '') + '. The sequence stopped on its own.'
+            : r.status === 'replied' ? 'They replied' + (r.replied_at ? ' on ' + fmtDate(r.replied_at) : '') + '. It is in your hands now.'
+            : r.status === 'quiet' ? 'Both notes went out. The door stays open; nothing more is scheduled.' : 'Marked not now.');
+          box.appendChild(st);
+          if (r.sent2_body || r.sent1_body) { var sent = T('details', 'lk-ash-psent'); var sm = T('summary', null, 'What went out'); sent.appendChild(sm); if (r.sent1_body) { sent.appendChild(T('b', null, 'Note 1' + (r.sent1_subject ? ': ' + r.sent1_subject : ''))); sent.appendChild(T('pre', null, r.sent1_body)); } if (r.sent2_body) { sent.appendChild(T('b', null, 'Note 2' + (r.sent2_subject ? ': ' + r.sent2_subject : ''))); sent.appendChild(T('pre', null, r.sent2_body)); } box.appendChild(sent); }
+        }
+
+        var more = T('div', 'lk-ash-acts lk-ash-pmore'); more.style.justifyContent = 'flex-start';
+        function small(label, fn) { var b = T('button', 'lk-ash-btn', label); b.type = 'button'; b.addEventListener('click', fn); more.appendChild(b); return b; }
+        if (r.status !== 'replied' && r.status !== 'signed_up') small('They replied', function () { setStatus(r, 'replied'); });
+        if (r.status !== 'declined' && r.status !== 'signed_up') small('Not now', function () { setStatus(r, 'declined'); });
+        if (r.status === 'replied' || r.status === 'declined') small('Reopen', function () { setStatus(r, 'new'); });
+        small('Edit details', function () { openForm(r); });
+        small('Delete', function () {
+          if (!window.confirm('Delete ' + r.business_name + ' from prospects? This cannot be undone.')) return;
+          A.prospectDelete(r.id).then(function (res) { if (res && res.data && res.data.ok) { rows = rows.filter(function (x) { return x.id !== r.id; }); openId = null; paintTools(); paint(); } else msg.textContent = 'Could not delete.'; });
+        });
+        box.appendChild(more); box.appendChild(msg);
+        return box;
+      }
+      function setStatus(r, status) {
+        A.prospectStatus(r.id, status).then(function (res) { var d = res && res.data; if (d && d.ok === true) { replaceRow(d.row); openId = r.id; paint(); } else window.alert(errText((d && d.reason) || (res && res.error) || 'status')); });
+      }
+
+      // ── save ───────────────────────────────────────────────────────────
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var p = {
+          first_name: fFirst.value.trim(), business_name: fBiz.value.trim(), email: fEmail.value.trim(), phone: fPhone.value.trim(),
+          instagram: fIg.value.trim(), channel: fChan.value, category_id: fCat.value ? Number(fCat.value) : null,
+          met_where: fWhere.value.trim(), met_on: fWhen.value || null, offer: fOffer.value, note: fNote.value.trim()
+        };
+        if (!p.business_name) { fmsg.textContent = 'Business name is required.'; fBiz.focus(); return; }
+        if (p.channel === 'email' && !p.email) { fmsg.textContent = 'Add their email, or pick Instagram or text.'; fEmail.focus(); return; }
+        if (!editingId && !p.note) { fmsg.textContent = 'Add the one thing you remember about them. It is what makes the note yours.'; fNote.focus(); return; }
+        if (editingId) p.id = editingId;
+        var isNew = !editingId;
+        saveBtn.disabled = true; saveBtn.textContent = 'Saving…'; fmsg.textContent = '';
+        A.prospectSave(p).then(function (res) {
+          var d = res && res.data;
+          if (!d || d.ok !== true) { saveBtn.disabled = false; saveBtn.textContent = isNew ? 'Save and write the notes' : 'Save changes'; fmsg.textContent = errText((d && d.reason) || (res && res.error) || 'save'); return; }
+          var row = d.row;
+          if (isNew) rows.push(row); else replaceRow(row);
+          if (!isNew || !A.prospectDraft) { saveBtn.disabled = false; closeForm(); openId = row.id; filt = 'all'; paintTools(); paint(); return; }
+          saveBtn.textContent = 'Writing the notes…';
+          A.prospectDraft(row.id).then(function (dr) {
+            saveBtn.disabled = false; closeForm();
+            if (dr && dr.data && dr.data.row) replaceRow(dr.data.row);
+            openId = row.id; filt = 'due'; paintTools(); paint();
+            if (dr && dr.error) window.alert(errText(dr.error));
+            var el = list.querySelector('.lk-ash-pdetail'); if (el) { try { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e2) {} }
+          });
+        });
+      });
+
+      load();
+    }
+
     function go(view, push) {
       if (!views[view]) view = 'today';
       VIEWS.forEach(function (vw) {
@@ -1426,6 +1772,7 @@
       });
       if (view === 'vendors') buildVendors();
       if (view === 'insights') buildInsights();
+      if (view === 'prospects') buildProspects();
       drawer(false);
       if (push) { try { history.replaceState(null, '', view === 'today' ? location.pathname + location.search : '#' + view); } catch (e) {} try { window.scrollTo(0, 0); } catch (e2) {} }
     }
