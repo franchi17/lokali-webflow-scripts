@@ -25,6 +25,11 @@
       eyebrow: "You're invited",
       title: "Lokali's first Vendor Circle gathering",
       body: 'Thursday, November 5, 5 p.m. - 7 p.m. at Mia’s Table, 18450 I-45 South, Shenandoah. Vendors only. Let me know by October 29.',
+      photo: 'https://cdn.jsdelivr.net/gh/franchi17/lokali-webflow-scripts@d440ff25790f/assets/mias-table-shakes.jpg',
+      day: 'Thursday', date: 'November 5', time: '5 p.m. - 7 p.m.',
+      venue: 'Mia\u2019s Table', address: '18450 I-45 South, Shenandoah',
+      caps: 'Vendors only \u00b7 Mia\u2019s menu if you\u2019re hungry',
+      deadline: 'Save your seat by Thursday, October 29',
       calendar: 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=Lokali%20Vendor%20Circle%20gathering%20at%20Mia%27s%20Table&dates=20261105T230000Z/20261106T010000Z&location=Mia%27s%20Table%2C%2018450%20I-45%20S%2C%20Shenandoah%2C%20TX%2077384&details=Lokali%27s%20first%20Vendor%20Circle%20gathering.%20Vendors%20only.'
     }
   };
@@ -32,6 +37,32 @@
   var EV = EVENTS[key] || EVENTS['nov5-2026']; if (!EVENTS[key]) key = 'nov5-2026';
 
   function $(id) { return document.getElementById(id); }
+  var styled = false;
+  function injectStyles() {
+    if (styled) return; styled = true;
+    var css = document.createElement('style');
+    css.textContent =
+      '.lk-rsvp-hero{padding:36px 16px 8px!important;}' +
+      '.lk-inv{max-width:560px;margin:0 auto;background:#EFE5FD;border-radius:22px;padding:14px;box-shadow:0 10px 36px rgba(43,26,74,.10);font-family:"Plus Jakarta Sans",Helvetica,Arial,sans-serif;}' +
+      '.lk-inv-frame{border:1px solid #C9B3F2;border-radius:14px;overflow:hidden;}' +
+      '.lk-inv-photo{display:block;width:100%;height:auto;aspect-ratio:2/1;object-fit:cover;}' +
+      '.lk-inv-body{padding:34px 36px 32px;text-align:center;}' +
+      '.lk-inv-caps{margin:0 0 12px;font-size:12px;line-height:1.4;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:#6002EE;}' +
+      '.lk-inv-caps-dark{color:#4A4761;margin-bottom:4px;}' +
+      '.lk-inv-caps-sm{font-size:12px;letter-spacing:.14em;margin:0 0 22px;}' +
+      '.lk-inv-title{margin:0 0 20px;font-size:30px;line-height:1.18;font-weight:800;color:#1A1829;letter-spacing:-.01em;text-wrap:balance;}' +
+      '.lk-inv-rule{width:56px;height:2px;background:#6002EE;margin:0 auto 22px;}' +
+      '.lk-inv-date{margin:0;font-size:60px;line-height:1;font-weight:800;color:#1A1829;letter-spacing:-.02em;}' +
+      '.lk-inv-time{margin:10px 0 22px;font-size:18px;line-height:1.5;font-weight:700;color:#1A1829;}' +
+      '.lk-inv-venue{margin:0 0 4px;font-size:17px;line-height:1.5;font-weight:800;color:#1A1829;}' +
+      '.lk-inv-addr{margin:0 0 6px;font-size:14px;line-height:1.6;color:#4A4761;}' +
+      '.lk-inv-deadline{margin:0;font-size:13px;line-height:1.6;color:#4A4761;}' +
+      '.lk-inv-deadline a{color:#6002EE;font-weight:600;text-decoration:underline;}' +
+      '.lk-inv-formlead{margin:0 0 18px;font-size:15px;line-height:1.6;color:#4A4761;text-align:center;}' +
+      '.lk-inv-formlead b{color:#1A1829;}' +
+      '@media (max-width:480px){.lk-inv{padding:10px;}.lk-inv-body{padding:28px 20px 26px;}.lk-inv-title{font-size:26px;}.lk-inv-date{font-size:44px;}.lk-inv-caps-sm{font-size:11px;letter-spacing:.1em;}}';
+    document.head.appendChild(css);
+  }
   function esc(s) { return String(s == null ? '' : s).replace(/[<>&"]/g, function (c) { return { '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]; }); }
 
   function init() {
@@ -40,10 +71,35 @@
     // header copy (the duplicated contact page's intro section)
     var sec = document.querySelector('.section-14');
     if (sec) {
-      var th = sec.querySelector('.title-header'), tt = sec.querySelector('._24px-title'), tb = sec.querySelector('.body');
-      if (th) th.textContent = EV.eyebrow;
-      if (tt) tt.textContent = EV.title;
-      if (tb) tb.textContent = EV.body;
+      injectStyles();
+      sec.className = 'section-14 lk-rsvp-hero';
+      sec.innerHTML =
+        '<div class="lk-inv">' +
+          '<div class="lk-inv-frame">' +
+            '<img class="lk-inv-photo" src="' + EV.photo + '" alt="">' +
+            '<div class="lk-inv-body">' +
+              '<p class="lk-inv-caps">You are invited to</p>' +
+              '<h1 class="lk-inv-title">' + esc(EV.title) + '</h1>' +
+              '<div class="lk-inv-rule"></div>' +
+              '<p class="lk-inv-caps lk-inv-caps-dark">' + esc(EV.day) + '</p>' +
+              '<p class="lk-inv-date">' + esc(EV.date) + '</p>' +
+              '<p class="lk-inv-time">' + esc(EV.time) + '</p>' +
+              '<div class="lk-inv-rule"></div>' +
+              '<p class="lk-inv-venue">' + esc(EV.venue) + '</p>' +
+              '<p class="lk-inv-addr">' + esc(EV.address) + '</p>' +
+              '<p class="lk-inv-caps lk-inv-caps-sm">' + esc(EV.caps) + '</p>' +
+              '<p class="lk-inv-deadline">' + esc(EV.deadline) + ' &middot; <a href="' + EV.calendar + '" target="_blank" rel="noopener">Add to calendar</a></p>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      var formWrap = document.querySelector('.lok-cf');
+      if (formWrap) {
+        var lead = document.createElement('p');
+        lead.className = 'lk-inv-formlead';
+        lead.innerHTML = '<b>Save your seat.</b> Ten seconds, and Mia\u2019s Table knows how many to expect.';
+        var inner = formWrap.querySelector('.lok-cf-inner') || formWrap;
+        inner.insertBefore(lead, inner.firstChild);
+      }
     }
     try { document.title = 'RSVP | Lokali'; } catch (e) {}
 
@@ -93,10 +149,20 @@
     } catch (e) {}
   }
 
+  // The duplicated contact page keeps Webflow's .w-form-done / .w-form-fail wrappers around
+  // the two message blocks, and Webflow CSS hides those wrappers. Toggle the wrapper too, or
+  // the message is set but never seen (F's first live test, 2026-10-08: a blank card).
   function show(which, text) {
     var ok = $('rs-success'), bad = $('rs-error');
-    if (ok) { ok.style.display = which === 'ok' ? 'block' : 'none'; if (which === 'ok' && text) ok.innerHTML = text; }
-    if (bad) { bad.style.display = which === 'bad' ? 'block' : 'none'; if (which === 'bad' && text) bad.textContent = text; }
+    function wrap(el, on) {
+      if (!el) return;
+      el.style.display = on ? 'block' : 'none';
+      var w = el.parentElement;
+      if (w && /\bw-form-(done|fail)\b/.test(w.className)) w.style.display = on ? 'block' : 'none';
+    }
+    wrap(ok, which === 'ok'); wrap(bad, which === 'bad');
+    if (ok && which === 'ok' && text) ok.innerHTML = text;
+    if (bad && which === 'bad' && text) bad.textContent = text;
   }
 
   function submit(form, hp) {
