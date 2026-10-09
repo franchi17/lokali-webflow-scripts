@@ -167,6 +167,19 @@
       'Add a way to reach you', 'Shoppers can reach you',
       'A phone number or email so an inquiry has somewhere to land.',
       'Add contact', CK_PROFILE + '#lok-sec-business');
+    // 2026-10-09 (F): a bridge comp, a paid plan on us until billing starts
+    // (comp_kind 'until_billing'), is asked for a card early so billing day
+    // changes nothing for them. 'forever' and untagged comps are NEVER asked:
+    // same gate as the Settings row in lokali-billing.js. Once a card is on
+    // file the row is Stripe-billed and the item simply goes away.
+    var bPlan = String((billing && billing.plan) || '').toLowerCase();
+    var bridgeComp = (bPlan === 'pro' || bPlan === 'featured') &&
+      !!billing && billing.billing_provider === 'internal' && billing.comp_kind === 'until_billing';
+    var bLabel = bPlan === 'featured' ? 'Featured' : 'Pro';
+    add('card', false,
+      'Keep ' + bLabel + ' when billing starts', bLabel + ' plan secured',
+      'Your ' + bLabel + ' plan is on us until billing starts. Add a card now and nothing changes that day. Nothing is charged before then, and you can switch to the plan with no monthly fee at any time.',
+      'Add a card', '/vendor-dashboard/settings', bridgeComp);
     add('pay', paidWays,
       'Add a way to get paid', 'Ways to get paid listed',
       'Venmo, Cash App, PayPal or Zelle. Taps on these show up as Payment clicks above.',
