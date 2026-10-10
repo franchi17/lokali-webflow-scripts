@@ -1038,7 +1038,7 @@
       ".lk-ash-ext{font-size:13.5px;color:#4A4761;text-decoration:none;padding:7px 8px;border-radius:8px;display:flex;justify-content:space-between;}" +
       ".lk-ash-ext:hover{background:#EEE6FF;color:#6002EE;}" +
       ".lk-ash-chip{display:flex;align-items:center;gap:10px;padding:10px 8px 2px;margin-top:10px;border-top:1px solid #EEEDF6;}" +
-      ".lk-ash-chip .lk-avatar{width:34px;height:34px;flex:0 0 34px;font-size:13px;}" +
+      "#lokali-account .lk-ash-chip .lk-avatar{width:34px;height:34px;min-height:0;flex:0 0 34px;font-size:13px;aspect-ratio:1/1;}" + /* id-prefixed: the base #lokali-account .lk-avatar rule set height 52 and made it an oval (F 2026-10-10) */
       ".lk-ash-name{font-size:13px;font-weight:700;color:#4A4761;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}" +
       ".lk-ash-role{font-size:11px;color:#8E8BA6;}" +
       ".lk-ash-out{all:unset;cursor:pointer;margin-left:auto;font-size:12.5px;font-weight:600;color:#6002EE;padding:8px 6px;border-radius:8px;font-family:" + F + ";}" +

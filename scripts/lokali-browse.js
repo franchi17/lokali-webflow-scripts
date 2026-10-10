@@ -1437,19 +1437,54 @@
   // 24, in order), so "shown on The Market but never opened" becomes measurable.
   // Settled (1.5s) and deduped: typing or toggling filters does not spam it, and
   // an unchanged list is not re-sent. Search passes are reported by gaSearch.
-  var _shownKey = '', _shownTimer = null;
+  // Blind spot 2 (2026-10-10): 'shown' used to mean "in the first 24 results of a
+  // filter pass". It now means ON SCREEN: a card at least half visible for a full
+  // second, watched with an IntersectionObserver, reported in batches of 24 as the
+  // shopper scrolls, each storefront once per page load. Browsers without the
+  // observer fall back to the old top-24 report so the stream never goes dark.
+  var _seenIO = null, _seenSince = {}, _seenSent = {}, _seenTimer = null, _shownKey = '';
+  function sendSeen(ids) {
+    var L = window.LokaliAPI && window.LokaliAPI.leads;
+    while (ids.length) {
+      var part = ids.splice(0, 24);
+      if (L && typeof L.trackVisit === 'function') L.trackVisit('market', { results: _lastVisibleIds.length, vendorIds: part });
+    }
+  }
+  function sweepSeen() {
+    clearTimeout(_seenTimer); _seenTimer = null;
+    var now = Date.now(), batch = [], maturing = false, id;
+    for (id in _seenSince) {
+      if (_seenSent[id]) continue;
+      if (now - _seenSince[id] >= 1000) { _seenSent[id] = 1; batch.push(Number(id)); }
+      else maturing = true;
+    }
+    if (batch.length) sendSeen(batch);
+    if (maturing) _seenTimer = setTimeout(sweepSeen, 700);
+  }
   function reportMarketShown() {
-    clearTimeout(_shownTimer);
-    _shownTimer = setTimeout(function () {
+    // runs after renderGrid (same tick, so wait for it) and observes this pass's cards
+    setTimeout(function () {
       try {
-        if (String(searchTerm || '').trim().length >= 2) return;
-        var ids = _lastVisibleIds.slice(0, 24), key = ids.join(',');
-        if (!ids.length || key === _shownKey) return;
-        _shownKey = key;
-        var L = window.LokaliAPI && window.LokaliAPI.leads;
-        if (L && typeof L.trackVisit === 'function') L.trackVisit('market', { results: _lastVisibleIds.length, vendorIds: ids });
+        if (!('IntersectionObserver' in window)) {
+          if (String(searchTerm || '').trim().length >= 2) return;
+          var ids = _lastVisibleIds.slice(0, 24), key = ids.join(',');
+          if (!ids.length || key === _shownKey) return;
+          _shownKey = key; sendSeen(ids.slice());
+          return;
+        }
+        if (!_seenIO) {
+          _seenIO = new IntersectionObserver(function (es) {
+            es.forEach(function (e) {
+              var id = e.target && e.target.dataset ? e.target.dataset.vendorId : null; if (!id) return;
+              if (e.isIntersecting && e.intersectionRatio >= 0.5) { if (!_seenSince[id]) _seenSince[id] = Date.now(); }
+              else delete _seenSince[id];
+            });
+            if (!_seenTimer) _seenTimer = setTimeout(sweepSeen, 1100);
+          }, { threshold: [0, 0.5] });
+        }
+        _renderedCards.forEach(function (c) { try { _seenIO.observe(c); } catch (e) {} });
       } catch (e) {}
-    }, 1500);
+    }, 0);
   }
   function applyFilters() {
     // A shortcut lives only while its own filter is still applied: editing the

@@ -1616,6 +1616,10 @@
       visitInsights: function (days) {
         return withClient(function (c) { return c.rpc('admin_visit_insights', { p_days: days || 30 }); });
       },
+      // blind spot 3 (2026-10-10): what comes back after an outbound tap (patch_blind_spots.sql)
+      closedLoop: function (days) {
+        return withClient(function (c) { return c.rpc('admin_closed_loop', { p_days: days || 30 }); });
+      },
       // Guide usage (patch_guide_events.sql): /start, the guides, the Resources menu,
       // the dashboard Help row. Separate RPC; the page works without it.
       guideInsights: function (days) {
