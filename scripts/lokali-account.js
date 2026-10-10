@@ -1018,7 +1018,7 @@
     st.id = 'lokali-admin-shell-styles';
     var F = "'Plus Jakarta Sans',sans-serif";
     st.textContent =
-      ".lk-ash{display:grid;grid-template-columns:230px minmax(0,1fr);gap:24px;align-items:start;font-family:" + F + ";color:#1A1829;}" +
+      ".lk-ash{display:grid;grid-template-columns:230px minmax(0,1fr);gap:28px;align-items:start;font-family:" + F + ";color:#1A1829;}" +
       ".lk-ash *{box-sizing:border-box;font-family:inherit;}" +
       ".lk-ash-rail{position:sticky;background:#fff;border:1px solid #EEEDF6;border-radius:16px;padding:16px 12px;display:flex;flex-direction:column;min-height:520px;}" +
       ".lk-ash-brand{display:flex;align-items:center;gap:8px;font-size:16px;font-weight:700;padding:4px 8px 14px;}" +
@@ -1150,17 +1150,18 @@
     var F = "'Plus Jakarta Sans',sans-serif";
     st.textContent =
       ".lk-ah-date{font-size:12.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#8E8BA6;margin:0 0 6px;}" +
-      ".lk-ash-h h2.lk-ah-story{font-size:25px;line-height:1.25;letter-spacing:-.02em;font-weight:800;max-width:32ch;text-wrap:balance;}" +
+      ".lk-ash-h h2.lk-ah-story{font-size:25px;line-height:1.25;letter-spacing:-.02em;font-weight:800;max-width:32ch;text-wrap:balance;margin:0;}" +
+      ".lk-ash-view .lk-ash-h{margin:4px 0 20px;}" +
       ".lk-ah-story em{font-style:normal;color:#6002EE;}" +
-      ".lk-ah-needs{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:#fff;border:1px solid #EEEDF6;border-radius:14px;padding:11px 14px;margin:0 0 12px;}" +
+      ".lk-ah-needs{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:#fff;border:1px solid #EEEDF6;border-radius:14px;padding:12px 16px;margin:0 0 16px;}" +
       ".lk-ah-needs .lk-ash-queues{margin:0;flex:1 1 auto;}" +
       ".lk-ah-st{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;color:#1A6640;white-space:nowrap;}" +
       ".lk-ah-st svg{width:18px;height:18px;flex:0 0 auto;}" +
       ".lk-ah-st.wait{color:#A63D74;}" +
       ".lk-ah-needs .lk-ash-btn{margin-left:auto;}" +
       ".lk-ash-needs[hidden]{display:none;}" +
-      ".lk-ash-needs{margin:0 0 20px;}" +
-      ".lk-ah-sides{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:8px 0 26px;}" +
+      ".lk-ash-needs{margin:0 0 24px;}" +
+      ".lk-ah-sides{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:0 0 24px;}" +
       ".lk-ah-side{background:#fff;border:1px solid #EEEDF6;border-radius:16px;padding:20px 22px;min-width:0;}" +
       ".lk-ah-eyebrow{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;}" +
       ".lk-ah-dot{width:10px;height:10px;border-radius:50%;}" +
@@ -1211,7 +1212,7 @@
       ".lk-ah-annot{display:grid;gap:10px;font-size:13px;color:#4A4761;line-height:1.5;}" +
       ".lk-ah-annot div{padding-left:12px;border-left:3px solid #D4BFF9;}" +
       ".lk-ah-annot b{color:#1A1829;}" +
-      ".lk-ah-two{display:grid;grid-template-columns:3fr 2fr;gap:16px;margin:0 0 26px;}" +
+      ".lk-ah-two{display:grid;grid-template-columns:3fr 2fr;gap:16px;margin:0 0 24px;}" +
       ".lk-ah-two[hidden]{display:none;}" +
       ".lk-ah-dist{display:grid;gap:5px;margin-top:4px;}" +
       ".lk-ah-drow{display:grid;grid-template-columns:170px minmax(0,1fr) 44px 30px;gap:10px;align-items:center;font-size:13px;}" +
@@ -1253,7 +1254,14 @@
       "body.lk-ah-lock{overflow:hidden;}" +
       "@media (max-width:1100px){.lk-ah-prompts{grid-template-columns:1fr;}.lk-ah-two{grid-template-columns:1fr;}.lk-ah-pulsewrap{grid-template-columns:1fr;}}" +
       "@media (max-width:991px){" +
-        ".lk-ah-sides{grid-template-columns:1fr;}" +
+        ".lk-ah-sides{grid-template-columns:1fr;gap:14px;margin:0 0 18px;}" +
+        ".lk-ah-side,.lk-ah-card{padding:16px;border-radius:14px;}" +
+        ".lk-ah-needs{padding:12px 14px;margin:0 0 14px;}" +
+        ".lk-ah-two{gap:14px;margin:0 0 18px;}" +
+        ".lk-ah-prompts{gap:10px;}.lk-ah-prompt{padding:14px 16px;}" +
+        ".lk-ah-pulsewrap{gap:16px;}" +
+        ".lk-ash-view .lk-ash-h{margin:2px 0 16px;}" +
+        ".lk-ah-dropnote{padding:11px 12px;}" +
         ".lk-ash-h h2.lk-ah-story{font-size:21px;}" +
         ".lk-ah-step{grid-template-columns:118px minmax(0,1fr) 44px;}" +
         ".lk-ah-drow{grid-template-columns:118px minmax(0,1fr) 40px 26px;}" +
