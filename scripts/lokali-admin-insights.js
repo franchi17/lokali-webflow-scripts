@@ -220,6 +220,48 @@
       ".lki-card{scroll-margin-top:120px;}" +
       "@media (max-width:760px){.lki-secbar button{min-height:44px;}}" +
       ".lki-state{padding:40px 20px;text-align:center;font-size:14px;color:#6B6880;background:#fff;border:1px solid #E8E5F3;border-radius:16px;line-height:1.6;}" +
+      /* 2026-10-10 question grid (the cards above are now drawer contents) */
+      ".lki-story{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:0 0 22px;}" +
+      ".lki-sl{background:#fff;border:1px solid #E8E5F3;border-radius:14px;padding:14px 16px;display:grid;grid-template-columns:18px minmax(0,1fr);gap:10px;align-items:start;font-size:13.5px;line-height:1.45;}" +
+      ".lki-sl .lki-ico{margin-top:3px;font-size:14px;}.lki-sl.good .lki-ico{color:#1A6640;}.lki-sl.bad .lki-ico{color:#A63D74;}.lki-sl.info .lki-ico{color:#6002EE;}" +
+      ".lki-sl-more{all:unset;cursor:pointer;grid-column:1/-1;justify-self:start;font-family:" + FONT + ";font-size:12.5px;font-weight:600;color:#6002EE;padding:2px 0;}" +
+      ".lki-group{margin:0 0 26px;}" +
+      ".lki-gh{display:flex;align-items:baseline;gap:10px;margin:0 0 10px;}" +
+      ".lki-gh h2{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin:0;}" +
+      ".lki-gh.shop h2{color:#0F6B74;}.lki-gh.vend h2{color:#A63D74;}.lki-gh.both h2{color:#6002EE;}.lki-gh.money h2{color:#1A6640;}" +
+      ".lki-gh span{color:#8E8BA6;font-size:13px;}" +
+      ".lki-qs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;}" +
+      ".lki-qs-extra .lki-qs{grid-template-columns:repeat(auto-fit,minmax(300px,1fr));}.lki-qs-extra .lki-card{margin:0;}" +
+      ".lki-q{all:unset;box-sizing:border-box;display:grid;grid-template-rows:auto auto auto 1fr auto;gap:8px;background:#fff;border:1px solid #E8E5F3;border-radius:16px;padding:18px 20px;cursor:pointer;min-width:0;font-family:" + FONT + ";color:#1A1829;text-align:left;transition:border-color .15s,transform .15s;}" +
+      ".lki-q:hover{border-color:#D4BFF9;transform:translateY(-1px);}.lki-q:focus-visible{outline:2px solid #6002EE;outline-offset:2px;}" +
+      ".lki-q.wide{grid-column:1/-1;grid-template-rows:auto auto auto;}" +
+      ".lki-q h3{font-size:15px;font-weight:700;line-height:1.35;margin:0;color:#1A1829;}" +
+      ".lki-q-ans{font-size:30px;font-weight:700;letter-spacing:-.02em;line-height:1.1;font-variant-numeric:tabular-nums;}" +
+      ".lki-q-ans small{font-size:14px;font-weight:600;color:#8E8BA6;letter-spacing:0;}" +
+      ".lki-q-mark{min-height:36px;display:flex;align-items:flex-end;}" +
+      ".lki-q-read{font-size:13px;color:#4A4761;line-height:1.5;}" +
+      ".lki-q-open{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:#6002EE;border-top:1px solid #F1EFF8;padding-top:10px;}.lki-q-open .lki-ico{font-size:11px;}" +
+      ".lki-q-bars{display:grid;gap:5px;width:100%;}" +
+      ".lki-q-brow{display:grid;grid-template-columns:130px minmax(0,1fr) 44px;gap:10px;align-items:center;font-size:12px;color:#4A4761;}" +
+      ".lki-q-brow .l{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}" +
+      ".lki-q-brow .bar{height:10px;background:#F1EFF8;border-radius:3px;overflow:hidden;}.lki-q-brow .bar i{display:block;height:100%;border-radius:3px;background:#6002EE;}" +
+      ".lki-q-brow.shop .bar i{background:#0F6B74;}.lki-q-brow.vend .bar i{background:#A63D74;}" +
+      ".lki-q-brow .n{text-align:right;font-weight:700;color:#1A1829;font-variant-numeric:tabular-nums;}" +
+      ".lki-q-stack{display:flex;height:14px;border-radius:4px;overflow:hidden;width:100%;gap:2px;}.lki-q-stack i{display:block;height:100%;}" +
+      ".lki-q-legend{display:flex;flex-wrap:wrap;gap:8px 14px;font-size:12px;color:#4A4761;margin-top:6px;}.lki-q-legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px;}" +
+      ".lki-q-cols{display:flex;align-items:flex-end;gap:3px;height:44px;width:100%;}.lki-q-cols i{flex:1;background:#6002EE;border-radius:3px 3px 0 0;opacity:.85;min-height:1px;}.lki-q-cols i.lite{background:#D9D5E8;}" +
+      ".lki-q-meter{height:10px;background:#F1EFF8;border-radius:999px;overflow:hidden;width:100%;}.lki-q-meter i{display:block;height:100%;background:#1A6640;border-radius:999px;}" +
+      ".lki-dw{position:fixed;inset:0;z-index:4000;font-family:" + FONT + ";}.lki-dw[hidden]{display:none;}" +
+      ".lki-dw-scrim{position:absolute;inset:0;background:rgba(26,24,41,.4);}" +
+      ".lki-dw-panel{position:absolute;top:0;right:0;bottom:0;width:min(720px,100%);background:#F7F6FC;border-left:1px solid #E8E5F3;padding:22px 24px 40px;overflow:auto;box-shadow:-12px 0 40px rgba(26,24,41,.14);color:#1A1829;}" +
+      ".lki-dw-head{display:flex;align-items:flex-start;gap:12px;margin:0 0 14px;}" +
+      ".lki-dw-t{font-size:18px;font-weight:700;margin:0;}.lki-dw-s{margin:4px 0 0;color:#4A4761;font-size:13px;line-height:1.5;}" +
+      ".lki-dw-x{all:unset;box-sizing:border-box;cursor:pointer;margin-left:auto;flex:0 0 auto;border:1px solid #E8E5F3;border-radius:8px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;color:#4A4761;font-size:20px;background:#fff;}" +
+      ".lki-dw-x:hover{background:#EEE6FF;color:#6002EE;}.lki-dw-x:focus-visible{outline:2px solid #6002EE;outline-offset:1px;}" +
+      ".lki-dw-body .lki-card{margin:0 0 14px;}.lki-dw-body .lki-grid2{display:grid;}" +
+      "body.lki-dw-lock{overflow:hidden;}" +
+      "@media (max-width:1100px){.lki-story{grid-template-columns:1fr;}.lki-qs{grid-template-columns:1fr;}}" +
+      "@media (max-width:760px){.lki-q{padding:16px;}.lki-q-brow{grid-template-columns:100px minmax(0,1fr) 40px;}.lki-dw-panel{padding:16px 16px 40px;}}" +
       "@media (max-width:760px){" +
         ".lki-thead{display:none;}" +
         ".lki-row{grid-template-columns:1fr 1fr 1fr 24px;row-gap:10px;}" +
@@ -1000,7 +1042,76 @@
     return c;
   }
 
-  // ── render ─────────────────────────────────────────────────
+  // ── render ────────────────────────────────────────────────
+  // 2026-10-10 (F approved the question-grid mockup): the page is a grid of
+  // QUESTIONS. Each card answers one in a number, a to-scale mark and one
+  // sentence; the detail lives in a drawer, which holds the SAME card builders
+  // the page used to lay out top to bottom. Nothing about the numbers changed.
+  var Q_ICON = {
+    chev: '<svg viewBox="0 0 320 512" aria-hidden="true"><path fill="currentColor" d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg>'
+  };
+  function qCard(o) {
+    var c = el('button', 'lki-q' + (o.wide ? ' wide' : '')); c.type = 'button';
+    c.appendChild(el('h3', null, o.q));
+    if (o.ans != null) { var a = el('div', 'lki-q-ans', typeof o.ans === 'number' ? num(o.ans) : String(o.ans)); if (o.small) a.appendChild(el('small', null, ' ' + o.small)); c.appendChild(a); }
+    var m = el('div', 'lki-q-mark'); if (o.mark) m.appendChild(o.mark); c.appendChild(m);
+    c.appendChild(el('div', 'lki-q-read', o.read || ''));
+    var op = el('div', 'lki-q-open'); op.appendChild(document.createTextNode(o.open || 'Open the numbers')); var ic = el('span', 'lki-ico'); ic.innerHTML = Q_ICON.chev; op.appendChild(ic); c.appendChild(op);
+    c.addEventListener('click', function () { openDrawer(o.q, o.sub || '', o.body); });
+    return c;
+  }
+  // a few small to-scale marks for the cards
+  function qBars(rows, tone) {
+    var b = el('div', 'lki-q-bars'), max = 0; rows.forEach(function (r) { if (r[1] > max) max = r[1]; });
+    rows.forEach(function (r) {
+      var row = el('div', 'lki-q-brow ' + (tone || ''));
+      row.appendChild(el('span', 'l', r[0]));
+      var bar = el('div', 'bar'); var i = document.createElement('i'); i.style.width = max ? Math.max(r[1] ? 1.5 : 0, (r[1] / max) * 100) + '%' : '0'; bar.appendChild(i); row.appendChild(bar);
+      row.appendChild(el('span', 'n', num(r[1]))); b.appendChild(row);
+    });
+    return b;
+  }
+  function qStack(parts) {
+    var w = el('div'), st = el('div', 'lki-q-stack'), lg = el('div', 'lki-q-legend'), tot = 0;
+    parts.forEach(function (p) { tot += p[1]; });
+    parts.forEach(function (p) {
+      if (!p[1]) return;
+      var i = document.createElement('i'); i.style.width = (tot ? (p[1] / tot) * 100 : 0) + '%'; i.style.background = p[2]; st.appendChild(i);
+      var s = el('span'); var sw = document.createElement('i'); sw.style.background = p[2]; s.appendChild(sw); s.appendChild(document.createTextNode(p[0] + ' ' + num(p[1]))); lg.appendChild(s);
+    });
+    w.appendChild(st); w.appendChild(lg); return w;
+  }
+  function qCols(vals, lite) {
+    var b = el('div', 'lki-q-cols'), max = 0; vals.forEach(function (v) { if (v > max) max = v; });
+    vals.forEach(function (v) { var i = document.createElement('i'); i.style.height = (max ? (v / max) * 100 : 0) + '%'; if (lite && lite(v)) i.className = 'lite'; b.appendChild(i); });
+    return b;
+  }
+  function qMeter(a, b) { var m = el('div', 'lki-q-meter'); var i = document.createElement('i'); i.style.width = (b ? Math.min(100, (a / b) * 100) : 0) + '%'; m.appendChild(i); return m; }
+  function qGroup(root, cls, title, sub) {
+    var g = el('section', 'lki-group'); var h = el('div', 'lki-gh ' + cls); h.appendChild(el('h2', null, title)); if (sub) h.appendChild(el('span', null, sub)); g.appendChild(h);
+    var grid = el('div', 'lki-qs'); g.appendChild(grid); root.appendChild(g); return grid;
+  }
+
+  // the drawer: one per page, reused
+  var DW = null;
+  function openDrawer(title, sub, body) {
+    if (!DW) {
+      DW = el('div', 'lki-dw'); DW.hidden = true;
+      var scrim = el('div', 'lki-dw-scrim'); DW.appendChild(scrim);
+      var panel = el('aside', 'lki-dw-panel'); panel.setAttribute('role', 'dialog'); panel.setAttribute('aria-modal', 'true');
+      var head = el('div', 'lki-dw-head'); var hl = el('div'); hl.appendChild(el('h3', 'lki-dw-t', '')); hl.appendChild(el('p', 'lki-dw-s', '')); head.appendChild(hl);
+      var x = el('button', 'lki-dw-x', '×'); x.type = 'button'; x.setAttribute('aria-label', 'Close'); head.appendChild(x); panel.appendChild(head);
+      panel.appendChild(el('div', 'lki-dw-body')); DW.appendChild(panel); document.body.appendChild(DW);
+      function close() { DW.hidden = true; document.body.classList.remove('lki-dw-lock'); }
+      x.addEventListener('click', close); scrim.addEventListener('click', close);
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !DW.hidden) close(); });
+    }
+    DW.querySelector('.lki-dw-t').textContent = title; DW.querySelector('.lki-dw-s').textContent = sub || '';
+    var b = DW.querySelector('.lki-dw-body'); b.innerHTML = '';
+    var nodes = typeof body === 'function' ? body() : body; (Array.isArray(nodes) ? nodes : [nodes]).forEach(function (n) { if (n) b.appendChild(n); });
+    DW.hidden = false; document.body.classList.add('lki-dw-lock'); b.scrollTop = 0; DW.querySelector('.lki-dw-x').focus();
+  }
+
   function render(root, d, onRange, extra) {
     root.innerHTML = '';
     var t = d.totals || {};
@@ -1010,11 +1121,15 @@
     (d.vendors || []).forEach(function (v) { v.visit = vmap[v.id] || null; });
     ctx.hasVisit = !!d.visit;
     var rows = (d.vendors || []).map(function (v) { return { v: v, dx: diagnose(v, ctx) }; });
+    var pub = rows.filter(function (r) { return r.v.is_public; });
+    var reach = 0, inside = 0; rows.forEach(function (r) { reach += reached(r.v); inside += internal(r.v); });
+    var z = d.visit || null, zf = (z && z.funnel) || {}, f = d.funnel || {}, r$ = d.revenue || {}, L = d.loop || null;
+    var C = { shop: '#0F6B74', vend: '#A63D74', both: '#6002EE', good: '#1A6640', muted: '#D9D5E8', soft: '#D4BFF9' };
 
     var head = el('div', 'lki-head');
     var hl = el('div');
     hl.appendChild(el('h2', 'lki-h1', 'Marketplace insights'));
-    hl.appendChild(el('p', 'lki-sub', 'What is working on Lokali, what is not, and why. Only you can see this.'));
+    hl.appendChild(el('p', 'lki-sub', 'Every card answers one question. Open any card for the numbers behind it. Only you can see this.'));
     head.appendChild(hl);
     var range = el('div', 'lki-range');
     RANGES.forEach(function (r) {
@@ -1025,59 +1140,183 @@
     head.appendChild(range);
     root.appendChild(head);
 
+    // the story strip: one good, one warning, one to know, from the same takeaways as before
     var tl = takeaways(d, rows);
     if (tl.length) {
-      var tc = card('The short version'); tc.className += ' lki-tldr';
-      tc.querySelector('.lki-card-h').style.marginBottom = '8px';
-      tl.forEach(function (x) {
-        var line = el('div', 'lki-tl ' + x.tone);
+      var strip = el('div', 'lki-story'), picked = [];
+      ['good', 'bad', 'info'].forEach(function (tone) { var x = tl.filter(function (y) { return y.tone === tone && picked.indexOf(y) < 0; })[0]; if (x) picked.push(x); });
+      tl.forEach(function (x) { if (picked.length < 3 && picked.indexOf(x) < 0) picked.push(x); });
+      picked.forEach(function (x) {
+        var line = el('div', 'lki-sl ' + x.tone);
         line.appendChild(icon(x.tone === 'good' ? 'check' : (x.tone === 'bad' ? 'warn' : 'eye')));
-        line.appendChild(el('div', null, x.text)); tc.appendChild(line);
+        line.appendChild(el('div', null, x.text)); strip.appendChild(line);
       });
-      root.appendChild(tc);
+      var more = el('button', 'lki-sl-more', 'All ' + tl.length + ' takeaways'); more.type = 'button';
+      more.addEventListener('click', function () { openDrawer('The short version', 'Every takeaway the numbers support this period.', function () {
+        var tc = card('The short version'); tc.className += ' lki-tldr';
+        tl.forEach(function (x) { var line = el('div', 'lki-tl ' + x.tone); line.appendChild(icon(x.tone === 'good' ? 'check' : (x.tone === 'bad' ? 'warn' : 'eye'))); line.appendChild(el('div', null, x.text)); tc.appendChild(line); });
+        return tc;
+      }); });
+      strip.appendChild(more);
+      root.appendChild(strip);
     }
 
-    var reach = 0, inside = 0; rows.forEach(function (r) { reach += reached(r.v); inside += internal(r.v); });
-    var k = el('div', 'lki-kpis');
-    k.appendChild(kpi('Storefront views', t.views || 0, t.views_prev || 0));
-    k.appendChild(kpi('Shopper reach-outs', reach, null, inside ? 'plus ' + num(inside) + ' from vendor or admin accounts' : 'contact clicks and inquiries'));
-    k.appendChild(kpi('Reach-out rate', (t.views ? pct(reach, t.views) : 0) + '%', null, 'of views led to a contact'));
-    k.appendChild(kpi('Storefronts seen', (t.vendors_seen || 0) + ' of ' + (t.vendors_public || 0), null, 'live storefronts with a view'));
-    k.appendChild(kpi('Market searches', t.searches || 0, t.searches_prev || 0));
-    k.appendChild(kpi('Saves', t.favorites || 0, t.favorites_prev || 0));
-    k.appendChild(kpi('New vendors', t.new_vendors || 0, null, plural(t.new_accounts || 0, 'new account') + ' in total'));
-    root.appendChild(k);
+    // ── Shoppers ─────────────────────────────────────────────
+    var gS = qGroup(root, 'shop', 'Shoppers', 'the demand you are building for vendors');
+    if (z && z.visits) {
+      var known = z.known_visitors || 0, ret = z.returning_visitors || 0;
+      gS.appendChild(qCard({ q: 'Are shoppers coming, and coming back?', ans: num(z.visitors || 0), small: 'visitors, ' + num(ret) + ' came back',
+        mark: qBars([['Visited', zf.visits || 0], ['Opened a storefront', zf.viewed || 0], ['Reached out', zf.contacted || 0]], 'shop'),
+        read: (zf.visits ? pct(zf.viewed || 0, zf.visits) + '% of visits open a storefront and ' + pct(zf.contacted || 0, zf.visits) + '% reach out. ' : '') + (known >= 20 ? pct(ret, known) + '% of visitors returned on another day.' : 'Too few visitors yet to judge returns.') + (z.page_only ? ' ' + plural(z.page_only, 'visit') + ' only read public pages.' : ''),
+        open: 'Visits, returns, and where they land', sub: 'People rather than page loads, counted anonymously.', body: function () { return journeysCard(d); } }));
+      var en = (z.entry || []).filter(function (e) { return e.ref !== 'market' && e.ref !== 'internal'; }), enTot = 0; en.forEach(function (e) { enTot += e.n; });
+      var REFL = { direct: 'Typed the address or a bookmark', external: 'Another site or app', share: 'A share link' };
+      gS.appendChild(qCard({ q: 'Where do visits begin?', ans: en.length ? num(en[0].n) : '0', small: en.length ? 'of ' + num(enTot) + ' ' + (REFL[en[0].ref] || en[0].ref).toLowerCase() : 'visits',
+        mark: qBars(en.slice(0, 3).map(function (e) { return [REFL[e.ref] || e.ref, e.n]; }), 'shop'),
+        read: en.length && en[0].ref === 'direct' ? 'People arrive knowing the address: a person, a card or a post sent them. Search engines are barely in the picture yet.' : 'How visits that touched a vendor began.',
+        open: 'Entry routes and landing pages', body: function () { return entryCard(d); } }));
+    } else {
+      gS.appendChild(qCard({ q: 'Are shoppers coming, and coming back?', ans: 'Not yet', read: 'Visit counting is on and waiting for its first shopper.', open: 'What this will show', body: function () { return journeysCard(d); } }));
+    }
+    var daily = d.daily || [], best = null; daily.forEach(function (r) { if (!best || r.views > best.views) best = r; });
+    var quiet = daily.filter(function (r) { return r.views < 5; }).length;
+    gS.appendChild(qCard({ q: 'When do shoppers show up?', ans: best ? shortDay(best.d) : 'No views', small: best ? 'best day, ' + plural(best.views, 'view') : '',
+      mark: qCols(daily.map(function (r) { return r.views; }), function (v) { return v < 5; }),
+      read: best ? (quiet ? plural(quiet, 'day') + ' had fewer than 5 views. ' : '') + 'Hover the day-by-day chart inside for views, reach-outs and searches together.' : 'No storefront views in this period.',
+      open: 'Day by day', body: function () { return trendCard(d); } }));
+    var ch = d.contact_channels || [];
+    gS.appendChild(qCard({ q: 'How do shoppers reach out?', ans: num(reach), small: 'real reach-outs' + (inside ? ', ' + num(inside) + ' test clicks left out' : ''),
+      mark: qBars(ch.slice(0, 3).map(function (k) { return [nice(CHANNEL, k.channel), k.n]; }), 'shop'),
+      read: ch.length && ch[0].channel === 'website' ? 'Most shoppers leave to the vendor’s own site. The inquiry form is the only path that stays on Lokali.' : (ch.length ? 'Which button people press when they decide to contact a vendor.' : 'No reach-outs in this period.'),
+      open: 'Every button, who pressed it, and the shopper side', body: function () { return [channelsCard(d), demandCard(d)]; } }));
 
-    root.appendChild(healthCard(d, rows));
-    root.appendChild(trendCard(d));
-    if (d.visit) root.appendChild(journeysCard(d));
-    root.appendChild(vendorCard(d, rows));
-    var g1 = el('div', 'lki-grid2'); g1.appendChild(funnelCard(d)); g1.appendChild(growthCard(d)); root.appendChild(g1); root.appendChild(el('div', 'lki-gap'));
-    root.appendChild(searchCards(d)); root.appendChild(el('div', 'lki-gap'));
-    root.appendChild(supplyCards(d)); root.appendChild(el('div', 'lki-gap'));
-    root.appendChild(behaviourCards(d)); root.appendChild(el('div', 'lki-gap'));
-    if (d.loop) { root.appendChild(closedLoopCard(d)); root.appendChild(el('div', 'lki-gap')); }
-    root.appendChild(sharesCard(d));
-    if (d.guides) { root.appendChild(guidesCard(d)); root.appendChild(el('div', 'lki-gap')); }
-    var g2 = el('div', 'lki-grid2'); g2.appendChild(revenueCard(d)); g2.appendChild(demandCard(d)); root.appendChild(g2); root.appendChild(el('div', 'lki-gap'));
-    root.appendChild(gapsCard(!!d.visit));
-    // #181: a section bar so the page is not one long scroll. Built from the
-    // cards that actually rendered, so it can never point at a missing section.
-    var SECTIONS = [['Health', 'Marketplace health'], ['Visitors', 'Visitors and journeys'], ['Vendors', 'Who is getting seen'], ['Demand', 'What shoppers search for'], ['Categories and areas', 'Categories: supply vs attention'], ['Growth and revenue', 'Vendor activation funnel'], ['After the click', 'After the click'], ['Where people come from', 'Word of mouth'], ['Guides', 'Guides and Start Here']];
-    var bar = el('div', 'lki-secbar');
-    var siteHead = document.querySelector('.header-wrapper.w-nav');
-    bar.style.top = ((window.matchMedia && window.matchMedia('(min-width: 992px)').matches && siteHead ? siteHead.offsetHeight : 0)) + 'px';
-    SECTIONS.forEach(function (sx) {
-      var target = root.querySelector('[data-lki-title="' + sx[1] + '"]'); if (!target) return;
-      var b = el('button', null, sx[0]); b.type = 'button';
-      b.addEventListener('click', function () { target.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
-      bar.appendChild(b);
-    });
-    if (bar.childNodes.length > 1) root.insertBefore(bar, root.children[1] || null);
-    // Host page can hand over extra cards (How people found us, QR scans, Why people left).
-    if (typeof extra === 'function') { var slot = el('div', 'lki-grid2'); slot.style.marginTop = '16px'; root.appendChild(slot); try { extra(slot); } catch (e) {} }
+    // ── Vendors ──────────────────────────────────────────────
+    var gV = qGroup(root, 'vend', 'Vendors', 'the supply, and whether it is getting its share');
+    var byKey = {}; pub.forEach(function (r) { byKey[r.dx.key] = (byKey[r.dx.key] || 0) + 1; });
+    var working = byKey.working || 0;
+    gV.appendChild(qCard({ q: 'Who is getting seen, and who is not?', ans: num(working), small: 'of ' + num(pub.length) + ' live storefronts are working',
+      mark: qStack([['Working', working, C.good], ['Getting seen', byKey.seen || 0, C.both], ['Seen, no contact', byKey.stalls || 0, '#8E8BA6'], ['Low visibility', byKey.low || 0, C.vend], ['Not seen', byKey.unseen || 0, C.muted]]),
+      read: (byKey.low || 0) * 2 >= pub.length ? 'Half or more of the live storefronts sit below the typical ' + num(Math.round(ctx.median)) + ' views. Visibility, not the storefront page, is their problem.' : (byKey.stalls ? plural(byKey.stalls, 'storefront') + ' are seen often and never contacted: the page itself is where shoppers stop.' : 'Open the list to see why each one is or is not working, and what to fix.'),
+      open: 'Every storefront with its status and the fix', body: function () { return vendorCard(d, rows); } }));
+    gV.appendChild(qCard({ q: 'Do signups become live storefronts that get contacted?', ans: num(f.live || 0), small: 'of ' + num(f.signed_up || 0) + ' live, ' + num(f.contacted || 0) + ' ever contacted',
+      mark: qBars([['Signed up', f.signed_up || 0], ['Went live', f.live || 0], ['First reach-out', f.contacted || 0]], 'vend'),
+      read: (f.median_days_to_live != null ? 'Going live takes ' + (Number(f.median_days_to_live) < 1 ? 'under a day' : f.median_days_to_live + ' days') + '. ' : '') + (f.median_days_live_to_first_reach != null ? 'The first reach-out takes a median of ' + f.median_days_live_to_first_reach + ' days after that' + ((f.live || 0) - (f.contacted || 0) > 0 ? ', and ' + num((f.live || 0) - (f.contacted || 0)) + ' storefronts are still waiting for theirs.' : '.') : 'No storefront has had a shopper reach-out yet.'),
+      open: 'The activation funnel step by step', body: function () { return funnelCard(d); } }));
+    var wk = d.weekly || [], lastW = wk[wk.length - 1], sum8 = 0, live8 = 0; wk.forEach(function (w) { sum8 += w.vendors || 0; live8 += w.went_live || 0; });
+    gV.appendChild(qCard({ q: 'Is the vendor base growing?', ans: lastW ? num(lastW.vendors || 0) : '0', small: lastW ? 'signups this week, ' + num(lastW.went_live || 0) + ' went live' : 'signups',
+      mark: qCols(wk.map(function (w) { return w.vendors || 0; })),
+      read: wk.length ? num(sum8) + ' signups in ' + plural(wk.length, 'week') + ' and ' + num(live8) + ' of them are live today. Shopper accounts are not expected to grow until follows and reviews are promoted.' : 'No signups yet.',
+      open: 'Week by week, vendors and shopper accounts', body: function () { return growthCard(d); } }));
+    var full = live0(rows, true), thin = live0(rows, false), af = avg(full), at = avg(thin), sc = 0; pub.forEach(function (r) { sc += score(r.v); });
+    gV.appendChild(qCard({ q: 'Do complete storefronts do better?', ans: full.length >= 3 && thin.length >= 3 ? num(af) + ' vs ' + num(at) : 'Too few', small: full.length >= 3 && thin.length >= 3 ? 'views, 6+ basics vs the rest' : 'to compare yet',
+      mark: qBars([['6 or 7 basics (' + full.length + ')', af], ['5 or fewer (' + thin.length + ')', at]], 'vend'),
+      read: 'The average live storefront has ' + (pub.length ? (sc / pub.length).toFixed(1) : '0') + ' of 7 basics. Open to see which basic is missing most often; that is the nudge with the most leverage.',
+      open: 'Which basic is missing most often', body: function () { return basicsCard(rows); } }));
+    var hc = healthCard(d, rows), hGood = hc.querySelectorAll('.lki-h.good').length, hBad = hc.querySelectorAll('.lki-h.bad').length, hAll = hc.querySelectorAll('.lki-h').length;
+    gV.appendChild(qCard({ q: 'How healthy is the marketplace, by the book?', ans: num(hGood), small: 'of ' + num(hAll) + ' measures look good, ' + num(hBad) + ' need attention',
+      mark: qStack([['Good', hGood, C.good], ['Needs attention', hBad, C.vend], ['Direction only', hAll - hGood - hBad, C.soft]]),
+      read: 'Ten measures marketplace operators and researchers point to at this stage, each with its source. No invented targets.',
+      open: 'All ten, with why each matters', body: function () { return healthCard(d, rows); } }));
+
+    // ── Demand and supply ────────────────────────────────────
+    var gD = qGroup(root, 'both', 'Demand and supply', 'where shoppers look and whether someone is there');
+    var zt = (d.search_zero || []).filter(function (x) { return !/test/i.test(x.term || ''); });
+    gD.appendChild(qCard({ q: 'What do people search for, and do they find it?', ans: t.searches ? num(t.searches_zero || 0) : 'None', small: t.searches ? 'of ' + num(t.searches) + ' searches found nobody' : 'in this period',
+      mark: qBars((d.search_terms || []).slice(0, 3).map(function (x) { return [x.term, x.n]; }), 'both'),
+      read: t.searches ? (zt.length ? '“' + zt.slice(0, 3).map(function (x) { return x.term; }).join('”, “') + '” returned nothing. Every zero is a shopper who left, and a vendor or synonym to add.' : 'Every search found at least one vendor.') : 'Nobody has used Market search in this period.',
+      open: 'All terms, what they found, and who clicked', body: function () { return searchCards(d); } }));
+    var cats = (d.categories || []).filter(function (k) { return k.vendors > 0; }).map(function (k) { return { k: k, per: k.views / k.vendors }; }).sort(function (a, b) { return b.per - a.per; });
+    var empty = (d.categories || []).filter(function (k) { return !k.vendors; });
+    gD.appendChild(qCard({ q: 'Which categories have attention but few vendors?', ans: cats.length ? cats[0].k.name : 'None', small: cats.length ? num(Math.round(cats[0].per)) + ' views per vendor, ' + plural(cats[0].k.vendors, 'vendor') : '',
+      mark: qBars(cats.slice(0, 3).map(function (x) { return [x.k.name, Math.round(x.per)]; }).concat(empty.slice(0, 1).map(function (k) { return [k.name, 0]; })), 'both'),
+      read: (empty.length ? empty.map(function (k) { return k.name; }).join(', ') + (empty.length === 1 ? ' has' : ' have') + ' no live vendor at all. ' : '') + (cats.length ? cats[0].k.name + ' draws the most attention per vendor. That is your recruiting order.' : ''),
+      open: 'All categories and areas', body: function () { return supplyCards(d); } }));
+    var sh = d.shares || {};
+    gD.appendChild(qCard({ q: 'Is word of mouth working?', ans: num(t.shares || 0), small: 'share links made, ' + num(sh.landings || 0) + ' brought someone',
+      mark: qBars([['Links created', t.shares || 0], ['Landed on the site', sh.landings || 0], ['Led to a reach-out', sh.converted || 0]], 'both'),
+      read: t.shares ? (sh.landings ? pct(sh.landings, t.shares) + '% of links were followed' + (sh.converted ? ' and ' + plural(sh.converted, 'one') + ' led to a reach-out.' : ' and none led to a reach-out yet. The link works; what it opens does not sell yet.') : 'Few links are followed yet. The next step is making the share worth opening.') : 'No shares in this period.',
+      open: 'By channel and by who shared', body: function () { return sharesCard(d); } }));
+    var src = {}; (d.view_sources || []).forEach(function (s) { src[s.source] = s.n; }); var vtot = (src.listing || 0) + (src.service || 0) + (src.product || 0), itemShare = vtot ? pct((src.service || 0) + (src.product || 0), vtot) : 0;
+    var ti = d.top_items || [];
+    gD.appendChild(qCard({ q: 'What do shoppers open most?', ans: itemShare + '%', small: 'of views land on an item, not a storefront',
+      mark: qBars(ti.slice(0, 3).map(function (k) { return [k.name, k.views]; }), 'both'),
+      read: itemShare >= 25 ? 'Products and services are front doors of their own. The item page deserves the same care as the storefront.' : 'Most shoppers open the storefront first; item pages are the second door.',
+      open: 'The most opened listings', body: function () { return itemsCard(d); } }));
+    if (L) {
+      gD.appendChild(qCard({ q: 'What comes back after the click?', ans: num(L.won || 0), small: 'marked Won from ' + plural(L.outbound_total || 0, 'tap') + ' that left the site',
+        mark: qBars([['Taps that left', L.outbound_total || 0], ['Inquiry messages', L.inquiries || 0], ['Replied', L.replied || 0], ['Won', L.won || 0]], 'both'),
+        read: 'A call, text or website tap cannot be followed. What comes back: replies, Won marks' + (L.won_value_cents ? ' (about $' + num(Math.round(L.won_value_cents / 100)) + ')' : '') + ', the shopper’s own answer' + (z && z.contacted_visitors ? ', and ' + num(z.contacted_then_returned || 0) + ' of ' + num(z.contacted_visitors) + ' contacting visitors who came back.' : '.'),
+        open: 'The closed loop, such as it is', body: function () { return closedLoopCard(d); } }));
+    }
+    if (d.guides) {
+      var gi = d.guides, gp = (gi.pages || []), gv = 0; gp.forEach(function (p) { gv += p.views || 0; });
+      gD.appendChild(qCard({ q: 'Are the guides and Start Here being read?', ans: num(gv), small: 'guide page views', mark: qBars(gp.slice(0, 3).map(function (p) { return [guideLabel(p.target), p.views || 0]; }), 'both'),
+        read: 'Which guides get read, how people get there, and whether Start Here turns a reader into a sign-up.', open: 'Guides and Start Here', body: function () { return guidesCard(d); } }));
+    }
+
+    // ── Money and milestones ─────────────────────────────────
+    var gM = qGroup(root, 'money', 'Money and milestones', 'counts, not percentages, at this size');
+    var byPlan = {}; (r$.by_plan || []).forEach(function (p) { byPlan[p.plan] = p.n; });
+    var listCents = (r$.mrr_cents || 0) + (r$.trial_mrr_cents || 0);
+    gM.appendChild(qCard({ q: 'What would billing look like if it started today?', ans: '$' + num(Math.round(listCents / 100)), small: 'a month at list' + (r$.paying ? ', $' + num(Math.round((r$.mrr_cents || 0) / 100)) + ' of it paying now' : ', none of it paying yet'),
+      mark: qStack([['No monthly fee', byPlan.free || r$.free || 0, C.muted], ['Pro', byPlan.pro || 0, C.soft], ['Featured', byPlan.featured || 0, C.both]]),
+      read: num((byPlan.pro || 0) + (byPlan.featured || 0)) + ' vendors sit on Pro or Featured' + (r$.trialing ? ', ' + num(r$.trialing) + ' of them on a trial that ends when billing starts. Those are the conversations to have first.' : '.'),
+      open: 'Plans, trials, comps and risk', body: function () { return revenueCard(d); } }));
+    gM.appendChild(qCard({ q: 'How close is the founding circle to full?', ans: num(r$.founding_claimed || 0), small: 'of 50 seats claimed', mark: qMeter(r$.founding_claimed || 0, 50),
+      read: (r$.founding_claimed || 0) >= 25 ? 'Past halfway.' : 'Under halfway. ' + (live8 ? 'At ' + num(live8) + ' new live storefronts in ' + plural(wk.length, 'week') + ', the circle fills in roughly ' + num(Math.max(1, Math.ceil((50 - (r$.founding_claimed || 0)) / Math.max(1, live8 / wk.length)))) + ' more weeks.' : ''),
+      open: 'Founding and plans', body: function () { return revenueCard(d); } }));
+
+    // Host page extras (How people found us, QR scans, Why people left) keep their own cards.
+    if (typeof extra === 'function') { var gX = qGroup(root, 'both', 'Also worth a look', 'signup sources, QR scans, why people left'); gX.className += ' lki-qs-extra'; try { extra(gX); } catch (e) {} }
+
+    // Blind spots, folded into one wide card
+    var gB = qGroup(root, 'both', 'What this page cannot tell you yet', 'so a quiet number is never mistaken for a fact');
+    gB.appendChild(qCard({ wide: true, q: (z ? 'Two blind spots left, two fixed' : 'Four blind spots'), read: z ? 'Fixed on Oct 10: page-only visits now count, and a Market card counts as shown only when it was on screen. Still blind: what happens after a call or website tap, and small numbers that swing on one busy day.' : 'Visits to pages that log nothing, whether a Market card was on screen, what happens after the click, and small numbers.', open: 'Read them', body: function () { return gapsCard(!!d.visit); } }));
 
     root.appendChild(el('p', 'lki-note', 'Views exclude a vendor previewing their own storefront. Days are Central time. Numbers refresh each time you open this page.'));
+  }
+
+  // The two halves of the old behaviour grid, so each can be a drawer of its own.
+  function channelsCard(d) {
+    var ch = card('How shoppers reach out', 'Which button people press when they decide to contact a vendor.');
+    ch.appendChild(rankList((d.contact_channels || []).map(function (k) { return { label: nice(CHANNEL, k.channel), n: k.n }; }), C_CONTACTS, 'No reach-outs in this period.'));
+    return ch;
+  }
+  function itemsCard(d) {
+    var it = card('Most viewed listings', 'Individual services and products shoppers opened most.');
+    it.appendChild(rankList((d.top_items || []).slice(0, 12).map(function (k) {
+      return { label: k.name, n: k.views, sub: k.vendor + ' · ' + (k.kind === 'service' ? 'Service' : 'Product'), value: plural(k.views, 'view') };
+    }), C_VIEWS, 'No listing views in this period.'));
+    var src = {}; (d.view_sources || []).forEach(function (s) { src[s.source] = s.n; });
+    var tot = (src.listing || 0) + (src.service || 0) + (src.product || 0);
+    if (tot) it.appendChild(el('p', 'lki-note', pct(src.listing || 0, tot) + '% of views were storefront pages, ' + pct(src.service || 0, tot) + '% services, ' + pct(src.product || 0, tot) + '% products.'));
+    return it;
+  }
+  // Entry routes + landing pages (blind spot 1), the drawer behind "Where do visits begin?"
+  function entryCard(d) {
+    var z = d.visit || {}, c = card('Where visits begin', 'How visits that touched a vendor started, and which page each visit landed on first.');
+    var REF = { direct: 'Typed the address or a bookmark', external: 'Another website, search engine or social app', share: 'A Lokali share link' };
+    var en = (z.entry || []).filter(function (e) { return e.ref !== 'market' && e.ref !== 'internal'; });
+    c.appendChild(rankList(en.map(function (e) { return { label: REF[e.ref] || e.ref, n: e.n, sub: e.contacted ? plural(e.contacted, 'visit') + ' ended in a reach-out' : null, value: plural(e.n, 'visit') }; }), C_SEARCH, 'No visits recorded yet.'));
+    var PAGE = { home: 'Homepage', market: 'The Market', about: 'About', pricing: 'Pricing', start: 'Start Here', guides: 'Vendor guides', features: 'Features and plans', contact: 'Contact us', week: 'This week', storefront: 'A storefront', item: 'A listing', other: 'Another page' };
+    var ln = z.landing || [];
+    if (ln.length) {
+      c.appendChild(el('div', 'lki-why-h', 'Where visits land first, and how many go on to a vendor'));
+      c.appendChild(rankList(ln.map(function (x) { return { label: PAGE[x.page] || x.page, n: x.n, sub: num(x.touched || 0) + ' of ' + num(x.n) + ' opened The Market or a storefront' + (x.contacted ? ' · ' + plural(x.contacted, 'reach-out') : ''), value: plural(x.n, 'visit') }; }), C_SEARCH, ''));
+    }
+    c.appendChild(el('p', 'lki-note', '“Direct” at this size is mostly people who were told the address: QR cards, an Instagram bio, a vendor saying “find me on Lokali”. Page-only visits are counted since the page event shipped on October 10, 2026.'));
+    return c;
+  }
+  // Which basic is missing most often (the drawer behind "Do complete storefronts do better?")
+  function basicsCard(rows) {
+    var live = rows.filter(function (r) { return r.v.is_public; });
+    var NAMES = ['Cover photo', 'Gallery photos', 'Description (80+ characters)', 'Tagline', 'Specialty tags', 'Three or more listings', 'Owner story'];
+    var miss = NAMES.map(function (n, i) { return { label: n, n: live.filter(function (r) { return !basics(r.v)[i]; }).length }; }).sort(function (a, b) { return b.n - a.n; });
+    var c = card('Storefront basics', 'The seven things a complete storefront has, and how many live storefronts are missing each one.');
+    c.appendChild(rankList(miss.map(function (m) { return { label: m.label, n: m.n, value: m.n ? 'missing on ' + num(m.n) : 'all have it' }; }), C_CONTACTS, ''));
+    var full = live0(rows, true), thin = live0(rows, false);
+    if (full.length >= 3 && thin.length >= 3) c.appendChild(el('p', 'lki-note', 'Storefronts with at least 6 of the 7 basics averaged ' + plural(avg(full), 'view') + '; the rest averaged ' + num(avg(thin)) + '. Google reports complete business profiles are 2.7 times more likely to be considered reputable; your own data points the same way.'));
+    return c;
   }
 
   // ---- Guides and Start Here (patch_guide_events.sql, 2026-09-20) ----------------

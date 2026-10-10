@@ -1349,6 +1349,18 @@
       D + ".lki-h.good{border-left-color:#8FD9B0;}html.lk-dark .lki-h.bad{border-left-color:#F0A3C9;}html.lk-dark .lki-h.info{border-left-color:#B08CFF;}" +
       D + ".lki-pill.working{background:#1F3A2E;color:#8FD9B0;}html.lk-dark .lki-pill.seen{background:#2F2750;color:#C9B0FF;}html.lk-dark .lki-pill.stalls,html.lk-dark .lki-pill.low,html.lk-dark .lki-pill.unseen,html.lk-dark .lki-flag{background:#3E2638;color:#F0A3C9;}html.lk-dark .lki-pill.fresh{background:#1F3350;color:#8FBCF2;}" +
       D + ".lki-tip{box-shadow:0 6px 18px rgba(0,0,0,.4);}" +
+      /* question grid + drawer (2026-10-10 Insights rebuild) */
+      D + ".lki-sl,html.lk-dark .lki-q,html.lk-dark .lki-dw-x{background:#242039;border-color:#352F4F;color:#F3F1FA;}" +
+      D + ".lki-q h3,html.lk-dark .lki-q-ans,html.lk-dark .lki-q-brow .n,html.lk-dark .lki-dw-t{color:#F3F1FA;}" +
+      D + ".lki-q-read,html.lk-dark .lki-q-brow,html.lk-dark .lki-q-legend,html.lk-dark .lki-dw-s{color:#C9C4DD;}" +
+      D + ".lki-q-ans small,html.lk-dark .lki-gh span{color:#9B96B3;}" +
+      D + ".lki-q-open,html.lk-dark .lki-sl-more{color:#C9B0FF;border-color:#352F4F;}" +
+      D + ".lki-q:hover{border-color:#4A3A7A;}" +
+      D + ".lki-gh.shop h2{color:#7FD3D8;}html.lk-dark .lki-gh.vend h2{color:#F0A3C9;}html.lk-dark .lki-gh.both h2{color:#C9B0FF;}html.lk-dark .lki-gh.money h2{color:#8FD9B0;}" +
+      D + ".lki-sl.good .lki-ico{color:#8FD9B0;}html.lk-dark .lki-sl.bad .lki-ico{color:#F0A3C9;}html.lk-dark .lki-sl.info .lki-ico{color:#C9B0FF;}" +
+      D + ".lki-q-brow .bar,html.lk-dark .lki-q-meter{background:#2C273F;}html.lk-dark .lki-q-brow .bar i{background:#B08CFF;}html.lk-dark .lki-q-brow.shop .bar i{background:#7FD3D8;}html.lk-dark .lki-q-brow.vend .bar i{background:#F0A3C9;}" +
+      D + ".lki-q-cols i{background:#B08CFF;}html.lk-dark .lki-q-cols i.lite{background:#4A4466;}html.lk-dark .lki-q-meter i{background:#8FD9B0;}" +
+      D + ".lki-dw-panel{background:#1B1830;border-color:#352F4F;box-shadow:-12px 0 40px rgba(0,0,0,.5);}html.lk-dark .lki-dw-scrim{background:rgba(0,0,0,.55);}" +
       /* queue sections + the vendors / prospects views */
       D + ".lk-admin-stat{background:#29223F;}html.lk-dark .lk-admin-section{background:#242039;}" +
       D + ".lk-ash-note{color:#9B96B3;}" +
