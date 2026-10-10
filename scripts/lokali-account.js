@@ -1400,7 +1400,8 @@
       for (var p = mount.parentElement; p && p !== document.body; p = p.parentElement) p.style.backgroundColor = dark ? '#1B1830' : '';
     }
     var themeMode = null; try { themeMode = localStorage.getItem('lk_admin_theme'); } catch (e) {}
-    if (themeMode !== 'dark' && themeMode !== 'light') themeMode = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+    // F 2026-10-10: dark is a choice made with the toggle, never applied on its own.
+    if (themeMode !== 'dark' && themeMode !== 'light') themeMode = 'light';
     applyTheme(themeMode);
     themeBtn.addEventListener('click', function () { themeMode = themeMode === 'dark' ? 'light' : 'dark'; try { localStorage.setItem('lk_admin_theme', themeMode); } catch (e) {} applyTheme(themeMode); });
     foot.appendChild(themeBtn);
