@@ -1360,10 +1360,11 @@
       D + ".lki-sl.good .lki-ico{color:#8FD9B0;}html.lk-dark .lki-sl.bad .lki-ico{color:#F0A3C9;}html.lk-dark .lki-sl.info .lki-ico{color:#C9B0FF;}" +
       D + ".lki-q-brow .bar,html.lk-dark .lki-q-meter{background:#2C273F;}html.lk-dark .lki-q-brow .bar i{background:#B08CFF;}html.lk-dark .lki-q-brow.shop .bar i{background:#7FD3D8;}html.lk-dark .lki-q-brow.vend .bar i{background:#F0A3C9;}" +
       D + ".lki-q-cols i{background:#B08CFF;}html.lk-dark .lki-q-cols i.lite{background:#4A4466;}html.lk-dark .lki-q-meter i{background:#8FD9B0;}" +
-      D + ".lki-dw-panel{background:#1B1830;border-color:#352F4F;box-shadow:-12px 0 40px rgba(0,0,0,.5);}html.lk-dark .lki-dw-scrim{background:rgba(0,0,0,.55);}" +
+      D + ".lki-dw-panel{background:#1B1830;border-color:#352F4F;color:#F3F1FA;box-shadow:-12px 0 40px rgba(0,0,0,.5);}html.lk-dark .lki-dw-scrim{background:rgba(0,0,0,.55);}" +
       /* queue sections + the vendors / prospects views */
       D + ".lk-admin-stat{background:#29223F;}html.lk-dark .lk-admin-section{background:#242039;}" +
       D + ".lk-ash-note{color:#9B96B3;}" +
+      D + ".lk-ash label,html.lk-dark .lk-ash legend{color:#C9C4DD;}" +
       D + ".lk-avatar{background:#2F2750;color:#C9B0FF;}";
     document.head.appendChild(st);
   }
