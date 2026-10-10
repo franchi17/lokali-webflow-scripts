@@ -37,6 +37,7 @@
   var EV = EVENTS[key] || EVENTS['nov5-2026']; if (!EVENTS[key]) key = 'nov5-2026';
 
   function $(id) { return document.getElementById(id); }
+  var changeToken = '';
   var styled = false;
   function injectStyles() {
     if (styled) return; styled = true;
@@ -127,10 +128,13 @@
 
     form.addEventListener('submit', function (e) { e.preventDefault(); e.stopImmediatePropagation(); submit(form, hp); }, true);
 
-    // prefill from the confirmation email's change links (?email=&name=&business=&sf=&a=yes|no):
-    // a second submit for the same email UPDATES the row, so "change my answer" is one tap.
+    // prefill from the confirmation email's change links (?email=&name=&business=&sf=&a=yes|no&t=):
+    // SEC-095 (2026-10-10): `t` is the signed token from that person's own email. Only a submit
+    // carrying it may change an existing answer; without it the server leaves the row alone and
+    // emails the owner their own links instead (see the pending_link branch below).
     try {
       var q = new URLSearchParams(window.location.search);
+      changeToken = q.get('t') || '';
       var setv = function (id, v) { var el = $(id); if (el && v && !el.value) el.value = v; };
       setv('rs-name', q.get('name')); setv('rs-email', q.get('email')); setv('rs-business', q.get('business'));
       var sf = q.get('sf'); if (sf && ['live','not_yet','none'].indexOf(sf) >= 0 && $('rs-storefront')) $('rs-storefront').value = sf;
@@ -185,6 +189,7 @@
       attending: (($('rs-attending') || {}).value || '') === 'yes',
       storefront: ($('rs-storefront') || {}).value || ''
     };
+    if (changeToken) data.t = changeToken;
     data.name = data.name.trim(); data.email = data.email.trim(); data.business = data.business.trim();
     if (!data.name) return show('bad', 'Please enter your name.');
     if (!data.email || data.email.indexOf('@') < 1) return show('bad', 'Please enter a valid email address.');
@@ -200,13 +205,18 @@
           return show('bad', res.j && res.j.error === 'rate_limited' ? 'Too many tries in a row. Give it an hour, or reply to the invite email.' : 'Something went wrong. Please try again, or reply to the invite email with a yes.');
         }
         form.style.display = 'none';
+        if (res.j && res.j.pending_link) {
+          // an answer already exists for this address and this submit carried no signed link
+          return show('ok', '<b>We already have an answer from ' + esc(data.email) + '.</b> To change it, use the link in the email we just sent to that address (check spam too). Nothing changed yet.');
+        }
+        var tok = res.j && typeof res.j.token === 'string' ? res.j.token : '';
         if (data.attending) {
           var first = esc(data.name.split(/\s+/)[0]);
           var nudge = data.storefront === 'live' ? '' :
-            ' <br><br><b>One more thing.</b> The printed booth card and review cards are made from live storefronts around October 30. Open yours by then and your kit will be on the table waiting for you. It is free and takes about twenty minutes: <a href="/sign-up">open a storefront</a>.';
+            ' <br><br><b>One more thing.</b> The printed booth card and review cards are made from live storefronts around October 30. Open yours by then and your kit will be on the table waiting for you. There is no monthly fee and it takes about twenty minutes: <a href="/sign-up">open a storefront</a>.';
           show('ok', '<b>You’re on the list, ' + first + '.</b> See you on November 5. A confirmation is on its way to ' + esc(data.email) + '. <a href="' + EV.calendar + '" target="_blank" rel="noopener">Add it to your calendar</a>.' + nudge);
         } else {
-          show('ok', '<b>Thanks for letting me know.</b> You’ll hear about the next one. Plans change again? <a href="/rsvp?a=yes&email=' + encodeURIComponent(data.email) + '&name=' + encodeURIComponent(data.name) + '&business=' + encodeURIComponent(data.business) + '&sf=' + encodeURIComponent(data.storefront) + '">Count me back in</a>.');
+          show('ok', '<b>Thanks for letting me know.</b> You’ll hear about the next one. Plans change again? <a href="/rsvp?e=' + encodeURIComponent(key) + '&a=yes&email=' + encodeURIComponent(data.email) + '&name=' + encodeURIComponent(data.name) + '&business=' + encodeURIComponent(data.business) + '&sf=' + encodeURIComponent(data.storefront) + (tok ? '&t=' + encodeURIComponent(tok) : '') + '">Count me back in</a>.');
         }
       })
       .catch(function () { if (btn) { btn.disabled = false; btn.value = label; } show('bad', 'Something went wrong. Please try again, or reply to the invite email with a yes.'); });

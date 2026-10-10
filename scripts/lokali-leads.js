@@ -149,6 +149,9 @@
     '#lok-leads-page .lq-fold button{margin-left:auto;font:700 12.5px/1.2 ' + FONT + ';color:' + VIOLET + ';background:' + VIOLET_L + ';border:none;border-radius:8px;padding:8px 12px;cursor:pointer;}',
     '#lok-leads-page .lq-closed .lq-row{opacity:.85;}',
     '#lok-leads-page .lq-row.lq-flash{background:' + VIOLET_L + ';box-shadow:0 0 0 6px ' + VIOLET_L + ';border-radius:10px;transition:background .9s ease,box-shadow .9s ease;}',
+    // SEC-097: the nudge email's Won/Closed link asks before it changes anything
+    '#lok-leads-page .lq-confirm{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:6px 0 10px;padding:10px 12px;background:' + VIOLET_L + ';border-radius:10px;font:600 13px/1.4 ' + FONT + ';color:' + INK + ';}',
+    '#lok-leads-page .lq-confirm span{flex:1 1 180px;}',
     '#lok-leads-page .lq-t2 .lq-said{color:' + GREEN + ';font-weight:700;}',
     '#lok-leads-page .lq-del{font:600 12px/1.2 ' + FONT + ';color:' + GRAY + ';background:none;border:1px solid ' + BORDER + ';border-radius:8px;padding:6px 10px;cursor:pointer;white-space:nowrap;}',
     '#lok-leads-page .lq-del.arm{color:#fff;background:#B42318;border-color:#B42318;}',
@@ -742,20 +745,41 @@
       }
       if (!lead) { reveal(); return; }
       if (lead.status === 'spam') { reveal(); return; }
+      // SEC-097 (2026-10-10, F: confirm chip): a link must not change a lead by being opened.
+      // The row is revealed with a one-tap chip; the change happens only on the tap.
+      function confirmChip(label, onYes) {
+        var row = document.getElementById('inq-' + id);
+        if (!row) { reveal(); return; }
+        var box = el('div', 'lq-confirm');
+        box.appendChild(el('span', null, label));
+        var yes = el('button', 'lq-btn p', 'Yes'); yes.type = 'button';
+        var no = el('button', 'lq-btn q', 'Not now'); no.type = 'button';
+        yes.addEventListener('click', function () { box.remove(); onYes(); });
+        no.addEventListener('click', function () { box.remove(); });
+        box.appendChild(yes); box.appendChild(no);
+        row.parentNode.insertBefore(box, row.nextSibling);
+        reveal();
+      }
       if (won != null && lead.status !== 'won') {
         var n = Math.round(Number(won));   // the email link carries CENTS
         var cents = (won !== 'ask' && isFinite(n) && n > 0 && n <= 100000000) ? n : null;
-        var prev = lead.status; lead.status = 'won';
-        if (cents != null && lead.worth == null) lead.worth = cents; else if (lead.worth == null) lead._askWorth = true;
-        repaintAll(); reveal();
-        // status first, then the amount: the guard only keeps a value on a row that IS won
-        setStatus(lead, 'won').then(function (res) {
-          if (res && res.error) { lead.status = prev; lead.worth = (cents != null ? null : lead.worth); repaintAll(); return; }
-          if (cents != null) setWorth(lead, cents).then(function (r2) { if (r2 && r2.error) { lead.worth = null; lead._askWorth = true; repaintAll(); } });
+        var who = lead.name || 'this lead';
+        confirmChip(cents != null ? 'Mark ' + who + ' as Won for $' + (cents / 100).toLocaleString('en-US', { maximumFractionDigits: 2 }) + '?' : 'Mark ' + who + ' as Won?', function () {
+          var prev = lead.status; lead.status = 'won';
+          if (cents != null && lead.worth == null) lead.worth = cents; else if (lead.worth == null) lead._askWorth = true;
+          repaintAll(); reveal();
+          // status first, then the amount: the guard only keeps a value on a row that IS won
+          setStatus(lead, 'won').then(function (res) {
+            if (res && res.error) { lead.status = prev; lead.worth = (cents != null ? null : lead.worth); repaintAll(); return; }
+            if (cents != null) setWorth(lead, cents).then(function (r2) { if (r2 && r2.error) { lead.worth = null; lead._askWorth = true; repaintAll(); } });
+          });
         });
         return;
       }
-      if (closed === '1' && lead.status !== 'closed' && lead.status !== 'won') { moveLead(lead, 'closed'); reveal(); return; }
+      if (closed === '1' && lead.status !== 'closed' && lead.status !== 'won') {
+        confirmChip('Close ' + (lead.name || 'this lead') + '?', function () { moveLead(lead, 'closed'); reveal(); });
+        return;
+      }
       reveal();
     })();
   }
