@@ -223,7 +223,6 @@
     'video_url', 'is_custom', 'turnaround_days', 'is_quote_based', 'is_active',
     'shipping_offered', 'pickup_only', 'delivery_offered', 'sort_order', 'slug',
     'buy_url',     // #172: external checkout link (https only; shape-checked by patch_product_buy_link.sql)
-    'shipping_cents', // #205 on-site checkout: flat shipping price in cents (null = no shipping through checkout)
     'subcategory', // #96-LISTING
     'lead_time',   // #78: free-text per-item lead time (supersedes turnaround_days for display)
     'is_featured_pick', // FEAT-PICKS: Featured-plan shop window (cap+plan gate = DB trigger)
@@ -1561,7 +1560,7 @@
     // selector when the LOADED client actually whitelists the column —
     // otherwise pick() would strip it and the save would silently drop the
     // vendor's choice under a success toast.
-    capabilities: { onsiteCheckout: true, listingSubcategory: true, itemLeadTime: true, productBuyLink: true, linkFetch: true, serviceLink: true, servicePriceFree: true, vendorLinkedin: true }, // serviceLink / servicePriceFree / vendorLinkedin = punchlist 2026-10-02 (link_url + price_type 'free' + linkedin_url) // itemLeadTime = #78 (lead_time in both EDITABLE lists); productBuyLink = #172 (buy_url in PRODUCT_EDITABLE)
+    capabilities: { listingSubcategory: true, itemLeadTime: true, productBuyLink: true, linkFetch: true, serviceLink: true, servicePriceFree: true, vendorLinkedin: true }, // serviceLink / servicePriceFree / vendorLinkedin = punchlist 2026-10-02 (link_url + price_type 'free' + linkedin_url) // itemLeadTime = #78 (lead_time in both EDITABLE lists); productBuyLink = #172 (buy_url in PRODUCT_EDITABLE)
     // #96-SUGGEST — admin surface (is_admin()-gated server-side; non-admins
     // get { ok:false } — safe to call from any session).
     // #137 — the notification feed behind the header bell. All three RPCs are
@@ -1615,6 +1614,10 @@
       // click, shown vs opened. Separate RPC; the page works without it.
       visitInsights: function (days) {
         return withClient(function (c) { return c.rpc('admin_visit_insights', { p_days: days || 30 }); });
+      },
+      // blind spot 3 (2026-10-10): what comes back after an outbound tap (patch_blind_spots.sql)
+      closedLoop: function (days) {
+        return withClient(function (c) { return c.rpc('admin_closed_loop', { p_days: days || 30 }); });
       },
       // Guide usage (patch_guide_events.sql): /start, the guides, the Resources menu,
       // the dashboard Help row. Separate RPC; the page works without it.

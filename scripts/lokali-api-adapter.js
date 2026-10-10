@@ -1685,5 +1685,30 @@
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', activate);
     }
+    // Blind spot 1 (2026-10-10): one 'page' event per PUBLIC page load, so a visit
+    // that reads the homepage or Start Here and never opens a storefront is still a
+    // visit in the admin's shopper numbers. Same random ids and privacy rules as
+    // trackVisit's other kinds; the server only accepts the page CLASS below, never a
+    // path. Signed-in areas (dashboard, account, checkout) send nothing. Before
+    // patch_blind_spots.sql is applied the server drops the kind silently.
+    try {
+      var _pp = String(location.pathname || '').replace(/\/+$/, '') || '/';
+      if (!/^\/(vendor-dashboard|account|login|sign-up|checkout|paypal-checkout|order-confirmation|rsvp)(\/|$)/.test(_pp)) {
+        var _cls = _pp === '/' ? 'home'
+          : /^\/the-market(\/|$)/.test(_pp) ? 'market'
+          : /^\/about(\/|$)/.test(_pp) ? 'about'
+          : /^\/pricing(\/|$)/.test(_pp) ? 'pricing'
+          : /^\/start(\/|$)/.test(_pp) ? 'start'
+          : /^\/vendor-resources(\/|$)/.test(_pp) ? 'guides'
+          : /^\/(features|for-customers|for-vendors|founding-vendors)(\/|$)/.test(_pp) ? 'features'
+          : /^\/contact-us(\/|$)/.test(_pp) ? 'contact'
+          : /^\/(this-week|this-weekend)(\/|$)/.test(_pp) ? 'week'
+          : /^\/(service|product-detail|product|sku)(\/|$)/.test(_pp) ? 'item'
+          : /^\/(privacy|terms|search|categories|category|locations|401|404)(\/|$)/.test(_pp) ? 'other'
+          : 'storefront';
+        var _firePage = function () { try { trackVisit('page', { source: _cls }); } catch (e) {} };
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _firePage); else _firePage();
+      }
+    } catch (e) {}
   }
 })();

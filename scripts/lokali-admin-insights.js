@@ -295,8 +295,8 @@
       if (v.away) gap('Marked as away right now.');
       var vz = v.visit;
       if (ctx.hasVisit && v.is_public) {
-        if (vz && vz.shown >= SHOWN_MIN && vz.opened_after_shown * 20 < vz.shown) gap('Listed on The Market in ' + plural(vz.shown, 'visit') + ' and opened from there in ' + num(vz.opened_after_shown) + '. The card itself (cover photo, name, tagline) is not earning the click.');
-        else if (vz && vz.shown >= SHOWN_MIN) win('Opened in ' + num(vz.opened_after_shown) + ' of ' + plural(vz.shown, 'visit') + ' where The Market listed it');
+        if (vz && vz.shown >= SHOWN_MIN && vz.opened_after_shown * 20 < vz.shown) gap('On screen on The Market in ' + plural(vz.shown, 'visit') + ' and opened from there in ' + num(vz.opened_after_shown) + '. The card itself (cover photo, name, tagline) is not earning the click.');
+        else if (vz && vz.shown >= SHOWN_MIN) win('Opened in ' + num(vz.opened_after_shown) + ' of ' + plural(vz.shown, 'visit') + ' where its card was on screen');
         if (vz && vz.repeat_visitors) win(plural(vz.repeat_visitors, 'visitor') + ' came back to it on another day');
       }
       if (internal(v)) gap(plural(internal(v), 'contact click') + ' came from a signed-in vendor or admin account, so ' + (internal(v) === 1 ? 'it is' : 'they are') + ' not counted as a shopper reaching out.');
@@ -464,7 +464,7 @@
     var SORTS = [['name', 'Storefront'], ['views', 'Views'], ['search_hits', 'In searches'], ['reach', 'Reach-outs'], ['rate', 'Reach-out rate'], ['score', 'Basics']];
     var st = { filter: 'all', sort: 'views', dir: -1, open: {} };
     var hasVisit = !!d.visit;
-    if (hasVisit) SORTS[2] = ['shown', 'Listed / opened'];
+    if (hasVisit) SORTS[2] = ['shown', 'On screen / opened'];
     var maxViews = 0; rows.forEach(function (r) { if (r.v.views > maxViews) maxViews = r.v.views; });
 
     var tools = el('div', 'lki-tools'); c.appendChild(tools);
@@ -547,7 +547,7 @@
         if (v.views_prev > 0) { var ch = Math.round(((v.views - v.views_prev) / v.views_prev) * 100); delta = (ch > 0 ? '+' : '') + ch + '%'; dCls = ch > 0 ? 'up' : (ch < 0 ? 'down' : null); }
         else if (v.views > 0) delta = 'new';
         row.appendChild(cell('Views', num(v.views), delta, dCls));
-        if (hasVisit) row.appendChild(cell('Listed / opened', v.visit ? num(v.visit.shown) + ' / ' + num(v.visit.opened_after_shown) : '0 / 0', v.visit && v.visit.shown ? pct(v.visit.opened_after_shown, v.visit.shown) + '% opened' : null, null, true));
+        if (hasVisit) row.appendChild(cell('On screen / opened', v.visit ? num(v.visit.shown) + ' / ' + num(v.visit.opened_after_shown) : '0 / 0', v.visit && v.visit.shown ? pct(v.visit.opened_after_shown, v.visit.shown) + '% opened' : null, null, true));
         else row.appendChild(cell('In searches', num(v.search_hits), null, null, true));
         row.appendChild(cell('Reach-outs', num(reached(v)), internal(v) ? '+' + internal(v) + ' internal' : null));
         row.appendChild(cell('Rate', v.views ? pct(reached(v), v.views) + '%' : '0%'));
@@ -916,6 +916,20 @@
     k.appendChild(kpi('Searches that led to a click', s.with_results ? pct(s.clicked || 0, s.with_results) + '%' : 'No searches', null, s.with_results ? num(s.clicked || 0) + ' of ' + num(s.with_results) + ' searches with results' : 'in this period'));
     k.appendChild(kpi('Looked at 2 or more storefronts', f.viewed_2plus || 0, null, 'visits that compared vendors'));
     c.appendChild(k);
+    // blind spot 1 (2026-10-10): visits that read public pages and never touched a vendor
+    if (z.page_only != null) {
+      var k2 = el('div', 'lki-kpis'); k2.style.margin = '0 0 14px';
+      k2.appendChild(kpi('Never opened a storefront', z.page_only || 0, null, 'visits that only read public pages'));
+      var ln = (z.landing || []), lnTouched = 0, lnN = 0; ln.forEach(function (x) { lnN += x.n || 0; lnTouched += x.touched || 0; });
+      k2.appendChild(kpi('Went on to a vendor', lnN ? pct(lnTouched, lnN) + '%' : 'n/a', null, 'of visits, whatever page they landed on'));
+      if (z.contacted_visitors != null) k2.appendChild(kpi('Came back after a contact', (z.contacted_then_returned || 0) + ' of ' + (z.contacted_visitors || 0), null, 'visitors who pressed a contact button and returned on a later day'));
+      c.appendChild(k2);
+      var PAGE = { home: 'Homepage', market: 'The Market', about: 'About', pricing: 'Pricing', start: 'Start Here', guides: 'Vendor guides', features: 'Features and plans', contact: 'Contact us', week: 'This week', storefront: 'A storefront', item: 'A listing', other: 'Another page' };
+      if (ln.length) {
+        var hl = el('div', 'lki-why-h', 'Where visits land first, and how many go on to a vendor'); c.appendChild(hl);
+        c.appendChild(rankList(ln.map(function (x) { return { label: PAGE[x.page] || x.page, n: x.n, sub: num(x.touched || 0) + ' of ' + num(x.n) + ' opened The Market or a storefront' + (x.contacted ? ' · ' + plural(x.contacted, 'reach-out') : ''), value: plural(x.n, 'visit') }; }), C_SEARCH, ''));
+      }
+    }
 
     c.appendChild(el('div', 'lki-why-h', 'From arriving to reaching out'));
     var steps = [['All visits', f.visits], ['Browsed or searched The Market', f.saw_market], ['Opened a storefront', f.viewed], ['Reached out to a vendor', f.contacted]];
@@ -944,8 +958,28 @@
     var notes = [];
     if (since != null && since < d.days) notes.push('Visit counting began ' + (since < 1 ? 'today' : since + ' days ago') + ', so this covers less than the selected period.');
     if (z.private_visits) notes.push(plural(z.private_visits, 'visit') + ' came from browsers asking not to be tracked. They count as visits and are never given a lasting id, so they cannot count as returning.');
-    notes.push('It only sees pages that log something: The Market, storefronts, listings and contact clicks. Homepage-only visits are in Google Analytics.');
+    if (z.pages_since) notes.push('Page loads on the homepage, About, Pricing, Start Here and the guides have been counted since ' + new Date(z.pages_since).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + '; before that only The Market, storefronts, listings and contact clicks were.');
+    else notes.push('It only sees pages that log something: The Market, storefronts, listings and contact clicks. Page-only visits start counting once patch_blind_spots.sql is applied.');
     c.appendChild(el('p', 'lki-note', notes.join(' ')));
+    return c;
+  }
+
+  // Blind spot 3 (2026-10-10): a call, text or website tap leaves Lokali and cannot be
+  // followed. This card sets the taps that leave against the only outcomes that do
+  // come back: inquiry replies and Won marks (#194), the shopper's own answer (#206).
+  function closedLoopCard(d) {
+    var L = d.loop || {}, z = d.visit || {};
+    var c = card('After the click', 'Taps that leave the site against the outcomes that come back. Only the inquiry form stays on Lokali, so this is a floor, never the whole story.');
+    var k = el('div', 'lki-kpis'); k.style.margin = '0 0 14px';
+    k.appendChild(kpi('Taps that left the site', L.outbound_total || 0, null, 'website, call, text, buy and booking taps by shoppers'));
+    k.appendChild(kpi('Inquiry messages', L.inquiries || 0, null, num(L.replied || 0) + ' answered by the vendor' + (L.waiting ? ' · ' + num(L.waiting) + ' still waiting' : '')));
+    k.appendChild(kpi('Marked Won by the vendor', L.won || 0, null, L.won_value_cents ? 'about $' + num(Math.round(L.won_value_cents / 100)) + ' of business' : (L.won_all ? plural(L.won_all, 'win') + ' all-time' : 'none yet')));
+    k.appendChild(kpi('Shopper said hired', (L.shopper_hired || 0) + ' of ' + (L.shopper_asked || 0), null, (L.shopper_not_hired ? num(L.shopper_not_hired) + ' said not hired · ' : '') + 'asked by the two-week nudge email'));
+    if (z.contacted_visitors != null) k.appendChild(kpi('Came back after a contact', (z.contacted_then_returned || 0) + ' of ' + (z.contacted_visitors || 0), null, 'visitors who pressed a contact button and returned later'));
+    c.appendChild(k);
+    var ob = (L.outbound || []), NICE = { website: 'Website', call: 'Call', sms: 'Text message', whatsapp: 'WhatsApp', email: 'Email', buy_link: 'Buy link', buy_lokali: 'Buy on Lokali', booking_link: 'Booking link', service_link: 'Service link', zelle: 'Zelle', venmo: 'Venmo', cashapp: 'Cash App', paypal: 'PayPal', linkedin: 'LinkedIn', instagram: 'Instagram' };
+    if (ob.length) { c.appendChild(el('div', 'lki-why-h', 'Where the taps went')); c.appendChild(rankList(ob.map(function (x) { return { label: NICE[x.type] || x.type, n: x.n }; }), C_CONTACTS, '')); }
+    c.appendChild(el('p', 'lki-note', 'A tap that leaves cannot be followed, by design: no pixel on the vendor\u2019s site, no call recording. The Won mark and the shopper\u2019s answer are the honest proxies, and both are self-reported.'));
     return c;
   }
 
@@ -954,12 +988,12 @@
     c.className += ' lki-gaps';
     var ul = el('ul');
     (hasVisit ? [
-     'Visits to pages that log nothing. Visitors and journeys starts counting when someone opens The Market, a storefront or a listing. A person who reads the homepage and leaves is only in Google Analytics.',
-     'Whether a Market card was actually on screen. "Listed" means it was in the first 24 results of that pass, not that the shopper scrolled to it.',
+     'Page loads before October 10, 2026. Visits that only read the homepage, About or Start Here are counted from that day on (the page event), so older periods under-count visits.',
+     'Market cards during a search. For a plain browse, "on screen" means the card was at least half visible for a second. For a search, every result still counts as shown even if the shopper never scrolled to it.',
      'The same person on two devices, or after clearing their browser, counts as two visitors. Browsers asking not to be tracked never count as returning. Treat "came back" as a floor.'
     ] : [
      'Unique visitors, repeat visits, search to click, and Market card impressions. These switch on when the visit-events SQL patch is applied.'
-    ]).concat(['What happens after the click. A call, text or website visit leaves Lokali. Only inquiry-form messages and the lead status vendors set (Replied, Won, Closed) come back.',
+    ]).concat(['What happens after a call, text or website tap. Those leave Lokali for good. What does come back is in "After the click": inquiry replies and Won marks, the shopper\u2019s own hired answer, and visitors who return after a contact.',
      'Small numbers. With about twenty vendors, one busy day or one test session swings every rate. Read direction over weeks, not single values.'
     ]).forEach(function (t) { ul.appendChild(el('li', null, t)); });
     c.appendChild(ul);
@@ -1022,13 +1056,14 @@
     root.appendChild(searchCards(d)); root.appendChild(el('div', 'lki-gap'));
     root.appendChild(supplyCards(d)); root.appendChild(el('div', 'lki-gap'));
     root.appendChild(behaviourCards(d)); root.appendChild(el('div', 'lki-gap'));
+    if (d.loop) { root.appendChild(closedLoopCard(d)); root.appendChild(el('div', 'lki-gap')); }
     root.appendChild(sharesCard(d));
     if (d.guides) { root.appendChild(guidesCard(d)); root.appendChild(el('div', 'lki-gap')); }
     var g2 = el('div', 'lki-grid2'); g2.appendChild(revenueCard(d)); g2.appendChild(demandCard(d)); root.appendChild(g2); root.appendChild(el('div', 'lki-gap'));
     root.appendChild(gapsCard(!!d.visit));
     // #181: a section bar so the page is not one long scroll. Built from the
     // cards that actually rendered, so it can never point at a missing section.
-    var SECTIONS = [['Health', 'Marketplace health'], ['Visitors', 'Visitors and journeys'], ['Vendors', 'Who is getting seen'], ['Demand', 'What shoppers search for'], ['Categories and areas', 'Categories: supply vs attention'], ['Growth and revenue', 'Vendor activation funnel'], ['Where people come from', 'Word of mouth'], ['Guides', 'Guides and Start Here']];
+    var SECTIONS = [['Health', 'Marketplace health'], ['Visitors', 'Visitors and journeys'], ['Vendors', 'Who is getting seen'], ['Demand', 'What shoppers search for'], ['Categories and areas', 'Categories: supply vs attention'], ['Growth and revenue', 'Vendor activation funnel'], ['After the click', 'After the click'], ['Where people come from', 'Word of mouth'], ['Guides', 'Guides and Start Here']];
     var bar = el('div', 'lki-secbar');
     var siteHead = document.querySelector('.header-wrapper.w-nav');
     bar.style.top = ((window.matchMedia && window.matchMedia('(min-width: 992px)').matches && siteHead ? siteHead.offsetHeight : 0)) + 'px';
@@ -1106,10 +1141,17 @@
       }).catch(function () { return d; }).then(function (d2) {
         // Guide usage is optional too: before patch_guide_events.sql is applied the
         // RPC is missing and the card is simply omitted.
-        if (typeof A.guideInsights !== 'function') return d2;
-        return A.guideInsights(days).then(function (r3) {
+        var g = (typeof A.guideInsights !== 'function') ? Promise.resolve(d2) : A.guideInsights(days).then(function (r3) {
           var gi = r3 && r3.data; if (gi && gi.ok === true) d2.guides = gi; return d2;
         }).catch(function () { return d2; });
+        // blind spot 3 (2026-10-10): what comes back after the click. Optional until
+        // patch_blind_spots.sql is applied; the card is simply omitted before that.
+        return g.then(function (d3) {
+          if (typeof A.closedLoop !== 'function') return d3;
+          return A.closedLoop(days).then(function (r4) {
+            var lp = r4 && r4.data; if (lp && lp.ok === true) d3.loop = lp; return d3;
+          }).catch(function () { return d3; });
+        });
       });
     });
   }
