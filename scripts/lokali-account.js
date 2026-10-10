@@ -1006,7 +1006,10 @@
     insights: '<svg viewBox="0 0 512 512" aria-hidden="true"><path fill="currentColor" d="M32 32c17.700 0 32 14.300 32 32V400c0 8.800 7.200 16 16 16H480c17.700 0 32 14.300 32 32s-14.300 32-32 32H80c-44.200 0-80-35.800-80-80V64C0 46.300 14.300 32 32 32zm96 96c0-17.700 14.300-32 32-32s32 14.300 32 32V320c0 17.700-14.300 32-32 32s-32-14.300-32-32V128zm128 64c17.700 0 32 14.300 32 32V320c0 17.700-14.300 32-32 32s-32-14.300-32-32V224c0-17.700 14.300-32 32-32zm96-96c0-17.700 14.300-32 32-32s32 14.300 32 32V320c0 17.700-14.300 32-32 32s-32-14.300-32-32V128z"/></svg>',
     prospects: '<svg viewBox="0 0 512 512" aria-hidden="true"><path fill="currentColor" d="M48 64C21.5 64 0 85.5 0 112c0 15.1 7.1 29.3 19.2 38.4L236.8 313.6c11.4 8.5 27 8.5 38.4 0L492.8 150.4c12.1-9.1 19.2-23.3 19.2-38.4c0-26.5-21.5-48-48-48H48zM0 176V384c0 35.3 28.7 64 64 64H448c35.3 0 64-28.7 64-64V176L294.4 339.2c-22.8 17.1-54 17.1-76.8 0L0 176z"/></svg>',
     bars: '<svg viewBox="0 0 448 512" aria-hidden="true"><path fill="currentColor" d="M0 96C0 78.300 14.300 64 32 64H416c17.700 0 32 14.300 32 32s-14.300 32-32 32H32C14.300 128 0 113.700 0 96zM0 256c0-17.700 14.300-32 32-32H416c17.700 0 32 14.300 32 32s-14.300 32-32 32H32c-17.700 0-32-14.300-32-32zM448 416c0 17.700-14.300 32-32 32H32c-17.700 0-32-14.300-32-32s14.300-32 32-32H416c17.700 0 32 14.300 32 32z"/></svg>',
-    check: '<svg viewBox="0 0 448 512" aria-hidden="true"><path fill="currentColor" d="M438.600 105.400c12.500 12.500 12.500 32.800 0 45.300l-256 256c-12.500 12.500-32.800 12.500-45.300 0l-128-128c-12.500-12.500-12.500-32.800 0-45.300s32.800-12.500 45.300 0L160 338.700 393.400 105.400c12.500-12.500 32.800-12.500 45.300 0z"/></svg>'
+    check: '<svg viewBox="0 0 448 512" aria-hidden="true"><path fill="currentColor" d="M438.600 105.400c12.500 12.500 12.500 32.800 0 45.300l-256 256c-12.500 12.500-32.800 12.500-45.300 0l-128-128c-12.500-12.500-12.500-32.800 0-45.300s32.800-12.500 45.300 0L160 338.700 393.400 105.400c12.500-12.500 32.800-12.500 45.300 0z"/></svg>',
+    moon: '<svg viewBox="0 0 384 512" aria-hidden="true"><path fill="currentColor" d="M223.5 32C100 32 0 132.3 0 256S100 480 223.5 480c60.6 0 115.5-24.2 155.8-63.4c5-4.9 6.3-12.5 3.1-18.7s-10.1-9.7-17-8.5c-9.8 1.7-19.8 2.6-30.1 2.6c-96.9 0-175.5-78.8-175.5-176c0-65.8 36-123.1 89.3-153.3c6.1-3.5 9.2-10.5 7.7-17.3s-7.3-11.9-14.3-12.5c-6.3-.5-12.6-.8-19-.8z"/></svg>',
+    sun: '<svg viewBox="0 0 512 512" aria-hidden="true"><path fill="currentColor" d="M361.5 1.2c5 2.1 8.6 6.6 9.6 11.9L391 121l107.9 19.8c5.3 1 9.8 4.6 11.9 9.6s1.5 10.7-1.6 15.2L446.9 256l62.3 90.3c3.1 4.5 3.7 10.2 1.6 15.2s-6.6 8.6-11.9 9.6L391 391 371.1 498.9c-1 5.3-4.6 9.8-9.6 11.9s-10.7 1.5-15.2-1.6L256 446.9l-90.3 62.3c-4.5 3.1-10.2 3.7-15.2 1.6s-8.6-6.6-9.6-11.9L121 391 13.1 371.1c-5.3-1-9.8-4.6-11.9-9.6s-1.5-10.7 1.6-15.2L65.1 256 2.8 165.7c-3.1-4.5-3.7-10.2-1.6-15.2s6.6-8.6 11.9-9.6L121 121 140.9 13.1c1-5.3 4.6-9.8 9.6-11.9s10.7-1.5 15.2 1.6L256 65.1 346.3 2.8c4.5-3.1 10.2-3.7 15.2-1.6zM160 256a96 96 0 1 1 192 0 96 96 0 1 1 -192 0zm224 0a128 128 0 1 0 -256 0 128 128 0 1 0 256 0z"/></svg>',
+    heart: '<svg viewBox="0 0 512 512" aria-hidden="true"><path fill="currentColor" d="M47.6 300.4L228.3 469.1c7.5 7 17.4 10.9 27.7 10.9s20.2-3.9 27.7-10.9L464.4 300.4c30.4-28.3 47.6-68 47.6-109.5v-5.8c0-69.9-50.5-129.5-119.4-141C347 36.5 300.6 51.4 268 84L256 96 244 84c-32.6-32.6-79-47.5-124.6-39.9C50.5 55.6 0 115.2 0 185.1v5.8c0 41.5 17.2 81.2 47.6 109.5z"/></svg>',
   };
 
   function injectAdminShellCSS() {
@@ -1028,7 +1031,7 @@
       /* current page = two signals: tint + violet, heavier label */
       ".lk-ash-nav[aria-current='page']{background:#EEE6FF;color:#6002EE;font-weight:700;}" +
       ".lk-ash-nav[aria-current='page'] i{color:#6002EE;}" +
-      ".lk-ash-count{margin-left:auto;font-size:11px;font-weight:700;line-height:18px;background:#FF8D00;color:#2B1500;border-radius:999px;padding:0 8px;}" +
+      ".lk-ash-count{margin-left:auto;font-size:11px;font-weight:700;line-height:18px;background:#A63D74;color:#fff;border-radius:999px;padding:0 8px;}" +
       ".lk-ash-count[hidden]{display:none;}" +
       ".lk-ash-foot{margin-top:auto;padding-top:14px;border-top:1px solid #EEEDF6;display:flex;flex-direction:column;}" +
       ".lk-ash-lbl{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#8E8BA6;padding:2px 8px 4px;}" +
@@ -1057,23 +1060,23 @@
       ".lk-ash-queues{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}" +
       ".lk-ash-q{font-size:12.5px;font-weight:600;color:#4A4761;background:#fff;border:1px solid #EEEDF6;border-radius:999px;padding:5px 11px;}" +
       ".lk-ash-q b{font-weight:700;color:#8E8BA6;margin-left:5px;}" +
-      ".lk-ash-q.on{background:#FFF2DF;border-color:#FFDDB0;color:#6B3A00;}.lk-ash-q.on b{color:#6B3A00;}" +
+      ".lk-ash-q.on{background:#FBE9F2;border-color:#F5CFE1;color:#A63D74;}.lk-ash-q.on b{color:#A63D74;}" +
       /* queue sections inside Today: full width, amber edge = needs you */
       ".lk-ash-needs{display:flex;flex-direction:column;gap:10px;}" +
-      ".lk-ash-needs .lk-admin-section{background:#fff;border:1px solid #EEEDF6;border-left:3px solid #FF8D00;border-radius:0 14px 14px 0;}" +
-      ".lk-ash-needs .lk-admin-qcount{background:#FFF2DF;color:#6B3A00;}" +
+      ".lk-ash-needs .lk-admin-section{background:#fff;border:1px solid #EEEDF6;border-left:3px solid #A63D74;border-radius:0 14px 14px 0;}" +
+      ".lk-ash-needs .lk-admin-qcount{background:#FBE9F2;color:#A63D74;}" +
       ".lk-ash-pulse{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));background:#fff;border:1px solid #EEEDF6;border-radius:14px;overflow:hidden;}" +
       ".lk-ash-kp{padding:14px 16px;border-left:1px solid #EEEDF6;}" +
       ".lk-ash-kp:first-child{border-left:0;}" +
       ".lk-ash-kp .l{font-size:12px;font-weight:600;color:#4A4761;}" +
       ".lk-ash-kp .n{font-size:26px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;margin:2px 0;color:#1A1829;}" +
       ".lk-ash-kp .d{font-size:12px;color:#8E8BA6;line-height:1.45;}" +
-      ".lk-ash-kp .d.up{color:#1A7F55;}.lk-ash-kp .d.warn{color:#9A4A12;}" +
+      ".lk-ash-kp .d.up{color:#1A6640;}.lk-ash-kp .d.warn{color:#A63D74;}" +
       ".lk-ash-list{background:#fff;border:1px solid #EEEDF6;border-radius:14px;overflow:hidden;}" +
       ".lk-ash-li{display:flex;gap:10px;padding:11px 16px;border-top:1px solid #EEEDF6;font-size:14px;line-height:1.5;color:#1A1829;}" +
       ".lk-ash-li:first-child{border-top:0;}" +
       ".lk-ash-dot{width:8px;height:8px;border-radius:50%;flex:0 0 8px;margin-top:7px;background:#D4BFF9;}" +
-      ".lk-ash-dot.good{background:#5DCAA5;}.lk-ash-dot.bad{background:#FF8D00;}" +
+      ".lk-ash-dot.good{background:#5DCAA5;}.lk-ash-dot.bad{background:#A63D74;}" +
       ".lk-ash-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 14px;align-items:center;padding:13px 16px;border-top:1px solid #EEEDF6;}" +
       ".lk-ash-row:first-child{border-top:0;}" +
       ".lk-ash-row b{display:block;font-size:14.5px;font-weight:600;overflow-wrap:anywhere;}" +
@@ -1087,7 +1090,7 @@
       ".lk-ash-btn.primary:hover{background:#3D00E0;border-color:#3D00E0;color:#fff;}" +
       ".lk-ash-pill{font-size:11px;font-weight:700;border-radius:999px;padding:2px 9px;}" +
       ".lk-ash-pill.working{background:#E7F7EE;color:#14623F;}.lk-ash-pill.seen{background:#EEE6FF;color:#3D00E0;}" +
-      ".lk-ash-pill.stalls,.lk-ash-pill.low,.lk-ash-pill.unseen{background:#FFF2DF;color:#6B3A00;}.lk-ash-pill.notlive{background:#EEEDF6;color:#4A4761;}" +
+      ".lk-ash-pill.stalls,.lk-ash-pill.low,.lk-ash-pill.unseen{background:#FBE9F2;color:#A63D74;}.lk-ash-pill.notlive{background:#EEEDF6;color:#4A4761;}" +
       ".lk-ash-tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 12px;}" +
       ".lk-ash-search{flex:1 1 220px;font-size:14px;border:1px solid #E4E2F0;border-radius:10px;padding:0 12px;min-height:42px;background:#fff;color:#1A1829;}" +
       ".lk-ash-fchip{all:unset;box-sizing:border-box;cursor:pointer;font-family:" + F + ";font-size:12.5px;font-weight:600;color:#4A4761;background:#fff;border:1px solid #EEEDF6;border-radius:999px;padding:0 12px;min-height:36px;display:inline-flex;align-items:center;gap:5px;}" +
@@ -1138,6 +1141,196 @@
     document.head.appendChild(st);
   }
 
+  // Admin home v2 (2026-10-10): the Today view's own styles. Shoppers = teal,
+  // vendors = rose, violet stays the action colour; no orange beside violet.
+  function injectAdminHomeCSS() {
+    if (document.getElementById('lokali-admin-home-styles')) return;
+    var st = document.createElement('style');
+    st.id = 'lokali-admin-home-styles';
+    var F = "'Plus Jakarta Sans',sans-serif";
+    st.textContent =
+      ".lk-ah-date{font-size:12.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#8E8BA6;margin:0 0 6px;}" +
+      ".lk-ash-h h2.lk-ah-story{font-size:25px;line-height:1.25;letter-spacing:-.02em;font-weight:800;max-width:32ch;text-wrap:balance;}" +
+      ".lk-ah-story em{font-style:normal;color:#6002EE;}" +
+      ".lk-ah-needs{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:#fff;border:1px solid #EEEDF6;border-radius:14px;padding:11px 14px;margin:0 0 12px;}" +
+      ".lk-ah-needs .lk-ash-queues{margin:0;flex:1 1 auto;}" +
+      ".lk-ah-st{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;color:#1A6640;white-space:nowrap;}" +
+      ".lk-ah-st svg{width:18px;height:18px;flex:0 0 auto;}" +
+      ".lk-ah-st.wait{color:#A63D74;}" +
+      ".lk-ah-needs .lk-ash-btn{margin-left:auto;}" +
+      ".lk-ash-needs[hidden]{display:none;}" +
+      ".lk-ash-needs{margin:0 0 20px;}" +
+      ".lk-ah-sides{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:8px 0 26px;}" +
+      ".lk-ah-side{background:#fff;border:1px solid #EEEDF6;border-radius:16px;padding:20px 22px;min-width:0;}" +
+      ".lk-ah-eyebrow{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;}" +
+      ".lk-ah-dot{width:10px;height:10px;border-radius:50%;}" +
+      ".lk-ah-side.shop .lk-ah-eyebrow{color:#0F6B74;}.lk-ah-side.shop .lk-ah-dot{background:#0F6B74;}" +
+      ".lk-ah-side.vend .lk-ah-eyebrow{color:#A63D74;}.lk-ah-side.vend .lk-ah-dot{background:#A63D74;}" +
+      ".lk-ah-side h3{font-size:19px;font-weight:700;letter-spacing:-.01em;margin:10px 0 4px;color:#1A1829;text-wrap:balance;}" +
+      ".lk-ah-sub{font-size:13.5px;color:#4A4761;margin:0 0 16px;max-width:54ch;line-height:1.5;}" +
+      ".lk-ah-steps{display:grid;gap:9px;}" +
+      ".lk-ah-step{display:grid;grid-template-columns:150px minmax(0,1fr) 52px;align-items:center;gap:12px;font-size:13px;}" +
+      ".lk-ah-step .lab{color:#4A4761;font-weight:500;}" +
+      ".lk-ah-step.drop .lab{color:#1A1829;font-weight:700;}" +
+      ".lk-ah-step .bar{height:14px;background:#F1EFF8;border-radius:4px;overflow:hidden;}" +
+      ".lk-ah-step .bar i{display:block;height:100%;border-radius:4px;}" +
+      ".lk-ah-side.shop .bar i{background:#0F6B74;}.lk-ah-side.vend .bar i{background:#A63D74;}" +
+      ".lk-ah-step .n{text-align:right;font-weight:700;font-variant-numeric:tabular-nums;color:#1A1829;}" +
+      ".lk-ah-dropnote{margin-top:14px;padding:12px 14px;border-radius:10px;font-size:13px;line-height:1.5;color:#1A1829;}" +
+      ".lk-ah-dropnote[hidden]{display:none;}" +
+      ".lk-ah-side.shop .lk-ah-dropnote{background:#E0F4F5;}.lk-ah-side.vend .lk-ah-dropnote{background:#FBE9F2;}" +
+      ".lk-ah-dropnote a{color:inherit;font-weight:600;text-decoration:underline;text-underline-offset:2px;}" +
+      ".lk-ah-foot{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;}" +
+      ".lk-ah-prompts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;}" +
+      ".lk-ah-prompt{all:unset;box-sizing:border-box;display:flex;flex-direction:column;gap:8px;background:#fff;border:1px solid #EEEDF6;border-radius:14px;padding:16px 18px;min-width:0;font-family:" + F + ";color:#1A1829;text-align:left;}" +
+      "button.lk-ah-prompt{cursor:pointer;transition:border-color .15s,transform .15s;}" +
+      "button.lk-ah-prompt:hover{border-color:#D4BFF9;transform:translateY(-1px);}" +
+      "button.lk-ah-prompt:focus-visible{outline:2px solid #6002EE;outline-offset:2px;}" +
+      ".lk-ah-tag{align-self:flex-start;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:999px;}" +
+      ".lk-ah-tag.shop{background:#E0F4F5;color:#0F6B74;}.lk-ah-tag.vend{background:#FBE9F2;color:#A63D74;}.lk-ah-tag.both{background:#EEE6FF;color:#6002EE;}" +
+      ".lk-ah-prompt h4{font-size:15px;font-weight:700;line-height:1.35;margin:0;text-wrap:balance;}" +
+      ".lk-ah-prompt p{margin:0;color:#4A4761;font-size:13px;line-height:1.5;}" +
+      ".lk-ah-prompt .ev{font-size:12px;color:#8E8BA6;border-top:1px solid #F1EFF8;padding-top:8px;margin-top:auto;line-height:1.45;}" +
+      ".lk-ah-tile{all:unset;box-sizing:border-box;display:block;cursor:pointer;padding:14px 16px;border-left:1px solid #EEEDF6;font-family:" + F + ";min-width:0;}" +
+      ".lk-ah-tile:first-child{border-left:0;}" +
+      ".lk-ah-tile:hover{background:#FBFAFE;}" +
+      ".lk-ah-tile:focus-visible{outline:2px solid #6002EE;outline-offset:-2px;}" +
+      ".lk-ah-tile .n small{font-size:14px;font-weight:600;color:#8E8BA6;letter-spacing:0;}" +
+      ".lk-ah-tile .d.warn{color:#A63D74;}" +
+      ".lk-ah-spark{display:block;width:100%;height:34px;margin-top:8px;}" +
+      ".lk-ah-card{background:#fff;border:1px solid #EEEDF6;border-radius:16px;padding:18px 22px;min-width:0;}" +
+      ".lk-ah-card[hidden]{display:none;}" +
+      ".lk-ah-pulsewrap{display:grid;grid-template-columns:minmax(0,1fr) 250px;gap:22px;align-items:start;}" +
+      ".lk-ah-chartwrap{position:relative;}" +
+      ".lk-ah-chart{display:block;width:100%;height:auto;font-family:" + F + ";}" +
+      ".lk-ah-tip{position:absolute;pointer-events:none;background:#1A1829;color:#fff;font-size:12px;padding:5px 8px;border-radius:6px;transform:translate(-50%,-115%);white-space:nowrap;}" +
+      ".lk-ah-tip[hidden]{display:none;}" +
+      ".lk-ah-legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:#4A4761;margin-top:8px;}" +
+      ".lk-ah-legend i{display:inline-block;width:10px;height:10px;border-radius:2px;vertical-align:-1px;margin-right:6px;}" +
+      ".lk-ah-legend i.a{background:#6002EE;}.lk-ah-legend i.b{background:#D9D5E8;}" +
+      ".lk-ah-annot{display:grid;gap:10px;font-size:13px;color:#4A4761;line-height:1.5;}" +
+      ".lk-ah-annot div{padding-left:12px;border-left:3px solid #D4BFF9;}" +
+      ".lk-ah-annot b{color:#1A1829;}" +
+      ".lk-ah-two{display:grid;grid-template-columns:3fr 2fr;gap:16px;margin:0 0 26px;}" +
+      ".lk-ah-two[hidden]{display:none;}" +
+      ".lk-ah-dist{display:grid;gap:5px;margin-top:4px;}" +
+      ".lk-ah-drow{display:grid;grid-template-columns:170px minmax(0,1fr) 44px 30px;gap:10px;align-items:center;font-size:13px;}" +
+      ".lk-ah-drow .nm{color:#4A4761;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}" +
+      ".lk-ah-drow .bar{height:10px;background:#F1EFF8;border-radius:3px;overflow:hidden;}" +
+      ".lk-ah-drow .bar i{display:block;height:100%;background:#D9D5E8;border-radius:3px;}" +
+      ".lk-ah-drow.hot .bar i{background:#6002EE;}" +
+      ".lk-ah-drow .n{text-align:right;font-weight:600;font-variant-numeric:tabular-nums;}" +
+      ".lk-ah-drow .c{font-size:11px;color:#1A6640;font-weight:700;text-align:right;font-variant-numeric:tabular-nums;}" +
+      ".lk-ah-drow .c.none{color:#8E8BA6;font-weight:500;}" +
+      ".lk-ah-distfoot{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px;font-size:12.5px;color:#4A4761;}" +
+      ".lk-ah-wins{display:grid;gap:10px;margin-top:4px;}" +
+      ".lk-ah-win{display:grid;grid-template-columns:36px minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 12px;border-radius:12px;background:#F7F6FC;}" +
+      ".lk-ah-win .ic{width:36px;height:36px;border-radius:10px;background:#E4F7EE;color:#1A6640;display:flex;align-items:center;justify-content:center;}" +
+      ".lk-ah-win .ic svg{width:16px;height:16px;}" +
+      ".lk-ah-win b{display:block;font-size:13px;font-weight:700;overflow-wrap:anywhere;}" +
+      ".lk-ah-win small{display:block;color:#4A4761;font-size:12px;line-height:1.4;}" +
+      ".lk-ah-win .lk-ash-btn{min-height:32px;padding:0 10px;font-size:12px;}" +
+      /* drawer */
+      ".lk-ah-drawer{position:fixed;inset:0;z-index:4000;font-family:" + F + ";}" +
+      ".lk-ah-drawer[hidden]{display:none;}" +
+      ".lk-ah-scrim{position:absolute;inset:0;background:rgba(26,24,41,.35);}" +
+      ".lk-ah-panel{position:absolute;top:0;right:0;bottom:0;width:min(540px,100%);background:#fff;border-left:1px solid #EEEDF6;padding:24px 26px 40px;overflow:auto;box-shadow:-12px 0 40px rgba(26,24,41,.14);color:#1A1829;}" +
+      ".lk-ah-ph{display:flex;align-items:flex-start;gap:12px;margin:0 0 16px;}" +
+      ".lk-ah-ph h3{font-size:18px;font-weight:700;margin:0;}" +
+      ".lk-ah-ph p{margin:4px 0 0;color:#4A4761;font-size:13px;line-height:1.5;}" +
+      ".lk-ah-x{all:unset;box-sizing:border-box;cursor:pointer;margin-left:auto;flex:0 0 auto;border:1px solid #EEEDF6;border-radius:8px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;color:#4A4761;font-size:20px;}" +
+      ".lk-ah-x:hover{background:#EEE6FF;color:#6002EE;}.lk-ah-x:focus-visible{outline:2px solid #6002EE;outline-offset:1px;}" +
+      ".lk-ah-table{width:100%;border-collapse:collapse;font-size:13px;}" +
+      ".lk-ah-table th{text-align:left;color:#8E8BA6;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:6px 0;border-bottom:1px solid #EEEDF6;}" +
+      ".lk-ah-table td{padding:8px 6px 8px 0;border-bottom:1px solid #F1EFF8;vertical-align:top;overflow-wrap:anywhere;}" +
+      ".lk-ah-table .r{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}" +
+      ".lk-ah-minibar{height:8px;min-width:80px;background:#F1EFF8;border-radius:3px;overflow:hidden;}" +
+      ".lk-ah-minibar i{display:block;height:100%;background:#0F6B74;border-radius:3px;}" +
+      ".lk-ah-note{background:#F6F1FF;border-radius:10px;padding:12px 14px;font-size:13px;color:#4A4761;margin:16px 0;line-height:1.5;}" +
+      ".lk-ah-note b{color:#1A1829;}" +
+      ".lk-ah-h4{font-size:13px;font-weight:700;color:#1A1829;margin:18px 0 6px;}" +
+      ".lk-ah-pbody .lk-ash-list{margin-top:4px;}" +
+      "body.lk-ah-lock{overflow:hidden;}" +
+      "@media (max-width:1100px){.lk-ah-prompts{grid-template-columns:1fr;}.lk-ah-two{grid-template-columns:1fr;}.lk-ah-pulsewrap{grid-template-columns:1fr;}}" +
+      "@media (max-width:991px){" +
+        ".lk-ah-sides{grid-template-columns:1fr;}" +
+        ".lk-ash-h h2.lk-ah-story{font-size:21px;}" +
+        ".lk-ah-step{grid-template-columns:118px minmax(0,1fr) 44px;}" +
+        ".lk-ah-drow{grid-template-columns:118px minmax(0,1fr) 40px 26px;}" +
+        ".lk-ah-needs .lk-ash-btn{margin-left:0;}" +
+        ".lk-ah-win{grid-template-columns:36px minmax(0,1fr);}.lk-ah-win .lk-ash-btn{grid-column:2;justify-self:start;}" +
+        ".lk-ah-panel{padding:18px 16px 40px;}" +
+      "}" +
+      "@media (prefers-reduced-motion:reduce){button.lk-ah-prompt{transition:none;}}";
+    document.head.appendChild(st);
+  }
+
+  // Admin dark mode (F 2026-10-10: "exactly how it shows on the html preview").
+  // Same tokens as the mockup's dark theme; applied by html.lk-dark, which the
+  // rail toggle sets (remembered per browser, system preference by default).
+  function injectAdminDarkCSS() {
+    if (document.getElementById('lokali-admin-dark-styles')) return;
+    var st = document.createElement('style');
+    st.id = 'lokali-admin-dark-styles';
+    var D = 'html.lk-dark ';
+    st.textContent =
+      D + "body{background:#1B1830;}" +
+      D + ".lk-ash,html.lk-dark .lk-ash *{color-scheme:dark;}" +
+      D + ".lk-ash{color:#F3F1FA;}" +
+      D + ".lk-ash-rail,html.lk-dark .lk-ash-bar,html.lk-dark .lk-ash-list,html.lk-dark .lk-ah-side,html.lk-dark .lk-ah-card,html.lk-dark .lk-ah-needs,html.lk-dark .lk-ash-pulse,html.lk-dark .lk-ash-pform,html.lk-dark .lk-ah-prompt,html.lk-dark .lk-ash-clear{background:#242039;border-color:#352F4F;}" +
+      D + ".lk-ash-rail{border-color:#352F4F;}" +
+      D + ".lk-ash-brand,html.lk-dark .lk-ash-nav,html.lk-dark .lk-ash-h h2,html.lk-dark .lk-ash-sech h3,html.lk-dark .lk-ash-li,html.lk-dark .lk-ash-row b,html.lk-dark .lk-ash-kp .n,html.lk-dark .lk-ah-side h3,html.lk-dark .lk-ah-step .n,html.lk-dark .lk-ah-step.drop .lab,html.lk-dark .lk-ah-dropnote,html.lk-dark .lk-ah-prompt,html.lk-dark .lk-ah-annot b,html.lk-dark .lk-ah-note b,html.lk-dark .lk-ah-panel,html.lk-dark .lk-ah-ph h3,html.lk-dark .lk-ah-h4,html.lk-dark .lk-ash-burger,html.lk-dark .lk-ash-search,html.lk-dark .lk-ash-pbody,html.lk-dark .lk-admin-title,html.lk-dark .lk-admin-qtitle,html.lk-dark .lk-admin-row-l1,html.lk-dark .lk-admin-stat-num,html.lk-dark .lk-admin-input,html.lk-dark .lk-ah-win b{color:#F3F1FA;}" +
+      D + ".lk-ash-nav i,html.lk-dark .lk-ash-name,html.lk-dark .lk-ash-ext,html.lk-dark .lk-ash-row small,html.lk-dark .lk-ash-meta,html.lk-dark .lk-ash-kp .l,html.lk-dark .lk-ash-q,html.lk-dark .lk-ash-fchip,html.lk-dark .lk-ash-pf,html.lk-dark .lk-ash-pmsg,html.lk-dark .lk-ash-pnote,html.lk-dark .lk-ash-psent,html.lk-dark .lk-ah-sub,html.lk-dark .lk-ah-step .lab,html.lk-dark .lk-ah-prompt p,html.lk-dark .lk-ah-ph p,html.lk-dark .lk-ah-note,html.lk-dark .lk-ah-annot,html.lk-dark .lk-ah-legend,html.lk-dark .lk-ah-distfoot,html.lk-dark .lk-ah-drow .nm,html.lk-dark .lk-ah-win small,html.lk-dark .lk-ah-x,html.lk-dark .lk-admin-sub,html.lk-dark .lk-admin-decline{color:#C9C4DD;}" +
+      D + ".lk-ash-lbl,html.lk-dark .lk-ash-role,html.lk-dark .lk-ash-h p,html.lk-dark .lk-ash-sech span,html.lk-dark .lk-ash-kp .d,html.lk-dark .lk-ash-q b,html.lk-dark .lk-ash-note,html.lk-dark .lk-ash-pwhen,html.lk-dark .lk-ah-date,html.lk-dark .lk-ah-prompt .ev,html.lk-dark .lk-ah-table th,html.lk-dark .lk-ah-tile .n small,html.lk-dark .lk-ah-drow .c.none,html.lk-dark .lk-admin-empty,html.lk-dark .lk-admin-row-l2,html.lk-dark .lk-admin-row-l1 span,html.lk-dark .lk-admin-stat-lbl{color:#9B96B3;}" +
+      D + ".lk-ash-nav:hover,html.lk-dark .lk-ash-ext:hover,html.lk-dark .lk-ash-out:hover,html.lk-dark .lk-ash-burger:hover,html.lk-dark .lk-ah-x:hover{background:#2F2750;}" +
+      D + ".lk-ash-nav[aria-current='page']{background:#2F2750;color:#C9B0FF;}html.lk-dark .lk-ash-nav[aria-current='page'] i{color:#C9B0FF;}" +
+      D + ".lk-ash-brand span{background:#B08CFF;color:#1B1830;}" +
+      D + ".lk-ash-out,html.lk-dark .lk-ash-sech button,html.lk-dark .lk-ah-story em,html.lk-dark .lk-ash-psent summary{color:#C9B0FF;}" +
+      D + ".lk-ash-foot,html.lk-dark .lk-ash-chip,html.lk-dark .lk-ash-li,html.lk-dark .lk-ash-row,html.lk-dark .lk-ash-kp,html.lk-dark .lk-ash-pmore,html.lk-dark .lk-ah-table th,html.lk-dark .lk-ah-table td,html.lk-dark .lk-ah-prompt .ev,html.lk-dark .lk-ah-pdetail,html.lk-dark .lk-admin-row,html.lk-dark .lk-admin-row-done,html.lk-dark .lk-admin-empty{border-color:#352F4F;}" +
+      D + ".lk-ash-btn,html.lk-dark .lk-ash-fchip,html.lk-dark .lk-ash-q,html.lk-dark .lk-ash-search,html.lk-dark .lk-ah-x,html.lk-dark .lk-admin-input,html.lk-dark .lk-admin-decline{background:#242039;border-color:#352F4F;color:#F3F1FA;}" +
+      D + ".lk-ash-btn:hover,html.lk-dark .lk-ash-fchip[aria-pressed='true']{background:#2F2750;border-color:#4A3A7A;color:#C9B0FF;}" +
+      D + ".lk-ash-btn.primary{background:#6002EE;border-color:#6002EE;color:#fff;}html.lk-dark .lk-ash-btn.primary:hover{background:#7A2BFF;border-color:#7A2BFF;}" +
+      D + ".lk-ah-tile:hover,html.lk-dark .lk-ash-pnote,html.lk-dark .lk-ash-psent pre,html.lk-dark .lk-ah-win,html.lk-dark .lk-admin-stat{background:#29223F;}" +
+      D + ".lk-ash-q.on,html.lk-dark .lk-ash-count{background:#3E2638;border-color:#55304A;color:#F0A3C9;}html.lk-dark .lk-ash-q.on b{color:#F0A3C9;}" +
+      D + ".lk-ash-clear{background:#1F3A2E;border-color:#2B5A42;color:#8FD9B0;}html.lk-dark .lk-ash-clear small{color:#8FD9B0;}" +
+      D + ".lk-ah-st{color:#8FD9B0;}html.lk-dark .lk-ah-st.wait{color:#F0A3C9;}" +
+      D + ".lk-ash-pill.working{background:#1F3A2E;color:#8FD9B0;}html.lk-dark .lk-ash-pill.seen{background:#2F2750;color:#C9B0FF;}html.lk-dark .lk-ash-pill.stalls,html.lk-dark .lk-ash-pill.low,html.lk-dark .lk-ash-pill.unseen{background:#3E2638;color:#F0A3C9;}html.lk-dark .lk-ash-pill.notlive{background:#2C273F;color:#C9C4DD;}" +
+      D + ".lk-ash-kp .d.up,html.lk-dark .lk-ah-drow .c{color:#8FD9B0;}html.lk-dark .lk-ash-kp .d.warn,html.lk-dark .lk-ah-tile .d.warn{color:#F0A3C9;}" +
+      D + ".lk-ash-dot{background:#4A3A7A;}html.lk-dark .lk-ash-dot.good{background:#8FD9B0;}html.lk-dark .lk-ash-dot.bad{background:#F0A3C9;}" +
+      D + ".lk-ash-needs .lk-admin-section,html.lk-dark .lk-admin-section{background:#242039;border-color:#352F4F;}html.lk-dark .lk-ash-needs .lk-admin-section{border-left-color:#F0A3C9;}" +
+      D + ".lk-ash-needs .lk-admin-qcount{background:#3E2638;color:#F0A3C9;}" +
+      D + ".lk-admin-approve{background:#1F3A2E;border-color:#2B5A42;color:#8FD9B0;}" +
+      /* the two sides */
+      D + ".lk-ah-side.shop .lk-ah-eyebrow{color:#7FD3D8;}html.lk-dark .lk-ah-side.shop .lk-ah-dot,html.lk-dark .lk-ah-side.shop .bar i,html.lk-dark .lk-ah-minibar i{background:#7FD3D8;}" +
+      D + ".lk-ah-side.vend .lk-ah-eyebrow{color:#F0A3C9;}html.lk-dark .lk-ah-side.vend .lk-ah-dot,html.lk-dark .lk-ah-side.vend .bar i{background:#F0A3C9;}" +
+      D + ".lk-ah-step .bar,html.lk-dark .lk-ah-drow .bar,html.lk-dark .lk-ah-minibar{background:#2C273F;}" +
+      D + ".lk-ah-side.shop .lk-ah-dropnote{background:#1E3A3F;}html.lk-dark .lk-ah-side.vend .lk-ah-dropnote{background:#3E2638;}" +
+      D + ".lk-ah-tag.shop{background:#1E3A3F;color:#7FD3D8;}html.lk-dark .lk-ah-tag.vend{background:#3E2638;color:#F0A3C9;}html.lk-dark .lk-ah-tag.both{background:#2F2750;color:#C9B0FF;}" +
+      D + "button.lk-ah-prompt:hover{border-color:#4A3A7A;}" +
+      D + ".lk-ah-drow .bar i{background:#4A4466;}html.lk-dark .lk-ah-drow.hot .bar i{background:#B08CFF;}" +
+      D + ".lk-ah-win .ic{background:#1F3A2E;color:#8FD9B0;}" +
+      D + ".lk-ah-note{background:#29223F;}" +
+      D + ".lk-ah-annot div{border-left-color:#4A3A7A;}" +
+      D + ".lk-ah-legend i.a{background:#B08CFF;}html.lk-dark .lk-ah-legend i.b{background:#4A4466;}" +
+      D + ".lk-ah-tip{background:#F3F1FA;color:#1B1830;}" +
+      D + ".lk-ah-scrim{background:rgba(0,0,0,.5);}html.lk-dark .lk-ah-panel{background:#242039;border-color:#352F4F;box-shadow:-12px 0 40px rgba(0,0,0,.4);}" +
+      /* chart marks */
+      D + ".lk-ah-grid{stroke:#2F2A45;}html.lk-dark .lk-ah-axis{fill:#9B96B3;}html.lk-dark .lk-ah-area{fill:#2F2750;}html.lk-dark .lk-ah-prev{stroke:#4A4466;}html.lk-dark .lk-ah-line{stroke:#B08CFF;}html.lk-dark .lk-ah-pt{fill:#B08CFF;stroke:#242039;}" +
+      D + ".lk-ah-sp-a{fill:#B08CFF;}html.lk-dark .lk-ah-sp-l{stroke:#B08CFF;}html.lk-dark .lk-ah-sp-d{fill:#B08CFF;}" +
+      /* theme toggle */
+      ".lk-ash-theme{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:10px;width:100%;border-radius:8px;padding:6px 8px;margin:0 0 6px;font-size:13.5px;font-weight:600;color:#4A4761;font-family:'Plus Jakarta Sans',sans-serif;}" +
+      ".lk-ash-theme i{width:40px;height:40px;flex:0 0 40px;display:flex;align-items:center;justify-content:center;color:#4A4761;}.lk-ash-theme i svg{width:16px;height:16px;}" +
+      ".lk-ash-theme:hover{background:#EEE6FF;color:#6002EE;}.lk-ash-theme:focus-visible{outline:2px solid #6002EE;outline-offset:1px;}" +
+      D + ".lk-ash-theme{color:#C9C4DD;}html.lk-dark .lk-ash-theme i{color:#C9C4DD;}html.lk-dark .lk-ash-theme:hover{background:#2F2750;color:#C9B0FF;}" +
+      /* insights module and the vendors view inherit the same surfaces */
+      D + ".lki-card,html.lk-dark .lki-kpi,html.lk-dark .lki-range,html.lk-dark .lki-secbar,html.lk-dark .lki-state,html.lk-dark .lki-chip,html.lk-dark .lki-why,html.lk-dark .lki-tldr{background:#242039;border-color:#352F4F;color:#F3F1FA;}" +
+      D + ".lki,html.lk-dark .lki-h,html.lk-dark .lki-cell,html.lk-dark .lki-lbl{color:#F3F1FA;}" +
+      D + ".lki-note,html.lk-dark .lki-empty,html.lk-dark .lki-thead,html.lk-dark .lki-legend,html.lk-dark .lki-axis,html.lk-dark .lki-why p,html.lk-dark .lki-why li,html.lk-dark .lki-gaps li,html.lk-dark .lki-li small,html.lk-dark .lki-cell small,html.lk-dark .lki-sm-l,html.lk-dark .lki-chip span,html.lk-dark .lki-secbar button,html.lk-dark .lki-h-r,html.lk-dark .lki-fn-n small,html.lk-dark .lki-wk>div{color:#C9C4DD;}" +
+      D + ".lki-chip.is-on,html.lk-dark .lki-range button.is-on,html.lk-dark .lki-secbar button:hover,html.lk-dark .lki-row:hover,html.lk-dark .lki-col.is-hot{background:#2F2750;color:#C9B0FF;}" +
+      D + ".lki-tip{background:#F3F1FA;color:#1B1830;}";
+    document.head.appendChild(st);
+  }
+
   // What to tell a vendor, in their words (the insights page words gaps for the admin).
   function vendorTips(v, listingsN) {
     var t = [];
@@ -1161,7 +1354,7 @@
   }
 
   function renderAdminShell(mount, acc, name) {
-    injectAdminCSS(); injectAdminShellCSS();
+    injectAdminCSS(); injectAdminShellCSS(); injectAdminHomeCSS(); injectAdminDarkCSS();
     mount.style.maxWidth = '1240px';
     var a = state.admin, ov = a.overview;
     var SAPI = window.LokaliSupabaseAPI;
@@ -1194,6 +1387,23 @@
       navBtns[vw[0]] = b; rail.appendChild(b);
     });
     var foot = T('div', 'lk-ash-foot');
+    // dark mode toggle (F 2026-10-10): remembered per browser, system default
+    var themeBtn = T('button', 'lk-ash-theme'); themeBtn.type = 'button';
+    var themeIco = document.createElement('i'); themeBtn.appendChild(themeIco); var themeLbl = T('span', null, ''); themeBtn.appendChild(themeLbl);
+    function applyTheme(mode) {
+      var dark = mode === 'dark';
+      document.documentElement.classList.toggle('lk-dark', dark);
+      themeIco.innerHTML = dark ? ASH_ICO.sun : ASH_ICO.moon; themeLbl.textContent = dark ? 'Light mode' : 'Dark mode';
+      themeBtn.setAttribute('aria-pressed', dark ? 'true' : 'false');
+      // the Webflow wrappers between the mount and <body> keep their own light
+      // backgrounds, so paint them too (and clear them again in light mode)
+      for (var p = mount.parentElement; p && p !== document.body; p = p.parentElement) p.style.backgroundColor = dark ? '#1B1830' : '';
+    }
+    var themeMode = null; try { themeMode = localStorage.getItem('lk_admin_theme'); } catch (e) {}
+    if (themeMode !== 'dark' && themeMode !== 'light') themeMode = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+    applyTheme(themeMode);
+    themeBtn.addEventListener('click', function () { themeMode = themeMode === 'dark' ? 'light' : 'dark'; try { localStorage.setItem('lk_admin_theme', themeMode); } catch (e) {} applyTheme(themeMode); });
+    foot.appendChild(themeBtn);
     foot.appendChild(T('div', 'lk-ash-lbl', 'Open in'));
     [['Stripe', 'https://dashboard.stripe.com/'], ['Supabase', 'https://supabase.com/dashboard/project/baacipkokiweipncavov'],
      ['Google Analytics', 'https://analytics.google.com/'], ['Brevo', 'https://app.brevo.com/'], ['Webflow', 'https://webflow.com/dashboard']].forEach(function (x) {
@@ -1272,29 +1482,41 @@
     }
 
     // ── TODAY ───────────────────────────────────────────────────────────────
+    // Admin home v2 (2026-10-10): the two sides of the marketplace first, then
+    // what the numbers suggest designing next, then the pulse. Queues fold into
+    // one line. Everything deeper opens in a drawer. Data = admin_insights +
+    // admin_visit_insights, already fetched once for the shell; no new SQL.
     (function buildToday() {
-      var v = views.today, now = new Date(), hr = now.getHours();
-      var head = T('div', 'lk-ash-h'), hl = T('div');
-      hl.appendChild(T('h2', null, (hr < 12 ? 'Good morning, ' : hr < 18 ? 'Good afternoon, ' : 'Good evening, ') + name));
-      var dstr = ''; try { dstr = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }); } catch (e) {}
-      hl.appendChild(T('p', null, dstr)); head.appendChild(hl); v.appendChild(head);
+      var v = views.today, now = new Date();
+      function n(x) { return (Number(x) || 0).toLocaleString('en-US'); }
+      function pct(a, b) { return b ? Math.round((a / b) * 100) : 0; }
+      function plural(k, one, many) { k = Number(k) || 0; return n(k) + ' ' + (k === 1 ? one : (many || one + 's')); }
+      function dayLabel(iso) { try { var p = String(iso).slice(0, 10).split('-'); return new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2])).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); } catch (e) { return String(iso); } }
+      function weekday(iso) { try { var p = String(iso).slice(0, 10).split('-'); return new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2])).toLocaleDateString('en-US', { weekday: 'long' }); } catch (e) { return ''; } }
+      var NS = 'http://www.w3.org/2000/svg';
+      function S(tag, attrs, text) { var e = document.createElementNS(NS, tag); for (var k in attrs) e.setAttribute(k, attrs[k]); if (text != null) e.textContent = text; return e; }
 
-      // Needs you: the existing queue sections, most serious first.
-      var needs = T('div', 'lk-ash-sec');
-      var nh = T('div', 'lk-ash-sech'); nh.appendChild(T('h3', null, 'Needs you')); var nhint = T('span', null, ''); nh.appendChild(nhint); needs.appendChild(nh);
-      var clear = T('div', 'lk-ash-clear'); clear.hidden = true; clear.innerHTML = ASH_ICO.check;
-      var ct = T('div', null, 'Nothing needs you right now.'); ct.appendChild(T('small', null, 'You also get an email within 5 minutes of anything new.')); clear.appendChild(ct);
-      needs.appendChild(clear);
-      var grid = T('div', 'lk-ash-needs'); needs.appendChild(grid);
-      var chips = T('div', 'lk-ash-queues'); chips.setAttribute('aria-label', 'All queues'); needs.appendChild(chips);
-      v.appendChild(needs);
+      // head: date eyebrow + the month's story (filled when the numbers land)
+      var head = T('div', 'lk-ash-h'), hl = T('div');
+      var dstr = ''; try { dstr = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }); } catch (e) {}
+      hl.appendChild(T('p', 'lk-ah-date', dstr));
+      var story = T('h2', 'lk-ah-story', 'Reading this month’s numbers…');
+      hl.appendChild(story); head.appendChild(hl); v.appendChild(head);
+
+      // needs you: one line + chips; the queue sections sit behind Review
+      var band = T('div', 'lk-ah-needs');
+      var st = T('div', 'lk-ah-st'); st.innerHTML = ASH_ICO.check; var stT = T('span', null, 'Checking the queues…'); st.appendChild(stT); band.appendChild(st);
+      var chips = T('div', 'lk-ash-queues'); chips.setAttribute('aria-label', 'All queues'); band.appendChild(chips);
+      var review = T('button', 'lk-ash-btn', 'Review'); review.type = 'button'; review.setAttribute('aria-expanded', 'false'); band.appendChild(review);
+      v.appendChild(band);
+      var grid = T('div', 'lk-ash-needs'); grid.hidden = true; v.appendChild(grid);
+      review.addEventListener('click', function () { grid.hidden = !grid.hidden; review.textContent = grid.hidden ? 'Review' : 'Hide'; review.setAttribute('aria-expanded', grid.hidden ? 'false' : 'true'); });
 
       window.__lokAttn = { suggestions: a.queue.length, reports: (Number(ov.open_vendor_reports) || 0) + (Number(ov.open_review_reports) || 0), creatives: null, addresses: null, pairings: null, blocks: null };
       function sectionTitle(sec) {
         var t = sec.querySelector('.lk-admin-qtitle'); if (!t) return '';
-        var out = ''; t.childNodes.forEach(function (n) { if (n.nodeType === 3) out += n.textContent; }); return out.trim();
+        var out = ''; t.childNodes.forEach(function (x) { if (x.nodeType === 3) out += x.textContent; }); return out.trim();
       }
-      // Empty queues fold away but stay findable as a quiet chip with a zero.
       function paintNeeds() {
         var total = 0, open = 0; chips.innerHTML = '';
         grid.querySelectorAll('.lk-admin-section').forEach(function (sec) {
@@ -1307,9 +1529,11 @@
           var q = T('span', 'lk-ash-q' + (rows ? ' on' : ''), title); q.appendChild(T('b', null, String(rows))); chips.appendChild(q);
           total += rows; if (!quiet) open++;
         });
-        clear.hidden = total > 0 || open > 0;
-        nhint.textContent = total ? (total === 1 ? '1 thing waiting, most serious first' : total + ' things waiting, most serious first') : '';
+        var waiting = total > 0 || open > 0;
+        st.classList.toggle('wait', waiting);
+        stT.textContent = total ? (total === 1 ? '1 thing needs you' : total + ' things need you') : (open ? 'Something is still loading' : 'Nothing needs you right now');
         navCount.textContent = String(total); navCount.hidden = !total;
+        review.hidden = !waiting; if (!waiting) { grid.hidden = true; review.textContent = 'Review'; review.setAttribute('aria-expanded', 'false'); }
       }
       window.__lokPaintAttn = paintNeeds;
       appendReportsSection(grid, ov);              // trust and safety first
@@ -1323,56 +1547,328 @@
       try { new MutationObserver(function () { paintNeeds(); }).observe(grid, { childList: true, subtree: true, characterData: true }); } catch (e) {}
       setTimeout(paintNeeds, 0);
 
-      // Pulse + Worth knowing + Vendors to nudge: filled when insights arrive.
+      // ── drawer (the dive-deeper layer) ────────────────────────────────────
+      var drawerEl = T('div', 'lk-ah-drawer'); drawerEl.hidden = true;
+      var scrim = T('div', 'lk-ah-scrim'); drawerEl.appendChild(scrim);
+      var panel = T('aside', 'lk-ah-panel'); panel.setAttribute('role', 'dialog'); panel.setAttribute('aria-modal', 'true');
+      var ph = T('div', 'lk-ah-ph'), phl = T('div'); var pTitle = T('h3', null, ''); pTitle.id = 'lk-ah-ptitle'; panel.setAttribute('aria-labelledby', pTitle.id);
+      var pSub = T('p', null, ''); phl.appendChild(pTitle); phl.appendChild(pSub); ph.appendChild(phl);
+      var pX = T('button', 'lk-ah-x', '×'); pX.type = 'button'; pX.setAttribute('aria-label', 'Close'); ph.appendChild(pX); panel.appendChild(ph);
+      var pBody = T('div', 'lk-ah-pbody'); panel.appendChild(pBody); drawerEl.appendChild(panel); v.appendChild(drawerEl);
+      var lastFocus = null;
+      function openDrawer(title, sub, fill) {
+        lastFocus = document.activeElement; pTitle.textContent = title; pSub.textContent = sub || ''; pBody.innerHTML = '';
+        fill(pBody); drawerEl.hidden = false; document.body.classList.add('lk-ah-lock'); pX.focus();
+      }
+      function closeDrawer() { if (drawerEl.hidden) return; drawerEl.hidden = true; document.body.classList.remove('lk-ah-lock'); try { if (lastFocus && lastFocus.focus) lastFocus.focus(); } catch (e) {} }
+      pX.addEventListener('click', closeDrawer); scrim.addEventListener('click', closeDrawer);
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeDrawer(); });
+      function table(host, cols, rows) {
+        var tb = T('table', 'lk-ah-table'), tr = T('tr');
+        cols.forEach(function (c) { tr.appendChild(T('th', c.r ? 'r' : null, c.l)); }); tb.appendChild(tr);
+        rows.forEach(function (r) { var x = T('tr'); r.forEach(function (cell, i) { var td = T('td', cols[i] && cols[i].r ? 'r' : null); if (cell && cell.nodeType) td.appendChild(cell); else td.textContent = cell == null ? '' : String(cell); x.appendChild(td); }); tb.appendChild(x); });
+        host.appendChild(tb); return tb;
+      }
+      function note(host, strong, rest) { var d = T('div', 'lk-ah-note'); if (strong) d.appendChild(T('b', null, strong + ' ')); d.appendChild(document.createTextNode(rest)); host.appendChild(d); return d; }
+
+      // ── the two sides ─────────────────────────────────────────────────────
+      var sides = T('div', 'lk-ah-sides'); v.appendChild(sides);
+      function sideCard(kind, eyebrow) {
+        var s = T('section', 'lk-ah-side ' + kind); s.setAttribute('aria-label', eyebrow);
+        var eb = T('div', 'lk-ah-eyebrow'); eb.appendChild(T('span', 'lk-ah-dot')); eb.appendChild(document.createTextNode(eyebrow)); s.appendChild(eb);
+        s.h = T('h3', null, 'Loading…'); s.appendChild(s.h);
+        s.sub = T('p', 'lk-ah-sub', ''); s.appendChild(s.sub);
+        s.steps = T('div', 'lk-ah-steps'); s.appendChild(s.steps);
+        s.note = T('div', 'lk-ah-dropnote'); s.note.hidden = true; s.appendChild(s.note);
+        s.foot = T('div', 'lk-ah-foot'); s.appendChild(s.foot);
+        sides.appendChild(s); return s;
+      }
+      var shopSide = sideCard('shop', 'Shoppers'), vendSide = sideCard('vend', 'Vendors');
+      function steps(host, rows, dropIdx) {
+        host.innerHTML = ''; var max = rows[0][1] || 1;
+        rows.forEach(function (r, i) {
+          var s = T('div', 'lk-ah-step' + (i === dropIdx ? ' drop' : ''));
+          s.appendChild(T('span', 'lab', r[0]));
+          var b = T('div', 'bar'), f = T('i'); f.style.width = Math.max(r[1] ? 1.5 : 0, (r[1] / max) * 100) + '%'; b.appendChild(f); s.appendChild(b);
+          s.appendChild(T('span', 'n', n(r[1]))); host.appendChild(s);
+        });
+      }
+      function biggestLoss(rows) { var bi = -1, best = -1; for (var i = 1; i < rows.length; i++) { var loss = rows[i - 1][1] - rows[i][1]; if (loss > best) { best = loss; bi = i; } } return bi; }
+      function dropNote(side, strong, rest, linkText, onLink) {
+        side.note.innerHTML = ''; side.note.appendChild(T('b', null, strong + ' ')); side.note.appendChild(document.createTextNode(rest + ' '));
+        if (linkText) { var l = T('a', null, linkText); l.href = '#'; l.addEventListener('click', function (e) { e.preventDefault(); onLink(); }); side.note.appendChild(l); }
+        side.note.hidden = false;
+      }
+      function footBtn(side, label, primary, fn) { var b = T('button', 'lk-ash-btn' + (primary ? ' primary' : ''), label); b.type = 'button'; b.addEventListener('click', fn); side.foot.appendChild(b); return b; }
+
+      // ── prompts, pulse, chart, two-up: shells now, filled on data ─────────
+      var promptsSec = T('div', 'lk-ash-sec'); promptsSec.hidden = true; v.appendChild(promptsSec);
       var pulse = T('div', 'lk-ash-sec');
-      var ph = T('div', 'lk-ash-sech'); ph.appendChild(T('h3', null, 'Pulse')); ph.appendChild(T('span', null, 'last 30 days against the 30 before'));
-      var toIns = T('button', null, 'Open Insights'); toIns.type = 'button'; toIns.addEventListener('click', function () { go('insights', true); }); ph.appendChild(toIns);
-      pulse.appendChild(ph);
+      var pulH = T('div', 'lk-ash-sech'); pulH.appendChild(T('h3', null, 'Pulse')); pulH.appendChild(T('span', null, 'last 30 days against the 30 before'));
+      var toIns = T('button', null, 'Open Insights'); toIns.type = 'button'; toIns.addEventListener('click', function () { go('insights', true); }); pulH.appendChild(toIns);
+      pulse.appendChild(pulH);
       var pbox = T('div', 'lk-ash-list'); pbox.appendChild(T('div', 'lk-ash-note', 'Loading the numbers…')); pulse.appendChild(pbox);
       v.appendChild(pulse);
-      var know = T('div', 'lk-ash-sec'); know.hidden = true; v.appendChild(know);
-      var nudge = T('div', 'lk-ash-sec'); nudge.hidden = true; v.appendChild(nudge);
+      var chartSec = T('div', 'lk-ash-sec lk-ah-card'); chartSec.hidden = true; v.appendChild(chartSec);
+      var two = T('div', 'lk-ah-two'); two.hidden = true; v.appendChild(two);
 
       Promise.all([insightsData(), contacts()]).then(function (rs) {
         var pack = rs[0], cmap = rs[1];
-        if (!pack) { pbox.innerHTML = ''; pbox.appendChild(T('div', 'lk-ash-note', 'The numbers could not load. Refresh the page to try again.')); return; }
-        var d = pack.d, an = pack.an, t = d.totals || {};
-        function n(x) { return (Number(x) || 0).toLocaleString('en-US'); }
-        function kp(label, value, detail, cls) {
-          var k = T('div', 'lk-ash-kp'); k.appendChild(T('div', 'l', label)); k.appendChild(T('div', 'n', value)); k.appendChild(T('div', 'd' + (cls ? ' ' + cls : ''), detail)); return k;
+        if (!pack) {
+          pbox.innerHTML = ''; pbox.appendChild(T('div', 'lk-ash-note', 'The numbers could not load. Refresh the page to try again.'));
+          story.textContent = 'Good ' + (now.getHours() < 12 ? 'morning' : now.getHours() < 18 ? 'afternoon' : 'evening') + ', ' + name + '.';
+          shopSide.h.textContent = 'The numbers could not load.'; vendSide.h.textContent = 'The numbers could not load.'; return;
+        }
+        var d = pack.d, an = pack.an, t = d.totals || {}, z = d.visit || null, zf = (z && z.funnel) || {};
+        var rows = an.rows, pub = rows.filter(function (r) { return r.v.is_public; });
+        var reachRows = pub.filter(function (r) { return r.reach > 0; });
+        var known = z ? (Number(z.known_visitors) || 0) : 0, ret = z ? (Number(z.returning_visitors) || 0) : 0;
+        var vd = t.views_prev > 0 ? Math.round(((t.views - t.views_prev) / t.views_prev) * 100) : null;
+        var zeroTerms = (d.search_zero || []).filter(function (x) { return !/test/i.test(x.term || ''); });
+        var byViews = pub.slice().sort(function (x, y) { return y.v.views - x.v.views; });
+        var top5 = 0; byViews.slice(0, 5).forEach(function (r) { top5 += r.v.views; });
+        var top5Share = pct(top5, t.views), low = pub.filter(function (r) { return r.v.views <= 2; }).length;
+        var stalls = pub.filter(function (r) { return r.dx.key === 'stalls'; });
+
+        // headline: one sentence of fact, one open question
+        var s1;
+        if (!t.views) s1 = 'No storefront views yet this month.';
+        else if (vd == null) s1 = 'Shoppers opened storefronts ' + plural(t.views, 'time') + ' this month.';
+        else if (vd >= 80) s1 = 'Shoppers are opening storefronts about ' + (vd >= 180 ? 'three' : 'twice') + ' as often as last month.';
+        else if (vd >= 15) s1 = 'Storefront views are up ' + vd + '% on last month.';
+        else if (vd <= -15) s1 = 'Storefront views are down ' + Math.abs(vd) + '% on last month.';
+        else s1 = 'Storefront views are holding steady on last month.';
+        var s2;
+        if (z && known >= 20 && ret / known < 0.3) s2 = 'Getting them to come back is the open question.';
+        else if (t.views >= 100 && an.reach / t.views < 0.03) s2 = 'Turning views into reach-outs is the open question.';
+        else if (t.searches >= 5 && t.searches_zero / t.searches >= 0.3) s2 = 'Searches that find nobody are the open question.';
+        else if (reachRows.length) s2 = plural(reachRows.length, 'vendor') + ' heard from a shopper.';
+        else s2 = 'No vendor has heard from a shopper yet.';
+        story.textContent = s1 + ' '; story.appendChild(T('em', null, s2));
+
+        // shoppers
+        if (!z || !z.visits) {
+          shopSide.h.textContent = 'Visit counting is on and waiting for shoppers.';
+          shopSide.sub.textContent = 'Journeys appear here as people browse The Market and open storefronts.';
+        } else {
+          // The Market is not a step everyone passes (a shared link lands on a
+          // storefront), so it is a sentence, not a bar; the bars stay nested.
+          var srows = [['Visited Lokali', zf.visits || 0], ['Opened a storefront', zf.viewed || 0], ['Reached out', zf.contacted || 0]];
+          shopSide.h.textContent = plural(z.visitors, 'person', 'people') + ' visited. ' + n(ret) + ' came back.';
+          shopSide.sub.textContent = 'Visits by people not signed in as a vendor or admin, last ' + d.days + ' days. ' + n(zf.saw_market || 0) + ' of ' + n(zf.visits || 0) + ' visits touched The Market; the rest landed straight on a storefront.';
+          var returnStory = known >= 20 && ret / known < 0.3;
+          var di = biggestLoss(srows);
+          steps(shopSide.steps, srows, returnStory ? -1 : di);
+          if (returnStory) {
+            dropNote(shopSide, 'Biggest drop: visiting to coming back.', n(known - ret) + ' of ' + n(known) + ' visitors have not returned yet. Following a vendor is the one return path today; a saved search or a shopper-facing "New this week" would add another.', 'See where visits began', function () { entryDrawer(); });
+          } else if (di === 1) {
+            dropNote(shopSide, 'Biggest drop: arriving to opening.', n(srows[0][1] - srows[1][1]) + ' visits never opened a storefront. The Market cards decide here: photo, name, tagline.', 'See where visits began', function () { entryDrawer(); });
+          } else if (di === 2) {
+            dropNote(shopSide, 'Biggest drop: opening to reaching out.', n(srows[1][1] - srows[2][1]) + ' visits opened a storefront and stopped there. The storefront page is where the decision happens.', 'How shoppers reach out', function () { channelsDrawer(); });
+          }
+          footBtn(shopSide, (t.searches ? plural(t.searches_zero, 'search', 'searches') + ' found nobody' : 'No Market searches yet'), false, function () { searchesDrawer(); });
+          footBtn(shopSide, 'How shoppers reach out', false, function () { channelsDrawer(); });
+        }
+
+        // vendors
+        var vrows = [['Signed up', rows.length], ['Went live', pub.length], ['Was seen', pub.filter(function (r) { return r.v.views > 0; }).length], ['Had 5 or more views', pub.filter(function (r) { return r.v.views >= 5; }).length], ['Got a reach-out', reachRows.length]];
+        var vi = biggestLoss(vrows);
+        vendSide.h.textContent = n(pub.length) + ' live. ' + n(reachRows.length) + ' heard from a shopper.';
+        vendSide.sub.textContent = 'Every vendor signup so far and how far each got. The step with the biggest loss is where onboarding or The Market needs work.';
+        steps(vendSide.steps, vrows, vi);
+        var quiet = pub.filter(function (r) { return r.v.views >= 5 && !r.reach; });
+        function avgViews(list) { var s = 0; list.forEach(function (r) { s += r.v.views; }); return list.length ? Math.round(s / list.length) : 0; }
+        var complete = pub.filter(function (r) { return r.score >= 6; }), rest = pub.filter(function (r) { return r.score < 6; });
+        var evidence = complete.length >= 3 && rest.length >= 3 ? ' Storefronts with 6 or more of the 7 basics averaged ' + plural(avgViews(complete), 'view') + ', the rest ' + n(avgViews(rest)) + '.' : '';
+        if (vi === 1) dropNote(vendSide, 'Biggest drop: signing up to going live.', n(vrows[0][1] - vrows[1][1]) + ' signups never went live. The first session after signup is where they stall.', 'See who stalled', function () { nudgeDrawer(); });
+        else if (vi === 2) dropNote(vendSide, 'Biggest drop: live to seen.', n(vrows[1][1] - vrows[2][1]) + ' live storefronts were not opened by anyone. Visibility, not the storefront, is the problem.' + evidence, 'See who to nudge', function () { nudgeDrawer(); });
+        else if (vi === 3) dropNote(vendSide, 'Biggest drop: seen once to seen often.', n(vrows[2][1] - vrows[3][1]) + ' storefronts got fewer than 5 views. The Market order and the homepage strip decide who is seen.' + evidence, 'See who to nudge', function () { nudgeDrawer(); });
+        else if (vi === 4) { var qa = 0; quiet.forEach(function (r) { qa += r.score; }); dropNote(vendSide, 'Biggest drop: being seen to being contacted.', n(vrows[3][1]) + ' storefronts were seen 5 or more times, ' + n(reachRows.length) + ' got a reach-out. The ' + n(quiet.length) + ' quiet ones average ' + (quiet.length ? Math.round(qa / quiet.length) : 0) + ' of 7 basics.' + evidence, 'See the quiet storefronts', function () { nudgeDrawer(); }); }
+        var cand = rows.filter(function (r) { return r.v.name && !r.v.away && r.dx.key !== 'working' && (!r.v.is_public || r.score <= 4); });
+        cand.sort(function (x, y) { return (x.v.is_public ? x.score : -1) - (y.v.is_public ? y.score : -1) || y.v.views - x.v.views; });
+        footBtn(vendSide, cand.length ? 'Nudge ' + Math.min(3, cand.length) + ' vendor' + (Math.min(3, cand.length) === 1 ? '' : 's') + ' this week' : 'See quiet storefronts', true, function () { nudgeDrawer(); });
+        footBtn(vendSide, 'All vendors', false, function () { go('vendors', true); });
+
+        // ── drawers with real content ──
+        function searchesDrawer() {
+          openDrawer('Searches that found nobody', 'Zero-result searches in The Market, last ' + d.days + ' days. Each one is a shopper who left empty-handed.', function (b) {
+            if (!(d.search_zero || []).length) { b.appendChild(T('p', 'lk-ash-note', 'Every search found at least one vendor.')); return; }
+            table(b, [{ l: 'Typed' }, { l: 'Times', r: true }, { l: 'Last' }], (d.search_zero || []).map(function (x) { return [x.term, n(x.n), dayLabel(x.last_at)]; }));
+            note(b, 'Two fixes, different sizes.', 'A synonym on the right subcategory fixes a single term today. A no-results page that shows the three closest storefronts instead of an empty state fixes the pattern.');
+            var all = (d.search_terms || []).filter(function (x) { return x.avg_results > 0; }).slice(0, 8);
+            if (all.length) { b.appendChild(T('h4', 'lk-ah-h4', 'Searches that did find someone')); table(b, [{ l: 'Typed' }, { l: 'Times', r: true }, { l: 'Found', r: true }], all.map(function (x) { return [x.term, n(x.n), plural(x.avg_results, 'vendor')]; })); }
+          });
+        }
+        var CH = { website: 'Website', buy_link: 'Buy link', 'inquiry form': 'Inquiry form', sms: 'Text message', call: 'Call', zelle: 'Zelle', booking_link: 'Booking link', linkedin: 'LinkedIn', email: 'Email', whatsapp: 'WhatsApp', instagram: 'Instagram', facebook: 'Facebook' };
+        function channelsDrawer() {
+          openDrawer('How shoppers reach out', 'Which button people pressed on storefronts, last ' + d.days + ' days.', function (b) {
+            var ch = d.contact_channels || [];
+            if (!ch.length) { b.appendChild(T('p', 'lk-ash-note', 'No reach-outs in this period.')); return; }
+            var max = ch[0].n || 1;
+            table(b, [{ l: 'Button' }, { l: 'Clicks', r: true }, { l: '' }], ch.map(function (x) { var bar = T('div', 'lk-ah-minibar'), f = T('i'); f.style.width = pct(x.n, max) + '%'; bar.appendChild(f); return [CH[x.channel] || x.channel, n(x.n), bar]; }));
+            var by = (d.leads && d.leads.by_actor) || {};
+            note(b, 'Who pressed them:', n(by.anonymous || 0) + ' not signed in, ' + n(by.shopper || 0) + ' signed-in shoppers, ' + n(by.vendor_or_admin || 0) + ' from vendor or admin accounts (your own tests, left out of every rate on this page).');
+          });
+        }
+        var REF = { direct: 'Typed the address or a bookmark', external: 'Another site, search engine or social app', share: 'A Lokali share link', market: 'Arrived mid-visit from The Market', internal: 'Another Lokali page' };
+        function entryDrawer() {
+          openDrawer('Where visits began', 'How visits that touched a vendor started, and who came back.', function (b) {
+            if (!z) { b.appendChild(T('p', 'lk-ash-note', 'Visit counting is not on yet.')); return; }
+            var en = (z.entry || []).filter(function (e) { return e.ref !== 'market' && e.ref !== 'internal'; });
+            if (en.length) table(b, [{ l: 'Came in via' }, { l: 'Visits', r: true }, { l: 'Reached out', r: true }], en.map(function (e) { return [REF[e.ref] || e.ref, n(e.n), n(e.contacted || 0)]; }));
+            note(b, n(ret) + ' of ' + n(known) + ' visitors came back on another day.', ' Random ids only, no names or IPs. Browsers asking not to be tracked never count as returning, so treat this as a floor.');
+            var rep = pub.filter(function (r) { return r.v.visit && r.v.visit.repeat_visitors; }).sort(function (x, y) { return y.v.visit.repeat_visitors - x.v.visit.repeat_visitors; }).slice(0, 8);
+            if (rep.length) { b.appendChild(T('h4', 'lk-ah-h4', 'Storefronts people came back to')); table(b, [{ l: 'Storefront' }, { l: 'Returning visitors', r: true }], rep.map(function (r) { return [r.v.name, n(r.v.visit.repeat_visitors)]; })); }
+          });
+        }
+        function nudgeDrawer() {
+          openDrawer('Vendors to nudge', 'Most fixable first: a named signup that never went live, then live storefronts missing the most basics. Away vendors are left alone.', function (b) {
+            if (!cand.length) { b.appendChild(T('p', 'lk-ash-note', 'Every live storefront has its basics. Nothing to nudge this week.')); return; }
+            var list = T('div', 'lk-ash-list'); cand.slice(0, 12).forEach(function (r) { list.appendChild(vendorRow(r, cmap, true)); }); b.appendChild(list);
+            if (cand.length > 12) b.appendChild(T('p', 'lk-ash-note', (cand.length - 12) + ' more in the Vendors view.'));
+          });
+        }
+        function viewsDrawer() {
+          openDrawer('Storefront views', n(t.views) + ' in the last ' + d.days + ' days against ' + n(t.views_prev) + ' in the ' + d.days + ' before.', function (b) {
+            var vs = d.view_sources || [], tot = 0; vs.forEach(function (x) { tot += x.n; });
+            var LBL = { listing: 'Storefront page', product: 'Product page', service: 'Service page' };
+            table(b, [{ l: 'Where the view landed' }, { l: 'Views', r: true }, { l: 'Share', r: true }], vs.map(function (x) { return [LBL[x.source] || x.source, n(x.n), pct(x.n, tot) + '%']; }));
+            var item = 0; vs.forEach(function (x) { if (x.source !== 'listing') item += x.n; });
+            if (tot) note(b, pct(item, tot) + '% of views land on an item page,', ' not the storefront. Those pages are front doors too.');
+            var ti = (d.top_items || []).slice(0, 8);
+            if (ti.length) { b.appendChild(T('h4', 'lk-ah-h4', 'Most opened items')); table(b, [{ l: 'Item' }, { l: 'Vendor' }, { l: 'Views', r: true }], ti.map(function (x) { return [x.name, x.vendor, n(x.views)]; })); }
+          });
+        }
+
+        // ── what this suggests you design next ──
+        var prompts = [];
+        if (z && known >= 20 && ret / known < 0.3) prompts.push({ tag: 'shop', tl: 'Shoppers', h: 'Give a shopper a reason to come back', p: 'Following a vendor is the only return path today. A saved search or a shopper-facing "New this week" email would turn a one-time visit into a habit.', ev: n(ret) + ' of ' + n(known) + ' visitors returned on another day.' + (t.shares ? ' ' + plural(t.shares, 'share link') + ' created, so people do pass Lokali on.' : ''), open: entryDrawer });
+        if (t.searches >= 5 && zeroTerms.length && t.searches_zero / t.searches >= 0.25) prompts.push({ tag: 'both', tl: 'Both sides', h: 'Searches that find nobody', p: '"' + zeroTerms.slice(0, 3).map(function (x) { return x.term; }).join('", "') + '" returned nothing. A synonym on the right subcategory fixes a term today; a "closest matches" page instead of an empty state fixes the pattern.', ev: n(t.searches_zero) + ' of ' + plural(t.searches, 'search', 'searches') + ' returned zero results. Low volume, but every zero sends a shopper to Google.', open: searchesDrawer });
+        if (pub.length >= 10 && top5Share >= 40) prompts.push({ tag: 'vend', tl: 'Vendors', h: 'Attention is concentrating on a few storefronts', p: byViews[0].v.name + ' alone took ' + pct(byViews[0].v.views, t.views) + '% of views. The Market order and the homepage strip decide who gets seen; a newly-live lane or a rotation would spread it.', ev: 'Top 5 storefronts: ' + top5Share + '% of views. ' + plural(low, 'live storefront') + ' had 2 or fewer.', open: function () { go('vendors', true); } });
+        if (stalls.length) prompts.push({ tag: 'vend', tl: 'Vendors', h: 'People open these storefronts and stop', p: stalls.slice(0, 3).map(function (r) { return r.v.name; }).join(', ') + (stalls.length > 3 ? ' and ' + (stalls.length - 3) + ' more' : '') + ' had 30 or more views and no reach-out. The page itself is where shoppers stop: photos, price, a clear first step.', ev: plural(stalls.length, 'storefront') + ' seen 30+ times without a contact.', open: nudgeDrawer });
+        if (!t.reviews && an.reach >= 5) { var ra = 0; rows.forEach(function (r) { ra += Number(r.v.reviews_all) || 0; }); prompts.push({ tag: 'both', tl: 'Both sides', h: 'Nobody left a review this month', p: 'A review ask after a Won lead or a vendor reply would turn reach-outs into the social proof the next shopper looks for.', ev: '0 reviews in ' + d.days + ' days, ' + n(ra) + ' all-time, against ' + plural(an.reach, 'shopper reach-out') + '.', open: function () { go('insights', true); } }); }
+        if (prompts.length < 3) (an.takeaways || []).filter(function (x) { return !/^Storefront views|^[\d,]+ storefront views|reach-out|reached out|contact click/i.test(x.text); }).slice(0, 3 - prompts.length).forEach(function (x) { prompts.push({ tag: 'both', tl: 'Worth knowing', h: x.text, p: '', ev: '', open: null }); });
+        if (prompts.length) {
+          var prH = T('div', 'lk-ash-sech'); prH.appendChild(T('h3', null, 'What this suggests you design next')); prH.appendChild(T('span', null, 'each card opens the numbers behind it')); promptsSec.appendChild(prH);
+          var pg = T('div', 'lk-ah-prompts');
+          prompts.slice(0, 3).forEach(function (p) {
+            var c = T(p.open ? 'button' : 'div', 'lk-ah-prompt'); if (p.open) { c.type = 'button'; c.addEventListener('click', p.open); }
+            c.appendChild(T('span', 'lk-ah-tag ' + p.tag, p.tl)); c.appendChild(T('h4', null, p.h));
+            if (p.p) c.appendChild(T('p', null, p.p)); if (p.ev) c.appendChild(T('div', 'ev', p.ev));
+            pg.appendChild(c);
+          });
+          promptsSec.appendChild(pg); promptsSec.hidden = false;
+        }
+
+        // ── pulse tiles with sparklines ──
+        var daily = d.daily || [];
+        function buckets(key) { var out = [], size = Math.max(1, Math.ceil(daily.length / 4)); for (var i = 0; i < daily.length; i += size) { var s = 0; daily.slice(i, i + size).forEach(function (r) { s += Number(r[key]) || 0; }); out.push(s); } return out; }
+        function spark(vals) {
+          var W = 200, H = 34, max = Math.max.apply(null, vals.concat([1])), svg = S('svg', { viewBox: '0 0 ' + W + ' ' + H, 'aria-hidden': 'true', class: 'lk-ah-spark' });
+          if (vals.length < 2) return svg;
+          var pts = vals.map(function (x, i) { return [3 + i * (W - 6) / (vals.length - 1), H - 4 - (x / max) * (H - 10)]; });
+          var dd = pts.map(function (p, i) { return (i ? 'L' : 'M') + p[0].toFixed(1) + ',' + p[1].toFixed(1); }).join(' ');
+          svg.appendChild(S('path', { d: dd + ' L' + pts[pts.length - 1][0].toFixed(1) + ',' + (H - 2) + ' L3,' + (H - 2) + ' Z', fill: '#6002EE', opacity: '.12', class: 'lk-ah-sp-a' }));
+          svg.appendChild(S('path', { d: dd, fill: 'none', stroke: '#6002EE', 'stroke-width': '2', 'stroke-linejoin': 'round', class: 'lk-ah-sp-l' }));
+          svg.appendChild(S('circle', { cx: pts[pts.length - 1][0].toFixed(1), cy: pts[pts.length - 1][1].toFixed(1), r: '3', fill: '#6002EE', class: 'lk-ah-sp-d' }));
+          return svg;
+        }
+        function tile(label, value, small, detail, cls, sp, onOpen) {
+          var k = T('button', 'lk-ash-kp lk-ah-tile'); k.type = 'button'; k.appendChild(T('div', 'l', label));
+          var nn = T('div', 'n', value); if (small) nn.appendChild(T('small', null, ' ' + small)); k.appendChild(nn);
+          k.appendChild(T('div', 'd' + (cls ? ' ' + cls : ''), detail)); if (sp) k.appendChild(sp); k.addEventListener('click', onOpen); return k;
         }
         var grid4 = T('div', 'lk-ash-pulse');
-        var vd = t.views_prev > 0 ? Math.round(((t.views - t.views_prev) / t.views_prev) * 100) : null;
-        grid4.appendChild(kp('Storefront views', n(t.views), vd == null ? 'none in the 30 days before' : (vd >= 0 ? 'up ' : 'down ') + Math.abs(vd) + '% from ' + n(t.views_prev), vd != null && vd >= 0 ? 'up' : (vd != null ? 'warn' : '')));
+        grid4.appendChild(tile('Storefront views', n(t.views), null, vd == null ? 'none in the 30 days before' : (vd >= 0 ? 'up ' : 'down ') + Math.abs(vd) + '% from ' + n(t.views_prev), vd != null && vd >= 0 ? 'up' : (vd == null ? '' : 'warn'), spark(buckets('views')), viewsDrawer));
         var rate = t.views ? Math.round((an.reach / t.views) * 100) : 0;
-        grid4.appendChild(kp('Shopper reach-outs', n(an.reach), rate + '% of views' + (an.internal ? ' · ' + n(an.internal) + ' test clicks left out' : ''), an.reach ? '' : 'warn'));
-        var withReach = an.rows.filter(function (r) { return r.v.is_public && r.reach > 0; }).length;
-        grid4.appendChild(kp('Live storefronts seen', n(t.vendors_seen) + ' of ' + n(t.vendors_public), withReach + (withReach === 1 ? ' had' : ' had') + ' a shopper reach out'));
-        var zero = (d.search_zero || []).slice(0, 2).map(function (z) { return z.term; }).join(', ');
-        grid4.appendChild(kp('Searches that found nobody', t.searches ? n(t.searches_zero) + ' of ' + n(t.searches) : 'None', t.searches ? (zero || 'every search found someone') : 'nobody searched The Market', t.searches_zero ? 'warn' : ''));
+        grid4.appendChild(tile('Shopper reach-outs', n(an.reach), 'real', rate + '% of views' + (an.internal ? ' · ' + n(an.internal) + ' test clicks left out' : ''), an.reach ? '' : 'warn', spark(buckets('contacts')), channelsDrawer));
+        if (z && z.visits) grid4.appendChild(tile('Came back another day', n(ret), 'of ' + n(known), 'visitors seen on 2 or more days', ret ? '' : 'warn', null, entryDrawer));
+        else { var withReach = reachRows.length; grid4.appendChild(tile('Live storefronts seen', n(t.vendors_seen) + ' of ' + n(t.vendors_public), null, withReach + ' had a shopper reach out', '', null, function () { go('vendors', true); })); }
+        var zt = zeroTerms.slice(0, 3).map(function (x) { return x.term; }).join(', ');
+        grid4.appendChild(tile('Searches that found nobody', t.searches ? n(t.searches_zero) : 'None', t.searches ? 'of ' + n(t.searches) : null, t.searches ? (zt || 'every search found someone') : 'nobody searched The Market yet', t.searches && t.searches_zero ? 'warn' : '', spark(buckets('searches')), searchesDrawer));
         pulse.replaceChild(grid4, pbox);
 
-        // drop the takeaways the Pulse tiles already say (views, reach-outs, test clicks)
-        var tk = (an.takeaways || []).filter(function (x) { return !/^Storefront views|^[\d,]+ storefront views|reach-out|reached out|contact click/i.test(x.text); }).slice(0, 3);
-        if (tk.length) {
-          var kh = T('div', 'lk-ash-sech'); kh.appendChild(T('h3', null, 'Worth knowing')); know.appendChild(kh);
-          var kl = T('div', 'lk-ash-list');
-          tk.forEach(function (x) { var li = T('div', 'lk-ash-li'); li.appendChild(T('span', 'lk-ash-dot ' + x.tone)); li.appendChild(T('span', null, x.text)); kl.appendChild(li); });
-          know.appendChild(kl); know.hidden = false;
+        // ── views by day ──
+        if (daily.length >= 7) {
+          var ch = T('div', 'lk-ash-sech'); ch.appendChild(T('h3', null, 'Views by day')); ch.appendChild(T('span', null, 'Central time, hover for the number')); chartSec.appendChild(ch);
+          var wrap = T('div', 'lk-ah-pulsewrap'), cw = T('div', 'lk-ah-chartwrap');
+          var W = 720, Hh = 200, pl = 34, pr = 12, pt = 14, pb = 28, iw = W - pl - pr, ih = Hh - pt - pb;
+          var maxV = 0; daily.forEach(function (r) { if (r.views > maxV) maxV = r.views; }); maxV = Math.max(5, Math.ceil(maxV / 10) * 10);
+          var svg = S('svg', { viewBox: '0 0 ' + W + ' ' + Hh, role: 'img', 'aria-label': 'Storefront views per day, last ' + d.days + ' days', class: 'lk-ah-chart' });
+          var X = function (i) { return pl + i * (iw / (daily.length - 1)); }, Y = function (val) { return pt + ih - (val / maxV) * ih; };
+          var stepG = maxV >= 50 ? 10 : 5; for (var g = 0; g <= maxV; g += stepG) { svg.appendChild(S('line', { x1: pl, x2: W - pr, y1: Y(g), y2: Y(g), stroke: '#ECE9F5', 'stroke-width': '1', class: 'lk-ah-grid' })); svg.appendChild(S('text', { x: pl - 8, y: Y(g) + 4, 'text-anchor': 'end', 'font-size': '11', fill: '#8E8BA6', class: 'lk-ah-axis' }, String(g))); }
+          var area = 'M' + X(0) + ',' + Y(0), line = '';
+          daily.forEach(function (r, i) { area += ' L' + X(i).toFixed(1) + ',' + Y(r.views).toFixed(1); line += (i ? ' L' : 'M') + X(i).toFixed(1) + ',' + Y(r.views).toFixed(1); });
+          area += ' L' + X(daily.length - 1).toFixed(1) + ',' + Y(0) + ' Z';
+          svg.appendChild(S('path', { d: area, fill: '#EEE6FF', opacity: '.9', class: 'lk-ah-area' }));
+          var prevAvg = t.views_prev / daily.length;
+          svg.appendChild(S('line', { x1: pl, x2: W - pr, y1: Y(prevAvg), y2: Y(prevAvg), stroke: '#D9D5E8', 'stroke-width': '2', 'stroke-dasharray': '4 4', class: 'lk-ah-prev' }));
+          svg.appendChild(S('path', { d: line, fill: 'none', stroke: '#6002EE', 'stroke-width': '2', 'stroke-linejoin': 'round', class: 'lk-ah-line' }));
+          var every = daily.length > 40 ? 10 : 5;
+          daily.forEach(function (r, i) { if (i % every === 0 || i === daily.length - 1) svg.appendChild(S('text', { x: X(i), y: Hh - 8, 'text-anchor': 'middle', 'font-size': '11', fill: '#8E8BA6', class: 'lk-ah-axis' }, dayLabel(r.d))); });
+          var order = daily.map(function (r, i) { return i; }).sort(function (x, y) { return daily[y].views - daily[x].views; });
+          if (daily[order[0]].views) svg.appendChild(S('circle', { cx: X(order[0]), cy: Y(daily[order[0]].views), r: '4.5', fill: '#6002EE', stroke: '#fff', 'stroke-width': '2', class: 'lk-ah-pt' }));
+          svg.appendChild(S('circle', { cx: X(daily.length - 1), cy: Y(daily[daily.length - 1].views), r: '4', fill: '#6002EE', stroke: '#fff', 'stroke-width': '2', class: 'lk-ah-pt' }));
+          var dot = S('circle', { r: '4.5', fill: '#6002EE', stroke: '#fff', 'stroke-width': '2', class: 'lk-ah-pt', opacity: '0' }); svg.appendChild(dot);
+          var tip = T('div', 'lk-ah-tip'); tip.hidden = true;
+          svg.addEventListener('mousemove', function (e) {
+            var rc = svg.getBoundingClientRect(), px = (e.clientX - rc.left) / rc.width * W, i = Math.max(0, Math.min(daily.length - 1, Math.round((px - pl) / (iw / (daily.length - 1)))));
+            dot.setAttribute('cx', X(i)); dot.setAttribute('cy', Y(daily[i].views)); dot.setAttribute('opacity', '1');
+            tip.hidden = false; tip.textContent = dayLabel(daily[i].d) + ': ' + plural(daily[i].views, 'view'); tip.style.left = (X(i) / W * 100) + '%'; tip.style.top = (Y(daily[i].views) / Hh * 100) + '%';
+          });
+          svg.addEventListener('mouseleave', function () { dot.setAttribute('opacity', '0'); tip.hidden = true; });
+          cw.appendChild(svg); cw.appendChild(tip);
+          var lg = T('div', 'lk-ah-legend'); var l1 = T('span'); l1.appendChild(T('i', 'a')); l1.appendChild(document.createTextNode('Storefront views')); var l2 = T('span'); l2.appendChild(T('i', 'b')); l2.appendChild(document.createTextNode('Daily average of the ' + d.days + ' days before')); lg.appendChild(l1); lg.appendChild(l2);
+          var left = T('div'); left.appendChild(cw); left.appendChild(lg); wrap.appendChild(left);
+          var ann = T('div', 'lk-ah-annot');
+          var b0 = daily[order[0]], b1 = daily[order[1]];
+          if (b0 && b0.views) { var a0 = T('div'); a0.appendChild(T('b', null, dayLabel(b0.d) + ': ' + plural(b0.views, 'view') + '.')); a0.appendChild(document.createTextNode(' The best day, a ' + weekday(b0.d) + '.' + (b0.contacts ? ' ' + plural(b0.contacts, 'contact click') + ' that day.' : ''))); ann.appendChild(a0); }
+          if (b1 && b1.views && b1.views >= prevAvg * 2) { var a1 = T('div'); a1.appendChild(T('b', null, dayLabel(b1.d) + ': ' + plural(b1.views, 'view') + '.')); a1.appendChild(document.createTextNode(' Second best, a ' + weekday(b1.d) + '.')); ann.appendChild(a1); }
+          var quietDays = daily.filter(function (r) { return r.views < 5; }).length;
+          if (quietDays) { var a2 = T('div'); a2.appendChild(T('b', null, plural(quietDays, 'quiet day') + '.')); a2.appendChild(document.createTextNode(' Under 5 views. A post, a vendor share or a follow-up email lands best there.')); ann.appendChild(a2); }
+          wrap.appendChild(ann); chartSec.appendChild(wrap); chartSec.hidden = false;
         }
 
-        // Most fixable first: a named signup that never went live, then the live
-        // storefronts missing the most basics. Away vendors are left alone.
-        var cand = an.rows.filter(function (r) { return r.v.name && !r.v.away && r.dx.key !== 'working' && (!r.v.is_public || r.score <= 4); });
-        cand.sort(function (x, y) { return (x.v.is_public ? x.score : -1) - (y.v.is_public ? y.score : -1) || y.v.views - x.v.views; });
-        cand = cand.slice(0, 3);
-        if (cand.length) {
-          var gh = T('div', 'lk-ash-sech'); gh.appendChild(T('h3', null, 'Vendors to nudge this week')); gh.appendChild(T('span', null, 'picked by what is most fixable'));
-          var allV = T('button', null, 'All vendors'); allV.type = 'button'; allV.addEventListener('click', function () { go('vendors', true); }); gh.appendChild(allV);
-          nudge.appendChild(gh);
-          var gl = T('div', 'lk-ash-list'); cand.forEach(function (r) { gl.appendChild(vendorRow(r, cmap, false)); }); nudge.appendChild(gl);
-          nudge.hidden = false;
+        // ── who is getting seen + wins to pass on ──
+        var seenCard = T('section', 'lk-ah-card'), sh = T('div', 'lk-ash-sech'); sh.appendChild(T('h3', null, 'Who is getting seen')); sh.appendChild(T('span', null, 'views per live storefront, ' + d.days + ' days'));
+        var allB = T('button', null, 'All ' + n(pub.length)); allB.type = 'button'; allB.addEventListener('click', function () { go('vendors', true); }); sh.appendChild(allB); seenCard.appendChild(sh);
+        var dist = T('div', 'lk-ah-dist'), maxViews = byViews.length ? (byViews[0].v.views || 1) : 1;
+        byViews.slice(0, 12).forEach(function (r, i) {
+          var row = T('div', 'lk-ah-drow' + (i < 5 ? ' hot' : '')); row.appendChild(T('span', 'nm', r.v.name || 'Unnamed'));
+          var bar = T('div', 'bar'), f = T('i'); f.style.width = Math.max(r.v.views ? 1.5 : 0, pct(r.v.views, maxViews)) + '%'; bar.appendChild(f); row.appendChild(bar);
+          row.appendChild(T('span', 'n', n(r.v.views))); row.appendChild(T('span', 'c' + (r.reach ? '' : ' none'), n(r.reach))); dist.appendChild(row);
+        });
+        seenCard.appendChild(dist);
+        var df = T('div', 'lk-ah-distfoot'); df.appendChild(T('span', null, 'Green is the number of shopper reach-outs. Violet bars are the top five.'));
+        if (pub.length > 12) { var more = T('button', 'lk-ash-btn', 'Show the ' + n(pub.length - 12) + ' below'); more.type = 'button'; more.addEventListener('click', function () { go('vendors', true); }); df.appendChild(more); }
+        seenCard.appendChild(df); two.appendChild(seenCard);
+
+        var wins = [];
+        var rated = pub.filter(function (r) { return r.v.views >= 5 && r.reach >= 2; }).sort(function (x, y) { return y.reach / y.v.views - x.reach / x.v.views; });
+        if (rated.length) wins.push({ r: rated[0], h: rated[0].v.name + ': ' + plural(rated[0].reach, 'reach-out') + ' from ' + plural(rated[0].v.views, 'view'), s: 'Highest contact rate of any storefront this month' });
+        var fresh = pub.filter(function (r) { return r.reach > 0 && r.v.published_at && (now - new Date(r.v.published_at)) / 86400000 <= 14 && (!rated.length || r !== rated[0]); }).sort(function (x, y) { return new Date(y.v.published_at) - new Date(x.v.published_at); });
+        if (fresh.length) { var days = Math.max(1, Math.round((now - new Date(fresh[0].v.published_at)) / 86400000)); wins.push({ r: fresh[0], h: fresh[0].v.name + ': a reach-out in the first ' + (days === 1 ? 'day' : days + ' days') + ' live', s: plural(fresh[0].v.views, 'view') + ' so far, ' + plural(fresh[0].reach, 'conversation') + ' started' }); }
+        var repeat = pub.filter(function (r) { return r.v.visit && r.v.visit.repeat_visitors >= 2 && (!rated.length || r !== rated[0]) && (!fresh.length || r !== fresh[0]); }).sort(function (x, y) { return y.v.visit.repeat_visitors - x.v.visit.repeat_visitors; });
+        if (repeat.length) wins.push({ r: repeat[0], h: repeat[0].v.name + ': ' + plural(repeat[0].v.visit.repeat_visitors, 'shopper') + ' came back to it', s: 'Returned on another day to look again' });
+        if (t.qr_scans) wins.push({ h: plural(t.qr_scans, 'QR code scan') + ' this month', s: 'The launch kit cards are being scanned in real shops', go: 'insights' });
+        if (t.favorites) wins.push({ h: plural(t.favorites, 'shopper') + ' saved a storefront', s: 'A favorite is a shopper planning to come back', go: 'insights' });
+        if (wins.length) {
+          var winCard = T('section', 'lk-ah-card'), wh = T('div', 'lk-ash-sech'); wh.appendChild(T('h3', null, 'Wins to pass on')); wh.appendChild(T('span', null, 'vendors love hearing this')); winCard.appendChild(wh);
+          var wl = T('div', 'lk-ah-wins');
+          wins.slice(0, 4).forEach(function (w) {
+            var row = T('div', 'lk-ah-win'); var ic = T('div', 'ic'); ic.innerHTML = ASH_ICO.heart; row.appendChild(ic);
+            var tx = T('div'); tx.appendChild(T('b', null, w.h)); tx.appendChild(T('small', null, w.s)); row.appendChild(tx);
+            var c = w.r && cmap[w.r.v.id];
+            if (c) {
+              var m = T('a', 'lk-ash-btn', 'Tell ' + (c.first_name || 'them')); var body = (c.first_name ? 'Hi ' + c.first_name + ',' : 'Hi,') + '\n\nA quick one from Lokali: ' + w.h.charAt(0).toLowerCase() + w.h.slice(1) + '. ' + w.s + '.\n\nThank you for being part of this. Keep sharing your link, it is working.\n\nFrancesca\nLokali';
+              m.href = 'mailto:' + encodeURIComponent(c.email).replace(/%40/g, '@') + '?subject=' + encodeURIComponent('Good news from Lokali') + '&body=' + encodeURIComponent(body); row.appendChild(m);
+            } else if (w.r && w.r.v.slug) { var o = T('a', 'lk-ash-btn', 'Open'); o.href = '/' + encodeURIComponent(w.r.v.slug); o.target = '_blank'; o.rel = 'noopener'; row.appendChild(o); }
+            else if (w.go) { var gb = T('button', 'lk-ash-btn', 'See'); gb.type = 'button'; gb.addEventListener('click', function () { go(w.go, true); }); row.appendChild(gb); }
+            wl.appendChild(row);
+          });
+          winCard.appendChild(wl); two.appendChild(winCard);
         }
+        two.hidden = false;
       });
     })();
 
