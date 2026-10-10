@@ -1330,12 +1330,29 @@
       ".lk-ash-theme i{width:40px;height:40px;flex:0 0 40px;display:flex;align-items:center;justify-content:center;color:#4A4761;}.lk-ash-theme i svg{width:16px;height:16px;}" +
       ".lk-ash-theme:hover{background:#EEE6FF;color:#6002EE;}.lk-ash-theme:focus-visible{outline:2px solid #6002EE;outline-offset:1px;}" +
       D + ".lk-ash-theme{color:#C9C4DD;}html.lk-dark .lk-ash-theme i{color:#C9C4DD;}html.lk-dark .lk-ash-theme:hover{background:#2F2750;color:#C9B0FF;}" +
-      /* insights module and the vendors view inherit the same surfaces */
-      D + ".lki-card,html.lk-dark .lki-kpi,html.lk-dark .lki-range,html.lk-dark .lki-secbar,html.lk-dark .lki-state,html.lk-dark .lki-chip,html.lk-dark .lki-why,html.lk-dark .lki-tldr{background:#242039;border-color:#352F4F;color:#F3F1FA;}" +
-      D + ".lki,html.lk-dark .lki-h,html.lk-dark .lki-cell,html.lk-dark .lki-lbl{color:#F3F1FA;}" +
-      D + ".lki-note,html.lk-dark .lki-empty,html.lk-dark .lki-thead,html.lk-dark .lki-legend,html.lk-dark .lki-axis,html.lk-dark .lki-why p,html.lk-dark .lki-why li,html.lk-dark .lki-gaps li,html.lk-dark .lki-li small,html.lk-dark .lki-cell small,html.lk-dark .lki-sm-l,html.lk-dark .lki-chip span,html.lk-dark .lki-secbar button,html.lk-dark .lki-h-r,html.lk-dark .lki-fn-n small,html.lk-dark .lki-wk>div{color:#C9C4DD;}" +
-      D + ".lki-chip.is-on,html.lk-dark .lki-range button.is-on,html.lk-dark .lki-secbar button:hover,html.lk-dark .lki-row:hover,html.lk-dark .lki-col.is-hot{background:#2F2750;color:#C9B0FF;}" +
-      D + ".lki-tip{background:#F3F1FA;color:#1B1830;}";
+      /* insights module (lokali-admin-insights.js has its own light sheet; this maps every surface) */
+      D + ".lki,html.lk-dark .lki h1,html.lk-dark .lki h2,html.lk-dark .lki h3,html.lk-dark .lki h4,html.lk-dark .lki-h1,html.lk-dark .lki-card-h,html.lk-dark .lki-kpi-v,html.lk-dark .lki-cell,html.lk-dark .lki-tl,html.lk-dark .lki-li,html.lk-dark .lki-fn-n,html.lk-dark .lki-tip,html.lk-dark .lk-ash h2,html.lk-dark .lk-ash h3,html.lk-dark .lk-ash h4{color:#F3F1FA;}" +
+      D + ".lki-sub,html.lk-dark .lki-card-s,html.lk-dark .lki-kpi-l,html.lk-dark .lki-kpi-d,html.lk-dark .lki-sm-l,html.lk-dark .lki-chip,html.lk-dark .lki-legend,html.lk-dark .lki-why p,html.lk-dark .lki-why li,html.lk-dark .lki-gaps li,html.lk-dark .lki-h-r,html.lk-dark .lki-h-l,html.lk-dark .lki-h details,html.lk-dark .lki-secbar button,html.lk-dark .lki-range button,html.lk-dark .lki-state,html.lk-dark .lki-pill.plan,html.lk-dark .lki-pill.notlive{color:#C9C4DD;}" +
+      D + ".lki-sm-l small,html.lk-dark .lki-axis,html.lk-dark .lki-chip span,html.lk-dark .lki-thead,html.lk-dark .lki-cell small,html.lk-dark .lki-cell .lki-lbl,html.lk-dark .lki-caret,html.lk-dark .lki-li small,html.lk-dark .lki-empty,html.lk-dark .lki-note,html.lk-dark .lki-fn-n small,html.lk-dark .lki-wk>div{color:#9B96B3;}" +
+      D + ".lki-card,html.lk-dark .lki-kpi,html.lk-dark .lki-range,html.lk-dark .lki-state,html.lk-dark .lki-secbar button,html.lk-dark .lki-tip{background:#242039;border-color:#352F4F;}" +
+      D + ".lki-tldr,html.lk-dark .lki-why,html.lk-dark .lki-h,html.lk-dark .lki-chip,html.lk-dark .lki-row:hover,html.lk-dark .lki-col.is-hot,html.lk-dark .lki-pill.plan,html.lk-dark .lki-pill.notlive{background:#29223F;border-color:#352F4F;}" +
+      D + ".lki-secbar{background:#1B1830;}" +
+      D + ".lki-tl,html.lk-dark .lki-sm,html.lk-dark .lki-v,html.lk-dark .lki-li{border-color:#352F4F;}" +
+      D + ".lki-chip.is-on,html.lk-dark .lki-range button.is-on{background:#2F2750;border-color:#4A3A7A;color:#C9B0FF;}html.lk-dark .lki-chip.is-on span{color:#C9B0FF;}" +
+      D + ".lki-secbar button:hover{background:#2F2750;color:#C9B0FF;border-color:#4A3A7A;}" +
+      D + ".lki-link,html.lk-dark .lki-thead button.is-sort,html.lk-dark .lki-h summary,html.lk-dark .lki-h details a{color:#C9B0FF;}" +
+      D + ".lki-vbar,html.lk-dark .lki-hbar,html.lk-dark .lki-fn-bar{background:#2C273F;}" +
+      D + ".lki-fn-bar b{background:#B08CFF;}" +
+      D + ".lki-tl.good .lki-ico,html.lk-dark .lki-kpi-d.up,html.lk-dark .lki-cell small.up,html.lk-dark .lki-why li.ok .lki-ico{color:#8FD9B0;}" +
+      D + ".lki-tl.bad .lki-ico,html.lk-dark .lki-kpi-d.down,html.lk-dark .lki-cell small.down,html.lk-dark .lki-why li.gap .lki-ico{color:#F0A3C9;}" +
+      D + ".lki-tl.info .lki-ico{color:#C9B0FF;}" +
+      D + ".lki-h.good{border-left-color:#8FD9B0;}html.lk-dark .lki-h.bad{border-left-color:#F0A3C9;}html.lk-dark .lki-h.info{border-left-color:#B08CFF;}" +
+      D + ".lki-pill.working{background:#1F3A2E;color:#8FD9B0;}html.lk-dark .lki-pill.seen{background:#2F2750;color:#C9B0FF;}html.lk-dark .lki-pill.stalls,html.lk-dark .lki-pill.low,html.lk-dark .lki-pill.unseen,html.lk-dark .lki-flag{background:#3E2638;color:#F0A3C9;}html.lk-dark .lki-pill.fresh{background:#1F3350;color:#8FBCF2;}" +
+      D + ".lki-tip{box-shadow:0 6px 18px rgba(0,0,0,.4);}" +
+      /* queue sections + the vendors / prospects views */
+      D + ".lk-admin-stat{background:#29223F;}html.lk-dark .lk-admin-section{background:#242039;}" +
+      D + ".lk-ash-note{color:#9B96B3;}" +
+      D + ".lk-avatar{background:#2F2750;color:#C9B0FF;}";
     document.head.appendChild(st);
   }
 
