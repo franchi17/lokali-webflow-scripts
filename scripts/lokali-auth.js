@@ -1183,7 +1183,7 @@
       return b;
     }
 
-    cards.appendChild(card(faIcon('0 0 448 512', FA_BAG, '#FF8D00'), "I'm here to shop", 'Discover local makers, save favorites, and message the businesses near you.', 'customer'));
+    cards.appendChild(card(faIcon('0 0 448 512', FA_BAG, '#FF8D00'), "I'm here to shop", 'Discover local makers, follow your favorites, and message the businesses near you.', 'customer'));
     cards.appendChild(card(faIcon('0 0 640 512', FA_SHOP, '#6002EE'), "I want to sell", 'Open a storefront to list your business and get found by locals. Free to start, and you can still shop, too.', 'vendor'));
 
     var login = el('div', 'lok-role-login');
@@ -1237,10 +1237,16 @@
     note.appendChild(change);
     card.appendChild(note);
 
-    card.appendChild(el('h2', null, 'Create your account'));
+    // Follow context (lokali-favorites.js / vendor-listing / heart-nav): the
+    // shopper tapped Follow on a vendor, so say what following gets them.
+    var fc = (intent !== 'vendor' && _followCtx) ? _followCtx : null;
+    card.appendChild(el('h2', null, fc && fc.name ? 'Follow ' + fc.name : (fc ? 'Follow the makers you like' : 'Create your account')));
     card.appendChild(el('p', 'lok-auth-sub', intent === 'vendor'
       ? 'Get your business in front of nearby customers.'
-      : 'Save favorites and connect with local vendors.'));
+      : (fc && fc.name
+          ? 'Create an account and we\u2019ll email you once a week when ' + (fc.first ? fc.first + ' posts' : 'they post') + ' where they\u2019ll be, what\u2019s new, or a sale. Unsubscribe anytime.'
+          : (fc ? 'Create an account to follow vendors and get their market dates each week.'
+                : 'Follow local vendors and hear what they are up to each week.'))));
 
     var err = errorBox(); var info = infoBox();
     card.appendChild(err); card.appendChild(info);
@@ -1265,7 +1271,7 @@
     form.appendChild(el('div', 'lok-auth-hint', 'At least 8 characters, with an uppercase letter, a lowercase letter, a number, and a symbol.'));
 
     var captcha = attachTurnstile(form);
-    var submit = primaryBtn('Create account');
+    var submit = primaryBtn(fc && fc.name ? 'Create account and follow' : 'Create account');
     form.appendChild(submit);
 
     form.addEventListener('submit', function (e) {
@@ -1302,7 +1308,8 @@
         try {
           if (typeof window.gtag === 'function') {
             var _gaIntent = ''; try { _gaIntent = String(sessionStorage.getItem('lokali_signup_intent') || '').split(':')[0]; } catch (e2) {}
-            window.gtag('event', 'sign_up', { method: 'email', intent: _gaIntent || 'unknown' });
+            var _gaSrc = _promptSource; try { _gaSrc = _gaSrc || sessionStorage.getItem('lokali_prompt_source') || ''; } catch (e4) {}
+            window.gtag('event', 'sign_up', { method: 'email', intent: _gaIntent || 'unknown', source: _gaSrc || 'page' });
           }
         } catch (e3) {}
         var d = (res && res.data) || {};
@@ -1611,8 +1618,14 @@
   // OVERLAY MODAL (openSignUp / openSignIn / openAccountPanel host)
   // ──────────────────────────────────────────────────────────────────────────
   var _overlay = null;
+  // 2026-10-11 follow context: openSignUp({follow:{name,first}|{generic:true}, source})
+  // names the vendor the shopper just tapped Follow on, so the form says what
+  // the account is for. Cleared when the overlay closes.
+  var _followCtx = null;
+  var _promptSource = '';
   var _overlayPrevFocus = null; // element to hand focus back to on close
   function closeOverlay() {
+    _followCtx = null;
     if (_overlay && _overlay.parentNode) _overlay.parentNode.removeChild(_overlay);
     _overlay = null;
     document.removeEventListener('keydown', overlayKeydown, true);
@@ -1860,6 +1873,8 @@
     openSignUp: function (opts) {
       opts = opts || {};
       if (opts.intent === 'customer' || opts.intent === 'vendor') setSignupIntent(opts.intent);
+      _followCtx = opts.follow || null;
+      _promptSource = opts.source || '';
       openOverlay(function (body) {
         renderSignUpFlow(body, { overlay: true, onAuthed: overlayAuthed });
       });

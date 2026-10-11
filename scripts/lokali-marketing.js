@@ -106,11 +106,11 @@
   // the link is minted once per vendor and must not change if their platform
   // changes, and the channel key is internal (never shown).
   var PLACE_ETSY = { ch: 'etsy_about', title: 'Your Etsy shop\u2019s About section',
-      why: 'Etsy lets you list a website under About. Buyers who already trust you there can find your Lokali storefront, save you, and message you directly.',
+      why: 'Etsy lets you list a website under About. Buyers who already trust you there can find your Lokali storefront, follow you, and message you directly.',
       snippet: function (v, url) { return 'Local to the Houston area? Find me on Lokali for pickup and custom work: ' + url; },
       note: 'Keep it about pickup, custom work and messaging. Etsy\u2019s rules don\u2019t allow telling buyers to purchase your Etsy items somewhere else, or QR codes that lead off Etsy.' };
   var PLACE_SHOP = { ch: 'etsy_about', title: 'Your online shop or website',
-      why: 'One line on your About page, in your site footer, or in your order confirmation email. Buyers who already trust you there can find your Lokali storefront, save you, and message you directly.',
+      why: 'One line on your About page, in your site footer, or in your order confirmation email. Buyers who already trust you there can find your Lokali storefront, follow you, and message you directly.',
       snippet: function (v, url) { return 'Local to the Houston area? Find me on Lokali for pickup and custom work: ' + url; },
       note: 'Shopify, Square and Wix all let you edit the order confirmation email. That one reaches every buyer at the moment they trust you most.' };
   // True when any product Buy link or the vendor's own website points at Etsy.
@@ -122,7 +122,7 @@
   var PLACEMENTS = [
     { ch: 'packaging', title: 'A thank-you note in the package',
       why: 'Every order is a chance to turn a one-time buyer into a neighbor who can find you again.',
-      snippet: function (v, url) { return 'Thank you for your order! I\u2019m also on Lokali, where neighbors can save my storefront, message me directly and arrange pickup: ' + url; },
+      snippet: function (v, url) { return 'Thank you for your order! I\u2019m also on Lokali, where neighbors can follow me, message me directly and arrange pickup: ' + url; },
       note: 'Write the link out. For market booths and flyers, use your QR code above instead.' },
     { ch: 'email_signature', title: 'Your email signature',
       why: 'One line under your name, on every email you already send.',
@@ -840,7 +840,7 @@
         sum30 += d30; sumSaved += saved;
         stats = '<div class="mkt-pl-stats">' +
           '<span class="mkt-pl-stat' + (d30 ? '' : ' zero') + '">' + d30 + ' arrived in 30 days</span>' +
-          '<span class="mkt-pl-stat' + (saved ? '' : ' zero') + '">' + saved + ' saved you</span>' +
+          '<span class="mkt-pl-stat' + (saved ? '' : ' zero') + '">' + saved + ' followed you</span>' +
         '</div>';
       }
       return '<div class="mkt-pl" data-ch="' + pl.ch + '">' +
@@ -861,13 +861,13 @@
     if (allowed) {
       summary = '<div class="mkt-pl-sum">' +
         '<div class="mkt-qr-stat"><div class="mkt-qr-sv">' + sum30 + '</div><div class="mkt-qr-sl">Arrived, 30 days</div></div>' +
-        '<div class="mkt-qr-stat"><div class="mkt-qr-sv">' + sumSaved + '</div><div class="mkt-qr-sl">Saved you</div></div>' +
+        '<div class="mkt-qr-stat"><div class="mkt-qr-sv">' + sumSaved + '</div><div class="mkt-qr-sl">Followed you</div></div>' +
       '</div>';
     } else {
       // Pro teaser, same shape as the QR card: activity yes, numbers no.
       summary = '<div class="mkt-qr-teaser" style="margin:0 0 14px;">' +
         (p.has_landings
-          ? '<b>Neighbors are arriving from your links.</b> How many, from which placement, and how many saved you are a Featured perk. Every arrival is being counted in the meantime. '
+          ? '<b>Neighbors are arriving from your links.</b> How many, from which placement, and how many followed you are a Featured perk. Every arrival is being counted in the meantime. '
           : 'Counting is already on. Every arrival from these links is saved from the first click, and the per-placement numbers are a Featured perk. ') +
         '<a href="/pricing">See the Featured plan</a>' +
       '</div>';

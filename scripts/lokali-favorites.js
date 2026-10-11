@@ -1,5 +1,8 @@
 /**
- * lokali-favorites.js — customer "save vendor" / favorites front-end.
+ * lokali-favorites.js — customer "follow vendor" front-end (favorites API).
+ *
+ * 2026-10-11: shopper-facing wording is Follow / Following everywhere (F:
+ * "consistency is key"). The rows are still `favorites`; a follow IS a save.
  *
  * Two surfaces, both driven by this one script:
  *   1. Browse cards (/the-market): a heart overlay on every `.vcard[data-vendor-id]`
@@ -95,8 +98,10 @@
     if (!btn) return;
     btn.classList.toggle('is-saved', !!saved);
     btn.setAttribute('aria-pressed', saved ? 'true' : 'false');
-    btn.setAttribute('aria-label', saved ? 'Remove from saved' : 'Save vendor');
-    btn.title = saved ? 'Saved' : 'Save vendor';
+    btn.setAttribute('aria-label', saved ? 'Unfollow vendor' : 'Follow vendor');
+    btn.title = saved ? 'Following' : 'Follow vendor';
+    var lb = btn.querySelector('.lk-fav-label');
+    if (lb) lb.textContent = saved ? 'Following' : 'Follow';
   }
 
   function syncAllHeartsFor(vendorId, saved) {
@@ -117,6 +122,7 @@
     btn.classList.add('is-busy');
     persistToggle(id, next).then(function (res) {
       btn.classList.remove('is-busy');
+      if (next && !(res && res.error)) followToast(vendorNameFor(btn));
       if (res && res.error) {
         // revert on failure
         if (_savedSet) { if (next) _savedSet.delete(id); else _savedSet.add(id); }
@@ -152,7 +158,7 @@
     ov.innerHTML =
       '<div role="dialog" aria-modal="true" style="background:#fff;border-radius:16px;max-width:400px;width:100%;padding:26px 24px;box-shadow:0 20px 60px rgba(35,29,63,.25);">' +
         '<h3 style="margin:0 0 8px;font-size:18px;font-weight:700;color:#231D3F;font-family:inherit;">Switching you to your shopping space</h3>' +
-        '<p style="margin:0 0 18px;font-size:13.5px;line-height:1.55;color:#4A4761;">You’re signed in as a vendor. Saving and contacting other vendors happens on your customer side. Your storefront isn’t touched. We won’t ask again.</p>' +
+        '<p style="margin:0 0 18px;font-size:13.5px;line-height:1.55;color:#4A4761;">You’re signed in as a vendor. Following and contacting other vendors happens on your customer side. Your storefront isn’t touched. We won’t ask again.</p>' +
         '<div style="display:flex;gap:8px;justify-content:flex-end;">' +
           '<button data-sn-cancel style="font-family:inherit;font-size:13px;font-weight:600;color:#4A4761;background:#fff;border:.5px solid #C8C6D8;border-radius:9px;padding:9px 16px;cursor:pointer;">Not now</button>' +
           '<button data-sn-go style="font-family:inherit;font-size:13px;font-weight:600;color:#fff;background:#6002EE;border:none;border-radius:9px;padding:9px 16px;cursor:pointer;">Continue</button>' +
@@ -194,15 +200,29 @@
       doToggle(vendorId, btn);
       return;
     }
-    // Not signed in → sign up to save.
+    // Not signed in → create an account to follow.
     setPendingFav(vendorId);
     stampCustomerIntent();
-    openAuthModal();
+    openAuthModal(vendorNameFor(btn));
   }
 
-  function openAuthModal() {
+  // Vendor name for the overlay headline ("Follow Baxter Blue Woodworks"):
+  // the market card's name link, or the page h1 on a storefront.
+  function vendorNameFor(btn) {
+    try {
+      var card = btn && btn.closest && btn.closest('.vcard');
+      var n = card ? card.querySelector('.vcard-name') : document.querySelector('h1');
+      var t = n ? (n.textContent || '').replace(/\s+/g, ' ').trim() : '';
+      return t && t.length <= 60 ? t : '';
+    } catch (e) { return ''; }
+  }
+
+  function openAuthModal(name) {
+    var source = document.getElementById(BROWSE_GRID_ID) ? 'market_card' : 'storefront';
+    try { if (typeof window.gtag === 'function') window.gtag('event', 'account_prompt', { source: source }); } catch (e) {}
+    try { sessionStorage.setItem('lokali_prompt_source', source); } catch (e) {}
     if (window.LokaliAuth && typeof window.LokaliAuth.openSignUp === 'function') {
-      window.LokaliAuth.openSignUp();
+      window.LokaliAuth.openSignUp({ intent: 'customer', follow: { name: name || '', first: '' }, source: source });
     } else if (window.LokaliAuth && typeof window.LokaliAuth.openSignIn === 'function') {
       window.LokaliAuth.openSignIn();
     } else {
@@ -217,7 +237,7 @@
     btn.type = 'button';
     btn.className = 'lk-fav' + (inline ? ' lk-fav-inline' : '');
     btn.setAttribute('data-vendor-id', String(vendorId));
-    btn.innerHTML = heartSVG() + (inline ? '<span class="lk-fav-label">Save</span>' : '');
+    btn.innerHTML = heartSVG() + (inline ? '<span class="lk-fav-label">Follow</span>' : '');
     applyState(btn, _savedSet ? _savedSet.has(Number(vendorId)) : false);
     btn.addEventListener('click', function (ev) { onHeartClick(vendorId, btn, ev); });
     return btn;
@@ -311,6 +331,24 @@
       }, function () {});
     } catch (e) {}
   }
+  // Small confirmation after a follow (the heart alone said nothing about the
+  // weekly email). Same bottom-toast shape as welcomeExplorerToast.
+  function followToast(name) {
+    try {
+      var el = document.createElement('div');
+      el.setAttribute('role', 'status');
+      el.setAttribute('style',
+        'position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(8px);z-index:9999;' +
+        'background:#fff;border:.5px solid #E5D4FD;border-radius:12px;padding:12px 18px;' +
+        'box-shadow:0 8px 28px rgba(26,24,41,.14);font:500 13px/1.5 "Plus Jakarta Sans",-apple-system,sans-serif;' +
+        'color:#1A1829;max-width:min(92vw,420px);opacity:0;transition:all .25s ease;');
+      el.textContent = 'Following ' + (name || 'this vendor') + '. Their news lands in your Thursday email.';
+      document.body.appendChild(el);
+      requestAnimationFrame(function () { el.style.opacity = '1'; el.style.transform = 'translateX(-50%)'; });
+      setTimeout(function () { el.style.opacity = '0'; setTimeout(function () { try { el.remove(); } catch (e) {} }, 300); }, 4000);
+    } catch (e) {}
+  }
+
   function completePendingSave() {
     var pending = getPendingFav();
     if (!pending || !hasToken()) return;

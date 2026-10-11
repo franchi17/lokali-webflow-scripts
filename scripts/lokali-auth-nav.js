@@ -271,7 +271,7 @@
       var person = (a && a.first_name || '').trim();
       html += '<div class="lok-acct-cap">Switch to</div>';
       html += idRow(DASH_URL, IC_STORE, store, 'Storefront', inStore, false);
-      html += idRow(ACCOUNT_URL, IC_SHOP, person || 'Shopping', person ? 'Shopping' : 'Saves & reviews', !inStore, true);
+      html += idRow(ACCOUNT_URL, IC_SHOP, person || 'Shopping', person ? 'Shopping' : 'Following & reviews', !inStore, true);
     } else {
       html += '<a href="' + ACCOUNT_URL + '" role="menuitem">My Account</a>';
     }

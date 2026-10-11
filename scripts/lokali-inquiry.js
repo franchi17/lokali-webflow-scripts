@@ -123,7 +123,7 @@
     ov.innerHTML =
       '<div role="dialog" aria-modal="true" style="background:#fff;border-radius:16px;max-width:400px;width:100%;padding:26px 24px;box-shadow:0 20px 60px rgba(35,29,63,.25);">' +
         '<h3 style="margin:0 0 8px;font-size:18px;font-weight:700;color:#231D3F;font-family:inherit;">Switching you to your shopping space</h3>' +
-        '<p style="margin:0 0 18px;font-size:13.5px;line-height:1.55;color:#4A4761;">You’re signed in as a vendor. Saving and contacting other vendors happens on your customer side. Your storefront isn’t touched. We won’t ask again.</p>' +
+        '<p style="margin:0 0 18px;font-size:13.5px;line-height:1.55;color:#4A4761;">You’re signed in as a vendor. Following and contacting other vendors happens on your customer side. Your storefront isn’t touched. We won’t ask again.</p>' +
         '<div style="display:flex;gap:8px;justify-content:flex-end;">' +
           '<button data-sn-cancel style="font-family:inherit;font-size:13px;font-weight:600;color:#4A4761;background:#fff;border:.5px solid #C8C6D8;border-radius:9px;padding:9px 16px;cursor:pointer;">Not now</button>' +
           '<button data-sn-go style="font-family:inherit;font-size:13px;font-weight:600;color:#fff;background:#6002EE;border:none;border-radius:9px;padding:9px 16px;cursor:pointer;">Continue</button>' +

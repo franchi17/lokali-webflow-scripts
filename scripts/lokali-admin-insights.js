@@ -343,7 +343,7 @@
       }
       if (internal(v)) gap(plural(internal(v), 'contact click') + ' came from a signed-in vendor or admin account, so ' + (internal(v) === 1 ? 'it is' : 'they are') + ' not counted as a shopper reaching out.');
       if (v.reviews_all) win(plural(v.reviews_all, 'review'));
-      if (v.favorites_all) win('Saved by ' + plural(v.favorites_all, 'shopper'));
+      if (v.favorites_all) win('Followed by ' + plural(v.favorites_all, 'shopper'));
     }
     return out;
   }
@@ -636,7 +636,7 @@
   }
 
   function downloadCSV(d, rows) {
-    var head = ['Storefront', 'Status', 'Plan', 'Founding', 'Live', 'Views', 'Views previous period', 'In searches', 'Shopper reach-outs', 'Clicks from vendor or admin accounts', 'Basics out of 7', 'Shares', 'Saves', 'Reviews', 'Services', 'Products', 'Gallery photos', 'Likely holding it back'];
+    var head = ['Storefront', 'Status', 'Plan', 'Founding', 'Live', 'Views', 'Views previous period', 'In searches', 'Shopper reach-outs', 'Clicks from vendor or admin accounts', 'Basics out of 7', 'Shares', 'Followers', 'Reviews', 'Services', 'Products', 'Gallery photos', 'Likely holding it back'];
     var lines = [head];
     rows.forEach(function (r) {
       var v = r.v;
@@ -928,7 +928,7 @@
     var c = card('The shopper side', 'Vendors are the supply. This is the demand you are building for them.');
     var k = el('div', 'lki-kpis'); k.style.margin = '0 0 6px';
     k.appendChild(kpi('Shopper accounts', s.accounts || 0, null, plural(s.new || 0, 'new one') + ' in this period'));
-    k.appendChild(kpi('Have saved a vendor', s.saved || 0));
+    k.appendChild(kpi('Follow a vendor', s.saved || 0));
     k.appendChild(kpi('Have reached out', s.reached_out || 0, null, 'while signed in'));
     k.appendChild(kpi('Have left a review', s.reviewed || 0));
     k.appendChild(kpi('Newsletter subscribers', s.newsletter || 0));

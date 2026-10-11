@@ -37,8 +37,9 @@
       label: 'Features',
       href: '/features',
       anchor: 'a[href*="/about"]',
+      // 2026-10-11 (F): "For customers" is its own nav item now (lokali-heart-nav.js
+      // inserts it after The Market); the panel keeps only the vendor page.
       links: [
-        { href: '/for-customers', label: 'For customers' },
         { href: '/for-vendors',   label: 'For vendors' }
       ]
     },

@@ -1968,11 +1968,11 @@
     var picks = _allVendors.filter(function (v) { var t = vTrust(v); return t && Number(t.saves) >= 3; })
       .sort(function (a, b) { return Number(vTrust(b).saves) - Number(vTrust(a).saves); });
     if (picks.length) {
-      var pk = stSection("Neighbors' picks", 'Most saved storefronts', null, null);
+      var pk = stSection("Neighbors' picks", 'Most followed storefronts', null, null);
       var prow = ce('div', 'lk-st-row');
       picks.slice(0, 4).forEach(function (v) {
         var n = Number(vTrust(v).saves);
-        prow.appendChild(miniCard(v, 'saved', 'Saved by ' + n + ' neighbors'));
+        prow.appendChild(miniCard(v, 'saved', 'Followed by ' + n + ' neighbors'));
       });
       pk.appendChild(prow); _startEl.appendChild(pk);
     }

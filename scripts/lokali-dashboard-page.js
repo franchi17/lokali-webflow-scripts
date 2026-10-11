@@ -695,9 +695,9 @@
   // Fixed set of five (handoff §4 — names verbatim). `moment` = celebration
   // card copy; the first-inquiry strings are the handoff's exact copy block.
   var GAM_MILESTONES = [
-    { key: 'first_save', name: 'First save', locked: 'Unlocks when a shopper saves your listing',
-      done: 'A shopper saved your listing',
-      moment: { title: 'Someone saved your listing', sub: 'Your first save is in! A shopper bookmarked your storefront to come back to. Saves often turn into inquiries.', cta: null } },
+    { key: 'first_save', name: 'First follower', locked: 'Unlocks when a shopper follows you',
+      done: 'A shopper followed your storefront',
+      moment: { title: 'You have your first follower', sub: 'Your first follower is in! They will hear about your posts in the weekly email. Followers often turn into inquiries.', cta: null } },
     { key: 'first_inquiry', name: 'First inquiry', locked: 'Unlocks when a customer reaches out',
       done: 'A customer reached out about your services',
       moment: { title: 'Someone just found you', sub: 'Your first inquiry is in! A reply within a day makes a great first impression.', cta: { label: 'View inquiry', href: '/vendor-dashboard/leads' } } },

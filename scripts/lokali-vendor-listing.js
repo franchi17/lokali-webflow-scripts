@@ -221,6 +221,18 @@
     ".vl-save .vl-heart{fill:none;stroke:#6B6880;stroke-width:1.8;transition:fill .12s,stroke .12s;}",
     ".vl-save.vl-save-on{background-color:#F3EBFF;border-color:#D4AAFD;color:#6002EE;}",
     ".vl-save.vl-save-on .vl-heart{fill:#6002EE;stroke:#6002EE;}",
+    // 2026-10-11 Follow: one line under the Share/Follow row says what following gets you.
+    ".vl-follow-hint{margin:8px 0 0;font-size:12.5px;line-height:1.45;color:#6E6A85;}",
+    // QR-scan nudge (utm_source=qr): someone who just met the maker at a booth.
+    ".vl-qr-nudge{display:flex;align-items:center;gap:12px;background:#EEE6FF;border:1px solid #D4BFF9;border-radius:14px;padding:12px 12px 12px 14px;margin:0 0 16px;font-family:'Plus Jakarta Sans',sans-serif;}",
+    ".vl-qr-nudge .vl-qr-ic{width:38px;height:38px;border-radius:10px;background:#fff;color:#6002EE;display:flex;align-items:center;justify-content:center;flex:0 0 auto;}",
+    ".vl-qr-nudge .vl-qr-ic svg{width:19px;height:19px;}",
+    ".vl-qr-nudge p{margin:0;flex:1 1 200px;min-width:0;font-size:14px;line-height:1.45;color:#1A1829;}",
+    ".vl-qr-nudge p b{font-weight:700;}",
+    ".vl-qr-nudge .vl-qr-go{background:#6002EE;color:#fff;border:none;border-radius:100px;font:700 13.5px/1 'Plus Jakarta Sans',sans-serif;padding:0 16px;min-height:40px;cursor:pointer;white-space:nowrap;}",
+    ".vl-qr-nudge .vl-qr-x{width:36px;height:36px;border:none;background:none;color:#4A4761;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto;}",
+    ".vl-qr-nudge .vl-qr-x svg{width:14px;height:14px;}",
+    "@media (max-width:640px){.vl-qr-nudge{flex-wrap:wrap;}.vl-qr-nudge .vl-qr-go{flex:1 1 100%;order:3;}}",
     // Desktop: the action column must have a DEFINITE width — it was
     // content-sized, which makes the Share/Save row's width:100% circular and
     // the browser then sizes the two buttons by content instead of 50/50.
@@ -321,10 +333,10 @@
     // label (same as the market's inline heart) so it fits the shared row.
     var btn = document.getElementById('vl-save');
     if (btn) {
-      btn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="vl-heart" d="' + HEART_PATH + '"/></svg><span class="vl-save-label">Save</span>';
+      btn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="vl-heart" d="' + HEART_PATH + '"/></svg><span class="vl-save-label">Follow</span>';
       btn.setAttribute('role', 'button');
       btn.setAttribute('aria-pressed', 'false');
-      btn.setAttribute('aria-label', 'Save vendor');
+      btn.setAttribute('aria-label', 'Follow vendor');
       // Webflow element is a div — needs a tabindex to be reachable at all
       // (Enter/Space handling lives in initSave beside the click wiring).
       if (btn.tagName !== 'BUTTON' && btn.tagName !== 'A') btn.setAttribute('tabindex', '0');
@@ -337,7 +349,70 @@
       btn.parentNode.insertBefore(arow, btn);
       arow.appendChild(shareAnchor);
       arow.appendChild(btn);
+      var fh = ce('p', 'vl-follow-hint'); fh.id = 'vl-follow-hint';
+      fh.textContent = 'Hear where they will be next. One email a week, only when they post.';
+      arow.parentNode.insertBefore(fh, arow.nextSibling);
     }
+  }
+
+  // Follow hint copy once the owner's first name is known (hydrate) and
+  // whenever the follow state flips.
+  var _vlOwnerFirst = '';
+  function vlFollowHint(following) {
+    var fh = document.getElementById('vl-follow-hint');
+    if (!fh) return;
+    var who = _vlOwnerFirst || 'they';
+    fh.textContent = following
+      ? 'You’ll hear from ' + (_vlOwnerFirst || 'them') + ' on Thursdays when they post.'
+      : 'Hear where ' + who + ' will be next. One email a week, only when they post.';
+  }
+
+  // QR-scan nudge: a visit that starts from a booth card (utm_source=qr, set by
+  // the launch kit and the dashboard QR code) shows one banner asking to follow.
+  // Dismissed or followed = remembered per vendor on this device. Never for the
+  // storefront's own owner (vendors.me check below) and never once following.
+  function vlQrNudge(vid, v) {
+    try {
+      if (!/[?&]utm_source=qr(&|$)/.test(window.location.search || '')) return;
+      var key = 'lokali_qr_nudge_' + vid;
+      if (localStorage.getItem(key) === '1') return;
+      var saveBtn = document.getElementById('vl-save');
+      if (!saveBtn || document.getElementById('vl-qr-nudge')) return;
+      var main = document.querySelector('.vl-op-main') || document.querySelector('.vl-hero');
+      if (!main) return;
+      var show = function () {
+        if (/vl-save-on/.test(saveBtn.className) || document.getElementById('vl-qr-nudge')) return;
+        var name = (v && v.business_name) || 'this vendor';
+        var box = ce('div', 'vl-qr-nudge'); box.id = 'vl-qr-nudge'; box.setAttribute('role', 'region'); box.setAttribute('aria-label', 'Follow this vendor');
+        var ic = ce('span', 'vl-qr-ic'); ic.innerHTML = '<svg viewBox=\"0 0 448 512\" aria-hidden=\"true\"><path fill=\"currentColor\" d=\"M0 80C0 53.5 21.5 32 48 32h96c26.5 0 48 21.5 48 48v96c0 26.5-21.5 48-48 48H48c-26.5 0-48-21.5-48-48V80zM64 96v64h64V96H64zM0 336c0-26.5 21.5-48 48-48h96c26.5 0 48 21.5 48 48v96c0 26.5-21.5 48-48 48H48c-26.5 0-48-21.5-48-48V336zm64 16v64h64V352H64zM304 32h96c26.5 0 48 21.5 48 48v96c0 26.5-21.5 48-48 48H304c-26.5 0-48-21.5-48-48V80c0-26.5 21.5-48 48-48zm80 64H320v64h64V96zM256 304c0-8.8 7.2-16 16-16h64c8.8 0 16 7.2 16 16s7.2 16 16 16h32c8.8 0 16-7.2 16-16s7.2-16 16-16s16 7.2 16 16v96c0 8.8-7.2 16-16 16H368c-8.8 0-16-7.2-16-16s-7.2-16-16-16s-16 7.2-16 16v64c0 8.8-7.2 16-16 16H272c-8.8 0-16-7.2-16-16V304zM368 480a16 16 0 1 1 0-32 16 16 0 1 1 0 32zm64 0a16 16 0 1 1 0-32 16 16 0 1 1 0 32z\"/></svg>';
+        var p = ce('p'); var b = ce('b'); b.textContent = 'Just met ' + (_vlOwnerFirst || 'them') + '? ';
+        p.appendChild(b); p.appendChild(document.createTextNode('Follow ' + name + ' to hear where they’ll be next. One email a week.'));
+        var go = ce('button', 'vl-qr-go'); go.type = 'button'; go.textContent = 'Follow';
+        go.addEventListener('click', function () { try { sessionStorage.setItem('lokali_prompt_source', 'qr_banner'); } catch (e) {} saveBtn.click(); });
+        var x = ce('button', 'vl-qr-x'); x.type = 'button'; x.setAttribute('aria-label', 'Dismiss');
+        x.innerHTML = '<svg viewBox=\"0 0 384 512\" aria-hidden=\"true\"><path fill=\"currentColor\" d=\"M342.6 150.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 210.7 86.6 105.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L146.7 256 41.4 361.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192 301.3 297.4 406.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.3 256 342.6 150.6z\"/></svg>';
+        x.addEventListener('click', function () { try { localStorage.setItem(key, '1'); } catch (e) {} box.remove(); });
+        box.appendChild(ic); box.appendChild(p); box.appendChild(go); box.appendChild(x);
+        main.insertBefore(box, main.firstChild);
+        var done = function () { if (/vl-save-on/.test(saveBtn.className)) { try { localStorage.setItem(key, '1'); } catch (e) {} box.remove(); } };
+        window.addEventListener('lokali:favorites-synced', function () { setTimeout(done, 300); });
+        saveBtn.addEventListener('click', function () { setTimeout(done, 1500); });
+      };
+      // Give refreshSaveState (signed in) a moment so a follower never sees it.
+      setTimeout(function () {
+        var A = window.LokaliAPI; var c = null;
+        try { c = JSON.parse(localStorage.getItem('LOKALI_ACCT_CACHE') || 'null'); } catch (e) {}
+        if (c && c.role === 'vendor' && A && A.vendors && A.vendors.me) {
+          A.vendors.me().then(function (res) {
+            var me = res && !res.error && res.data && (res.data.vendor || res.data);
+            if (me && Number(me.id) === Number(vid)) return; // own storefront
+            show();
+          }, show);
+          return;
+        }
+        show();
+      }, vlHasToken() ? 1800 : 400);
+    } catch (e) {}
   }
 
   // Restyle the hero category text as the colored pill from the vendor card.
@@ -1723,8 +1798,8 @@
       if (saveBtn) {
         var foot = ce('div', 'vl-upd-foot');
         var hint = ce('span', 'vl-upd-hint');
-        hint.textContent = 'Save ' + (vendorName || 'this vendor') + ' and their updates arrive in one weekly email. You can turn it off any time.';
-        var sv = ce('button', 'vl-upd-save'); sv.type = 'button'; sv.textContent = 'Save to follow';
+        hint.textContent = 'Follow ' + (vendorName || 'this vendor') + ' and their updates arrive in one weekly email. You can turn the email off any time.';
+        var sv = ce('button', 'vl-upd-save'); sv.type = 'button'; sv.textContent = 'Follow';
         var sync = function () { sv.style.display = /vl-save-on/.test(saveBtn.className) ? 'none' : ''; };
         sv.addEventListener('click', function () { saveBtn.click(); setTimeout(sync, 1500); });
         window.addEventListener('lokali:favorites-synced', sync);
@@ -1822,14 +1897,16 @@
     if (!btn) return;
     btn.classList.toggle('vl-save-on', !!saved);
     btn.setAttribute('aria-pressed', saved ? 'true' : 'false');
-    btn.title = saved ? 'Saved' : 'Save vendor';
+    btn.title = saved ? 'Following' : 'Follow vendor';
+    btn.setAttribute('aria-label', saved ? 'Following. Tap to unfollow.' : 'Follow vendor');
+    vlFollowHint(!!saved);
     var label = btn.querySelector('.vl-save-label');
-    if (label) { label.textContent = saved ? 'Saved' : 'Save'; return; }
+    if (label) { label.textContent = saved ? 'Following' : 'Follow'; return; }
     // No label span — update the button's own text node, preserving the icon.
     var nodes = btn.childNodes;
     for (var i = nodes.length - 1; i >= 0; i--) {
       if (nodes[i].nodeType === 3 && nodes[i].nodeValue && nodes[i].nodeValue.trim()) {
-        nodes[i].nodeValue = saved ? 'Saved' : 'Save vendor';
+        nodes[i].nodeValue = saved ? 'Following' : 'Follow vendor';
         return;
       }
     }
@@ -1861,7 +1938,10 @@
       if (!vlHasToken()) {
         try { sessionStorage.setItem('lokali_pending_fav', String(vid)); } catch (e) {}
         try { sessionStorage.setItem('lokali_signup_intent', 'customer:' + Date.now()); } catch (e) {} // timestamped (#101 — a stale 'customer' stash was silently pre-answering the /sign-up role chooser)
-        if (window.LokaliAuth && typeof window.LokaliAuth.openSignUp === 'function') window.LokaliAuth.openSignUp();
+        var src = 'storefront'; try { src = sessionStorage.getItem('lokali_prompt_source') === 'qr_banner' ? 'qr_banner' : 'storefront'; sessionStorage.setItem('lokali_prompt_source', src); } catch (e) {}
+        try { if (typeof window.gtag === 'function') window.gtag('event', 'account_prompt', { source: src }); } catch (e) {}
+        var h1 = document.querySelector('h1'); var nm = h1 ? (h1.textContent || '').replace(/\s+/g, ' ').trim() : '';
+        if (window.LokaliAuth && typeof window.LokaliAuth.openSignUp === 'function') window.LokaliAuth.openSignUp({ intent: 'customer', follow: { name: nm.length <= 60 ? nm : '', first: _vlOwnerFirst }, source: src });
         else window.location.href = '/sign-up';
         return;
       }
@@ -2467,14 +2547,14 @@
     }
     function findShare() { return document.querySelector('.vl-op-card .lk-share, .vl-hero-right .lk-share'); }
     function findSave() { return document.getElementById('vl-save'); }
-    var share = proxy('Share', findShare), save = proxy('Save vendor', findSave);
+    var share = proxy('Share', findShare), save = proxy('Follow vendor', findSave);
     r.appendChild(share); r.appendChild(save);
     function syncSave() {
       var real = findSave();
       var on = !!(real && real.classList.contains('vl-save-on'));
       save.classList.toggle('vl-ph-on', on);
       save.setAttribute('aria-pressed', on ? 'true' : 'false');
-      save.setAttribute('aria-label', on ? 'Saved' : 'Save vendor');
+      save.setAttribute('aria-label', on ? 'Following' : 'Follow vendor');
     }
     // lokali-share.js mounts its button late; a control that never shows up
     // takes its proxy with it rather than leaving a dead circle on the photo.
@@ -3672,6 +3752,9 @@
         .then(function (pres) { renderProducts(asArray(unwrap(pres)), !(pres && pres.error)); });
       renderReviews(vid, v.business_name || '');
       renderUpdates(vid, v.business_name || '');
+      _vlOwnerFirst = String(v.owner_name || '').trim().split(/\s+/)[0] || '';
+      vlFollowHint(/vl-save-on/.test((document.getElementById('vl-save') || {}).className || ''));
+      vlQrNudge(vid, v);
     });
   }
 

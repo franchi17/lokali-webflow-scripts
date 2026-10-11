@@ -184,7 +184,7 @@
         '<div class="lkf-stat"><b>' + (st ? st.new_7d : 0) + '</b><span>new this week</span></div>' +
         '<div class="lkf-stat"><b>' + (st ? st.emailable : 0) + '</b><span>get the weekly email</span></div>' +
       '</div>' +
-      (n === 0 ? '<p class="lkf-sub" style="margin:14px 0 0;">No followers yet. Your QR code and storefront link both lead to the Save button, so every customer you meet can follow you. Posts still show on your storefront today.</p>' : '') +
+      (n === 0 ? '<p class="lkf-sub" style="margin:14px 0 0;">No followers yet. Your QR code and storefront link both lead to the Follow button, so every customer you meet can follow you. Posts still show on your storefront today.</p>' : '') +
       '</div>' +
       '<div class="lkf-card"><h2 class="lkf-h2">Tell your followers</h2><p class="lkf-sub">Pick what it is about. It takes about thirty seconds.</p>' +
       '<div class="lkf-chips" role="group" aria-label="Kind of update">' + KINDS.map(function (x) {

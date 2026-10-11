@@ -832,6 +832,7 @@
   // ── render: shell ──────────────────────────────────────────
   function currentPane() {
     var h = (location.hash || '').replace('#', '').toLowerCase();
+    if (h === 'following') h = 'saved'; // 2026-10-11: the header heart links to #following; the pane key stays 'saved'
     return PANES.indexOf(h) >= 0 ? h : 'home';
   }
 
@@ -1890,7 +1891,7 @@
         var repeat = pub.filter(function (r) { return r.v.visit && r.v.visit.repeat_visitors >= 2 && (!rated.length || r !== rated[0]) && (!fresh.length || r !== fresh[0]); }).sort(function (x, y) { return y.v.visit.repeat_visitors - x.v.visit.repeat_visitors; });
         if (repeat.length) wins.push({ r: repeat[0], h: repeat[0].v.name + ': ' + plural(repeat[0].v.visit.repeat_visitors, 'shopper') + ' came back to it', s: 'Returned on another day to look again' });
         if (t.qr_scans) wins.push({ h: plural(t.qr_scans, 'QR code scan') + ' this month', s: 'The launch kit cards are being scanned in real shops', go: 'insights' });
-        if (t.favorites) wins.push({ h: plural(t.favorites, 'shopper') + ' saved a storefront', s: 'A favorite is a shopper planning to come back', go: 'insights' });
+        if (t.favorites) wins.push({ h: plural(t.favorites, 'shopper') + ' followed a storefront', s: 'A follower is a shopper planning to come back', go: 'insights' });
         if (wins.length) {
           var winCard = T('section', 'lk-ah-card'), wh = T('div', 'lk-ash-sech'); wh.appendChild(T('h3', null, 'Wins to pass on')); wh.appendChild(T('span', null, 'vendors love hearing this')); winCard.appendChild(wh);
           var wl = T('div', 'lk-ah-wins');
@@ -3768,8 +3769,8 @@
       });
       card.appendChild(chips);
     } else {
-      tx.appendChild(el('h3', null, state.saved.length ? 'See who is new near you' : 'Find your first local favorite'));
-      tx.appendChild(el('p', null, 'The Market starts with vendors near ' + esc(acc.region) + '. Tap the heart on anyone you want to come back to.'));
+      tx.appendChild(el('h3', null, state.saved.length ? 'See who is new near you' : 'Follow your first local vendor'));
+      tx.appendChild(el('p', null, 'The Market starts with vendors near ' + esc(acc.region) + '. Tap the heart to follow anyone you want to keep up with.'));
       var a = el('a', 'lk-btn primary', 'Browse The Market'); a.href = '/the-market';
       card.appendChild(a);
     }
@@ -3816,7 +3817,7 @@
 
     var cols = el('div', 'lkh-cols');
     var sc = el('div', 'lkh-card');
-    var sh = el('div', 'lkh-head'); sh.appendChild(el('h3', null, 'Saved vendors'));
+    var sh = el('div', 'lkh-head'); sh.appendChild(el('h3', null, 'Vendors you follow'));
     if (state.saved.length) {
       var all = el('button', 'lkh-more', 'See all ' + state.saved.length); all.type = 'button';
       all.addEventListener('click', function () { location.hash = 'saved'; show('saved'); });
@@ -3828,7 +3829,7 @@
       state.saved.slice(0, 3).forEach(function (row) { g.appendChild(savedRow(row, true)); });
       sc.appendChild(g);
     } else {
-      sc.appendChild(el('div', 'lkh-mini', '<b>Nothing saved yet</b>Tap the heart on any vendor in The Market and they will wait for you here.'));
+      sc.appendChild(el('div', 'lkh-mini', '<b>Not following anyone yet</b>Tap the heart on any vendor in The Market to follow them. They will show up here, and in one email each Thursday.'));
     }
     cols.appendChild(sc);
 
@@ -3878,9 +3879,9 @@
   // ── pane: Saved ────────────────────────────────────────────
   function renderSaved() {
     var pane = el('div', 'lk-pane'); pane.setAttribute('data-pane', 'saved');
-    pane.appendChild(el('p', 'lk-intro', "Vendors you've saved to come back to. Tap the heart on any listing to add it here."));
+    pane.appendChild(el('p', 'lk-intro', "Vendors you follow. Tap the heart on any storefront to follow it, and their market dates and news land here and in one email each Thursday."));
     if (!state.saved.length) {
-      pane.appendChild(emptyState('Nothing saved yet', 'When you find a vendor you like, tap the heart to keep them here for later.', 'Browse vendors', '/the-market'));
+      pane.appendChild(emptyState('Not following anyone yet', 'When you find a vendor you like, tap the heart to follow them.', 'Browse The Market', '/the-market'));
     } else {
       var grid = el('div', 'lkh-grid wide');
       state.saved.forEach(function (row) { grid.appendChild(savedRow(row)); });
@@ -3915,19 +3916,19 @@
     if (!compact) {
       var heart = el('button', 'lk-heart', '<svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>');
       heart.type = 'button';
-      heart.title = 'Remove from saved';
-      heart.setAttribute('aria-label', 'Remove ' + vendorName(v) + ' from saved');
+      heart.title = 'Unfollow';
+      heart.setAttribute('aria-label', 'Unfollow ' + vendorName(v));
       heart.addEventListener('click', function () {
         heart.disabled = true;
         var at = state.saved.indexOf(row);
         api().request('favorites', 'DELETE', '/favorites/' + encodeURIComponent(vid), null, true).then(function (res) {
-          if (res && res.error) { heart.disabled = false; toast('Could not remove'); return; }
+          if (res && res.error) { heart.disabled = false; toast('Couldn’t unfollow. Please try again.'); return; }
           state.saved = state.saved.filter(function (x) { return x !== row; });
           rerender();
           // Undo re-saves through the same endpoint the heart on a listing uses.
-          toastAction('Removed ' + vendorName(v), 'Undo', function () {
+          toastAction('Unfollowed ' + vendorName(v), 'Undo', function () {
             api().request('favorites', 'POST', '/favorites', { vendors_id: vid }, true).then(function (r2) {
-              if (r2 && r2.error) { toast('Couldn’t put it back. Save them again from their page.'); return; }
+              if (r2 && r2.error) { toast('Couldn’t undo that. Follow them again from their page.'); return; }
               state.saved.splice(Math.min(Math.max(at, 0), state.saved.length), 0, row);
               rerender();
             });
@@ -4001,7 +4002,7 @@
   var GI_STORE = '<path d="M3 9l1.5-5h15L21 9"/><path d="M4 9v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9"/><path d="M9 20v-6h6v6"/>';
   var GI_MSG = '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>';
   // Hub navigation, in order. Settings is rail-only (gear button elsewhere).
-  var HUB_NAV = [['home', 'Home', GI_HOME], ['saved', 'Saved', GI_HEART], ['reviews', 'Reviews', GI_STAR], ['badges', 'Badges', GI_COMPASS], ['settings', 'Settings', GI_GEAR]];
+  var HUB_NAV = [['home', 'Home', GI_HOME], ['saved', 'Following', GI_HEART], ['reviews', 'Reviews', GI_STAR], ['badges', 'Badges', GI_COMPASS], ['settings', 'Settings', GI_GEAR]];
   // Category icons by seeded id (1 handcrafted … 8 home, 9 professional); unknown → tag.
   var CAT_ICOS = {
     1: 'M12 19l7-7 3 3-7 7-3-3zM18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5zM2 2l7.586 7.586M11 11a2 2 0 1 0 4 0 2 2 0 0 0-4 0z',
@@ -4464,7 +4465,7 @@
     var tgRemind = toggleRow('Review reminders', 'A gentle nudge to review a vendor a few days after you contact them.', acc.notif_review_reminders === true);
     // #185: weekly email about the vendors this person saved (default ON in
     // patch_vendor_posts.sql; the digest cron reads this flag).
-    var tgSaved = toggleRow('Updates from vendors you saved', 'One email on Thursdays when a vendor you saved posts an update or where they will be. No email on quiet weeks.', acc.notif_saved_updates !== false);
+    var tgSaved = toggleRow('Updates from vendors you follow', 'One email on Thursdays when a vendor you follow posts an update or where they will be. No email on quiet weeks.', acc.notif_saved_updates !== false);
     nc.appendChild(tgLetter.row); nc.appendChild(tgReplies.row); nc.appendChild(tgSaved.row); nc.appendChild(tgRemind.row);
     pane.appendChild(nc);
 
@@ -4533,7 +4534,7 @@
     });
     outWrap.appendChild(outBtn); outRow.appendChild(outWrap); ac.appendChild(outRow);
     var delRow = el('div', 'lk-set-row');
-    delRow.innerHTML = '<div><div class="lk-set-label lk-danger">Delete account</div><div class="lk-set-help">Permanently removes your account and saves. Reviews you wrote stay but lose your name. If you have a vendor listing, it and its reviews are deleted too. This can\'t be undone.</div></div>';
+    delRow.innerHTML = '<div><div class="lk-set-label lk-danger">Delete account</div><div class="lk-set-help">Permanently removes your account and the vendors you follow. Reviews you wrote stay but lose your name. If you have a vendor listing, it and its reviews are deleted too. This can\'t be undone.</div></div>';
     var delWrap = el('div'); var delBtn = el('button', 'lk-btn danger', 'Delete');
     delWrap.appendChild(delBtn); delRow.appendChild(delWrap); ac.appendChild(delRow);
 
@@ -4542,7 +4543,7 @@
     // only (no-ink rule) — light card, violet text, danger accents.
     var confirmBox = el('div', 'lk-del-confirm');
     confirmBox.style.cssText = 'display:none;padding:14px 16px;margin-top:2px;border:1px solid #F3D6D6;border-radius:12px;background:#FDF7F7;';
-    confirmBox.innerHTML = '<div class="lk-set-help" style="margin-bottom:8px;">Type <b>DELETE</b> to confirm. Your sign-in, saves and any vendor listing are removed immediately.</div>';
+    confirmBox.innerHTML = '<div class="lk-set-help" style="margin-bottom:8px;">Type <b>DELETE</b> to confirm. Your sign-in, follows and any vendor listing are removed immediately.</div>';
     // 58k-D3 — founders only: deleting permanently forfeits the founding spot.
     if (state.isFounding) {
       var foundWarn = el('div', 'lk-set-help');
@@ -4709,7 +4710,7 @@
     injectCSS();
     if (!hasToken()) {
       mount.innerHTML = '<div class="lk-empty"><div class="lk-empty-title">Sign in to your account</div>' +
-        '<div class="lk-empty-sub">View your saved vendors, reviews, and settings.</div>' +
+        '<div class="lk-empty-sub">See the vendors you follow, your reviews, and settings.</div>' +
         '<a class="lk-btn primary" style="text-decoration:none;display:inline-block" href="/login">Sign in</a></div>';
       return;
     }

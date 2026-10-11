@@ -43,12 +43,13 @@
     // #185: where saved vendors will be this week (weekend_feed). Sits with
     // the Market because it is the other shopper destination.
     { label: 'This week',       href: '/this-week' },
+    // 2026-10-11 (F): "For customers" out of the Features dropdown, its own row.
+    { label: 'For customers',   href: '/for-customers' },
     { label: 'About',           href: '/about' },
     // Features = link + tap-to-expand audience pages (mirrors the desktop
     // "Features" dropdown from lokali-resources-nav.js; the label lands on
     // the /features chooser).
     { label: 'Features', href: '/features', children: [
-      { label: 'For customers', href: '/for-customers' },
       { label: 'For vendors',   href: '/for-vendors' }
     ] },
     // Pricing = link + tap-to-expand anchor links into the page's key sections
@@ -69,7 +70,7 @@
     ] },
     { label: 'Contact us',      href: '/contact-us' },
     { label: 'Login',           href: '/login' },
-    { label: 'Become a Vendor', href: '/sign-up', cta: true }
+    { label: 'Open a storefront', href: '/sign-up', cta: true } // 2026-10-11: matches the desktop header wording
   ];
 
   function injectCss() {
@@ -662,7 +663,7 @@
       var cta = document.createElement('a');
       cta.id = 'lok-row1-cta';
       cta.href = '/sign-up';
-      cta.textContent = 'Become a vendor';
+      cta.textContent = 'Open a storefront';
       right.insertBefore(cta, right.firstChild);
     }
     document.documentElement.classList.add('lok-row2');
