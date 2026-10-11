@@ -60,7 +60,11 @@
       '@media (max-width:767px){#lok-heart-nav{width:36px;height:36px;margin:0;}#lok-heart-nav .lok-heart-cnt{top:0;right:-2px;}}',
       // Home hero line.
       '#lok-home-shop{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:18px;font-family:' + FONT + ';font-size:14.5px;line-height:1.5;color:#4A4761;}',
-      '#lok-home-shop svg{color:#6002EE;flex:0 0 auto;}',
+      '#lok-home-shop svg{color:#6002EE;vertical-align:-2px;margin-right:2px;}',
+      // Seven nav items need ~730px at 1440; the middle column is 704. One size down
+      // on the nav text (16 -> 15px) buys the room; fitNavItem() still falls back when
+      // a wider (signed-in) header cannot hold it.
+      '.header-nav-menu-list:has(#lok-nav-customers) .header-nav-link,.header-nav-menu-list:has(#lok-nav-customers) .lok-res-trig{font-size:15px;}',
       '#lok-home-shop a{color:#6002EE;font-weight:700;text-decoration:underline;text-underline-offset:3px;}',
       '@media (max-width:767px){#lok-home-shop{justify-content:center;text-align:center;font-size:14px;}}'
     ].join('');
@@ -148,7 +152,7 @@
     if (!row || !row.parentNode) return;
     var p = document.createElement('p');
     p.id = 'lok-home-shop';
-    p.innerHTML = svg(HEART_SOLID, 15) + '<span>Follow the makers you like and hear where they’ll be each week. <a href="/sign-up">Create an account</a></span>';
+    p.innerHTML = '<span>' + svg(HEART_SOLID, 14) + ' Follow the makers you like and hear where they’ll be each week. <a href="/sign-up">Create an account</a></span>';
     p.querySelector('a').addEventListener('click', function (e) {
       if (!(window.LokaliAuth && typeof window.LokaliAuth.openSignUp === 'function')) { stampCustomerIntent(); return; }
       e.preventDefault(); openSignup('home_line');
