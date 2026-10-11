@@ -191,9 +191,16 @@
   function fitNavItem(clone) {
     var check = function () {
       if (!clone.parentNode) return;
-      var hdr = document.querySelector('.header-wrapper');
-      var list = clone.parentNode;
-      var tight = (hdr && hdr.scrollWidth > hdr.clientWidth + 1) || (list.scrollWidth > list.clientWidth + 1);
+      // scrollWidth lies here (the absolutely positioned dropdown panels count),
+      // so measure the real thing: do the nav's first and last items keep clear
+      // of the logo and of the right-hand group?
+      var list = clone.parentNode, lis = list.children;
+      if (!lis.length || !clone.offsetParent) return; // nav hidden (hamburger widths): nothing to fit
+      var first = lis[0].getBoundingClientRect(), last = lis[lis.length - 1].getBoundingClientRect();
+      var logo = document.querySelector('.header-logo-link'), right = document.querySelector('.header-right-side');
+      var tight = first.left < 0 ||
+        (logo && first.left < logo.getBoundingClientRect().right + 8) ||
+        (right && last.right > right.getBoundingClientRect().left - 8);
       if (!tight) return;
       clone.parentNode.removeChild(clone);
       var panel = document.querySelector('.lok-dd-feat:not(.mob) .lok-res-panel');
