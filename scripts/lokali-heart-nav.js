@@ -210,8 +210,13 @@
       if (right) {
         var kids = right.children;
         for (var k = 0; k < kids.length; k++) {
-          var kr = kids[k].getBoundingClientRect();
-          if (kr.width && kids[k].offsetParent && kr.left < rightLeft) rightLeft = kr.left;
+          var kid = kids[k];
+          // The header search form's box reaches well left of its magnifier (the
+          // field itself is what mobile-nav shows or hides); the magnifier is the
+          // visible edge, so measure that.
+          if (kid.id === 'lok-hdr-search' && kid.querySelector('button')) kid = kid.querySelector('button');
+          var kr = kid.getBoundingClientRect();
+          if (kr.width && kid.offsetParent && kr.left < rightLeft) rightLeft = kr.left;
         }
       }
       var tight = left < 0 ||
