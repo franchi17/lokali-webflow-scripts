@@ -194,13 +194,19 @@
       // scrollWidth lies here (the absolutely positioned dropdown panels count),
       // so measure the real thing: do the nav's first and last items keep clear
       // of the logo and of the right-hand group?
-      var list = clone.parentNode, lis = list.children;
-      if (!lis.length || !clone.offsetParent) return; // nav hidden (hamburger widths): nothing to fit
-      var first = lis[0].getBoundingClientRect(), last = lis[lis.length - 1].getBoundingClientRect();
+      // Only VISIBLE boxes: the list starts with hidden tablet-only items and the
+      // right group starts with a zero-width search form.
+      var vis = function (nodes) { var o = []; for (var i = 0; i < nodes.length; i++) { var r = nodes[i].getBoundingClientRect(); if (r.width > 0 && nodes[i].offsetParent) o.push(r); } return o; };
+      if (!clone.offsetParent) return; // nav hidden (hamburger widths): nothing to fit
+      var lis = vis(clone.parentNode.children);
+      if (!lis.length) return;
+      var first = lis[0], last = lis[lis.length - 1];
       var logo = document.querySelector('.header-logo-link'), right = document.querySelector('.header-right-side');
+      var rightKids = right ? vis(right.children) : [];
+      var rightLeft = rightKids.length ? Math.min.apply(null, rightKids.map(function (r) { return r.left; })) : Infinity;
       var tight = first.left < 0 ||
         (logo && first.left < logo.getBoundingClientRect().right + 8) ||
-        (right && last.right > right.getBoundingClientRect().left - 8);
+        last.right > rightLeft - 8;
       if (!tight) return;
       clone.parentNode.removeChild(clone);
       var panel = document.querySelector('.lok-dd-feat:not(.mob) .lok-res-panel');
