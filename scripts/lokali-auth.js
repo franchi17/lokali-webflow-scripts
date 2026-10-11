@@ -1873,9 +1873,12 @@
     openSignUp: function (opts) {
       opts = opts || {};
       if (opts.intent === 'customer' || opts.intent === 'vendor') setSignupIntent(opts.intent);
-      _followCtx = opts.follow || null;
       _promptSource = opts.source || '';
       openOverlay(function (body) {
+        // Set INSIDE the build callback: openOverlay() runs closeOverlay() first,
+        // which clears the context (v1.4.551 set it before the call and every
+        // overlay opened with the generic headline).
+        _followCtx = opts.follow || null;
         renderSignUpFlow(body, { overlay: true, onAuthed: overlayAuthed });
       });
     },
