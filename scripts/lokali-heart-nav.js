@@ -53,8 +53,9 @@
       'font-size:10.5px;font-weight:800;line-height:17px;text-align:center;padding:0 4px;box-sizing:border-box;}',
       '#lok-heart-nav .lok-heart-cnt:empty{display:none;}',
       // Tooltip for the signed-out heart (hover and keyboard focus); never on touch.
-      // Brand colours (F 2026-10-11: orange-700 text on orange-50), no ink surfaces.
-      '#lok-heart-nav .lok-heart-tip{position:absolute;top:calc(100% + 6px);right:0;background:#FFF2DF;color:#8A4B00;border:1px solid #FFDDB0;font-size:12px;font-weight:600;',
+      // Brand pink (F 2026-10-11: the Leads wait-badge pair, #B1006A on #FDE7F3), centred
+      // under the heart. No ink surfaces.
+      '#lok-heart-nav .lok-heart-tip{position:absolute;top:calc(100% + 6px);left:50%;right:auto;transform:translateX(-50%);background:#FDE7F3;color:#B1006A;border:1px solid #F7CDE4;font-size:12px;font-weight:600;',
       'white-space:nowrap;border-radius:8px;padding:6px 10px;opacity:0;pointer-events:none;transition:opacity .12s;z-index:5;}',
       '@media (hover:hover){#lok-heart-nav:hover .lok-heart-tip,#lok-heart-nav:focus-visible .lok-heart-tip{opacity:1;}}',
       // Phone row 1 is tight (logo + pill + Login + burger): 36px heart, no margin.
