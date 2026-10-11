@@ -142,7 +142,9 @@
   // ── 2. home hero line (signed out) ────────────────────────────────────
   function mountHomeLine() {
     if (!isHome() || signedIn() || document.getElementById('lok-home-shop')) return;
-    var row = document.querySelector('.buttons-row');
+    // The header carries a hidden .buttons-row too; take the hero's (the visible one).
+    var rows = document.querySelectorAll('.buttons-row'), row = null;
+    for (var i = 0; i < rows.length; i++) { if (rows[i].closest('.hero') && rows[i].offsetParent) { row = rows[i]; break; } }
     if (!row || !row.parentNode) return;
     var p = document.createElement('p');
     p.id = 'lok-home-shop';
@@ -155,6 +157,11 @@
   }
 
   // ── 3. desktop nav: "For customers" after "The Market" ────────────────
+  // The list is <li> items with the link inside. Clone the Market <li>, point
+  // it at /for-customers. If the seven-item header no longer fits (signed-in
+  // headers are ~250px wider), take it back out and put "For customers" into
+  // the Features panel instead (lokali-resources-nav.js keeps only For vendors
+  // there since this release), so the page is always one click away.
   function mountNavItem() {
     if (document.getElementById('lok-nav-customers')) return;
     var list = document.querySelector('.header-nav-menu-list');
@@ -163,15 +170,39 @@
     for (var i = 0; i < as.length; i++) {
       if ((as[i].getAttribute('href') || '').replace(/\/+$/, '') === '/the-market') { market = as[i]; break; }
     }
-    if (!market) return;
-    var a = market.cloneNode(false);
+    var li = market && market.closest('li');
+    if (!li || li.parentNode !== list) return;
+    var clone = li.cloneNode(true);
+    var a = clone.querySelector('a.header-nav-link') || clone.querySelector('a');
+    if (!a) return;
+    var here = (location.pathname || '').replace(/\/+$/, '') === '/for-customers';
     a.id = 'lok-nav-customers';
     a.href = '/for-customers';
     a.textContent = 'For customers';
-    a.classList.remove('w--current');
-    if ((location.pathname || '').replace(/\/+$/, '') === '/for-customers') { a.classList.add('w--current'); a.setAttribute('aria-current', 'page'); }
-    else a.removeAttribute('aria-current');
-    market.parentNode.insertBefore(a, market.nextSibling);
+    a.classList.toggle('w--current', here);
+    if (here) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+    list.insertBefore(clone, li.nextSibling);
+    fitNavItem(clone);
+  }
+  function fitNavItem(clone) {
+    var check = function () {
+      if (!clone.parentNode) return;
+      var hdr = document.querySelector('.header-wrapper');
+      var list = clone.parentNode;
+      var tight = (hdr && hdr.scrollWidth > hdr.clientWidth + 1) || (list.scrollWidth > list.clientWidth + 1);
+      if (!tight) return;
+      clone.parentNode.removeChild(clone);
+      var panel = document.querySelector('.lok-dd-feat:not(.mob) .lok-res-panel');
+      if (panel && !panel.querySelector('a[href="/for-customers"]')) {
+        var a = document.createElement('a');
+        a.href = '/for-customers'; a.textContent = 'For customers';
+        panel.insertBefore(a, panel.firstChild);
+      }
+    };
+    check();
+    window.addEventListener('load', check);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(check);
+    setTimeout(check, 1500); // after auth-nav swaps Login for the wider account chip
   }
 
   function init() {
