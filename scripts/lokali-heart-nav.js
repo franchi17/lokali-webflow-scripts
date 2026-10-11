@@ -216,10 +216,17 @@
         panel.insertBefore(a, panel.firstChild);
       }
     };
-    check();
-    window.addEventListener('load', check);
-    if (document.fonts && document.fonts.ready) document.fonts.ready.then(check);
-    setTimeout(check, 1500); // after auth-nav swaps Login for the wider account chip
+    // lokali-mobile-nav.js refits the header on resize (search field to icon-only,
+    // tighter nav spacing when the links collide). Ask for that refit first and
+    // measure after it has run, or a header that WOULD fit gets judged too tight.
+    var refitThen = function (ms) {
+      try { window.dispatchEvent(new Event('resize')); } catch (e) {}
+      setTimeout(check, ms);
+    };
+    refitThen(350);
+    window.addEventListener('load', function () { refitThen(100); });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { refitThen(100); });
+    setTimeout(function () { refitThen(100); }, 1800); // after auth-nav swaps Login for the wider account chip
   }
 
   function init() {
