@@ -137,7 +137,7 @@
     <div class="lwg-start">
       <div class="lwg-prog" id="lwg-prog" hidden><span id="lwg-prog-t"></span><span class="lwg-bar" aria-hidden="true"><i id="lwg-bar"></i></span></div>
       <ol class="lwg-steps">
-        <li data-step="account"><span class="lwg-tick"><span>1</span><svg aria-hidden="true"><use href="#lwg-i-check"/></svg></span><h3>Open your storefront</h3><p>Free, and no card needed.</p><span class="lwg-act"><a href="/sign-up">Open your storefront</a><span class="lwg-mins">2 min</span></span></li>
+        <li data-step="account"><span class="lwg-tick"><span>1</span><svg aria-hidden="true"><use href="#lwg-i-check"/></svg></span><h3>Open your storefront</h3><p>There's a plan with no monthly fee, and no card needed.</p><span class="lwg-act"><a href="/sign-up">Open your storefront</a><span class="lwg-mins">2 min</span></span></li>
         <li data-step="about"><span class="lwg-tick"><span>2</span><svg aria-hidden="true"><use href="#lwg-i-check"/></svg></span><h3>Tell people who you are</h3><p>A few lines about your work, and a short hello from you.</p><span class="lwg-act"><a href="/vendor-dashboard/profile#lok-sec-about">Open profile</a><span class="lwg-mins">10 min</span></span></li>
         <li data-step="listing"><span class="lwg-tick"><span>3</span><svg aria-hidden="true"><use href="#lwg-i-check"/></svg></span><h3>Add your first listing</h3><p>One clear photo and a price is enough to begin.</p><span class="lwg-act"><a href="/vendor-dashboard/services">Add a listing</a><span class="lwg-mins">5 min</span></span></li>
       </ol>
@@ -280,7 +280,7 @@
       }
     });
     $('lwg-plan-name').textContent = NAME[plan];
-    $('lwg-plan-note').textContent = plan === 'free' ? 'Free forever.' : plan === 'featured' ? 'Everything here is yours.' : '';
+    $('lwg-plan-note').textContent = plan === 'free' ? 'No monthly fee.' : plan === 'featured' ? 'Everything here is yours.' : '';
     $('lwg-plan').hidden = false;
     if (plan === 'featured') {
       $('lwg-plans').hidden = true;
