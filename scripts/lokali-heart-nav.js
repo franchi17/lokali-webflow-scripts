@@ -191,22 +191,32 @@
   function fitNavItem(clone) {
     var check = function () {
       if (!clone.parentNode) return;
-      // scrollWidth lies here (the absolutely positioned dropdown panels count),
-      // so measure the real thing: do the nav's first and last items keep clear
-      // of the logo and of the right-hand group?
-      // Only VISIBLE boxes: the list starts with hidden tablet-only items and the
-      // right group starts with a zero-width search form.
-      var vis = function (nodes) { var o = []; for (var i = 0; i < nodes.length; i++) { var r = nodes[i].getBoundingClientRect(); if (r.width > 0 && nodes[i].offsetParent) o.push(r); } return o; };
+      // Measure the LINKS (the <li> boxes carry spacing) against the logo and the
+      // first visible thing in the right-hand group, the way lokali-mobile-nav's
+      // own search fit does. That fit has already run (resize dispatched below),
+      // so the search field is icon-only by now if the row needed the room.
       if (!clone.offsetParent) return; // nav hidden (hamburger widths): nothing to fit
-      var lis = vis(clone.parentNode.children);
-      if (!lis.length) return;
-      var first = lis[0], last = lis[lis.length - 1];
+      var links = clone.parentNode.querySelectorAll('.header-nav-link, .lok-res-trig');
+      var left = Infinity, edge = 0;
+      for (var i = 0; i < links.length; i++) {
+        var r = links[i].getBoundingClientRect();
+        if (!r.width || !links[i].offsetParent) continue;
+        if (r.left < left) left = r.left;
+        if (r.right > edge) edge = r.right;
+      }
+      if (!isFinite(left)) return;
       var logo = document.querySelector('.header-logo-link'), right = document.querySelector('.header-right-side');
-      var rightKids = right ? vis(right.children) : [];
-      var rightLeft = rightKids.length ? Math.min.apply(null, rightKids.map(function (r) { return r.left; })) : Infinity;
-      var tight = first.left < 0 ||
-        (logo && first.left < logo.getBoundingClientRect().right + 8) ||
-        last.right > rightLeft - 8;
+      var rightLeft = Infinity;
+      if (right) {
+        var kids = right.children;
+        for (var k = 0; k < kids.length; k++) {
+          var kr = kids[k].getBoundingClientRect();
+          if (kr.width && kids[k].offsetParent && kr.left < rightLeft) rightLeft = kr.left;
+        }
+      }
+      var tight = left < 0 ||
+        (logo && left < logo.getBoundingClientRect().right + 12) ||
+        edge > rightLeft - 12;
       if (!tight) return;
       clone.parentNode.removeChild(clone);
       var panel = document.querySelector('.lok-dd-feat:not(.mob) .lok-res-panel');
