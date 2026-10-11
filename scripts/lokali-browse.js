@@ -515,6 +515,12 @@
     // primary-700 violet; 44px min-height per the tap-target floor).
     ".browse-empty-cta{display:inline-flex;align-items:center;justify-content:center;margin-top:16px;padding:12px 22px;min-height:44px;box-sizing:border-box;background:#3d00e0;color:#fff;border-radius:10px;font-family:'Plus Jakarta Sans',sans-serif;font-size:15.5px;font-weight:600;text-decoration:none;transition:background .15s;}",
     ".browse-empty-cta:hover{background:#3100b3;color:#fff;}",
+    // Zero-result notice above the grid (injected; no Webflow style exists).
+    ".browse-near-notice{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 16px;padding:14px 16px;background:#F4F0FD;border:1px solid #DEDAEE;border-radius:12px;font-family:'Plus Jakarta Sans',sans-serif;color:#3A3651;}",
+    ".browse-near-notice p{margin:0;font-size:15px;line-height:1.45;}",
+    ".browse-near-notice b{font-weight:700;color:#4A1FB8;overflow-wrap:anywhere;}",
+    ".browse-near-clear{flex:0 0 auto;min-height:40px;padding:8px 16px;border:1px solid #C4A8F7;border-radius:100px;background:#fff;color:#4A1FB8;font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;}",
+    ".browse-near-clear:hover{background:#E6DBFD;}",
     // Active-filter chips (no Webflow styles exist for them) — pill matching the
     // sidebar's .filter-item.active; the × is a real button with a 32px hit area.
     ".active-filter-chip{display:inline-flex;align-items:center;font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:500;background:#E6DBFD;color:#6002EE;border:1px solid #C4A8F7;border-radius:100px;padding:2px 2px 2px 12px;min-height:28px;box-sizing:border-box;margin:2px 6px 2px 0;}",
@@ -1411,7 +1417,11 @@
     // Phrase = the query as typed, or the kept tokens re-joined ("insurance
     // near me" → "insurance") so stop-words don't demote an exact hit.
     var p2 = toks.join(' ');
-    function phrase(h) { return h.indexOf(q) !== -1 || h.indexOf(p2) !== -1; }
+    // Zero-result fix (2026-10-11): "madeone" never found Made One. A query of
+    // 5+ chars with no space is also tried against the haystack with its spaces
+    // removed, so a name typed as one word still lands in band 6.
+    var qc = q.indexOf(' ') === -1 && q.length >= 5 ? q : '';
+    function phrase(h) { return h.indexOf(q) !== -1 || h.indexOf(p2) !== -1 || (!!qc && h.replace(/[\s\n]+/g, '').indexOf(qc) !== -1); }
     function all(h) { for (var i = 0; i < toks.length; i++) { if (!hayHasToken(h, toks[i])) return false; } return true; }
     if (phrase(h1)) return 6;
     if (all(h1)) return 5;
@@ -1422,6 +1432,76 @@
     return 0;
   }
   var _searchScores = {};
+  var _nearPool = [];   // vendors the current search rejected (cat/location/toggles already applied)
+  var _nearNotice = null;
+  function lev(a, b) {
+    var m = a.length, n = b.length, i, j, prev = [], cur = [];
+    for (j = 0; j <= n; j++) prev[j] = j;
+    for (i = 1; i <= m; i++) {
+      cur = [i];
+      for (j = 1; j <= n; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a.charAt(i - 1) === b.charAt(j - 1) ? 0 : 1));
+      prev = cur;
+    }
+    return prev[n];
+  }
+  // Closest storefronts for a search that matched nobody. Scores, per vendor:
+  // the query run together inside the name/specialty words (4), one of the
+  // typed words or its stem anywhere in h1 (3), a h1 word within one or two
+  // edits of a typed word, or sharing its first four letters (3 / 2), one typed
+  // word in the description (1). Returns { kind: 'near', list } for scored
+  // vendors, else { kind: 'start', list } = the top three of the pool by the
+  // default order, so the shopper always has somewhere to go next.
+  function nearestVendors(q, toks) {
+    var qc = q.replace(/\s+/g, ''), scored = [], i, k;
+    for (i = 0; i < _nearPool.length; i++) {
+      var e = _nearPool[i], best = 0;
+      var words = e.h1.split(/[^a-z0-9]+/).filter(function (w) { return w.length >= 3; });
+      if (qc.length >= 4 && e.h1.replace(/[\s\n]+/g, '').indexOf(qc) !== -1) best = 4;
+      for (k = 0; k < toks.length && best < 3; k++) {
+        var t = toks[k]; if (t.length < 3) continue;
+        if (hayHasToken(e.h1, t)) { best = 3; break; }
+        var st = stemToken(t), allow = t.length >= 7 ? 2 : (t.length >= 4 ? 1 : 0);
+        for (var w = 0; w < words.length; w++) {
+          var wd = words[w];
+          if (allow && Math.abs(wd.length - t.length) <= allow && lev(wd, t) <= allow) { best = 3; break; }
+          if (t.length >= 5 && wd.indexOf(t.slice(0, 4)) === 0) best = Math.max(best, 2);
+          if (st !== t && st.length >= 4 && wd.indexOf(st.slice(0, 4)) === 0) best = Math.max(best, 2);
+        }
+        if (best < 1 && hayHasToken(e.h3, t)) best = 1;
+      }
+      if (best) scored.push({ v: e.v, s: best });
+    }
+    var byDefault = function (a, b) { return vTier(b) - vTier(a) || (vCreated(b) - vCreated(a)) || rank(b) - rank(a); };
+    if (scored.length) {
+      scored.sort(function (a, b) { return b.s - a.s || byDefault(a.v, b.v); });
+      return { kind: 'near', list: scored.slice(0, 3).map(function (x) { return x.v; }) };
+    }
+    var pool = _nearPool.map(function (e) { return e.v; }).sort(byDefault);
+    return { kind: 'start', list: pool.slice(0, 3) };
+  }
+  function showNearNotice(q, kind) {
+    if (!_grid) return;
+    if (!_nearNotice) {
+      _nearNotice = ce('div', 'browse-near-notice');
+      _nearNotice.setAttribute('role', 'status');
+      _grid.parentNode.insertBefore(_nearNotice, _grid);
+    }
+    _nearNotice.innerHTML = '';
+    var p = ce('p');
+    p.appendChild(document.createTextNode('No storefront matched '));
+    var b = ce('b'); b.textContent = '\u201C' + q + '\u201D'; p.appendChild(b);
+    p.appendChild(document.createTextNode(kind === 'near' ? '. The closest matches are below.' : '. Here are a few storefronts to start with instead.'));
+    _nearNotice.appendChild(p);
+    var clear = ce('button', 'browse-near-clear'); clear.type = 'button'; clear.textContent = 'Clear search';
+    clear.addEventListener('click', function () {
+      searchTerm = '';
+      allSearchInputs().forEach(function (bx) { bx.value = ''; });
+      applyFilters();
+    });
+    _nearNotice.appendChild(clear);
+    showEl(_nearNotice, 'flex');
+  }
+  function hideNearNotice() { if (_nearNotice) hideEl(_nearNotice); }
 
   // ── filter + sort + render cards ──
   // Away mode chip helper: 'Sep 29' for a future vendors.away_until, else ''.
@@ -1501,6 +1581,7 @@
     var q = searchTerm.toLowerCase().trim();
     var toks = searchTokens(q);
     _searchScores = {};
+    _nearPool = [];
     var catId = activeCategory === 'all' ? null : SLUG_TO_ID[activeCategory];
     var locId = activeLocationId === 'all' ? null : String(activeLocationId);
     var visible = _allVendors.filter(function (v) {
@@ -1533,7 +1614,7 @@
         var h2 = h1 + '\n' + vListingNames(v).join('\n').toLowerCase();
         var h3 = h2 + '\n' + String(vDescription(v) || '').toLowerCase();
         var sc = 0;
-        if (q) { sc = searchScore(h1, h2, h3, q, toks); if (!sc) return false; }
+        if (q) { sc = searchScore(h1, h2, h3, q, toks); if (!sc) { if (!occTerms) _nearPool.push({ v: v, h1: h1, h3: h3 }); return false; } }
         if (occTerms) {
           // Any word wins; its best band ranks the card (a typed search, when
           // present, stays the primary rank).
@@ -1552,7 +1633,17 @@
     sortVendors(visible);
     _lastVisibleIds = visible.map(function (v) { return v.id; });
     reportMarketShown();
-    renderGrid(visible);
+    // Zero-result fix (2026-10-11, F): a search that matches nobody used to end
+    // in the stock "No vendors found" state, and 7 of 14 Market searches in 30
+    // days did exactly that. Now the grid shows the three closest storefronts
+    // (near-misses: a typo, a word that only half matches, a name run together)
+    // or, when nothing is even close, three storefronts from the same filter
+    // set, under a notice that says plainly nothing matched. The demand log
+    // still records the search as 0 results: these cards are a courtesy, not
+    // a match.
+    var nearList = (q && !(_occ && _occ.terms) && visible.length === 0) ? nearestVendors(q, toks) : null;
+    if (nearList && nearList.list.length) { renderGrid(nearList.list); showNearNotice(q, nearList.kind); }
+    else { hideNearNotice(); renderGrid(visible); }
     try { renderStartHere(); } catch (e) {}
     try { renderOccasionBar(visible.length); } catch (e) {}
     updateCounts(visible.length);
@@ -2461,9 +2552,12 @@
     // #110 GA4: search terms, settle-debounced (800ms) + deduped + capped at 50
     // chars — one event per settled term, not one per keystroke.
     var _gaLastTerm = '';
-    var gaSearch = debounce(function () {
-      var term = String(searchTerm || '').trim().slice(0, 50);
-      if (term.length < 2 || term === _gaLastTerm) return;
+    // Zero-result fix (2026-10-11): a term that matched nobody waits another 2s
+    // and is logged only if the box still holds it, so "tutorin" on the way to
+    // "tutoring" and "exu" on the way to anything stop counting as searches that
+    // found nobody. Hits log on the usual 800ms settle.
+    function fireSearch(term) {
+      if (term === _gaLastTerm) return;
       _gaLastTerm = term;
       try { if (typeof window.gtag === 'function') window.gtag('event', 'market_search', { term: term }); } catch (e) {}
       // Demand signals (2026-09-17): the settled term + active filters + what it
@@ -2479,6 +2573,14 @@
         var L = window.LokaliAPI && window.LokaliAPI.leads;
         if (L && typeof L.trackVisit === 'function') L.trackVisit('search', { term: term, results: _lastVisibleIds.length, vendorIds: _lastVisibleIds.slice(0, 24) });
       } catch (e) {}
+    }
+    var gaSearch = debounce(function () {
+      var term = String(searchTerm || '').trim().slice(0, 50);
+      if (term.length < 2 || term === _gaLastTerm) return;
+      if (_lastVisibleIds.length) { fireSearch(term); return; }
+      setTimeout(function () {
+        if (String(searchTerm || '').trim().slice(0, 50) === term) fireSearch(term);
+      }, 2000);
     }, 800);
     document.addEventListener('input', function (e) {
       var t = (e.composedPath && e.composedPath()[0]) || e.target;
