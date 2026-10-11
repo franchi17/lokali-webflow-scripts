@@ -61,10 +61,6 @@
       // Home hero line.
       '#lok-home-shop{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:18px;font-family:' + FONT + ';font-size:14.5px;line-height:1.5;color:#4A4761;}',
       '#lok-home-shop svg{color:#6002EE;vertical-align:-2px;margin-right:2px;}',
-      // Seven nav items need ~730px at 1440; the middle column is 704. One size down
-      // on the nav text (16 -> 15px) buys the room; fitNavItem() still falls back when
-      // a wider (signed-in) header cannot hold it.
-      '.header-nav-menu-list:has(#lok-nav-customers) .header-nav-link,.header-nav-menu-list:has(#lok-nav-customers) .lok-res-trig{font-size:15px;}',
       '#lok-home-shop a{color:#6002EE;font-weight:700;text-decoration:underline;text-underline-offset:3px;}',
       '@media (max-width:767px){#lok-home-shop{justify-content:center;text-align:center;font-size:14px;}}'
     ].join('');
@@ -247,8 +243,9 @@
 
   function init() {
     injectCSS();
-    mountNavItem();
-    mountHomeLine();
+    // mountNavItem() retired 2026-10-11 (F: 'this menu is too cramped'): 'For customers' lives
+    // in the Features panel on desktop (lokali-resources-nav.js) and as its own row on phones.
+    // mountHomeLine() retired 2026-10-11 (F: 'I don't want this line on the home page').
     if (!mountHeart()) {
       // Header can render late on some pages; retry briefly.
       var n = 0, iv = setInterval(function () { if (mountHeart() || ++n > 20) clearInterval(iv); }, 250);

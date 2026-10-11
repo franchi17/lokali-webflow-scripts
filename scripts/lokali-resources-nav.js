@@ -37,9 +37,10 @@
       label: 'Features',
       href: '/features',
       anchor: 'a[href*="/about"]',
-      // 2026-10-11 (F): "For customers" is its own nav item now (lokali-heart-nav.js
-      // inserts it after The Market); the panel keeps only the vendor page.
+      // 2026-10-11: briefly a top-level nav item (v1.4.551); F: 'this menu is too cramped',
+      // so it is back here. The phone menu keeps its own 'For customers' row.
       links: [
+        { href: '/for-customers', label: 'For customers' },
         { href: '/for-vendors',   label: 'For vendors' }
       ]
     },

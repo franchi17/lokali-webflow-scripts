@@ -350,6 +350,10 @@
     // 1040px Designer box grows to 1424 (hero inner keeps its 32px inset) and the
     // vendor grid takes a third column so cards hold their ~350px size instead
     // of ballooning. Tiles/new-this-week rows are fr grids and just stretch.
+    // 992-1439px (F 2026-10-11, Market screenshot: "a lot of side margin we don't need"): the
+    // 1040px Designer box left ~160px flanks at 1366. Use the width minus a 24px gutter and
+    // let the card grid pick its column count (3 x ~320 at 1366, 2 at 1100).
+    "@media screen and (min-width:992px) and (max-width:1439px){.browse-body{max-width:calc(100% - 48px);}.browse-hero .browse-hero-inner{max-width:calc(100% - 112px);}#browse-vendor-grid{grid-template-columns:repeat(auto-fill,minmax(300px,1fr));}}",
     "@media screen and (min-width:1440px){.browse-body{max-width:1424px;}.browse-hero .browse-hero-inner{max-width:1360px;}#browse-vendor-grid{grid-template-columns:repeat(3,minmax(0,1fr));}}",
     ".browse-hero .browse-hero-sub,.browse-hero .result-meta{display:none;}",
     "html.lk-hood-moved .browse-hero .form-block-7{display:none;}",
