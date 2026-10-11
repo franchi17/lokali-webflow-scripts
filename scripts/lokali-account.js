@@ -1242,8 +1242,8 @@
       ".lk-ah-x{all:unset;box-sizing:border-box;cursor:pointer;margin-left:auto;flex:0 0 auto;border:1px solid #EEEDF6;border-radius:8px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;color:#4A4761;font-size:20px;}" +
       ".lk-ah-x:hover{background:#EEE6FF;color:#6002EE;}.lk-ah-x:focus-visible{outline:2px solid #6002EE;outline-offset:1px;}" +
       ".lk-ah-table{width:100%;border-collapse:collapse;font-size:13px;}" +
-      ".lk-ah-table th{text-align:left;color:#8E8BA6;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:6px 0;border-bottom:1px solid #EEEDF6;}" +
-      ".lk-ah-table td{padding:8px 6px 8px 0;border-bottom:1px solid #F1EFF8;vertical-align:top;overflow-wrap:anywhere;}" +
+      ".lk-ah-table th{text-align:left;color:#8E8BA6;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:6px 0 6px 14px;border-bottom:1px solid #EEEDF6;}" +
+      ".lk-ah-table td{padding:8px 0 8px 14px;border-bottom:1px solid #F1EFF8;vertical-align:top;overflow-wrap:anywhere;}.lk-ah-table th:first-child,.lk-ah-table td:first-child{padding-left:0;}" +
       ".lk-ah-table .r{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}" +
       ".lk-ah-minibar{height:8px;min-width:80px;background:#F1EFF8;border-radius:3px;overflow:hidden;}" +
       ".lk-ah-minibar i{display:block;height:100%;background:#0F6B74;border-radius:3px;}" +
@@ -1732,7 +1732,7 @@
         function searchesDrawer() {
           openDrawer('Searches that found nobody', 'Zero-result searches in The Market, last ' + d.days + ' days. Each one is a shopper who left empty-handed.', function (b) {
             if (!(d.search_zero || []).length) { b.appendChild(T('p', 'lk-ash-note', 'Every search found at least one vendor.')); return; }
-            table(b, [{ l: 'Typed' }, { l: 'Times', r: true }, { l: 'Last' }], (d.search_zero || []).map(function (x) { return [x.term, n(x.n), dayLabel(x.last_at)]; }));
+            table(b, [{ l: 'Typed' }, { l: 'Times', r: true }, { l: 'Last', r: true }], (d.search_zero || []).map(function (x) { return [x.term, n(x.n), dayLabel(x.last_at)]; }));
             note(b, 'Two fixes, different sizes.', 'A synonym on the right subcategory fixes a single term today. A no-results page that shows the three closest storefronts instead of an empty state fixes the pattern.');
             var all = (d.search_terms || []).filter(function (x) { return x.avg_results > 0; }).slice(0, 8);
             if (all.length) { b.appendChild(T('h4', 'lk-ah-h4', 'Searches that did find someone')); table(b, [{ l: 'Typed' }, { l: 'Times', r: true }, { l: 'Found', r: true }], all.map(function (x) { return [x.term, n(x.n), plural(x.avg_results, 'vendor')]; })); }
