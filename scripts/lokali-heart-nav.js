@@ -205,7 +205,8 @@
         if (r.right > edge) edge = r.right;
       }
       if (!isFinite(left)) return;
-      var logo = document.querySelector('.header-logo-link'), right = document.querySelector('.header-right-side');
+      // The logo LINK box is 60px wider than the logo image; the image is the edge.
+      var logo = document.querySelector('.header-logo-link img, .header-logo, .header-logo-link'), right = document.querySelector('.header-right-side');
       var rightLeft = Infinity;
       if (right) {
         var kids = right.children;
@@ -220,7 +221,7 @@
         }
       }
       var tight = left < 0 ||
-        (logo && left < logo.getBoundingClientRect().right + 12) ||
+        (logo && left < logo.getBoundingClientRect().right + 16) ||
         edge > rightLeft - 12;
       if (!tight) return;
       clone.parentNode.removeChild(clone);
