@@ -272,11 +272,11 @@
         '.lok-acct .lok-acct-menu button.lok-acct-row:hover{background:#F3EBFF;color:#6002EE;}' +
         '.lok-acct .lok-acct-menu button.lok-acct-row[disabled]{opacity:.6;cursor:default;}' +
         '.lok-acct .lok-acct-menu button.lok-acct-row .lok-sw-name{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;}' +
-        // #215b: storefront logo in the row + the brand-pink unread dot (#B1006A).
+        // #215b: storefront logo in the row + the hot-pink unread dot (#EE0290, F 2026-10-12 'brighter').
         '.lok-acct .lok-acct-menu .lok-sw-logo{position:relative;width:24px;height:24px;flex:0 0 auto;border-radius:6px;background:#F0E6FF;color:#6002EE;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;text-transform:uppercase;}' +
         '.lok-acct .lok-acct-menu .lok-sw-logo img{width:100%;height:100%;object-fit:cover;border-radius:6px;display:block;box-shadow:inset 0 0 0 1px #EEEDF6;}' +
-        '.lok-sw-pdot{position:absolute;top:-3px;right:-3px;width:9px;height:9px;border-radius:50%;background:#B1006A;box-shadow:0 0 0 2px #fff;}' +
-        '.lok-acct .lok-acct-name .lok-chip-pdot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#B1006A;margin-left:6px;vertical-align:middle;box-shadow:0 0 0 2px #fff;}' +
+        '.lok-sw-pdot{position:absolute;top:-3px;right:-3px;width:9px;height:9px;border-radius:50%;background:#EE0290;box-shadow:0 0 0 2px #fff;}' +
+        '.lok-acct .lok-acct-name .lok-chip-pdot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#EE0290;margin-left:6px;vertical-align:middle;box-shadow:0 0 0 2px #fff;}' +
         '.lok-sw-sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}';
       document.head.appendChild(st);
     }

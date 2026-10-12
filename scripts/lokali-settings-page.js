@@ -711,8 +711,9 @@
     '.lok-sf-row.is-current{background:#F7F6FC;}' +
     '.lok-sf-av{position:relative;width:40px;height:40px;border-radius:10px;background:#F0E6FF;color:#6002EE;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:0 0 auto;text-transform:uppercase;}' +
     '.lok-sf-av img{width:100%;height:100%;object-fit:cover;display:block;border-radius:10px;box-shadow:inset 0 0 0 1px #EEEDF6;}' +
-    // #215b brand-pink unread dot (#B1006A) on the logo + a pink count line.
-    '.lok-sf-pdot{position:absolute;top:-4px;right:-4px;width:12px;height:12px;border-radius:50%;background:#B1006A;box-shadow:0 0 0 2px #fff;}' +
+    // #215b hot-pink unread dot (#EE0290, F 2026-10-12 'brighter') on the logo + a pink count line
+    // (the count text stays #B1006A: #EE0290 is 4.2:1, under AA for 13px text).
+    '.lok-sf-pdot{position:absolute;top:-4px;right:-4px;width:12px;height:12px;border-radius:50%;background:#EE0290;box-shadow:0 0 0 2px #fff;}' +
     '.lok-sf-txt span.new{color:#B1006A;font-weight:700;}' +
     '.lok-sf-txt{flex:1 1 auto;min-width:0;}' +
     '.lok-sf-txt b{display:block;font-size:15px;font-weight:600;color:#1A1829;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}' +
