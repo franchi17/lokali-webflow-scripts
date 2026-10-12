@@ -211,15 +211,15 @@
       ".lok-acct-menu button.lok-idsw{display:flex;align-items:center;gap:10px;padding:8px 10px;width:100%;text-align:left;background:none;border:none;cursor:pointer;font-family:inherit;}",
       ".lok-acct-menu button.lok-idsw[disabled]{opacity:.6;cursor:default;}",
       // #215b: storefront logos in the switcher + the brand-pink "unread" dot
-      // (#B1006A, the Leads wait-badge pink) on a business's logo and by the name.
+      // (#EE0290, the site's hot pink, F 2026-10-12 'brighter'; 4.2:1 on white) on a business's logo and by the name.
       ".lok-idsw-ic{position:relative;}",
       ".lok-idsw-ic.has-logo{background:#fff;box-shadow:inset 0 0 0 1px #EEEDF6;}",
       ".lok-idsw-ic.has-logo img{width:100%;height:100%;object-fit:cover;border-radius:8px;display:block;}",
       ".lok-idsw.is-current .lok-idsw-ic.has-logo{background:#fff;box-shadow:0 0 0 2px #6002EE;}",
-      ".lok-idsw-pdot{position:absolute;top:-3px;right:-3px;width:10px;height:10px;border-radius:50%;background:#B1006A;box-shadow:0 0 0 2px #fff;}",
+      ".lok-idsw-pdot{position:absolute;top:-3px;right:-3px;width:10px;height:10px;border-radius:50%;background:#EE0290;box-shadow:0 0 0 2px #fff;}",
       ".lok-sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}",
       ".lok-acct-trigger{position:relative;}",
-      ".lok-acct-pdot{width:8px;height:8px;border-radius:50%;background:#B1006A;flex-shrink:0;box-shadow:0 0 0 2px #fff;}",
+      ".lok-acct-pdot{width:8px;height:8px;border-radius:50%;background:#EE0290;flex-shrink:0;box-shadow:0 0 0 2px #fff;}",
       "@media (max-width:640px){.lok-acct-pdot{position:absolute;top:1px;left:25px;}}",
       // #98 house rule: ≥44px tap targets on mobile — chip trigger + menu rows.
       "@media (max-width:991px){.lok-acct-trigger{min-height:44px;}.lok-acct-menu a,.lok-acct-menu button{min-height:44px;display:flex;align-items:center;}}"
