@@ -4,8 +4,9 @@
  * Site-wide (footer loader). Three small things, all additive:
  *   1. A heart in the header, beside Login / the account chip, on every page.
  *      Signed out: opens the create-account overlay ("Follow the makers you
- *      like"). Signed in: a link to /account#following with a count badge of
- *      the vendors this person follows.
+ *      like"). Signed in: a plain link to /account#following. NO number on it
+ *      (F 2026-10-12 'remove the heart number, it makes no sense': a badge on an
+ *      icon reads as 'something new', but this was a running total of follows).
  *   2. Home page, signed out only: one shopper line under the hero buttons
  *      ("Follow the makers you like ... Create an account").
  *   3. Desktop nav: "For customers" as its own item after "The Market" (F
@@ -13,11 +14,10 @@
  *      same row from lokali-mobile-nav.js.
  *
  * Signed-in state = the LOKALI_ACCT_CACHE that lokali-auth.js writes (same
- * source lokali-auth-nav.js paints from). The follow count comes from the
- * favorites API (a "save" IS a follow, #185). No new endpoints.
+ * source lokali-auth-nav.js paints from). No API calls.
  *
  * Depends on (all optional, degrade to a plain link): window.LokaliAuth
- * (openSignUp), window.LokaliAPI (favorites GET), window.gtag.
+ * (openSignUp), window.gtag.
  */
 (function () {
   'use strict';
@@ -49,9 +49,6 @@
       '#lok-heart-nav:hover{background:rgba(96,2,238,.07);}',
       '#lok-heart-nav:focus-visible{outline:2px solid #6002EE;outline-offset:2px;}',
       '#lok-heart-nav svg{display:block;}',
-      '#lok-heart-nav .lok-heart-cnt{position:absolute;top:4px;right:2px;min-width:17px;height:17px;border-radius:100px;background:#FF8D00;color:#fff;',
-      'font-size:10.5px;font-weight:800;line-height:17px;text-align:center;padding:0 4px;box-sizing:border-box;}',
-      '#lok-heart-nav .lok-heart-cnt:empty{display:none;}',
       // Tooltip for the signed-out heart (hover and keyboard focus); never on touch.
       // Brand pink (F 2026-10-11: the Leads wait-badge pair, #B1006A on #FDE7F3), centred
       // under the heart. No ink surfaces.
@@ -59,7 +56,7 @@
       'white-space:nowrap;border-radius:8px;padding:6px 10px;opacity:0;pointer-events:none;transition:opacity .12s;z-index:5;}',
       '@media (hover:hover){#lok-heart-nav:hover .lok-heart-tip,#lok-heart-nav:focus-visible .lok-heart-tip{opacity:1;}}',
       // Phone row 1 is tight (logo + pill + Login + burger): 36px heart, no margin.
-      '@media (max-width:767px){#lok-heart-nav{width:36px;height:36px;margin:0;}#lok-heart-nav .lok-heart-cnt{top:0;right:-2px;}}',
+      '@media (max-width:767px){#lok-heart-nav{width:36px;height:36px;margin:0;}}',
       // Home hero line.
       '#lok-home-shop{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:18px;font-family:' + FONT + ';font-size:14.5px;line-height:1.5;color:#4A4761;}',
       '#lok-home-shop svg{color:#6002EE;vertical-align:-2px;margin-right:2px;}',
@@ -88,7 +85,7 @@
       el.href = FOLLOWING_URL;
       el.setAttribute('aria-label', 'Vendors you follow');
       el.title = 'Vendors you follow';
-      el.innerHTML = svg(HEART, 20) + '<span class="lok-heart-cnt" aria-hidden="true"></span>';
+      el.innerHTML = svg(HEART, 20);
     } else {
       el.type = 'button';
       el.setAttribute('aria-label', 'Follow vendors you like. Create an account.');
@@ -98,30 +95,8 @@
     return el;
   }
 
-  // Count of followed vendors for the badge (signed in only). Cached for the
-  // next page paint; refreshed in the background.
-  var COUNT_KEY = 'lokali_follow_count';
-  function paintCount(n) {
-    var c = document.querySelector('#lok-heart-nav .lok-heart-cnt');
-    if (!c) return;
-    c.textContent = n > 0 ? (n > 99 ? '99+' : String(n)) : '';
-    var a = document.getElementById('lok-heart-nav');
-    if (a) a.setAttribute('aria-label', n > 0 ? 'Vendors you follow: ' + n : 'Vendors you follow');
-  }
-  function refreshCount() {
-    try { var cached = parseInt(localStorage.getItem(COUNT_KEY), 10); if (cached >= 0) paintCount(cached); } catch (e) {}
-    var tries = 0;
-    (function poll() {
-      var A = window.LokaliAPI;
-      if (!(A && A.request && A.getToken && A.getToken())) { if (++tries < 40) setTimeout(poll, 250); return; }
-      A.request('favorites', 'GET', '/favorites', null, true).then(function (res) {
-        var rows = res && res.data;
-        if (!Array.isArray(rows)) return;
-        paintCount(rows.length);
-        try { localStorage.setItem(COUNT_KEY, String(rows.length)); } catch (e) {}
-      }).catch(function () {});
-    })();
-  }
+  // The follow-count badge is gone (F 2026-10-12); drop the number it cached.
+  try { localStorage.removeItem('lokali_follow_count'); } catch (e) {}
 
   function mountHeart() {
     if (document.getElementById('lok-heart-nav')) return true;
@@ -137,7 +112,6 @@
     anchor = right.querySelector('.lok-acct') || anchor || right.querySelector('.hamburger-menu-wrapper, .w-nav-button');
     var heart = buildHeart();
     if (anchor && anchor.parentNode === right) right.insertBefore(heart, anchor); else right.appendChild(heart);
-    if (signedIn()) refreshCount();
     return true;
   }
 
@@ -256,7 +230,7 @@
     // does not, swap the heart to its signed-in form.
     window.addEventListener('lokali:authed', function () {
       var old = document.getElementById('lok-heart-nav');
-      if (old && old.tagName === 'BUTTON' && signedIn()) { old.parentNode.replaceChild(buildHeart(), old); refreshCount(); }
+      if (old && old.tagName === 'BUTTON' && signedIn()) old.parentNode.replaceChild(buildHeart(), old);
       var line = document.getElementById('lok-home-shop'); if (line) line.remove();
     });
   }
