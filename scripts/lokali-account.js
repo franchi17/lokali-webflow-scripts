@@ -2008,7 +2008,8 @@
       function errText(e) { return ERR[e] || ('Something went wrong (' + e + ').'); }
       function fmtDate(s) { if (!s) return ''; try { var d = /^\d{4}-\d{2}-\d{2}$/.test(String(s)) ? new Date(s + 'T12:00:00') : new Date(s); return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); } catch (e) { return ''; } }
       function daysUntil(s) { if (!s) return null; return Math.ceil((new Date(s).getTime() - Date.now()) / 86400000); }
-      function esc(s) { return String(s == null ? '' : s); }
+      function val(s) { // SEC-099: plain string for input .value (NOT an HTML escaper; never use in el())
+        return String(s == null ? '' : s); }
 
       // ── add / edit form (one panel, re-used for edits) ──────────────────
       var panel = T('div', 'lk-ash-panel'); panel.hidden = true; v.appendChild(panel);
@@ -2053,9 +2054,9 @@
         editingId = row ? row.id : null;
         form.reset(); try { fWhen.valueAsDate = new Date(); } catch (e) {}
         if (row) {
-          fFirst.value = esc(row.first_name); fBiz.value = esc(row.business_name); fEmail.value = esc(row.email); fPhone.value = esc(row.phone);
-          fIg.value = esc(row.instagram); fChan.value = row.channel || 'email'; fCat.value = row.category_id != null ? String(row.category_id) : '';
-          fWhere.value = esc(row.met_where); if (row.met_on) fWhen.value = String(row.met_on).slice(0, 10); fOffer.value = row.offer || 'either'; fNote.value = esc(row.note);
+          fFirst.value = val(row.first_name); fBiz.value = val(row.business_name); fEmail.value = val(row.email); fPhone.value = val(row.phone);
+          fIg.value = val(row.instagram); fChan.value = row.channel || 'email'; fCat.value = row.category_id != null ? String(row.category_id) : '';
+          fWhere.value = val(row.met_where); if (row.met_on) fWhen.value = String(row.met_on).slice(0, 10); fOffer.value = row.offer || 'either'; fNote.value = val(row.note);
         }
         saveBtn.textContent = row ? 'Save changes' : 'Save and write the notes';
         fmsg.textContent = ''; panel.hidden = false; addBtn.textContent = 'Close'; addBtn.setAttribute('aria-expanded', 'true');
@@ -2193,8 +2194,8 @@
           var hasDraft = !!(touch === 1 ? r.body1 : r.body2);
           var dh = T('div', 'lk-ash-sech'); dh.appendChild(T('h3', null, touch === 1 ? 'The first hello' : 'The last note')); dh.appendChild(T('span', null, isEmail ? 'goes out from francesca@golokali.com' : 'copy it into ' + (r.channel === 'instagram' ? 'Instagram' : 'a text')));
           var rewrite = T('button', null, hasDraft ? 'Rewrite both notes' : 'Write the notes for me'); rewrite.type = 'button'; dh.appendChild(rewrite); box.appendChild(dh);
-          var subj = document.createElement('input'); subj.className = 'lk-ash-search'; subj.placeholder = 'Subject'; subj.value = esc(touch === 1 ? r.subject1 : r.subject2); subj.maxLength = 200; subj.hidden = !isEmail;
-          var body = document.createElement('textarea'); body.className = 'lk-ash-search lk-ash-pbody'; body.rows = 11; body.maxLength = 4000; body.placeholder = hasDraft ? '' : 'No draft yet. Press "Write the notes for me", or write it here.'; body.value = esc(touch === 1 ? r.body1 : r.body2);
+          var subj = document.createElement('input'); subj.className = 'lk-ash-search'; subj.placeholder = 'Subject'; subj.value = val(touch === 1 ? r.subject1 : r.subject2); subj.maxLength = 200; subj.hidden = !isEmail;
+          var body = document.createElement('textarea'); body.className = 'lk-ash-search lk-ash-pbody'; body.rows = 11; body.maxLength = 4000; body.placeholder = hasDraft ? '' : 'No draft yet. Press "Write the notes for me", or write it here.'; body.value = val(touch === 1 ? r.body1 : r.body2);
           box.appendChild(subj); box.appendChild(body);
           var when = T('p', 'lk-ash-pwhen', touch === 2 && !r.due ? 'This one is not due until ' + fmtDate(r.next_touch_at) + '. You can still send it now.' : (touch === 2 ? 'After this one the row goes quiet. No third note, ever.' : 'After this, note 2 comes due in ten days unless they reply or sign up.'));
           box.appendChild(when);
