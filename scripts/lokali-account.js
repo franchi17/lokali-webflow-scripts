@@ -1932,6 +1932,7 @@
       // Sign in as a vendor sits at the top (F 2026-10-06): it is the tool used
       // most on this view, and a vendor row's "Sign in as" scrolls up to it.
       var tool = T('div', 'lk-ash-sec'); tool.style.margin = '0 0 22px'; appendSignInAsSection(tool); signInHost = tool.querySelector('.lk-admin-section'); v.appendChild(tool);
+      var linkTool = appendLinkStorefrontsSection(v); // #215
 
       var tools = T('div', 'lk-ash-tools');
       var search = T('input', 'lk-ash-search'); search.type = 'search'; search.id = 'lk-ash-vsearch'; search.placeholder = 'Find a vendor by name'; search.setAttribute('aria-label', 'Find a vendor by name');
@@ -1942,6 +1943,7 @@
         var pack = rs[0], cmap = rs[1];
         if (!pack) { list.innerHTML = ''; list.appendChild(T('div', 'lk-ash-note', 'Vendors could not load. Refresh the page to try again.')); return; }
         var rows = pack.an.rows, filt = 'all';
+        if (linkTool) linkTool.setRows(rows);
         sub.textContent = rows.length + ' accounts · ' + pack.an.live + ' live on The Market · numbers are the last 30 days';
         var F = [['all', 'All'], ['working', 'Working'], ['seen', 'Getting seen'], ['stalls', 'Seen, no contact'], ['low', 'Low visibility'], ['unseen', 'Not seen'], ['notlive', 'Not live']];
         var fbtns = [];
@@ -2928,6 +2930,104 @@
   // without ever holding their password. The link is shown here (never emailed)
   // and must be opened in a private window; opening it in this browser would
   // replace the admin session. Server refuses admins, shoppers, unknown emails.
+  // #215 — linked storefronts: one person running several businesses. Vendors
+  // link their own logins from Settings (email confirmation); this panel does
+  // it at once, lists every group and can disconnect any storefront. Folds
+  // closed like Invite a vendor: a rare tool.
+  function appendLinkStorefrontsSection(view) {
+    var SAPI = window.LokaliSupabaseAPI, A = SAPI && SAPI.admin;
+    if (!A || !A.linkStorefronts || !A.storefrontGroups) return null;
+    var sec = el('div', 'lk-ash-sec'); sec.style.margin = '0 0 22px'; view.appendChild(sec);
+    var host = el('div', 'lk-admin-section lk-admin-section-wide'); sec.appendChild(host);
+    var head = el('div'); head.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;';
+    var t = el('div', 'lk-admin-qtitle'); t.appendChild(document.createTextNode('Linked storefronts'));
+    var count = el('span', 'lk-admin-qcount', '0'); t.appendChild(count); head.appendChild(t);
+    var openBtn = el('button', 'lk-ash-btn', 'Link storefronts'); openBtn.type = 'button'; openBtn.setAttribute('aria-expanded', 'false'); head.appendChild(openBtn);
+    host.appendChild(head);
+    host.appendChild(el('p', 'lk-admin-sub',
+      'One person, several businesses. Linked logins share a Switch to list in their menus, so they move between storefronts without signing out. Vendors can link their own from Settings (we email the other login a confirm link); here it happens at once. Each storefront keeps its own login, plan and billing.'));
+    var form = document.createElement('form'); form.setAttribute('novalidate', ''); form.hidden = true;
+    form.style.cssText = 'display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin:0 0 14px;';
+    var dl = document.createElement('datalist'); dl.id = 'lk-link-vendors'; form.appendChild(dl);
+    function field(label, ph) {
+      var w = el('label'); w.style.cssText = 'display:flex;flex-direction:column;gap:4px;font-size:12px;color:#6B6880;flex:1 1 220px;';
+      w.appendChild(document.createTextNode(label));
+      var i = document.createElement('input'); i.type = 'text'; i.className = 'lk-admin-input'; i.autocomplete = 'off'; i.setAttribute('list', 'lk-link-vendors');
+      i.style.width = '100%'; i.style.boxSizing = 'border-box'; i.placeholder = ph; i.maxLength = 120;
+      w.appendChild(i); form.appendChild(w); return i;
+    }
+    var fA = field('First storefront *', 'Business name'), fB = field('Second storefront *', 'Business name');
+    var go = el('button', 'lk-admin-btn', 'Link these two'); go.type = 'submit'; form.appendChild(go);
+    var out = el('div'); out.style.cssText = 'flex-basis:100%;font-size:13px;color:#6B6880;'; form.appendChild(out);
+    host.appendChild(form);
+    openBtn.addEventListener('click', function () {
+      form.hidden = !form.hidden; openBtn.setAttribute('aria-expanded', form.hidden ? 'false' : 'true');
+      openBtn.textContent = form.hidden ? 'Link storefronts' : 'Close';
+      if (!form.hidden) fA.focus();
+    });
+    var list = el('div'); host.appendChild(list);
+    var rowsByName = {}, rows = [];
+    function resolve(name) {
+      var q = String(name || '').trim().replace(/\s+/g, ' ').toLowerCase(); if (!q) return { err: 'Type both business names.' };
+      var hits = rows.filter(function (r) { return String(r.v.name || '').trim().replace(/\s+/g, ' ').toLowerCase() === q; });
+      if (!hits.length) hits = rows.filter(function (r) { return String(r.v.name || '').toLowerCase().indexOf(q) >= 0; });
+      if (!hits.length) return { err: 'No storefront called "' + name.trim() + '". Use the exact name from the list below.' };
+      if (hits.length > 1) return { err: 'More than one storefront matches "' + name.trim() + '". Type the full name.' };
+      return { id: hits[0].v.id, name: hits[0].v.name };
+    }
+    var ERR = { not_admin: 'Only the admin can do this.', no_vendor: 'One of those storefronts has no login behind it.', same_login: 'Those two storefronts already share one login.',
+      admin_account: 'The admin account cannot be linked.', group_full: 'That group is full (10 storefronts).', not_linked: 'That storefront is not linked.' };
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var ra = resolve(fA.value), rb = resolve(fB.value);
+      if (ra.err) { out.textContent = ra.err; return; } if (rb.err) { out.textContent = rb.err; return; }
+      if (ra.id === rb.id) { out.textContent = 'Pick two different storefronts.'; return; }
+      if (!window.confirm('Link ' + ra.name + ' with ' + rb.name + '? Whoever is signed in to either can switch to the other without a password. Only do this when both belong to the same person.')) return;
+      go.disabled = true; go.textContent = 'Linking…'; out.textContent = '';
+      A.linkStorefronts(ra.id, rb.id).then(function (res) {
+        go.disabled = false; go.textContent = 'Link these two';
+        var d = res && res.data;
+        if (res.error || !d || d.ok !== true) { out.textContent = ERR[d && d.reason] || 'Could not link (' + (res.error || (d && d.reason) || 'unknown') + ').'; return; }
+        out.textContent = d.already ? 'Those two were already linked.' : 'Linked. ' + ra.name + ' and ' + rb.name + ' now see each other under Switch to.';
+        fA.value = ''; fB.value = ''; load();
+      }).catch(function () { go.disabled = false; go.textContent = 'Link these two'; out.textContent = 'Network error. Nothing happened.'; });
+    });
+    function load() {
+      A.storefrontGroups().then(function (res) {
+        var d = res && res.data; list.innerHTML = '';
+        if (res.error || !d || d.ok !== true) { list.appendChild(el('div', 'lk-admin-empty', 'Could not load linked storefronts.')); return; }
+        var groups = d.groups || []; count.textContent = String(groups.length);
+        if (!groups.length) { list.appendChild(el('div', 'lk-admin-empty', 'No linked storefronts yet.')); return; }
+        groups.forEach(function (g) {
+          var row = el('div', 'lk-admin-row'); row.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;';
+          (g.storefronts || []).forEach(function (sf, i) {
+            if (i) row.appendChild(el('span', '', '+')).style.color = '#B3B1C6';
+            var chip = el('span'); chip.style.cssText = 'display:inline-flex;align-items:center;gap:6px;padding:6px 6px 6px 10px;border:1px solid #E4E2F0;border-radius:100px;font-size:13px;font-weight:600;color:#1A1829;background:#fff;';
+            var nm = el('a', '', ''); nm.textContent = sf.business_name || 'Storefront'; nm.href = sf.slug ? '/' + encodeURIComponent(sf.slug) : '#'; nm.target = '_blank'; nm.rel = 'noopener'; nm.style.cssText = 'color:inherit;text-decoration:none;';
+            chip.appendChild(nm);
+            var x = el('button', '', 'Disconnect'); x.type = 'button'; x.setAttribute('aria-label', 'Disconnect ' + (sf.business_name || 'storefront'));
+            x.style.cssText = 'all:unset;cursor:pointer;font-size:11px;font-weight:700;color:#B42318;padding:3px 8px;border-radius:100px;background:#FDF1F1;';
+            x.addEventListener('click', function () {
+              if (!window.confirm('Disconnect ' + (sf.business_name || 'this storefront') + ' from the others? They can be linked again any time.')) return;
+              x.textContent = '…';
+              A.unlinkStorefront(sf.vendors_id).then(function (r2) { var d2 = r2 && r2.data; if (r2.error || !d2 || d2.ok !== true) { x.textContent = 'Disconnect'; out.textContent = ERR[d2 && d2.reason] || 'Could not disconnect.'; return; } load(); })
+                .catch(function () { x.textContent = 'Disconnect'; });
+            });
+            chip.appendChild(x); row.appendChild(chip);
+          });
+          list.appendChild(row);
+        });
+      }).catch(function () { list.innerHTML = ''; list.appendChild(el('div', 'lk-admin-empty', 'Could not load linked storefronts.')); });
+    }
+    load();
+    return {
+      setRows: function (rs) {
+        rows = rs || []; dl.innerHTML = '';
+        rows.forEach(function (r) { if (r.v && r.v.name) { var o = document.createElement('option'); o.value = r.v.name; dl.appendChild(o); } });
+      }
+    };
+  }
+
   function appendSignInAsSection(wrap) {
     var API = window.LokaliSupabaseAPI;
     if (!API || !API.admin || !API.admin.signInAs) return;

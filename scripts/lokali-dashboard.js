@@ -1086,6 +1086,13 @@
     var path = window.location.pathname;
     var dashboardPrefix = '/vendor-dashboard';
     if (!isLoggedIn() && path.indexOf(dashboardPrefix) === 0) {
+      // #215: a "link your storefronts" email opened while signed out. Keep its
+      // token for this tab only, so lokali-auth.js can bring the person back to
+      // Settings after they sign in (the token never goes back into a URL).
+      try {
+        var lt = new URLSearchParams(window.location.search).get('link');
+        if (lt && /^[A-Za-z0-9_-]{20,128}$/.test(lt)) sessionStorage.setItem('LOKALI_SF_LINK', JSON.stringify({ token: lt, t: Date.now() }));
+      } catch (e) {}
       window.location.href = '/login';
     }
   })();

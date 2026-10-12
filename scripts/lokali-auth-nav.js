@@ -207,6 +207,20 @@
       ".lok-idsw--shop .lok-idsw-ic{background:#FFF2DF;color:#FF8D00;}",
       ".lok-idsw--shop.is-current .lok-idsw-ic{background:#FFF2DF;color:#FF8D00;}",
       ".lok-idsw-dot{margin-left:auto;width:7px;height:7px;border-radius:50%;background:#2BB673;flex-shrink:0;}",
+      // #215 linked storefronts: same row, a button instead of a link.
+      ".lok-acct-menu button.lok-idsw{display:flex;align-items:center;gap:10px;padding:8px 10px;width:100%;text-align:left;background:none;border:none;cursor:pointer;font-family:inherit;}",
+      ".lok-acct-menu button.lok-idsw[disabled]{opacity:.6;cursor:default;}",
+      // #215b: storefront logos in the switcher + the brand-pink "unread" dot
+      // (#B1006A, the Leads wait-badge pink) on a business's logo and by the name.
+      ".lok-idsw-ic{position:relative;}",
+      ".lok-idsw-ic.has-logo{background:#fff;box-shadow:inset 0 0 0 1px #EEEDF6;}",
+      ".lok-idsw-ic.has-logo img{width:100%;height:100%;object-fit:cover;border-radius:8px;display:block;}",
+      ".lok-idsw.is-current .lok-idsw-ic.has-logo{background:#fff;box-shadow:0 0 0 2px #6002EE;}",
+      ".lok-idsw-pdot{position:absolute;top:-3px;right:-3px;width:10px;height:10px;border-radius:50%;background:#B1006A;box-shadow:0 0 0 2px #fff;}",
+      ".lok-sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}",
+      ".lok-acct-trigger{position:relative;}",
+      ".lok-acct-pdot{width:8px;height:8px;border-radius:50%;background:#B1006A;flex-shrink:0;box-shadow:0 0 0 2px #fff;}",
+      "@media (max-width:640px){.lok-acct-pdot{position:absolute;top:1px;left:25px;}}",
       // #98 house rule: ≥44px tap targets on mobile — chip trigger + menu rows.
       "@media (max-width:991px){.lok-acct-trigger{min-height:44px;}.lok-acct-menu a,.lok-acct-menu button{min-height:44px;display:flex;align-items:center;}}"
       // (No #lok-mnav-panel switcher rules: the menu is header-chip only now —
@@ -248,11 +262,27 @@
   // inline an equivalent stroke cart rather than an <i class="fa-...">.)
   var IC_SHOP = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>';
 
-  function idRow(href, icon, name, sub, current, shop) {
+  // #215b: a storefront's logo in place of the generic glyph (http(s) URLs only;
+  // the Supabase render endpoint serves a small copy when lokali-supabase-client
+  // has loaded), and the pink unread dot on it.
+  function logoUrl(u) {
+    u = typeof u === 'string' ? u.trim() : '';
+    if (!/^https?:\/\//i.test(u) || /[\s"'<>`\\]/.test(u)) return '';
+    try { if (window.LokaliImg && window.LokaliImg.thumb) return window.LokaliImg.thumb(u, 96); } catch (e) {}
+    return u;
+  }
+  function storeIc(photo, unread) {
+    var u = logoUrl(photo);
+    var dot = unread > 0 ? '<span class="lok-idsw-pdot" aria-hidden="true"></span>' : '';
+    return { cls: u ? ' has-logo' : '', html: (u ? '<img src="' + esc(u) + '" alt="" loading="lazy">' : IC_STORE) + dot };
+  }
+  function unreadText(n) { return n > 0 ? '<span class="lok-sr">, ' + n + (n === 1 ? ' new notification' : ' new notifications') + '</span>' : ''; }
+
+  function idRow(href, icon, name, sub, current, shop, icCls, unread) {
     return '<a href="' + href + '" role="menuitem" class="lok-idsw' + (shop ? ' lok-idsw--shop' : '') + (current ? ' is-current' : '') + '">' +
-      '<span class="lok-idsw-ic">' + icon + '</span>' +
+      '<span class="lok-idsw-ic' + (icCls || '') + '">' + icon + '</span>' +
       '<span class="lok-idsw-txt"><span class="lok-idsw-name">' + esc(name) + '</span>' +
-      '<span class="lok-idsw-sub">' + esc(sub) + '</span></span>' +
+      '<span class="lok-idsw-sub">' + esc(sub) + '</span>' + unreadText(unread || 0) + '</span>' +
       (current ? '<span class="lok-idsw-dot" title="You’re here"></span>' : '') +
     '</a>';
   }
@@ -270,7 +300,24 @@
       var store = (a && a.business_name || '').trim() || 'My storefront';
       var person = (a && a.first_name || '').trim();
       html += '<div class="lok-acct-cap">Switch to</div>';
-      html += idRow(DASH_URL, IC_STORE, store, 'Storefront', inStore, false);
+      // #215: the person's OTHER storefronts (linked logins) follow their current
+      // one. One click swaps the session; no password, no sign-out. Painted from
+      // the acct cache so the list is there on the first frame; refreshLinked()
+      // keeps it (and the unread counts) current.
+      var linked = (a && a.linked) || [], un = (a && a.linked_unread) || {}, cur = null;
+      for (var ci = 0; ci < linked.length; ci++) if (linked[ci] && linked[ci].current) cur = linked[ci];
+      var curUnread = cur ? (Number(un[cur.vendors_id]) || 0) : 0;
+      var sic = storeIc((a && a.store_photo) || (cur && cur.profile_photo) || '', curUnread);
+      html += idRow(DASH_URL, sic.html, store, 'Storefront', inStore, false, sic.cls, curUnread);
+      for (var li = 0; li < linked.length; li++) {
+        var L = linked[li];
+        if (!L || L.current || !L.vendors_id) continue;
+        var n = Number(un[L.vendors_id]) || 0, lic = storeIc(L.profile_photo, n);
+        html += '<button type="button" role="menuitem" class="lok-idsw" data-lok-switch="' + Number(L.vendors_id) + '">' +
+          '<span class="lok-idsw-ic' + lic.cls + '">' + lic.html + '</span>' +
+          '<span class="lok-idsw-txt"><span class="lok-idsw-name">' + esc(L.business_name || 'Storefront') + '</span>' +
+          '<span class="lok-idsw-sub">Storefront</span>' + unreadText(n) + '</span></button>';
+      }
       html += idRow(ACCOUNT_URL, IC_SHOP, person || 'Shopping', person ? 'Shopping' : 'Following & reviews', !inStore, true);
     } else {
       html += '<a href="' + ACCOUNT_URL + '" role="menuitem">My Account</a>';
@@ -321,7 +368,9 @@
     });
     wrap.addEventListener('click', function (e) {
       var so = e.target.closest && e.target.closest('.lok-acct-signout');
-      if (so) { e.preventDefault(); signOut(); }
+      if (so) { e.preventDefault(); signOut(); return; }
+      var sw = e.target.closest && e.target.closest('[data-lok-switch]');
+      if (sw) { e.preventDefault(); e.stopPropagation(); switchStorefront(sw); }
     });
     return wrap;
   }
@@ -361,6 +410,54 @@
       nm.style.display = first ? '' : 'none';
     }
     if (menu) menu.innerHTML = menuItemsHTML(a);
+    // #215b: pink dot by the name when ANOTHER linked storefront has unread
+    // notifications (this storefront's own are already on the bell).
+    var trig = wrap.querySelector('.lok-acct-trigger');
+    if (trig) {
+      var others = 0, L2 = (a && a.linked) || [], un2 = (a && a.linked_unread) || {};
+      for (var oi = 0; oi < L2.length; oi++) if (L2[oi] && !L2[oi].current) others += Number(un2[L2[oi].vendors_id]) || 0;
+      var pd = trig.querySelector('.lok-acct-pdot');
+      if (others > 0 && !pd) {
+        pd = document.createElement('span'); pd.className = 'lok-acct-pdot'; pd.setAttribute('aria-hidden', 'true');
+        if (nm && nm.parentNode === trig) trig.insertBefore(pd, nm.nextSibling); else trig.appendChild(pd);
+      } else if (others <= 0 && pd) pd.parentNode.removeChild(pd);
+      trig.setAttribute('aria-label', 'Account menu' + (others > 0 ? ', new notifications in another storefront' : ''));
+    }
+  }
+
+  // #215: swap this browser to a linked storefront's login, then land on its
+  // dashboard (or reload the same dashboard page when already inside one).
+  function switchStorefront(btn) {
+    var id = Number(btn.getAttribute('data-lok-switch'));
+    var API = window.LokaliSupabaseAPI, SF = API && API.storefronts;
+    var sub = btn.querySelector('.lok-idsw-sub');
+    if (!SF || !SF.switchTo || !id) { if (sub) sub.textContent = 'Not available right now'; return; }
+    btn.disabled = true; if (sub) sub.textContent = 'Switching\u2026';
+    SF.switchTo(id).then(function (res) {
+      if (res && res.error) { btn.disabled = false; if (sub) sub.textContent = 'Could not switch. Try again.'; return; }
+      var path = (window.location.pathname || '').replace(/\/+$/, '');
+      window.location.href = path.indexOf('/vendor-dashboard') === 0 ? path : DASH_URL;
+    }).catch(function () { btn.disabled = false; if (sub) sub.textContent = 'Could not switch. Try again.'; });
+  }
+  // Keep the linked list fresh (a link or disconnect made on another device).
+  // The RPC returns [] for everyone not linked, so this costs one small call.
+  function refreshLinked(tries) {
+    if (!acct || acct.role !== 'vendor') return;
+    var API = window.LokaliSupabaseAPI, SF = API && API.storefronts;
+    if (!SF || !SF.linked) { if ((tries || 0) < 40) setTimeout(function () { refreshLinked((tries || 0) + 1); }, 250); return; }
+    SF.linked().then(function (res) {
+      if (res.error) return;
+      var list = (res.data || []).map(function (x) { return { vendors_id: x.vendors_id, business_name: x.business_name, slug: x.slug, profile_photo: x.profile_photo || '', current: x.current === true }; });
+      var before = JSON.stringify([acct.linked || [], acct.linked_unread || {}]);
+      acct.linked = list;
+      for (var i = 0; i < list.length; i++) if (list[i].current && list[i].profile_photo) acct.store_photo = list[i].profile_photo;
+      var done = function (m) {
+        acct.linked_unread = m || {}; setCache(acct);
+        if (JSON.stringify([acct.linked, acct.linked_unread]) !== before) refreshExisting();
+      };
+      if (list.length > 1 && SF.unread) SF.unread().then(function (r) { done(r && r.data); }).catch(function () { done({}); });
+      else done({});
+    }).catch(function () {});
   }
 
   function signOut() {
@@ -491,13 +588,17 @@
   // business_name gets it once via vendors.me(), then it's cached for instant
   // paint next time. Best-effort; the row falls back to "My storefront" meanwhile.
   function ensureStoreName() {
-    if (!acct || acct.role !== 'vendor' || (acct.business_name || '').trim()) return;
+    // #215b: the logo rides along (store_photo; '' = checked, none), fetched once.
+    if (!acct || acct.role !== 'vendor' || ((acct.business_name || '').trim() && typeof acct.store_photo === 'string')) return;
     var A = window.LokaliAPI;
     if (!A || !A.vendors || !A.vendors.me) return;
     A.vendors.me().then(function (res) {
       var v = res && !res.error && res.data && (res.data.vendor || res.data);
-      var bn = v && (v.business_name || v.name);
-      if (bn) { acct.business_name = String(bn); setCache(acct); refreshExisting(); }
+      if (!v) return;
+      var bn = v.business_name || v.name;
+      if (bn) acct.business_name = String(bn);
+      acct.store_photo = logoUrl(v.profile_photo) ? String(v.profile_photo).trim() : '';
+      setCache(acct); refreshExisting();
     }).catch(function () {});
   }
 
@@ -505,6 +606,7 @@
   fetchAccount().then(function (a) {
     if (a && (a.role || a.first_name)) { acct = a; setCache(a); render(); refreshExisting(); hideBecomeVendorForVendor(); }
     ensureStoreName();
+    refreshLinked(0);
   });
 
   // Failsafe: stop observing, final pass, reveal anything still hidden.

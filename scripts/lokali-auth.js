@@ -511,6 +511,7 @@
         // not the public homepage. Same surfaces a vendor is routed from.
         if ((isAuthPage() || isHomePath()) && redirectBudgetOk()) window.location.href = ADMIN_AFTER_SIGN_IN_PATH;
       } else if (role === 'vendor') {
+        if (isAuthPage() && takeStorefrontLinkReturn()) return; // #215: back to the confirm card
         if ((isAuthPage() || isHomePath()) && redirectBudgetOk()) window.location.href = AFTER_SIGN_IN_PATH;
       } else {
         // customer: only redirect away from a dedicated auth page; otherwise stay.
@@ -1387,6 +1388,17 @@
     }
     if (low.indexOf('single') >= 0 || low.indexOf('at least') >= 0) return 'Google is the only way into this account right now, so it cannot be disconnected.';
     return friendlyAuthError(err);
+  }
+  // #215: a "link your storefronts" email opened signed-out had its token stashed
+  // by lokali-dashboard.js. After sign-in, land on Settings, which reads the
+  // stash and shows the confirm card. Half an hour, this tab only.
+  function takeStorefrontLinkReturn() {
+    var raw = ssGet('LOKALI_SF_LINK'); if (!raw) return false;
+    var st = null; try { st = JSON.parse(raw); } catch (e) {}
+    if (!st || !st.token || !st.t || (Date.now() - st.t) > 30 * 60 * 1000) { ssDel('LOKALI_SF_LINK'); return false; }
+    if (!redirectBudgetOk()) return false;
+    window.location.href = '/vendor-dashboard/settings#lok-sf';
+    return true;
   }
   function consumeLinkReturn() {
     var raw = ssGet(LINK_RETURN_KEY);

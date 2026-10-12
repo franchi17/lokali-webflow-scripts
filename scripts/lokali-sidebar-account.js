@@ -180,7 +180,10 @@
     var photo = photoUrl(v);
 
     if (v.business_name) cacheStoreName(v.business_name); // #66 P2 → header switcher
+    cacheStorePhoto(photo); // #215b → header switcher logo
+    var hadDot = !!wrap.querySelector('.lok-acct-name .lok-chip-pdot');
     setText(wrap.querySelector('.lok-acct-name'), name);
+    if (hadDot && wrap.__lokChipDot) wrap.__lokChipDot(1); // setText wiped it
     setText(wrap.querySelector('.lok-acct-plan'), plan.label);
 
     var av = wrap.querySelector('.lok-acct-av');
@@ -244,9 +247,106 @@
     } catch (e) {}
   }
 
+  // #215b: the storefront logo for the header switcher's current row ('' = none).
+  function cacheStorePhoto(u) {
+    try {
+      var c = readCache() || {};
+      if (c.store_photo !== (u || '')) { c.store_photo = u || ''; localStorage.setItem('LOKALI_ACCT_CACHE', JSON.stringify(c)); }
+    } catch (e) {}
+  }
+
   // #37 / #66 Phase 2 — the route to the person's SHOPPING space. Was framed as
   // "My Customer Account"; now it's the person side of the identity switcher.
   // Reuses the .lok-acct-row style the native Upgrade/Help rows carry.
+  // #215: the person's OTHER storefronts, above the shopping row. One tap swaps
+  // the session to that storefront's login and reloads this same page as it.
+  // Painted from the acct cache first (instant), then refreshed from the RPC.
+  var SW_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.5-5h15L21 9"/><path d="M4 9v10a1 1 0 001 1h14a1 1 0 001-1V9"/><path d="M3 9a2.5 2.5 0 005 0 2.5 2.5 0 005 0 2.5 2.5 0 005 0 2.5 2.5 0 003 0"/></svg>';
+  function addSwitchRows(wrap) {
+    var menu = wrap.querySelector('.lok-acct-menu');
+    if (!menu) return;
+    if (!document.getElementById('lok-sw-css')) {
+      var st = document.createElement('style'); st.id = 'lok-sw-css';
+      st.textContent = '.lok-acct .lok-acct-menu .lok-sw-cap{font-family:\'Plus Jakarta Sans\',sans-serif;font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:#B3B1C6;padding:8px 10px 2px;}' +
+        '.lok-acct .lok-acct-menu button.lok-acct-row{all:unset;box-sizing:border-box;width:100%;cursor:pointer;display:flex;flex-direction:row;align-items:center;gap:8px;padding:9px 10px;font-family:\'Plus Jakarta Sans\',sans-serif;font-size:13px;font-weight:600;color:#44445A;line-height:1.2;border-radius:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}' +
+        '.lok-acct .lok-acct-menu button.lok-acct-row:hover{background:#F3EBFF;color:#6002EE;}' +
+        '.lok-acct .lok-acct-menu button.lok-acct-row[disabled]{opacity:.6;cursor:default;}' +
+        '.lok-acct .lok-acct-menu button.lok-acct-row .lok-sw-name{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;}' +
+        // #215b: storefront logo in the row + the brand-pink unread dot (#B1006A).
+        '.lok-acct .lok-acct-menu .lok-sw-logo{position:relative;width:24px;height:24px;flex:0 0 auto;border-radius:6px;background:#F0E6FF;color:#6002EE;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;text-transform:uppercase;}' +
+        '.lok-acct .lok-acct-menu .lok-sw-logo img{width:100%;height:100%;object-fit:cover;border-radius:6px;display:block;box-shadow:inset 0 0 0 1px #EEEDF6;}' +
+        '.lok-sw-pdot{position:absolute;top:-3px;right:-3px;width:9px;height:9px;border-radius:50%;background:#B1006A;box-shadow:0 0 0 2px #fff;}' +
+        '.lok-acct .lok-acct-name .lok-chip-pdot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#B1006A;margin-left:6px;vertical-align:middle;box-shadow:0 0 0 2px #fff;}' +
+        '.lok-sw-sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}';
+      document.head.appendChild(st);
+    }
+    function paint(list, unread) {
+      unread = unread || {};
+      Array.prototype.slice.call(menu.querySelectorAll('[data-lok-sw]')).forEach(function (n) { n.parentNode.removeChild(n); });
+      var others = (list || []).filter(function (x) { return x && !x.current && x.vendors_id; });
+      chipDot(others.reduce(function (t, x) { return t + (Number(unread[x.vendors_id]) || 0); }, 0));
+      if (!others.length) return;
+      var ref = menu.querySelector('[data-lok-customer-row]');
+      var cap = document.createElement('div'); cap.className = 'lok-sw-cap'; cap.setAttribute('data-lok-sw', '1'); cap.textContent = 'Switch to';
+      var nodes = [cap];
+      others.forEach(function (x) {
+        var b = document.createElement('button'); b.type = 'button'; b.className = 'lok-acct-row'; b.setAttribute('data-lok-sw', '1');
+        b.setAttribute('aria-label', 'Switch to ' + (x.business_name || 'storefront'));
+        var n = Number(unread[x.vendors_id]) || 0;
+        var ic = document.createElement('span'); ic.className = 'lok-sw-logo';
+        var u = photoUrl(x);
+        if (u) {
+          var img = document.createElement('img'); img.alt = ''; img.loading = 'lazy';
+          if (window.LokaliImg && window.LokaliImg.set) window.LokaliImg.set(img, u, 96); else img.src = u;
+          img.onerror = function () { ic.textContent = initials(x.business_name); };
+          ic.appendChild(img);
+        } else ic.textContent = initials(x.business_name);
+        if (n > 0) { var dot = document.createElement('span'); dot.className = 'lok-sw-pdot'; dot.setAttribute('aria-hidden', 'true'); ic.appendChild(dot); }
+        var nm = document.createElement('span'); nm.className = 'lok-sw-name'; nm.textContent = x.business_name || 'Storefront';
+        b.appendChild(ic); b.appendChild(nm);
+        if (n > 0) { var sr = document.createElement('span'); sr.className = 'lok-sw-sr'; sr.textContent = ', ' + n + (n === 1 ? ' new notification' : ' new notifications'); b.appendChild(sr); }
+        b.addEventListener('click', function (e) {
+          e.preventDefault(); e.stopPropagation();
+          var SF = window.LokaliSupabaseAPI && window.LokaliSupabaseAPI.storefronts;
+          if (!SF || !SF.switchTo) { nm.textContent = 'Not available right now'; return; }
+          b.disabled = true; nm.textContent = 'Switching to ' + (x.business_name || 'storefront') + '…';
+          SF.switchTo(x.vendors_id).then(function (res) {
+            if (res && res.error) { b.disabled = false; nm.textContent = 'Could not switch. Try again.'; return; }
+            window.location.href = (window.location.pathname || '/vendor-dashboard/dashboard');
+          }).catch(function () { b.disabled = false; nm.textContent = 'Could not switch. Try again.'; });
+        });
+        nodes.push(b);
+      });
+      nodes.forEach(function (n) { if (ref) menu.insertBefore(n, ref); else menu.appendChild(n); });
+    }
+    // Pink dot by the business name on the chip: another linked storefront has
+    // unread notifications (this one's own are on the bell).
+    function chipDot(total) {
+      var name = wrap.querySelector('.lok-acct-name');
+      if (!name) return;
+      var d = name.querySelector('.lok-chip-pdot');
+      if (total > 0 && !d) { d = document.createElement('span'); d.className = 'lok-chip-pdot'; d.title = 'New notifications in another storefront'; d.setAttribute('role', 'img'); d.setAttribute('aria-label', 'New notifications in another storefront'); name.appendChild(d); }
+      else if (total <= 0 && d) d.parentNode.removeChild(d);
+    }
+    wrap.__lokChipDot = chipDot;
+    var c = readCache();
+    paint(c && Array.isArray(c.linked) ? c.linked : [], c && c.linked_unread);
+    (function fetchLinked(tries) {
+      var SF = window.LokaliSupabaseAPI && window.LokaliSupabaseAPI.storefronts;
+      if (!SF || !SF.linked) { if (tries < 40) setTimeout(function () { fetchLinked(tries + 1); }, 250); return; }
+      SF.linked().then(function (res) {
+        if (res.error) return;
+        var list = res.data || [];
+        paint(list, (readCache() || {}).linked_unread);
+        if (list.length > 1 && SF.unread) SF.unread().then(function (r) {
+          var m = (r && r.data) || {};
+          try { var cc = readCache(); if (cc) { cc.linked_unread = m; localStorage.setItem('LOKALI_ACCT_CACHE', JSON.stringify(cc)); } } catch (e) {}
+          paint(list, m);
+        }).catch(function () {});
+      }).catch(function () {});
+    })(0);
+  }
+
   function addCustomerAccountRow(wrap) {
     var menu = wrap.querySelector('.lok-acct-menu');
     if (!menu || menu.querySelector('[data-lok-customer-row]')) return;
@@ -588,6 +688,7 @@
     killStrayDrawerTransform(); // #67 round 4
     bindToggle(wrap);
     addCustomerAccountRow(wrap);
+    addSwitchRows(wrap); // #215
     decorateMenuRows(wrap); // #51
     whenApi(function () { fetchAndHydrate(wrap, 0); });
   }

@@ -700,6 +700,35 @@
     '.lok-set-btn:hover{background:#EEE6FF;}' +
     '.lok-set-btn.pri{background:#6002EE;border-color:#6002EE;color:#fff;}.lok-set-btn.pri:hover{background:#3D00E0;}' +
     '.lok-set-btn.quiet{border-color:#DEDAEE;color:#4A4761;}' +
+    // #215 Your storefronts (link / switch / disconnect)
+    '.lok-set-btn.danger{border-color:#F3C6C6;color:#B42318;}.lok-set-btn.danger:hover{background:#FDF1F1;}' +
+    '.lok-set-btn[disabled]{opacity:.55;cursor:default;}' +
+    '.lok-sf{font-family:' + FONT + ';margin:0 0 8px;scroll-margin-top:84px;}' +
+    '.lok-sf-head{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#6E6A85;margin:22px 0 6px;}' +
+    '.lok-sf-sub{font-size:13.5px;line-height:1.5;color:#6E6A85;margin:0 0 12px;}' +
+    '.lok-sf-list{display:flex;flex-direction:column;gap:8px;margin:0 0 12px;}' +
+    '.lok-sf-row{display:flex;align-items:center;gap:12px;min-height:60px;padding:10px 12px 10px 10px;border:1px solid #DEDAEE;border-radius:12px;background:#fff;}' +
+    '.lok-sf-row.is-current{background:#F7F6FC;}' +
+    '.lok-sf-av{position:relative;width:40px;height:40px;border-radius:10px;background:#F0E6FF;color:#6002EE;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:0 0 auto;text-transform:uppercase;}' +
+    '.lok-sf-av img{width:100%;height:100%;object-fit:cover;display:block;border-radius:10px;box-shadow:inset 0 0 0 1px #EEEDF6;}' +
+    // #215b brand-pink unread dot (#B1006A) on the logo + a pink count line.
+    '.lok-sf-pdot{position:absolute;top:-4px;right:-4px;width:12px;height:12px;border-radius:50%;background:#B1006A;box-shadow:0 0 0 2px #fff;}' +
+    '.lok-sf-txt span.new{color:#B1006A;font-weight:700;}' +
+    '.lok-sf-txt{flex:1 1 auto;min-width:0;}' +
+    '.lok-sf-txt b{display:block;font-size:15px;font-weight:600;color:#1A1829;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}' +
+    '.lok-sf-txt span{display:block;font-size:13px;color:#6E6A85;}' +
+    '.lok-sf-txt span.on{color:#1B7A4B;font-weight:600;}' +
+    '.lok-sf-acts{display:flex;gap:8px;flex:0 0 auto;flex-wrap:wrap;justify-content:flex-end;}' +
+    '.lok-sf-form{display:flex;gap:10px;flex-wrap:wrap;align-items:stretch;}' +
+    '.lok-sf-form input{flex:1 1 240px;min-width:0;min-height:44px;padding:0 14px;border:1.5px solid #DEDAEE;border-radius:10px;background:#FDFCFF;font-family:' + FONT + ';font-size:15px;color:#1A1829;outline:none;}' +
+    '.lok-sf-form input:focus{border-color:#6002EE;box-shadow:0 0 0 3px rgba(96,2,238,.12);}' +
+    '.lok-sf-msg{font-size:13.5px;line-height:1.5;margin:10px 0 0;color:#6E6A85;}' +
+    '.lok-sf-msg.err{color:#B42318;}.lok-sf-msg.ok{color:#1B7A4B;}' +
+    '.lok-sf-ask{border:1px solid #D4BFF9;background:#F7F3FF;border-radius:14px;padding:16px;margin:0 0 14px;}' +
+    '.lok-sf-ask b{display:block;font-size:16px;font-weight:700;color:#1A1829;margin:0 0 4px;}' +
+    '.lok-sf-ask p{font-size:14px;line-height:1.5;color:#4A4761;margin:0 0 12px;}' +
+    '.lok-sf-ask .lok-sf-acts{justify-content:flex-start;}' +
+    '@media (max-width:560px){.lok-sf-row{flex-wrap:wrap;}.lok-sf-acts{flex-basis:100%;justify-content:flex-start;padding-left:50px;}.lok-sf-ask .lok-sf-acts{padding-left:0;}}' +
     '.lok-set-break{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:0 0 16px;margin:0 0 16px;border-bottom:1px solid #EEEDF6;}' +
     '.lok-set-break>div{flex:1 1 240px;min-width:0;}' +
     '.lok-set-break b{display:block;font-family:' + FONT + ';font-size:15px;font-weight:700;color:#1A1829;}' +
@@ -884,6 +913,199 @@
     });
   }
 
+  // #215 Your storefronts: one person, several businesses. Each storefront keeps
+  // its own login; linking them puts a "Switch to" list in the menus so nobody
+  // signs out and back in. Linking = type the other storefront's login email,
+  // that inbox gets a confirm link, confirming while signed in there links the
+  // two. Any member can disconnect any storefront in the group. The confirm
+  // link lands on this page as ?link=<token>.
+  function mountStorefrontsCard(sYou) {
+    var A = window.LokaliSupabaseAPI, SF = A && A.storefronts;
+    if (!sYou || !SF || !SF.linked || $('lok-sf')) return;
+    var card = mk('div', 'lok-sf'); card.id = 'lok-sf';
+    card.appendChild(mk('div', 'lok-sf-head', 'Your storefronts'));
+    var sub = mk('p', 'lok-sf-sub'); card.appendChild(sub);
+    var ask = mk('div', 'lok-sf-ask'); ask.hidden = true; card.appendChild(ask);
+    var list = mk('div', 'lok-sf-list'); card.appendChild(list);
+    var formWrap = mk('div'); card.appendChild(formWrap);
+    var msg = mk('p', 'lok-sf-msg'); msg.hidden = true; card.appendChild(msg);
+    sYou.appendChild(card);
+    var mine = (_vendor && (_vendor.business_name || _vendor.name)) || 'this storefront';
+    var linked = [], unread = {};
+
+    function say(kind, text) { msg.hidden = !text; msg.textContent = text || ''; msg.className = 'lok-sf-msg' + (kind ? ' ' + kind : ''); }
+    function initials(n) { var p = String(n || '').trim().split(/\s+/).filter(Boolean); return ((p[0] || '')[0] || '') + ((p[1] || '')[0] || ''); }
+    function avatar(sf) {
+      var av = mk('div', 'lok-sf-av', sf.profile_photo ? '' : initials(sf.business_name));
+      if (sf.profile_photo) { var img = document.createElement('img'); img.alt = ''; if (window.LokaliImg) window.LokaliImg.set(img, sf.profile_photo, 120); else img.src = sf.profile_photo; av.appendChild(img); }
+      if ((Number(unread[sf.vendors_id]) || 0) > 0) { var d = mk('span', 'lok-sf-pdot'); d.setAttribute('aria-hidden', 'true'); av.appendChild(d); }
+      return av;
+    }
+    var REQ_ERR = {
+      email_invalid: 'That email does not look right.',
+      no_account: 'No Lokali login uses that email. Check the address your other storefront signs in with.',
+      no_vendor: 'That login has no storefront yet. Open one there first, then link it.',
+      not_a_vendor: 'Open a storefront on this account first.',
+      admin_account: 'That account cannot be linked.',
+      same_login: 'That is the email you are signed in with here. Enter the email of your other storefront.',
+      already_linked: 'Those two are already linked.',
+      already_sent: 'We sent that email a moment ago. Check the inbox (and spam) before sending another.',
+      too_many: 'You have a few requests waiting already. Confirm one of those first, or try again in an hour.',
+      email_failed: 'The email could not be sent. Nothing was linked. Try again in a minute.',
+      rpc_unavailable: 'Linking is not switched on yet. Try again later.'
+    };
+    var UNLINK_ERR = { not_linked: 'That storefront is not linked to this one.', no_vendor: 'That storefront no longer exists.' };
+
+    function render() {
+      list.innerHTML = ''; formWrap.innerHTML = '';
+      var others = linked.filter(function (x) { return !x.current; });
+      if (!linked.length) {
+        sub.textContent = 'Run more than one business? Link their logins and a Switch to list appears in your menu, so you move between storefronts without signing out. Each keeps its own login, plan and settings.';
+      } else {
+        sub.textContent = 'Linked storefronts share a Switch to list in your menu. Each keeps its own login, plan and settings. Disconnect any of them whenever you like.';
+        linked.forEach(function (sf) {
+          var row = mk('div', 'lok-sf-row' + (sf.current ? ' is-current' : ''));
+          row.appendChild(avatar(sf));
+          var txt = mk('div', 'lok-sf-txt');
+          txt.appendChild(mk('b', '', sf.business_name || 'Storefront'));
+          var nNew = Number(unread[sf.vendors_id]) || 0;
+          if (nNew > 0 && !sf.current) txt.appendChild(mk('span', 'new', nNew + (nNew === 1 ? ' new notification' : ' new notifications')));
+          else txt.appendChild(mk('span', sf.current ? 'on' : '', sf.current ? 'You are here' : (sf.is_active ? 'Live on Lokali' : 'Hidden from Lokali')));
+          row.appendChild(txt);
+          var acts = mk('div', 'lok-sf-acts');
+          if (!sf.current) {
+            var sw = mk('button', 'lok-set-btn pri', 'Switch to'); sw.type = 'button';
+            sw.addEventListener('click', function () { switchTo(sf, sw); });
+            acts.appendChild(sw);
+          }
+          var dc = mk('button', 'lok-set-btn quiet', 'Disconnect'); dc.type = 'button';
+          dc.setAttribute('aria-label', 'Disconnect ' + (sf.business_name || 'this storefront'));
+          dc.addEventListener('click', function () { confirmDisconnect(sf, row); });
+          acts.appendChild(dc);
+          row.appendChild(acts);
+          list.appendChild(row);
+        });
+      }
+      // The ask form: always there (link another), framed by state.
+      var form = document.createElement('form'); form.className = 'lok-sf-form'; form.setAttribute('novalidate', '');
+      var inp = document.createElement('input'); inp.type = 'email'; inp.autocomplete = 'off'; inp.maxLength = 254;
+      inp.placeholder = 'Login email of your other storefront';
+      inp.setAttribute('aria-label', 'Login email of your other storefront');
+      var go = mk('button', 'lok-set-btn' + (linked.length ? ' quiet' : ' pri'), linked.length ? 'Link another storefront' : 'Link your storefronts'); go.type = 'submit';
+      form.appendChild(inp); form.appendChild(go); formWrap.appendChild(form);
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var email = inp.value.trim();
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { say('err', REQ_ERR.email_invalid); inp.focus(); return; }
+        go.disabled = true; var was = go.textContent; go.textContent = 'Sending…'; say('', '');
+        SF.requestLink(email).then(function (res) {
+          go.disabled = false; go.textContent = was;
+          if (res.error) { say('err', REQ_ERR[res.error] || 'Something went wrong. Nothing was linked.'); return; }
+          inp.value = '';
+          var d = res.data || {};
+          say('ok', 'We emailed ' + email + '. Open that email while signed in to ' + (d.to_business || 'the other storefront') + ' and tap Confirm the link. It is good for 48 hours.');
+        }).catch(function () { go.disabled = false; go.textContent = was; say('err', 'Network error. Nothing was linked.'); });
+      });
+    }
+
+    function confirmDisconnect(sf, row) {
+      if (row.querySelector('.lok-sf-confirm')) return;
+      var acts = row.querySelector('.lok-sf-acts'); acts.style.display = 'none';
+      var box = mk('div', 'lok-sf-acts lok-sf-confirm');
+      var q = mk('span', '', sf.current ? 'Disconnect ' + mine + ' from the others?' : 'Disconnect ' + (sf.business_name || 'this storefront') + '?');
+      q.style.cssText = 'font-size:13.5px;color:#4A4761;align-self:center;';
+      var yes = mk('button', 'lok-set-btn danger', 'Disconnect'); yes.type = 'button';
+      var no = mk('button', 'lok-set-btn quiet', 'Keep'); no.type = 'button';
+      box.appendChild(q); box.appendChild(yes); box.appendChild(no); row.appendChild(box);
+      no.addEventListener('click', function () { row.removeChild(box); acts.style.display = ''; });
+      yes.addEventListener('click', function () {
+        yes.disabled = true; yes.textContent = 'Disconnecting…';
+        SF.unlink(sf.vendors_id).then(function (res) {
+          var d = res && res.data;
+          if (res.error || !d || d.ok !== true) { yes.disabled = false; yes.textContent = 'Disconnect'; say('err', UNLINK_ERR[d && d.reason] || 'Could not disconnect. Try again.'); return; }
+          linked = Array.isArray(d.storefronts) ? d.storefronts : [];
+          if (linked.length === 1) linked = [];   // a group of one is no group
+          render();
+          say('ok', (sf.business_name || 'That storefront') + ' is disconnected. You can link it again any time.');
+        }).catch(function () { yes.disabled = false; yes.textContent = 'Disconnect'; say('err', 'Network error. Nothing changed.'); });
+      });
+      try { yes.focus(); } catch (e) {}
+    }
+
+    function switchTo(sf, btn) {
+      btn.disabled = true; btn.textContent = 'Switching…'; say('', '');
+      SF.switchTo(sf.vendors_id).then(function (res) {
+        if (res.error) { btn.disabled = false; btn.textContent = 'Switch to'; say('err', 'Could not switch right now. Try again.'); return; }
+        window.location.href = '/vendor-dashboard/dashboard';
+      }).catch(function () { btn.disabled = false; btn.textContent = 'Switch to'; say('err', 'Network error. You are still signed in here.'); });
+    }
+
+    // An incoming confirm link (?link=<token>). Shown above the list; the token
+    // leaves the URL at once so a reload or a shared screenshot cannot replay it.
+    function handleIncoming() {
+      var token = '';
+      try { token = new URLSearchParams(window.location.search).get('link') || ''; } catch (e) {}
+      // Signed out when the email was opened: lokali-dashboard.js stashed the token
+      // and lokali-auth.js brought us here after sign-in.
+      if (!token) { try { var st = JSON.parse(sessionStorage.getItem('LOKALI_SF_LINK') || 'null'); if (st && st.token && (Date.now() - (st.t || 0)) < 30 * 60 * 1000) token = st.token; } catch (e) {} }
+      try { sessionStorage.removeItem('LOKALI_SF_LINK'); } catch (e) {}
+      if (!token || !SF.viewLink) return;
+      try { history.replaceState(null, '', window.location.pathname + '#lok-sf'); } catch (e) {}
+      ask.hidden = false; ask.innerHTML = '';
+      ask.appendChild(mk('b', '', 'Checking the link…'));
+      SF.viewLink(token).then(function (res) {
+        ask.innerHTML = '';
+        try { ask.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
+        var d = res.data || {};
+        if (res.error === 'wrong_account') {
+          ask.appendChild(mk('b', '', 'Sign in to ' + (d.to_business || 'the other storefront') + ' to confirm'));
+          var p1 = mk('p', '', 'This request links ' + (d.from_business || 'a storefront') + ' with ' + (d.to_business || 'another storefront') + ', and only that storefront’s login can confirm it' + (d.to_email_masked ? ' (' + d.to_email_masked + ')' : '') + '. Sign out, sign in there, then open the email link again.');
+          ask.appendChild(p1);
+          var acts0 = mk('div', 'lok-sf-acts'); var so = mk('button', 'lok-set-btn', 'Sign out'); so.type = 'button';
+          so.addEventListener('click', function () { if (window.LokaliAuth && window.LokaliAuth.signOut) window.LokaliAuth.signOut().then(function () { window.location.href = '/login'; }); else window.location.href = '/login'; });
+          acts0.appendChild(so); ask.appendChild(acts0);
+          return;
+        }
+        if (res.error) {
+          var WHY = { no_request: 'This link is not valid. Ask for a new one from the other storefront’s Settings.', used: 'This link was already used. If the storefronts are linked, they are listed below.', expired: 'This link has expired. Ask for a new one from the other storefront’s Settings.', declined: 'This request was declined. Ask for a new one if you changed your mind.' };
+          ask.appendChild(mk('b', '', 'This link cannot be used'));
+          ask.appendChild(mk('p', '', WHY[res.error] || 'Something went wrong. Ask for a new link from the other storefront’s Settings.'));
+          return;
+        }
+        ask.appendChild(mk('b', '', 'Link ' + (d.from_business || 'that storefront') + ' with ' + (d.to_business || mine) + '?'));
+        ask.appendChild(mk('p', '', 'Someone signed in to ' + (d.from_business || 'that storefront') + ' asked to link it with this one. Linked storefronts share a Switch to list, so one person can move between them without signing out. Only confirm if both are yours.'));
+        var acts = mk('div', 'lok-sf-acts');
+        var yes = mk('button', 'lok-set-btn pri', 'Link storefronts'); yes.type = 'button';
+        var no = mk('button', 'lok-set-btn quiet', 'Not now'); no.type = 'button';
+        acts.appendChild(yes); acts.appendChild(no); ask.appendChild(acts);
+        yes.addEventListener('click', function () {
+          yes.disabled = true; no.disabled = true; yes.textContent = 'Linking…';
+          SF.answerLink(token, true).then(function (r2) {
+            var d2 = r2.data || {};
+            if (r2.error || d2.ok !== true) { yes.disabled = false; no.disabled = false; yes.textContent = 'Link storefronts'; say('err', 'Could not link right now. Try the email link again in a minute.'); return; }
+            linked = Array.isArray(d2.storefronts) ? d2.storefronts : [];
+            ask.hidden = true; render();
+            say('ok', 'Linked. ' + (d.from_business || 'The other storefront') + ' is now in your Switch to list.');
+            try { SF.linked(); } catch (e) {}
+          }).catch(function () { yes.disabled = false; no.disabled = false; yes.textContent = 'Link storefronts'; say('err', 'Network error. Nothing changed.'); });
+        });
+        no.addEventListener('click', function () {
+          no.disabled = true; yes.disabled = true;
+          SF.answerLink(token, false).then(function () { ask.hidden = true; say('', 'Not linked. The email link is now void; ask for a new one if you change your mind.'); })
+            .catch(function () { ask.hidden = true; });
+        });
+      }).catch(function () { ask.innerHTML = ''; ask.appendChild(mk('b', '', 'Could not check the link')); ask.appendChild(mk('p', '', 'Try opening the email link again.')); });
+    }
+
+    render();
+    SF.linked().then(function (res) {
+      if (res.error) return;
+      linked = res.data || []; render();
+      if (linked.length > 1 && SF.unread) SF.unread().then(function (r) { unread = (r && r.data) || {}; render(); }).catch(function () {});
+    });
+    handleIncoming();
+  }
+
   function regroup() {
     if ($('lok-set-css')) return;
     var sYou = sectionOf('settings-email'), sPlan = sectionOf('settings-current-plan'),
@@ -938,6 +1160,7 @@
       // Sibling labels (FIRST NAME, EMAIL) are TYPED in capitals in Webflow, not CSS-uppercased.
       if (pwHead && !pwHead.children.length) pwHead.textContent = 'HOW YOU SIGN IN';
     }
+    mountStorefrontsCard(sYou); // #215
     var bar = mk('div'); bar.id = 'lok-set-namebar';
     bar.appendChild(mk('span', '', 'You changed your name'));
     var acts = mk('span');

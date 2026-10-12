@@ -413,6 +413,93 @@
     });
   }
 
+  // ---- #215 storefront switching: helpers -----------------------------------
+  // After a switch the browser is a DIFFERENT login, so per-login caches must not
+  // carry over (a plan cap or the first-run wizard of the other storefront).
+  var SWITCH_KEY = 'LOKALI_SWITCHED';
+  var SWITCH_SESSION_KEYS = ['lok_plan_services_v1', 'lok_plan_products_v1', 'lok_plan_portfolio_v1', 'lokali_sf_wizard', 'lokali_sf_wizard_seen'];
+  // Retire the session we just left (its refresh token would otherwise sit
+  // unused on the server forever). Direct /logout with the OLD access token, so
+  // the client's freshly saved session is untouched. Best-effort.
+  function retireSession(token) {
+    if (!token) return;
+    try {
+      fetch(SUPABASE_URL + '/auth/v1/logout?scope=local', {
+        method: 'POST', keepalive: true,
+        headers: { apikey: SUPABASE_PUBLISHABLE_KEY, Authorization: 'Bearer ' + token }
+      }).catch(function () {});
+    } catch (e) {}
+  }
+  // The menus paint from LOKALI_ACCT_CACHE before any network call; keep the
+  // linked list there (names + ids only) so "Switch to" shows every storefront
+  // on the first frame of the next page.
+  function cacheLinked(list) {
+    try {
+      var c = JSON.parse(localStorage.getItem('LOKALI_ACCT_CACHE') || 'null');
+      if (!c) return;
+      c.linked = (list || []).map(function (x) {
+        return { vendors_id: x.vendors_id, business_name: x.business_name, slug: x.slug, profile_photo: x.profile_photo || '', current: x.current === true };
+      });
+      // The current storefront's logo, so the menus can show it even before a fetch.
+      for (var i = 0; i < c.linked.length; i++) if (c.linked[i].current && c.linked[i].profile_photo) c.store_photo = c.linked[i].profile_photo;
+      localStorage.setItem('LOKALI_ACCT_CACHE', JSON.stringify(c));
+    } catch (e) {}
+  }
+  function afterSwitch(d) {
+    try { SWITCH_SESSION_KEYS.forEach(function (k) { sessionStorage.removeItem(k); }); } catch (e) {}
+    try {
+      localStorage.removeItem('lok_import_store_v1');   // the other shop's Etsy/Shopify address
+      var c = JSON.parse(localStorage.getItem('LOKALI_ACCT_CACHE') || 'null') || {};
+      // Same person, other storefront: keep the role (the header keeps painting
+      // signed-in and lokali-auth skips a re-sync), swap the storefront name, flip
+      // which linked row is current, drop what belonged to the other login (avatar).
+      var photo = '';
+      var linked = Array.isArray(c.linked) ? c.linked.map(function (x) {
+        var cur = Number(x.vendors_id) === Number(d.vendors_id);
+        if (cur) photo = x.profile_photo || '';
+        return { vendors_id: x.vendors_id, business_name: x.business_name, slug: x.slug, profile_photo: x.profile_photo || '', current: cur };
+      }) : null;
+      var next = { role: 'vendor', first_name: c.first_name || '', last_name: c.last_name || '', business_name: d.business_name || '', store_photo: photo };
+      if (linked) next.linked = linked;
+      localStorage.setItem('LOKALI_ACCT_CACHE', JSON.stringify(next));
+      // Tells the user's OTHER open tabs (the storage event never fires in this one).
+      localStorage.setItem(SWITCH_KEY, JSON.stringify({ name: d.business_name || '', at: Date.now() }));
+    } catch (e) {}
+  }
+  // Another tab switched storefront: this tab now runs as the other login, but its
+  // page still shows (and its forms still target) the storefront it loaded with.
+  // On dashboard and account pages, cover the page until it is reloaded, so a save
+  // can never land on the wrong storefront. Elsewhere nothing is storefront-bound.
+  window.addEventListener('storage', function (e) {
+    if (e.key !== SWITCH_KEY || !e.newValue) return;
+    var path = window.location.pathname || '';
+    if (!/^\/(vendor-dashboard|account)(\/|$)/.test(path)) return;
+    if (document.getElementById('lok-switched-cover')) return;
+    var name = '';
+    try { name = (JSON.parse(e.newValue) || {}).name || ''; } catch (err) {}
+    var cover = document.createElement('div');
+    cover.id = 'lok-switched-cover';
+    cover.setAttribute('role', 'alertdialog');
+    cover.setAttribute('aria-modal', 'true');
+    cover.style.cssText = "position:fixed;inset:0;z-index:2147483000;background:rgba(243,241,250,.94);display:flex;align-items:center;justify-content:center;padding:16px;font-family:'Plus Jakarta Sans',-apple-system,sans-serif;";
+    var card = document.createElement('div');
+    card.style.cssText = 'background:#fff;border:1px solid #E5DDF7;border-radius:16px;box-shadow:0 12px 32px rgba(38,10,80,.12);padding:24px;max-width:380px;width:100%;text-align:center;';
+    var h = document.createElement('p');
+    h.style.cssText = 'margin:0 0 6px;font-size:17px;font-weight:700;color:#231D3F;';
+    h.textContent = name ? ('You switched to ' + name) : 'You switched storefronts';
+    var t = document.createElement('p');
+    t.style.cssText = 'margin:0 0 18px;font-size:14px;line-height:1.5;color:#5E5873;';
+    t.textContent = 'That happened in another tab. Reload this page to keep working.';
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.style.cssText = "font-family:inherit;font-size:14px;font-weight:700;color:#fff;background:#6002EE;border:0;border-radius:10px;padding:11px 22px;cursor:pointer;";
+    b.textContent = 'Reload';
+    b.addEventListener('click', function () { window.location.reload(); });
+    card.appendChild(h); card.appendChild(t); card.appendChild(b); cover.appendChild(card);
+    (document.body || document.documentElement).appendChild(cover);
+    try { b.focus(); } catch (err) {}
+  });
+
   window.LokaliSupabaseAPI = {
     vendors: {
       // Shopper trust signals (2026-09-17): per-vendor AGGREGATES for the
@@ -1589,6 +1676,80 @@
         });
       }
     },
+    // #215 — one person, several storefronts. Each storefront keeps its own login
+    // (plan, billing, emails all stay per storefront); the admin LINKS those logins
+    // (patch_storefront_switcher.sql) and the menus offer the others here.
+    storefronts: {
+      // The caller's linked storefronts, own one first with current:true. [] for
+      // every login nobody linked, so the menus render nothing extra.
+      linked: function () {
+        return withClient(function (c) { return c.rpc('my_linked_storefronts'); })
+          .then(function (r) {
+            var list = Array.isArray(r && r.data) ? r.data : [];
+            if (!(r && r.error)) cacheLinked(list);
+            return { data: list, error: (r && r.error) || null };
+          });
+      },
+      // #215b: unread notification counts per linked storefront, as a map
+      // { vendors_id: count } (the caller's own included). {} for an unlinked
+      // login, and {} quietly if patch_storefront_unread.sql is not applied yet,
+      // so the pink dots simply stay off.
+      unread: function () {
+        return withClient(function (c) { return c.rpc('my_linked_unread'); }).then(function (r) {
+          var m = {};
+          if (r && !r.error && Array.isArray(r.data)) r.data.forEach(function (x) { if (x && x.vendors_id) m[x.vendors_id] = Number(x.unread) || 0; });
+          return { data: m, error: null };
+        });
+      },
+      // "Link your storefronts": email the other storefront's login a confirm link.
+      requestLink: function (email) {
+        return postRoute('/storefront-link/request', { email: String(email || '').trim() }, true);
+      },
+      // The confirm page: look at a request (who is asking, am I the right login)...
+      viewLink: function (token) {
+        return postRoute('/storefront-link/confirm', { token: String(token || '') }, true);
+      },
+      // ...then accept (links the two logins) or decline (kills the token).
+      answerLink: function (token, accept) {
+        return postRoute('/storefront-link/confirm', { token: String(token || ''), accept: accept === true }, true);
+      },
+      // Disconnect one storefront from my group (mine included). Resolves the
+      // remaining list in data.storefronts.
+      unlink: function (vendorsId) {
+        return withClient(function (c) { return c.rpc('unlink_storefront', { p_vendor: Number(vendorsId) }); })
+          .then(function (r) {
+            var d = r && r.data;
+            if (d && d.ok === true) cacheLinked(Array.isArray(d.storefronts) ? d.storefronts : []);
+            return r;
+          });
+      },
+      // Swap THIS browser to the login that owns vendorsId. The route re-checks the
+      // link server-side and mints a one-time token (never emailed, same mechanism
+      // as admin Sign-in-as); verifyOtp spends it and saves the new session; the old
+      // session is then retired. Resolves { data: {business_name, slug, ...}, error }.
+      // The caller navigates afterwards; every page boots fresh as the new login.
+      switchTo: function (vendorsId) {
+        var oldToken = null;
+        return sessionAccessToken().then(function (t) {
+          oldToken = t;
+          if (!t) return { data: null, error: 'not_signed_in' };
+          return postRoute('/switch-storefront', { vendors_id: Number(vendorsId) }, true);
+        }).then(function (r) {
+          if (r.error) return r;
+          var d = r.data || {};
+          if (!d.token_hash) return { data: null, error: 'switch_failed' };
+          return withClient(function (c) {
+            return c.auth.verifyOtp({ token_hash: d.token_hash, type: 'magiclink' }).then(function (v) {
+              if (v && v.error) return { data: null, error: 'verify_failed' };
+              retireSession(oldToken);
+              appUserId = null;
+              afterSwitch(d);
+              return { data: { vendors_id: d.vendors_id, slug: d.slug, business_name: d.business_name }, error: null };
+            });
+          });
+        });
+      }
+    },
     admin: {
       overview: function () {
         return withClient(function (c) { return c.rpc('admin_overview'); });
@@ -1641,6 +1802,21 @@
       // emailed. Open it in a PRIVATE window — same browser = replaces your session.
       signInAs: function (payload) {
         return postRoute('/admin/sign-in-as', payload || {}, true);
+      },
+      // #215 — link / unlink the logins of one person's storefronts (is_admin()-gated
+      // RPCs; an admin account can never be linked). Each resolves { data: {ok,
+      // storefronts:[...]} | {ok:false, reason}, error }.
+      linkStorefronts: function (vendorA, vendorB) {
+        return withClient(function (c) { return c.rpc('admin_link_storefronts', { p_vendor_a: Number(vendorA), p_vendor_b: Number(vendorB) }); });
+      },
+      unlinkStorefront: function (vendorsId) {
+        return withClient(function (c) { return c.rpc('admin_unlink_storefront', { p_vendor: Number(vendorsId) }); });
+      },
+      storefrontLinks: function (vendorsId) {
+        return withClient(function (c) { return c.rpc('admin_storefront_links', { p_vendor: Number(vendorsId) }); });
+      },
+      storefrontGroups: function () {
+        return withClient(function (c) { return c.rpc('admin_storefront_groups'); });
       },
       // #208 — prospect follow-ups (docs/supabase/patch_prospects.sql). The
       // list/save/status/markSent RPCs are is_admin()-gated server-side; the
