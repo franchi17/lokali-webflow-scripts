@@ -147,8 +147,11 @@
     if (!u || !node) return;
     var img = document.createElement('img');
     img.alt = '';
-    img.style.cssText = 'width:100%;height:100%;border-radius:inherit;object-fit:cover;display:block;';
-    img.onload = function () { node.textContent = ''; node.appendChild(img); };
+    img.className = 'lk-thumb-img';
+    // has-photo swaps the lavender initials backing for white: the photo is the
+    // vendor's logo, and a logo saved with transparent "white" areas otherwise
+    // shows the lavender through as a purple tinge (Madrone, 2026-10-12).
+    img.onload = function () { node.textContent = ''; node.classList.add('has-photo'); node.appendChild(img); };
     img.onerror = function () { /* keep initials */ };
     img.src = u;
   }
@@ -397,6 +400,8 @@
       R + '.lk-row{display:flex;align-items:center;gap:14px;background:#fff;border:1px solid ' + BORDER + ';border-radius:12px;padding:12px 14px;margin-bottom:10px;transition:border-color .15s;}',
       R + '.lk-row:hover{border-color:' + FOG + ';}',
       R + '.lk-thumb{width:46px;height:46px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#EADBFF,#D9C2FF);color:' + V + ';font-weight:700;font-size:15px;text-transform:uppercase;}',
+      R + '.lk-thumb-img{width:100%;height:100%;border-radius:inherit;object-fit:cover;display:block;}',
+      R + '.lk-thumb.has-photo,' + R + '.lk-await-av.has-photo{background:#fff;}',
       R + '.lk-row-info{flex:1;min-width:0;}',
       R + '.lk-row-name{font-size:14px;font-weight:600;}',
       R + '.lk-row-sub{font-size:12px;color:' + SLATE + ';margin-top:2px;}',
@@ -707,6 +712,10 @@
         '#lokali-account .lkh-grid.wide{grid-template-columns:repeat(3,minmax(0,1fr));}' +
         '#lokali-account .lkh-grid.wide .lk-row{flex-direction:column;align-items:stretch;padding:0;overflow:hidden;gap:10px;}' +
         '#lokali-account .lkh-grid.wide .lk-thumb{width:100%;height:130px;border-radius:0;font-size:26px;}' +
+        // The wide card's photo is a logo: show it whole and never blown up past
+        // its own size (cover cropped an 82px logo to its middle third at 4x).
+        '#lokali-account .lkh-grid.wide .lk-thumb.has-photo{padding:12px;border-bottom:1px solid #EEEDF6;}' +
+        '#lokali-account .lkh-grid.wide .lk-thumb.has-photo .lk-thumb-img{width:auto;height:auto;max-width:100%;max-height:100%;object-fit:contain;border-radius:0;}' +
         '#lokali-account .lkh-grid.wide .lk-row-info{padding:0 14px;flex:0 0 auto;}' +
         '#lokali-account .lkh-grid.wide .lk-row-actions{padding:0 14px 14px;}' +
         '#lokali-account .lkh-grid.wide .lk-row-actions .lk-btn{flex:1;}' +
