@@ -1712,6 +1712,25 @@
       answerLink: function (token, accept) {
         return postRoute('/storefront-link/confirm', { token: String(token || ''), accept: accept === true }, true);
       },
+      // #217 "Add another business": a NEW storefront on its own login, whose address
+      // (Settings suggests a "+" version of this login's email) gets one email; tapping
+      // it creates the storefront linked to this one. No second inbox needed.
+      requestAdd: function (businessName, email) {
+        return postRoute('/storefront-add/request', { business_name: String(businessName || '').trim(), email: String(email || '').trim() }, true);
+      },
+      // That email lands on Settings as ?link=<token> (the #215 param); a token the
+      // link flow answers no_request to is looked up here.
+      viewAdd: function (token) {
+        return postRoute('/storefront-add/confirm', { token: String(token || '') }, true);
+      },
+      // Create it. Resolves data.storefronts (the group, refreshed in the cache) + vendors_id.
+      createAdd: function (token) {
+        return postRoute('/storefront-add/confirm', { token: String(token || ''), create: true }, true).then(function (r) {
+          var d = r && r.data;
+          if (r && !r.error && d && d.ok === true && Array.isArray(d.storefronts)) cacheLinked(d.storefronts);
+          return r;
+        });
+      },
       // Disconnect one storefront from my group (mine included). Resolves the
       // remaining list in data.storefronts.
       unlink: function (vendorsId) {

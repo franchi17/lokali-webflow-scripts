@@ -729,7 +729,19 @@
     '.lok-sf-ask b{display:block;font-size:16px;font-weight:700;color:#1A1829;margin:0 0 4px;}' +
     '.lok-sf-ask p{font-size:14px;line-height:1.5;color:#4A4761;margin:0 0 12px;}' +
     '.lok-sf-ask .lok-sf-acts{justify-content:flex-start;}' +
-    '@media (max-width:560px){.lok-sf-row{flex-wrap:wrap;}.lok-sf-acts{flex-basis:100%;justify-content:flex-start;padding-left:50px;}.lok-sf-ask .lok-sf-acts{padding-left:0;}}' +
+    // #217 Add another business / Link your storefronts panels
+    '.lok-sf-btns{display:flex;gap:10px;flex-wrap:wrap;}' +
+    '.lok-sf-panel{border:1px solid #DEDAEE;background:#FDFCFF;border-radius:14px;padding:16px;margin:12px 0 0;}' +
+    '.lok-sf-panel>b{display:block;font-size:16px;font-weight:700;color:#1A1829;margin:0 0 12px;}' +
+    '.lok-sf-field{display:block;margin:0 0 14px;}' +
+    '.lok-sf-field>span{display:block;font-size:13px;font-weight:600;color:#4A4761;margin:0 0 6px;}' +
+    '.lok-sf-field input{display:block;width:100%;box-sizing:border-box;min-height:44px;padding:0 14px;border:1.5px solid #DEDAEE;border-radius:10px;background:#fff;font-family:' + FONT + ';font-size:15px;color:#1A1829;outline:none;}' +
+    '.lok-sf-field input:focus{border-color:#6002EE;box-shadow:0 0 0 3px rgba(96,2,238,.12);}' +
+    '.lok-sf-hint{font-size:13px;line-height:1.5;color:#6E6A85;margin:6px 0 12px;overflow-wrap:anywhere;}' +
+    '.lok-sf-field .lok-sf-hint{margin-bottom:0;}' +
+    '.lok-sf-panel .lok-sf-acts{justify-content:flex-start;}' +
+    '.lok-sf-panel .lok-sf-form input{background:#fff;}' +
+    '@media (max-width:560px){.lok-sf-row{flex-wrap:wrap;}.lok-sf-acts{flex-basis:100%;justify-content:flex-start;padding-left:50px;}.lok-sf-ask .lok-sf-acts{padding-left:0;}.lok-sf-panel .lok-sf-acts{padding-left:0;}}' +
     '.lok-set-break{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:0 0 16px;margin:0 0 16px;border-bottom:1px solid #EEEDF6;}' +
     '.lok-set-break>div{flex:1 1 240px;min-width:0;}' +
     '.lok-set-break b{display:block;font-family:' + FONT + ';font-size:15px;font-weight:700;color:#1A1829;}' +
@@ -920,6 +932,8 @@
   // that inbox gets a confirm link, confirming while signed in there links the
   // two. Any member can disconnect any storefront in the group. The confirm
   // link lands on this page as ?link=<token>.
+  // #217 Add another business: a NEW storefront without a second inbox (its login
+  // is a "+" version of this one's email); its emailed link uses the same param.
   function mountStorefrontsCard(sYou) {
     var A = window.LokaliSupabaseAPI, SF = A && A.storefronts;
     if (!sYou || !SF || !SF.linked || $('lok-sf')) return;
@@ -933,6 +947,20 @@
     sYou.appendChild(card);
     var mine = (_vendor && (_vendor.business_name || _vendor.name)) || 'this storefront';
     var linked = [], unread = {};
+    // #217: which panel is open ('' | 'add' | 'link'), and what was typed in the add
+    // panel (render() rebuilds the card, so the draft lives here, not in the inputs).
+    var open = '', draft = { name: '', email: '', edited: false };
+    var ownEmail = String((_user && _user.email) || '').trim().toLowerCase();
+    // info@x.com + "Alma y Letra" -> info+almayletra@x.com: a "+" version of this
+    // login's own address, so the new storefront's emails land in the same inbox.
+    // An existing tag is replaced (signed in as info+alma@ -> info+newname@).
+    function suggestEmail(name) {
+      var m = /^([^@\s]+)@([^@\s]+)$/.exec(ownEmail); if (!m) return '';
+      var tag = String(name || '').toLowerCase();
+      try { tag = tag.normalize('NFD').replace(/[̀-ͯ]/g, ''); } catch (e) {}
+      tag = tag.replace(/[^a-z0-9]+/g, '').slice(0, 20);
+      return tag ? m[1].split('+')[0] + '+' + tag + '@' + m[2] : '';
+    }
 
     function say(kind, text) { msg.hidden = !text; msg.textContent = text || ''; msg.className = 'lok-sf-msg' + (kind ? ' ' + kind : ''); }
     function initials(n) { var p = String(n || '').trim().split(/\s+/).filter(Boolean); return ((p[0] || '')[0] || '') + ((p[1] || '')[0] || ''); }
@@ -956,14 +984,28 @@
       rpc_unavailable: 'Linking is not switched on yet. Try again later.'
     };
     var UNLINK_ERR = { not_linked: 'That storefront is not linked to this one.', no_vendor: 'That storefront no longer exists.' };
+    var ADD_ERR = {
+      name_required: 'Enter the business name.',
+      email_invalid: 'That email does not look right.',
+      email_taken: 'That email already has a Lokali login. Use a different one, or link that storefront with Link your storefronts.',
+      same_name: 'One of your storefronts already has that name.',
+      group_full: 'One group can hold 10 storefronts. Disconnect one first.',
+      already_sent: 'We sent that email a moment ago. Check the inbox (and spam) before sending another.',
+      too_many: 'You have a few of these waiting already. Finish one of those first, or try again in an hour.',
+      not_a_vendor: 'Open a storefront on this account first.',
+      admin_account: 'The admin account cannot add storefronts.',
+      email_failed: 'The email could not be sent. Nothing was created. Try again in a minute.',
+      rpc_unavailable: 'Adding a business is not switched on yet. Try again later.',
+      not_enabled: 'Adding a business is not switched on yet. Try again later.'
+    };
 
     function render() {
       list.innerHTML = ''; formWrap.innerHTML = '';
       var others = linked.filter(function (x) { return !x.current; });
       if (!linked.length) {
-        sub.textContent = 'Run more than one business? Link their logins and a Switch to list appears in your menu, so you move between storefronts without signing out. Each keeps its own login, plan and settings.';
+        sub.textContent = 'Run more than one business? Add it here and a Switch to list appears in your menu, so you move between storefronts without signing out. No second email address needed. Each storefront keeps its own plan and settings.';
       } else {
-        sub.textContent = 'Linked storefronts share a Switch to list in your menu. Each keeps its own login, plan and settings. Disconnect any of them whenever you like.';
+        sub.textContent = 'Linked storefronts share a Switch to list in your menu. Each keeps its own plan and settings. Disconnect any of them whenever you like.';
         linked.forEach(function (sf) {
           var row = mk('div', 'lok-sf-row' + (sf.current ? ' is-current' : ''));
           row.appendChild(avatar(sf));
@@ -987,13 +1029,89 @@
           list.appendChild(row);
         });
       }
-      // The ask form: always there (link another), framed by state.
+      // Two ways in, each opening its own panel: Add another business (#217, a new
+      // storefront on a "+" version of this login's email) and Link your
+      // storefronts (#215, one that already has its own login).
+      var btns = mk('div', 'lok-sf-btns');
+      var addBtn = mk('button', 'lok-set-btn' + (linked.length ? ' quiet' : ' pri'), 'Add another business'); addBtn.type = 'button';
+      var linkBtn = mk('button', 'lok-set-btn quiet', linked.length ? 'Link another storefront' : 'Link your storefronts'); linkBtn.type = 'button';
+      addBtn.setAttribute('aria-expanded', open === 'add' ? 'true' : 'false');
+      linkBtn.setAttribute('aria-expanded', open === 'link' ? 'true' : 'false');
+      btns.appendChild(addBtn); btns.appendChild(linkBtn); formWrap.appendChild(btns);
+      addBtn.addEventListener('click', function () { open = open === 'add' ? '' : 'add'; say('', ''); render(); focusPanel(); });
+      linkBtn.addEventListener('click', function () { open = open === 'link' ? '' : 'link'; say('', ''); render(); focusPanel(); });
+      if (open === 'add') formWrap.appendChild(addPanel());
+      if (open === 'link') formWrap.appendChild(linkPanel());
+    }
+
+    function focusPanel() { var f = formWrap.querySelector('.lok-sf-panel input'); if (f) try { f.focus(); } catch (e) {} }
+    function closePanel() { open = ''; draft = { name: '', email: '', edited: false }; render(); }
+
+    // #217 Add another business: name + the address its emails go to. One email goes
+    // to that address; tapping it creates the storefront, linked to this one.
+    function addPanel() {
+      var p = document.createElement('form'); p.className = 'lok-sf-panel'; p.setAttribute('novalidate', '');
+      p.appendChild(mk('b', '', 'Add another business'));
+      var f1 = mk('label', 'lok-sf-field'); f1.appendChild(mk('span', '', 'Business name'));
+      var nm = document.createElement('input'); nm.type = 'text'; nm.maxLength = 120; nm.autocomplete = 'off'; nm.value = draft.name;
+      f1.appendChild(nm); p.appendChild(f1);
+      var f2 = mk('label', 'lok-sf-field'); f2.appendChild(mk('span', '', 'Emails for this storefront go to'));
+      var em = document.createElement('input'); em.type = 'email'; em.maxLength = 254; em.autocomplete = 'off'; em.value = draft.email;
+      var ph = suggestEmail('yourbusiness'); em.placeholder = ph || 'Email for this storefront';
+      f2.appendChild(em);
+      var hint = mk('p', 'lok-sf-hint'); f2.appendChild(hint); p.appendChild(f2);
+      function paintHint() {
+        hint.textContent = (draft.email && draft.email === suggestEmail(draft.name))
+          ? 'A version of your own email, so its new leads and reviews land in the inbox you already use (' + ownEmail + '). Change it if you prefer another address.'
+          : 'New leads and reviews for this storefront go to this address.';
+      }
+      nm.addEventListener('input', function () {
+        draft.name = nm.value;
+        if (!draft.edited) { draft.email = suggestEmail(nm.value); em.value = draft.email; }
+        paintHint();
+      });
+      em.addEventListener('input', function () {
+        draft.email = em.value.trim().toLowerCase();
+        draft.edited = draft.email !== '' && draft.email !== suggestEmail(draft.name);
+        paintHint();
+      });
+      paintHint();
+      p.appendChild(mk('p', 'lok-sf-hint', 'We send one email to that address. Tap the button in it and the storefront is created and linked to ' + mine + '.'));
+      var acts = mk('div', 'lok-sf-acts');
+      var go = mk('button', 'lok-set-btn pri', 'Send the email'); go.type = 'submit';
+      var cancel = mk('button', 'lok-set-btn quiet', 'Cancel'); cancel.type = 'button';
+      acts.appendChild(go); acts.appendChild(cancel); p.appendChild(acts);
+      cancel.addEventListener('click', function () { say('', ''); closePanel(); });
+      p.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var name = nm.value.trim(), email = em.value.trim().toLowerCase();
+        if (!name) { say('err', ADD_ERR.name_required); nm.focus(); return; }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { say('err', ADD_ERR.email_invalid); em.focus(); return; }
+        if (email === ownEmail) { say('err', 'That is the email you sign in with here. Use a different one (the suggested one works).'); em.focus(); return; }
+        go.disabled = true; cancel.disabled = true; go.textContent = 'Sending…'; say('', '');
+        SF.requestAdd(name, email).then(function (res) {
+          go.disabled = false; cancel.disabled = false; go.textContent = 'Send the email';
+          if (res.error) { say('err', ADD_ERR[res.error] || 'Something went wrong. Nothing was created.'); return; }
+          var d = res.data || {}, to = d.email || email;
+          closePanel();
+          say('ok', 'Check your inbox. We sent a link to ' + to + '. Tap Create my storefront in that email to finish; it is good for 48 hours.' +
+            (to.indexOf('+') > 0 ? ' Nothing there after a few minutes? Some email providers do not accept an address with a +. Add the business again with a different email.' : ''));
+        }).catch(function () { go.disabled = false; cancel.disabled = false; go.textContent = 'Send the email'; say('err', 'Network error. Nothing was created.'); });
+      });
+      return p;
+    }
+
+    // #215 Link your storefronts: one that already has its own login.
+    function linkPanel() {
+      var p = mk('div', 'lok-sf-panel');
+      p.appendChild(mk('b', '', 'Link a storefront that has its own login'));
+      p.appendChild(mk('p', 'lok-sf-hint', 'Type the email that storefront signs in with. We email it a confirm link; confirming there links the two.'));
       var form = document.createElement('form'); form.className = 'lok-sf-form'; form.setAttribute('novalidate', '');
       var inp = document.createElement('input'); inp.type = 'email'; inp.autocomplete = 'off'; inp.maxLength = 254;
       inp.placeholder = 'Login email of your other storefront';
       inp.setAttribute('aria-label', 'Login email of your other storefront');
-      var go = mk('button', 'lok-set-btn' + (linked.length ? ' quiet' : ' pri'), linked.length ? 'Link another storefront' : 'Link your storefronts'); go.type = 'submit';
-      form.appendChild(inp); form.appendChild(go); formWrap.appendChild(form);
+      var go = mk('button', 'lok-set-btn pri', 'Send the link'); go.type = 'submit';
+      form.appendChild(inp); form.appendChild(go); p.appendChild(form);
       form.addEventListener('submit', function (e) {
         e.preventDefault();
         var email = inp.value.trim();
@@ -1002,11 +1120,12 @@
         SF.requestLink(email).then(function (res) {
           go.disabled = false; go.textContent = was;
           if (res.error) { say('err', REQ_ERR[res.error] || 'Something went wrong. Nothing was linked.'); return; }
-          inp.value = '';
           var d = res.data || {};
+          closePanel();
           say('ok', 'We emailed ' + email + '. Open that email while signed in to ' + (d.to_business || 'the other storefront') + ' and tap Confirm the link. It is good for 48 hours.');
         }).catch(function () { go.disabled = false; go.textContent = was; say('err', 'Network error. Nothing was linked.'); });
       });
+      return p;
     }
 
     function confirmDisconnect(sf, row) {
@@ -1033,12 +1152,66 @@
       try { yes.focus(); } catch (e) {}
     }
 
-    function switchTo(sf, btn) {
+    function switchTo(sf, btn, label) {
+      var was = label || 'Switch to';
       btn.disabled = true; btn.textContent = 'Switching…'; say('', '');
       SF.switchTo(sf.vendors_id).then(function (res) {
-        if (res.error) { btn.disabled = false; btn.textContent = 'Switch to'; say('err', 'Could not switch right now. Try again.'); return; }
+        if (res.error) { btn.disabled = false; btn.textContent = was; say('err', 'Could not switch right now. Try again.'); return; }
         window.location.href = '/vendor-dashboard/dashboard';
-      }).catch(function () { btn.disabled = false; btn.textContent = 'Switch to'; say('err', 'Network error. You are still signed in here.'); });
+      }).catch(function () { btn.disabled = false; btn.textContent = was; say('err', 'Network error. You are still signed in here.'); });
+    }
+
+    // #217: an "Add another business" email lands on this page with the same ?link=
+    // param as #215 (a token the link flow does not know comes here). Tapping that
+    // email was the yes, so the storefront is created straight away.
+    function addProblem(reason, d) {
+      ask.innerHTML = '';
+      var biz = d.business_name || 'This storefront';
+      if (reason === 'wrong_account') {
+        ask.appendChild(mk('b', '', 'Sign in to ' + (d.from_business || 'your storefront') + ' to finish'));
+        ask.appendChild(mk('p', '', biz + ' is being added to ' + (d.from_business || 'another storefront') + ', so only that storefront’s login' +
+          (d.from_email_masked ? ' (' + d.from_email_masked + ')' : '') + ', or one linked with it, can finish. Sign out, sign in there, then open the email link again.'));
+        var a0 = mk('div', 'lok-sf-acts'); var so = mk('button', 'lok-set-btn', 'Sign out'); so.type = 'button';
+        so.addEventListener('click', function () { if (window.LokaliAuth && window.LokaliAuth.signOut) window.LokaliAuth.signOut().then(function () { window.location.href = '/login'; }); else window.location.href = '/login'; });
+        a0.appendChild(so); ask.appendChild(a0);
+        return;
+      }
+      var WHY = {
+        used: [biz + ' is already created', 'It is in your Switch to list. Nothing else to do.'],
+        expired: ['This link has expired', 'Nothing was created. Add the business again from Your storefronts to get a new link.'],
+        email_taken: ['That email is already in use', (d.email || 'That address') + ' became a Lokali login after this link was sent, so nothing was created. Add the business again with a different email.'],
+        group_full: ['Too many linked storefronts', 'One group can hold 10 storefronts. Disconnect one, then add the business again.'],
+        no_request: ['This link cannot be used', 'This link is not valid. Add the business again, or ask for a new link from the other storefront’s Settings.']
+      };
+      var w = WHY[reason] || ['Could not create the storefront', 'Nothing was created. Open the email link again in a minute.'];
+      ask.appendChild(mk('b', '', w[0])); ask.appendChild(mk('p', '', w[1]));
+    }
+    function handleAdd(token) {
+      ask.innerHTML = ''; ask.appendChild(mk('b', '', 'Checking the link…'));
+      SF.viewAdd(token).then(function (res) {
+        var d = res.data || {};
+        if (res.error) { addProblem(res.error, d); return; }
+        ask.innerHTML = '';
+        ask.appendChild(mk('b', '', 'Creating ' + (d.business_name || 'your storefront') + '…'));
+        ask.appendChild(mk('p', '', 'This takes a few seconds.'));
+        return SF.createAdd(token).then(function (r2) {
+          var d2 = r2.data || {};
+          if (r2.error || d2.ok !== true) { addProblem(r2.error || 'create_failed', d2); return; }
+          if (Array.isArray(d2.storefronts)) { linked = d2.storefronts; render(); }
+          var name = d2.business_name || d.business_name || 'Your new storefront';
+          ask.innerHTML = '';
+          ask.appendChild(mk('b', '', name + ' is ready'));
+          ask.appendChild(mk('p', '', 'It is linked to ' + mine + ' and stays hidden from shoppers until you finish its profile and add a first listing. New leads and reviews for it go to ' + (d2.email || d.email || 'its email') + '.'));
+          var a1 = mk('div', 'lok-sf-acts');
+          var label = 'Switch to ' + name + ' and set it up';
+          var sw = mk('button', 'lok-set-btn pri', label); sw.type = 'button';
+          sw.addEventListener('click', function () { switchTo({ vendors_id: d2.vendors_id }, sw, label); });
+          a1.appendChild(sw); ask.appendChild(a1);
+          // Re-read after the create committed, so the list loaded at mount (which may
+          // land later on a slow connection) can never put the old one back.
+          SF.linked().then(function (r3) { if (!r3.error && (r3.data || []).length) { linked = r3.data; render(); } }).catch(function () {});
+        });
+      }).catch(function () { ask.innerHTML = ''; ask.appendChild(mk('b', '', 'Could not check the link')); ask.appendChild(mk('p', '', 'Nothing was created. Try opening the email link again.')); });
     }
 
     // An incoming confirm link (?link=<token>). Shown above the list; the token
@@ -1058,6 +1231,7 @@
         ask.innerHTML = '';
         try { ask.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
         var d = res.data || {};
+        if (res.error === 'no_request' && SF.viewAdd) { handleAdd(token); return; } // #217
         if (res.error === 'wrong_account') {
           ask.appendChild(mk('b', '', 'Sign in to ' + (d.to_business || 'the other storefront') + ' to confirm'));
           var p1 = mk('p', '', 'This request links ' + (d.from_business || 'a storefront') + ' with ' + (d.to_business || 'another storefront') + ', and only that storefront’s login can confirm it' + (d.to_email_masked ? ' (' + d.to_email_masked + ')' : '') + '. Sign out, sign in there, then open the email link again.');
