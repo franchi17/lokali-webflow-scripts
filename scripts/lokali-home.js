@@ -6,7 +6,8 @@
  * page HTML Google reads is unchanged) and gains a one-piece search bar, a
  * trust line and an arched vendor photo that rotates through F's picks; a
  * "Shop by category" section (F's picked photos, each credited to the
- * storefront) is inserted before "What is Lokali"; that section is restyled
+ * storefront; light orange since 2026-10-14, to match the About page) is
+ * inserted before "What is Lokali"; that section is restyled
  * (centered, cards hidden, the three How-it-works steps and the six areas
  * folded in, the woman-owned line moved here); a violet "Follow the
  * storefronts you love" block and a short vendor invite close the page.
@@ -137,21 +138,23 @@
       '.lok-dots i{width:6px;height:6px;border-radius:50%;background:#D9CCF5;display:block;}' +
       '.lok-dots i.on{background:#6002EE;}' +
       // category tiles
-      '.lok-cats{background:#F3EBFF;padding:84px 0;font-family:"Plus Jakarta Sans",sans-serif;}' +
+      // F 2026-10-14: Shop by category is light orange (matches the About page); orange accents inside, no violet on it
+      '.lok-cats{background:#FFF7EC;padding:84px 0;font-family:"Plus Jakarta Sans",sans-serif;}' +
+      '.lok-cats .lok-ul{color:#FF8D00!important;}.lok-cats .lok-ul:hover{color:#F07F00!important;}.lok-cats .lok-cap b{color:#FF8D00;}' +
       '.lok-sec-head{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:30px;flex-wrap:wrap;}' +
       '.lok-sec-head h2{font-size:38px;line-height:1.1;font-weight:800;letter-spacing:-.025em;color:#1A1829;margin:0;}' +
       '.lok-sec-head .lok-ul{font-size:15px;white-space:nowrap;}' +
       '.lok-cat-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:34px 20px;}' +
       '.lok-cat{display:flex;flex-direction:column;min-width:0;text-decoration:none;color:inherit;}' +
-      '.lok-cat-img{position:relative;display:block;aspect-ratio:1/1;border-radius:16px;overflow:hidden;background:#E9E0FB;}' +
+      '.lok-cat-img{position:relative;display:block;aspect-ratio:1/1;border-radius:16px;overflow:hidden;background:#FFF2DF;}' +
       '.lok-cat-img img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .5s ease;}' +
       '.lok-cat:hover .lok-cat-img img{transform:scale(1.04);}' +
       '.lok-cat-t{font-size:16px;font-weight:800;margin-top:12px;line-height:1.25;letter-spacing:-.005em;color:#1A1829;}' +
       '.lok-cat .lok-cap{margin-top:3px;font-size:12.5px;min-height:1.4em;}' +
-      '.lok-cat-all .lok-cat-img{background:#fff;display:flex;flex-direction:column;justify-content:flex-end;padding:22px;}' +
-      '.lok-cat-all .lok-big{font-size:24px;font-weight:800;line-height:1.1;letter-spacing:-.02em;color:#6002EE;}' +
+      '.lok-cat-all .lok-cat-img{background:#fff;display:flex;flex-direction:column;justify-content:flex-end;padding:22px;box-shadow:0 1px 2px rgba(120,60,10,.06),0 8px 24px rgba(120,60,10,.06);}' +
+      '.lok-cat-all .lok-big{font-size:24px;font-weight:800;line-height:1.1;letter-spacing:-.02em;color:#FF8D00;}' +
       '.lok-cat-all .lok-sm{font-size:14px;font-weight:600;margin-top:6px;color:#4A4761;}' +
-      '.lok-cat-all .lok-arr{position:absolute;right:18px;top:18px;width:44px;height:44px;border-radius:50%;background:#6002EE;color:#fff;display:flex;align-items:center;justify-content:center;}' +
+      '.lok-cat-all .lok-arr{position:absolute;right:18px;top:18px;width:44px;height:44px;border-radius:50%;background:#FF8D00;color:#fff;display:flex;align-items:center;justify-content:center;}' +
       '.lok-cat-all .lok-arr svg{width:15px;height:15px;}' +
       // "What is Lokali" restyle
       '.wi-section.lok-v2{background:#fff!important;padding:84px 0!important;}' +

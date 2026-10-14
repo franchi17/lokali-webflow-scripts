@@ -11,7 +11,8 @@
  *     and seven owners' faces in a circle (one in the middle, six around).
  *   - "The people your neighbors actually recommend" (the #162 embed): same
  *     two paragraphs; the three storefronts become photo cards.
- *   - Principles: a calm two-by-two list with icons ("What we believe").
+ *   - Principles: four white cards with icons on lavender ("What we believe"),
+ *     with F's reworded "People over algorithms" (REWORD below).
  *   - Built for two kinds of people: vendor card lavender, customer card
  *     light orange, one founding strip.
  *   - Built for everywhere: light orange, area chips, and the waitlist button
@@ -90,6 +91,12 @@
   var I_HANDHEART = '<svg viewBox="0 0 576 512" aria-hidden="true"><path fill="currentColor" d="M163.9 136.9c-29.4-29.8-29.4-78.2 0-108s77-29.8 106.4 0l17.7 18 17.7-18c29.4-29.8 77-29.8 106.4 0s29.4 78.2 0 108L310.5 240.1c-6.2 6.3-14.3 9.4-22.5 9.4s-16.3-3.1-22.5-9.4L163.9 136.9zM568.2 336.3c13.1 17.8 9.3 42.8-8.5 55.9L433.1 485.5c-23.4 17.2-51.6 26.5-80.7 26.5L192 512 32 512c-17.7 0-32-14.3-32-32l0-64c0-17.7 14.3-32 32-32l36.8 0 44.9-36c22.7-18.2 50.9-28 80-28l78.3 0 16 0 64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32l-64 0-16 0c-8.8 0-16 7.2-16 16s7.2 16 16 16l120.6 0 119.7-88.2c17.8-13.1 42.8-9.3 55.9 8.5zM193.6 384c0 0 0 0 0 0l-.9 0c.3 0 .6 0 .9 0z"/></svg>';
   var I_FEATHER = '<svg viewBox="0 0 512 512" aria-hidden="true"><path fill="currentColor" d="M278.5 215.6L23 471c-9.4 9.4-9.4 24.6 0 33.9s24.6 9.4 33.9 0l57-57 68 0c49.7 0 97.9-14.4 139-41c11.1-7.2 5.5-23-7.8-23c-5.1 0-9.2-4.1-9.2-9.2c0-4.1 2.7-7.6 6.5-8.8l81-24.3c2.5-.8 4.8-2.1 6.7-4l22.4-22.4c10.1-10.1 2.9-27.3-11.3-27.3l-32.2 0c-5.1 0-9.2-4.1-9.2-9.2c0-4.1 2.7-7.6 6.5-8.8l112-33.6c4-1.2 7.4-3.9 9.3-7.7C506.4 207.6 512 184.1 512 160c0-41-16.3-80.3-45.3-109.3l-5.5-5.5C432.3 16.3 393 0 352 0s-80.3 16.3-109.3 45.3L139 149C91 197 64 262.1 64 330l0 55.3L253.6 195.8c6.2-6.2 16.4-6.2 22.6 0c5.4 5.4 6.1 13.6 2.2 19.8z"/></svg>';
   var PR_ICONS = [I_SHIELD, I_USERS, I_HANDHEART, I_FEATHER];
+  // Copy F approved in the mockup (2026-10-14). Swapped only while the Designer
+  // still carries the old wording, so a later Designer edit always wins.
+  var REWORD = {
+    'No outside advertisers. No third-party algorithms deciding who gets seen. Lokali may offer ways for vendors to stand out, but those tools are built by us, for you, and they never let outside money dictate your visibility.':
+      'No outside advertisers. No third-party algorithms deciding who gets seen. Lokali may offer vendors ways to stand out, but we build those tools ourselves, and outside money never decides who you see.'
+  };
 
   var C = { ink: '#1A1829', dusk: '#4A4761', v: '#6002EE', vdk: '#4B02BB', lav: '#F3EBFF', lavLine: '#D9CCF5',
     or: '#FF8D00', or50: '#FFF2DF', orWash: '#FFF7EC', orLine: '#F4DCC0', edge: '#DEDAEE' };
@@ -190,9 +197,10 @@
       // principles
       '.lok-ab-pr{background:' + C.lav + ';}' +
       '.lok-ab-pr .lok-h2{margin-bottom:30px!important;}' +
-      '.lok-pr-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 56px;}' +
-      '.lok-pr{display:grid;grid-template-columns:52px minmax(0,1fr);gap:20px;border-top:1px solid ' + C.lavLine + ';padding:28px 0 34px;}' +
-      '.lok-pr-ic{width:52px;height:52px;border-radius:50%;background:#fff;color:' + C.v + ';display:flex;align-items:center;justify-content:center;}' +
+      // F 2026-10-14: the four principles as white cards on the lavender band
+      '.lok-pr-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;}' +
+      '.lok-pr{display:grid;grid-template-columns:52px minmax(0,1fr);gap:20px;background:#fff;border-radius:20px;padding:28px 30px 30px;box-shadow:0 1px 2px rgba(40,32,90,.06),0 8px 24px rgba(40,32,90,.06);}' +
+      '.lok-pr-ic{width:52px;height:52px;border-radius:50%;background:' + C.lav + ';color:' + C.v + ';display:flex;align-items:center;justify-content:center;}' +
       '.lok-pr-ic svg{width:21px;height:21px;}' +
       '.lok-ab .lok-pr-t{font:800 21px/1.25 ' + F + '!important;letter-spacing:-.01em!important;color:' + C.ink + '!important;margin:0!important;text-transform:none!important;}' +
       '.lok-ab .lok-pr-b{font:400 15.5px/1.65 ' + F + '!important;color:' + C.dusk + '!important;margin:8px 0 0!important;}' +
@@ -264,7 +272,7 @@
         '.lok-wallfig{margin-top:28px;}.lok-trust{font-size:12.5px;gap:6px 12px;}.lok-acts{flex-direction:column;gap:14px;margin-top:24px;}.lok-acts .lok-btn{width:100%;}' +
         '.lok-ab .lok-copy{font-size:15.5px!important;line-height:1.65!important;}.lok-kn-ask{font-size:18px;margin:32px 0 12px;}' +
         '.lok-kn-grid{display:none;}.lok-kn-rows{display:grid;}.lok-ab .lok-kn-note{font-size:13px!important;margin-top:16px;}' +
-        '.lok-pr-grid{grid-template-columns:1fr;}.lok-pr{grid-template-columns:44px minmax(0,1fr);gap:14px;padding:22px 0 24px;}.lok-pr-ic{width:44px;height:44px;}.lok-pr-ic svg{width:17px;height:17px;}' +
+        '.lok-pr-grid{grid-template-columns:1fr;gap:12px;}.lok-pr{grid-template-columns:44px minmax(0,1fr);gap:14px;padding:22px 20px 24px;border-radius:18px;}.lok-pr-ic{width:44px;height:44px;}.lok-pr-ic svg{width:17px;height:17px;}' +
         '.lok-ab .lok-pr-t{font-size:18px!important;}.lok-ab .lok-pr-b{font-size:15px!important;}' +
         '.lok-who{padding:24px 22px;}.lok-ab .lok-who-h{font-size:23px!important;margin-top:16px!important;}.lok-ab .lok-who-p{font-size:15px!important;line-height:1.65!important;}' +
         '.lok-chk{grid-template-columns:1fr;gap:8px;}.lok-chk li{font-size:14px;}.lok-who-foot{padding-top:20px;}' +
@@ -536,7 +544,11 @@
       item.appendChild(svgSpan('lok-pr-ic', PR_ICONS[i % PR_ICONS.length]));
       var txt = el('div');
       if (t) txt.appendChild(take(t, 'lok-pr-t'));
-      if (b) txt.appendChild(take(b, 'lok-pr-b'));
+      if (b) {
+        var now = REWORD[oneLine(b.textContent)];
+        if (now) b.textContent = now;
+        txt.appendChild(take(b, 'lok-pr-b'));
+      }
       item.appendChild(txt);
       grid.appendChild(item);
     }
