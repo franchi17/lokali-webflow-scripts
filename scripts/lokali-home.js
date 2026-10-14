@@ -43,14 +43,14 @@
     { vid: 673, slug: 'baby-pima', name: 'Baby Pima', owner: 'Sofia', town: 'Spring',
       img: MEDIA + '673/portfolio/muvlpqm170bcji.webp', alt: 'A baby in a pima cotton outfit by Baby Pima' }
   ];
-  // Category tiles: the work, one storefront each, no storefront twice.
+  // Category tiles: F's saved picks (artifact picker, 2026-10-14 17:46Z).
   var CATS = [
-    { slug: 'handcrafted',  label: 'Handmade & Custom',       vid: 146, from: 'Paperloom',                 img: MEDIA + '146/product/mtj1zr4dvrpucw.webp',  pos: '50% 40%' },
+    { slug: 'handcrafted',  label: 'Handmade & Custom',       vid: 447, from: 'Cherry Dot Store',          img: MEDIA + '447/portfolio/mu02wb0q2pgvfs.webp', pos: '50% 50%' },
     { slug: 'home',         label: 'Home & Property',         vid: 431, from: 'Madrone Painting LLC',      img: MEDIA + '431/portfolio/mu04wxycnnez00.webp', pos: '40% 50%' },
     { slug: 'events',       label: 'Events & Entertainment',  vid: 578, from: 'The Fairytale Spa Woodlands', img: MEDIA + '578/portfolio/mue4uyxcm7y9ip.webp', pos: '50% 40%' },
-    { slug: 'fashion',      label: 'Clothing & Accessories',  vid: 286, from: 'Quori and Lace',            img: MEDIA + '286/portfolio/mt93nremtd92tt.jpeg', pos: '50% 25%' },
-    { slug: 'food',         label: 'Food',                    vid: 421, from: 'Donut Resist',              img: MEDIA + '421/product/mtxev77m57kv8a.webp',  pos: '50% 55%' },
-    { slug: 'children',     label: 'Children',                vid: 610, from: 'Engaged Minds Academy',     img: MEDIA + '610/service/muievyl8ges15r.webp',  pos: '50% 50%' },
+    { slug: 'fashion',      label: 'Clothing & Accessories',  vid: 286, from: 'Quori and Lace',            img: MEDIA + '286/portfolio/mt93l791x3pzbrv2.jpg', pos: '50% 30%' },
+    { slug: 'food',         label: 'Food',                    vid: 539, from: "Mia's Table",              img: MEDIA + '539/portfolio/mubhlk7f3n0n3w.avif', pos: '50% 50%' },
+    { slug: 'children',     label: 'Children',                vid: 610, from: 'Engaged Minds Academy',     img: MEDIA + '610/service/muiez549uibmuv.webp', pos: '50% 40%' },
     { slug: 'business',     label: 'Business',                vid: 260, from: 'Laso Business Consulting',  img: MEDIA + '260/service/svc-b33d4144a2.jpg',   pos: '50% 50%' },
     { slug: 'professional', label: 'Professional Services',   vid: 672, from: 'The Fitzpatrick Group',     img: MEDIA + '672/service/mux09frtbzqy9t.webp',  pos: '50% 25%' },
     { slug: 'wellness',     label: 'Wellness',                vid: 688, from: 'ANIKO Lifestyle & Wellness', img: MEDIA + '688/service/mv06fj6sz6s6e3.jpg',   pos: '50% 50%' }
