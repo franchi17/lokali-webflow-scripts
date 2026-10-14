@@ -73,6 +73,10 @@
       // /pricing anchor targets clear the fixed header on jump (the plan cards'
       // CTA and the guides still link to #plans / #compare). Was in pricing-nav.
       '#plans,#compare,#versus,#faq{scroll-margin-top:96px;}' +
+      // This week gate (see twGate): hidden until html.lok-tw. The footer row is a
+      // cloned <li>, so hide the row, not just the link, where :has() exists.
+      'html:not(.lok-tw) .header-nav-menu-list a[href="/this-week"],html:not(.lok-tw) #lok-mnav-panel a[href="/this-week"],' +
+      'html:not(.lok-tw) .lok-ft a[href="/this-week"],html:not(.lok-tw) .lok-ft li:has(> a[href="/this-week"]){display:none !important;}' +
       // Vertical alignment of the whole desktop nav row: Webflow NavbarLinks
       // ride vertical-align:top while plain links and our injected triggers sit
       // on the baseline, ~2px lower. Normalize all of them to the NavbarLink
@@ -252,7 +256,39 @@
     return true;
   }
 
+  // ── This week gate (F 2026-10-14: "hide THIS WEEK until someone actually uses
+  // that feature"). Every public link to /this-week (desktop header link, phone
+  // menu row, footer row — all carry href="/this-week") is hidden until
+  // weekend_feed() has at least TW_MIN upcoming posts; then html.lok-tw reveals
+  // them. The answer is cached per tab for an hour so it costs one RPC per
+  // session, not one per page. The page itself stays reachable by URL, and the
+  // vendor side (Followers > Where I'll be, storefront block, Thursday email)
+  // is untouched: this only decides whether the site POINTS at the page.
+  var TW_MIN = 3, TW_KEY = 'lokali_tw', TW_TTL = 60 * 60 * 1000;
+  function twShow() { document.documentElement.classList.add('lok-tw'); }
+  function twGate() {
+    var cached = null;
+    try { cached = JSON.parse(sessionStorage.getItem(TW_KEY) || 'null'); } catch (e) {}
+    if (cached && cached.t && (Date.now() - cached.t) < TW_TTL) { if (cached.on) twShow(); return; }
+    var ready = window.LokaliSupabaseReady;
+    if (!ready || !ready.then) return; // no client on this page: stay hidden
+    ready.then(function () {
+      var SB = window.LokaliSupabaseAPI;
+      if (!SB || !SB.posts || !SB.posts.weekendFeed) return;
+      return SB.posts.weekendFeed(9).then(function (res) {
+        var now = Date.now();
+        var n = (res && Array.isArray(res.data)) ? res.data.filter(function (e) {
+          return e && e.vendor && e.vendor.slug && e.starts_at && Date.parse(e.ends_at || e.starts_at) >= now;
+        }).length : 0;
+        var on = n >= TW_MIN;
+        try { sessionStorage.setItem(TW_KEY, JSON.stringify({ on: on, t: Date.now() })); } catch (e) {}
+        if (on) twShow();
+      });
+    }).catch(function () {});
+  }
+
   function boot() {
+    twGate();
     if (run()) return;
     // The header is server-rendered, but retry briefly in case it paints late.
     var n = 0, t = setInterval(function () { if (run() || ++n > 20) clearInterval(t); }, 150);
