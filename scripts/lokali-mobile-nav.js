@@ -43,35 +43,26 @@
     // #185: where saved vendors will be this week (weekend_feed). Sits with
     // the Market because it is the other shopper destination.
     { label: 'This week',       href: '/this-week' },
-    { label: 'About',           href: '/about' },
-    // Features = link + tap-to-expand audience pages (mirrors the desktop
-    // "Features" dropdown from lokali-resources-nav.js; the label lands on
-    // the /features chooser).
-    // 2026-10-11 (F): "For customers should always be under Features" (a top-level row
-    // went live for a few minutes at v1.4.551 and came straight back out).
-    { label: 'Features', href: '/features', children: [
-      { label: 'For customers', href: '/for-customers' },
-      { label: 'For vendors',   href: '/for-vendors' }
+    // 2026-10-14 header redesign (F approved the mockup): About = link + tap-to-expand
+    // (Our story, How Lokali works: F "put For customers under About"); everything
+    // vendor-facing is one "For vendors" group (Features / Pricing anchors / Resources
+    // retired). Mirrors the desktop menus in lokali-resources-nav.js; keep them in step.
+    { label: 'About', href: '/about', children: [
+      { label: 'Our story',        href: '/about' },
+      { label: 'How Lokali works', href: '/for-customers' }
     ] },
-    // Pricing = link + tap-to-expand anchor links into the page's key sections
-    // (mirrors the desktop "Pricing" dropdown from lokali-pricing-nav.js).
-    { label: 'Pricing', href: '/pricing', children: [
-      { label: 'Plans',             href: '/pricing#plans' },
-      { label: 'Compare plans',     href: '/pricing#compare' },
-      { label: 'Why Lokali',        href: '/pricing#versus' },
-      { label: 'FAQ',               href: '/pricing#faq' }
-    ] },
-    // Resources = a tap-to-expand accordion of the vendor-resources guides
-    // (mirrors the desktop "Resources" dropdown from lokali-resources-nav.js).
-    { label: 'Resources', children: [
+    { label: 'For vendors', children: [
+      { label: 'What you get',     href: '/for-vendors' },
+      { label: 'Pricing',          href: '/pricing' },
+      { label: 'Founding vendors', href: '/founding-vendors' },
       // 2026-09-20 (F: "shrink it to two"): the guides moved to one landing page,
       // /vendor-resources. Keep this list identical to lokali-resources-nav.js.
       { label: 'Starting a business? Start here', href: '/start' },
       { label: 'Guides for vendors', href: '/vendor-resources' }
     ] },
     { label: 'Contact us',      href: '/contact-us' },
-    { label: 'Login',           href: '/login' },
-    { label: 'Open a storefront', href: '/sign-up', cta: true } // 2026-10-11: matches the desktop header wording
+    { label: 'Open a storefront', href: '/sign-up', cta: true }, // 2026-10-11: matches the desktop header wording
+    { label: 'Login',           href: '/login' } // under the pill, as a quiet text link (auth-nav hides it once signed in)
   ];
 
   function injectCss() {
@@ -94,21 +85,23 @@
       '#lok-mnav-search{display:flex;gap:8px;margin:12px 0 6px;}',
       '#lok-mnav-search input{flex:1 1 auto;min-width:0;box-sizing:border-box;height:44px;padding:0 14px;',
       'font-family:"Plus Jakarta Sans",system-ui,sans-serif;font-size:16px;color:#343A40;background:#fff;',
-      'border:1px solid rgba(96,2,238,.25);border-radius:10px;-webkit-appearance:none;appearance:none;}',
-      '#lok-mnav-search input::placeholder{color:#8E8BA6;}',
+      'border:1.5px solid #CFC6F2;border-radius:100px;-webkit-appearance:none;appearance:none;}',
+      '#lok-mnav-search input::placeholder{color:#6E6A85;}',
       '#lok-mnav-search input:focus{outline:none;border-color:var(--lokali-primary,#6002ee);}',
       '#lok-mnav-search button{flex:0 0 44px;height:44px;display:flex;align-items:center;justify-content:center;',
-      'background:var(--lokali-primary,#6002ee);color:#fff;border:none;border-radius:10px;cursor:pointer;}',
+      'background:#F3EBFF;color:var(--lokali-primary,#6002ee);border:none;border-radius:50%;cursor:pointer;}',
       '#lok-mnav-panel a{display:block;width:100%;box-sizing:border-box;padding:15px 6px;font-size:17px;',
-      'font-weight:500;line-height:1.2;color:var(--lokali-primary,#6002ee);text-decoration:none;',
+      'font-weight:600;line-height:1.2;color:#1A1829;text-decoration:none;',
       'border-bottom:1px solid rgba(15,23,42,.06);}',
       '#lok-mnav-panel a.lok-cta{margin-top:14px;text-align:center;background:var(--lokali-primary,#6002ee);',
-      'color:#fff;border-radius:10px;border-bottom:0;font-weight:600;padding:14px 6px;}',
+      'color:#fff;border-radius:999px;border-bottom:0;font-weight:700;padding:14px 6px;}',
+      // Login sits under the pill as a quiet centred text link (the redesign's phone drawer).
+      '#lok-mnav-panel a.lok-cta + a{border-bottom:0;text-align:center;font-size:15px;font-weight:600;color:#4A4761;padding:12px 6px 4px;}',
       // Resources accordion: header row matches the other links; caret flips; sub-links
       // reveal indented with a smooth max-height transition.
       '#lok-mnav-panel .lok-mnav-acc{display:flex;align-items:center;justify-content:space-between;width:100%;',
-      'box-sizing:border-box;padding:15px 6px;font-family:inherit;font-size:17px;font-weight:500;line-height:1.2;',
-      'color:var(--lokali-primary,#6002ee);background:none;border:none;border-bottom:1px solid rgba(15,23,42,.06);',
+      'box-sizing:border-box;padding:15px 6px;font-family:inherit;font-size:17px;font-weight:600;line-height:1.2;',
+      'color:#1A1829;background:none;border:none;border-bottom:1px solid rgba(15,23,42,.06);',
       'cursor:pointer;text-align:left;}',
       '#lok-mnav-panel .lok-mnav-car{width:9px;height:9px;border-right:2px solid currentColor;',
       'border-bottom:2px solid currentColor;transform:rotate(45deg);transition:transform .2s;flex-shrink:0;margin-right:4px;}',
@@ -121,11 +114,11 @@
       // Link + caret header row (Pricing): the label navigates, the caret expands.
       '#lok-mnav-panel .lok-mnav-row{display:flex;align-items:stretch;border-bottom:1px solid rgba(15,23,42,.06);}',
       '#lok-mnav-panel .lok-mnav-row a{flex:1 1 auto;border-bottom:0;}',
-      '#lok-mnav-panel .lok-mnav-accbtn{background:none;border:none;cursor:pointer;color:var(--lokali-primary,#6002ee);',
+      '#lok-mnav-panel .lok-mnav-accbtn{background:none;border:none;cursor:pointer;color:#6E6A85;',
       'display:flex;align-items:center;justify-content:center;min-width:44px;padding:0 6px;}',
       '#lok-mnav-panel .lok-mnav-sub{max-height:0;overflow:hidden;transition:max-height .25s ease;}',
       '#lok-mnav-panel .lok-mnav-grp.open .lok-mnav-sub{max-height:520px;}',
-      '#lok-mnav-panel .lok-mnav-sub a{padding-left:20px;font-size:15px;}',
+      '#lok-mnav-panel .lok-mnav-sub a{padding-left:20px;font-size:15px;font-weight:500;color:#4A4761;}',
       // Hamburger -> X morph while the menu is open (two-bar hamburger; bars ~15px apart).
       // The original bars are driven by Webflow IX2 (Web Animations API) which overrides
       // even inline !important, so we hide them and render our own morphing icon instead.
@@ -140,7 +133,7 @@
       '@media screen and (max-width:991px){.header-right-side{margin-left:auto;}}',
       '.lok-burger{position:relative;width:30px;height:18px;flex:0 0 auto;}',
       '.lok-burger span{position:absolute;left:0;right:0;height:3px;border-radius:20px;',
-      'background:#343A40;transition:transform .25s ease,top .25s ease;}',
+      'background:#1A1829;transition:transform .25s ease,top .25s ease;}',
       '.lok-burger span:first-child{top:3px;}',
       '.lok-burger span:last-child{top:12px;}',
       'html.lok-mnav-open .lok-burger span:first-child{top:7.5px;transform:rotate(45deg);}',
@@ -188,15 +181,15 @@
       '#lok-row2-form input::placeholder{color:#6E6A85;}',
       '#lok-row2-form input::-webkit-search-cancel-button{-webkit-appearance:none;}',
       '#lok-row2-form button{flex:0 0 36px;width:36px;height:36px;border-radius:50%;border:none;padding:0;',
-      'display:flex;align-items:center;justify-content:center;background:var(--lokali-primary,#6002ee);color:#fff;cursor:pointer;}',
+      'display:flex;align-items:center;justify-content:center;background:#F3EBFF;color:var(--lokali-primary,#6002ee);cursor:pointer;}',
       // Signed-out row 1 keeps the vendor CTA on phones (F: keep "Become a vendor").
       // auth-nav inserts .lok-acct when signed in, which hides it again.
       '}',
       '#lok-row1-cta{display:none;}',
       '@media screen and (min-width:360px) and (max-width:767px){',
       'html.lok-row2 #lok-row1-cta{display:inline-flex;align-items:center;min-height:36px;box-sizing:border-box;',
-      'padding:0 10px;margin-right:6px;border:1.5px solid #6002EE;border-radius:100px;color:#6002EE;background:transparent;',
-      'font-family:"Plus Jakarta Sans",system-ui,sans-serif;font-size:12px;font-weight:600;line-height:1;text-decoration:none;white-space:nowrap;flex:0 0 auto;}',
+      'padding:0 12px;margin-right:6px;border:0;border-radius:100px;color:#fff;background:#6002EE;',
+      'font-family:"Plus Jakarta Sans",system-ui,sans-serif;font-size:12px;font-weight:700;line-height:1;text-decoration:none;white-space:nowrap;flex:0 0 auto;}',
       // Signed-out fit (measured live at 375: the 84px Login button pushed the row
       // 15px past the container and the CTA squeezed the logo). Login becomes a
       // compact text link with a 44px tap height; NO display rule here, auth-nav
@@ -211,6 +204,11 @@
       '}',
       '@media screen and (min-width:992px) and (max-width:1149px){',
       '.header-bottom-wrapper{display:none!important;}',
+      // 2026-10-14: the storefront pill stays in this range from 1040px (measured: a signed-in
+      // shopper's bell + chip + pill + burger overflow a 992px bar by ~10px; the pill is in
+      // the drawer and the footer anyway).
+      '}',
+      '@media screen and (min-width:992px) and (max-width:1039px){',
       '.header-btn-hidden-on-tablet{display:none!important;}',
       '.hamburger-menu-wrapper{display:flex!important;align-items:center;justify-content:center;min-width:44px;min-height:44px;}',
       '.header-right-side{margin-left:auto;}',
@@ -376,7 +374,7 @@
     var sinp = document.createElement('input');
     sinp.type = 'search';
     sinp.name = 'q';
-    sinp.placeholder = 'Search the market…';
+    sinp.placeholder = 'What do you need?'; // same wording as the header pill (F 2026-09-02)
     sinp.setAttribute('aria-label', 'Search the market');
     sinp.autocomplete = 'off';
     var sbtn = document.createElement('button');
@@ -682,7 +680,7 @@
       sel + '.lok-hs-open input{display:block;position:absolute;right:0;top:50%;',
       'transform:translateY(-50%);width:260px;background:#fff;border-color:var(--lokali-primary,#6002ee);',
       'z-index:9;box-shadow:0 6px 18px rgba(20,10,60,.12);}',
-      sel + '.lok-hs-open button{position:absolute;right:4px;top:50%;transform:translateY(-50%);',
+      sel + '.lok-hs-open button{position:absolute;right:5px;top:50%;transform:translateY(-50%);',
       'width:34px;height:34px;z-index:10;}',
       '}'
     ].join('');
@@ -706,14 +704,9 @@
       pre + '.header-right-side .btn-secondary{margin-left:6px!important;padding-left:10px!important;padding-right:10px!important;font-size:14.5px!important}';
   }
   var HDR_FIT_CSS = [
-    '@media screen and (min-width:1150px) and (max-width:1379px){',
-    '.header-wrapper .header-nav-list-item{padding-right:12px!important}',
-    '.header-wrapper .header-nav-link,.header-wrapper .lok-res-trig{font-size:15px!important}',
-    '.header-right-side .button-6{padding-left:12px!important;padding-right:12px!important}',
-    '.header-right-side .btn-secondary{margin-left:8px!important;padding-left:12px!important;padding-right:12px!important;font-size:15px!important}',
-    '#lok-hdr-search{margin-right:0!important}',
-    '}',
-    '@media screen and (min-width:1150px) and (max-width:1199px){' + hdrT2('') + '}',
+    // 2026-10-14: the unconditional 1150-1379 tier is gone (the redesigned bar has four
+    // links at 15px, measured to fit at 1150 signed out); the measured tiers below cover
+    // the signed-in right side.
     '@media screen and (min-width:1150px){',
     hdrT2('html.lok-nav-t2 '),
     'html.lok-nav-t3 .header-right-side .btn-secondary{display:none!important}',
@@ -781,25 +774,26 @@
         // Resting width = placeholder + padding: "What do you need?" measures 146px
         // at 500/16px PJS (Safari, 2026-09-02) and the old 180px box left 126px of
         // text room, so it clipped to "What do you nee". 206px leaves 6px slack.
-        '#lok-hdr-search input{box-sizing:border-box;width:206px;height:42px;padding:0 40px 0 14px;',
-        'font-family:"Plus Jakarta Sans",system-ui,sans-serif;font-size:16px;color:#343A40;',
-        'background:#F7F6FC;border:1px solid rgba(96,2,238,.18);border-radius:12px;',
+        // 2026-10-14 header redesign (F: 'make the search bar the same as how we have it on
+        // mobile'): the phone row-2 pill at desktop size. 262px rests, 300px on focus.
+        '#lok-hdr-search input{box-sizing:border-box;width:262px;height:44px;padding:0 48px 0 16px;',
+        'font-family:"Plus Jakarta Sans",system-ui,sans-serif;font-size:16px;color:#1A1829;',
+        'background:#fff;border:1.5px solid #CFC6F2;border-radius:100px;',
         '-webkit-appearance:none;appearance:none;transition:width .18s ease,border-color .18s ease,background .18s ease;}',
-        '#lok-hdr-search input::placeholder{color:#8E8BA6;}',
-        '#lok-hdr-search input:focus{outline:none;width:230px;border-color:var(--lokali-primary,#6002ee);',
+        '#lok-hdr-search input::placeholder{color:#6E6A85;}',
+        '#lok-hdr-search input:focus{outline:none;width:300px;border-color:var(--lokali-primary,#6002ee);',
         // The grow can brush the last nav link near 1440px - lift it so the
         // overlap reads as a deliberate overlay, same treatment as the fly-out.
-        'background:#fff;position:relative;z-index:5;box-shadow:0 4px 14px rgba(20,10,60,.10);}',
-        '#lok-hdr-search button{position:absolute;right:4px;top:50%;transform:translateY(-50%);',
+        'background:#fff;position:relative;z-index:5;box-shadow:0 0 0 3px rgba(96,2,238,.14);}',
+        '#lok-hdr-search button{position:absolute;right:5px;top:50%;transform:translateY(-50%);',
         'width:34px;height:34px;display:flex;align-items:center;justify-content:center;',
-        'background:transparent;border:none;border-radius:10px;color:var(--lokali-primary,#6002ee);cursor:pointer;}',
-        '#lok-hdr-search button:hover{background:#F3EBFF;}',
+        'background:#F3EBFF;border:none;border-radius:50%;color:var(--lokali-primary,#6002ee);cursor:pointer;}',
+        '#lok-hdr-search button:hover{background:#E9DDFC;}',
         // 1150-1379px: the middle nav links leave no room for an inline field
         // (measured overlap with "Contact us" at 1280; the inline threshold moved
         // 1350 -> 1380 on 2026-09-02 to pay for the 26px wider resting field) -
         // magnifier only, and a click flies the input out OVER the links
         // (absolute, right-anchored).
-        squeeze('@media screen and (min-width:1150px) and (max-width:1379px){', '#lok-hdr-search'),
         '@media screen and (max-width:1379px){#lok-hdr-search.lok-hs-market{display:none!important;}}',
         // Same squeeze at ANY desktop width once fitHeaderSearch() measures a
         // collision (2026-09-18: signed in, the bell + account chip + "Open your
@@ -808,7 +802,9 @@
         squeeze('@media screen and (min-width:1150px){', '#lok-hdr-search.lok-hs-tight'),
         '#lok-hdr-search.lok-hs-market.lok-hs-tight{display:none!important;}',
         // Burger range (matches F5 above): icon only, 44px target; the drawer field takes over.
-        '@media screen and (max-width:1149px){',
+        // 992-1149 (burger range, no desktop links): the field stays, a little narrower.
+        '@media screen and (min-width:992px) and (max-width:1149px){#lok-hdr-search input{width:214px;}#lok-hdr-search input:focus{width:260px;}}',
+        '@media screen and (max-width:991px){',
         '#lok-hdr-search{margin-right:0;}',
         '#lok-hdr-search input{display:none;}',
         '#lok-hdr-search button{position:static;transform:none;width:44px;height:44px;}',
@@ -886,6 +882,11 @@
     window.addEventListener('resize', refit);
     window.addEventListener('load', refit);
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(refit);
+    // 2026-10-14: Webflow's webfont loader swaps Plus Jakarta Sans in AFTER fonts.ready
+    // (html gets wf-active later), which widened the links and left the field on top of
+    // them until the next resize. Re-fit on that class flip and on a few timers.
+    if (window.MutationObserver) new MutationObserver(refit).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    [300, 900, 2200].forEach(function (ms) { setTimeout(refit, ms); });
     // auth-nav swaps Login for the bell + account chip after the session resolves.
     if (window.MutationObserver) {
       new MutationObserver(refit).observe(right, { childList: true, subtree: true, characterData: true });

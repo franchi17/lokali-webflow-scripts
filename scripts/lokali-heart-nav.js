@@ -45,8 +45,8 @@
     s.id = 'lok-heart-nav-css';
     s.textContent = [
       '#lok-heart-nav{position:relative;display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;flex:0 0 auto;',
-      'border:none;background:none;padding:0;margin:0 2px;border-radius:50%;color:#6002EE;cursor:pointer;text-decoration:none;font-family:' + FONT + ';}',
-      '#lok-heart-nav:hover{background:rgba(96,2,238,.07);}',
+      'border:none;background:none;padding:0;margin:0 2px;border-radius:50%;color:#4A4761;cursor:pointer;text-decoration:none;font-family:' + FONT + ';}', // 2026-10-14 header redesign: dusk at rest like the links
+      '#lok-heart-nav:hover{background:rgba(96,2,238,.07);color:#6002EE;}',
       '#lok-heart-nav:focus-visible{outline:2px solid #6002EE;outline-offset:2px;}',
       '#lok-heart-nav svg{display:block;}',
       // Tooltip for the signed-out heart (hover and keyboard focus); never on touch.

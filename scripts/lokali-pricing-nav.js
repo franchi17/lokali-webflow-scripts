@@ -1,4 +1,9 @@
 /*
+  RETIRED 2026-10-14 (header redesign): the Pricing anchors dropdown left the header;
+  /pricing is a plain entry in the "For vendors" menu (lokali-resources-nav.js, which
+  also carries the scroll-margin rule for #plans/#compare/#versus/#faq). The footer tag
+  was removed in the same release. Kept for history; nothing loads it.
+
   Lokali — Pricing header dropdown (nav injection).
 
   Adds a dropdown of anchor links to the key /pricing sections under the

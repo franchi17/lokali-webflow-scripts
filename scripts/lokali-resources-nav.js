@@ -1,96 +1,122 @@
 /*
-  Lokali — header dropdowns (nav injection): "Features" + "Resources".
+  Lokali — header menus (nav injection): "About" panel + "For vendors" menu.
 
-  Adds a "Features" item (after About) revealing the two audience feature
-  pages, and a "Resources" item (after Pricing) revealing the vendor-resources
-  guide pages. Injected by JS (same established pattern as lokali-auth-nav.js /
-  lokali-availability.js) so the shared Webflow header component is never
-  edited — additive + trivially reversible (remove the one footer <script> tag
-  and it's gone).
+  2026-10-14 header redesign (F approved the mockup): the bar reads
+  The Market · This week · About ▾ · For vendors ▾. The Designer's shared
+  Header V1 component carries the three real links; this script adds
+
+    - a hover panel under the EXISTING "About" link (Our story, How Lokali
+      works). About itself still navigates on click.
+    - a "For vendors" trigger right after About with every vendor-facing page:
+      What you get, Pricing, Founding vendors, then Start here and Guides.
+      (Replaces the old Features / Pricing / Resources trio; lokali-pricing-nav.js
+      is retired, its scroll-margin rule for the /pricing anchors lives here now.)
+    - a violet underline on the link for the page you are on (desktop only).
+
+  Injected by JS (same established pattern as lokali-auth-nav.js) so the
+  shared Webflow header component is never edited for menus — additive +
+  reversible (remove the one footer <script> tag and the bar is back to
+  three plain links). The file keeps its historic name so the footer pin and
+  the loader notes stay valid.
 
   Responsive by design, works in BOTH nav menus:
     - Desktop list (.header-nav-menu-list, not in .w-nav-menu): a hover/click
       dropdown panel positioned under the trigger.
     - Mobile hamburger list (inside .w-nav-menu / .show-in-tablet): a tap-to-
-      expand inline accordion (hover doesn't exist on touch).
-
-  "Features" is a real link — clicking it lands on /features (the chooser
-  page); only the two audience pages appear in its hover panel. On mobile the
-  tap therefore navigates to /features, which links both pages itself.
-
-  Load site-wide via the footer:
-    <script src="https://cdn.jsdelivr.net/gh/franchi17/lokali-webflow-scripts@v1.4/scripts/lokali-resources-nav.js"></script>
+      expand inline accordion. (Phones never render that list: lokali-mobile-nav.js
+      builds its own drawer from its LINKS array. Keep the two in step.)
 
   Self-contained, idempotent (safe to run twice / on every page). Matches the
-  live nav link styling: Plus Jakarta Sans, 16px/500, brand violet #6002EE.
+  redesigned nav link styling: Plus Jakarta Sans, 15px/600, dusk #4A4761,
+  ink on hover, violet reserved for the current-page underline and panel hover.
 */
 (function () {
   'use strict';
 
   var BRAND = '#6002EE';
+  var INK = '#1A1829';
+  var DUSK = '#4A4761';
   var FONT = "'Plus Jakarta Sans', sans-serif";
-  var MENUS = [
-    {
-      // A real link: click lands on the /features chooser; the panel only
-      // holds the two audience pages.
-      marker: 'lok-dd-feat',
-      label: 'Features',
-      href: '/features',
-      anchor: 'a[href*="/about"]',
-      // 2026-10-11: briefly a top-level nav item (v1.4.551); F: 'this menu is too cramped',
-      // so it is back here. The phone menu keeps its own 'For customers' row.
-      links: [
-        { href: '/for-customers', label: 'For customers' },
-        { href: '/for-vendors',   label: 'For vendors' }
-      ]
-    },
-    {
-      marker: 'lok-dd-res',
-      label: 'Resources',
-      href: null, // toggle-only trigger (button)
-      anchor: 'a[href*="/pricing"]',
-      // 2026-09-20 (F: "shrink it to two"): most header visitors are shoppers, so the
-      // nine vendor guides left the header for one landing page that groups them by
-      // task (/vendor-resources). Every guide is still one click from there, and the
-      // dashboard links each one in context. Add a guide on that PAGE, not here.
-      links: [
-        { href: '/start', label: 'Starting a business? Start here' },
-        { href: '/vendor-resources', label: 'Guides for vendors' }
-      ]
-    }
-  ];
+
+  // The panel under the existing About link (decorate: true = no new <li>).
+  var ABOUT = {
+    marker: 'lok-dd-about',
+    anchor: 'a[href*="/about"]',
+    decorate: true,
+    links: [
+      { href: '/about',         label: 'Our story' },
+      { href: '/for-customers', label: 'How Lokali works' }
+    ]
+  };
+  // One menu for everything vendor-facing, inserted after About.
+  var VENDORS = {
+    marker: 'lok-dd-vend',
+    label: 'For vendors',
+    href: null, // toggle-only trigger (button)
+    anchor: 'a[href*="/about"]',
+    links: [
+      { href: '/for-vendors',      label: 'What you get' },
+      { href: '/pricing',          label: 'Pricing' },
+      { href: '/founding-vendors', label: 'Founding vendors' },
+      { sep: true },
+      // 2026-09-20 (F: "shrink it to two"): the nine vendor guides live on one landing
+      // page grouped by task (/vendor-resources). Add a guide on that PAGE, not here.
+      { href: '/start',            label: 'Starting a business? Start here' },
+      { href: '/vendor-resources', label: 'Guides for vendors' }
+    ]
+  };
+  var MENUS = [ABOUT, VENDORS];
 
   function injectStyles() {
     if (document.getElementById('lok-res-styles')) return;
     var css =
+      // /pricing anchor targets clear the fixed header on jump (the plan cards'
+      // CTA and the guides still link to #plans / #compare). Was in pricing-nav.
+      '#plans,#compare,#versus,#faq{scroll-margin-top:96px;}' +
       // Vertical alignment of the whole desktop nav row: Webflow NavbarLinks
-      // ride vertical-align:top while plain links (Contact us) and our
-      // injected triggers sit on the baseline, ~2px lower. Normalize all of
-      // them to the NavbarLink position (measured: every label at the same
-      // pixel afterwards).
+      // ride vertical-align:top while plain links and our injected triggers sit
+      // on the baseline, ~2px lower. Normalize all of them to the NavbarLink
+      // position (measured: every label at the same pixel afterwards).
       '.header-nav-menu-list a.header-nav-link:not(.w-nav-link){vertical-align:top;}' +
       '.lok-res-li:not(.mob) > .lok-res-trig{position:relative;top:-2px;}' +
       '.lok-res-li{position:relative;}' +
       '.lok-res-trig{display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-family:' + FONT + ';' +
-        'font-size:16px;font-weight:500;color:' + BRAND + ';background:none;border:none;padding:0;margin:0;line-height:inherit;text-decoration:none;}' +
+        'font-size:15px;font-weight:600;color:' + DUSK + ';background:none;border:none;padding:0;margin:0;line-height:inherit;text-decoration:none;' +
+        'white-space:nowrap;transition:color .15s;}' +
+      '.lok-res-li:not(.mob):hover > .lok-res-trig,.lok-res-li.open > .lok-res-trig{color:' + INK + ';}' +
+      // Decorated About link: the caret sits inside the real link.
+      '.header-nav-link .lok-res-car{margin-left:6px;}' +
       // translate BEFORE rotate = pure-vertical nudge (post-rotation translate
-      // drifts diagonally); -1px aligns the glyph with the pricing-nav caret.
-      '.lok-res-car{display:inline-block;width:7px;height:7px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;' +
-        'transform:translateY(-1px) rotate(45deg);transition:transform .2s;flex-shrink:0;}' +
+      // drifts diagonally); -1px aligns the glyph with the text centre line.
+      '.lok-res-car{display:inline-block;width:7px;height:7px;border-right:1.75px solid currentColor;border-bottom:1.75px solid currentColor;' +
+        'transform:translateY(-1px) rotate(45deg);transition:transform .2s;flex-shrink:0;opacity:.7;}' +
+      '.header-nav-link .lok-res-car{transform:translateY(-3px) rotate(45deg);}' +
       // caret flips on desktop hover OR when pinned open (click); mobile uses .open only
       '.lok-res-li:not(.mob):hover > .lok-res-trig .lok-res-car,' +
+      '.lok-res-li:not(.mob):hover > .header-nav-link .lok-res-car,' +
       '.lok-res-li.open > .lok-res-trig .lok-res-car{transform:translateY(-1px) rotate(-135deg);}' +
+      '.lok-res-li:not(.mob):hover > .header-nav-link .lok-res-car{transform:translateY(0) rotate(-135deg);}' +
       // desktop floating panel — opens on pure-CSS :hover (robust; no JS event quirks) or .open
-      '.lok-res-panel{position:absolute;top:100%;left:0;margin-top:12px;min-width:230px;background:#fff;border:1px solid #ECE8F6;' +
-        'border-radius:14px;box-shadow:0 14px 34px rgba(60,45,120,.16);padding:8px;opacity:0;visibility:hidden;' +
+      '.lok-res-panel{position:absolute;top:100%;left:0;margin-top:14px;min-width:232px;background:#fff;border:1px solid #DEDAEE;' +
+        'border-radius:14px;box-shadow:0 2px 4px rgba(40,32,90,.06),0 14px 36px rgba(40,32,90,.14);padding:8px;opacity:0;visibility:hidden;' +
         'transform:translateY(-6px);transition:opacity .16s ease,transform .16s ease,visibility .16s ease;z-index:9999;}' +
       // a hit-bridge so the cursor can cross the gap from trigger to panel without closing
-      '.lok-res-li:not(.mob) > .lok-res-panel::before{content:"";position:absolute;top:-12px;left:0;right:0;height:12px;}' +
+      '.lok-res-li:not(.mob) > .lok-res-panel::before{content:"";position:absolute;top:-14px;left:0;right:0;height:14px;}' +
       '.lok-res-li:not(.mob):hover > .lok-res-panel,' +
       '.lok-res-li.open > .lok-res-panel{opacity:1;visibility:visible;transform:translateY(0);}' +
-      '.lok-res-panel a{display:block;font-family:' + FONT + ';font-size:14px;font-weight:500;color:#45415A;text-decoration:none;' +
+      '.lok-res-panel a{display:block;font-family:' + FONT + ';font-size:14px;font-weight:600;color:' + INK + ';text-decoration:none;' +
         'padding:9px 12px;border-radius:9px;white-space:nowrap;}' +
-      '.lok-res-panel a:hover{background:#F4F1FB;color:' + BRAND + ';}' +
+      '.lok-res-panel a:hover{background:#F3EBFF;color:' + BRAND + ';}' +
+      '.lok-res-sep{height:1px;background:#EEEDF6;margin:6px 4px;}' +
+      // Current page: a 2px violet rule under the label, anchored to the bar's bottom edge.
+      '.header-bottom-wrapper .header-nav-link.lok-nav-cur,.header-bottom-wrapper .lok-res-trig.lok-nav-cur{color:' + INK + ';}' +
+      '.header-bottom-wrapper .lok-nav-cur{position:relative;}' +
+      // Sits 1px above the bar's hairline: links are 21px tall at y=23 in a 72px bar, the
+      // 26px trigger starts 2px higher (measured in the harness, 2026-10-14).
+      '.header-bottom-wrapper .lok-nav-cur::after{content:"";position:absolute;left:0;right:0;bottom:-26px;height:2px;border-radius:2px;background:' + BRAND + ';}' +
+      '.header-bottom-wrapper .lok-res-trig.lok-nav-cur::after{bottom:-22px;}' +
+      '.header-bottom-wrapper .header-nav-link.lok-nav-cur::after{right:17px;}' + // stop short of the caret on About
+      '.header-bottom-wrapper .lok-res-trig.lok-nav-cur::after{right:13px;}' +
       // mobile accordion variant (inside the hamburger menu)
       '.lok-res-li.mob .lok-res-trig{display:flex;justify-content:space-between;width:100%;}' +
       '.lok-res-li.mob .lok-res-panel{position:static;opacity:1;visibility:visible;transform:none;box-shadow:none;border:none;' +
@@ -107,12 +133,50 @@
     var p = document.createElement('div');
     p.className = 'lok-res-panel';
     links.forEach(function (l) {
+      if (l.sep) {
+        var d = document.createElement('div');
+        d.className = 'lok-res-sep';
+        p.appendChild(d);
+        return;
+      }
       var a = document.createElement('a');
       a.href = l.href;
       a.textContent = l.label;
       p.appendChild(a);
     });
     return p;
+  }
+
+  function pathOf(href) {
+    try { return new URL(href, location.origin).pathname.replace(/\/+$/, '') || '/'; } catch (e) { return ''; }
+  }
+  var HERE = location.pathname.replace(/\/+$/, '') || '/';
+
+  // Decorate an existing link (About): caret inside the link, panel in its <li>,
+  // hover-only on desktop, tap-to-expand caret on the mobile list. The link
+  // keeps navigating in both.
+  function decorate(ul, cfg) {
+    var a = ul.querySelector(cfg.anchor);
+    var li = a ? a.closest('li') : null;
+    if (!li || li.classList.contains(cfg.marker)) return;
+    var isMobile = !!ul.closest('.w-nav-menu, .show-in-tablet');
+    li.classList.add('lok-res-li', cfg.marker);
+    if (isMobile) li.classList.add('mob');
+    var car = document.createElement('i');
+    car.className = 'lok-res-car';
+    car.setAttribute('aria-hidden', 'true');
+    a.appendChild(car);
+    li.appendChild(buildPanel(cfg.links));
+    if (isMobile) {
+      // Touch: the link keeps navigating; the caret toggles the accordion.
+      car.style.padding = '12px';
+      car.addEventListener('click', function (e) {
+        e.preventDefault(); e.stopPropagation();
+        li.classList.toggle('open');
+      });
+    }
+    // Current page underline: About for /about, and for the panel's pages.
+    if (!isMobile && cfg.links.some(function (l) { return !l.sep && pathOf(l.href) === HERE; })) a.classList.add('lok-nav-cur');
   }
 
   function inject(ul, cfg) {
@@ -122,7 +186,7 @@
     var isMobile = !!ul.closest('.w-nav-menu, .show-in-tablet');
 
     var li = document.createElement('li');
-    li.className = (anchorLi ? anchorLi.className + ' ' : 'header-nav-list-item middle ') +
+    li.className = (anchorLi ? anchorLi.className.replace(/\blok-\S+/g, '').replace(/\bmob\b/, '').trim() + ' ' : 'header-nav-list-item middle ') +
       'lok-res-li ' + cfg.marker + (isMobile ? ' mob' : '');
 
     // Link triggers navigate on click (desktop hover still reveals the panel);
@@ -139,6 +203,7 @@
     trig.setAttribute('aria-haspopup', 'true');
     trig.setAttribute('aria-expanded', 'false');
     trig.innerHTML = cfg.label + '<i class="lok-res-car" aria-hidden="true"></i>';
+    if (!isMobile && cfg.links.some(function (l) { return !l.sep && pathOf(l.href) === HERE; })) trig.classList.add('lok-nav-cur');
 
     var panel = buildPanel(cfg.links);
     li.appendChild(trig);
@@ -167,12 +232,22 @@
     }
   }
 
+  // Plain links (The Market, This week): underline the one for this page.
+  function markCurrent(ul) {
+    if (ul.closest('.w-nav-menu, .show-in-tablet')) return;
+    var links = ul.querySelectorAll('a.header-nav-link');
+    for (var i = 0; i < links.length; i++) {
+      if (pathOf(links[i].getAttribute('href') || '') === HERE) links[i].classList.add('lok-nav-cur');
+    }
+  }
+
   function run() {
     var lists = document.querySelectorAll('.header-nav-menu-list');
     if (!lists.length) return false;
     injectStyles();
     Array.prototype.forEach.call(lists, function (ul) {
-      MENUS.forEach(function (cfg) { inject(ul, cfg); });
+      MENUS.forEach(function (cfg) { if (cfg.decorate) decorate(ul, cfg); else inject(ul, cfg); });
+      markCurrent(ul);
     });
     return true;
   }
