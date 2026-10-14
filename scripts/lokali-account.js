@@ -708,6 +708,22 @@
       R + '.lk-save-bar[hidden]{display:none;}',
       '.lk-ac-toast{display:flex;align-items:center;gap:12px;font-size:14px;max-width:calc(100vw - 32px);}',
       '.lk-ac-toast button{font-family:' + F + ';min-height:40px;padding:0 14px;border-radius:9px;border:none;background:#fff;color:' + V + ';font-weight:700;font-size:13.5px;cursor:pointer;margin:-4px -8px -4px 0;}',
+      // signed-out welcome card
+      R + '.lk-so{max-width:640px;margin:1.5rem auto 0;padding:0 16px;}',
+      R + '.lk-so-card{background:#fff;border:1px solid ' + BORDER + ';border-radius:20px;padding:36px 32px 28px;text-align:center;}',
+      R + '.lk-so-icon{width:56px;height:56px;border-radius:50%;background:#EEE6FF;color:' + V + ';display:inline-flex;align-items:center;justify-content:center;margin-bottom:14px;}',
+      R + '.lk-so-title{margin:0 0 8px;font-size:24px;font-weight:700;letter-spacing:-.4px;color:' + INK + ';}',
+      R + '.lk-so-sub{margin:0 auto 22px;font-size:15px;line-height:1.55;color:' + DUSK + ';max-width:44ch;}',
+      R + '.lk-so-acts{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;}',
+      R + '.lk-so-acts .lk-btn{min-width:170px;font-size:15px;}',
+      R + '.lk-so-perks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:28px;padding-top:24px;border-top:1px solid #EEEDF6;text-align:left;}',
+      R + '.lk-so-perk{display:flex;gap:10px;align-items:flex-start;}',
+      R + '.lk-so-perk i{width:36px;height:36px;flex:0 0 36px;border-radius:10px;background:#EEE6FF;color:' + V + ';display:flex;align-items:center;justify-content:center;}',
+      R + '.lk-so-perk b{display:block;font-size:14px;font-weight:700;color:' + INK + ';margin-bottom:2px;}',
+      R + '.lk-so-perk span{font-size:13px;line-height:1.45;color:' + SLATE + ';}',
+      R + '.lk-so-foot{margin:18px 0 0;text-align:center;font-size:14px;color:' + DUSK + ';line-height:1.5;}',
+      R + '.lk-so-foot a{color:' + V + ';font-weight:600;text-decoration:none;}',
+      '@media (max-width:640px){#lokali-account .lk-so-card{padding:28px 20px 22px;}#lokali-account .lk-so-perks{grid-template-columns:1fr;gap:14px;}#lokali-account .lk-so-acts .lk-btn{flex:1 1 100%;}}',
       '@media (min-width:992px){' +
         '#lokali-account .lkh-grid.wide{grid-template-columns:repeat(3,minmax(0,1fr));}' +
         '#lokali-account .lkh-grid.wide .lk-row{flex-direction:column;align-items:stretch;padding:0;overflow:hidden;gap:10px;}' +
@@ -4819,14 +4835,61 @@
     if (!mount) return;
     injectCSS();
     if (!hasToken()) {
-      mount.innerHTML = '<div class="lk-empty"><div class="lk-empty-title">Sign in to your account</div>' +
-        '<div class="lk-empty-sub">See the vendors you follow, your reviews, and settings.</div>' +
-        '<a class="lk-btn primary" style="text-decoration:none;display:inline-block" href="/login">Sign in</a></div>';
+      renderSignedOut(mount);
+      // Sign in / sign up happen in the LokaliAuth overlay without leaving the
+      // page; a shopper stays on /account after it, so swap to the hub here.
+      window.addEventListener('lokali:authed', function () {
+        if (!hasToken() || mount.querySelector('.lkh,.lk-band')) return;
+        mount.innerHTML = '<div class="lk-empty"><div class="lk-empty-title">Loading your account…</div></div>';
+        loadAll().then(function () { render(mount); });
+        window.addEventListener('hashchange', function () { show(currentPane()); });
+      });
       return;
     }
     mount.innerHTML = '<div class="lk-empty"><div class="lk-empty-title">Loading your account…</div></div>';
     loadAll().then(function () { render(mount); });
     window.addEventListener('hashchange', function () { show(currentPane()); });
+  }
+
+  // ── signed-out /account (2026-10-14) ─────────────────────────
+  // The old state was one dashed box with a stretched link. Now: a welcome
+  // card that explains what the account is for, Sign in + Create an account
+  // in the overlay (fallback: the /login and /sign-up pages), and the three
+  // things a shopper gets. Create an account stamps the customer intent the
+  // same way the header heart does, so the role gate is skipped.
+  function renderSignedOut(mount) {
+    var A = window.LokaliAuth;
+    var wrap = el('div', 'lk-so');
+    var card = el('div', 'lk-so-card');
+    card.appendChild(el('div', 'lk-so-icon', gIco(GI_HEART, 26)));
+    card.appendChild(el('h2', 'lk-so-title', 'Your Lokali account'));
+    card.appendChild(el('p', 'lk-so-sub', 'Follow the makers and services you like, hear where they\u2019ll be each week, and keep your reviews in one place.'));
+    var acts = el('div', 'lk-so-acts');
+    var si = el('a', 'lk-btn primary', 'Sign in'); si.href = '/login';
+    si.addEventListener('click', function (e) {
+      if (A && typeof A.openSignIn === 'function') { e.preventDefault(); A.openSignIn({ source: 'account_page' }); }
+    });
+    var su = el('a', 'lk-btn ghost', 'Create an account'); su.href = '/sign-up';
+    su.addEventListener('click', function (e) {
+      try { sessionStorage.setItem('lokali_signup_intent', 'customer:' + Date.now()); } catch (err) {}
+      if (A && typeof A.openSignUp === 'function') { e.preventDefault(); A.openSignUp({ intent: 'customer', source: 'account_page' }); }
+    });
+    acts.appendChild(si); acts.appendChild(su);
+    card.appendChild(acts);
+    var perks = el('div', 'lk-so-perks');
+    [[GI_HEART, 'Following', 'Your favorite storefronts, and a note when they post something new.'],
+     [GI_STAR, 'Reviews', 'Share how it went and help the next neighbor choose.'],
+     [GI_COMPASS, 'Badges', 'Explore the Market and collect them as you go.']].forEach(function (p) {
+      var it = el('div', 'lk-so-perk');
+      it.innerHTML = '<i>' + gIco(p[0], 18) + '</i><div><b>' + esc(p[1]) + '</b><span>' + esc(p[2]) + '</span></div>';
+      perks.appendChild(it);
+    });
+    card.appendChild(perks);
+    wrap.appendChild(card);
+    var foot = el('p', 'lk-so-foot', 'Have a storefront? <a href="/login">Sign in</a> to open your dashboard, or <a href="/for-vendors">see what Lokali does for vendors</a>.');
+    wrap.appendChild(foot);
+    mount.innerHTML = '';
+    mount.appendChild(wrap);
   }
 
   function whenReady(cb) {
