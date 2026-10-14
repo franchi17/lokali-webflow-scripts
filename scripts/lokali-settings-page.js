@@ -988,6 +988,7 @@
       name_required: 'Enter the business name.',
       email_invalid: 'That email does not look right.',
       email_taken: 'That email already has a Lokali login. Use a different one, or link that storefront with Link your storefronts.',
+      email_not_yours: 'Use a version of your own email with a + in it, like you+shop@yourdomain.com. A business with its own separate inbox signs up on its own, then joins through Link your storefronts.', // SEC-105
       same_name: 'One of your storefronts already has that name.',
       group_full: 'One group can hold 10 storefronts. Disconnect one first.',
       already_sent: 'We sent that email a moment ago. Check the inbox (and spam) before sending another.',
@@ -1248,7 +1249,12 @@
           return;
         }
         ask.appendChild(mk('b', '', 'Link ' + (d.from_business || 'that storefront') + ' with ' + (d.to_business || mine) + '?'));
-        ask.appendChild(mk('p', '', 'Someone signed in to ' + (d.from_business || 'that storefront') + ' asked to link it with this one. Linked storefronts share a Switch to list, so one person can move between them without signing out. Only confirm if both are yours.'));
+        // SEC-103 (2026-10-14): name the LOGIN behind the request and say plainly what linking grants.
+        ask.appendChild(mk('p', '', 'Someone signed in to ' + (d.from_business || 'that storefront') + (d.from_email_masked ? ' (login ' + d.from_email_masked + ')' : '') + ' asked to link it with this one.'));
+        var warn = mk('p', '', 'Linking gives full access. Anyone who can sign in to ' + (d.from_business || 'that storefront') + ' will be able to open and change this storefront without your password: its leads and customer messages, listings, settings and billing. The same goes the other way.');
+        warn.style.cssText = 'background:#FFF4E5;border-radius:10px;padding:12px 14px;color:#3A2A12;';
+        ask.appendChild(warn);
+        ask.appendChild(mk('p', '', 'Only confirm if you run both storefronts yourself and you recognize that login. Lokali staff will never ask you to link your storefront.'));
         var acts = mk('div', 'lok-sf-acts');
         var yes = mk('button', 'lok-set-btn pri', 'Link storefronts'); yes.type = 'button';
         var no = mk('button', 'lok-set-btn quiet', 'Not now'); no.type = 'button';
