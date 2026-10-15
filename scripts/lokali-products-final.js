@@ -1130,6 +1130,7 @@ const LokaliProductsPage = (() => {
 
   const populateForm = (product) => {
     _selectedSubcat = product.subcategory || null; // #96-LISTING (pills re-render in showFormView)
+    _subcatDefaulted = false;
     _leadTime = product.lead_time || null;         // #78 (input + chips re-render in showFormView)
     _legacyTurnaroundDays = product.turnaround_days != null ? product.turnaround_days : null;
     if (el.fieldName())        el.fieldName().value        = product.product_name || '';
@@ -1180,7 +1181,8 @@ const LokaliProductsPage = (() => {
     if (el.fieldDelivery())    el.fieldDelivery().checked  = false;
     if (el.fieldIsActive())    el.fieldIsActive().checked   = true;
     if (el.fieldCategory())    el.fieldCategory().value    = '';
-    _selectedSubcat = null; // #96-LISTING
+    _selectedSubcat = defaultSubcatForNew(); // #96-LISTING: a new product starts on the vendor's usual tag
+    _subcatDefaulted = !!_selectedSubcat;
     _leadTime = null;       // #78
     _legacyTurnaroundDays = null;
     syncLeadInput(null);
@@ -2842,7 +2844,28 @@ const LokaliProductsPage = (() => {
   let _selectedSubcat = null;    // slug | null ("None")
   let _subcatUiMounted = false;
   let _subcatPendingSuggs = [];
+  let _subcatVendorTags = [];    // vendors.subcategories (trigger-derived from this vendor's listings)
+  let _subcatDefaulted = false;  // true while a NEW listing sits on the auto-picked tag
   const SUBCAT_LABEL_RE = /^[A-Za-z0-9&'’\-+/() ]+$/;
+
+  // The tag most of this vendor's listings already carry (ties → first seen),
+  // else the storefront's first tag. Only a slug the current list knows is
+  // used, so the dropdown never opens on a value the vendor can't see.
+  const defaultSubcatForNew = () => {
+    const counts = {}; const order = [];
+    (Array.isArray(products) ? products : []).forEach(x => {
+      const sl = x && typeof x.subcategory === 'string' ? x.subcategory : '';
+      if (!sl) return;
+      if (!counts[sl]) { counts[sl] = 0; order.push(sl); }
+      counts[sl] += 1;
+    });
+    let best = null;
+    order.forEach(sl => { if (best == null || counts[sl] > counts[best]) best = sl; });
+    if (!best && _subcatVendorTags.length) best = _subcatVendorTags[0];
+    if (!best) return null;
+    if (_subcatList && !_subcatList.some(s => s.slug === best)) return null;
+    return best;
+  };
 
   const loadSubcatTaxonomy = async () => {
     try {
@@ -2861,6 +2884,7 @@ const LokaliProductsPage = (() => {
       const vendor = meRes?.data?.vendor || meRes?.data;
       const catRaw = vendor?.categories_id;
       _subcatCategoryId = Array.isArray(catRaw) ? Number(catRaw[0]) : (catRaw != null ? Number(catRaw) : null);
+      _subcatVendorTags = Array.isArray(vendor?.subcategories) ? vendor.subcategories.filter(x => typeof x === 'string' && x) : [];
       if (taxRes && !taxRes.error && Array.isArray(taxRes.data) && _subcatCategoryId != null) {
         _subcatList = taxRes.data
           .filter(r => r && Number(r.category_id) === _subcatCategoryId && r.slug && r.label)
@@ -2894,22 +2918,29 @@ const LokaliProductsPage = (() => {
     // first ship). Inside the cell = normal flow in SERVICE DETAILS.
     wrap.style.cssText = "margin:14px 0 0;width:100%;box-sizing:border-box;background:#eee6ff;border-radius:8px;padding:12px 14px;font-family:'Plus Jakarta Sans',system-ui,sans-serif;";
     wrap.innerHTML =
-      '<div style="font-size:13px;font-weight:600;color:#33254E;margin-bottom:2px;">Tag</div>' +
-      '<p style="font-size:12.5px;color:#5A5570;margin:0 0 10px;">Pick one tag that fits this product best. Customers filter The Market by these. Optional.</p>' +
-      '<select data-subcat-select aria-label="Tag" style="display:block;width:100%;max-width:420px;font-family:inherit;font-size:16px;padding:9px 12px;border:1px solid #C9BDE8;border-radius:8px;background:#fff;color:#1A1829;cursor:pointer;box-sizing:border-box;"></select>' +
-      '<div style="border-top:1px dashed #DCD2F2;margin-top:12px;padding-top:10px;">' +
-        '<p style="font-size:12.5px;color:#5A5570;margin:0 0 8px;">Don’t see the right tag?</p>' +
+      '<div style="font-size:13px;font-weight:600;color:#33254E;margin-bottom:2px;">What kind of product is this?</div>' +
+      '<p style="font-size:12.5px;color:#5A5570;margin:0 0 10px;">Shoppers use this to narrow The Market. Pick the closest match, or leave it on None.</p>' +
+      '<select data-subcat-select aria-label="What kind of product is this?" style="display:block;width:100%;max-width:420px;font-family:inherit;font-size:16px;padding:9px 12px;border:1px solid #C9BDE8;border-radius:8px;background:#fff;color:#1A1829;cursor:pointer;box-sizing:border-box;"></select>' +
+      '<p data-subcat-note style="display:none;font-size:12px;color:#6B6787;margin:8px 0 0;line-height:1.45;"></p>' +
+      // The suggest box is folded behind one link: most vendors only ever pick
+      // from the list, and the open input + button read like a required field.
+      '<button type="button" data-subcat-fold style="display:inline-block;margin-top:10px;padding:0;border:0;background:none;font-family:inherit;font-size:12.5px;font-weight:600;color:#6002EE;cursor:pointer;text-decoration:underline;">None of these fit? Suggest a new one</button>' +
+      '<div data-subcat-suggest-wrap style="display:none;border-top:1px dashed #DCD2F2;margin-top:12px;padding-top:10px;">' +
         '<div style="display:flex;gap:6px;">' +
           '<input data-subcat-suggest maxlength="40" placeholder="e.g. Power washing" style="flex:1;min-width:0;font-family:inherit;font-size:16px;padding:8px 12px;border:1px solid #C9BDE8;border-radius:8px;background:#fff;color:#1A1829;">' +
           '<button type="button" data-subcat-suggest-btn style="font-family:inherit;font-size:13px;font-weight:600;padding:8px 16px;border-radius:8px;border:1px solid #6002EE;background:#6002EE;color:#fff;cursor:pointer;">Suggest</button>' +
         '</div>' +
-        '<p style="font-size:12px;color:#8E8BA6;margin:8px 0 0;line-height:1.45;">New tags are reviewed first, so filters stay consistent. Once approved, yours appears here for everyone.</p>' +
+        '<p style="font-size:12px;color:#8E8BA6;margin:8px 0 0;line-height:1.45;">We review new ones first so the filters stay tidy. Once approved, yours shows up here for everyone.</p>' +
         '<p data-subcat-hint style="font-size:12px;color:#6B6787;margin:8px 0 0;line-height:1.45;"></p>' +
         '<div data-subcat-pending style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>' +
       '</div>';
     host.appendChild(wrap);
     const sel = wrap.querySelector('[data-subcat-select]');
-    sel.addEventListener('change', () => { _selectedSubcat = sel.value || null; });
+    sel.addEventListener('change', () => { _selectedSubcat = sel.value || null; _subcatDefaulted = false; renderSubcatNote(); });
+    wrap.querySelector('[data-subcat-fold]').addEventListener('click', () => {
+      openSubcatFold();
+      try { wrap.querySelector('[data-subcat-suggest]').focus(); } catch (e) {}
+    });
     wrap.querySelector('[data-subcat-suggest-btn]').addEventListener('click', submitSubcatSuggestion);
     const inp = wrap.querySelector('[data-subcat-suggest]');
     inp.addEventListener('input', subcatTypeahead);
@@ -2937,13 +2968,30 @@ const LokaliProductsPage = (() => {
     if (_selectedSubcat && !_subcatList.some(s => s.slug === _selectedSubcat)) mk(_selectedSubcat, _selectedSubcat);
     _subcatList.slice().sort((a, b) => a.label.localeCompare(b.label)).forEach(s => mk(s.label, s.slug));
     sel.value = _selectedSubcat == null ? '' : _selectedSubcat;
+    renderSubcatNote();
     renderSubcatPending();
+  };
+
+  const openSubcatFold = () => {
+    const w = document.querySelector('#lok-product-subcat [data-subcat-suggest-wrap]');
+    const b = document.querySelector('#lok-product-subcat [data-subcat-fold]');
+    if (w) w.style.display = 'block';
+    if (b) b.style.display = 'none';
+  };
+
+  const renderSubcatNote = () => {
+    const note = document.querySelector('#lok-product-subcat [data-subcat-note]');
+    if (!note) return;
+    const show = _subcatDefaulted && !!_selectedSubcat;
+    note.textContent = show ? 'Set to match your other products. Change it if this one is different.' : '';
+    note.style.display = show ? 'block' : 'none';
   };
 
   const renderSubcatPending = () => {
     const box = document.querySelector('#lok-product-subcat [data-subcat-pending]');
     if (!box) return;
     box.innerHTML = '';
+    if (_subcatPendingSuggs.length) openSubcatFold(); // a vendor with a suggestion in flight sees its status
     _subcatPendingSuggs.forEach(p => {
       const chip = document.createElement('span');
       const approved = p.status === 'approved';
@@ -2980,6 +3028,7 @@ const LokaliProductsPage = (() => {
     link.addEventListener('click', () => {
       if (_subcatList.some(s => s.slug === match.slug)) {
         _selectedSubcat = match.slug;
+        _subcatDefaulted = false;
         renderSubcatPills();
         inp.value = '';
         setSubcatHint('Selected. It saves with this product.', 'ok');
@@ -3023,6 +3072,7 @@ const LokaliProductsPage = (() => {
         // stale, the unknown-slug pill renders it (never "reload" advice that
         // would destroy an unsaved draft).
         _selectedSubcat = d.slug;
+        _subcatDefaulted = false;
         renderSubcatPills();
         inp.value = '';
         setSubcatHint('That one already exists, so we selected it for you.', 'ok');
