@@ -3849,10 +3849,11 @@
   // set "Your area" (it sat at the bottom of Settings), 0 inquiries. So the
   // landing view must work EMPTY and must ask for the area itself. One
   // next-step card, never more (same idea as the vendor dashboard's).
-  // ⚠️ The six names mirror the ACTIVE rows of public.locations; The Market's
+  // ⚠️ The nine names mirror the ACTIVE rows of public.locations (Conroe,
+  // Shenandoah 2026-10-11, Sugar Land 2026-10-15); The Market's
   // #44 region default matches account.region against those names. Opening a
   // seventh community means adding it here too.
-  var HUB_AREAS = ['The Woodlands', 'Woodforest', 'Spring', 'Tomball', 'Katy', 'Houston'];
+  var HUB_AREAS = ['The Woodlands', 'Woodforest', 'Spring', 'Tomball', 'Katy', 'Conroe', 'Shenandoah', 'Sugar Land', 'Houston'];
 
   function nextStepCard() {
     var card = el('div', 'lkh-next');
