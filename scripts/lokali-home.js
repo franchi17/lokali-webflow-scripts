@@ -56,15 +56,19 @@
     { slug: 'professional', label: 'Professional Services',   vid: 672, from: 'The Fitzpatrick Group',     img: MEDIA + '672/service/mux09frtbzqy9t.webp',  pos: '50% 25%' },
     { slug: 'wellness',     label: 'Wellness',                vid: 688, from: 'ANIKO Lifestyle & Wellness', img: MEDIA + '688/service/mv06fj6sz6s6e3.jpg',   pos: '50% 50%' }
   ];
-  // The six open areas, in the order the old city cards used. `id` = the
-  // Supabase locations row the Market saves in localStorage (LOKALI_BROWSE_AREA),
-  // `slug` = the alias the Market's ?area= accepts (see lokali-browse CAT-LINK).
+  // The nine open areas, in the order the city cards use (Conroe + Shenandoah
+  // 2026-10-11, Sugar Land 2026-10-15). `id` = the Supabase locations row the
+  // Market saves in localStorage (LOKALI_BROWSE_AREA), `slug` = the alias the
+  // Market's ?area= accepts (see lokali-browse CAT-LINK).
   var AREAS = [
     { id: '1',  slug: 'the-woodlands', name: 'The Woodlands' },
     { id: '2',  slug: 'woodforest',    name: 'Woodforest' },
+    { id: '40', slug: 'shenandoah',    name: 'Shenandoah' },
+    { id: '4',  slug: 'conroe',        name: 'Conroe' },
     { id: '33', slug: 'spring',        name: 'Spring' },
     { id: '32', slug: 'tomball',       name: 'Tomball' },
     { id: '34', slug: 'katy',          name: 'Katy' },
+    { id: '41', slug: 'sugar-land',    name: 'Sugar Land' },
     { id: '3',  slug: 'houston',       name: 'Houston' }
   ];
   var AREA_KEY = 'LOKALI_BROWSE_AREA';
@@ -469,7 +473,7 @@
       li.appendChild(el('p', null, text));
       return li;
     }
-    var s1 = step('01', 'Pick your area', 'Our vendors already reach six areas around The Woodlands.');
+    var s1 = step('01', 'Pick your area', 'Our vendors already reach nine areas around The Woodlands and Greater Houston.');
     var areas = el('div', 'lok-areas');
     AREAS.forEach(function (a) {
       var chip = el('a', 'lok-area');

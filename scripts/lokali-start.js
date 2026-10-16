@@ -1,8 +1,8 @@
 /**
  * lokali-start.js - "Start Here": the new-business checklist at /start (2026-09-20, F).
  *
- * A public, no-account page. v3 (2026-09-20, F): WHERE comes first, one of the six
- * live Lokali cities, which resolves to a county (PLACE below; a city that spans
+ * A public, no-account page. v3 (2026-09-20, F): WHERE comes first, one of the nine
+ * live Lokali cities (Conroe, Shenandoah and Sugar Land joined 2026-10), which resolves to a county (PLACE below; a city that spans
  * counties asks which one). Then product or service (services are where the
  * licenses and certifications live), then the kind, then how you are set up,
  * build a tailored checklist that mixes the OFFICIAL steps for a small business
@@ -110,7 +110,13 @@
     { k: 'houston', t: 'Houston', counties: ['harris', 'fortbend', 'montgomery'], markets: 'Urban Harvest Farmers Market, Heights Mercantile Farmers Market and the East End Farmers Market on Navigation' },
     { k: 'spring', t: 'Spring', counties: ['harris', 'montgomery'], markets: 'Old Town Spring Farmers Market, Gosling Sunday Market and Rayford Sunday Market' },
     { k: 'tomball', t: 'Tomball', counties: ['harris', 'montgomery'], markets: 'Tomball Farmers Market, which runs every Saturday' },
-    { k: 'katy', t: 'Katy', counties: ['harris', 'fortbend', 'waller'], def: false, markets: 'Old Katy Farmers Market, the Farmers Market on Grand Parkway and the Sunday market at LaCenterra' }
+    { k: 'katy', t: 'Katy', counties: ['harris', 'fortbend', 'waller'], def: false, markets: 'Old Katy Farmers Market, the Farmers Market on Grand Parkway and the Sunday market at LaCenterra' },
+    // 2026-10-16: the three communities opened in October. Shenandoah sits inside The Woodlands' market
+    // circuit; Conroe and Sugar Land each have a Saturday market of their own (read on their organizers'
+    // pages 2026-10-16: mainstreetmarketctx.com, imperialfarmersmarket.com).
+    { k: 'shenandoah', t: 'Shenandoah', counties: ['montgomery'], markets: WOODLANDS_MARKETS },
+    { k: 'conroe', t: 'Conroe', counties: ['montgomery'], markets: 'Main Street Market in downtown Conroe, which runs every Saturday, and the Isaac Conroe Farmers Market on first Thursdays' },
+    { k: 'sugarland', t: 'Sugar Land', counties: ['fortbend'], markets: 'the Farmers Market at Imperial Park, which runs every Saturday' }
   ];
   function cityOf(k) { for (var i = 0; i < CITY.length; i++) if (CITY[i].k === k) return CITY[i]; return null; }
   function countyChips(c) { return c.counties.map(function (k) { return { k: k, t: COUNTY[k].t }; }); }
