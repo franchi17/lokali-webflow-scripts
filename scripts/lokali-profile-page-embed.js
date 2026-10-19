@@ -2719,6 +2719,10 @@ var LokaliProfilePage = (function () {
     } else {
       _selectedLocationIds.push(n);
     }
+    // Pills are buttons, so the INPUT/SELECT dirty guards never see this change;
+    // without the flag SAVE stays at pointer-events:none (same fix as the
+    // category pills, 2026-10-19 bug review H3).
+    _dirty = true; setTimeout(_refreshSaveBar, 0);
     _renderLocationPills();
   }
 

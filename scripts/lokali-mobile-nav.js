@@ -204,14 +204,18 @@
       '}',
       '@media screen and (min-width:992px) and (max-width:1149px){',
       '.header-bottom-wrapper{display:none!important;}',
+      // The link bar is hidden across this whole range, so the hamburger must be forced
+      // visible across the whole range too (Webflow hides it from 992px up). 2026-10-19:
+      // these two rules had slipped into the 992-1039 block below, leaving 1040-1149px
+      // with no menu control at all (bug review H2).
+      '.hamburger-menu-wrapper{display:flex!important;align-items:center;justify-content:center;min-width:44px;min-height:44px;}',
+      '.header-right-side{margin-left:auto;}',
+      '}',
       // 2026-10-14: the storefront pill stays in this range from 1040px (measured: a signed-in
       // shopper's bell + chip + pill + burger overflow a 992px bar by ~10px; the pill is in
       // the drawer and the footer anyway).
-      '}',
       '@media screen and (min-width:992px) and (max-width:1039px){',
       '.header-btn-hidden-on-tablet{display:none!important;}',
-      '.hamburger-menu-wrapper{display:flex!important;align-items:center;justify-content:center;min-width:44px;min-height:44px;}',
-      '.header-right-side{margin-left:auto;}',
       '}'
     ].join('');
     document.head.appendChild(s);
@@ -727,9 +731,12 @@
     if (logo && L - logo.getBoundingClientRect().right < 8) return true;
     return !!(right && right.getBoundingClientRect().left - R < 12);
   }
+  // classList.remove() rewrites the attribute (and queues a mutation record) even when the
+  // class is absent; only touch it when there is something to remove.
+  function dropClass(el, c) { if (el.classList.contains(c)) el.classList.remove(c); }
   function fitHeaderNav() {
     var de = document.documentElement;
-    de.classList.remove('lok-nav-t2'); de.classList.remove('lok-nav-t3');
+    dropClass(de, 'lok-nav-t2'); dropClass(de, 'lok-nav-t3');
     if (window.innerWidth < 1150 || !navCollides()) return;
     de.classList.add('lok-nav-t2');
     if (navCollides()) de.classList.add('lok-nav-t3');
@@ -873,10 +880,24 @@
         // room for it. The field should yield first (magnifier), full-size links stay; the nav
         // tiers only step in if the header still collides after that.
         var de = document.documentElement;
-        de.classList.remove('lok-nav-t2'); de.classList.remove('lok-nav-t3');
+        dropClass(de, 'lok-nav-t2'); dropClass(de, 'lok-nav-t3');
         fitHeaderSearch(form);
         fitHeaderNav();
       });
+    }
+    // 2026-10-19 (bug review H1): refit() itself writes html[class] (the nav tiers and the
+    // Market search class), and the class observer below used to call refit() on every
+    // such write, so the page spun ~4 mutation records per frame forever. Ignore any class
+    // change whose only difference is one of the classes this script writes.
+    var OWN_CLASSES = { 'lok-nav-t2': 1, 'lok-nav-t3': 1, 'lok-mkt-hs': 1 };
+    function foreignClassKey(str) {
+      return String(str || '').split(/\s+/).filter(function (c) { return c && !OWN_CLASSES[c]; }).sort().join(' ');
+    }
+    function onHtmlClass(recs) {
+      var now = foreignClassKey(document.documentElement.className);
+      for (var i = 0; i < recs.length; i++) {
+        if (foreignClassKey(recs[i].oldValue) !== now) { refit(); return; }
+      }
     }
     refit();
     window.addEventListener('resize', refit);
@@ -885,7 +906,7 @@
     // 2026-10-14: Webflow's webfont loader swaps Plus Jakarta Sans in AFTER fonts.ready
     // (html gets wf-active later), which widened the links and left the field on top of
     // them until the next resize. Re-fit on that class flip and on a few timers.
-    if (window.MutationObserver) new MutationObserver(refit).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    if (window.MutationObserver) new MutationObserver(onHtmlClass).observe(document.documentElement, { attributes: true, attributeFilter: ['class'], attributeOldValue: true });
     [300, 900, 2200].forEach(function (ms) { setTimeout(refit, ms); });
     // auth-nav swaps Login for the bell + account chip after the session resolves.
     if (window.MutationObserver) {

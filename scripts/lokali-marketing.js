@@ -1172,7 +1172,9 @@
   Page.prototype.formHtml = function (kind, e) {
     var t = e ? e.title : '', u = e ? (e.url || '') : '', b = e ? (e.body || '') : '';
     var img = e ? (e.image_url || '') : '';
-    return '<div class="mkt-form" data-kind="' + kind + '">' +
+    // The edit form REPLACES the entry's [data-id] card, so it must carry the id itself or
+    // Save resolves no id and inserts a duplicate (2026-10-19 bug review H4).
+    return '<div class="mkt-form" data-kind="' + kind + '"' + (e && e.id ? ' data-id="' + e.id + '"' : '') + '>' +
       '<label>' + (kind === 'cta' ? 'Button text' : 'Heading') + '</label>' +
       '<input class="mkt-in" data-f="title" maxlength="120" value="' + esc(t) + '" placeholder="' +
         (kind === 'cta' ? esc(CTA_EXAMPLE) : 'This week: your headline') + '">' +
