@@ -67,8 +67,9 @@
     { vid: 146, slug: 'paperloom', q: 'makes party favors?', who: 'Monica', biz: 'Paperloom', town: 'Spring', founding: true,
       face: MEDIA + '146/owner/mtkez2rr257slu.webp', img: MEDIA + '146/product/mtk8d90qso2ith.webp', pos: '50% 50%', alt: 'Personalized party favor boxes by Paperloom' }
   ];
-  // The six open areas: `slug` = the alias the Market's ?area= accepts (as in lokali-home.js).
-  var AREAS = { 'the woodlands': 'the-woodlands', 'woodforest': 'woodforest', 'spring': 'spring', 'tomball': 'tomball', 'katy': 'katy', 'houston': 'houston' };
+  // The nine open areas (Conroe, Shenandoah, Sugar Land added 2026-10): `slug` = the alias the
+  // Market's ?area= accepts (as in lokali-home.js).
+  var AREAS = { 'the woodlands': 'the-woodlands', 'woodforest': 'woodforest', 'shenandoah': 'shenandoah', 'conroe': 'conroe', 'spring': 'spring', 'tomball': 'tomball', 'katy': 'katy', 'sugar land': 'sugar-land', 'houston': 'houston' };
 
   // Circle geometry: center first, then clockwise from the top left (60-degree steps).
   // W/H = wall box, cy = center height, R = ring radius, D = face size, LW = label width.
