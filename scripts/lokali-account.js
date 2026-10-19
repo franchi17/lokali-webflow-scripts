@@ -4588,12 +4588,14 @@
     pane.appendChild(el('div', 'lk-group-label', 'Notifications'));
     var nc = el('div', 'lk-card');
     var tgLetter = toggleRow('The Neighborhood Edit', 'Our bi-monthly newsletter: vendor spotlights and what’s new on Lokali. Rare by design.', acc.notif_letter !== false);
-    var tgReplies = toggleRow('Vendor replies', 'Get an email when a vendor responds to an inquiry you sent.', acc.notif_vendor_replies !== false);
+    // 'Vendor replies' toggle removed 2026-10-19 (#214 gap 5): no such email exists.
+    // Vendors answer inquiries from their own inbox, so Lokali never sees the reply
+    // and cannot send one. The column stays; nothing reads it.
     var tgRemind = toggleRow('Review reminders', 'A gentle nudge to review a vendor a few days after you contact them.', acc.notif_review_reminders === true);
     // #185: weekly email about the vendors this person saved (default ON in
     // patch_vendor_posts.sql; the digest cron reads this flag).
     var tgSaved = toggleRow('Updates from vendors you follow', 'One email on Thursdays when a vendor you follow posts an update or where they will be. No email on quiet weeks.', acc.notif_saved_updates !== false);
-    nc.appendChild(tgLetter.row); nc.appendChild(tgReplies.row); nc.appendChild(tgSaved.row); nc.appendChild(tgRemind.row);
+    nc.appendChild(tgLetter.row); nc.appendChild(tgSaved.row); nc.appendChild(tgRemind.row);
     pane.appendChild(nc);
 
     var bar = el('div', 'lk-save-bar');
@@ -4615,7 +4617,6 @@
         region: areaIn.input.value.trim(),
         avatar: avatarSel,
         notif_letter: tgLetter.get(),
-        notif_vendor_replies: tgReplies.get(),
         notif_review_reminders: tgRemind.get(),
         notif_saved_updates: tgSaved.get()
       }).then(function (res) {
@@ -4631,7 +4632,6 @@
         var bandAv = document.querySelector('.lk-avatar');
         if (bandAv && bandAv.parentNode) bandAv.parentNode.replaceChild(avatarNode(state.account, 'lk-avatar'), bandAv);
         state.account.notif_letter = tgLetter.get();
-        state.account.notif_vendor_replies = tgReplies.get();
         state.account.notif_review_reminders = tgRemind.get();
         state.account.notif_saved_updates = tgSaved.get();
         // #54 — mirror the newsletter flag to the Brevo list (best-effort; the
