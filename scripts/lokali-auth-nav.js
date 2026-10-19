@@ -142,7 +142,16 @@
   }
   function clearAll() { try { localStorage.removeItem(TOKEN_KEY); localStorage.removeItem(CACHE_KEY); } catch (e) {} }
 
-  if (!token()) return; // signed out → leave the native "Login" link alone
+  if (!token()) {
+    // Signed out at parse time: leave the native "Login" link alone, but build the
+    // signed-in header after an in-page (overlay) sign-in, as heart-nav already does.
+    window.addEventListener('lokali:authed', function () { if (token()) boot(); });
+    return;
+  }
+  boot();
+  function boot() {
+  if (window.__lokAuthNavBooted) return;
+  window.__lokAuthNavBooted = true;
 
   var acct = getCache();   // {role, first_name, last_name} or null
   var revealed = false;
@@ -616,4 +625,5 @@
     removeHide();
     revealed = true;
   }, 4000);
+  }
 })();

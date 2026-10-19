@@ -446,7 +446,7 @@
     var l7 = countIn(inq, 0, W7) + countIn(con, 0, W7), lPrev = countIn(inq, W7, 2 * W7) + countIn(con, W7, 2 * W7);
     var p7 = countIn(pay, 0, W7), pPrev = countIn(pay, W7, 2 * W7);
     var unread = (L.totals && L.totals.unread) || 0;
-    var sh = shares && shares.ok ? shares : null;
+    var sh = (shares && typeof shares === 'object' && shares.ok !== false) ? shares : null; // adapter share.count() strips `ok`
     var landings = sh ? (Number(sh.landings) || 0) : 0, sharers = sh ? (Number(sh.unique_sharers) || 0) : 0;
     var extra = wonTile(wonRows);
     box.className = 'lok-kpis' + (extra ? ' five' : '');
@@ -466,7 +466,7 @@
     var rows = (d && d.inquiries) || [];
     return rows.filter(function (i) { return !(i.status) || i.status === 'new'; })
       .filter(function (i) { return !i.first_reply_at; })
-      .map(function (i) { return { id: i.id, name: i.customer_name || i.customer_email || 'A shopper', email: i.customer_email || '', context: i.context || '', t: i.created_at ? Date.parse(i.created_at) : 0 }; })
+      .map(function (i) { return { id: i.id, name: i.customer_name || i.customer_email || 'A shopper', email: i.customer_email || '', context: i.context || '', t: tsOf(i.created_at) }; })  // created_at is already ms (adapter normalizeTs); Date.parse(number) is NaN
       .sort(function (a, b) { return a.t - b.t; });
   }
   function waitingLabel(t) {

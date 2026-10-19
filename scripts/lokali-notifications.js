@@ -175,7 +175,7 @@
     state.unread = 0;
     state.items = state.items.map(function (i) { i.read = true; return i; });
     render();
-    n.markRead(null).catch(function () { load(); });
+    n.markRead(null).then(function (r) { if (r && r.error) load(); }, function () { load(); }); // the client resolves an envelope, never rejects
   }
 
   // Optimistic removal — the row disappearing instantly is what makes dismiss
@@ -188,7 +188,7 @@
     state.items = state.items.filter(function (i) { return !set[i.id]; });
     state.unread = Math.max(0, state.unread - removedUnread);
     render();
-    n.dismiss(ids).catch(function () { load(); });
+    n.dismiss(ids).then(function (r) { if (r && r.error) load(); }, function () { load(); });
   }
 
   function dismissRead() {

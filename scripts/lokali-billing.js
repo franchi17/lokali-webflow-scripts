@@ -1289,6 +1289,10 @@
     } else if (rank > cur) {
       var verb = cur === 0 ? 'Get ' : 'Upgrade to ';
       btn = '<button class="lok-up-btn" type="button" data-lok-up-plan="' + plan + '">' + verb + label + '</button>';
+    } else if (upState.stripeBilled === false) {
+      // Comped plan (billing_provider internal): there is no Stripe subscription for
+      // the portal to switch, so the button used to open an empty portal.
+      btn = '<a class="lok-up-btn is-second" href="/contact-us">Ask us to change your plan</a>';
     } else {
       btn = '<button class="lok-up-btn is-second" type="button" data-lok-up-switch="' + plan + '">Switch to ' + label + '</button>';
     }
@@ -1314,6 +1318,7 @@
     if (plan !== 'free' && status && status !== 'active' && status !== 'trialing' && status !== 'past_due' && status !== 'paused') plan = 'free';
     var iv = upState.interval;
     var stripeBilled = plan !== 'free' && b.billing_provider && b.billing_provider !== 'internal';
+    upState.stripeBilled = plan === 'free' ? null : !!stripeBilled; // read by upCardHtml
 
     overlay.querySelector('#lok-up-sub').textContent = upSubtitle(b);
 

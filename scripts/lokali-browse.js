@@ -970,7 +970,18 @@
       // Fetch FAILED — this is not a recruitment surface; keep the stock copy.
       if (_renderedCards.length === 0) showEmpty(false);
     }
-    return window.LokaliAPI.vendors.list(params).then(function (out) {
+    // Page through the whole publish-ready set: the adapter caps one call at
+    // per_page rows, so without this vendor 101+ would silently vanish.
+    function fetchAllPages(page, acc) {
+      return window.LokaliAPI.vendors.list({ page: page, per_page: PER_PAGE }).then(function (out) {
+        if (out && out.error) return out;
+        var rows = extractList(out && out.data);
+        acc = acc.concat(rows);
+        if (rows.length >= PER_PAGE && page < 20) return fetchAllPages(page + 1, acc);
+        return { data: acc, error: null };
+      });
+    }
+    return fetchAllPages(params.page, []).then(function (out) {
       if (out && out.error) return retryOrGiveUp();
       hideEl(loading);
       // is_active guard is deliberately tolerant: rows without the column (the
@@ -1158,6 +1169,9 @@
       tx = ty = null;
       if (Math.abs(dx) > 34 && Math.abs(dx) > Math.abs(dy) * 1.4) {
         swiped = true;
+        // Touch browsers fire no click after a moved touch, so the flag would
+        // otherwise linger and eat the NEXT genuine tap on the cover.
+        setTimeout(function () { swiped = false; }, 400);
         holdUntil = Date.now() + 6500;
         go(dx < 0 ? 1 : -1);
       }

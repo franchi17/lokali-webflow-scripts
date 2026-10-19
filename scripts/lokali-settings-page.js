@@ -368,7 +368,8 @@
       if (_user) _user.notif_letter = !!value;
       // Mirror to the Brevo list (best-effort; the save already succeeded).
       try {
-        if (window.LokaliAPI.account.syncNewsletter) window.LokaliAPI.account.syncNewsletter();
+        var sa = window.LokaliSupabaseAPI && window.LokaliSupabaseAPI.account; // mirror lives on the client, not the adapter
+        if (sa && sa.syncNewsletter) sa.syncNewsletter();
       } catch (e) {}
       flashSaved(inputEl);
     }).catch(function () {
@@ -432,7 +433,8 @@
       }
       if (_user) _user.notif_circle = !!value;
       try {
-        if (window.LokaliAPI.account.syncCircle) window.LokaliAPI.account.syncCircle();
+        var sc = window.LokaliSupabaseAPI && window.LokaliSupabaseAPI.account;
+        if (sc && sc.syncCircle) sc.syncCircle();
       } catch (e) {}
       flashSaved(inputEl);
     }).catch(function () {

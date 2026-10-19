@@ -490,7 +490,11 @@
       };
       infoBtn.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); showPop(infoPop.style.display !== 'block'); });
       infoWrap.querySelector('.ava-info-x').addEventListener('click', function (e) { e.stopPropagation(); showPop(false); });
-      document.addEventListener('click', function (e) { if (!infoWrap.contains(e.target)) showPop(false); });
+      self._infoWrap = infoWrap; self._showPop = showPop;
+      if (!self._docClickBound) { // one document listener for the page, not one per render
+        self._docClickBound = true;
+        document.addEventListener('click', function (e) { if (self._infoWrap && !self._infoWrap.contains(e.target) && self._showPop) self._showPop(false); });
+      }
     }
 
     // Instant-save on flip, separate from the main Settings Save so a missing DB

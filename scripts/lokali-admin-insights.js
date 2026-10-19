@@ -945,7 +945,7 @@
 
   // #180 phase 2: people, not page loads.
   function journeysCard(d) {
-    var z = d.visit, f = z.funnel || {}, s = z.search || {};
+    var z = d.visit || {}, f = z.funnel || {}, s = z.search || {};
     var since = z.since ? daysSince(z.since) : null;
     var c = card('Visitors and journeys', 'People rather than page loads: one visit is one browser tab session, counted anonymously with a random id. Vendor and admin sessions are left out entirely.');
     if (!z.visits) {

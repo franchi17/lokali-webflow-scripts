@@ -2944,9 +2944,7 @@ var LokaliProfilePage = (function () {
       phone_calls:          document.getElementById('checkbox-phone-calls') ? bool('checkbox-phone-calls') : undefined,
       category_id:          categoryId,
       categories_id:        categoriesId,
-      locations_id: (locationIds && locationIds.length)
-        ? locationIds
-        : (_vendor ? _vendor.locations_id : [])
+      locations_id: locationIds || []   // an empty pick is validated, not silently replaced by the old areas
     };
   }
 
@@ -2959,6 +2957,7 @@ var LokaliProfilePage = (function () {
 
   function _validate(payload) {
     if (!payload.business_name || !payload.business_name.trim()) return 'Business name is required.';
+    if (_vendor && Array.isArray(_vendor.locations_id) && _vendor.locations_id.length && (!payload.locations_id || !payload.locations_id.length)) return 'Keep at least one service area. Without one your storefront drops out of the Market.';
     // #147 (F 2026-08-22): address is required — never public, used to confirm the
     // vendor is in the neighborhood they list under.
     if (!payload.address || !String(payload.address).trim()) return 'Your business address is required. It’s never shown publicly. We use it only to confirm you’re in the neighborhood you list under.';
@@ -3171,7 +3170,9 @@ var LokaliProfilePage = (function () {
             console.error('[ProfilePage] save error from API:', res.error);
             _showErrorPopup(res.error || 'Failed to save profile. Please try again.');
           } else {
-            _vendor = res.data;
+            // updateMe reads back the PUBLIC columns only; keep the keys it lacks
+            // (card_photo_url, address, linkedin_url) from the row we already had.
+            _vendor = Object.assign({}, _vendor || {}, res.data || {});
             if (_vendor && _vendor.profile_photo) _uploadedProfilePhotoUrl = null;
             _dirty = false; // saved — clear the leave-page warning
             _rfHasSaved = true; // unlocks the "All changes saved" confirmation

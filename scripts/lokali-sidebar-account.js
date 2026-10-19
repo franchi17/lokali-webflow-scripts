@@ -180,7 +180,7 @@
     var photo = photoUrl(v);
 
     if (v.business_name) cacheStoreName(v.business_name); // #66 P2 → header switcher
-    cacheStorePhoto(photo); // #215b → header switcher logo
+    if (data) cacheStorePhoto(photo); // #215b → header switcher logo (never overwrite the cache with '' after a failed load)
     var hadDot = !!wrap.querySelector('.lok-acct-name .lok-chip-pdot');
     setText(wrap.querySelector('.lok-acct-name'), name);
     if (hadDot && wrap.__lokChipDot) wrap.__lokChipDot(1); // setText wiped it

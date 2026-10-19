@@ -128,8 +128,9 @@
           return (f.free != null && f.pro != null && f.featured != null) ? f : FEES_DEFAULT;
         }).catch(function () { return FEES_DEFAULT; })
       : Promise.resolve(FEES_DEFAULT);
+    // past_due / paused count as paid here, matching getMyBilling's own notion of a paid plan.
     var planP = (window.LokaliAPI && window.LokaliAPI.plans && window.LokaliAPI.plans.getMyBilling)
-      ? window.LokaliAPI.plans.getMyBilling().then(function (res) { var b = (res && (res.data || res)) || {}; var p = String(b.plan || 'free').toLowerCase(); var s = String(b.plan_status || '').toLowerCase(); return (s === '' || s === 'active' || s === 'trialing') ? p : 'free'; }).catch(function () { return 'free'; })
+      ? window.LokaliAPI.plans.getMyBilling().then(function (res) { var b = (res && (res.data || res)) || {}; var p = String(b.plan || 'free').toLowerCase(); var s = String(b.plan_status || '').toLowerCase(); return (s === '' || s === 'active' || s === 'trialing' || s === 'past_due' || s === 'paused') ? p : 'free'; }).catch(function () { return 'free'; })
       : Promise.resolve('free');
     return Promise.all([feesP, planP]).then(function (a) { state.fees = a[0]; state.plan = a[1]; });
   }

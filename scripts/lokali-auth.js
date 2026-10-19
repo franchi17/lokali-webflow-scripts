@@ -1023,6 +1023,7 @@
       }).then(function (res) {
         setBusy(submit, false);
         if (res && res.error) { captcha.reset(); showMsg(err, friendlyAuthError(res.error)); return; }
+        captcha.reset(); // single-use token: a second click must not resend the spent one
         showMsg(info, 'Check your email. If an account exists for ' + em + ', a reset link is on its way.');
       }).catch(function (ex) { setBusy(submit, false); captcha.reset(); showMsg(err, friendlyAuthError(ex)); });
     });
@@ -1387,7 +1388,7 @@
       return 'That Google account already belongs to another Lokali account. Sign in with it to use that account, or pick a different Google account.';
     }
     if (low.indexOf('single') >= 0 || low.indexOf('at least') >= 0) return 'Google is the only way into this account right now, so it cannot be disconnected.';
-    return friendlyAuthError(err);
+    return friendlyAuthError(typeof err === 'string' ? { message: err } : err);
   }
   // #215: a "link your storefronts" email opened signed-out had its token stashed
   // by lokali-dashboard.js. After sign-in, land on Settings, which reads the

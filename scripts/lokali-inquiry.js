@@ -246,7 +246,9 @@
       btn.disabled = false;
       btn.textContent = 'Send message';
       if (res && res.error) {
-        var isAway = res.status === 409 || /\baway\b/i.test(String(res.error));
+        // The route answers 409 {ok:false, reason:'away'}; the client chain turns that into
+        // the string 'HTTP 409' with no status, so read the reason (and the 409 text) too.
+        var isAway = res.status === 409 || (res.data && res.data.reason === 'away') || /\baway\b|HTTP 409/i.test(String(res.error));
         // #201: the route answers 429 {reason:'rate_limited'} for every cap
         // (per IP, per vendor, across vendors, 2 per vendor per hour, blocklist).
         // Say so plainly instead of "HTTP 429", and do not invite a retry: a

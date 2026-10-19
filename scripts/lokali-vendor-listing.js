@@ -2068,11 +2068,13 @@
     if (s.price_note) return { text: s.price_note, quote: true };
     return { text: 'Get a quote', quote: true };
   }
+  // Dollars: whole amounts as "$1,250", cents kept at two places ("$12.50", never "$12.5").
+  function fmtDollars(n) { return '$' + (Number.isInteger(n) ? n.toLocaleString('en-US') : n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })); }
   function productPrice(p) {
     if (p.is_quote_based) return { text: 'Get a quote', quote: true };
     if (p.price != null && p.price !== '') {
       var num = Number(p.price);
-      return { text: isFinite(num) ? '$' + num : String(p.price), quote: false };
+      return { text: isFinite(num) ? fmtDollars(num) : String(p.price), quote: false };
     }
     if (p.price_note) return { text: p.price_note, quote: true };
     return { text: 'Get a quote', quote: true };
@@ -3639,7 +3641,7 @@
         // not claim the vendor "doesn't exist" — that copy is confidently
         // wrong about a real storefront. Offer a retry instead.
         var errTxt = String((res[0] && res[0].error) || '').toLowerCase();
-        if (v == null && /rate|429|too many|timeout|network|fetch|load failed/.test(errTxt)) renderLoadErrorState();
+        if (/rate|429|too many|timeout|network|fetch|load failed/.test(errTxt)) renderLoadErrorState(); // unwrap() hands back the envelope on error, so v is never null here
         else renderNotFoundState(); // never leave the template's demo vendor as the hero
         return;
       }

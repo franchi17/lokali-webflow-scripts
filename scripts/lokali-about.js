@@ -726,9 +726,16 @@
         if (wall && keep.length) fillWall(wall, keep);
       }
       var nodes = document.querySelectorAll('#lok-ab-know [data-vid]');
+      var hidden = {};
       for (var i = 0; i < nodes.length; i++) {
-        if (!live[nodes[i].getAttribute('data-vid')]) nodes[i].style.display = 'none';
+        var vid = nodes[i].getAttribute('data-vid');
+        if (!live[vid]) { nodes[i].style.display = 'none'; hidden[vid] = true; }
       }
+      // The desktop grid is questions-row then cards-row: shrink its column
+      // count to the survivors so each question stays above its own card.
+      var kg = document.querySelector('#lok-ab-know .lok-kn-grid');
+      var left = CARDS.filter(function (c) { return !hidden[String(c.vid)]; }).length;
+      if (kg && left && left < CARDS.length) kg.style.gridTemplateColumns = 'repeat(' + left + ',minmax(0,1fr))';
     }).catch(function (e) {
       try { console.warn('[lokali-about] vendor check skipped:', e && e.message); } catch (x) {}
     });

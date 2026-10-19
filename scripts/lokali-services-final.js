@@ -318,6 +318,7 @@ const LokaliServicesPage = (() => {
   // before this file's pin moves (#101 ship order).
   let _imgFocus = null;
   let _mainImageUrl = null;   // #149: current main-image URL, for the card preview
+  let _skipLegacySeed = false; // set while a delete re-renders the gallery
   const lcFocusPos = (r) => (r && r.image_focus_x != null && r.image_focus_y != null) ? (r.image_focus_x + '% ' + r.image_focus_y + '%') : '';
   const applyFocusPreview = () => {
     paintCoverViews();               // gallery thumb + card preview stay in sync
@@ -515,7 +516,7 @@ const LokaliServicesPage = (() => {
 
   const formatPrice = (service) => {
     const fmt = (cents) =>
-      '$' + (cents / 100).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+      '$' + (cents / 100).toLocaleString('en-US', { minimumFractionDigits: (cents % 100) ? 2 : 0, maximumFractionDigits: 2 });
 
     switch (service.price_type) {
       case 'fixed':       return fmt(service.price_cents);
@@ -564,7 +565,7 @@ const LokaliServicesPage = (() => {
   };
   const dollarsFromCents = (cents) =>
     (cents != null && !isNaN(cents) && Number(cents) !== 0)
-      ? (Number(cents) / 100).toFixed(0)
+      ? (Number(cents) % 100 === 0 ? String(Number(cents) / 100) : (Number(cents) / 100).toFixed(2))
       : '';
 
   const nextServiceSortOrder = () => {
@@ -1464,7 +1465,8 @@ const LokaliServicesPage = (() => {
     // its photo as the standalone image_url and no gallery row. Register that photo
     // as gallery photo 1 before anything else happens, so a newly added photo sits
     // BESIDE it instead of replacing it (syncCoverFromGallery makes photo 1 the cover).
-    if (!_galleryPhotos.length) {
+    if (editingId !== serviceId) return; // a slower response for another item must not land here
+    if (!_galleryPhotos.length && !_skipLegacySeed) {
       const legacy = _mainImageUrl || (services.find(x => x.id === serviceId) || {}).image_url || null;
       if (legacy && /^https:\/\//.test(legacy)) {
         const seeded = await window.LokaliAPI.services.addPhoto(serviceId, legacy, 0);
@@ -1626,7 +1628,7 @@ const LokaliServicesPage = (() => {
         const up = await window.LokaliAPI.services.uploadServiceImage(file);
         if (up.error) throw new Error(up.error);
         const pp = up.data?.path || up.data?.image_path || null;
-        const purl = up.data?.url || up.data?.image_url || (pp ? (XANO_ORIGIN + pp) : null);
+        const purl = up.data?.url || up.data?.image_url || null;
         if (!purl) throw new Error('Upload returned no URL');
         _pendingGalleryPhotos.push({ url: purl });
       } catch (e) {
@@ -1646,7 +1648,7 @@ const LokaliServicesPage = (() => {
       const up = await window.LokaliAPI.services.uploadServiceImage(file);
       if (up.error) throw new Error(up.error);
       const p = up.data?.path || up.data?.image_path || null;
-      const url = up.data?.url || up.data?.image_url || (p ? (XANO_ORIGIN + p) : null);
+      const url = up.data?.url || up.data?.image_url || null;
       if (!url) throw new Error('Upload returned no URL');
       const sort = _galleryPhotos.length;
       const res = await window.LokaliAPI.services.addPhoto(editingId, url, sort);
@@ -1678,7 +1680,9 @@ const LokaliServicesPage = (() => {
       alert('Could not remove photo. Please try again.');
     } finally {
       _galleryBusy = false;
-      await renderGallery(editingId);
+      // Removing the LAST photo must not re-seed it from the old cover.
+      _skipLegacySeed = true; _mainImageUrl = null;
+      try { await renderGallery(editingId); } finally { _skipLegacySeed = false; }
       await syncCoverFromGallery();
     }
   };

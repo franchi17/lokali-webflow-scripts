@@ -960,6 +960,8 @@
   var CHECKOUT_BASE = ((typeof window !== 'undefined' && window.LOKALI_BILLING_BASE)
     ? String(window.LOKALI_BILLING_BASE) : 'https://lokali-api.vercel.app/api/lokali').replace(/\/$/, '');
   function money(cents) { var d = (cents || 0) / 100; return '$' + d.toLocaleString('en-US', { minimumFractionDigits: (d % 1) ? 2 : 0, maximumFractionDigits: 2 }); }
+  // Dollars: whole amounts as "$1,250", cents kept at two places ("$12.50", never "$12.5").
+  function fmtDollars(n) { return '$' + (Number.isInteger(n) ? n.toLocaleString('en-US') : n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })); }
   function mountLokaliBuy(p, vendorId) {
     try {
       if (!p || p.id == null || document.getElementById('vd-lok-buy')) return;
@@ -985,7 +987,8 @@
             '#vd-lok-sheet .lb-total{display:flex;justify-content:space-between;font-weight:700;font-size:15px;border-top:1px solid #EEEDF6;padding-top:10px;margin-top:10px;}' +
             '#vd-lok-sheet .lb-go{display:block;width:100%;margin-top:12px;min-height:46px;border:0;border-radius:999px;background:#6002EE;color:#fff;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;}#vd-lok-sheet .lb-go[disabled]{opacity:.6;cursor:default;}' +
             '#vd-lok-sheet .lb-note{font-size:12px;color:#6E6A85;margin-top:8px;line-height:1.5;}#vd-lok-sheet .lb-err{font-size:13px;color:#B1006A;margin-top:8px;display:none;}' +
-            '#vd-lok-sheet .lb-x{background:none;border:0;font-family:inherit;font-size:13px;color:#6E6A85;cursor:pointer;padding:6px 0;}';
+            '#vd-lok-sheet .lb-x{background:none;border:0;font-family:inherit;font-size:13px;color:#6E6A85;cursor:pointer;padding:6px 0;}' +
+            '#vd-lok-sheet.vd-lok-float{position:fixed;left:12px;right:12px;bottom:calc(74px + env(safe-area-inset-bottom));z-index:61;max-height:70vh;overflow:auto;margin:0;}';
           document.head.appendChild(st);
         }
         var btn = cta.cloneNode(true);
@@ -997,6 +1000,15 @@
         btn.setAttribute('role', 'button'); btn.setAttribute('aria-label', 'Buy on Lokali, pay securely with a card');
         btn.style.marginBottom = '10px';
         cta.parentNode.insertBefore(btn, cta);
+        // Phones: .vd-cta is hidden and the pinned bar proxies the controls, so
+        // mirror this button there too (otherwise there is no checkout entry on phones).
+        var bar = document.getElementById('vd2-bar');
+        if (bar && !document.getElementById('vd2-bar-lok')) {
+          var mb = document.createElement('button'); mb.type = 'button'; mb.id = 'vd2-bar-lok'; mb.className = 'vd2-bar-buy';
+          mb.textContent = 'Buy on Lokali';
+          mb.addEventListener('click', function () { btn.click(); });
+          bar.insertBefore(mb, bar.firstChild);
+        }
         var sheet = null;
         btn.addEventListener('click', function (e) {
           e.preventDefault();
@@ -1013,6 +1025,8 @@
             '<div class="lb-note">Secure card payment by Stripe. You pay ' + escapeText(vendorNameForSheet()) + ' directly; Lokali never sees your card.</div>' +
             '<button type="button" class="lb-x" id="vd-lok-x">Not now</button>';
           btn.insertAdjacentElement('afterend', sheet);
+          // Hidden CTA block (phones): float the sheet above the pinned bar instead.
+          if (!btn.offsetParent) { sheet.classList.add('vd-lok-float'); document.body.appendChild(sheet); }
           var qty = sheet.querySelector('#vd-lok-qty'), total = sheet.querySelector('#vd-lok-total'), go = sheet.querySelector('#vd-lok-go'), err = sheet.querySelector('#vd-lok-err');
           function way() { var r = sheet.querySelector('input[name="vd-lok-way"]:checked'); return r ? r.value : ways[0].k; }
           function wayCents() { var k = way(); for (var i = 0; i < ways.length; i++) if (ways[i].k === k) return ways[i].cents; return 0; }
@@ -1229,7 +1243,7 @@
       return 'Get a quote';
     }
     if (it.is_quote_based) return 'Get a quote';
-    if (it.price != null && it.price !== '') { var n = Number(it.price); return isFinite(n) ? '$' + n : String(it.price); }
+    if (it.price != null && it.price !== '') { var n = Number(it.price); return isFinite(n) ? fmtDollars(n) : String(it.price); }
     if (it.price_note) return String(it.price_note);
     return 'Get a quote';
   }
@@ -1545,7 +1559,7 @@
       var priceEl = $('vd-price');
       if (priceEl) {
         if (p.is_quote_based) { priceEl.textContent = 'Get a quote'; priceEl.classList.add('vd-price-quote'); }
-        else if (p.price != null && p.price !== '') { var n = Number(p.price); priceEl.textContent = isFinite(n) ? '$' + n : String(p.price); }
+        else if (p.price != null && p.price !== '') { var n = Number(p.price); priceEl.textContent = isFinite(n) ? fmtDollars(n) : String(p.price); }
         else if (p.price_note) { priceEl.textContent = p.price_note; priceEl.classList.add('vd-price-quote'); }
       }
       show($('vd-tag-custom'), !!p.is_custom);

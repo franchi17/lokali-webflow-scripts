@@ -278,6 +278,7 @@ const LokaliProductsPage = (() => {
   // before this file's pin moves (#101 ship order).
   let _imgFocus = null;
   let _mainImageUrl = null;   // #149: current main-image URL, for the card preview
+  let _skipLegacySeed = false; // set while a delete re-renders the gallery
   const lcFocusPos = (r) => (r && r.image_focus_x != null && r.image_focus_y != null) ? (r.image_focus_x + '% ' + r.image_focus_y + '%') : '';
   const applyFocusPreview = () => {
     paintCoverViews();               // gallery thumb + card preview stay in sync
@@ -1168,7 +1169,11 @@ const LokaliProductsPage = (() => {
     setShipCents(product.shipping_cents); // #205
   };
 
+  // products has no price_note column (services does), so the template's note
+  // input can never persist: keep it out of sight rather than drop typed text.
+  const hidePriceNote = () => { const pn = el.fieldPriceNote(); if (!pn) return; pn.style.display = 'none'; const lb = pn.previousElementSibling; if (lb && lb.tagName === 'LABEL') lb.style.display = 'none'; };
   const resetForm = () => {
+    hidePriceNote();
     [
       el.fieldName(), el.fieldDescription(), el.fieldPrice(), el.fieldPriceNote(),
       el.fieldStock(), el.fieldTurnaround()
@@ -1500,7 +1505,8 @@ const LokaliProductsPage = (() => {
     // its photo as the standalone image_url and no gallery row. Register that photo
     // as gallery photo 1 before anything else happens, so a newly added photo sits
     // BESIDE it instead of replacing it (syncCoverFromGallery makes photo 1 the cover).
-    if (!_galleryPhotos.length) {
+    if (editingId !== productId) return; // a slower response for another item must not land here
+    if (!_galleryPhotos.length && !_skipLegacySeed) {
       const legacy = _mainImageUrl || (products.find(x => x.id === productId) || {}).image_url || null;
       if (legacy && /^https:\/\//.test(legacy)) {
         const seeded = await window.LokaliAPI.products.addPhoto(productId, legacy, 0);
@@ -1662,7 +1668,7 @@ const LokaliProductsPage = (() => {
         const up = await window.LokaliAPI.products.uploadProductImage(file);
         if (up.error) throw new Error(up.error);
         const pp = up.data?.path || up.data?.image_path || null;
-        const purl = up.data?.url || up.data?.image_url || (pp ? (XANO_ORIGIN + pp) : null);
+        const purl = up.data?.url || up.data?.image_url || null;
         if (!purl) throw new Error('Upload returned no URL');
         _pendingGalleryPhotos.push({ url: purl });
       } catch (e) {
@@ -1682,7 +1688,7 @@ const LokaliProductsPage = (() => {
       const up = await window.LokaliAPI.products.uploadProductImage(file);
       if (up.error) throw new Error(up.error);
       const p = up.data?.path || up.data?.image_path || null;
-      const url = up.data?.url || up.data?.image_url || (p ? (XANO_ORIGIN + p) : null);
+      const url = up.data?.url || up.data?.image_url || null;
       if (!url) throw new Error('Upload returned no URL');
       const sort = _galleryPhotos.length;
       const res = await window.LokaliAPI.products.addPhoto(editingId, url, sort);
@@ -1714,7 +1720,9 @@ const LokaliProductsPage = (() => {
       alert('Could not remove photo. Please try again.');
     } finally {
       _galleryBusy = false;
-      await renderGallery(editingId);
+      // Removing the LAST photo must not re-seed it from the old cover.
+      _skipLegacySeed = true; _mainImageUrl = null;
+      try { await renderGallery(editingId); } finally { _skipLegacySeed = false; }
       await syncCoverFromGallery();
     }
   };
@@ -1756,7 +1764,6 @@ const LokaliProductsPage = (() => {
       product_description: el.fieldDescription()?.value.trim() || null,
       category_id:         parseInt(el.fieldCategory()?.value) || null,
       price:               isQuote ? null : priceFromInput(el.fieldPrice()?.value),
-      price_note:          el.fieldPriceNote()?.value.trim() || null,
       stock_quantity:      (() => {
         const v = el.fieldStock()?.value;
         if (v === '' || v == null) return null;

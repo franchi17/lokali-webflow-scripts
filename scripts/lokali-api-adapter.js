@@ -1199,7 +1199,10 @@
             keepaliveInsert('lead_events', { vendors_id: row.vendors_id, event_type: row.event_type, source: row.source }, token);
           });
         };
-        authTokenP().then(send, function () { send(null); });
+        // Signed out: fire now (keepalive only protects a request already issued; a
+        // tel:/wa.me navigation can unload the page before the token promise settles).
+        var signedOut = !!(window.LokaliAuth && typeof window.LokaliAuth.isSignedIn === 'function' && !window.LokaliAuth.isSignedIn());
+        (signedOut ? Promise.resolve(null) : authTokenP()).then(send, function () { send(null); });
       } catch (e) {}
       trackVisit('contact', { vendorId: vendorId, source: eventType });
     },
@@ -1248,7 +1251,8 @@
           if (firstErr) return envelope({ error: firstErr });
           var now = Date.now();
           var winStart = now - THREE60_D;
-          var inquiries = normalizeTs(iq.data || []);
+          // Same exclusions as the inbox (getMine): hidden rows and spam never count as leads.
+          var inquiries = normalizeTs(iq.data || []).filter(function (i) { return !i.hidden_by_vendor_at && i.status !== 'spam'; });
           var allEvents = normalizeTs(ev.data || []);
           // Split payment-link clicks off from contact leads — they're their own metric.
           var payEvents = allEvents.filter(isPaymentEvent);

@@ -483,7 +483,8 @@
         var first = panel.querySelector('a,button:not(#lok-mnav-search button)');
         if (first) first.focus();
       } else if (panel.contains(document.activeElement)) {
-        btn.focus();
+        var back = btn.offsetParent ? btn : (document.getElementById('lok-row2-burger') || btn); // phones hide the header burger
+        back.focus();
       }
     }
 

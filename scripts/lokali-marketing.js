@@ -1245,7 +1245,7 @@
       }
       // #163 QR code downloads
       else if (act === 'post-png') self.downloadPost();
-      else if (act === 'post-copy') { var capEl = document.getElementById('mkt-post-cap'); if (capEl) { fallbackCopy(capEl.textContent); toast('Caption copied'); } }
+      else if (act === 'post-copy') { var capEl = document.getElementById('mkt-post-cap'); if (capEl) { var capTxt = capEl.textContent, capDone = function () { toast('Caption copied'); }; if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(capTxt).then(capDone, function () { fallbackCopy(capTxt); capDone(); }); else { fallbackCopy(capTxt); capDone(); } } }
       else if (act === 'qr-png') self.downloadQr('png');
       else if (act === 'qr-svg') self.downloadQr('svg');
       else if (act === 'qr-badge-l') self.setQrBadge('l');

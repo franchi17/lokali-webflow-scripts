@@ -123,6 +123,22 @@
     7: 'Health & Wellness', 8: 'Home & Property', 9: 'Professional Services',
     10: 'Clothing & Accessories' // #196
   };
+  // Area name from locations_id (the favorites embed carries ids, never a city).
+  var _locNames = null, _locP = null;
+  function locNamesP() {
+    if (_locP) return _locP;
+    var A = api(), S = window.LokaliSupabaseAPI;
+    var fn = (A && A.data && A.data.locations) || (S && S.data && S.data.locations) || null;
+    _locP = (fn ? fn() : Promise.resolve(null)).then(function (res) {
+      var m = {}; ((res && res.data) || []).forEach(function (l) { if (l && l.id != null) m[String(l.id)] = l.location_name || l.name || ''; });
+      _locNames = m; return m;
+    }).catch(function () { _locNames = {}; return _locNames; });
+    return _locP;
+  }
+  function vendorArea(v) {
+    var id = v && (Array.isArray(v.locations_id) ? v.locations_id[0] : v.locations_id);
+    return (id != null && _locNames) ? (_locNames[String(id)] || '') : '';
+  }
   function vendorCat(v) {
     var c = v && (v.category || v.category_name);
     if (c) return c;
@@ -2066,7 +2082,7 @@
       var o0 = document.createElement('option'); o0.value = ''; o0.textContent = 'Pick one'; fCat.appendChild(o0);
       Object.keys(CAT_NAMES).forEach(function (id) { var o = document.createElement('option'); o.value = id; o.textContent = CAT_NAMES[id]; fCat.appendChild(o); });
       var fWhere = fld('Where you met', 'met_where', 'text', 'e.g. MCHC mixer at Lupita’s', 160);
-      var fWhen = fld('When', 'met_on', 'date'); try { fWhen.valueAsDate = new Date(); } catch (e) {}
+      var fWhen = fld('When', 'met_on', 'date'); try { fWhen.value = localISODate(); } catch (e) {}
       var fOffer = fld('The offer', 'offer', 'select');
       [['either', 'Sign up, or I set it up for them'], ['build', 'I build it for them'], ['self', 'They sign up themselves']].forEach(function (o) { var op = document.createElement('option'); op.value = o[0]; op.textContent = o[1]; fOffer.appendChild(op); });
       var fNote = fld('The one thing you remember about them *', 'note', 'textarea', 'What you talked about, what they make, what made you smile. This is what makes the note sound like you.', 1000, true);
@@ -2079,7 +2095,7 @@
 
       function openForm(row) {
         editingId = row ? row.id : null;
-        form.reset(); try { fWhen.valueAsDate = new Date(); } catch (e) {}
+        form.reset(); try { fWhen.value = localISODate(); } catch (e) {}
         if (row) {
           fFirst.value = val(row.first_name); fBiz.value = val(row.business_name); fEmail.value = val(row.email); fPhone.value = val(row.phone);
           fIg.value = val(row.instagram); fChan.value = row.channel || 'email'; fCat.value = row.category_id != null ? String(row.category_id) : '';
@@ -2764,7 +2780,7 @@
         var spam = Number(r.spam_rows) || 0;
         l2.textContent = why + (r.vendors ? ' · wrote to ' + r.vendors : '') +
           ' · ' + spam + (spam === 1 ? ' message' : ' messages') + ' in Spam' +
-          (r.created_at ? ' · ' + fmtSpotDay(r.created_at) : '') + (r.reviewed_at ? ' · reviewed' : '');
+          (r.created_at ? ' · ' + fmtLocalDay(r.created_at) : '') + (r.reviewed_at ? ' · reviewed' : '');
         meta.appendChild(l1); meta.appendChild(l2);
         if (r.sample) {
           // Sender-written text: textContent only, never markup.
@@ -2834,7 +2850,7 @@
         var l2 = el('div', 'lk-admin-row-l2');
         l2.textContent = (missing ? 'Published without a business address' : (r.nearest_miles != null ? ('~' + r.nearest_miles + ' mi from the nearest listed area') : 'distance unknown')) +
           ' · lists: ' + (r.areas || '—') + (r.is_publish_ready ? ' · LIVE on The Market' : ' · not public yet') +
-          (r.checked_at ? ' · ' + fmtSpotDay(r.checked_at) : '');
+          (r.checked_at ? ' · ' + fmtLocalDay(r.checked_at) : '');
         meta.appendChild(l1); meta.appendChild(l2);
         row.appendChild(meta);
         if (r.slug) {
@@ -3149,7 +3165,7 @@
         ? ((CAT_LABELS[r.category] || r.category || 'Report') + ' \u2014 ' + (r.business_name || 'Unknown vendor'))
         : ('Review flagged \u2014 ' + (r.business_name || 'Unknown vendor') + (r.review_rating != null ? (' (' + r.review_rating + '\u2605 review)') : ''));
       var l2 = el('div', 'lk-admin-row-l2');
-      l2.textContent = 'from ' + (r.reporter_email || 'unknown') + ' \u00b7 ' + fmtSpotDay(r.created_at);
+      l2.textContent = 'from ' + (r.reporter_email || 'unknown') + ' \u00b7 ' + fmtLocalDay(r.created_at);
       meta.appendChild(l1); meta.appendChild(l2);
       // The substance, textContent only (user free text, never markup). For a
       // review report BOTH halves matter — the flagged review is the evidence,
@@ -3228,6 +3244,12 @@
   // homepage-tier vendors get coordinated for the "Meet the vendor" feature
   // and The Neighborhood Edit shoutout. Data ships in admin_overview()
   // (is_admin-gated); all vendor text lands via textContent.
+  // Plain timestamps (reports, scans, flags): the viewer's own calendar day.
+  // valueAsDate would serialise the UTC day (tomorrow after ~7 PM Central).
+  function localISODate() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+  function fmtLocalDay(iso) {
+    try { return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }); } catch (e) { return String(iso || ''); }
+  }
   function fmtSpotDay(iso) {
     // Windows are UTC-midnight-anchored — format in UTC or the shown date
     // slips a day for US timezones.
@@ -3301,7 +3323,7 @@
         bits.push(r.tenure_days < 1 ? 'same day'
           : r.tenure_days + ' day' + (r.tenure_days === 1 ? '' : 's') + ' with us');
       }
-      if (r.created_at) bits.push(fmtSpotDay(r.created_at));
+      if (r.created_at) bits.push(fmtLocalDay(r.created_at));
       l2.textContent = bits.join(' · ');
       meta.appendChild(l1); meta.appendChild(l2);
       if (r.comment) {
@@ -3362,7 +3384,7 @@
         l1.textContent = c.campaign === 'flyer' ? 'Square business flyer' : (c.campaign || 'unknown');
         var l2 = el('div', 'lk-admin-row-l2');
         l2.textContent = String(c.total || 0) + ' total · ' + String(c.last_30d || 0) + ' in 30d' +
-          (c.last_scan ? ' · last ' + fmtSpotDay(c.last_scan) : '');
+          (c.last_scan ? ' · last ' + fmtLocalDay(c.last_scan) : '');
         meta.appendChild(l1); meta.appendChild(l2);
         row.appendChild(meta);
         host.appendChild(row);
@@ -3470,7 +3492,7 @@
         }
         if (r.channel && r.channel !== 'unknown') bits.push(CHAN_LBL[r.channel] || r.channel);
         if (!bits.length) bits.push('no source recorded');
-        if (r.created_at) bits.push(fmtSpotDay(r.created_at));
+        if (r.created_at) bits.push(fmtLocalDay(r.created_at));
         l2.textContent = bits.join(' · ');
         meta.appendChild(l1); meta.appendChild(l2);
         row.appendChild(meta);
@@ -4029,7 +4051,8 @@
     info.appendChild(el('div', 'lk-row-name', '<a href="' + esc(vendorHref(v)) + '">' + esc(vendorName(v)) + '</a>'));
     var sub = el('div', 'lk-row-sub');
     var cat = vendorCat(v);
-    sub.innerHTML = (cat ? '<span class="cat">' + esc(cat) + '</span>' : '') + (v.city ? (cat ? ' · ' : '') + esc(v.city) : '');
+    function paintSub() { var city = vendorArea(v); sub.innerHTML = (cat ? '<span class="cat">' + esc(cat) + '</span>' : '') + (city ? (cat ? ' · ' : '') + esc(city) : ''); }
+    paintSub(); if (!_locNames) locNamesP().then(function () { if (sub.isConnected) paintSub(); });
     info.appendChild(sub);
     r.appendChild(info);
     var actions = el('div', 'lk-row-actions');
@@ -4637,7 +4660,8 @@
         // #54 — mirror the newsletter flag to the Brevo list (best-effort; the
         // save already succeeded, so a Brevo hiccup must never surface here).
         try {
-          if (api().account.syncNewsletter) api().account.syncNewsletter();
+          var sa = window.LokaliSupabaseAPI && window.LokaliSupabaseAPI.account; // the mirror lives on the client, not the adapter
+          if (sa && sa.syncNewsletter) sa.syncNewsletter();
         } catch (e) {}
         bar.hidden = true;
         toast('Changes saved');

@@ -52,6 +52,12 @@
       '<p>' + (final ? 'The order is being recorded. Your receipt will arrive by email within a few minutes; if it does not, write to hello@golokali.com with the time of your purchase.' : 'One moment while Stripe confirms it.') + '</p>' +
       '<a class="oc-btn ghost" href="/the-market" style="margin-left:0;">Keep browsing</a></div>';
   }
+  // The server never confirmed anything (bad session id, rate limit, outage): say so, never "went through".
+  function unsure(mount) {
+    mount.innerHTML = '<div class="oc-card" style="text-align:center;"><h1 style="font-size:20px;">We could not confirm your payment yet</h1>' +
+      '<p>If your card was charged, your receipt email from Stripe has the details and the vendor has your order. If you are not sure, write to hello@golokali.com with the time of your purchase.</p>' +
+      '<a class="oc-btn ghost" href="/the-market" style="margin-left:0;">Keep browsing</a></div>';
+  }
   function bad(mount) {
     mount.innerHTML = '<div class="oc-card"><h1 style="font-size:20px;">We could not find that order</h1><p>If you just paid, your receipt email has the details. Otherwise head back to the Market.</p><a class="oc-btn" href="/the-market">Go to the Market</a></div>';
   }
@@ -82,12 +88,12 @@
       fetch(BASE + '/checkout/summary?session_id=' + encodeURIComponent(sid)).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, status: r.status, data: d }; }); })
         .then(function (r) {
           if (r.status === 404) { if (tries < 3) { tries++; setTimeout(poll, 1500); } else bad(mount); return; }
-          if (!r.ok) { if (tries < 6) { tries++; setTimeout(poll, 2000); } else waiting(mount, true); return; }
+          if (!r.ok) { if (tries < 6) { tries++; setTimeout(poll, 2000); } else unsure(mount); return; }
           var o = r.data;
           if (o.status === 'pending') { if (tries < 10) { tries++; setTimeout(poll, 1500); } else waiting(mount, true); return; }
           if (o.status === 'canceled') { bad(mount); return; }
           render(mount, o);
-        }).catch(function () { if (tries < 6) { tries++; setTimeout(poll, 2000); } else waiting(mount, true); });
+        }).catch(function () { if (tries < 6) { tries++; setTimeout(poll, 2000); } else unsure(mount); });
     })();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
