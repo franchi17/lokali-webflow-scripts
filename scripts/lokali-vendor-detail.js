@@ -210,8 +210,10 @@
     '.vd2-box{padding:16px;border-radius:14px;gap:12px;}',
     'html.vd2 .vd-name{font-size:22px !important;}',
     'html.vd2 .vd-price{font-size:18px !important;}',
-    // the pinned bar carries the main button on phones
-    'html.vd2 .vd2-box .vd-cta{display:none !important;}',
+    // Phones keep the box's own buttons (F 2026-10-23, Agash: with them moved
+    // into the pinned bar, "Call" was the only button beside the price, so a
+    // product with a Buy link read as call-only). The bar slides in once they
+    // scroll out of view (v2Bar), so one screen never shows Buy online twice.
     '.vd2-h{font-size:17px;}',
     'html.vd2 #vd-desc{font-size:14.5px;line-height:1.65;}',
     'html.vd2 #vd-desc.vd2-clamp:not(.vd2-open){display:-webkit-box !important;-webkit-line-clamp:6;-webkit-box-orient:vertical;overflow:hidden;}',
@@ -221,7 +223,8 @@
     '#vd-back-label{display:inline-block;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom;}',
     '@media (max-width:359px){#vd-back-label{max-width:88px;}.lok-pgrow{gap:6px !important;}}', // 320px: Back + pager stay on one line
     'html.vd2 body{padding-bottom:76px;}',
-    '#vd2-bar{position:fixed;left:0;right:0;bottom:0;z-index:60;display:flex;gap:10px;background:#fff;border-top:1px solid #EEEDF6;padding:10px 14px calc(10px + env(safe-area-inset-bottom));box-shadow:0 -6px 20px rgba(26,24,41,.08);}',
+    '#vd2-bar{position:fixed;left:0;right:0;bottom:0;z-index:60;display:flex;gap:10px;background:#fff;border-top:1px solid #EEEDF6;padding:10px 14px calc(10px + env(safe-area-inset-bottom));box-shadow:0 -6px 20px rgba(26,24,41,.08);transition:transform .22s ease,visibility 0s;}',
+    '#vd2-bar.vd2-bar-away{transform:translateY(calc(100% + 8px));visibility:hidden;box-shadow:none;transition:transform .22s ease,visibility 0s .22s;}',
     '#vd2-bar button,#vd2-bar a{flex:1 1 0;min-width:0;font:600 15px/1.2 ' + V2_FONT + ';border-radius:10px;min-height:46px;display:flex;align-items:center;justify-content:center;cursor:pointer;text-decoration:none;border:0;padding:0 10px;}',
     '#vd2-bar .vd2-bar-main{background:#6002EE;color:#fff;}',
     '#vd2-bar .vd2-bar-main.vd2-bar-orange{background:#FF6B00;}',
@@ -231,7 +234,8 @@
     '#vd2-bar .vd2-bar-buy.vd2-bar-book{background:#6002EE;}',
     '#vd2-bar .vd2-bar-book ~ .vd2-bar-main{color:#6002EE;border-color:#6002EE;}',
     'html.vd2 #lok-totop{bottom:calc(84px + env(safe-area-inset-bottom)) !important;}',
-    '}'
+    '}',
+    '@media (prefers-reduced-motion:reduce){#vd2-bar,#vd2-bar.vd2-bar-away{transition:none;}}'
   ].join('');
 
   var V2_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10" stroke-width="1.6" opacity=".35"/><polyline points="16.5 9 10.8 15 7.5 11.8"/></svg>';
@@ -478,6 +482,16 @@
       bar.appendChild(cb);
     }
     document.body.appendChild(bar);
+    // Hidden while the box's buttons sit whole on screen, clear of the phone
+    // header (~120px) and of the bar's own strip (~80px). No observer = the
+    // bar simply stays, as before.
+    var boxCta = document.querySelector('.vd2-box .vd-cta');
+    if (boxCta && 'IntersectionObserver' in window) {
+      new IntersectionObserver(function (es) {
+        var e = es[es.length - 1];
+        bar.classList.toggle('vd2-bar-away', e.isIntersecting && e.intersectionRatio >= 0.99);
+      }, { rootMargin: '-120px 0px -80px 0px', threshold: [0, 1] }).observe(boxCta);
+    }
   }
 
   // "Run by Monica" with her photo; business + category on the second line

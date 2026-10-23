@@ -787,6 +787,9 @@
     // share a row, and the whole card is the link anyway (same call as phones)
     '@media (min-width:768px) and (max-width:899px){#vl-op-nav{padding:4px;}#vl-op-nav a{padding:9px 10px;font-size:13px;}}',
     '@media (min-width:768px) and (max-width:899px){html.vl-op [data-vl-panel="products"] .vl-card-cta{display:none;}html.vl-op [data-vl-panel="products"] .vl-card-foot{justify-content:flex-start;}}',
+    // ...except "Buy online" (F 2026-10-23, Agash on a phone: with every button
+    // hidden the cards gave no sign the products can be bought on their site)
+    '@media (max-width:899px){html.vl-op [data-vl-panel="products"] .vl-card-cta.vl-card-cta-buy{display:inline-flex;}}',
     // large phones / small tablets in portrait: a third column instead of 280px cards
     '@media (min-width:560px) and (max-width:767px){html.vl-op [data-vl-panel="services"] .vl-grid,html.vl-op [data-vl-panel="products"] .vl-grid{grid-template-columns:repeat(3,minmax(0,1fr)) !important;}}',
     '@media (min-width:768px){',
@@ -831,7 +834,8 @@
     'html.vl-op .vl-card-name{font-size:14px;line-height:1.3;}',
     'html.vl-op .vl-card-price{font-size:12.5px;margin-top:3px;text-align:left;}',
     'html.vl-op .vl-card-desc,html.vl-op .vl-card-cta{display:none;}',
-    'html.vl-op .vl-card-foot{justify-content:flex-start;margin-top:6px;}',
+    'html.vl-op .vl-card-cta.vl-card-cta-buy{padding:6px 11px;font-size:12px;}',
+    'html.vl-op .vl-card-foot{justify-content:flex-start;flex-wrap:wrap;row-gap:6px;margin-top:6px;}',
     'html.vl-op .vl-card-foot .vl-card-lead{background:none;padding:0;border-radius:0;font-size:12px;color:#6E6A85;}',
     // a lone listing takes the row instead of sitting as a half
     'html.vl-op .vl-grid > .vl-card:only-child{grid-column:1/-1;}',
@@ -2114,7 +2118,7 @@
     a.className = 'vl-card';
     a.href = opts.href || '#';
     var priceClass = 'vl-card-price' + (opts.quote ? ' vl-card-price-quote' : '');
-    var ctaClass = 'vl-card-cta' + (opts.orange ? ' vl-card-cta-orange' : '');
+    var ctaClass = 'vl-card-cta' + (opts.orange ? ' vl-card-cta-orange' : '') + (opts.buy ? ' vl-card-cta-buy' : '');
     a.innerHTML = '<div class="vl-card-img" style="background:' + opts.tint + ';"></div>' +
       '<div class="vl-card-body"><div class="vl-card-top">' +
       '<div class="vl-card-name"></div>' +
@@ -2268,6 +2272,7 @@
     // #94: built on demand — see opProgressiveList.
     opProgressiveList(grid, list, 'products', function (p, i) {
       var pr = productPrice(p);
+      var buy = /^https:\/\/\S+$/.test(String(p.buy_url || ''));
       return cardEl({
         name: p.product_name || p.name,
         desc: p.product_description || p.description || '',
@@ -2279,7 +2284,7 @@
         // #172: a product with an external checkout reads "Buy online" so the
         // card promises what the detail page delivers (the card still opens
         // the detail page; the actual outbound button + click log live there).
-        cta: /^https:\/\/\S+$/.test(String(p.buy_url || '')) ? 'Buy online' : 'Order', orange: true,
+        cta: buy ? 'Buy online' : 'Order', orange: true, buy: buy,
         lead: leadText(p),
         href: itemHref('products', p)
       });
