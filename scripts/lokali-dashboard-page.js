@@ -279,6 +279,10 @@
     '.lok-also li svg{width:14px;height:14px;color:#8E8BA6;flex-shrink:0;}',
     '.lok-also li a{margin-left:auto;text-decoration:none;font-weight:600;font-size:12px;white-space:nowrap;color:#6002EE;min-height:32px;display:inline-flex;align-items:center;}',
     '.lok-ns-done{font-size:12.5px;color:#4A4761;line-height:1.55;}',
+    '.lok-card.accent{position:relative;}',
+    '.lok-ns-x{position:absolute;top:8px;right:8px;width:32px;height:32px;border:none;background:none;color:#8E8BA6;font-size:15px;line-height:1;cursor:pointer;font-family:inherit;border-radius:8px;}',
+    '.lok-ns-x:hover{background:#F3EBFF;color:#6002EE;}',
+    '.lok-ns-x~.lok-ns-done{padding-right:28px;}',
     '.lok-ns-skip{display:inline-flex;align-items:center;min-height:34px;margin-left:12px;font-size:12px;font-weight:600;color:#8E8BA6;text-decoration:underline;text-underline-offset:2px;}',
     '.lok-also li .lok-ns-skip{margin-left:auto;min-height:32px;}.lok-also li .lok-ns-skip+a{margin-left:12px;}',
     '.lok-feed{list-style:none;margin:0;padding:0;}',
@@ -519,6 +523,8 @@
     if (d < 86400000) return Math.round(d / 3600000) + 'h ago';
     var days = Math.floor(d / 86400000); return 'Waiting ' + days + (days === 1 ? ' day' : ' days');
   }
+  var NS_HIDE_KEY = 'lok_next_hide_v1:';
+  function nsHidden(vendorId) { try { return localStorage.getItem(NS_HIDE_KEY + vendorId) === '1'; } catch (e) { return false; } }
   function nextStepCard(v, hasListing, ck, waiting) {
     var root = document.querySelector('[data-listing-strength]');
     if (!root) return null;
@@ -552,7 +558,13 @@
         '<a class="lok-btn" href="' + esc(f.href) + '">' + esc(f.action) + ' →</a>' +
         (f.optional ? '<a href="#" class="lok-ns-skip" data-ck-skip="' + esc(f.key) + '">Not for me</a>' : '') + '</div></div>';
     } else {
-      html += '<div class="lok-ns-done">Your storefront has everything shoppers look for. Fresh photos and a new listing now and then keep it that way.</div>';
+      // All in place (F 2026-10-24: "there should be an x to hide that piece"): the card
+      // can be hidden; it comes back by itself the moment something is open again or a
+      // lead is waiting, since the flag only applies to this complete state.
+      var hasAddr = !!(v.address && String(v.address).trim());
+      if (total && hasAddr && nsHidden(v.id)) { root.style.display = 'none'; return (v.is_publish_ready != null) ? !!v.is_publish_ready : true; }
+      html += '<button type="button" class="lok-ns-x" data-ns-hide aria-label="Hide this card">✕</button>' +
+        '<div class="lok-ns-done">Your storefront has everything shoppers look for. Fresh photos and a new listing now and then keep it that way.</div>';
     }
     if (total) {
       html += '<div class="lok-meter' + (open.length ? '' : ' ok') + '" role="img" aria-label="' + done.length + ' of ' + total + ' in place"><div style="width:' + Math.round(done.length / total * 100) + '%"></div></div>' +
@@ -565,7 +577,13 @@
           '<a href="' + esc(it.href) + '">' + esc(it.action) + ' →</a></li>';
       }).join('') + '</ul>';
     }
+    root.style.display = '';
     root.innerHTML = html;
+    var hx = root.querySelector('[data-ns-hide]');
+    if (hx) hx.addEventListener('click', function () {
+      try { localStorage.setItem(NS_HIDE_KEY + v.id, '1'); } catch (e) {}
+      root.style.display = 'none';
+    });
     // 'Not for me' (F 2026-10-24): skip an optional item, then repaint this card
     // from a fresh checkup (render() hands us the refresh).
     Array.prototype.slice.call(root.querySelectorAll('[data-ck-skip]')).forEach(function (a) {
