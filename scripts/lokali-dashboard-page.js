@@ -279,6 +279,8 @@
     '.lok-also li svg{width:14px;height:14px;color:#8E8BA6;flex-shrink:0;}',
     '.lok-also li a{margin-left:auto;text-decoration:none;font-weight:600;font-size:12px;white-space:nowrap;color:#6002EE;min-height:32px;display:inline-flex;align-items:center;}',
     '.lok-ns-done{font-size:12.5px;color:#4A4761;line-height:1.55;}',
+    '.lok-ns-skip{display:inline-flex;align-items:center;min-height:34px;margin-left:12px;font-size:12px;font-weight:600;color:#8E8BA6;text-decoration:underline;text-underline-offset:2px;}',
+    '.lok-also li .lok-ns-skip{margin-left:auto;min-height:32px;}.lok-also li .lok-ns-skip+a{margin-left:12px;}',
     '.lok-feed{list-style:none;margin:0;padding:0;}',
     '.lok-feed li{display:grid;grid-template-columns:26px 1fr auto;gap:10px;align-items:start;padding:9px 0;border-bottom:.5px solid #EEEDF6;font-size:12.5px;line-height:1.5;}',
     '.lok-feed li:last-child{border-bottom:none;}',
@@ -547,7 +549,8 @@
       var f = open[0];
       html += '<div class="lok-next"><div class="n">1</div><div>' +
         '<p class="t">' + esc(f.title) + '</p><p class="w">' + esc(f.why) + '</p>' +
-        '<a class="lok-btn" href="' + esc(f.href) + '">' + esc(f.action) + ' →</a></div></div>';
+        '<a class="lok-btn" href="' + esc(f.href) + '">' + esc(f.action) + ' →</a>' +
+        (f.optional ? '<a href="#" class="lok-ns-skip" data-ck-skip="' + esc(f.key) + '">Not for me</a>' : '') + '</div></div>';
     } else {
       html += '<div class="lok-ns-done">Your storefront has everything shoppers look for. Fresh photos and a new listing now and then keep it that way.</div>';
     }
@@ -557,10 +560,22 @@
     }
     if (open.length > 1) {
       html += '<ul class="lok-also">' + open.slice(1, 3).map(function (it) {
-        return '<li>' + ICO.circle + '<span>' + esc(it.title) + '</span><a href="' + esc(it.href) + '">' + esc(it.action) + ' →</a></li>';
+        return '<li>' + ICO.circle + '<span>' + esc(it.title) + '</span>' +
+          (it.optional ? '<a href="#" class="lok-ns-skip" data-ck-skip="' + esc(it.key) + '">Not for me</a>' : '') +
+          '<a href="' + esc(it.href) + '">' + esc(it.action) + ' →</a></li>';
       }).join('') + '</ul>';
     }
     root.innerHTML = html;
+    // 'Not for me' (F 2026-10-24): skip an optional item, then repaint this card
+    // from a fresh checkup (render() hands us the refresh).
+    Array.prototype.slice.call(root.querySelectorAll('[data-ck-skip]')).forEach(function (a) {
+      a.addEventListener('click', function (e) {
+        e.preventDefault();
+        var S = window.LokaliCheckupSkip;
+        if (S && S.set) S.set(v.id, a.getAttribute('data-ck-skip'), true);
+        if (typeof _nextRefresh === 'function') _nextRefresh();
+      });
+    });
     // #90 publish gate: the 'not public yet' / soft address note rides on top.
     var gCats = !!(v.categories_id && v.categories_id.length);
     var gLocs = !!(v.locations_id && v.locations_id.length);
@@ -1046,6 +1061,7 @@
     anchor.parentNode.insertBefore(card, anchor.nextSibling);
   }
 
+  var _nextRefresh = null; // set by render(): repaints 'Your next step' after a 'Not for me'
   function render(v, services, products, leadsData, x) {
     x = x || {};
     var hasListing = services.length > 0 || products.length > 0;
@@ -1060,6 +1076,11 @@
     var ck = (typeof window.LokaliCheckup === 'function')
       ? window.LokaliCheckup(v, services, products, x.photos, x.cfg, x.billing)
       : { items: [], open: [], done: [], total: 0, paidPlan: false };
+    _nextRefresh = function () {
+      var ck2 = (typeof window.LokaliCheckup === 'function')
+        ? window.LokaliCheckup(v, services, products, x.photos, x.cfg, x.billing) : ck;
+      nextStepCard(v, hasListing, ck2, x.waiting);
+    };
     var gateReady = nextStepCard(v, hasListing, ck, x.waiting);
     if (gateReady == null) gateReady = !!v.is_publish_ready;
     renderHeader(v, x.billing, gateReady);

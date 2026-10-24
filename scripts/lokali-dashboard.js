@@ -100,8 +100,25 @@
   // simply absent for Free vendors — the upsell card below already does that
   // pitch. Exposed as window.LokaliCheckup for the node test.
   var CK_PROFILE = '/vendor-dashboard/profile';
+  // 'Not for me' (F 2026-10-24, after the home told her to add a booking link she
+  // does not use): the four items that depend on how a vendor runs the business
+  // (booking link, pay handles, Buy link, gallery) can be skipped. A skip counts
+  // as done with a 'Skipped:' title and is reversible from the Insights checkup.
+  // Remembered per vendor in this browser only (no column for it yet).
+  var CK_SKIP_KEY = 'lok_checkup_skip_v1:';
+  function ckSkips(vendorId) {
+    try { var a = JSON.parse(localStorage.getItem(CK_SKIP_KEY + vendorId) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; }
+  }
+  function ckSetSkip(vendorId, key, on) {
+    var a = ckSkips(vendorId).filter(function (k) { return k !== key; });
+    if (on) a.push(key);
+    try { localStorage.setItem(CK_SKIP_KEY + vendorId, JSON.stringify(a)); } catch (e) {}
+    return a;
+  }
+  try { window.LokaliCheckupSkip = { list: ckSkips, set: ckSetSkip }; } catch (e) {}
   function buildCheckup(v, services, products, photos, cfg, billing) {
     v = v || {}; services = services || []; products = products || []; photos = photos || []; cfg = cfg || {};
+    var skips = ckSkips(v.id);
     var f = (billing && billing.features) || {};
     var svc = services.filter(function (s) { return s.is_active !== false; });
     var prd = products.filter(function (p) { return p.is_active !== false; });
@@ -119,10 +136,14 @@
     var SVC = '/vendor-dashboard/services', PRD = '/vendor-dashboard/products';
     function n(c, w) { return c + ' ' + w + (c === 1 ? '' : 's'); }
     var items = [];
-    // add(key, done, openTitle, doneTitle, why, action, href, show)
-    function add(key, done, openTitle, doneTitle, why, action, href, show) {
+    // add(key, done, openTitle, doneTitle, why, action, href, show, skippedTitle)
+    // skippedTitle marks an OPTIONAL item: it carries a 'Not for me' link and,
+    // once skipped, sits in the done list under that title.
+    function add(key, done, openTitle, doneTitle, why, action, href, show, skippedTitle) {
       if (show === false) return;
-      items.push({ key: key, done: !!done, title: done ? doneTitle : openTitle, why: why, action: action, href: href });
+      var skipped = !!skippedTitle && !done && skips.indexOf(key) >= 0;
+      items.push({ key: key, done: !!done || skipped, skipped: skipped, optional: !!skippedTitle,
+        title: skipped ? skippedTitle : (done ? doneTitle : openTitle), why: why, action: action, href: href });
     }
     // 2026-10-02: the address FIRST while it is blank. It is part of the
     // publish gate (patch_publish_gate_profile.sql) so nothing else on this
@@ -183,19 +204,19 @@
     add('pay', paidWays,
       'Add a way to get paid', 'Ways to get paid listed',
       'Venmo, Cash App, PayPal or Zelle. Taps on these show up as Payment clicks above.',
-      'Add payment', CK_PROFILE + '#lok-pay-card');
+      'Add payment', CK_PROFILE + '#lok-pay-card', true, 'Skipped: ways to get paid');
     add('buy', prd.some(function (p) { return !!p.buy_url; }),
       'Link your online store', 'Online store linked',
       'If you sell on Etsy, Shopify or your own site, a Buy button turns a view into a sale.',
-      'Add a Buy link', PRD, prd.length > 0);
+      'Add a Buy link', PRD, prd.length > 0, 'Skipped: online store link');
     add('gallery', gallery > 0,
       'Add photos to your storefront gallery', 'Gallery has photos',
       'A photo strip across the top of your storefront. It is the first thing a visitor sees.',
-      'Add gallery photos', CK_PROFILE + '#lok-portfolio-card', (Number(f.max_vendor_photos) || 0) > 0);
+      'Add gallery photos', CK_PROFILE + '#lok-portfolio-card', (Number(f.max_vendor_photos) || 0) > 0, 'Skipped: gallery photos');
     add('booking', !!cfg.booking_url,
       'Add your booking link', 'Booking link added',
       'Calendly, Acuity, Square or any scheduling page. Puts a Book button on your storefront.',
-      'Add booking link', '/vendor-dashboard/availability', paidPlan && svc.length > 0);
+      'Add booking link', '/vendor-dashboard/availability', paidPlan && svc.length > 0, 'Skipped: booking link');
     add('verified', v.identity_status === 'verified',
       'Get Verified', 'Verified',
       'A quick ID check. The Verified badge tells a stranger you are a real person.',

@@ -112,6 +112,9 @@
     '#lok-analytics-section .an-ck-t{font-size:13px;font-weight:600;color:' + INK + ';}',
     '#lok-analytics-section .an-ck-row.done .an-ck-t{font-weight:500;color:' + DUSK + ';}',
     '#lok-analytics-section .an-ck-w{font-size:12px;color:#6E6A85;margin-top:1px;max-width:62ch;line-height:1.5;}',
+    '#lok-analytics-section .an-ck-acts{display:flex;flex-direction:column;align-items:flex-end;gap:2px;}',
+    '#lok-analytics-section .an-ck-skip{font-family:inherit;font-size:12px;font-weight:600;color:' + SLATE + ';background:none;border:none;padding:0;min-height:32px;cursor:pointer;text-decoration:underline;text-underline-offset:2px;white-space:nowrap;}',
+    '#lok-analytics-section .an-ck-skip:hover{color:' + DUSK + ';}',
     '#lok-analytics-section .an-ck-fix{display:inline-flex;align-items:center;min-height:32px;font-size:12px;font-weight:600;color:' + VIOLET + ';text-decoration:none;white-space:nowrap;padding:4px 12px;border:1px solid #E5D4FD;border-radius:8px;background:#fff;}',
     '#lok-analytics-section .an-ck-fix:hover{background:' + VIOLET_L + ';}',
     '#lok-analytics-section .an-ck-fix:focus-visible,#lok-analytics-section .an-ck-more:focus-visible{outline:2px solid ' + VIOLET + ';outline-offset:2px;}',
@@ -362,6 +365,23 @@
   var CK_ICON_CHEV = '<svg viewBox="0 0 512 512" fill="currentColor" aria-hidden="true"><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>';
   var CK_SHOW = 3; // Hick's law: three open items by default, the rest behind one toggle
 
+  // 'Not for me' (F 2026-10-24): optional items (booking link, pay handles, Buy
+  // link, gallery) can be skipped; a skipped row sits in the done list with an
+  // Undo. window.LokaliCheckupSkip (lokali-dashboard.js) keeps the list per
+  // vendor in this browser; _ckRefresh (set in render) repaints the card.
+  var _ckRefresh = null;
+  function ckSkipLink(item, on) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'an-ck-skip';
+    b.textContent = on ? 'Not for me' : 'Undo';
+    b.setAttribute('aria-label', (on ? 'Not for me: ' : 'Undo skip: ') + item.title);
+    b.addEventListener('click', function () {
+      var S = window.LokaliCheckupSkip, v = _ckRefresh && _ckRefresh.vendor;
+      if (S && S.set && v) S.set(v.id, item.key, on);
+      if (typeof _ckRefresh === 'function') _ckRefresh();
+    });
+    return b;
+  }
   function ckRow(item) {
     var li = el('li', 'an-ck-row' + (item.done ? ' done' : ''));
     var ico = el('span', 'an-ck-ico'); ico.innerHTML = item.done ? CK_ICON_DONE : CK_ICON_OPEN;
@@ -371,10 +391,15 @@
     if (!item.done) body.appendChild(el('div', 'an-ck-w', item.why));
     li.appendChild(body);
     if (!item.done) {
+      var acts = el('div', 'an-ck-acts');
       // Descriptive label (WCAG 2.4.4): the link says what happens, not "Fix".
       var a = el('a', 'an-ck-fix', item.action + ' →'); a.href = item.href;
       a.setAttribute('aria-label', item.action + ': ' + item.title);
-      li.appendChild(a);
+      acts.appendChild(a);
+      if (item.optional) acts.appendChild(ckSkipLink(item, true));
+      li.appendChild(acts);
+    } else if (item.skipped) {
+      li.appendChild(ckSkipLink(item, false));
     }
     return li;
   }
@@ -550,7 +575,17 @@
         rate.toFixed(0) + '%</strong> of them reached out. ' + tail;
       mount.appendChild(ins);
     }
-    if (ck.total) mount.appendChild(checkupCard(ck));
+    if (ck.total) {
+      var ckCard = checkupCard(ck);
+      mount.appendChild(ckCard);
+      _ckRefresh = function () {
+        var ck2 = buildCheckup(vendor, services, products, photos, cfg, billing);
+        var fresh = checkupCard(ck2);
+        ckCard.parentNode.replaceChild(fresh, ckCard);
+        ckCard = fresh;
+      };
+      _ckRefresh.vendor = vendor;
+    }
 
     // Demand signals (2026-09-17): searches that found this vendor and searches
     // nearby that found nobody, from my_search_signals() (five-search floor is
