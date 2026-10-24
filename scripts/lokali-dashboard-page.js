@@ -302,9 +302,30 @@
     '.lok-qa-ic{width:34px;height:34px;border-radius:10px;background:#F3EBFF;color:#6002EE;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin:0;}',
     '.lok-qa-ic svg{width:15px;height:15px;}',
     '.quick-actions-card .div-block-171{min-width:0;}',
+    // Quiet week (F 2026-10-24, quiet-state mockup): when nothing moved, the
+    // tile row becomes one line with three small figures. Tiles come back by
+    // themselves once any counter clears the floor (see renderTiles).
+    '.lok-kpis.quiet{display:block;}',
+    '.lok-quiet{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:#fff;border:.5px solid #EEEDF6;border-radius:12px;padding:14px 16px;font-family:"Plus Jakarta Sans",-apple-system,sans-serif;}',
+    '.lok-quiet .lok-qt{flex:1 1 260px;min-width:0;}',
+    '.lok-quiet .lok-qt b{display:block;font-size:14px;font-weight:700;color:#1A1829;line-height:1.4;}',
+    '.lok-quiet .lok-qt span{font-size:12.5px;color:#6E6A85;line-height:1.5;}',
+    '.lok-quiet .lok-qm{display:flex;gap:16px;font-size:11.5px;color:#4A4761;font-variant-numeric:tabular-nums;line-height:1.4;}',
+    '.lok-quiet .lok-qm b{display:block;font-size:16px;font-weight:700;color:#1A1829;line-height:1.2;}',
+    '.lok-next.calm{background:#F7F6FC;}',
+    '.lok-next.calm .n{background:#1A1829;}',
+    '.lok-gam-fold{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 16px;}',
+    '.lok-gam-fold .lok-gam-title{font-size:14px;}',
+    '.lok-gam-fold .lok-gam-sub{margin:0;flex:1 1 200px;min-width:0;}',
+    '.lok-gam-fold button{font-family:inherit;font-size:12px;font-weight:600;color:#6002EE;background:none;border:none;padding:0;cursor:pointer;min-height:32px;margin-left:auto;white-space:nowrap;}',
+    '.lok-gam-fold .lok-gam-list{display:none;flex-basis:100%;margin-top:4px;}',
+    '.lok-gam-fold.open .lok-gam-list{display:block;}',
     '.lok-kpis.five{grid-template-columns:repeat(5,minmax(0,1fr));}',
     '@media(max-width:1100px){.lok-kpis.five{grid-template-columns:1fr 1fr 1fr;}}',
-    '@media(max-width:900px){.lok-kpis,.lok-kpis.five{grid-template-columns:1fr 1fr;}#lok-cols{grid-template-columns:1fr;}}',
+    '@media(max-width:900px){.lok-kpis,.lok-kpis.five{grid-template-columns:1fr 1fr;}#lok-cols{grid-template-columns:1fr;}' +
+      '}',
+    '#lok-cols>.lok-kpis.quiet{grid-column:1/-1;margin:0;}',
+    '.lok-kpis.quiet.lok-inline{margin:16px 0;}#lok-feed-card.lok-inline{margin:0 0 16px;}',
     '@media(max-width:480px){.lok-kpis,.lok-kpis.five{grid-template-columns:1fr;}.lok-btn{min-height:44px;}.lok-also li a{min-height:44px;}}'
   ].join('');
   function injectHomeStyles() {
@@ -329,6 +350,8 @@
     pay: '<svg viewBox="0 0 576 512" fill="currentColor" aria-hidden="true"><path d="M64 32C28.7 32 0 60.7 0 96v32H576V96c0-35.3-28.7-64-64-64H64zM576 224H0V416c0 35.3 28.7 64 64 64H512c35.3 0 64-28.7 64-64V224zM112 352h64c8.8 0 16 7.2 16 16s-7.2 16-16 16H112c-8.8 0-16-7.2-16-16s7.2-16 16-16zm112 16c0-8.8 7.2-16 16-16H368c8.8 0 16 7.2 16 16s-7.2 16-16 16H240c-8.8 0-16-7.2-16-16z"/></svg>',
     eye: '<svg viewBox="0 0 576 512" fill="currentColor" aria-hidden="true"><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM144 256a144 144 0 1 1 288 0 144 144 0 1 1 -288 0zm144-64c0 35.3-28.7 64-64 64c-7.1 0-13.9-1.2-20.3-3.3c-5.5-1.8-11.9 1.6-11.7 7.4c.3 6.9 1.3 13.8 3.2 20.7c13.7 51.2 66.4 81.6 117.6 67.9s81.6-66.4 67.9-117.6c-11.1-41.5-47.8-69.4-88.6-71.1c-5.8-.2-9.2 6.1-7.4 11.7c2.1 6.4 3.3 13.2 3.3 20.3z"/></svg>',
     star: '<svg viewBox="0 0 576 512" fill="currentColor" aria-hidden="true"><path d="M316.9 18C311.6 7 300.4 0 288.1 0s-23.4 7-28.8 18L195 150.3 51.4 171.5c-12 1.8-22 10.2-25.7 21.7s-.7 24.2 7.9 32.7L137.8 329 113.2 474.7c-2 12 3 24.2 12.9 31.3s23 8 33.8 2.3l128.3-68.5 128.3 68.5c10.8 5.7 23.9 4.9 33.8-2.3s14.9-19.3 12.9-31.3L438.5 329 542.7 225.9c8.6-8.5 11.7-21.2 7.9-32.7s-13.7-19.9-25.7-21.7L381.2 150.3 316.9 18z"/></svg>',
+    // Lucide 'megaphone' stroke, the same glyph the sidebar's Marketing row uses.
+    horn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>',
     phone: '<svg viewBox="0 0 512 512" fill="currentColor" aria-hidden="true"><path d="M164.9 24.6c-7.7-18.6-28-28.5-47.4-23.2l-88 24C12.1 30.2 0 46 0 64C0 311.4 200.6 512 448 512c18 0 33.8-12.1 38.6-29.5l24-88c5.3-19.4-4.6-39.7-23.2-47.4l-96-40c-16.3-6.8-35.2-2.1-46.3 11.6L304.7 368C234.3 334.7 177.3 277.7 144 207.3L193.3 167c13.7-11.2 18.4-30 11.6-46.3l-40-96z"/></svg>'
   };
 
@@ -449,6 +472,23 @@
     var sh = (shares && typeof shares === 'object' && shares.ok !== false) ? shares : null; // adapter share.count() strips `ok`
     var landings = sh ? (Number(sh.landings) || 0) : 0, sharers = sh ? (Number(sh.unique_sharers) || 0) : 0;
     var extra = wonTile(wonRows);
+    // Quiet floor (F 2026-10-24): no reach-out, payment tap, share landing, won
+    // lead or unread lead in the window, and under QUIET_VIEWS views. Four of
+    // 33 live vendors cleared it on 10-24; the rest saw four zeros and flat chips.
+    var quiet = !extra && !unread && l7 === 0 && p7 === 0 && landings === 0 && v7 < QUIET_VIEWS;
+    if (quiet) {
+      box.className = 'lok-kpis quiet';
+      var opened = v7 === 0 ? 'Nobody opened your storefront this week, and no reach-outs yet.'
+        : v7 === 1 ? 'One person opened your storefront this week, no reach-outs yet.'
+        : v7 + ' people opened your storefront this week, no reach-outs yet.';
+      // The three figures keep the tile ids so the skeleton loader clears on them.
+      box.innerHTML = '<div class="lok-quiet"><div class="lok-qt"><b>A quiet week. ' + opened + '</b>' +
+        '<span>The full numbers come back here once there is more to show. Until then, the step below is what moves them.</span></div>' +
+        '<div class="lok-qm"><div><b id="stat-profile-views">' + v7 + '</b>' + (v7 === 1 ? 'view' : 'views') + '</div>' +
+        '<div><b id="stat-profile-complete">0</b>reach-outs</div><div><b id="stat-active-products">0</b>shares</div></div>' +
+        sparkline(views) + '</div>';
+      return true;
+    }
     box.className = 'lok-kpis' + (extra ? ' five' : '');
     box.innerHTML = extra +
       tile('Views · last 7 days', 'stat-profile-views', v7, sparkline(views), deltaChip(v7, vPrev), 'Storefront and listing opens') +
@@ -458,7 +498,9 @@
       tile('Shared link · all time', null, landings, '',
         '<span class="lok-delta ' + (sharers ? 'up' : 'flat') + '">' + (sharers ? sharers + (sharers === 1 ? ' neighbor shared it' : ' neighbors shared it') : 'not shared yet') + '</span>',
         'People who opened a link someone shared');
+    return false;
   }
+  var QUIET_VIEWS = 10;
 
   // ── Your next step: the shared checkup, top item large ──────────────────
   // Inquiries still marked new with no first reply, oldest first (from leads.getMine).
@@ -571,7 +613,18 @@
     items.sort(function (a, b) { return b.t - a.t; });
     return items.slice(0, 8);
   }
-  function renderFeed(leadsData, reviews, gateReady, paidPlan) {
+  // Empty feed on a live storefront (F 2026-10-24): one thing the vendor can do
+  // this week instead of a sentence about what will appear. Posting reaches the
+  // people who already saved the storefront; sharing the link reaches the rest.
+  function oneThingCard() {
+    return '<div class="lok-ct"><h3>This week, one thing</h3><a href="/vendor-dashboard/followers">Followers →</a></div>' +
+      '<div class="lok-next calm"><div class="n">' + ICO.horn + '</div><div>' +
+        '<p class="t">Tell your followers where you will be</p>' +
+        '<p class="w">A post shows on your storefront at once and goes out in the weekly email to everyone who saved you. It takes about thirty seconds.</p>' +
+        '<a class="lok-btn" href="/vendor-dashboard/followers">Post an update →</a></div></div>' +
+      '<ul class="lok-also"><li>' + ICO.circle + '<span>Send your link to three past customers</span><a href="#" data-quiet-copy>Copy link →</a></li></ul>';
+  }
+  function renderFeed(leadsData, reviews, gateReady, paidPlan, quiet) {
     var strength = document.querySelector('[data-listing-strength]');
     var host = strength && strength.parentNode; // Webflow's .div-block-182 embed wrapper
     if (!host || !host.parentNode) return;
@@ -582,6 +635,31 @@
       cols.appendChild(host);
       host.style.margin = '0';
     }
+    // Quiet week placement (mockup, F 2026-10-24). Desktop: the one-line row spans
+    // the grid above the two cards. Phone: the row and the 'one thing' card go
+    // right after the next-step card, INSIDE the embed wrapper, because that
+    // wrapper (host) also carries the quick actions and the milestone cards, so
+    // the grid's first cell is next step + quick actions + milestones as one block.
+    var qrow = document.querySelector('.lok-kpis.quiet');
+    var mqPhone = window.matchMedia ? window.matchMedia('(max-width:900px)') : null;
+    function placeQuiet() {
+      var fc = document.getElementById('lok-feed-card');
+      if (!quiet || !qrow || !fc) return;
+      if (mqPhone && mqPhone.matches) {
+        strength.parentNode.insertBefore(qrow, strength.nextSibling);
+        strength.parentNode.insertBefore(fc, qrow.nextSibling);
+        qrow.classList.add('lok-inline'); fc.classList.add('lok-inline');
+      } else {
+        if (qrow.parentNode !== cols) cols.insertBefore(qrow, cols.firstChild);
+        if (fc.parentNode !== cols) cols.appendChild(fc);
+        qrow.classList.remove('lok-inline'); fc.classList.remove('lok-inline');
+      }
+    }
+    if (quiet && mqPhone && !mqPhone.__lokQuiet) {
+      mqPhone.__lokQuiet = true;
+      if (mqPhone.addEventListener) mqPhone.addEventListener('change', placeQuiet);
+      else if (mqPhone.addListener) mqPhone.addListener(placeQuiet);
+    }
     var card = document.getElementById('lok-feed-card');
     if (!card) { card = el('div', 'lok-card'); card.id = 'lok-feed-card'; cols.appendChild(card); }
     var items = buildFeed(leadsData, reviews);
@@ -590,12 +668,22 @@
       html += '<ul class="lok-feed">' + items.map(function (it) {
         return '<li><span class="lok-fi ' + it.kind + '">' + it.ico + '</span><p class="lok-ft">' + it.html + '</p><span class="lok-fw">' + whenLabel(it.t) + '</span></li>';
       }).join('') + '</ul>';
+    } else if (gateReady) {
+      html = oneThingCard();
     } else {
-      html += '<div class="lok-feed-empty">' + (gateReady
-        ? 'Nothing yet, and that is normal early on. Inquiries, contact taps, payment taps and reviews show up here as they happen. Sharing your link with ten people you already know is the fastest way to see the first one.'
-        : 'Once your storefront is live, inquiries, contact taps, payment taps and reviews show up here as they happen.') + '</div>';
+      html += '<div class="lok-feed-empty">Once your storefront is live, inquiries, contact taps, payment taps and reviews show up here as they happen.</div>';
     }
     card.innerHTML = html;
+    placeQuiet();
+    var qc = card.querySelector('[data-quiet-copy]');
+    if (qc) qc.addEventListener('click', function (e) {
+      e.preventDefault();
+      // Same path as the header's Copy link: the hidden Webflow #share-copy-link
+      // carries the tokenized ?via= share URL, so attribution survives.
+      var hidden = document.getElementById('share-copy-link');
+      if (hidden) hidden.click();
+      flashCopied(qc);
+    });
     // The Free-tier share teaser (lokali-share.js) used to sit in the share
     // card; keep its mount alive under the feed so the nudge still renders.
     // lokali-share.js gates it with isPaidTier(vendor row), and the vendor row
@@ -624,7 +712,11 @@
     var unread = (leadsData && leadsData.totals && leadsData.totals.unread) || 0;
     qaCard('qa-services', '/vendor-dashboard/services', ICO.plus, 'Add a service', sCount + (sCount === 1 ? ' active service' : ' active services'));
     qaCard('qa-products', '/vendor-dashboard/products', ICO.plus, 'Add a product', pCount + (pCount === 1 ? ' active product' : ' active products'));
-    qaCard('qa-settings', '/vendor-dashboard/leads', ICO.mail, 'Reply to leads', unread ? unread + ' unread' : 'Nothing waiting');
+    // Slot three (F 2026-10-24): 'Reply to leads' only while a lead is unread (the
+    // sidebar badge and the Leads tile already carry the count); otherwise the
+    // slot is the one weekly action that reaches people, a post to followers.
+    if (unread) qaCard('qa-settings', '/vendor-dashboard/leads', ICO.mail, 'Reply to leads', unread + ' unread');
+    else qaCard('qa-settings', '/vendor-dashboard/followers', ICO.horn, 'Post an update', 'Reaches people who saved you');
     qaCard('qa-preview', '/vendor-dashboard/marketing', ICO.qr, 'Share & QR kit', 'Link, caption, printable code');
     var share = document.querySelector('.div-block-43'); if (share) share.style.display = 'none';
   }
@@ -663,7 +755,6 @@
     '.lok-gam-pill{font-size:10.5px;font-weight:700;border-radius:100px;padding:2px 8px;flex-shrink:0;white-space:nowrap;}',
     '.lok-gam-pill.green{background:#EAFAF2;color:#1D6A45;}',
     '.lok-gam-pill.grey{background:#EEEDF6;color:#8E8BA6;}',
-    '.lok-gam-cb{display:inline-flex;align-items:center;gap:6px;margin-top:10px;font-size:11px;font-weight:700;border-radius:100px;padding:4px 12px;background:#FFF0E6;color:#B4530A;}',
     '.lok-gam-moment{font-family:"Plus Jakarta Sans",-apple-system,sans-serif;background:linear-gradient(135deg,#F3EBFF 0%,#fff 65%);border:.5px solid #E5D4FD;border-radius:12px;padding:1.5rem;margin:0 0 16px;display:flex;gap:14px;align-items:flex-start;color:#1A1829;}',
     '.lok-gam-moment-ico{width:44px;height:44px;border-radius:50%;flex-shrink:0;background:#6002EE;color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(96,2,238,.25);}',
     '.lok-gam-moment-title{font-size:16px;font-weight:700;}',
@@ -673,12 +764,6 @@
     '.lok-gam-btn:hover{opacity:.9;}',
     '.lok-gam-ghost{font-family:inherit;font-size:12.5px;font-weight:500;color:#8E8BA6;background:none;border:none;padding:8px 10px;cursor:pointer;}',
     '.lok-gam-ghost:hover{color:#4A4761;}',
-    '.lok-gam-linkbox{display:flex;align-items:center;gap:10px;background:#F7F6FC;border:.5px solid #EEEDF6;border-radius:8px;padding:10px 12px;margin-top:1.25rem;}',
-    '.lok-gam-linktext{flex:1;font-size:12.5px;color:#4A4761;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
-    '.lok-gam-copy{font-family:inherit;font-size:12px;font-weight:600;color:#6002EE;background:#fff;border:.5px solid #E5D4FD;border-radius:8px;padding:6px 14px;flex-shrink:0;cursor:pointer;}',
-    '.lok-gam-copy:hover{background:#F3EBFF;}',
-    '.lok-gam-incentive{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12px;color:#4A4761;line-height:1.5;}',
-    '.lok-gam-incentive svg{color:#1D6A45;flex-shrink:0;}',
     // Share-your-profile card polish (Francesca 2026-08-13): the Webflow
     // "Copy link" pill carried a stray 20px left margin (misaligned with the
     // Share Profile button below it), and the Share button was oversized —
@@ -794,13 +879,19 @@
         ? 'Every business starts at zero. These unlock as customers find you. Only you can see them.'
         : COUNT_WORDS[earnedCount] + ' down. These are yours to see, a record of your business taking root on Lokali.';
 
+    // Nothing reached yet (F 2026-10-24): one line, the next milestone named, the
+    // five rows behind a tap. The full card returns with the first milestone.
+    var folded = earnedCount === 0;
     var card = document.createElement('div');
-    card.className = 'lok-gam-card';
-    var html =
-      '<div class="lok-gam-eyebrow">Your journey</div>' +
-      '<div class="lok-gam-title">Milestones</div>' +
-      '<div class="lok-gam-sub">' + sub + '</div>' +
-      '<div class="lok-gam-list">';
+    card.className = 'lok-gam-card' + (folded ? ' lok-gam-fold' : '');
+    var html = folded
+      ? '<div class="lok-gam-title">Milestones</div>' +
+        '<div class="lok-gam-sub">0 of 5 reached. ' + GAM_MILESTONES[0].name + ' is the next one.</div>' +
+        '<button type="button" data-gam-fold aria-expanded="false">See all five</button>'
+      : '<div class="lok-gam-eyebrow">Your journey</div>' +
+        '<div class="lok-gam-title">Milestones</div>' +
+        '<div class="lok-gam-sub">' + sub + '</div>';
+    html += '<div class="lok-gam-list">';
     GAM_MILESTONES.forEach(function (d) {
       var m = byKey[d.key];
       html +=
@@ -813,66 +904,18 @@
     });
     html += '</div>';
     card.innerHTML = html;
-    return card;
-  }
-
-  function gamReferralCard(data) {
-    var refs = (data && data.referrals) || [];
-    var n = refs.length;
-    var m = (data && data.months_earned) || 0;
-    var url = data && data.referral_url;
-    if (!url) return null;
-    var shownUrl = url.replace(/^https?:\/\/(www\.)?/, '');
-
-    var sub;
-    if (n >= 3) {
-      sub = n + ' neighbors and counting. You’re a Community Builder. The neighborhood is bigger because of you.';
-    } else if (n > 0) {
-      sub = (n === 1 ? '1 neighbor has' : n + ' neighbors have') + ' joined through your link, ' +
-            (m === 1 ? '1 free month' : m + ' free months') + ' earned so far.';
-    } else {
-      sub = 'Know another local business that belongs on Lokali? Send them your link. Founding slots are limited.';
-    }
-
-    var card = document.createElement('div');
-    card.className = 'lok-gam-card';
-    var html =
-      '<div class="lok-gam-eyebrow">Grow the neighborhood</div>' +
-      '<div class="lok-gam-title">Bring your neighbors</div>' +
-      '<div class="lok-gam-sub">' + gamEsc(sub) + '</div>' +
-      // Community Builder recognition at 3+ — peach house, matching the
-      // badges-guide treatment.
-      (n >= 3
-        ? '<div><span class="lok-gam-cb"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Community Builder</span></div>'
-        : '') +
-      '<div class="lok-gam-linkbox"><div class="lok-gam-linktext">' + gamEsc(shownUrl) + '</div>' +
-        '<button type="button" class="lok-gam-copy" data-gam-copy>Copy link</button></div>' +
-      '<div class="lok-gam-incentive">' +
-        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4h-4z"/></svg>' +
-        '<span>You get <strong>1 month free</strong> for each neighbor who joins a paid plan, up to 12 months a year.</span></div>';
-    if (n > 0) {
-      html += '<div class="lok-gam-list">';
-      refs.forEach(function (r) {
-        var paid = !!r.is_paid;
-        var planLabel = (r.plan === 'featured' ? 'Featured' : r.plan === 'pro' ? 'Pro' : 'Free') + ' plan';
-        html +=
-          '<div class="lok-gam-row">' +
-            '<div class="lok-gam-check done">' + GAM_CHECK + '</div>' +
-            '<div class="lok-gam-name" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + gamEsc(r.business_name || 'A neighbor') + '</div>' +
-            '<div class="lok-gam-pill ' + (paid ? 'green' : 'grey') + '">' + planLabel + '</div>' +
-            '<div class="lok-gam-date">' + gamDate(r.created_at) + '</div>' +
-          '</div>';
-      });
-      html += '</div>';
-    }
-    card.innerHTML = html;
-    card.querySelector('[data-gam-copy]').addEventListener('click', function () {
-      var btn = card.querySelector('[data-gam-copy]');
-      copyToClipboard(url).then(function (ok) { if (ok) flashCopied(btn); });
+    var fold = card.querySelector('[data-gam-fold]');
+    if (fold) fold.addEventListener('click', function () {
+      var open = card.classList.toggle('open');
+      fold.setAttribute('aria-expanded', open ? 'true' : 'false');
+      fold.textContent = open ? 'Hide' : 'See all five';
     });
     return card;
   }
 
+  // The home's 'Bring your neighbors' referral card left on 2026-10-24 (F): the
+  // Marketing page carries the same card, and no referral was ever claimed from
+  // here. Claiming a stashed ?ref= code still happens below.
   function renderGamification() {
     var SB = window.LokaliSupabaseAPI;
     if (!SB || !SB.vendorGamification) return;
@@ -881,12 +924,8 @@
     if (document.querySelector('[data-gam-mounted]')) return;
 
     gamClaimReferral(SB).then(function () {
-      return Promise.all([
-        SB.vendorGamification.milestones(),
-        SB.vendorGamification.referralData()
-      ]);
-    }).then(function (res) {
-      var msRes = res[0], refRes = res[1];
+      return SB.vendorGamification.milestones();
+    }).then(function (msRes) {
       gamStyles();
       var wrap = document.createElement('div');
       wrap.setAttribute('data-gam-mounted', '');
@@ -894,15 +933,10 @@
       var rows = (msRes && !msRes.error && msRes.data) || null;
       if (rows) {
         var moment = gamCelebration(rows);
-        // Celebration rides ABOVE the listing-strength card; the two standing
-        // cards mount together right after it.
+        // Celebration rides ABOVE the listing-strength card; the milestones
+        // card mounts right after the quick actions.
         if (moment && top && top.parentNode) top.parentNode.insertBefore(moment, top);
         wrap.appendChild(gamMilestonesCard(rows));
-      }
-      var refData = refRes && !refRes.error && refRes.data;
-      if (refData && refData.ok) {
-        var refCard = gamReferralCard(refData);
-        if (refCard) wrap.appendChild(refCard);
       }
       if (wrap.children.length) {
         anchor.parentNode.insertBefore(wrap, anchor.nextSibling);
@@ -1029,8 +1063,8 @@
     var gateReady = nextStepCard(v, hasListing, ck, x.waiting);
     if (gateReady == null) gateReady = !!v.is_publish_ready;
     renderHeader(v, x.billing, gateReady);
-    renderTiles(leadsData, x.shares, x.wonRows);
-    renderFeed(leadsData, x.reviews, gateReady, !!(x.billing && x.billing.plan && x.billing.plan !== 'free'));
+    var quiet = renderTiles(leadsData, x.shares, x.wonRows); // true on a quiet week (F 2026-10-24)
+    renderFeed(leadsData, x.reviews, gateReady, !!(x.billing && x.billing.plan && x.billing.plan !== 'free'), quiet);
     renderQuickActions(services, products, leadsData);
 
     // Milestones + referral cards + home-screen card (best-effort; mount after the quick actions now)
