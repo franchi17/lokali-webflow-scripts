@@ -391,15 +391,12 @@
     ".lk-mkt-meta b{color:#1A1829;font-weight:700;}",
     "@media screen and (max-width:991px){.lk-mkt-meta{display:none;}}",
     "@media screen and (max-width:767px){.browse-hero h1.lk-mkt-h1{font-size:28px;}}",
-    // (2) sidebar rows
+    // (2) sidebar width; the row rules sit AFTER the original .filter-item flex
+    //     rule further down (same specificity, so order decides).
     "@media screen and (min-width:992px){.grid-template-columns{grid-template-columns:272px minmax(0,1fr)!important;}.browse-sidebar{width:auto;padding:18px 14px 16px;}}",
-    "#browse-filter-panel .filter-item{display:grid;grid-template-columns:18px minmax(0,1fr) auto;gap:10px;align-items:center;min-height:36px;padding:0 10px;font-size:13px;}",
-    "#browse-filter-panel .filter-item .fi-left{display:contents;}",
-    "#browse-filter-panel .filter-item .fi-label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;justify-self:start;text-align:left;}",
     // Drawer: the neighborhood select sits in the page row on phones, so its
     // sidebar slot would show a bare 'Neighborhood' label over nothing.
     "@media screen and (max-width:991px){#lk-hood-side:not(:has(select)){display:none;}}",
-    "#browse-filter-panel .filter-item .filter-count-pill{justify-self:end;min-width:28px;padding:2px 0;}",
     // (3) shortcut chips (page >=992px, drawer <=991px)
     "#lk-start.lk-chips{margin:0 0 16px;}",
     ".lk-occ-chips{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}",
@@ -594,6 +591,12 @@
     "#browse-filter-panel .lk-glyph-icon{font-size:13px;font-weight:700;width:16px;text-align:center;display:inline-block;flex-shrink:0;}",
     "#browse-filter-panel .filter-count-pill{font-size:11px;font-weight:600;background:#EEEDF6;color:#6E6A85;border-radius:100px;padding:1px 7px;min-width:22px;text-align:center;}",
     "#browse-filter-panel .filter-item.active .filter-count-pill{background:rgba(96,2,238,.12);color:#6002EE;}",
+    // Frame pass 2026-10-24 (2): one-line rows, icon / label / count pinned
+    // right. Must follow the flex rule above: same specificity, later wins.
+    "#browse-filter-panel .filter-item{display:grid;grid-template-columns:18px minmax(0,1fr) auto;gap:10px;align-items:center;min-height:36px;padding:0 10px;font-size:13px;}",
+    "#browse-filter-panel .filter-item .fi-left{display:contents;}",
+    "#browse-filter-panel .filter-item .fi-label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;justify-self:start;text-align:left;}",
+    "#browse-filter-panel .filter-item .filter-count-pill{justify-self:end;min-width:28px;padding:2px 0;}",
     "#browse-filter-panel .lk-divider{height:.5px;background:#EEEDF6;margin:1rem 0;}",
     "#browse-filter-panel .lk-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;background:none;border:none;font-family:inherit;-webkit-appearance:none;appearance:none;text-align:left;padding:6px 0;cursor:pointer;user-select:none;}",
     "#browse-filter-panel .lk-toggle-label{font-size:13.5px;line-height:1.45;color:#4A4761;display:flex;align-items:flex-start;gap:6px;}",
