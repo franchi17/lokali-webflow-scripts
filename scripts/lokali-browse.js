@@ -382,6 +382,10 @@
     //     neighborhood ask, with REAL links (the Designer's code-island buttons
     //     were href="#").
     ".browse-hero .browse-hero-inner{display:flex;flex-direction:row;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px;}",
+    // Webflow's .w-container clearfix pseudo-elements become flex items here and,
+    // with the 24px column gap, pushed the title 24px in from the sidebar's edge
+    // (F 2026-10-24 'align the text').
+    ".browse-hero .browse-hero-inner::before,.browse-hero .browse-hero-inner::after{display:none;content:none;}",
     ".browse-hero .browse-hero-inner>.search-bar{flex:1 1 100%;}",
     ".browse-hero .lk-mkt-head{min-width:0;}",
     ".browse-hero .lk-mkt-head .text-block-115{font-size:12px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#6002EE;margin-bottom:6px;}",
@@ -429,12 +433,17 @@
     ".lk-strip .mkt-about-note{margin-top:14px;font-size:13.5px;}",
     ".lk-strip .mkt-about-note a{color:#6002EE;font-weight:700;text-decoration:underline;margin-right:16px;}",
     "@media (max-width:767px){.mkt-about.lk-strip{padding:22px 18px 20px!important;}}",
-    ".newsletter-nudge.lk-warm{background:#FFF7EC!important;border-radius:16px;align-items:center;gap:28px;padding:28px 32px;}",
+    // The Designer's band is a COLUMN flex (text over form); row + wrap puts the
+    // form beside the text on wide screens and under it on phones. (v1.4.582
+    // set align-items:center on the column and centred everything, F's screenshot.)
+    ".newsletter-nudge.lk-warm{background:#FFF7EC!important;border-radius:16px;flex-direction:row;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:20px 32px;padding:28px 32px;}",
+    ".lk-warm .div-block-197{flex:1 1 380px;min-width:0;}",
+    ".lk-strip .mkt-about-cols{margin-bottom:0!important;}",
     ".lk-warm .newsletter-nudge-eyebrow{color:#FF8D00!important;font-size:12px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;}",
     ".lk-warm .newsletter-nudge-headline{color:#1A1829!important;font-size:22px;font-weight:800;letter-spacing:-.02em;line-height:1.15;margin:6px 0 6px;}",
     ".lk-warm .newsletter-nudge-sub{color:#4A4761!important;font-size:14px;max-width:52ch;}",
     ".lk-warm .newsletter-nudge-right{flex:0 0 auto;width:auto;min-width:0;}",
-    "@media (max-width:767px){.newsletter-nudge.lk-warm{flex-direction:column;align-items:stretch;padding:22px 18px;}}",
+    "@media (max-width:767px){.newsletter-nudge.lk-warm{flex-direction:column;align-items:stretch;padding:22px 18px;}.lk-warm .div-block-197{flex:0 0 auto;}}",
     ".bottom-ctas .lk-card{background:#fff!important;border:1px solid #DEDAEE!important;border-radius:14px!important;padding:24px 26px!important;box-shadow:0 1px 2px rgba(40,32,90,.08),0 4px 14px rgba(40,32,90,.06);display:flex;flex-direction:column;align-items:flex-start;gap:8px;}",
     ".bottom-ctas .lk-card code-island{display:none!important;}",
     ".bottom-ctas .lk-card .text-block-122,.bottom-ctas .lk-card .text-block-125{color:#6002EE!important;font-size:12px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;}",

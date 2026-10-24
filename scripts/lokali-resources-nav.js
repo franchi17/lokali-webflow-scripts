@@ -119,7 +119,10 @@
       // 26px trigger starts 2px higher (measured in the harness, 2026-10-14).
       '.header-bottom-wrapper .lok-nav-cur::after{content:"";position:absolute;left:0;right:0;bottom:-26px;height:2px;border-radius:2px;background:' + BRAND + ';}' +
       '.header-bottom-wrapper .lok-res-trig.lok-nav-cur::after{bottom:-22px;}' +
-      '.header-bottom-wrapper .header-nav-link.lok-nav-cur::after{right:17px;}' + // stop short of the caret on About
+      // Only the decorated link (About) carries a caret; a plain current link
+      // (The Market) gets the full-width rule (F 2026-10-24: the line ran under
+      // half the word).
+      '.header-bottom-wrapper .header-nav-link.lok-res-link.lok-nav-cur::after{right:17px;}' + // stop short of the caret on About
       '.header-bottom-wrapper .lok-res-trig.lok-nav-cur::after{right:13px;}' +
       // mobile accordion variant (inside the hamburger menu)
       '.lok-res-li.mob .lok-res-trig{display:flex;justify-content:space-between;width:100%;}' +
@@ -170,6 +173,7 @@
     car.className = 'lok-res-car';
     car.setAttribute('aria-hidden', 'true');
     a.appendChild(car);
+    a.classList.add('lok-res-link');
     li.appendChild(buildPanel(cfg.links));
     if (isMobile) {
       // Touch: the link keeps navigating; the caret toggles the accordion.
