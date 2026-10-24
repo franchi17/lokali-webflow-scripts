@@ -359,6 +359,94 @@
     "html.lk-hood-moved .browse-hero .form-block-7{display:none;}",
     "@media screen and (max-width:767px){html.lok-row2 .browse-hero .search-bar{display:none;}.browse-hero{padding-top:20px;}.browse-body{padding-top:14px;}}",
     "@media screen and (min-width:1380px){html.lok-mkt-hs .browse-hero .search-bar{display:none;}}",
+    // ── Frame pass (F 2026-10-24; mockup https://claude.ai/artifact/7jMRJ7KZoFJVh7JQfVAHvA) ──
+    // The grid, cards and filters already matched the Home/About redesign; only the
+    // frame around them was stale. Four things change, all in this script:
+    // (1) the title: the Designer's 26px text block becomes a real H1 in the new
+    //     pages' voice (38px/800, violet second line) with the eyebrow spaced like
+    //     theirs; the band stays compact on the GREY ground (lavender #F3EBFF puts
+    //     the muted grey at 4.47:1, under AA - the reason #F2F1F9 was chosen);
+    // (2) the sidebar: 272px with one-line category rows (icon / label / count
+    //     pinned right) - at 220px five labels wrapped and the counts drifted;
+    // (3) the start band: six tiles + a mini card (313px desktop, 372px phone)
+    //     become ONE row of chips, so the first card lands on the first screen
+    //     (it sat at 755px on a 375 phone; 20 of 61 real visits since Oct 10
+    //     never had a card reach the screen). <=991px the chips live in the
+    //     Filter & sort drawer with the categories, toggles and sort, the category
+    //     chip strip is retired, and the drawer gets a "Show N vendors" button;
+    // (4) the tail: the SEO block (added 2026-08-24 so Google would index the
+    //     page) keeps its paragraph but loses the category column, the three
+    //     steps and the peach vendor band (/for-customers says all of it); the
+    //     newsletter block drops its off-brand #0000D6 for the page's one light-
+    //     orange section; the two bottom cards become one vendor ask + the
+    //     neighborhood ask, with REAL links (the Designer's code-island buttons
+    //     were href="#").
+    ".browse-hero .browse-hero-inner{display:flex;flex-direction:row;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px;}",
+    ".browse-hero .browse-hero-inner>.search-bar{flex:1 1 100%;}",
+    ".browse-hero .lk-mkt-head{min-width:0;}",
+    ".browse-hero .lk-mkt-head .text-block-115{font-size:12px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#6002EE;margin-bottom:6px;}",
+    ".browse-hero h1.lk-mkt-h1{font-family:'Plus Jakarta Sans',sans-serif;font-size:38px;font-weight:800;letter-spacing:-.03em;line-height:1.05;color:#1A1829;margin:0;}",
+    ".browse-hero h1.lk-mkt-h1 .lk-v{color:#6002EE;}",
+    ".lk-mkt-meta{font-size:13.5px;color:#4A4761;text-align:right;line-height:1.5;padding-bottom:5px;margin-left:auto;}",
+    ".lk-mkt-meta b{color:#1A1829;font-weight:700;}",
+    "@media screen and (max-width:991px){.lk-mkt-meta{display:none;}}",
+    "@media screen and (max-width:767px){.browse-hero h1.lk-mkt-h1{font-size:28px;}}",
+    // (2) sidebar rows
+    "@media screen and (min-width:992px){.grid-template-columns{grid-template-columns:272px minmax(0,1fr)!important;}.browse-sidebar{width:auto;padding:18px 14px 16px;}}",
+    "#browse-filter-panel .filter-item{display:grid;grid-template-columns:18px minmax(0,1fr) auto;gap:10px;align-items:center;min-height:36px;padding:0 10px;font-size:13px;}",
+    "#browse-filter-panel .filter-item .fi-left{display:contents;}",
+    "#browse-filter-panel .filter-item .fi-label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;justify-self:start;text-align:left;}",
+    // Drawer: the neighborhood select sits in the page row on phones, so its
+    // sidebar slot would show a bare 'Neighborhood' label over nothing.
+    "@media screen and (max-width:991px){#lk-hood-side:not(:has(select)){display:none;}}",
+    "#browse-filter-panel .filter-item .filter-count-pill{justify-self:end;min-width:28px;padding:2px 0;}",
+    // (3) shortcut chips (page >=992px, drawer <=991px)
+    "#lk-start.lk-chips{margin:0 0 16px;}",
+    ".lk-occ-chips{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}",
+    ".lk-occ-chips-l{font-size:12.5px;font-weight:600;color:#6E6A85;margin-right:4px;}",
+    ".lk-occ-chip{display:inline-flex;align-items:center;gap:7px;min-height:38px;padding:0 13px;border-radius:100px;border:1px solid #DEDAEE;background:#fff;color:#4A4761;font:600 13px/1 'Plus Jakarta Sans',sans-serif;cursor:pointer;-webkit-appearance:none;appearance:none;}",
+    ".lk-occ-chip:hover{border-color:#C4A8F7;color:#1A1829;}",
+    ".lk-occ-chip:focus-visible{outline:2px solid #6002EE;outline-offset:2px;}",
+    ".lk-occ-chip i{display:inline-flex;width:13px;height:13px;flex:none;}.lk-occ-chip i svg{width:13px;height:13px;display:block;}",
+    ".lk-occ-chip.new{background:#EAF7EF;border-color:#C6F2DB;color:#11744A;}",
+    "#lk-cat-chips{display:none!important;}",
+    "#browse-filter-panel .lk-drawer-only{display:none;}",
+    "#lk-drawer-foot{display:none;}",
+    "@media screen and (max-width:991px){",
+    "#lk-start{display:none!important;}",
+    "#browse-filter-panel .lk-drawer-only{display:block;}",
+    "#browse-filter-panel .lk-drawer-only .lk-occ-chip{min-height:40px;font-size:13.5px;}",
+    "#lk-drawer-foot{display:block;position:sticky;bottom:0;background:#fff;padding:12px 0 6px;margin-top:14px;border-top:1px solid #EEEDF6;}",
+    ".lk-drawer-show{display:block;width:100%;min-height:48px;border:0;border-radius:999px;background:#6002EE;color:#fff;font:700 15px/1 'Plus Jakarta Sans',sans-serif;cursor:pointer;}",
+    ".lk-drawer-show:focus-visible{outline:2px solid #6002EE;outline-offset:2px;}",
+    "}",
+    // (4) the tail
+    ".mkt-about.lk-strip{padding:28px 32px 26px!important;}",
+    ".lk-strip .mkt-about-eyebrow{font-size:12px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#6002EE;}",
+    ".lk-strip .mkt-about-h2{font-size:22px!important;font-weight:800!important;letter-spacing:-.025em;line-height:1.15;color:#1A1829!important;margin:6px 0 10px!important;}",
+    ".lk-strip .mkt-about-h2 .lk-v{color:#6002EE;}",
+    ".lk-strip .mkt-about-intro{font-size:14.5px!important;line-height:1.55!important;max-width:72ch;margin:0 0 14px!important;}",
+    ".lk-strip .mkt-about-cols{display:block!important;margin-top:0!important;}",
+    ".lk-strip .mkt-about-col:first-child,.lk-strip .mkt-about-h3,.lk-strip .mkt-about-p,.lk-strip .mkt-about-steps,.lk-strip .mkt-about-cta{display:none!important;}",
+    ".lk-strip .mkt-chip{display:inline-flex;align-items:center;border:1px solid #E6DBFD;background:#F3EBFF;color:#6002EE;border-radius:100px;padding:7px 13px;font-size:13px;font-weight:600;}",
+    ".lk-strip .mkt-about-note{margin-top:14px;font-size:13.5px;}",
+    ".lk-strip .mkt-about-note a{color:#6002EE;font-weight:700;text-decoration:underline;margin-right:16px;}",
+    "@media (max-width:767px){.mkt-about.lk-strip{padding:22px 18px 20px!important;}}",
+    ".newsletter-nudge.lk-warm{background:#FFF7EC!important;border-radius:16px;align-items:center;gap:28px;padding:28px 32px;}",
+    ".lk-warm .newsletter-nudge-eyebrow{color:#FF8D00!important;font-size:12px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;}",
+    ".lk-warm .newsletter-nudge-headline{color:#1A1829!important;font-size:22px;font-weight:800;letter-spacing:-.02em;line-height:1.15;margin:6px 0 6px;}",
+    ".lk-warm .newsletter-nudge-sub{color:#4A4761!important;font-size:14px;max-width:52ch;}",
+    ".lk-warm .newsletter-nudge-right{flex:0 0 auto;width:auto;min-width:0;}",
+    "@media (max-width:767px){.newsletter-nudge.lk-warm{flex-direction:column;align-items:stretch;padding:22px 18px;}}",
+    ".bottom-ctas .lk-card{background:#fff!important;border:1px solid #DEDAEE!important;border-radius:14px!important;padding:24px 26px!important;box-shadow:0 1px 2px rgba(40,32,90,.08),0 4px 14px rgba(40,32,90,.06);display:flex;flex-direction:column;align-items:flex-start;gap:8px;}",
+    ".bottom-ctas .lk-card code-island{display:none!important;}",
+    ".bottom-ctas .lk-card .text-block-122,.bottom-ctas .lk-card .text-block-125{color:#6002EE!important;font-size:12px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;}",
+    ".bottom-ctas .lk-card .text-block-123{color:#1A1829!important;font-size:20px;font-weight:800;letter-spacing:-.02em;line-height:1.15;}",
+    ".bottom-ctas .lk-card .text-block-124{color:#4A4761!important;font-size:14px;max-width:46ch;margin-bottom:6px;}",
+    ".lk-cta-btn{display:inline-flex;align-items:center;min-height:42px;padding:0 18px;border-radius:999px;font:700 14px/1 'Plus Jakarta Sans',sans-serif;text-decoration:none;white-space:nowrap;}",
+    ".lk-cta-btn.lk-cta-v{background:#6002EE;color:#fff;}.lk-cta-btn.lk-cta-v:hover{background:#4B02BB;}",
+    ".lk-cta-btn.lk-cta-l{background:#F3EBFF;color:#6002EE;}.lk-cta-btn.lk-cta-l:hover{background:#E6DBFD;}",
+    ".lk-cta-btn:focus-visible{outline:2px solid #6002EE;outline-offset:2px;}",
     // Neighborhood picker: lilac fill + violet text (F). #E6DBFD is the lightest
     // lilac that clears 3x the visibility threshold on the ground.
     "#lk-hood-side{margin-bottom:1.5rem;}",
@@ -1261,7 +1349,7 @@
       item.setAttribute('data-category-slug', c.slug);
       var left = ce('div', 'fi-left');
       left.appendChild(maskIcon(c.url, ICON_VIOLET, 18));
-      left.appendChild(document.createTextNode(c.label));
+      var lab = ce('span', 'fi-label'); lab.textContent = c.label; left.appendChild(lab);
       var pill = ce('span', 'filter-count-pill'); pill.textContent = '0';
       item.appendChild(left); item.appendChild(pill);
       item.addEventListener('click', function () { setCategory(c.slug); });
@@ -1270,6 +1358,14 @@
     mount.appendChild(cs);
     renderSubcatRow(); // #96 — unfold pills under the (restored) active category
     mount.appendChild(ce('div', 'lk-divider'));
+
+    // Shortcuts (drawer only, <=991px): the occasion chips that sit above the
+    // grid on desktop. Filled by renderDrawerShortcuts() once vendors exist.
+    var sh = ce('div', 'lk-filter-section lk-drawer-only'); sh.id = 'lk-drawer-shortcuts';
+    var shl = ce('div', 'lk-filter-label'); shl.textContent = 'Shortcuts'; sh.appendChild(shl);
+    mount.appendChild(sh);
+    mount.appendChild(ce('div', 'lk-divider lk-drawer-only'));
+    renderDrawerShortcuts();
 
     // Filter by (toggles)
     var fs = ce('div', 'lk-filter-section');
@@ -1309,6 +1405,30 @@
       ss.appendChild(item);
     });
     mount.appendChild(ss);
+    ensureDrawerFoot();
+  }
+
+  // Drawer footer (<=991px): one button that says what tapping it shows, so the
+  // sheet reads as "set things, then see the result" instead of a list of
+  // controls with no end. Lives on #browse-sidebar, BESIDE the panel mount
+  // (renderFilterPanel wipes the mount). Count updated from applyFilters.
+  function ensureDrawerFoot() {
+    var sb = el('browse-sidebar');
+    if (!sb || el('lk-drawer-foot')) return;
+    var foot = ce('div'); foot.id = 'lk-drawer-foot';
+    var b = ce('button', 'lk-drawer-show'); b.type = 'button'; b.textContent = 'Show vendors';
+    b.addEventListener('click', closeFilters);
+    foot.appendChild(b); sb.appendChild(foot);
+  }
+  function updateDrawerFoot(n) {
+    var b = document.querySelector('#lk-drawer-foot .lk-drawer-show');
+    if (b) b.textContent = 'Show ' + n + (n === 1 ? ' vendor' : ' vendors');
+  }
+  function renderDrawerShortcuts() {
+    var sec = el('lk-drawer-shortcuts');
+    if (!sec) return;
+    var old = sec.querySelector('.lk-occ-chips'); if (old) sec.removeChild(old);
+    sec.appendChild(occasionChips(true));
   }
 
   // #96 — feature-detect: does the loaded vendor payload actually CARRY the
@@ -1665,6 +1785,7 @@
     try { renderStartHere(); } catch (e) {}
     try { renderOccasionBar(visible.length); } catch (e) {}
     updateCounts(visible.length);
+    try { updateDrawerFoot(visible.length); updateFrameMeta(); } catch (e) {}
     updateActiveFilters();
     updateMobileIndicator();
     persistState();
@@ -1821,7 +1942,7 @@
       var shown = _startEl && _startEl.classList.contains('show');
       scrollToNode(shown ? _startEl : _grid, smooth);
       // The tapped tile (or the New link); the first tile if that section is gone.
-      if (shown && prev) focusQuietly(_startEl.querySelector('[data-occ="' + prev.k + '"]') || _startEl.querySelector('.lk-st-tile'));
+      if (shown && prev) focusQuietly(_startEl.querySelector('[data-occ="' + prev.k + '"]') || _startEl.querySelector('.lk-occ-chip'));
     };
     if (defer) setTimeout(function () { (window.requestAnimationFrame || setTimeout)(land); }, 0);
     else land();
@@ -1948,52 +2069,48 @@
     sec.appendChild(head);
     return sec;
   }
+  // Frame pass 2026-10-24: the band is ONE row of chips (the six occasions and,
+  // when someone is new, "New this week"), on the default view only. The tiles,
+  // the mini cards and the neighbors' picks row are gone: together they put the
+  // first card at 755px on a phone. The chips keep every shortcut reachable
+  // (Home no longer links to occasions) and reuse applyOccasion, so the bar,
+  // the Clear button and the Back behaviour are unchanged. <=991px this
+  // element is hidden and the same chips render in the drawer.
+  function anyNewThisWeek() {
+    var locId = activeLocationId === 'all' ? null : String(activeLocationId);
+    for (var i = 0; i < _allVendors.length; i++) {
+      var v = _allVendors[i];
+      if (vIsNew(v) && (locId == null || vLocationIds(v).map(String).indexOf(locId) !== -1)) return true;
+    }
+    return false;
+  }
+  function occChip(o, label, svg, inDrawer, extra) {
+    var b = ce('button', 'lk-occ-chip' + (extra ? ' ' + extra : '')); b.type = 'button';
+    b.setAttribute('data-occ', o.k);
+    var ic = ce('i'); ic.innerHTML = svg || ''; ic.style.color = o.fg; b.appendChild(ic);
+    b.appendChild(document.createTextNode(label));
+    b.addEventListener('click', function () { if (inDrawer) closeFilters(); applyOccasion(o); });
+    return b;
+  }
+  function occasionChips(inDrawer) {
+    var row = ce('div', 'lk-occ-chips');
+    row.setAttribute('role', 'group'); row.setAttribute('aria-label', 'Shortcuts');
+    if (!inDrawer) { var l = ce('span', 'lk-occ-chips-l'); l.textContent = 'Shortcuts'; row.appendChild(l); }
+    OCCASIONS.forEach(function (o) { row.appendChild(occChip(o, o.t, OCC_SVG[o.ico], inDrawer)); });
+    if (anyNewThisWeek()) row.appendChild(occChip(NEW_SHORTCUT, NEW_SHORTCUT.t, SIG_SVG.bolt, inDrawer, 'new'));
+    return row;
+  }
   function renderStartHere() {
     if (!_grid || !_grid.parentNode) return;
     if (!_startEl) {
-      _startEl = ce('div'); _startEl.id = 'lk-start';
+      _startEl = ce('div', 'lk-chips'); _startEl.id = 'lk-start';
       var anchor = _occBarEl || el('browse-loading') || _grid;
       _grid.parentNode.insertBefore(_startEl, anchor);
     }
+    renderDrawerShortcuts();
     if (!isDefaultView() || !_allVendors.length) { _startEl.classList.remove('show'); return; }
     _startEl.innerHTML = '';
-    // 1. occasions
-    var occ = stSection("What's the occasion?", 'Shortcuts across categories', null, null);
-    var tiles = ce('div', 'lk-st-tiles');
-    OCCASIONS.forEach(function (o) {
-      var t = ce('button', 'lk-st-tile'); t.type = 'button'; t.setAttribute('data-occ', o.k);
-      t.style.background = o.bg; t.style.color = o.fg;
-      var ic = ce('span', 'lk-st-tile-ico'); ic.innerHTML = OCC_SVG[o.ico] || ''; ic.style.color = o.fg; t.appendChild(ic);
-      var tt = ce('span', 'lk-st-tile-t'); tt.textContent = o.t; t.appendChild(tt);
-      var ts = ce('span', 'lk-st-tile-s'); ts.textContent = o.s; t.appendChild(ts);
-      t.addEventListener('click', function () { applyOccasion(o); });
-      tiles.appendChild(t);
-    });
-    occ.appendChild(tiles); _startEl.appendChild(occ);
-    // 2. new this week (respects the neighborhood pick)
-    var locId = activeLocationId === 'all' ? null : String(activeLocationId);
-    var fresh = _allVendors.filter(function (v) {
-      return vIsNew(v) && (locId == null || vLocationIds(v).map(String).indexOf(locId) !== -1);
-    }).sort(function (a, b) { return vCreated(b) - vCreated(a); });
-    if (fresh.length) {
-      var nw = stSection('New this week', null, 'See everything new →', function () { applyOccasion(NEW_SHORTCUT); });
-      var nwLink = nw.querySelector('.lk-st-link'); if (nwLink) nwLink.setAttribute('data-occ', NEW_SHORTCUT.k);
-      var row = ce('div', 'lk-st-row');
-      fresh.slice(0, 4).forEach(function (v) { row.appendChild(miniCard(v, 'new', 'Just opened')); });
-      nw.appendChild(row); _startEl.appendChild(nw);
-    }
-    // 3. neighbors' picks (saves floor is server-side; zero rows = no section)
-    var picks = _allVendors.filter(function (v) { var t = vTrust(v); return t && Number(t.saves) >= 3; })
-      .sort(function (a, b) { return Number(vTrust(b).saves) - Number(vTrust(a).saves); });
-    if (picks.length) {
-      var pk = stSection("Neighbors' picks", 'Most followed storefronts', null, null);
-      var prow = ce('div', 'lk-st-row');
-      picks.slice(0, 4).forEach(function (v) {
-        var n = Number(vTrust(v).saves);
-        prow.appendChild(miniCard(v, 'saved', 'Followed by ' + n + ' neighbors'));
-      });
-      pk.appendChild(prow); _startEl.appendChild(pk);
-    }
+    _startEl.appendChild(occasionChips(false));
     _startEl.classList.add('show');
   }
 
@@ -2472,7 +2589,9 @@
   }
 
   function updateMobileIndicator() {
-    renderCategoryChips();
+    // Frame pass 2026-10-24: the chip strip is retired (the drawer's category
+    // list, with counts, is the one place to pick a category on phones);
+    // renderCategoryChips() stays for a quick revert.
     var btn = el('browse-mobile-filter-btn');
     if (!btn) return;
     btn.classList.toggle('has-filters', activeCategory !== 'all' || activeSubcats.length > 0 || showNewOnly || showFoundingOnly || showVerifiedOnly || activeLocationId !== 'all' || !!searchTerm || !!(_occ && _occ.terms));
@@ -2671,6 +2790,118 @@
   }
 
   // ── init ──
+  // ── Frame pass 2026-10-24: title band + the tail under the grid ──────────
+  // Both work on the Designer's own elements (re-tagged, re-worded, hidden by
+  // class), never on copies, so the page's static text stays in the raw HTML
+  // for crawlers and a Designer tidy later changes nothing here.
+  var NUMBER_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'];
+  function numberWord(n) { return (n >= 0 && n < NUMBER_WORDS.length) ? NUMBER_WORDS[n] : String(n); }
+  function communityCount() {
+    var sel = locSelectEl(); if (!sel) return 0;
+    var n = 0;
+    for (var i = 0; i < sel.options.length; i++) { var v = String(sel.options[i].value || '').toLowerCase(); if (v && v !== 'all' && v !== '0') n++; }
+    return n;
+  }
+  function frameHero() {
+    var inner = document.querySelector('.browse-hero .browse-hero-inner');
+    var eye = inner && inner.querySelector('.text-block-115');
+    var title = inner && inner.querySelector('.text-block-116');
+    if (!inner || !title || inner.querySelector('.lk-mkt-h1')) return;
+    var text = (title.textContent || '').replace(/\s+/g, ' ').trim();
+    var h1 = ce('h1', 'lk-mkt-h1');
+    if (/^browse local vendors near you\.?$/i.test(text)) {
+      h1.appendChild(document.createTextNode('Browse local vendors'));
+      h1.appendChild(ce('br'));
+      var v = ce('span', 'lk-v'); v.textContent = 'near you.'; h1.appendChild(v);
+    } else { h1.textContent = text; }
+    var head = ce('div', 'lk-mkt-head');
+    title.parentNode.insertBefore(head, eye || title);
+    if (eye) head.appendChild(eye);
+    head.appendChild(h1);
+    title.parentNode.removeChild(title);
+    var meta = ce('div', 'lk-mkt-meta'); meta.id = 'lk-mkt-meta';
+    meta.setAttribute('aria-hidden', 'true');
+    inner.appendChild(meta);
+  }
+  // "N storefronts across nine communities" + the Home hero's trust line. The
+  // count is every public storefront (not the filtered result - that number is
+  // "Showing N vendors" above the grid).
+  function updateFrameMeta() {
+    var meta = el('lk-mkt-meta'); if (!meta) return;
+    var n = _allVendors.length; if (!n) { meta.textContent = ''; return; }
+    var c = communityCount();
+    meta.textContent = '';
+    var b = ce('b'); b.textContent = n + (n === 1 ? ' storefront' : ' storefronts'); meta.appendChild(b);
+    meta.appendChild(document.createTextNode(c ? ' across ' + numberWord(c) + ' communities' : ''));
+    meta.appendChild(ce('br'));
+    meta.appendChild(document.createTextNode('Verified people · Reviews from real customers · Message them directly'));
+  }
+  function frameTail() {
+    // The SEO block: keep the paragraph, drop the duplicates.
+    var about = document.querySelector('.mkt-about');
+    if (about) {
+      var eye = about.querySelector('.mkt-about-eyebrow'); if (eye) eye.textContent = 'Where The Market is open';
+      var hoodCol = about.querySelector('.mkt-about-col:last-child');
+      var hoodChips = hoodCol ? hoodCol.querySelectorAll('.mkt-about-chips .mkt-chip').length : 0;
+      var h2 = about.querySelector('.mkt-about-h2');
+      if (h2) {
+        h2.textContent = 'Independent local vendors across ';
+        var v = ce('span', 'lk-v'); v.textContent = numberWord(hoodChips || 9) + ' communities.'; h2.appendChild(v);
+      }
+      var intro = about.querySelector('.mkt-about-intro');
+      if (intro) {
+        var names = [];
+        if (hoodCol) { var cs = hoodCol.querySelectorAll('.mkt-about-chips .mkt-chip'); for (var i = 0; i < cs.length; i++) names.push(cs[i].textContent.trim()); }
+        var first = names.length ? names[0] : 'The Woodlands';
+        var rest = names.slice(1);
+        var served = rest.length > 1 ? rest.slice(0, -1).join(', ') + ' and ' + rest[rest.length - 1] : rest.join('');
+        intro.textContent = 'The Market is Lokali’s directory of independent local vendors: the makers, bakers, stylists, tutors, and service pros working right in your neighborhood. ' +
+          'Lokali started in ' + first + (served ? ', and our vendors already serve ' + served + '.' : '.') + ' Every storefront belongs to a real person nearby.';
+      }
+      var note = about.querySelector('.mkt-about-note');
+      if (note) {
+        var link = note.querySelector('a');
+        var href = (link && link.getAttribute('href')) || '/contact-us';
+        note.textContent = '';
+        var a1 = ce('a'); a1.href = href; a1.textContent = 'Request your neighborhood'; note.appendChild(a1);
+        var a2 = ce('a'); a2.href = '/for-customers'; a2.textContent = 'How Lokali works →'; note.appendChild(a2);
+      }
+      about.classList.add('lk-strip');
+    }
+    // The newsletter block: the page's one light-orange section. The input and
+    // button live in a Webflow code island (open shadow DOM), so their colors
+    // are set inside it; the band itself is light DOM.
+    var news = document.querySelector('.newsletter-nudge');
+    if (news) {
+      news.classList.add('lk-warm');
+      var island = news.querySelector('code-island');
+      if (island && island.shadowRoot && !island.shadowRoot.querySelector('#lk-warm-css')) {
+        var st = ce('style'); st.id = 'lk-warm-css';
+        st.textContent = 'input{background:#fff!important;border:1.5px solid #F2D9B8!important;border-radius:100px!important;color:#1A1829!important;min-height:46px;padding-left:18px!important;}' +
+          'input:focus{outline:none!important;border-color:#FF8D00!important;box-shadow:0 0 0 3px rgba(255,141,0,.18)!important;}' +
+          'button{background:#FF8D00!important;border:0!important;border-radius:100px!important;color:#fff!important;font-weight:700!important;min-height:46px;padding:0 20px!important;cursor:pointer;}' +
+          'button:hover{background:#F07F00!important;}';
+        island.shadowRoot.appendChild(st);
+      }
+    }
+    // The two bottom cards: one vendor ask (Home's line, the header's button
+    // wording), one neighborhood ask. The code-island buttons were href="#".
+    var light = document.querySelector('.bottom-cta-card-cta-card-light');
+    if (light) {
+      setText(light.querySelector('.text-block-122'), 'For vendors');
+      setText(light.querySelector('.text-block-123'), 'Have a business? Your neighbors are looking.');
+      setText(light.querySelector('.text-block-124'), 'List your business free and be among the first in your area. Founding vendors lock in their rate for as long as they stay.');
+      var vb = ce('a', 'lk-cta-btn lk-cta-v'); vb.href = '/sign-up'; vb.textContent = 'Open your storefront'; light.appendChild(vb);
+      light.classList.add('lk-card');
+    }
+    var dark = document.querySelector('.bottom-cta-card-cta-card-dark');
+    if (dark) {
+      setText(dark.querySelector('.text-block-125'), 'Coming soon');
+      var nb = ce('a', 'lk-cta-btn lk-cta-l'); nb.href = '/contact-us'; nb.textContent = 'Request your neighborhood →'; dark.appendChild(nb);
+      dark.classList.add('lk-card');
+    }
+  }
+
   function init() {
     if (!window.LokaliAPI) { console.error('[lokali-browse] LokaliAPI not found — load lokali-api-client.js first.'); return; }
     _grid = el('browse-vendor-grid');
@@ -2678,6 +2909,8 @@
     _emptyState = el('browse-empty-state');
 
     injectStyles();
+    try { frameHero(); } catch (e) { console.warn('[lokali-browse] frameHero:', e); }
+    try { frameTail(); } catch (e) { console.warn('[lokali-browse] frameTail:', e); }
     ensureLoadingEl();
     // Hand-off from the page-head pre-script guard (the-market head CSS hides
     // the Webflow-baked "No vendors found"/"0 vendors" and spins a pure-CSS
