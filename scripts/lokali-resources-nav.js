@@ -73,9 +73,12 @@
       // /pricing anchor targets clear the fixed header on jump (the plan cards'
       // CTA and the guides still link to #plans / #compare). Was in pricing-nav.
       '#plans,#compare,#versus,#faq{scroll-margin-top:96px;}' +
-      // This week gate (see twGate): hidden until html.lok-tw. The footer row is a
-      // cloned <li>, so hide the row, not just the link, where :has() exists.
+      // This week gate (see twGate): hidden until html.lok-tw. The footer row and
+      // the header item are <li>s, so hide the row, not just the link, where
+      // :has() exists (the header li keeps Middle's 26px padding-right: with only
+      // the link hidden, The Market -> About was a double 52px gap, F 2026-10-25).
       'html:not(.lok-tw) .header-nav-menu-list a[href="/this-week"],html:not(.lok-tw) #lok-mnav-panel a[href="/this-week"],' +
+      'html:not(.lok-tw) .header-nav-menu-list li:has(> a[href="/this-week"]),' +
       'html:not(.lok-tw) .lok-ft a[href="/this-week"],html:not(.lok-tw) .lok-ft li:has(> a[href="/this-week"]){display:none !important;}' +
       // Vertical alignment of the whole desktop nav row: Webflow NavbarLinks
       // ride vertical-align:top while plain links and our injected triggers sit
