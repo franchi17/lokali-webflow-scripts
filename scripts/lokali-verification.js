@@ -122,10 +122,9 @@
   // Verification is a paid perk. Whether the vendor is on Pro/Featured decides whether
   // they see the "Get Verified" button or the upsell. Cached once billing resolves so
   // renderStatus() can re-run (e.g. return-from-Stripe polling) without re-fetching.
-  // Four states so we NEVER nag a paying vendor: 'pro' (paid + active) | 'trial'
-  // (Pro/Featured but no successful payment yet — founding free trial; #48: the
-  // server refuses to start verification until the first real charge, so show why
-  // instead of a dead button) | 'free' | 'unknown'. Only a confirmed 'free' shows
+  // Three states so we NEVER nag a paying vendor: 'pro' (Pro/Featured, active OR
+  // a founding trial; since 2026-10-25 the server lets trials verify, the old
+  // 'trial' locked state is gone) | 'free' | 'unknown'. Only a confirmed 'free' shows
   // the upsell; 'unknown' (billing still loading / cold-start failure) keeps the
   // button, so a Pro/Featured vendor can't be misrendered as Free — the server
   // gate enforces payment regardless.
@@ -146,10 +145,9 @@
     status = (status || 'unverified').toLowerCase();
     if (!STATUS_LABELS[status]) status = 'unverified';
     var isVerified = status === 'verified';
-    if (planState === 'pro' || planState === 'trial' || planState === 'free' || planState === 'unknown') _planState = planState;
+    if (planState === 'pro' || planState === 'free' || planState === 'unknown') _planState = planState;
     else planState = _planState;
     var confirmedFree = planState === 'free';
-    var trialLocked = planState === 'trial' && !isVerified && status !== 'pending';
     // 48 — badge is a paid perk: an identity-verified vendor whose plan LAPSED
     // (confirmed Free) has the public badge hidden server-side; mirror that here
     // and explain, instead of showing a badge the public listing doesn't have.
@@ -167,17 +165,15 @@
       el.style.display = (isVerified && !lapsedVerified) ? '' : 'none';
     });
 
-    // Status line. Trial-locked / lapsed vendors get the WHY.
+    // Status line. Lapsed vendors get the WHY.
     $all('[data-lokali-verify-status]').forEach(function (el) {
       el.textContent = lapsedVerified
         ? 'Verified. Your badge is hidden while your plan is inactive'
-        : (trialLocked
-          ? 'Unlocks after your first plan payment'
-          : STATUS_LABELS[status]);
+        : STATUS_LABELS[status];
     });
 
-    // The button: shown whenever the vendor can act AND is not confirmed Free or
-    // trial-locked. 'unknown' still shows it — optimistic, so a cold-start billing
+    // The button: shown whenever the vendor can act AND is not confirmed Free.
+    // 'unknown' still shows it — optimistic, so a cold-start billing
     // miss never hides the button from a paying vendor (#48: the server enforces
     // payment anyway).
     //
@@ -192,7 +188,7 @@
     var returningFromStripe = new URLSearchParams(window.location.search).get('status') === 'done';
     $all('[data-lokali-verify]').forEach(function (btn) {
       var actionable = !isVerified && !(status === 'pending' && returningFromStripe);
-      btn.style.display = (actionable && !confirmedFree && !trialLocked) ? '' : 'none';
+      btn.style.display = (actionable && !confirmedFree) ? '' : 'none';
       if (status === 'failed') btn.textContent = 'Try again';
       else if (status === 'pending') btn.textContent = 'Continue verification';
     });
@@ -241,13 +237,9 @@
     }
     return api.plans.getMyBilling().then(function (res) {
       if (res && !res.error && res.data && hasPlanInfo(res.data)) {
-        if (!planIsPro(res.data)) return 'free';
-        // Paid plan — but a founding trial hasn't PAID yet (#48). billing_GET
-        // only ever reports 'active'|'trialing' for a live sub, so anything
-        // that isn't explicitly 'trialing' stays optimistic 'pro'.
-        var st = String(res.data.plan_status
-          || (res.data.subscription && res.data.subscription.status) || '').toLowerCase();
-        return st === 'trialing' ? 'trial' : 'pro';
+        // Pro/Featured, active or trialing: since 2026-10-25 a founding trial
+        // may verify too (server gate matches), so there is no 'trial' state.
+        return planIsPro(res.data) ? 'pro' : 'free';
       }
       return retryOrUnknown();
     }).catch(retryOrUnknown);
