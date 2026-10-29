@@ -128,7 +128,13 @@
 
     setText($('settings-email'), (_user && _user.email) || '');
     setText($('settings-account-type'), _titlecase((_user && _user.role) || 'vendor'));
-    setText($('settings-current-plan'), _titlecase(_plan || 'free') + (_planEnds ? ' · ends ' + _planEnds : ''));
+    // #230 (found 2026-10-29): this used to write the ROW's textContent, which
+    // threw away the native "View Plans" link (#settings-view-plans) on every
+    // load, so Settings never showed a way to change plan. Write the text
+    // child only; the row keeps its link (and lokali-billing.js's additions).
+    var planRow = $('settings-current-plan');
+    setText((planRow && planRow.querySelector('.settings-lokali-text')) || planRow,
+      _titlecase(_plan || 'free') + (_planEnds ? ' · ends ' + _planEnds : ''));
 
     // Listing visibility = vendor.is_active
     var vis = $('toggle-visibility-public');
@@ -465,11 +471,18 @@
     var saveBtn = $('settings-save-btn');
     if (saveBtn) saveBtn.addEventListener('click', function (e) { e.preventDefault(); saveProfile(); });
 
+    // #230: the plan link opens the in-app plan picker when lokali-billing.js
+    // has one (it intercepts /pricing clicks on dashboard pages in the capture
+    // phase, so this handler never runs then); otherwise the pricing page.
     var viewPlans = $('settings-view-plans');
-    if (viewPlans) viewPlans.addEventListener('click', function (e) {
-      e.preventDefault();
-      window.location.href = (typeof window.LOKALI_PRICING_URL === 'string' && window.LOKALI_PRICING_URL) || '/pricing';
-    });
+    if (viewPlans) {
+      if (viewPlans.getAttribute('href') === '#' || !viewPlans.getAttribute('href')) viewPlans.setAttribute('href', '/pricing');
+      viewPlans.addEventListener('click', function (e) {
+        e.preventDefault();
+        if (window.LokaliUpgrade && typeof window.LokaliUpgrade.open === 'function') { window.LokaliUpgrade.open({ source: 'settings' }); return; }
+        window.location.href = (typeof window.LOKALI_PRICING_URL === 'string' && window.LOKALI_PRICING_URL) || '/pricing';
+      });
+    }
 
     // Email + password are both auth-managed (Supabase owns identity). Both the
     // "Change" email link and the "Update" password link open the LokaliAuth
@@ -1404,15 +1417,17 @@
     });
 
     // Plan and billing
-    var vp = document.querySelector('#settings-view-plans .text-link'); if (vp) vp.textContent = 'Compare plans';
+    // #230: 'Change plan' (lokali-billing.js refines it to 'Upgrade' on Free and
+    // adds the plan sentence + a Downgrade to Free link once billing is known).
+    var vp = document.querySelector('#settings-view-plans .text-link'); if (vp) vp.textContent = 'Change plan';
     var stripeLink = document.querySelector('.div-block-158.stripe a');
     // lokali-billing.js turns this row into "Set up billing" for a comped vendor
     // (data-lokali-setup-plan); leave its wording alone when it has.
     if (stripeLink && !stripeLink.hasAttribute('data-lokali-setup-plan')) {
       var sl = stripeLink.querySelector('.text-link') || stripeLink;
-      sl.textContent = 'Manage billing';
+      sl.textContent = 'Manage card and invoices';
       if (!stripeLink.parentNode.querySelector('.lok-set-billnote')) {
-        stripeLink.parentNode.insertBefore(mk('div', 'settings-lokali-text lok-set-billnote', 'Cards and invoices open in Stripe, our payment partner, on a secure page.'), stripeLink);
+        stripeLink.parentNode.insertBefore(mk('div', 'settings-lokali-text lok-set-billnote', 'Your card, invoices and receipts open in Stripe, our payment partner, on a secure page. Plan changes happen above.'), stripeLink);
       }
     }
 

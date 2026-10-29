@@ -3,7 +3,8 @@
  *
  * Pairs with the Vercel endpoints in my-clerk-app/app/api/lokali/billing/*:
  *   POST /billing/checkout         -> { url }  (hosted Stripe Checkout; #88 adds spotlight_start)
- *   POST /billing/portal           -> { url }  (Stripe Customer Portal: manage/cancel/switch)
+ *   POST /billing/portal           -> { url }  (Stripe Customer Portal: card + invoices;
+ *                                      body {flow:'cancel'} = Stripe's hosted cancel page, #230)
  *   POST /billing/spotlight-cancel -> { ok, refunded }  (#88 self-cancel ≥7d before start)
  * Auth = the Supabase access token (via LokaliAuth.token()).
  *
@@ -17,8 +18,21 @@
  * 2026-10-02 in-app plan picker: on /vendor-dashboard* every <a href="/pricing">
  * (no hash, or #plans) opens window.LokaliUpgrade.open() instead, a modal with the
  * current plan, Pro/Featured cards, a Monthly/Yearly toggle and one button straight
- * to checkout (or the Stripe portal for a downgrade). #upgrade in the URL opens it
- * too. Add data-lokali-no-upgrade-modal to a link to opt it out.
+ * to checkout. #upgrade in the URL opens it too. Add data-lokali-no-upgrade-modal
+ * to a link to opt it out.
+ *
+ * #230 (F 2026-10-29, "nowhere helps them upgrade or downgrade; don't make them
+ * dig"): EVERY plan move is one tap inside the modal, never a hunt through the
+ * Stripe portal. Up (Pro -> Featured), down (Featured -> Pro) and monthly <->
+ * yearly all call /billing/checkout, which for an existing subscriber returns
+ * Stripe's hosted confirm page for the EXISTING subscription (prorated swap;
+ * downgrades wait for period end per the portal configuration). Paid -> Free is
+ * a "Downgrade to Free" row that opens Stripe's hosted cancel page (portal
+ * {flow:'cancel'}: native cancellation survey, plan runs to period end). Comped
+ * vendors (billing_provider 'internal', no Stripe subscription) get "Ask us".
+ * Settings > Plan and billing shows the plan sentence + an Upgrade / Change
+ * plan button (renderSettingsPlan), and the sidebar carries a visible Upgrade
+ * pill (lokali-sidebar-account.js).
  *
  * ── Webflow wiring (add these attributes/IDs in the Designer) ──────────────────
  * UPGRADE BUTTONS:  add  data-lokali-checkout  +  data-plan="pro|featured|spotlight"
@@ -269,6 +283,7 @@
     var comped = entitled && (plan === 'pro' || plan === 'featured') &&
       b.billing_provider === 'internal' && b.comp_kind === 'until_billing';
     renderCompedSetup(comped ? plan : null);
+    renderSettingsPlan(b, plan, isFree, entitled);
 
     // Highlight the active plan card.
     $all('[data-lokali-plan-card]').forEach(function (card) {
@@ -354,6 +369,81 @@
     yearly.setAttribute('data-lokali-setup-plan', plan);
     yearly.setAttribute('data-interval', 'year');
     (yearly.querySelector('.text-link') || yearly).textContent = 'Set up yearly billing';
+  }
+
+  // #230 — Settings > Plan and billing > CURRENT PLAN row. The native row is
+  // "<plan> | View Plans"; lokali-settings-page.js relabels the link "Change
+  // plan" and sends it to /pricing, which bindUpgradeIntercept turns into the
+  // modal. Here, once billing is known: the link reads "Upgrade" on Free, the
+  // plan sentence (same words as the modal) sits under the plan name, and a
+  // Stripe-billed paid plan gets a quiet "Downgrade to Free" link beside it.
+  // Everything is additive and idempotent; a missing anchor leaves the row as
+  // Webflow authored it.
+  var SET_PLAN_CSS =
+    '.lok-set-plannote{font-family:"Plus Jakarta Sans",sans-serif;font-size:13.5px;line-height:1.5;color:#6E6A85;margin:4px 0 0;flex:1 1 100%;}' +
+    '#settings-current-plan{flex-wrap:wrap;row-gap:8px;}' +
+    '#settings-current-plan .lok-set-planacts{display:flex;align-items:center;gap:14px;flex:0 0 auto;margin-left:auto;}' +
+    '#settings-current-plan .lok-set-planacts a.link-block-6{display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:0 16px;border-radius:10px;background:#6002EE;text-decoration:none;}' +
+    '#settings-current-plan .lok-set-planacts a.link-block-6:hover{background:#4D02BE;}' +
+    '#settings-current-plan .lok-set-planacts a.link-block-6 .text-link{color:#fff;font-weight:700;}' +
+    '#settings-current-plan .lok-set-plandown{font-family:"Plus Jakarta Sans",sans-serif;font-size:13px;font-weight:600;color:#6E6A85;background:none;border:0;padding:0;cursor:pointer;text-decoration:underline;text-underline-offset:2px;}' +
+    '#settings-current-plan .lok-set-plandown:hover{color:#6002EE;}' +
+    '#settings-current-plan .lok-set-plandown[disabled]{opacity:.6;cursor:default;}';
+  function renderSettingsPlan(b, plan, isFree, entitled) {
+    if (!/^\/vendor-dashboard\/settings/.test(window.location.pathname)) return;
+    var row = document.getElementById('settings-current-plan');
+    var link = document.getElementById('settings-view-plans');
+    if (!row || !link || link.parentNode !== row) return;
+    if (!document.getElementById('lok-set-plan-css')) {
+      var st = document.createElement('style'); st.id = 'lok-set-plan-css'; st.textContent = SET_PLAN_CSS;
+      document.head.appendChild(st);
+    }
+    // A lapsed paid plan reads as Free (same rule as the modal; past_due and
+    // paused still count as the plan, since Stripe can still recover them).
+    var st = String(b.plan_status || '').toLowerCase();
+    var effective = plan;
+    if (isFree || !UP_RANK[plan]) effective = 'free';
+    else if (st && st !== 'active' && st !== 'trialing' && st !== 'past_due' && st !== 'paused') effective = 'free';
+    if (entitled === false && effective !== 'free' && st !== 'past_due' && st !== 'paused') effective = 'free';
+    var stripeBilled = effective !== 'free' && b.billing_provider && b.billing_provider !== 'internal';
+    var cancelPending = effective !== 'free' && b.cancel_at_period_end === true;
+
+    var acts = row.querySelector('.lok-set-planacts');
+    if (!acts) {
+      acts = document.createElement('div'); acts.className = 'lok-set-planacts';
+      row.insertBefore(acts, link);
+      acts.appendChild(link);
+    }
+    var lt = link.querySelector('.text-link') || link;
+    lt.textContent = effective === 'free' ? 'Upgrade' : 'Change plan';
+    // A real /pricing href: bindUpgradeIntercept turns it into the modal, and a
+    // signed-out or non-vendor click still lands on the pricing page.
+    if (link.getAttribute('href') !== '/pricing') link.setAttribute('href', '/pricing');
+
+    var note = row.querySelector('.lok-set-plannote');
+    if (!note) { note = document.createElement('div'); note.className = 'lok-set-plannote'; row.appendChild(note); }
+    note.textContent = upSubtitle(b) + (effective === 'free' ? ' Pro and Featured put you higher in your category and unlock your own web address, more photos and a verified badge.' : '');
+
+    var down = acts.querySelector('.lok-set-plandown');
+    if (stripeBilled && !cancelPending) {
+      if (!down) {
+        down = document.createElement('button'); down.type = 'button'; down.className = 'lok-set-plandown';
+        down.textContent = 'Downgrade to Free';
+        down.addEventListener('click', function () {
+          if (down.disabled) return;
+          down.disabled = true; down.textContent = 'Opening...';
+          window.LokaliBilling.cancel().catch(function (err) {
+            console.error('[lokali-billing] settings cancel failed', err);
+            down.disabled = false; down.textContent = 'Downgrade to Free';
+            var msg = err && err.message && !/^Request failed/.test(err.message) ? err.message : UP_PORTAL_ERR;
+            if (typeof window.alert === 'function') window.alert(msg);
+          });
+        });
+        acts.insertBefore(down, link);
+      }
+    } else if (down) {
+      down.parentNode.removeChild(down);
+    }
   }
 
   function loadBilling() {
@@ -1141,6 +1231,11 @@
     '#lok-up-error.is-on{display:block;}',
     '.lok-up-freerow{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 14px;padding:12px 16px;border:1px solid #E2E0EC;border-radius:12px;background:#FAF9FD;font-size:14px;color:#4A4761;}',
     '.lok-up-freerow strong{color:#1A1530;font-weight:700;}',
+    '.lok-up-freerow.is-down{margin:14px 0 0;line-height:1.5;}',
+    '.lok-up-freerow a{color:#6002EE;font-weight:600;}',
+    '#lok-up-cancel{flex:0 0 auto;margin:0;padding:8px 14px;border:1px solid #DEDAEE;border-radius:999px;background:#fff;font-size:13px;font-weight:600;color:#4A4761;cursor:pointer;font-family:inherit;}',
+    '#lok-up-cancel:hover{border-color:#D4BFF9;color:#6002EE;background:#F3EBFF;}',
+    '#lok-up-cancel[disabled]{opacity:.6;cursor:default;}',
     '.lok-up-cards{display:grid;grid-template-columns:1fr;gap:14px;}',
     '@media (min-width:640px){.lok-up-cards{grid-template-columns:1fr 1fr;}}',
     '.lok-up-plan{position:relative;display:flex;flex-direction:column;padding:20px 18px 18px;border:1px solid #E2E0EC;border-radius:14px;background:#fff;}',
@@ -1170,7 +1265,7 @@
     '@media (max-width:639px){#lok-up-overlay{align-items:flex-end;padding:0;}#lok-up-card{max-width:none;max-height:94vh;border-radius:16px 16px 0 0;padding:22px 16px calc(16px + env(safe-area-inset-bottom));}#lok-up-title{font-size:20px;}.lok-up-foot{flex-direction:column;align-items:stretch;text-align:center;}}'
   ].join('');
 
-  var upState = { overlay: null, lastFocus: null, interval: 'month', billing: null, busy: false, source: '' };
+  var upState = { overlay: null, lastFocus: null, interval: 'month', billing: null, busy: false, source: '', stripeBilled: null, currentInterval: null };
 
   function injectUpgradeStyles() {
     if (document.getElementById('lok-up-styles')) return;
@@ -1284,17 +1379,25 @@
     var rank = UP_RANK[plan], cur = UP_RANK[current] || 0;
     var label = PLAN_LABELS[plan];
     var btn;
+    // #230: every move is a checkout call. For an existing subscriber the route
+    // returns Stripe's hosted confirm page for the EXISTING subscription (up,
+    // down, or a monthly <-> yearly change); a comped plan has no subscription
+    // to change, so it reads "Ask us".
+    var comped = upState.stripeBilled === false;
     if (rank === cur) {
-      btn = '<button class="lok-up-btn" type="button" disabled>Current plan</button>';
+      if (cur > 0 && !comped && upState.currentInterval && interval !== upState.currentInterval) {
+        btn = '<button class="lok-up-btn is-second" type="button" data-lok-up-plan="' + plan + '">Switch to ' +
+          (interval === 'year' ? 'yearly' : 'monthly') + ' billing</button>';
+      } else {
+        btn = '<button class="lok-up-btn" type="button" disabled>Current plan</button>';
+      }
     } else if (rank > cur) {
       var verb = cur === 0 ? 'Get ' : 'Upgrade to ';
       btn = '<button class="lok-up-btn" type="button" data-lok-up-plan="' + plan + '">' + verb + label + '</button>';
-    } else if (upState.stripeBilled === false) {
-      // Comped plan (billing_provider internal): there is no Stripe subscription for
-      // the portal to switch, so the button used to open an empty portal.
+    } else if (comped) {
       btn = '<a class="lok-up-btn is-second" href="/contact-us">Ask us to change your plan</a>';
     } else {
-      btn = '<button class="lok-up-btn is-second" type="button" data-lok-up-switch="' + plan + '">Switch to ' + label + '</button>';
+      btn = '<button class="lok-up-btn is-second" type="button" data-lok-up-plan="' + plan + '">Switch to ' + label + '</button>';
     }
     var items = UP_HIGHLIGHTS[plan].map(function (t) {
       return '<li>' + UP_CHECK_SVG + '<span>' + upEsc(t) + '</span></li>';
@@ -1319,7 +1422,12 @@
     var iv = upState.interval;
     var stripeBilled = plan !== 'free' && b.billing_provider && b.billing_provider !== 'internal';
     upState.stripeBilled = plan === 'free' ? null : !!stripeBilled; // read by upCardHtml
+    upState.currentInterval = plan !== 'free' && (b.plan_interval === 'year' || b.plan_interval === 'month')
+      ? b.plan_interval : null;
+    var cancelPending = plan !== 'free' && b.cancel_at_period_end === true;
+    var endText = upPeriodEndText(b);
 
+    overlay.querySelector('#lok-up-title').textContent = plan === 'free' ? 'Choose your plan' : 'Change your plan';
     overlay.querySelector('#lok-up-sub').textContent = upSubtitle(b);
 
     var html = '';
@@ -1335,10 +1443,27 @@
       upCardHtml('pro', plan, iv, plan === 'free') +
       upCardHtml('featured', plan, iv, plan === 'pro') +
     '</div>';
+    // #230: the way DOWN to Free, in the same place as the way up. Stripe's
+    // hosted cancel page (native survey; the plan runs to period end). A plan
+    // already set to end just says so; a comped plan points at us.
+    if (plan !== 'free') {
+      var freeRow;
+      if (cancelPending) {
+        freeRow = '<span><strong>Free</strong>, from ' + (endText ? upEsc(endText) : 'the end of this billing period') +
+          '. Your ' + upEsc(PLAN_LABELS[plan]) + ' plan is set to end; to keep it, open Manage card and invoices below.</span><span>$0</span>';
+      } else if (!stripeBilled) {
+        freeRow = '<span><strong>Free</strong>, $0. Your plan is on us; <a href="/contact-us">ask us</a> to change it.</span>';
+      } else {
+        freeRow = '<span><strong>Free</strong>, $0. Your ' + upEsc(PLAN_LABELS[plan]) + ' plan stays until ' +
+          (endText ? upEsc(endText) : 'the end of this billing period') + ', then stops.</span>' +
+          '<button id="lok-up-cancel" type="button">Downgrade to Free</button>';
+      }
+      html += '<div class="lok-up-freerow is-down">' + freeRow + '</div>';
+    }
     html += '<div class="lok-up-foot">' +
       '<span>Nothing is charged before January 1, 2027. Cancel anytime. ' +
         '<a id="lok-up-compare" href="/pricing#compare">Compare every feature</a></span>' +
-      (stripeBilled ? '<button id="lok-up-manage" type="button">Manage billing</button>' : '') +
+      (stripeBilled ? '<button id="lok-up-manage" type="button">Manage card and invoices</button>' : '') +
     '</div>';
 
     var body = overlay.querySelector('#lok-up-body');
@@ -1356,16 +1481,15 @@
     upAll('[data-lok-up-plan]', body).forEach(function (btn) {
       btn.addEventListener('click', function () { upStartCheckout(btn, btn.getAttribute('data-lok-up-plan')); });
     });
-    upAll('[data-lok-up-switch]', body).forEach(function (btn) {
-      btn.addEventListener('click', function () { upOpenPortal(btn, 'Opening billing...'); });
-    });
     var manage = body.querySelector('#lok-up-manage');
     if (manage) manage.addEventListener('click', function () { upOpenPortal(manage, 'Opening billing...'); });
+    var cancel = body.querySelector('#lok-up-cancel');
+    if (cancel) cancel.addEventListener('click', function () { upStartCancel(cancel); });
   }
 
   function upSetBusy(btn, busyText) {
     upState.busy = true;
-    upAll('.lok-up-btn, #lok-up-manage, [data-lok-up-iv]', upState.overlay).forEach(function (el) {
+    upAll('.lok-up-btn, #lok-up-manage, #lok-up-cancel, [data-lok-up-iv]', upState.overlay).forEach(function (el) {
       if (el !== btn) el.disabled = true;
     });
     btn.dataset.lokUpPrev = btn.textContent;
@@ -1401,6 +1525,29 @@
       if (err && err.code === 'already_on_plan' && window.LokaliAPI && window.LokaliAPI.plans &&
           window.LokaliAPI.plans.invalidateBilling) {
         window.LokaliAPI.plans.invalidateBilling(); // our cached plan was stale
+      }
+    });
+  }
+
+  // #230: paid -> Free. Stripe's hosted cancel page; the route answers
+  // no_subscription for a comped plan (the UI should not offer it then, but a
+  // stale cache can), already_cancelling when it is already set to end.
+  function upStartCancel(btn) {
+    if (upState.busy) return;
+    upShowError('');
+    upSetBusy(btn, 'Opening...');
+    try {
+      if (typeof window.gtag === 'function') {
+        window.gtag('event', 'begin_cancel', { source: 'upgrade_modal' });
+      }
+    } catch (e) {}
+    window.LokaliBilling.cancel().catch(function (err) {
+      console.error('[lokali-billing] upgrade modal cancel failed', err);
+      upClearBusy();
+      upShowError(upErrorMessage(err, UP_PORTAL_ERR));
+      if (err && (err.code === 'no_subscription' || err.code === 'already_cancelling') &&
+          window.LokaliAPI && window.LokaliAPI.plans && window.LokaliAPI.plans.invalidateBilling) {
+        window.LokaliAPI.plans.invalidateBilling();
       }
     });
   }
@@ -1556,6 +1703,10 @@
     },
     portal: function () {
       return postForRedirect(PORTAL_URL, {});
+    },
+    // #230: Stripe's hosted cancel page for the live subscription (paid -> Free).
+    cancel: function () {
+      return postForRedirect(PORTAL_URL, { flow: 'cancel' });
     }
   };
 

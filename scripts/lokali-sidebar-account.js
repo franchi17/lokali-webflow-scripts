@@ -8,7 +8,10 @@
  *   - toggles the expand/collapse menu, and forces it to open UPWARD (the chip
  *     sits at the bottom of the viewport; the native menu opened downward and
  *     rendered entirely below the fold — bug #36)
- *   - hides the "Upgrade" row for top-tier vendors
+ *   - relabels the menu's "Upgrade" row "Change plan" for top-tier vendors
+ *     (#230: it used to be hidden, leaving Featured with no way to a lower plan)
+ *   - adds a visible Upgrade pill above the chip for Free and Pro vendors
+ *     (#230, F 2026-10-29: "I don't want them to have to dig to upgrade")
  *   - regroups the main nav (Dashboard / YOUR STOREFRONT / GROW), badges unread
  *     leads, marks the storefront row as external, locks (not hides) Marketing
  *     on Free — F 2026-09-17, mockup tab F
@@ -199,9 +202,11 @@
       }
     }
 
-    // Hide the upgrade row for top-tier vendors.
+    // #230: top-tier vendors keep the row, as "Change plan" (down to Pro or
+    // Free lives in the same picker); everyone else sees "Upgrade".
     var up = wrap.querySelector('.lok-acct-upgrade');
-    if (up) up.style.display = plan.top ? 'none' : '';
+    if (up) { up.style.display = ''; setRowLabel(up, plan.top ? 'Change plan' : 'Upgrade'); }
+    renderUpgradePill(wrap, billing ? plan : null);
 
     // Marketing tab is paid-only (Francesca 2026-08-17: "Free don't get it").
     // The sidebar rows are static Webflow markup on every dashboard page, so
@@ -387,6 +392,37 @@
     new MutationObserver(strip).observe(w, { attributes: true, attributeFilter: ['style'] });
     if (mqDesk.addEventListener) mqDesk.addEventListener('change', strip);
     else if (mqDesk.addListener) mqDesk.addListener(strip);
+  }
+
+  // #230 — a visible Upgrade pill in the sidebar's account area, above the chip,
+  // on every dashboard page (desktop rail and the phone drawer slide the same
+  // DOM). Shown only once billing is positively known and the plan is not the
+  // top one: Free sees "Upgrade", Pro "Upgrade to Featured". The href is the
+  // pricing page, which lokali-billing.js turns into the in-app plan picker.
+  var PILL_CSS =
+    '.lok-acct-upbtn{display:none;align-items:center;justify-content:center;gap:8px;min-height:40px;margin:0 0 10px;padding:0 14px;border-radius:10px;' +
+      'background:#6002EE;color:#fff;font-family:\'Plus Jakarta Sans\',sans-serif;font-size:13.5px;font-weight:700;text-decoration:none;line-height:1.2;transition:background .12s ease;}' +
+    '.lok-acct-upbtn.is-on{display:flex;}' +
+    '.lok-acct-upbtn:hover{background:#4D02BE;color:#fff;}' +
+    '.lok-acct-upbtn svg{width:15px;height:15px;flex:0 0 auto;}';
+  function renderUpgradePill(wrap, plan) {
+    var host = wrap.parentNode;
+    if (!host) return;
+    var pill = host.querySelector('.lok-acct-upbtn');
+    if (!pill) {
+      if (!document.getElementById('lok-acct-pill-css')) {
+        var st = document.createElement('style'); st.id = 'lok-acct-pill-css'; st.textContent = PILL_CSS;
+        document.head.appendChild(st);
+      }
+      pill = document.createElement('a');
+      pill.className = 'lok-acct-upbtn';
+      pill.href = '/pricing';
+      pill.innerHTML = '<span class="lok-row-ic">' + ROW_ICONS.upgrade + '</span><span class="lok-acct-upbtn-l"></span>';
+      host.insertBefore(pill, wrap);
+    }
+    var on = !!(plan && !plan.top);
+    pill.classList.toggle('is-on', on);
+    if (on) pill.querySelector('.lok-acct-upbtn-l').textContent = plan.label === 'Pro plan' ? 'Upgrade to Featured' : 'Upgrade';
   }
 
   function bindToggle(wrap) {
