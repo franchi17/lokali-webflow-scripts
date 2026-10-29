@@ -1599,7 +1599,7 @@
         var out = ''; t.childNodes.forEach(function (x) { if (x.nodeType === 3) out += x.textContent; }); return out.trim();
       }
       function paintNeeds() {
-        var total = 0, open = 0; chips.innerHTML = '';
+        var total = 0, open = 0, info = 0; chips.innerHTML = '';
         grid.querySelectorAll('.lk-admin-section').forEach(function (sec) {
           var empty = sec.querySelector('.lk-admin-empty');
           var loading = empty && /loading/i.test(empty.textContent || '');
@@ -1607,11 +1607,15 @@
           var quiet = !!empty && !loading && !rows && !sec.querySelector('form');
           sec.classList.toggle('lk-collapsed', quiet);
           var title = sectionTitle(sec); if (!title) return;
+          // Informational sections (the RSVP list, 2026-10-29): their rows are reading, not work.
+          // They get no chip, never count as "needs you" and never read as "still loading";
+          // they only keep the grid open so the list stays visible.
+          if (sec.classList.contains('lk-admin-section-info')) { if (!quiet) info++; return; }
           var q = T('span', 'lk-ash-q' + (rows ? ' on' : ''), title); q.appendChild(T('b', null, String(rows))); chips.appendChild(q);
           total += rows; if (!quiet) open++;
         });
-        var waiting = total > 0 || open > 0;
-        st.classList.toggle('wait', waiting);
+        var waiting = total > 0 || open > 0 || info > 0;
+        st.classList.toggle('wait', total > 0 || open > 0);
         stT.textContent = total ? (total === 1 ? '1 thing needs you' : total + ' things need you') : (open ? 'Something is still loading' : 'Nothing needs you right now');
         navCount.textContent = String(total); navCount.hidden = !total;
         review.hidden = !waiting; if (!waiting) { grid.hidden = true; review.textContent = 'Review'; review.setAttribute('aria-expanded', 'false'); }
@@ -2697,13 +2701,13 @@
   function appendRsvpSection(wrap) {
     var API = window.LokaliSupabaseAPI && window.LokaliSupabaseAPI.vendors;
     if (!API || !API.adminEventRsvps) return;
-    var host = el('div', 'lk-admin-section');
+    var host = el('div', 'lk-admin-section lk-admin-section-info');
     wrap.appendChild(host);
     var SF = { live: 'storefront live', not_yet: 'setting up a storefront', none: 'no storefront yet' };
     function draw(d) {
       host.innerHTML = '';
       var rows = (d && d.rows) || [];
-      host.className = 'lk-admin-section' + (rows.length ? ' lk-admin-section-wide' : '');
+      host.className = 'lk-admin-section lk-admin-section-info' + (rows.length ? ' lk-admin-section-wide' : '');
       var t = el('div', 'lk-admin-qtitle');
       t.appendChild(document.createTextNode('Gathering RSVPs, November 5'));
       t.appendChild(el('span', 'lk-admin-qcount', String(d ? d.yes : 0)));
@@ -2734,7 +2738,8 @@
       var d = res && res.data;
       if (!d || d.ok === false) { host.innerHTML = ''; host.appendChild(el('div', 'lk-admin-empty', 'RSVPs could not be loaded.')); return; }
       draw(d);
-    }).catch(function () { host.innerHTML = ''; host.appendChild(el('div', 'lk-admin-empty', 'RSVPs could not be loaded.')); });
+      if (window.__lokPaintAttn) window.__lokPaintAttn();
+    }).catch(function () { host.innerHTML = ''; host.appendChild(el('div', 'lk-admin-empty', 'RSVPs could not be loaded.')); if (window.__lokPaintAttn) window.__lokPaintAttn(); });
   }
   // ── #201: blocked inquiry senders (patch_inquiry_sender_cap.sql) ──────────
   // Addresses on inquiry_blocklist: automatic (kept sending past the 2-per-hour
