@@ -386,7 +386,19 @@
     // with the 24px column gap, pushed the title 24px in from the sidebar's edge
     // (F 2026-10-24 'align the text').
     ".browse-hero .browse-hero-inner::before,.browse-hero .browse-hero-inner::after{display:none;content:none;}",
-    ".browse-hero .browse-hero-inner>.search-bar{flex:1 1 100%;}",
+    // The hero search box + the meta line live in one right-hand column
+    // (.lk-mkt-right, built by frameHero), bottom-aligned with the H1. The old
+    // flex:1 1 100% "own row" rule never worked: the Designer's max-width:500px
+    // clamps the flex base size, so the box slotted in BESIDE the title and
+    // pushed the meta to a staggered second row (F 2026-10-30, signed-in
+    // screenshot - signed out >=1380px the header field replaces the box, which
+    // is why the frame pass never saw it). Phones: the box is display:none
+    // (lok-row2), the meta too, and the empty column collapses to 0x0.
+    ".lk-mkt-right{display:flex;flex-direction:column;align-items:flex-end;gap:10px;margin-left:auto;min-width:0;max-width:100%;}",
+    ".lk-mkt-right .search-bar{width:500px;max-width:100%;}",
+    // <=991px the meta is hidden and the column wraps under the title - anchor
+    // it left like the title instead of floating right.
+    "@media screen and (max-width:991px){.lk-mkt-right{margin-left:0;margin-right:auto;align-items:flex-start;}}",
     ".browse-hero .lk-mkt-head{min-width:0;}",
     ".browse-hero .lk-mkt-head .text-block-115{font-size:12px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#6002EE;margin-bottom:6px;}",
     ".browse-hero h1.lk-mkt-h1{font-family:'Plus Jakarta Sans',sans-serif;font-size:38px;font-weight:800;letter-spacing:-.03em;line-height:1.05;color:#1A1829;margin:0;}",
@@ -2833,7 +2845,15 @@
     title.parentNode.removeChild(title);
     var meta = ce('div', 'lk-mkt-meta'); meta.id = 'lk-mkt-meta';
     meta.setAttribute('aria-hidden', 'true');
-    inner.appendChild(meta);
+    // Search box + meta share a right-hand column (see the .lk-mkt-right CSS).
+    // Safe to reparent the code-island: the search bindings are a document-level
+    // capture listener + shadow-root scans, nothing keyed to DOM position, and
+    // this runs at init, before the island hydrates.
+    var right = ce('div', 'lk-mkt-right');
+    var sb = inner.querySelector(':scope>.search-bar');
+    if (sb) right.appendChild(sb);
+    right.appendChild(meta);
+    inner.appendChild(right);
   }
   // "N storefronts across nine communities" + the Home hero's trust line. The
   // count is every public storefront (not the filtered result - that number is
