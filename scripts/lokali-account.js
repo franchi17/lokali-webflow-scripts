@@ -446,6 +446,14 @@
       R + '.lk-rec button.sel-yes{background:' + GREENL + ';border-color:' + GREEN + ';color:' + GREEN + ';}',
       R + '.lk-rec button.sel-no{background:#FDECEC;border-color:#E0726A;color:#C0392B;}',
       R + '.lk-ta{width:100%;font-family:' + F + ';font-size:13px;color:' + INK + ';border:1px solid ' + FOG + ';border-radius:8px;padding:10px 12px;min-height:74px;resize:vertical;background:' + SNOW + ';}',
+      // Conduct tags on a review (2026-10-30; same encoding as lokali-vendor-listing.js).
+      R + '.lk-chips{margin:0 0 10px;}',
+      R + '.lk-chips-l{font-family:' + F + ';font-size:12px;font-weight:600;color:' + DUSK + ';margin:0 0 6px;}',
+      R + '.lk-chips-r{display:flex;flex-wrap:wrap;gap:6px;}',
+      R + '.lk-chips button{font-family:' + F + ';font-size:12px;font-weight:600;border-radius:100px;padding:7px 12px;min-height:36px;cursor:pointer;border:1px solid ' + FOG + ';background:#fff;color:' + DUSK + ';}',
+      R + '.lk-chips button[aria-pressed="true"]{background:#F1ECFD;border-color:#C9B3FA;color:#4B2EA8;}',
+      R + '.lk-rev-tags{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px;}',
+      R + '.lk-rev-tag{display:inline-flex;align-items:center;font-family:' + F + ';font-size:11px;font-weight:600;color:#4B2EA8;background:#F1ECFD;border-radius:100px;padding:5px 10px;}',
       R + '.lk-ta:focus{outline:none;border-color:' + V + ';background:#fff;}',
       R + '.lk-composer-foot{display:flex;justify-content:flex-end;gap:8px;margin-top:10px;}',
       // my review cards
@@ -4437,6 +4445,56 @@
     return REVIEW_ERRORS[code] || REVIEW_OUR_FAULT;
   }
 
+  // ---- conduct tags (2026-10-30) --------------------------------------------
+  // Mirror of the block in lokali-vendor-listing.js: tags live on the comment's
+  // FIRST LINE joined by " · ", free text after a blank line. Keep the labels
+  // and separator identical in both files or old reviews stop parsing as tags.
+  var CONDUCT_TAGS = ['Showed up on time', 'Same person every visit', 'No surprise charges', 'Explained the options', 'Easy to reach'];
+  var CONDUCT_SEP = ' · ';
+  function encodeConduct(tags, text) {
+    var t = (text || '').trim();
+    if (!tags || !tags.length) return t;
+    return tags.join(CONDUCT_SEP) + (t ? '\n\n' + t : '');
+  }
+  function parseConduct(comment) {
+    var c = comment == null ? '' : String(comment);
+    var nl = c.indexOf('\n');
+    var first = (nl < 0 ? c : c.slice(0, nl)).trim();
+    if (!first) return { tags: [], text: c.trim() };
+    var parts = first.split(CONDUCT_SEP);
+    for (var i = 0; i < parts.length; i++) {
+      if (CONDUCT_TAGS.indexOf(parts[i].trim()) < 0) return { tags: [], text: c.trim() };
+    }
+    return { tags: parts.map(function (p) { return p.trim(); }), text: nl < 0 ? '' : c.slice(nl).trim() };
+  }
+  function conductChips(preset) {
+    var wrap = el('div', 'lk-chips'); wrap.style.display = 'none';
+    wrap.appendChild(el('div', 'lk-chips-l', 'What did they do well? Pick any that fit.'));
+    var r = el('div', 'lk-chips-r');
+    var picked = {};
+    (preset || []).forEach(function (t) { picked[t] = true; });
+    CONDUCT_TAGS.forEach(function (tag) {
+      var b = el('button', null, esc(tag)); b.type = 'button';
+      b.setAttribute('aria-pressed', picked[tag] ? 'true' : 'false');
+      b.addEventListener('click', function () {
+        picked[tag] = !picked[tag];
+        b.setAttribute('aria-pressed', picked[tag] ? 'true' : 'false');
+      });
+      r.appendChild(b);
+    });
+    wrap.appendChild(r);
+    return {
+      el: wrap,
+      show: function (on) { wrap.style.display = on ? '' : 'none'; },
+      selected: function () { return CONDUCT_TAGS.filter(function (t) { return picked[t]; }); }
+    };
+  }
+  function conductTagsEl(tags) {
+    var w = el('div', 'lk-rev-tags');
+    tags.forEach(function (t) { w.appendChild(el('span', 'lk-rev-tag', esc(t))); });
+    return w;
+  }
+
   function awaitRow(row) {
     var v = vendorOf(row);
     var vid = v.id != null ? v.id : row.vendors_id;
@@ -4458,11 +4516,13 @@
     var recRow = el('div', 'lk-rec');
     var yes = el('button', null, LK_FA.up + ' Would recommend');
     var no = el('button', null, LK_FA.down + ' Wouldn’t');
-    yes.addEventListener('click', function () { rec.val = true; yes.className = 'sel-yes'; no.className = ''; });
-    no.addEventListener('click', function () { rec.val = false; no.className = 'sel-no'; yes.className = ''; });
+    var chips = conductChips();
+    yes.addEventListener('click', function () { rec.val = true; yes.className = 'sel-yes'; no.className = ''; chips.show(true); });
+    no.addEventListener('click', function () { rec.val = false; no.className = 'sel-no'; yes.className = ''; chips.show(false); });
     recRow.appendChild(yes); recRow.appendChild(no);
     comp.appendChild(recRow);
-    var ta = el('textarea', 'lk-ta'); ta.placeholder = 'How was your experience? (optional)';
+    comp.appendChild(chips.el);
+    var ta = el('textarea', 'lk-ta'); ta.placeholder = 'How was your experience? (optional)'; ta.maxLength = 1880;
     comp.appendChild(ta);
     var foot = el('div', 'lk-composer-foot');
     var cancel = el('button', 'lk-btn ghost', 'Cancel');
@@ -4471,12 +4531,13 @@
     submit.addEventListener('click', function () {
       if (rec.val == null) { toast('Pick recommend or not first'); return; }
       submit.disabled = true;
-      api().reviews.create({ vendors_id: vid, is_recommended: rec.val, comment: ta.value || '' }).then(function (res) {
+      var body = encodeConduct(rec.val ? chips.selected() : [], ta.value);
+      api().reviews.create({ vendors_id: vid, is_recommended: rec.val, comment: body }).then(function (res) {
         submit.disabled = false;
         if (res && res.error) { toast(reviewErrorMessage(res.error)); return; }
         state.awaiting = state.awaiting.filter(function (x) { return (vendorOf(x).id != null ? vendorOf(x).id : x.vendors_id) != vid; });
         // optimistic local add so it shows under "Your reviews"
-        state.mine.unshift({ id: (res.data && res.data.id), vendors_id: vid, vendor: v, is_recommended: rec.val, comment: ta.value || '', created_at: Date.now() });
+        state.mine.unshift({ id: (res.data && res.data.id), vendors_id: vid, vendor: v, is_recommended: rec.val, comment: body, created_at: Date.now() });
         rerender(); toast('Thanks! Your review is live');
       });
     });
@@ -4495,7 +4556,9 @@
     c.appendChild(head);
     var rec = !!row.is_recommended;
     c.appendChild(el('div', 'lk-rec-pill' + (rec ? '' : ' no'), (rec ? '✓ Would recommend' : 'Didn’t recommend')));
-    if (row.comment) c.appendChild(el('div', 'lk-review-body', esc(row.comment)));
+    var pc = parseConduct(row.comment);
+    if (pc.tags.length) c.appendChild(conductTagsEl(pc.tags));
+    if (pc.text) c.appendChild(el('div', 'lk-review-body', esc(pc.text)));
     var foot = el('div', 'lk-review-foot');
     var edit = el('button', null, 'Edit');
     var del = el('button', null, 'Delete');
@@ -4521,11 +4584,15 @@
     var recRow = el('div', 'lk-rec');
     var yes = el('button', rec.val ? 'sel-yes' : null, LK_FA.up + ' Would recommend');
     var no = el('button', !rec.val ? 'sel-no' : null, LK_FA.down + ' Wouldn’t');
-    yes.addEventListener('click', function () { rec.val = true; yes.className = 'sel-yes'; no.className = ''; });
-    no.addEventListener('click', function () { rec.val = false; no.className = 'sel-no'; yes.className = ''; });
+    var pc = parseConduct(row.comment);
+    var chips = conductChips(pc.tags);
+    chips.show(rec.val);
+    yes.addEventListener('click', function () { rec.val = true; yes.className = 'sel-yes'; no.className = ''; chips.show(true); });
+    no.addEventListener('click', function () { rec.val = false; no.className = 'sel-no'; yes.className = ''; chips.show(false); });
     recRow.appendChild(yes); recRow.appendChild(no);
     card.appendChild(recRow);
-    var ta = el('textarea', 'lk-ta'); ta.value = row.comment || '';
+    card.appendChild(chips.el);
+    var ta = el('textarea', 'lk-ta'); ta.value = pc.text; ta.maxLength = 1880;
     card.appendChild(ta);
     var foot = el('div', 'lk-composer-foot');
     var cancel = el('button', 'lk-btn ghost', 'Cancel');
@@ -4533,9 +4600,10 @@
     cancel.addEventListener('click', function () { rerender(); });
     save.addEventListener('click', function () {
       save.disabled = true;
-      api().reviews.update(row.id, { is_recommended: rec.val, comment: ta.value || '' }).then(function (res) {
+      var body = encodeConduct(rec.val ? chips.selected() : [], ta.value);
+      api().reviews.update(row.id, { is_recommended: rec.val, comment: body }).then(function (res) {
         if (res && res.error) { save.disabled = false; toast('Could not save'); return; }
-        row.is_recommended = rec.val; row.comment = ta.value || '';
+        row.is_recommended = rec.val; row.comment = body;
         rerender(); toast('Review updated');
       });
     });

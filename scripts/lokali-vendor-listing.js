@@ -3806,6 +3806,13 @@
       '.vl-vreport-note{font:400 11px/1.5 ' + FONT + ';color:#8E8BA6;margin-top:6px;}',
       '.vl-rev-pill{display:inline-flex;align-items:center;gap:5px;font:600 11px/1 ' + FONT + ';color:#2BB673;background:#E4F7EE;border-radius:100px;padding:4px 10px;margin-bottom:8px;}',
       '.vl-rev-pill.no{color:#C0392B;background:#FDECEC;}',
+      // Conduct tags (2026-10-30): what the neighbor says the vendor DID, parsed
+      // from the comment's first line (see CONDUCT_TAGS). Shoppers trust conduct
+      // over stars, so they sit between the verdict pill and the free text.
+      '.vl-rev-tags{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px;}',
+      '.vl-rev-tag{display:inline-flex;align-items:center;font:600 11px/1 ' + FONT + ';color:#4B2EA8;background:#F1ECFD;border-radius:100px;padding:5px 10px;}',
+      '.vl-rev-say{font:500 12.5px/1.5 ' + FONT + ';color:#4A4761;margin:-4px 0 14px;}',
+      '.vl-rev-say strong{color:#1A1829;font-weight:600;}',
       '.vl-rev-body{font:400 13px/1.6 ' + FONT + ';color:#4A4761;}',
       '.vl-rev-reply{margin-top:10px;padding:10px 12px;background:#F7F6FC;border-radius:8px;border-left:2px solid #6002EE;}',
       '.vl-rev-reply-label{font:600 11px/1 ' + FONT + ';color:#6002EE;margin-bottom:4px;}',
@@ -3827,6 +3834,12 @@
       '.vl-inv-rec button.sel-yes{background:#EAFAF2;border-color:#BFE6D1;color:#1D6A45;}',
       '.vl-inv-rec button.sel-no{background:#FDF1E7;border-color:#F6D9BE;color:#8A4B14;}',
       '.vl-inv-ta{display:block;width:100%;box-sizing:border-box;min-height:96px;font:500 14px/1.5 ' + FONT + ';color:#1A1829;background:#fff;border:1px solid #DEDAEE;border-radius:12px;padding:12px;margin:0 0 10px;resize:vertical;}',
+      '.vl-inv-chips{margin:0 0 10px;}',
+      '.vl-inv-chips-l{font:600 12px/1.4 ' + FONT + ';color:#4A4761;margin:0 0 6px;}',
+      '.vl-inv-chips-r{display:flex;flex-wrap:wrap;gap:6px;}',
+      '.vl-inv-chips button{font:600 12.5px/1 ' + FONT + ';background:#fff;color:#4A4761;border:1px solid #DEDAEE;border-radius:999px;padding:9px 12px;min-height:36px;cursor:pointer;}',
+      '.vl-inv-chips button[aria-pressed="true"]{background:#F1ECFD;border-color:#C9B3FA;color:#4B2EA8;}',
+      '.vl-inv-chips button:focus-visible{outline:3px solid #C9B3FA;outline-offset:2px;}',
       '.vl-inv-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}',
       '.vl-inv-note{font:500 12.5px/1.4 ' + FONT + ';color:#6B6880;}',
       '.vl-inv-msg{font:600 13px/1.45 ' + FONT + ';color:#8A4B14;margin:10px 0 0;}',
@@ -3918,7 +3931,13 @@
     pill.innerHTML = rec ? LK_FA.up : LK_FA.down;
     pill.appendChild(document.createTextNode(rec ? ' Recommends' : ' Doesn’t recommend'));
     card.appendChild(pill);
-    if (r.comment) { var b = ce('div', 'vl-rev-body'); b.textContent = r.comment; card.appendChild(b); }
+    var pc = parseConduct(r.comment);
+    if (pc.tags.length) {
+      var tags = ce('div', 'vl-rev-tags');
+      pc.tags.forEach(function (t) { var s = ce('span', 'vl-rev-tag'); s.textContent = t; tags.appendChild(s); });
+      card.appendChild(tags);
+    }
+    if (pc.text) { var b = ce('div', 'vl-rev-body'); b.textContent = pc.text; card.appendChild(b); }
     if (r.vendor_reply) {
       var rep = ce('div', 'vl-rev-reply');
       var rl = ce('div', 'vl-rev-reply-label'); rl.textContent = 'Response from the owner';
@@ -4228,6 +4247,56 @@
     } catch (e2) {}
     return code;
   }
+  // ---- conduct tags (2026-10-30) --------------------------------------------
+  // The voice-of-customer research (docs/marketing/voice-of-customer-reddit-
+  // facebook-2026-10.md): what converts a shopper is "showed up on time, no
+  // upsell", not a star count. The composer offers these as toggles on a
+  // "Would recommend" review and stores them as the comment's FIRST LINE,
+  // joined by " · ", with the free text after a blank line. No schema change:
+  // a plain reader (emails, admin, the account page) sees a readable line, and
+  // parseConduct() lifts it back out wherever we render. Keep this list in sync
+  // with lokali-account.js (same encoding, same labels) or old reviews stop
+  // parsing as tags.
+  var CONDUCT_TAGS = ['Showed up on time', 'Same person every visit', 'No surprise charges', 'Explained the options', 'Easy to reach'];
+  var CONDUCT_SEP = ' · ';
+  function encodeConduct(tags, text) {
+    var t = (text || '').trim();
+    if (!tags || !tags.length) return t;
+    return tags.join(CONDUCT_SEP) + (t ? '\n\n' + t : '');
+  }
+  function parseConduct(comment) {
+    var c = comment == null ? '' : String(comment);
+    var nl = c.indexOf('\n');
+    var first = (nl < 0 ? c : c.slice(0, nl)).trim();
+    if (!first) return { tags: [], text: c.trim() };
+    var parts = first.split(CONDUCT_SEP);
+    for (var i = 0; i < parts.length; i++) {
+      if (CONDUCT_TAGS.indexOf(parts[i].trim()) < 0) return { tags: [], text: c.trim() };
+    }
+    return { tags: parts.map(function (p) { return p.trim(); }), text: nl < 0 ? '' : c.slice(nl).trim() };
+  }
+  // Toggle row for a composer; returns { el, selected() }. Hidden until the
+  // reviewer picks "Would recommend": conduct tags describe a job well done.
+  function conductChips() {
+    var wrap = ce('div', 'vl-inv-chips'); wrap.style.display = 'none';
+    var l = ce('p', 'vl-inv-chips-l'); l.textContent = 'What did they do well? Pick any that fit.';
+    var r = ce('div', 'vl-inv-chips-r');
+    var picked = {};
+    CONDUCT_TAGS.forEach(function (tag) {
+      var b = ce('button'); b.type = 'button'; b.textContent = tag; b.setAttribute('aria-pressed', 'false');
+      b.addEventListener('click', function () {
+        picked[tag] = !picked[tag];
+        b.setAttribute('aria-pressed', picked[tag] ? 'true' : 'false');
+      });
+      r.appendChild(b);
+    });
+    wrap.appendChild(l); wrap.appendChild(r);
+    return {
+      el: wrap,
+      show: function (on) { wrap.style.display = on ? '' : 'none'; },
+      selected: function () { return CONDUCT_TAGS.filter(function (t) { return picked[t]; }); }
+    };
+  }
   var INVITE_ERRORS = {
     not_eligible: 'This review link did not work for this storefront. Ask them for a fresh link.',
     already_reviewed: 'You have already reviewed this vendor. You can edit it under Reviews in your account.',
@@ -4260,22 +4329,25 @@
       var yes = ce('button'); yes.type = 'button'; yes.textContent = 'Would recommend';
       var no = ce('button'); no.type = 'button'; no.textContent = 'Would not';
       yes.setAttribute('aria-pressed', 'false'); no.setAttribute('aria-pressed', 'false');
-      yes.addEventListener('click', function () { rec = true; yes.className = 'sel-yes'; no.className = ''; yes.setAttribute('aria-pressed', 'true'); no.setAttribute('aria-pressed', 'false'); });
-      no.addEventListener('click', function () { rec = false; no.className = 'sel-no'; yes.className = ''; no.setAttribute('aria-pressed', 'true'); yes.setAttribute('aria-pressed', 'false'); });
+      var chips = conductChips();
+      yes.addEventListener('click', function () { rec = true; yes.className = 'sel-yes'; no.className = ''; yes.setAttribute('aria-pressed', 'true'); no.setAttribute('aria-pressed', 'false'); chips.show(true); });
+      no.addEventListener('click', function () { rec = false; no.className = 'sel-no'; yes.className = ''; no.setAttribute('aria-pressed', 'true'); yes.setAttribute('aria-pressed', 'false'); chips.show(false); });
       row.appendChild(yes); row.appendChild(no);
-      var ta = ce('textarea', 'vl-inv-ta'); ta.id = 'vl-inv-comment'; ta.maxLength = 2000;
+      // 2000 is the server cap on the whole comment; the tag line takes up to ~110.
+      var ta = ce('textarea', 'vl-inv-ta'); ta.id = 'vl-inv-comment'; ta.maxLength = 1880;
       ta.setAttribute('aria-label', 'Your review'); ta.placeholder = 'How was your experience? (optional)';
       var foot = ce('div', 'vl-inv-foot');
       var note = ce('span', 'vl-inv-note'); note.textContent = 'Shown as "Invited by the vendor".';
       var post = ce('button', 'vl-inv-btn'); post.type = 'button'; post.textContent = 'Post review';
       var msg = ce('p', 'vl-inv-msg'); msg.setAttribute('role', 'status'); msg.style.display = 'none';
       foot.appendChild(note); foot.appendChild(post);
-      card.appendChild(row); card.appendChild(ta); card.appendChild(foot); card.appendChild(msg);
+      card.appendChild(row); card.appendChild(chips.el); card.appendChild(ta); card.appendChild(foot); card.appendChild(msg);
       function say(t) { msg.textContent = t; msg.style.display = t ? '' : 'none'; }
       post.addEventListener('click', function () {
         if (rec == null) { say('Choose "Would recommend" or "Would not" first.'); return; }
         say(''); post.disabled = true;
-        SB.reviews.create({ vendorId: vendorId, isRecommended: rec, comment: ta.value || '', inviteCode: code })
+        var body = encodeConduct(rec ? chips.selected() : [], ta.value);
+        SB.reviews.create({ vendorId: vendorId, isRecommended: rec, comment: body, inviteCode: code })
           .then(function (res) {
             post.disabled = false;
             // Route answers { ok, reason } with HTTP 200 for a refusal; a
@@ -4350,6 +4422,24 @@
           sum.appendChild(newPill);
         }
         panel.appendChild(sum);
+        // "Neighbors say": conduct tags counted across recommending reviews,
+        // most-mentioned first. Only renders when at least one review has tags.
+        var tally = {};
+        items.forEach(function (r) {
+          if (!r.is_recommended) return;
+          parseConduct(r.comment).tags.forEach(function (t) { tally[t] = (tally[t] || 0) + 1; });
+        });
+        var said = CONDUCT_TAGS.filter(function (t) { return tally[t]; })
+          .sort(function (a, b) { return tally[b] - tally[a]; });
+        if (said.length) {
+          var say = ce('div', 'vl-rev-say');
+          var sl = ce('strong'); sl.textContent = 'Neighbors say: ';
+          say.appendChild(sl);
+          say.appendChild(document.createTextNode(said.map(function (t) {
+            return t + (tally[t] > 1 ? ' (' + tally[t] + ')' : '');
+          }).join(' · ')));
+          panel.appendChild(say);
+        }
         items.forEach(function (r) { panel.appendChild(reviewCard(r)); });
         $all('.vl-rev-body', panel).forEach(opClamp);
         maybeAddReportButtons(panel, vendorId);
