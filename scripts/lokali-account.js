@@ -2910,7 +2910,7 @@
     wrap.appendChild(host);
     var t = el('div', 'lk-admin-qtitle'); t.appendChild(document.createTextNode('Invite a vendor')); host.appendChild(t);
     host.appendChild(el('p', 'lk-admin-sub',
-      'For people who said yes in person: this creates their account and pre-fills the storefront, then emails them a link to choose a password. They land on their dashboard with only a listing left to add. Nothing goes out until you press Invite.'));
+      'For people who said yes in person: this creates their account and pre-fills the storefront, then emails them a link to choose a password. They land on their dashboard with only a listing left to add. Nothing goes out until you press Invite. Tick the QR box instead to get a printable claim link and send no email at all (#232, gathering cards).'));
     var form = document.createElement('form'); form.setAttribute('novalidate', '');
     form.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;align-items:end;';
     function field(label, name, type, ph, max) {
@@ -2947,34 +2947,67 @@
     var fPhone = field('Phone', 'phone', 'tel', '(832) 555-0100', 40);
     var fDesc = field('Description', 'description', 'textarea', 'A paragraph in their voice (they can edit it)', 2000);
     fDesc.parentNode.style.gridColumn = '1/-1';
+    // #232 (F 2026-10-31, "scan this code … see the prepopulated profile"): same
+    // account + pre-fill, but NO email — the response carries a claim link that
+    // goes on a printed card as a QR. The link works until their first sign-in.
+    var qrW = el('label'); qrW.style.cssText = 'grid-column:1/-1;display:inline-flex;align-items:center;gap:7px;font-size:13px;color:#1A1829;cursor:pointer;';
+    var qrCb = document.createElement('input'); qrCb.type = 'checkbox';
+    qrW.appendChild(qrCb); qrW.appendChild(document.createTextNode('Printed QR invite: send no email, give me a claim link for their card instead.'));
+    form.appendChild(qrW);
     var actions = el('div'); actions.style.cssText = 'grid-column:1/-1;display:flex;align-items:center;gap:12px;flex-wrap:wrap;';
     var btn = document.createElement('button'); btn.type = 'submit'; btn.className = 'lk-admin-btn'; btn.textContent = 'Invite';
     var msg = el('div'); msg.style.cssText = 'font-size:13px;color:#6B6880;';
     actions.appendChild(btn); actions.appendChild(msg); form.appendChild(actions);
+    qrCb.addEventListener('change', function () { btn.textContent = qrCb.checked ? 'Create + get link' : 'Invite'; });
+    // The claim link, shown only after a QR invite. Readonly + copy, like #171's.
+    var linkRow = el('div'); linkRow.style.cssText = 'grid-column:1/-1;display:none;gap:8px;align-items:center;';
+    var linkInput = document.createElement('input'); linkInput.type = 'text'; linkInput.readOnly = true;
+    linkInput.className = 'lk-admin-input'; linkInput.style.cssText = 'flex:1;min-width:0;font-size:12px;';
+    linkInput.addEventListener('focus', function () { linkInput.select(); });
+    var copyBtn = document.createElement('button'); copyBtn.type = 'button'; copyBtn.className = 'lk-admin-btn'; copyBtn.textContent = 'Copy';
+    copyBtn.addEventListener('click', function () {
+      var done = function () { copyBtn.textContent = 'Copied'; setTimeout(function () { copyBtn.textContent = 'Copy'; }, 1500); };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(linkInput.value).then(done).catch(function () { linkInput.focus(); });
+      else { linkInput.focus(); try { document.execCommand('copy'); done(); } catch (e2) {} }
+    });
+    linkRow.appendChild(linkInput); linkRow.appendChild(copyBtn); form.appendChild(linkRow);
     var ERR = {
       already_registered: 'That email already has a Lokali account. Ask them to log in instead; nothing was sent.',
       email_invalid: 'That email doesn’t look right.', business_name_required: 'Business name is required.',
       not_admin: 'Only the admin can invite vendors.', rpc_unavailable: 'The database side isn’t installed yet (patch_admin_invite_vendor.sql). Nothing was sent.',
-      invite_failed: 'Supabase refused the invite. Nothing was sent.', provision_failed: 'The invite email went out but the storefront pre-fill failed. Tell Claude the email address.'
+      invite_failed: 'Supabase refused the invite. Nothing was sent.', provision_failed: 'The invite email went out but the storefront pre-fill failed. Tell Claude the email address.',
+      claim_unavailable: 'The server cannot sign claim links right now (LOKALI_UNSUB_SECRET). Nothing was created.'
     };
     form.addEventListener('submit', function (e) {
       e.preventDefault();
+      var qrMode = qrCb.checked;
       var payload = {
         email: fEmail.value.trim(), first_name: fFirst.value.trim(), business_name: fBiz.value.trim(),
         category_id: fCat.value ? Number(fCat.value) : null,
         locations_id: Array.prototype.map.call(areasRow.querySelectorAll('input[name=loc]:checked'), function (c) { return Number(c.value); }),
-        tagline: fTag.value.trim(), website_url: fWeb.value.trim(), phone: fPhone.value.trim(), description: fDesc.value.trim()
+        tagline: fTag.value.trim(), website_url: fWeb.value.trim(), phone: fPhone.value.trim(), description: fDesc.value.trim(),
+        delivery: qrMode ? 'qr' : 'email'
       };
       if (!payload.email || !payload.business_name) { msg.textContent = 'Email and business name are required.'; return; }
-      if (!window.confirm('Send the invite email to ' + payload.email + ' now?')) return;
-      btn.disabled = true; btn.textContent = 'Inviting…'; msg.textContent = '';
+      var ask = qrMode
+        ? 'Create the account for ' + payload.email + ' and get their claim link? No email goes out.'
+        : 'Send the invite email to ' + payload.email + ' now?';
+      if (!window.confirm(ask)) return;
+      btn.disabled = true; btn.textContent = qrMode ? 'Creating…' : 'Inviting…'; msg.textContent = '';
+      linkRow.style.display = 'none';
       API.admin.inviteVendor(payload).then(function (res) {
-        btn.disabled = false; btn.textContent = 'Invite';
+        btn.disabled = false; btn.textContent = qrCb.checked ? 'Create + get link' : 'Invite';
         var d = res && res.data;
         if (res && res.error) { msg.textContent = ERR[res.error] || ('Could not invite (' + res.error + ').'); return; }
-        msg.textContent = 'Invite sent to ' + payload.email + '. Storefront pre-filled' + (d && d.slug ? ' at /' + d.slug : '') + ' — it goes public once they add a listing.';
-        form.reset();
-      }).catch(function () { btn.disabled = false; btn.textContent = 'Invite'; msg.textContent = 'Network error — nothing was sent.'; });
+        if (qrMode && d && d.claim_url) {
+          linkInput.value = d.claim_url; linkRow.style.display = 'flex';
+          msg.textContent = 'Account created and storefront pre-filled' + (d.slug ? ' at /' + d.slug : '') +
+            '. Nothing was emailed: put this link on their card as a QR. It keeps working until their first sign-in, and scanning it twice is fine.';
+        } else {
+          msg.textContent = 'Invite sent to ' + payload.email + '. Storefront pre-filled' + (d && d.slug ? ' at /' + d.slug : '') + ' — it goes public once they add a listing.';
+        }
+        form.reset(); btn.textContent = 'Invite'; // reset() unticks the QR box too
+      }).catch(function () { btn.disabled = false; btn.textContent = qrCb.checked ? 'Create + get link' : 'Invite'; msg.textContent = 'Network error — nothing was sent.'; });
     });
     host.appendChild(form);
   }
