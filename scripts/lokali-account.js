@@ -2999,6 +2999,9 @@
         btn.disabled = false; btn.textContent = qrCb.checked ? 'Create + get link' : 'Invite';
         var d = res && res.data;
         if (res && res.error) { msg.textContent = ERR[res.error] || ('Could not invite (' + res.error + ').'); return; }
+        // reset() FIRST: the link field lives inside the form, so resetting after
+        // setting it wiped the link the moment it appeared (found live 2026-11-01).
+        form.reset(); btn.textContent = 'Invite'; // reset() unticks the QR box too
         if (qrMode && d && d.claim_url) {
           linkInput.value = d.claim_url; linkRow.style.display = 'flex';
           msg.textContent = 'Account created and storefront pre-filled' + (d.slug ? ' at /' + d.slug : '') +
@@ -3006,7 +3009,6 @@
         } else {
           msg.textContent = 'Invite sent to ' + payload.email + '. Storefront pre-filled' + (d && d.slug ? ' at /' + d.slug : '') + ' — it goes public once they add a listing.';
         }
-        form.reset(); btn.textContent = 'Invite'; // reset() unticks the QR box too
       }).catch(function () { btn.disabled = false; btn.textContent = qrCb.checked ? 'Create + get link' : 'Invite'; msg.textContent = 'Network error — nothing was sent.'; });
     });
     host.appendChild(form);
