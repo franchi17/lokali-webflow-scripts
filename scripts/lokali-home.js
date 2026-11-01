@@ -423,7 +423,7 @@
       a.setAttribute('data-vid', String(c.vid));
       var box = el('span', 'lok-cat-img');
       var img = el('img');
-      img.alt = '';
+      img.alt = c.from + ', ' + c.label + ' on Lokali';
       img.loading = 'lazy';
       img.decoding = 'async';
       if (c.pos) img.style.objectPosition = c.pos;

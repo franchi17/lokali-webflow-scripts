@@ -192,7 +192,7 @@
     if (coverUrl) {
       var cimg = document.createElement('img');
       imgSet(cimg, coverUrl, 640);
-      cimg.alt = '';
+      cimg.alt = 'Work by ' + (String(v.business_name || '').trim() || headline);
       cimg.loading = 'lazy';
       if (cover && cover.url && cover.fx != null && cover.fy != null) cimg.style.objectPosition = cover.fx + '% ' + cover.fy + '%';
       cimg.addEventListener('error', function () { if (cimg.parentNode) cimg.parentNode.removeChild(cimg); });
@@ -213,7 +213,7 @@
       var img = document.createElement('img');
       img.className = 'lok-nb-face';
       imgSet(img, faceUrl, 96);
-      img.alt = '';
+      img.alt = headline + (ownerName && v.business_name && v.business_name !== ownerName ? ' of ' + v.business_name : '');
       img.loading = 'lazy';
       // A blocked/failed photo (corporate web filters refuse api.golokali.com
       // while Webflow's CDN loads fine) falls back to the initials circle.
