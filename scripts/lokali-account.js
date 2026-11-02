@@ -3054,6 +3054,7 @@
         var more = T('div', 'lk-ash-acts lk-ash-pmore'); more.style.justifyContent = 'flex-start';
         function small(label, fn) { var b = T('button', 'lk-ash-btn', label); b.type = 'button'; b.addEventListener('click', fn); more.appendChild(b); return b; }
         if (r.status !== 'replied' && r.status !== 'signed_up') small('They replied', function () { setStatus(r, 'replied'); });
+        if (r.status !== 'signed_up') small('They signed up', function () { markSignedUp(r); });
         if (r.status !== 'declined' && r.status !== 'signed_up') small('Not now', function () { setStatus(r, 'declined'); });
         if (r.status === 'replied' || r.status === 'declined') small('Reopen', function () { setStatus(r, 'new'); });
         small('Edit details', function () { openForm(r); });
@@ -3066,6 +3067,11 @@
       }
       function setStatus(r, status) {
         A.prospectStatus(r.id, status).then(function (res) { var d = res && res.data; if (d && d.ok === true) { replaceRow(d.row); openId = r.id; paint(); } else window.alert(errText((d && d.reason) || (res && res.error) || 'status')); });
+      }
+
+      function markSignedUp(r) {
+        if (!window.confirm('Mark ' + (r.first_name || r.business_name) + ' as signed up? This stops the follow-up notes and cannot be undone here.')) return;
+        A.prospectSignedUp(r.id).then(function (res) { var d = res && res.data; if (d && d.ok === true) { replaceRow(d.row); openId = r.id; paint(); } else window.alert(errText((d && d.reason) || (res && res.error) || 'status')); });
       }
 
       // ── save ───────────────────────────────────────────────────────────

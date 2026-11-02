@@ -1849,6 +1849,10 @@
       prospectStatus: function (id, status) {
         return withClient(function (c) { return c.rpc('admin_prospect_status', { p_id: id, p_status: status }); });
       },
+      // F knows they signed up (no email on the row to match): stop the sequence and link the storefront.
+      prospectSignedUp: function (id, vendorId) {
+        return withClient(function (c) { return c.rpc('admin_prospect_mark_signed_up', { p_id: id, p_vendor_id: vendorId || null }); });
+      },
       // F sent it herself (Instagram DM / text): stamp touch 1 or 2 without an email.
       prospectMarkSent: function (id, touch, subject, body) {
         return withClient(function (c) { return c.rpc('admin_prospect_mark_sent', { p_id: id, p_touch: touch, p_subject: subject || null, p_body: body || null }); });
