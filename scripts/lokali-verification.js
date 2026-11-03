@@ -112,9 +112,10 @@
           setButtonBusy(btn, false);
           console.error('[lokali-verification] start failed', err);
           // #48: the server refuses unpaid/free plans with a human-readable
-          // reason — surface it instead of the generic line.
+          // reason — surface it instead of the generic line. SEC-110: same for
+          // "still being reviewed" (409) and "try again tomorrow" (429).
           var m = err && err.message ? String(err.message) : '';
-          alert(/plan|payment/i.test(m) ? m : 'Sorry, we could not start verification. Please try again.');
+          alert(/plan|payment|reviewed|tomorrow/i.test(m) ? m : 'Sorry, we could not start verification. Please try again.');
         });
     });
   }
