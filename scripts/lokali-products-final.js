@@ -508,6 +508,17 @@ const LokaliProductsPage = (() => {
     applyFormErrorTypography(e);
     e.textContent = msg;
     e.style.display = 'block';
+    // Zoom Drain, 2026-11-06: on a phone the vendor tapped Save, validation
+    // failed, and the one-line message sat off-screen — he left believing the
+    // listing had saved. Make it a box, announce it, and bring it into view.
+    e.setAttribute('role', 'alert');
+    e.style.padding = '10px 14px';
+    e.style.borderRadius = '10px';
+    e.style.background = '#FDECEF';
+    e.style.border = '1px solid #F5B8C4';
+    e.style.color = '#9F1239';
+    e.style.fontWeight = '600';
+    try { e.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (_) { e.scrollIntoView(); }
   };
 
   const clearError = () => {
@@ -1869,6 +1880,15 @@ const LokaliProductsPage = (() => {
     try {
       let imageUrl;
 
+      // Validate the typed fields FIRST: a failed save must not upload a photo
+      // (Zoom Drain 2026-11-06 left two orphaned storage objects this way).
+      // validate() never reads image_url, so a null cover is fine here.
+      const preError = validate(buildPayload(null));
+      if (preError) {
+        showError(preError);
+        return;
+      }
+
       const imgFile = el.imgInput()?.files?.[0];
 
       if (imgFile) {
@@ -2724,6 +2744,15 @@ const LokaliProductsPage = (() => {
     el.backBtn()?.addEventListener('click',   showListView);
     el.cancelBtn()?.addEventListener('click', showListView);
     el.saveBtn()?.addEventListener('click',   handleSave);
+    // Photos staged on a NEW item live only in memory until Save succeeds;
+    // showListView() empties the list, so a non-empty list means the add form
+    // is open with unsaved photos. Warn before a reload or navigation drops
+    // them (Zoom Drain 2026-11-06: two photos uploaded, page reloaded, gone).
+    window.addEventListener('beforeunload', (ev) => {
+      if (editingId || !_pendingGalleryPhotos.length) return;
+      ev.preventDefault();
+      ev.returnValue = '';
+    });
     paintSaveBtn(el.saveBtn()); // #142 FA icon + ALL-CAPS label from first paint
     el.deleteBtn()?.addEventListener('click', () => handleDeactivate(editingId));
 
