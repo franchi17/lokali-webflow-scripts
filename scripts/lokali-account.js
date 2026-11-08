@@ -1507,6 +1507,8 @@
     house: '<svg viewBox="0 0 576 512" aria-hidden="true"><path fill="currentColor" d="M575.8 255.5c0 18-15 32.1-32 32.1l-32 0 .7 160.2c0 2.7-.2 5.4-.5 8.1l0 16.2c0 22.1-17.9 40-40 40l-16 0c-1.1 0-2.2 0-3.3-.1c-1.4 .1-2.8 .1-4.2 .1L416 512l-24 0c-22.1 0-40-17.9-40-40l0-24 0-64c0-17.7-14.3-32-32-32l-64 0c-17.7 0-32 14.3-32 32l0 64 0 24c0 22.1-17.9 40-40 40l-24 0-31.9 0c-1.5 0-3-.1-4.5-.2c-1.2 .1-2.4 .2-3.6 .2l-16 0c-22.1 0-40-17.9-40-40l0-112c0-.9 0-1.9 .1-2.8l0-69.7-32 0c-18 0-32-14-32-32.1c0-9 3-17 10-24L266.4 8c7-7 15-8 22-8s15 2 21 7L564.8 231.5c8 7 12 15 11 24z"/></svg>',
     engine: '<svg viewBox="0 0 512 512" aria-hidden="true"><path fill="currentColor" d="M228.3 469.1L47.6 300.4c-4.2-3.9-8.2-8.1-11.9-12.4l87 0c22.6 0 43-13.6 51.7-34.5l10.5-25.2 49.3 109.5c3.8 8.5 12.1 14 21.4 14.1s17.8-5 22-13.3L320 253.7l1.7 3.4c9.5 19 28.9 31 50.1 31l104.5 0c-3.7 4.3-7.7 8.5-11.9 12.4L283.7 469.1c-7.5 7-17.4 10.9-27.7 10.9s-20.2-3.9-27.7-10.9zM503.7 240l-132 0c-3 0-5.8-1.7-7.2-4.4l-23.2-46.3c-4.1-8.1-12.4-13.3-21.5-13.3s-17.4 5.1-21.5 13.3l-41.4 82.8L205.9 158.2c-3.9-8.7-12.7-14.3-22.2-14.1s-18.1 5.9-21.8 14.8l-31.8 76.3c-1.2 3-4.2 4.9-7.4 4.9L16 240c-2.6 0-5 .4-7.3 1.1C3 225.2 0 208.2 0 190.9l0-5.8c0-69.9 50.5-129.5 119.4-141C165 36.5 211.4 51.4 244 84l12 12 12-12c32.6-32.6 79-47.5 124.6-39.9C461.5 55.6 512 115.2 512 185.1l0 5.8c0 16.9-2.8 33.5-8.3 49.1z"/></svg>',
     off: '<svg viewBox="0 0 384 512" aria-hidden="true"><path fill="currentColor" d="M223.5 32C100 32 0 132.3 0 256S100 480 223.5 480c60.6 0 115.5-24.2 155.8-63.4c5-4.9 6.3-12.5 3.1-18.7s-10.1-9.7-17-8.5c-9.8 1.7-19.8 2.6-30.1 2.6c-96.9 0-175.5-78.8-175.5-176c0-65.8 36-123.1 89.3-153.3c6.1-3.5 9.2-10.5 7.7-17.3s-7.3-11.9-14.3-12.5c-6.3-.5-12.6-.8-19-.8z"/></svg>',
+    wait: '<svg viewBox="0 0 384 512" aria-hidden="true"><path fill="currentColor" d="M32 0C14.3 0 0 14.3 0 32S14.3 64 32 64l0 11c0 42.4 16.9 83.1 46.9 113.1L146.7 256 78.9 323.9C48.9 353.9 32 394.6 32 437l0 11c-17.7 0-32 14.3-32 32s14.3 32 32 32l320 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l0-11c0-42.4-16.9-83.1-46.9-113.1L237.3 256l67.9-67.9c30-30 46.9-70.7 46.9-113.1l0-11c17.7 0 32-14.3 32-32S369.7 0 352 0L32 0zM96 75l0-11 192 0 0 11c0 25.5-10.1 49.9-28.1 67.9L192 210.7l-67.9-67.9C106.1 124.9 96 100.5 96 75z"/></svg>',
+    decide: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M6 21h12M12 6l7 1M12 6L5 7M3 14l2-7 2 7a2 2 0 0 1-4 0zM17 14l2-7 2 7a2 2 0 0 1-4 0z"/></svg>',
     pen: '<svg viewBox="0 0 512 512" aria-hidden="true"><path fill="currentColor" d="M362.7 19.3L314.3 67.7 444.3 197.7l48.4-48.4c25-25 25-65.5 0-90.5L453.3 19.3c-25-25-65.5-25-90.5 0zm-71 71L58.6 323.5c-10.4 10.4-18 23.3-22.2 37.4L1 481.2C-1.5 489.7 .8 498.8 7 505s15.3 8.5 23.7 6.1l120.3-35.4c14.1-4.2 27-11.8 37.4-22.2L421.7 220.3 291.7 90.3z"/></svg>'
   };
   function fqClone(o) { return JSON.parse(JSON.stringify(o)); }
@@ -1531,6 +1533,30 @@
       }
       return { data: fqLocal(), remote: false };
     }).catch(function () { return { data: fqLocal(), remote: false }; });
+  }
+  // Clo's brief (patch_admin_brief.sql, #237 Phase 1): the newest row, or null when the
+  // patch is not applied, the RPC refuses, or the brief is more than a week old.
+  function fqLoadBrief() {
+    var ready = window.LokaliSupabaseReady;
+    if (!ready || typeof ready.then !== 'function') return Promise.resolve(null);
+    return ready.then(function (c) { return c.rpc('admin_brief_get'); }).then(function (res) {
+      var d = res && res.data, b = d && d.ok === true && d.brief;
+      if (!b || typeof b !== 'object' || !b.date) return null;
+      var age = fqDaysTo(b.date, new Date()); // negative = days ago
+      if (age == null || age < -7 || age > 1) return null;
+      return { date: b.date, note: String(b.note || '').trim(), three: fqList(b.three, ['t', 'd']), waiting: fqList(b.waiting, ['t', 'd', 'w']), decisions: fqList(b.decisions, ['t', 'pick']), at: b.generated_at || null };
+    }).catch(function () { return null; });
+  }
+  function fqList(a, keys) {
+    if (!Array.isArray(a)) return [];
+    return a.filter(function (x) { return x && typeof x === 'object' && String(x.t || '').trim(); }).slice(0, 8)
+      .map(function (x) { var o = {}; keys.forEach(function (k) { o[k] = String(x[k] || '').trim(); }); return o; });
+  }
+  // 'From Friday' when the brief is not today's; '' when it is.
+  function fqBriefWhen(date, now) {
+    var days = fqDaysTo(date, now); if (days == null || days === 0) return '';
+    if (days === -1) return 'From yesterday'; if (days === 1) return 'For tomorrow';
+    var d = fqParseDate(date); try { return 'From ' + d.toLocaleDateString('en-US', { weekday: 'long' }); } catch (e) { return ''; }
   }
   // Always keeps a browser copy; resolves true when Lokali stored it too.
   function fqSaveBoard(board) {
@@ -1590,12 +1616,13 @@
 
   // The board: loaded once, shared by every hand-written card.
   function fqBoardCtl(parts) {
-    var ctl = { board: fqMerge(null), remote: false, loaded: false };
+    var ctl = { board: fqMerge(null), remote: false, loaded: false, brief: null };
     ctl.save = function () {
       return fqSaveBoard(ctl.board).then(function (ok) { ctl.remote = ok; parts.forEach(function (p) { if (p.onStore) p.onStore(ctl); }); return ok; });
     };
-    fqLoadBoard().then(function (r) {
-      ctl.board = fqMerge(r.data); ctl.remote = r.remote; ctl.loaded = true;
+    Promise.all([fqLoadBoard(), fqLoadBrief()]).then(function (rs) {
+      var r = rs[0];
+      ctl.board = fqMerge(r.data); ctl.remote = r.remote; ctl.brief = rs[1]; ctl.loaded = true;
       parts.forEach(function (p) { if (p.draw) p.draw(ctl); if (p.onStore) p.onStore(ctl); });
     });
     return ctl;
@@ -1621,7 +1648,8 @@
     h1.appendChild(fqT('span', null, (hr < 12 ? 'Good morning, ' : hr < 18 ? 'Good afternoon, ' : 'Good evening, ') + first + '.'));
     var line2 = fqT('em', null, 'Run the day.'); h1.appendChild(line2); hello.appendChild(h1);
     var note = fqT('div', 'lk-fq-note'), av = fqT('div', 'lk-fq-av', 'C'); av.setAttribute('aria-hidden', 'true'); note.appendChild(av);
-    var p = fqT('p'); p.appendChild(document.createTextNode('Your month in one breath: '));
+    var p = fqT('p'); var briefS = fqT('span', 'lk-fq-brief'); briefS.hidden = true; p.appendChild(briefS);
+    p.appendChild(document.createTextNode('Your month in one breath: '));
     H.story = fqT('span', 'lk-fq-story', 'reading this month’s numbers…'); p.appendChild(H.story);
     var needs = fqT('span'), evt = fqT('span'); p.appendChild(needs); p.appendChild(evt);
     p.appendChild(document.createTextNode(' ')); p.appendChild(fqT('span', 'lk-fq-sign', 'xo, Clo'));
@@ -1676,6 +1704,9 @@
       return form;
     }
     H.draw = function (ctl) {
+      var bf = ctl.brief; briefS.innerHTML = '';
+      if (bf && bf.note) { var bw = fqBriefWhen(bf.date, now); if (bw) briefS.appendChild(fqT('b', null, bw + ': ')); briefS.appendChild(document.createTextNode(bf.note + ' ')); }
+      briefS.hidden = !(bf && bf.note);
       var ev = ctl.board.event || {}, days = fqDaysTo(ev.date, now), d = fqParseDate(ev.date);
       arch.innerHTML = ''; arch.hidden = !ctl.loaded;
       line2.textContent = ev.name && days != null && days >= 0 && days <= 7 ? 'Big week. You’re ready.' : 'Run the day.';
@@ -1733,6 +1764,7 @@
     var three = fqCard('lk-fq-three'), th = fqHead(three, 'three', 'Today’s three', 'Three moves. That’s the whole list.');
     var prog = fqT('div', 'lk-fq-prog'); th.right.appendChild(prog);
     var tb = fqT('div', 'lk-fq-tasks'); three.appendChild(tb);
+    var sug = fqT('div', 'lk-fq-sug'); sug.hidden = true; three.appendChild(sug); var sugKeep = false;
     var week = fqCard('lk-fq-week'), wh = fqHead(week, 'week', 'This week', 'The shape of your week.');
     var wb = fqT('ol', 'lk-fq-weeklist'); week.appendChild(wb);
     R.el.appendChild(three); R.el.appendChild(week);
@@ -1741,7 +1773,7 @@
       var ctl = ctlRef, b = ctl.board.three, items = (b.items || []).slice(0, 5), done = b.done || {};
       tb.innerHTML = ''; prog.innerHTML = '';
       var n = 0; items.forEach(function (x, i) { if (done[i]) n++; });
-      if (!items.length) { tb.appendChild(fqT('p', 'lk-fq-set', 'Nothing set. Tap Edit and name the three things that would make today a win.')); return; }
+      if (!items.length) { tb.appendChild(fqT('p', 'lk-fq-set', 'Nothing set. Tap Edit and name the three things that would make today a win.')); drawSug(); return; }
       prog.appendChild(fqT('span', null, n + ' of ' + items.length + ' done'));
       var bars = fqT('div'); bars.setAttribute('aria-hidden', 'true'); items.forEach(function (x, i) { bars.appendChild(fqT('i', done[i] ? 'on' : null)); }); prog.appendChild(bars);
       items.forEach(function (x, i) {
@@ -1757,6 +1789,27 @@
         var sd = fqParseDate(b.set), when = ''; try { when = sd.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }); } catch (e) {}
         tb.appendChild(fqT('p', 'lk-fq-set', 'Set ' + when + '. New day? Edit to choose today’s three.'));
       }
+      drawSug();
+    }
+    // Clo suggests (#237 Phase 1): the brief's three, with one tap to make them hers.
+    // Hidden once the board already carries them, or after Keep mine (this page load).
+    function sameThree(a, b) { return a.length === b.length && a.every(function (x, i) { return x.t === ((b[i] || {}).t || ''); }); }
+    function drawSug() {
+      var ctl = ctlRef, bf = ctl && ctl.brief, list = bf ? bf.three.slice(0, 5) : [];
+      sug.innerHTML = '';
+      var show = list.length && !sugKeep && !sameThree(list, ctl.board.three.items || []);
+      sug.hidden = !show; if (!show) return;
+      var k = fqT('div', 'k'), avm = fqT('span', 'lk-fq-av sm', 'C'); avm.setAttribute('aria-hidden', 'true'); k.appendChild(avm);
+      var bw = fqBriefWhen(bf.date, now); k.appendChild(document.createTextNode('Clo suggests' + (bw ? ' · ' + bw.toLowerCase() : ''))); sug.appendChild(k);
+      var ol = fqT('ol'); list.forEach(function (x) { var li = fqT('li'); li.appendChild(fqT('b', null, x.t)); if (x.d) li.appendChild(fqT('small', null, x.d)); ol.appendChild(li); }); sug.appendChild(ol);
+      var acts = fqT('div', 'acts'), use = fqT('button', 'lk-ash-btn primary', 'Use these'), keep = fqT('button', 'lk-ash-btn', 'Keep mine');
+      use.type = 'button'; keep.type = 'button'; acts.appendChild(use); acts.appendChild(keep); sug.appendChild(acts);
+      use.addEventListener('click', function () {
+        use.disabled = true;
+        ctl.board.three = { set: today, done: {}, items: list.map(function (x) { return { t: x.t, d: x.d }; }) };
+        ctl.save().then(function () { drawThree(); });
+      });
+      keep.addEventListener('click', function () { sugKeep = true; drawSug(); });
     }
     function drawWeek() {
       var ctl = ctlRef, items = ctl.board.week.items || [];
@@ -1780,6 +1833,34 @@
         fromText: function (s) { ctl.board.week = { items: fqLines(s).map(function (l) { var hot = l.charAt(0) === '!'; var pr = fqPair(hot ? l.slice(1).trim() : l); return { day: pr.d ? pr.t : '', t: pr.d || pr.t, hot: hot }; }) }; }, redraw: drawWeek });
     };
     return R;
+  }
+
+  // Waiting on you + Decide, from Clo's brief (#237 Phase 1). The row stays hidden
+  // until a brief exists; the Decide card hides when the brief has no decisions.
+  function fqBriefRow(now) {
+    var W = { el: fqT('div', 'lk-fq-row lk-fq-briefrow') }; W.el.hidden = true;
+    var wait = fqCard('lk-fq-wait'), wh = fqHead(wait, 'wait', 'Waiting on you', 'Nothing is waiting on you.');
+    var wl = fqT('ul', 'lk-fq-wl'); wait.appendChild(wl);
+    var dec = fqCard('lk-fq-decide'), dh = fqHead(dec, 'decide', 'Decide', 'Nothing to decide today.');
+    var dl = fqT('ul', 'lk-fq-wl dec'); dec.appendChild(dl);
+    W.el.appendChild(wait); W.el.appendChild(dec);
+    W.draw = function (ctl) {
+      var bf = ctl.brief; wl.innerHTML = ''; dl.innerHTML = '';
+      if (!bf || (!bf.waiting.length && !bf.decisions.length)) { W.el.hidden = true; return; }
+      W.el.hidden = false;
+      var bw = fqBriefWhen(bf.date, now), n = bf.waiting.length;
+      wh.h.textContent = n ? (n === 1 ? 'One thing is on you.' : fqWords(n) + ' things are on you.') : 'Nothing is waiting on you.';
+      wh.right.innerHTML = ''; wh.right.appendChild(fqT('span', 'lk-fq-chip v', 'Clo, ' + (bw ? bw.replace(/^(From|For) /, '') : 'today')));
+      bf.waiting.forEach(function (x) {
+        var li = fqT('li'), tx = fqT('div'); tx.appendChild(fqT('b', null, x.t)); if (x.d) tx.appendChild(fqT('small', null, x.d)); li.appendChild(tx);
+        if (x.w) li.appendChild(fqT('span', 'lk-fq-chip' + (/overdue|stale|today/i.test(x.w) ? ' r' : ' v'), x.w));
+        wl.appendChild(li);
+      });
+      var m = bf.decisions.length; dec.hidden = !m;
+      dh.h.textContent = m === 1 ? 'One call is yours.' : fqWords(m) + ' calls are yours.';
+      bf.decisions.forEach(function (x, i) { var li = fqT('li'), tx = fqT('div'); tx.appendChild(fqT('b', null, (i + 1) + '. ' + x.t)); if (x.pick) tx.appendChild(fqT('small', null, x.pick)); li.appendChild(tx); dl.appendChild(li); });
+    };
+    return W;
   }
 
   // Road to billing day + money. Filled once the insights payload lands.
@@ -1930,8 +2011,8 @@
     eh.right.appendChild(fqT('span', 'lk-fq-chip', 'All quiet'));
     var el = fqT('ul', 'lk-fq-englist'); eng.appendChild(el);
     var ver = ''; try { var ss = document.getElementsByTagName('script'); for (var i = 0; i < ss.length; i++) { var m = /@?(\d+\.\d+\.\d+)\/scripts\/lokali-account\.js/.exec(ss[i].src || ''); if (m) { ver = m[1]; break; } } } catch (e) {}
-    var lBoard = fqT('span', null, 'Checking where your cards are kept…');
-    [['g', ver ? 'Scripts pinned at v' + ver + '.' : 'Scripts are pinned to an exact release.'], ['v', lBoard], ['p', 'Any policy or grant change: the three isolation grids run again.'], ['r', 'After any deploy, check it actually landed.']]
+    var lBoard = fqT('span', null, 'Checking where your cards are kept…'), lBrief = fqT('span', null, 'Checking for Clo’s brief…');
+    [['g', ver ? 'Scripts pinned at v' + ver + '.' : 'Scripts are pinned to an exact release.'], ['v', lBoard], ['p', lBrief], ['p', 'Any policy or grant change: the three isolation grids run again.'], ['r', 'After any deploy, check it actually landed.']]
       .forEach(function (x) { var li = fqT('li'); li.appendChild(fqT('i', x[0])); if (x[1].nodeType) li.appendChild(x[1]); else li.appendChild(fqT('span', null, x[1])); el.appendChild(li); });
     var off = fqCard('lk-fq-off'), oh = fqHead(off, 'off', 'Protected time', 'Off the clock.');
     off.appendChild(fqT('p', 'lk-fq-p ink', 'I hold these. Nothing gets booked over them.'));
@@ -1946,6 +2027,9 @@
     Hs.onStore = function (ctl) {
       if (!ctl.loaded) return;
       lBoard.textContent = ctl.remote ? 'Your hand-written cards are saved to Lokali, so they follow you everywhere.' : 'Your hand-written cards are saved in this browser until patch_admin_board.sql is applied.';
+      var bf = ctl.brief, at = '';
+      if (bf && bf.at) { try { at = new Date(bf.at).toLocaleString('en-US', { weekday: 'short', hour: 'numeric', minute: '2-digit' }); } catch (e) {} }
+      lBrief.textContent = bf ? 'Clo’s brief landed ' + (at || 'today') + '. It also sits in team/briefs on the Mac.' : 'No brief from Clo on this page yet. It shows here once patch_admin_brief.sql is applied and the morning task has run.';
     };
     Hs.wire = function (ctl) {
       fqEditor(oh.right, ol, { name: 'Protected time', ctl: ctl, help: 'Write it as  What: when.',
@@ -2055,6 +2139,22 @@
       ".lk-fq-day .t{font-size:15px;font-weight:600;line-height:1.45;min-width:0;}" +
       ".lk-fq-day.today{background:#EEE6FF;}.lk-fq-day.today .d{color:#4A1DB0;}" +
       ".lk-fq-day.hot{background:#FBE9F2;box-shadow:inset 0 0 0 2px #F3B9D6;padding:16px 14px;}.lk-fq-day.hot .d{color:#A63D74;}.lk-fq-day.hot .t{font-weight:800;}" +
+      /* Clo's brief: the one-liner in the note, Clo suggests, waiting on you + decide (#237) */
+      ".lk-fq-brief b{font-weight:800;color:#A63D74;}" +
+      ".lk-fq-sug{margin-top:14px;background:#FBE9F2;border-radius:22px;padding:16px 18px;display:flex;flex-direction:column;gap:10px;}" +
+      ".lk-fq-sug .k{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#A63D74;}" +
+      ".lk-fq-av.sm{flex:0 0 24px;width:24px;height:24px;border-radius:12px;font-size:12px;}" +
+      ".lk-fq-sug ol{margin:0;padding:0 0 0 22px;display:flex;flex-direction:column;gap:8px;}" +
+      ".lk-fq-sug li{font-size:15px;line-height:1.45;color:#2B2640;padding-left:2px;}.lk-fq-sug li::marker{font-weight:800;color:#A63D74;}" +
+      ".lk-fq-sug li b{font-weight:800;}.lk-fq-sug li small{display:block;font-size:13px;line-height:1.5;color:#5E5873;margin-top:2px;}" +
+      ".lk-fq-sug .acts{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}" +
+      ".lk-fq-wait{flex:1.25 1 460px;}.lk-fq-decide{flex:1 1 400px;}" +
+      ".lk-fq-wl{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;}" +
+      ".lk-fq-wl li{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;padding:14px 16px;border-radius:18px;background:#F8F4FF;}" +
+      ".lk-fq-wl li>div{min-width:0;}.lk-fq-wl b{display:block;font-size:16px;font-weight:800;letter-spacing:-.01em;line-height:1.35;color:#2B2640;}" +
+      ".lk-fq-wl small{display:block;font-size:14px;line-height:1.5;color:#5E5873;margin-top:3px;}" +
+      ".lk-fq-wl .lk-fq-chip{flex:0 0 auto;margin-top:2px;}" +
+      ".lk-fq-wl.dec li{background:#F7F2FF;}" +
       /* road + money */
       ".lk-fq-road{flex:1.6 1 520px;}.lk-fq-money{flex:1 1 340px;}" +
       ".lk-fq-card h2.lk-fq-big,.lk-fq-card h2.lk-fq-mh{font-size:clamp(28px,3vw,40px);line-height:1.05;letter-spacing:-.035em;}" +
@@ -2137,6 +2237,9 @@
       D + ".lk-fq-stat," + D + ".lk-fq-task," + D + ".lk-fq-day," + D + ".lk-fq-mile," + D + ".lk-fq-dial," + D + ".lk-fq-mini.v div{background:#29223F;}" +
       "html.lk-dark .lk-fq-play{background:#242039;}html.lk-dark .lk-fq-play .eqw{background:#3E2638;}html.lk-dark .lk-fq-play small{color:#F0A3C9;}html.lk-dark .lk-fq-play b{color:#F3F1FA;}" +
       D + ".lk-fq-note," + D + ".lk-fq-clo," + D + ".lk-fq-yay," + D + ".lk-fq-day.hot{background:#3E2638;}" +
+      D + ".lk-fq-sug{background:#3E2638;}" + D + ".lk-fq-sug li," + D + ".lk-fq-sug li b{color:#F3F1FA;}" + D + ".lk-fq-sug li small{color:#B8B2CF;}" +
+      D + ".lk-fq-sug .k," + D + ".lk-fq-sug li::marker," + D + ".lk-fq-brief b{color:#F0A3C9;}" +
+      D + ".lk-fq-wl li," + D + ".lk-fq-wl.dec li{background:#29223F;}" + D + ".lk-fq-wl b{color:#F3F1FA;}" + D + ".lk-fq-wl small{color:#B8B2CF;}" +
       D + ".lk-fq-day.today{background:#2F2750;}" + D + ".lk-fq-day.today .d{color:#C9B0FF;}" + D + ".lk-fq-day.hot .d{color:#F0A3C9;}" + D + ".lk-fq-day.hot{box-shadow:inset 0 0 0 2px #55304A;}" +
       D + ".lk-fq-h1 em," + D + ".lk-fq-card h2 em," + D + ".lk-fq-big em," + D + ".lk-fq-out .n," + D + ".lk-fq-ico{color:#C9B0FF;}" +
       D + ".lk-fq-sign," + D + ".lk-fq-yay em," + D + ".lk-fq-mile.here b{color:#F0A3C9;}" + D + ".lk-fq-mile b{color:#C9B0FF;}" +
@@ -2328,6 +2431,7 @@
       var grid = T('div', 'lk-ash-needs'); grid.hidden = true; v.appendChild(grid);
       review.addEventListener('click', function () { grid.hidden = !grid.hidden; review.textContent = grid.hidden ? 'Review' : 'Hide'; review.setAttribute('aria-expanded', grid.hidden ? 'false' : 'true'); });
       var FB = fqBoardRow(now); v.appendChild(FB.el);
+      var FW = fqBriefRow(now); v.appendChild(FW.el); // Clo's brief: waiting on you + decide (#237)
 
       window.__lokAttn = { suggestions: a.queue.length, reports: (Number(ov.open_vendor_reports) || 0) + (Number(ov.open_review_reports) || 0), creatives: null, addresses: null, pairings: null, blocks: null };
       function sectionTitle(sec) {
@@ -2437,7 +2541,7 @@
       [FG.el, FL.el, FHS.el].forEach(function (x) { v.appendChild(x); });
       var foot = T('div', 'lk-fq-foot'); foot.appendChild(T('span', null, 'Numbers pulled live from Lokali when this page opened.'));
       var fr = T('span', null, 'Made for one founder in The Woodlands, Texas. '); fr.appendChild(T('em', null, 'Run it.')); foot.appendChild(fr); v.appendChild(foot);
-      var ctl = fqBoardCtl([FH, FB, FL, FHS]); [FB, FL, FHS].forEach(function (x) { x.wire(ctl); });
+      var ctl = fqBoardCtl([FH, FB, FW, FL, FHS]); [FB, FL, FHS].forEach(function (x) { x.wire(ctl); });
       if (SAPI && SAPI.admin && typeof SAPI.admin.prospects === 'function') {
         SAPI.admin.prospects().then(function (res) { if (res && res.data && res.data.ok === true) FL.fillProspects(res.data.rows || []); else FL.failProspects(); }).catch(function () { FL.failProspects(); });
       } else FL.failProspects();
