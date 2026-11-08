@@ -1055,6 +1055,7 @@
     vendors: '<svg viewBox="0 0 640 512" aria-hidden="true"><path fill="currentColor" d="M36.800 192H603.200c20.300 0 36.800-16.500 36.800-36.800c0-7.300-2.200-14.400-6.200-20.400L558.200 21.400C549.300 8 534.400 0 518.300 0H121.700c-16 0-31 8-39.900 21.400L6.200 134.700c-4 6.100-6.200 13.200-6.200 20.400C0 175.500 16.500 192 36.800 192zM64 224V384v80c0 26.500 21.500 48 48 48H336c26.500 0 48-21.500 48-48V384 224H320V384H128V224H64zm448 0V480c0 17.700 14.300 32 32 32s32-14.300 32-32V224H512z"/></svg>',
     insights: '<svg viewBox="0 0 512 512" aria-hidden="true"><path fill="currentColor" d="M32 32c17.700 0 32 14.300 32 32V400c0 8.800 7.200 16 16 16H480c17.700 0 32 14.300 32 32s-14.300 32-32 32H80c-44.200 0-80-35.800-80-80V64C0 46.300 14.300 32 32 32zm96 96c0-17.700 14.300-32 32-32s32 14.300 32 32V320c0 17.700-14.300 32-32 32s-32-14.300-32-32V128zm128 64c17.700 0 32 14.300 32 32V320c0 17.700-14.300 32-32 32s-32-14.300-32-32V224c0-17.700 14.300-32 32-32zm96-96c0-17.700 14.300-32 32-32s32 14.300 32 32V320c0 17.700-14.300 32-32 32s-32-14.300-32-32V128z"/></svg>',
     prospects: '<svg viewBox="0 0 512 512" aria-hidden="true"><path fill="currentColor" d="M48 64C21.5 64 0 85.5 0 112c0 15.1 7.1 29.3 19.2 38.4L236.8 313.6c11.4 8.5 27 8.5 38.4 0L492.8 150.4c12.1-9.1 19.2-23.3 19.2-38.4c0-26.5-21.5-48-48-48H48zM0 176V384c0 35.3 28.7 64 64 64H448c35.3 0 64-28.7 64-64V176L294.4 339.2c-22.8 17.1-54 17.1-76.8 0L0 176z"/></svg>',
+    marketing: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15 9.5a3.5 3.5 0 0 1 0 5"/><path d="M17.5 7a7 7 0 0 1 0 10"/><path d="M7 14l1 5h2.5l-.8-5"/></svg>',
     bars: '<svg viewBox="0 0 448 512" aria-hidden="true"><path fill="currentColor" d="M0 96C0 78.300 14.300 64 32 64H416c17.700 0 32 14.300 32 32s-14.300 32-32 32H32C14.300 128 0 113.700 0 96zM0 256c0-17.700 14.300-32 32-32H416c17.700 0 32 14.300 32 32s-14.300 32-32 32H32c-17.700 0-32-14.300-32-32zM448 416c0 17.700-14.300 32-32 32H32c-17.700 0-32-14.300-32-32s14.300-32 32-32H416c17.700 0 32 14.300 32 32z"/></svg>',
     check: '<svg viewBox="0 0 448 512" aria-hidden="true"><path fill="currentColor" d="M438.600 105.400c12.500 12.500 12.500 32.800 0 45.300l-256 256c-12.500 12.500-32.800 12.500-45.300 0l-128-128c-12.500-12.500-12.500-32.800 0-45.300s32.800-12.500 45.300 0L160 338.700 393.400 105.400c12.500-12.500 32.800-12.500 45.300 0z"/></svg>',
     moon: '<svg viewBox="0 0 384 512" aria-hidden="true"><path fill="currentColor" d="M223.5 32C100 32 0 132.3 0 256S100 480 223.5 480c60.6 0 115.5-24.2 155.8-63.4c5-4.9 6.3-12.5 3.1-18.7s-10.1-9.7-17-8.5c-9.8 1.7-19.8 2.6-30.1 2.6c-96.9 0-175.5-78.8-175.5-176c0-65.8 36-123.1 89.3-153.3c6.1-3.5 9.2-10.5 7.7-17.3s-7.3-11.9-14.3-12.5c-6.3-.5-12.6-.8-19-.8z"/></svg>',
@@ -1509,6 +1510,9 @@
     off: '<svg viewBox="0 0 384 512" aria-hidden="true"><path fill="currentColor" d="M223.5 32C100 32 0 132.3 0 256S100 480 223.5 480c60.6 0 115.5-24.2 155.8-63.4c5-4.9 6.3-12.5 3.1-18.7s-10.1-9.7-17-8.5c-9.8 1.7-19.8 2.6-30.1 2.6c-96.9 0-175.5-78.8-175.5-176c0-65.8 36-123.1 89.3-153.3c6.1-3.5 9.2-10.5 7.7-17.3s-7.3-11.9-14.3-12.5c-6.3-.5-12.6-.8-19-.8z"/></svg>',
     wait: '<svg viewBox="0 0 384 512" aria-hidden="true"><path fill="currentColor" d="M32 0C14.3 0 0 14.3 0 32S14.3 64 32 64l0 11c0 42.4 16.9 83.1 46.9 113.1L146.7 256 78.9 323.9C48.9 353.9 32 394.6 32 437l0 11c-17.7 0-32 14.3-32 32s14.3 32 32 32l320 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l0-11c0-42.4-16.9-83.1-46.9-113.1L237.3 256l67.9-67.9c30-30 46.9-70.7 46.9-113.1l0-11c17.7 0 32-14.3 32-32S369.7 0 352 0L32 0zM96 75l0-11 192 0 0 11c0 25.5-10.1 49.9-28.1 67.9L192 210.7l-67.9-67.9C106.1 124.9 96 100.5 96 75z"/></svg>',
     decide: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M6 21h12M12 6l7 1M12 6L5 7M3 14l2-7 2 7a2 2 0 0 1-4 0zM17 14l2-7 2 7a2 2 0 0 1-4 0z"/></svg>',
+    camera: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="14" rx="3"/><circle cx="12" cy="13" r="3.5"/><path d="M8 6l1.5-2.5h5L16 6"/></svg>',
+    pin: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/></svg>',
+    mail: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3.5 7.5L12 13l8.5-5.5"/></svg>',
     pen: '<svg viewBox="0 0 512 512" aria-hidden="true"><path fill="currentColor" d="M362.7 19.3L314.3 67.7 444.3 197.7l48.4-48.4c25-25 25-65.5 0-90.5L453.3 19.3c-25-25-65.5-25-90.5 0zm-71 71L58.6 323.5c-10.4 10.4-18 23.3-22.2 37.4L1 481.2C-1.5 489.7 .8 498.8 7 505s15.3 8.5 23.7 6.1l120.3-35.4c14.1-4.2 27-11.8 37.4-22.2L421.7 220.3 291.7 90.3z"/></svg>'
   };
   function fqClone(o) { return JSON.parse(JSON.stringify(o)); }
@@ -2271,15 +2275,102 @@
   }
 
 
+  // Marketing tab styles (F 2026-11-08). Same language as Founder HQ: white
+  // 28px cards on the lavender ground, italic 800 numerals, teal = shoppers,
+  // rose = vendors, violet = emphasis, green = good. Dark rules keyed on html.lk-dark.
+  function injectMarketingCSS() {
+    if (document.getElementById('lokali-marketing-styles')) return;
+    var st = document.createElement('style');
+    st.id = 'lokali-marketing-styles';
+    var D = 'html.lk-dark ';
+    st.textContent = [
+      ".lk-mk-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;}",
+      ".lk-mk-ctl{display:flex;align-items:center;gap:12px;flex:0 0 auto;}",
+      ".lk-ash .lk-mk-ctl select.lk-ash-search{width:auto;min-width:150px;padding:10px 36px 10px 14px;}",
+      ".lk-mk-read{font-size:12.5px;font-weight:600;color:#5E5873;white-space:nowrap;}",
+      ".lk-mk-body{display:flex;flex-direction:column;gap:20px;}",
+      ".lk-mk-body .lk-fq-row{margin:0;}",
+      ".lk-mk-grid2{display:grid;grid-template-columns:1.35fr 1fr;gap:20px;}.lk-mk-grid2.rev{grid-template-columns:1fr 1.35fr;}",
+      ".lk-mk-grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;}",
+      ".lk-mk-card{min-width:0;}",
+      ".lk-ash .lk-mk-card h2{font-size:clamp(22px,2.2vw,28px);line-height:1.2;letter-spacing:-.025em;font-weight:800;margin:0 0 14px;text-wrap:balance;}",
+      ".lk-ash .lk-mk-card h2 em{font-style:italic;color:#6002EE;}",
+      ".lk-mk-h4{margin:18px 0 8px;font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#5E5873;}",
+      ".lk-mk-note{margin:12px 0 0;font-size:13px;line-height:1.55;font-weight:600;color:#5E5873;}",
+      ".lk-mk-foot{margin:0;padding:4px 6px 0;font-size:12.5px;line-height:1.6;font-weight:600;color:#5E5873;}",
+      ".lk-mk-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;}.lk-mk-tiles.two,.lk-mk-period .lk-mk-tiles{grid-template-columns:repeat(2,minmax(0,1fr));}",
+      ".lk-mk-tile{display:flex;flex-direction:column;gap:3px;border-radius:18px;padding:14px 16px;background:#F7F2FF;min-width:0;}",
+      ".lk-mk-tile .l{font-size:12.5px;font-weight:700;color:#5E5873;line-height:1.3;}",
+      ".lk-mk-tile .n{font-size:30px;font-weight:800;font-style:italic;letter-spacing:-.045em;line-height:1.05;color:#4A1DB0;}",
+      ".lk-mk-tile .n small{font-size:13px;font-style:normal;font-weight:700;letter-spacing:0;color:#5E5873;}",
+      ".lk-mk-tile .d{font-size:12px;font-weight:600;line-height:1.4;color:#5E5873;}",
+      ".lk-mk-tile.up .d{color:#1A6640;}.lk-mk-tile.warn .d{color:#A63D74;}",
+      ".lk-mk-tiles.teal .lk-mk-tile{background:#E0F4F5;}.lk-mk-tiles.teal .lk-mk-tile .n{color:#0F6B74;}",
+      ".lk-mk-cats{margin-top:14px;}.lk-mk-cats .lk-fq-cat{flex-wrap:wrap;}",
+      ".lk-mk-wait{flex:1 0 100%;font-size:12px;font-weight:600;color:#A63D74;padding:0 0 8px;margin-top:-4px;}",
+      ".lk-mk-card .lk-fq-bar{margin:4px 0 2px;}",
+      ".lk-mk-chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px;}",
+      ".lk-mk-bars{display:flex;flex-direction:column;gap:8px;}",
+      ".lk-mk-bar{display:grid;grid-template-columns:minmax(120px,1.1fr) minmax(0,2fr) auto;align-items:center;gap:12px;font-size:13.5px;}",
+      ".lk-mk-bar .lab{font-weight:700;color:#2B2640;line-height:1.3;}.lk-mk-bar .lab small{display:block;font-weight:600;color:#5E5873;font-size:12px;}",
+      ".lk-mk-bar .track{position:relative;height:14px;border-radius:999px;background:#F3EBFF;overflow:visible;}",
+      ".lk-mk-bar .track i{display:block;height:100%;border-radius:999px;background:#6002EE;min-width:2px;}",
+      ".lk-mk-bar .track u{position:absolute;top:-3px;width:2px;height:20px;background:#A63D74;border-radius:1px;}",
+      ".lk-mk-bar .val{font-weight:800;color:#2B2640;white-space:nowrap;}.lk-mk-bar .val small{font-weight:600;color:#5E5873;}",
+      ".lk-mk-table{width:100%;border-collapse:collapse;margin:14px 0 0;font-size:13.5px;}",
+      ".lk-mk-table th{text-align:left;font-size:11.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#5E5873;padding:0 8px 8px 0;border-bottom:1px solid #F1EAFD;}",
+      ".lk-mk-table td{padding:9px 8px 9px 0;border-bottom:1px solid #F1EAFD;color:#2B2640;font-weight:600;vertical-align:top;}",
+      ".lk-mk-table td:first-child{font-weight:700;}",
+      ".lk-mk-table .num{text-align:right;padding-right:0;padding-left:8px;white-space:nowrap;font-variant-numeric:tabular-nums;}",
+      ".lk-mk-table tr:last-child td{border-bottom:0;}",
+      ".lk-mk-table .sus{color:#A63D74;}",
+      ".lk-mk-recent{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;}",
+      ".lk-mk-recent li{padding:10px 0;border-bottom:1px solid #F1EAFD;}.lk-mk-recent li:last-child{border-bottom:0;}",
+      ".lk-mk-recent .top{display:flex;justify-content:space-between;gap:12px;align-items:baseline;}",
+      ".lk-ash .lk-mk-recent a.nm{font-weight:800;color:#2B2640;text-decoration:none;}.lk-ash .lk-mk-recent a.nm:hover{color:#6002EE;}",
+      ".lk-mk-recent .wh{font-size:12px;font-weight:600;color:#5E5873;white-space:nowrap;}",
+      ".lk-mk-recent .meta{font-size:12.5px;font-weight:600;color:#5E5873;line-height:1.45;margin-top:2px;}",
+      ".lk-mk-posts{list-style:none;margin:14px 0 0;padding:0;display:flex;flex-direction:column;gap:8px;}",
+      ".lk-mk-posts li{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;color:#2B2640;}",
+      ".lk-mk-posts .st{flex:0 0 auto;font-size:11.5px;font-weight:800;border-radius:999px;padding:3px 10px;background:#E4F7EE;color:#1A6640;}",
+      ".lk-mk-posts .st.draft{background:#FBE9F2;color:#A63D74;}.lk-mk-posts .st.skipped{background:#F3EBFF;color:#4A1DB0;}",
+      ".lk-mk-posts .tx{flex:1 1 auto;min-width:0;}",
+      ".lk-ash .lk-mk-posts a.op{font-weight:800;color:#6002EE;text-decoration:none;white-space:nowrap;}",
+      ".lk-mk-emailhost{margin-top:4px;}",
+      ".lk-mk-cols{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;}",
+      ".lk-mk-col{display:flex;flex-direction:column;gap:4px;background:#F7F2FF;border-radius:18px;padding:14px 16px;min-width:0;}",
+      ".lk-mk-col .l{font-size:12.5px;font-weight:700;color:#5E5873;}",
+      ".lk-mk-col .n{font-size:28px;font-weight:800;font-style:italic;letter-spacing:-.04em;color:#4A1DB0;line-height:1.1;}",
+      ".lk-mk-col .ch{display:flex;align-items:flex-end;gap:3px;height:56px;margin:8px 0 4px;}",
+      ".lk-mk-col .ch i{flex:1 1 0;display:block;border-radius:3px 3px 0 0;background:#C9B3F2;min-height:3px;}.lk-mk-col .ch i.now{background:#6002EE;}",
+      ".lk-mk-col .d{font-size:11.5px;font-weight:600;color:#5E5873;}",
+      "@media (max-width:1100px){.lk-mk-grid3{grid-template-columns:repeat(2,minmax(0,1fr));}.lk-mk-cols{grid-template-columns:repeat(2,minmax(0,1fr));}}",
+      "@media (max-width:991px){.lk-mk-grid2,.lk-mk-grid2.rev,.lk-mk-grid3{grid-template-columns:1fr;gap:14px;}.lk-mk-body{gap:14px;}.lk-mk-tiles{grid-template-columns:repeat(2,minmax(0,1fr));}}",
+      "@media (max-width:560px){.lk-mk-tiles,.lk-mk-tiles.two,.lk-mk-period .lk-mk-tiles,.lk-mk-cols{grid-template-columns:1fr;}.lk-mk-bar{grid-template-columns:1fr;gap:4px;}.lk-mk-bar .val{justify-self:end;}}",
+      /* dark */
+      D + ".lk-mk-read," + D + ".lk-mk-note," + D + ".lk-mk-foot," + D + ".lk-mk-h4," + D + ".lk-mk-tile .l," + D + ".lk-mk-tile .d," + D + ".lk-mk-tile .n small," + D + ".lk-mk-bar .lab small," + D + ".lk-mk-bar .val small," + D + ".lk-mk-table th," + D + ".lk-mk-recent .wh," + D + ".lk-mk-recent .meta," + D + ".lk-mk-col .l," + D + ".lk-mk-col .d," + D + ".lk-mk-wait{color:#B8B2CF;}",
+      D + ".lk-mk-bar .lab," + D + ".lk-mk-bar .val," + D + ".lk-mk-table td," + D + ".lk-mk-posts li," + D + ".lk-ash .lk-mk-recent a.nm{color:#F3F1FA;}",
+      D + ".lk-mk-tile," + D + ".lk-mk-col," + D + ".lk-mk-tiles.teal .lk-mk-tile{background:#29223F;}",
+      D + ".lk-mk-tile .n," + D + ".lk-mk-col .n," + D + ".lk-ash .lk-mk-card h2 em{color:#C9B0FF;}" + D + ".lk-mk-tiles.teal .lk-mk-tile .n{color:#7FD3D8;}",
+      D + ".lk-mk-tile.up .d{color:#8FD9B0;}" + D + ".lk-mk-tile.warn .d," + D + ".lk-mk-table .sus{color:#F0A3C9;}",
+      D + ".lk-mk-bar .track{background:#2F2750;}" + D + ".lk-mk-bar .track i{background:#B08CFF;}" + D + ".lk-mk-bar .track u{background:#F0A3C9;}",
+      D + ".lk-mk-table th," + D + ".lk-mk-table td," + D + ".lk-mk-recent li{border-color:#352F4F;}",
+      D + ".lk-mk-posts .st{background:#1F3A2E;color:#8FD9B0;}" + D + ".lk-mk-posts .st.draft{background:#3E2638;color:#F0A3C9;}" + D + ".lk-mk-posts .st.skipped{background:#2F2750;color:#C9B0FF;}",
+      D + ".lk-mk-col .ch i{background:#4A3A7A;}" + D + ".lk-mk-col .ch i.now{background:#B08CFF;}",
+      D + ".lk-ash .lk-mk-posts a.op{color:#C9B0FF;}"
+    ].join('');
+    document.head.appendChild(st);
+  }
+
   function renderAdminShell(mount, acc, name) {
-    injectAdminCSS(); injectAdminShellCSS(); injectAdminHomeCSS(); injectAdminDarkCSS(); injectFounderCSS();
+    injectAdminCSS(); injectAdminShellCSS(); injectAdminHomeCSS(); injectAdminDarkCSS(); injectFounderCSS(); injectMarketingCSS();
     mount.style.maxWidth = '1320px';
     var a = state.admin, ov = a.overview;
     var SAPI = window.LokaliSupabaseAPI;
     function T(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
 
     var shell = T('div', 'lk-ash');
-    var VIEWS = [['today', 'Today'], ['vendors', 'Vendors'], ['prospects', 'Prospects'], ['insights', 'Insights']];
+    var VIEWS = [['today', 'Today'], ['vendors', 'Vendors'], ['prospects', 'Prospects'], ['marketing', 'Marketing'], ['insights', 'Insights']];
 
     // phone top bar + drawer overlay (same behaviour as the vendor dashboard)
     var bar = T('div', 'lk-ash-bar'); var barTitle = T('span', null, 'Today'); bar.appendChild(barTitle);
@@ -3212,6 +3303,323 @@
       load();
     }
 
+    // ── MARKETING (F 2026-11-08, mounted on first open) ──────────────────────
+    // "Build a marketing tab on my dashboard ... optimized for data and making
+    // decisions. Nothing can be made up." One RPC (admin_marketing, docs/supabase/
+    // patch_admin_marketing.sql) carries every database number; the email card
+    // reads Brevo through /admin/marketing-email (the key stays on the server).
+    // Every figure on the page is a live read; where a source does not exist yet
+    // (Instagram reach) the card says so instead of guessing.
+    var marketingBuilt = false, mkDays = 30;
+    function buildMarketing() {
+      if (marketingBuilt) return; marketingBuilt = true;
+      var v = views.marketing;
+      function n(x) { return (Number(x) || 0).toLocaleString('en-US'); }
+      function num(x) { return Number(x) || 0; }
+      function pct(a, b) { return b ? Math.round((num(a) / num(b)) * 100) : 0; }
+      function plural(k, one, many) { k = num(k); return n(k) + ' ' + (k === 1 ? one : (many || one + 's')); }
+      function when(iso) { if (!iso) return ''; try { return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); } catch (e) { return ''; } }
+      function ago(iso) { if (!iso) return ''; var d = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000); return d <= 0 ? 'today' : d === 1 ? 'yesterday' : d + ' days ago'; }
+      function delta(cur, prev, what) {
+        cur = num(cur); prev = num(prev);
+        if (!prev) return cur ? 'none in the ' + mkDays + ' days before' : 'none in either period';
+        if (!cur) return 'none this period, ' + n(prev) + ' the ' + mkDays + ' days before';
+        var d = Math.round(((cur - prev) / prev) * 100);
+        return (d >= 0 ? 'up ' : 'down ') + Math.abs(d) + '% from ' + n(prev) + (what ? ' ' + what : '');
+      }
+      function deltaCls(cur, prev) { cur = num(cur); prev = num(prev); if (!prev && !cur) return ''; if (!prev) return 'up'; return cur >= prev ? 'up' : 'warn'; }
+      function link(href, text, cls) { var a = T('a', cls || null, text); a.href = href; a.target = '_blank'; a.rel = 'noopener'; return a; }
+      function card(cls, ico, kick, title) { var c = fqCard('lk-mk-card' + (cls ? ' ' + cls : '')); var h = fqHead(c, ico, kick, title); return { el: c, h: h }; }
+      function note(text, cls) { return T('p', 'lk-mk-note' + (cls ? ' ' + cls : ''), text); }
+      function tile(label, value, small, detail, cls) {
+        var k = T('div', 'lk-mk-tile' + (cls ? ' ' + cls : '')); k.appendChild(T('span', 'l', label));
+        var nn = T('span', 'n', value); if (small) nn.appendChild(T('small', null, ' ' + small)); k.appendChild(nn);
+        if (detail) k.appendChild(T('span', 'd', detail)); return k;
+      }
+      function bars(rows, opts) {
+        // rows: [{label, n, prev?, sub?}] -> label | bar | number
+        opts = opts || {}; var max = 0; rows.forEach(function (r) { max = Math.max(max, num(r.n), num(r.prev)); });
+        var box = T('div', 'lk-mk-bars' + (opts.cls ? ' ' + opts.cls : ''));
+        rows.forEach(function (r) {
+          var row = T('div', 'lk-mk-bar'); var lab = T('span', 'lab', r.label); if (r.sub) lab.appendChild(T('small', null, r.sub)); row.appendChild(lab);
+          var track = T('span', 'track'); var fill = T('i'); fill.style.width = (max ? Math.max(1, Math.round((num(r.n) / max) * 100)) : 0) + '%'; track.appendChild(fill);
+          if (r.prev != null && max) { var ghost = T('u'); ghost.style.left = Math.min(100, Math.round((num(r.prev) / max) * 100)) + '%'; ghost.title = n(r.prev) + ' the period before'; track.appendChild(ghost); }
+          row.appendChild(track);
+          var val = T('span', 'val', n(r.n)); if (r.prev != null) val.appendChild(T('small', null, ' / ' + n(r.prev))); row.appendChild(val);
+          box.appendChild(row);
+        });
+        return box;
+      }
+      function table(head, rows, cls) {
+        var t = T('table', 'lk-mk-table' + (cls ? ' ' + cls : '')), th = T('thead'), tr = T('tr');
+        head.forEach(function (h, i) { tr.appendChild(T('th', i ? 'num' : null, h)); }); th.appendChild(tr); t.appendChild(th);
+        var tb = T('tbody');
+        rows.forEach(function (r) { var x = T('tr'); r.forEach(function (c, i) { var td = T('td', i ? 'num' : null); if (c && c.nodeType) td.appendChild(c); else td.textContent = c == null ? '' : String(c); x.appendChild(td); }); tb.appendChild(x); });
+        t.appendChild(tb); return t;
+      }
+      var HOW = { own: 'Signed up on their own', claim_card: 'You built the page for them', 'prospect:instagram': 'Your Instagram note', 'prospect:email': 'Your email note', 'prospect:text': 'Your text message', 'prospect:in_person': 'Met in person, then a note' };
+      function howLabel(k) { return HOW[k] || (String(k).indexOf('prospect:') === 0 ? 'Your note (' + String(k).slice(9) + ')' : String(k)); }
+      var CHAN = { instagram: 'Instagram DM', email: 'Email', text: 'Text message', in_person: 'In person', unknown: 'Not noted' };
+      var REF = { direct: 'Typed in or from an app (direct)', external: 'From another website', market: 'The Market', share: 'A shared link', internal: 'From inside Lokali', unknown: 'Unknown' };
+      var PAGE = { storefront: 'Storefronts', home: 'Home', market: 'The Market', pricing: 'Pricing', about: 'About', features: 'Features', guides: 'Guides', contact: 'Contact', start: 'Start Here', week: 'This Week', listing: 'Listings', product: 'Products', service: 'Services', other: 'Other pages' };
+      var QRC = { 'flyer/print': 'Printed flyer', 'vendor/print': 'Vendor QR cards', 'vendor-circle/screen': 'Circle screen loop', 'unknown/': 'Unknown' };
+      function eventLabel(key) { var m = /^([a-z]{3})(\d{1,2})-(\d{4})$/.exec(String(key || '')); if (!m) return String(key || 'Event'); var mon = { jan: 'Jan', feb: 'Feb', mar: 'Mar', apr: 'Apr', may: 'May', jun: 'Jun', jul: 'Jul', aug: 'Aug', sep: 'Sep', oct: 'Oct', nov: 'Nov', dec: 'Dec' }[m[1]] || m[1]; return 'Vendor Circle, ' + mon + ' ' + m[2] + ', ' + m[3]; }
+      // the eight demand categories of TODO #233, by category slug; realtor and lender
+      // has no category of its own and comes from the two subcategories
+      var DEMAND = [['home', 'Home services'], ['beauty', 'Beauty'], ['wellness', 'Health and wellness'], ['food', 'Food'], ['events', 'Events'], ['children', 'Children and education'], ['professional', 'Professional services']];
+
+      var head = T('div', 'lk-ash-h lk-mk-head'), hl = T('div'); hl.appendChild(T('p', 'lk-fq-eyebrow', 'Marketing'));
+      var story = T('h2', 'lk-ah-story', 'Reading the numbers…'); hl.appendChild(story);
+      var sub = T('p', null, 'Every number on this page is read live from Supabase and Brevo. Nothing is estimated, and where a source is missing the card says so.'); hl.appendChild(sub); head.appendChild(hl);
+      var ctl = T('div', 'lk-mk-ctl'); var sel = T('select', 'lk-ash-search'); sel.setAttribute('aria-label', 'Period');
+      [[7, 'Last 7 days'], [30, 'Last 30 days'], [90, 'Last 90 days']].forEach(function (o) { var op = T('option', null, o[1]); op.value = String(o[0]); if (o[0] === mkDays) op.selected = true; sel.appendChild(op); });
+      ctl.appendChild(sel); var readAt = T('span', 'lk-mk-read', ''); ctl.appendChild(readAt); head.appendChild(ctl);
+      v.appendChild(head);
+      var body = T('div', 'lk-mk-body'); v.appendChild(body);
+      body.appendChild(T('div', 'lk-ash-note', 'Loading the marketing numbers…'));
+      if (!SAPI || !SAPI.admin || !SAPI.admin.marketing) { body.innerHTML = ''; body.appendChild(T('div', 'lk-ash-note', 'The marketing tab needs the newer client script.')); return; }
+
+      sel.addEventListener('change', function () { mkDays = Number(sel.value) || 30; load(); });
+
+      var emailCache = null;
+      function load() {
+        body.innerHTML = ''; body.appendChild(T('div', 'lk-ash-note', 'Loading the marketing numbers…'));
+        SAPI.admin.marketing(mkDays).then(function (res) {
+          var d = res && res.data;
+          body.innerHTML = '';
+          if (!d || d.ok !== true) {
+            var why = d && d.reason === 'not_admin' ? 'Only the admin can read this.' : (res && res.error ? 'The database side is not installed yet (patch_admin_marketing.sql).' : 'The numbers could not load. Refresh the page to try again.');
+            body.appendChild(T('div', 'lk-ash-note', why)); story.textContent = 'The marketing numbers could not load.'; return;
+          }
+          try { readAt.textContent = 'Read ' + new Date(d.generated_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }); } catch (e) {}
+          paint(d);
+          if (emailCache) paintEmail(emailCache); else if (SAPI.admin.marketingEmail) SAPI.admin.marketingEmail().then(function (r) { emailCache = r; paintEmail(r); }); else paintEmail({ data: null, error: 'no_route' });
+        }).catch(function () { body.innerHTML = ''; body.appendChild(T('div', 'lk-ash-note', 'The numbers could not load. Refresh the page to try again.')); });
+      }
+
+      var emailHost = null;
+      function paint(d) {
+        var P = d.days, ring = d.ring || {}, tr = d.traffic || {}, ld = d.leads || {}, sh = d.shoppers || {}, ou = d.outreach || {}, cc = d.claim_cards || {}, ct = d.content || {};
+        var byCat = {}; (d.categories || []).forEach(function (c) { byCat[c.slug] = c; });
+        var rl = d.realtor_lender || {};
+        var demand = DEMAND.map(function (x) { var c = byCat[x[0]] || {}; var live = num(c.live_ring); if (x[0] === 'home') live = Math.max(0, live - num(rl.live_ring)); return { key: x[0], name: x[1], live: live, waiting: num(c.waiting), fresh: num(c.new_ring) }; });
+        demand.push({ key: 'realtor', name: 'Realtor and lender', live: num(rl.live_ring), waiting: num(rl.waiting), fresh: 0 });
+        demand.sort(function (a, b) { return ((a.live >= 3) - (b.live >= 3)) || (a.live - b.live) || a.name.localeCompare(b.name); });
+        var gaps = demand.filter(function (c) { return c.live < 3; }), toFill = 0; gaps.forEach(function (g) { toFill += 3 - g.live; });
+        var slots = demand.length * 3, filled = 0; demand.forEach(function (c) { filled += Math.min(3, c.live); });
+
+        // ── story ──
+        story.innerHTML = '';
+        if (gaps.length) {
+          story.appendChild(T('em', null, fqWords(toFill) + (toFill === 1 ? ' storefront' : ' storefronts')));
+          story.appendChild(document.createTextNode(' between The Woodlands and a real city: ' + gaps.map(function (g) { return g.name.toLowerCase() + ' ' + g.live + ' of 3'; }).join(', ') + '.'));
+        } else { story.appendChild(T('em', null, 'Every demand category has three.')); story.appendChild(document.createTextNode(' The Woodlands is a real city. The next milestone is 100 live in the ring.')); }
+
+        // ── row 1: the milestone + this period ──
+        var row1 = T('div', 'lk-fq-row lk-mk-grid2');
+        var mile = card('lk-mk-mile', 'road', 'The milestone', '');
+        mile.h.h.textContent = ''; mile.h.h.appendChild(T('em', null, n(filled))); mile.h.h.appendChild(document.createTextNode(' of ' + slots + ' slots filled. ' + n(ring.live_ring) + ' live in the ring, ' + n(ring.live_total) + ' in all.'));
+        var bar = fqT('div', 'lk-fq-bar'); bar.setAttribute('role', 'img'); bar.setAttribute('aria-label', filled + ' of ' + slots + ' category slots filled');
+        var fill = fqT('b'); fill.style.width = Math.round((filled / slots) * 100) + '%'; bar.appendChild(fill); mile.el.appendChild(bar);
+        var grid = fqT('div', 'lk-fq-cats lk-mk-cats');
+        demand.forEach(function (c) {
+          var row = fqT('div', 'lk-fq-cat'); row.appendChild(fqT('span', 'nm', c.name));
+          var dots = fqT('span', 'dots'); dots.setAttribute('aria-hidden', 'true');
+          for (var k = 0; k < 3; k++) dots.appendChild(fqT('i', k < c.live ? null : 'off'));
+          dots.appendChild(fqT('span', 'x', c.live > 3 ? '+' + (c.live - 3) : '')); row.appendChild(dots);
+          var chip = fqT('span', 'ch' + (c.live < 3 ? ' need' : ''), c.live >= 3 ? 'Floor met' : 'Need ' + (3 - c.live));
+          if (c.live < 3 && c.waiting) chip.title = c.waiting + ' started, not live yet'; row.appendChild(chip);
+          if (c.live < 3 && c.waiting) row.appendChild(fqT('span', 'lk-mk-wait', c.waiting + ' started, not live'));
+          row.setAttribute('aria-label', c.name + ': ' + c.live + ' live'); grid.appendChild(row);
+        });
+        mile.el.appendChild(grid);
+        var pace = T('p', 'lk-fq-clo');
+        pace.appendChild(document.createTextNode(plural(ring.new_ring, 'storefront') + ' went live in the ring in the last ' + P + ' days (' + n(ring.new_ring_prev) + ' the ' + P + ' before). ' + n(ring.created_live) + ' of the ' + plural(ring.created, 'account') + ' created in that window are live; ' + n(ring.unpublished) + ' approved storefronts are still unpublished. '));
+        if (gaps.length) pace.appendChild(document.createTextNode('A send to a 0 or a 1 moves the city; a send to an 8 does not. '));
+        pace.appendChild(T('span', 'lk-fq-sign', 'Clo')); mile.el.appendChild(pace);
+        row1.appendChild(mile.el);
+
+        var per = card('lk-mk-period', 'week', 'This period', 'The last ' + P + ' days, against the ' + P + ' before.');
+        var tiles = T('div', 'lk-mk-tiles');
+        tiles.appendChild(tile('New live in the ring', n(ring.new_ring), null, delta(ring.new_ring, ring.new_ring_prev), deltaCls(ring.new_ring, ring.new_ring_prev)));
+        var reach = num(ld.inquiries) + num(ld.taps), reachPrev = num(ld.inquiries_prev) + num(ld.taps_prev);
+        tiles.appendChild(tile('Shopper reach-outs', n(reach), null, n(ld.inquiries) + ' inquiries, ' + n(ld.taps) + ' taps on a contact · ' + plural(ld.vendors_with_lead, 'storefront') + ' got one · ' + delta(reach, reachPrev), deltaCls(reach, reachPrev)));
+        var sinceNote = ''; try { if (tr.page_since && new Date(tr.page_since).getTime() > Date.now() - (2 * P * 86400000)) sinceNote = ' · page visits counted since ' + when(tr.page_since); } catch (e) {}
+        tiles.appendChild(tile('Visitors', n(tr.visitors), null, 'browsers that keep a cookie, signed-in vendors left out · ' + (sinceNote ? n(tr.visitors_prev) + ' the ' + P + ' days before, but page visits are only counted since ' + when(tr.page_since) + ', so the two do not compare' : delta(tr.visitors, tr.visitors_prev)), sinceNote ? '' : deltaCls(tr.visitors, tr.visitors_prev)));
+        tiles.appendChild(tile('Storefront views', n(tr.views), null, delta(tr.views, tr.views_prev), deltaCls(tr.views, tr.views_prev)));
+        tiles.appendChild(tile('Edit sign-ups on the site', n(sh.subscribers_period), null, n(sh.subscribers) + ' all time through the site form · ' + delta(sh.subscribers_period, sh.subscribers_prev), deltaCls(sh.subscribers_period, sh.subscribers_prev)));
+        tiles.appendChild(tile('Follows', n(sh.follows_period), null, plural(sh.followers, 'person follows', 'people follow') + ' a storefront, all time · ' + delta(sh.follows_period, sh.follows_prev), deltaCls(sh.follows_period, sh.follows_prev)));
+        per.el.appendChild(tiles);
+        row1.appendChild(per.el);
+        body.appendChild(row1);
+
+        // ── row 2: how storefronts arrive + outreach funnel ──
+        var row2 = T('div', 'lk-fq-row lk-mk-grid2 rev');
+        var arr = card('lk-mk-arrive', 'shop', 'How storefronts arrive', '');
+        var arrivals = (d.arrivals || []).slice(); var arrTotal = 0, yours = 0;
+        arrivals.forEach(function (a) { arrTotal += num(a.n); if (a.how !== 'own') yours += num(a.n); });
+        arr.h.h.textContent = '';
+        if (arrTotal) { arr.h.h.appendChild(T('em', null, n(yours) + ' of ' + n(arrTotal))); arr.h.h.appendChild(document.createTextNode(' storefronts that went live in the last ' + P + ' days came through something you did: a note, or a page you built.')); }
+        else arr.h.h.textContent = 'No storefront went live in the last ' + P + ' days.';
+        if (arrTotal) arr.el.appendChild(bars(arrivals.map(function (a) { return { label: howLabel(a.how), n: a.n }; })));
+        var rec = (d.recent || []).slice(0, 6);
+        if (rec.length) {
+          arr.el.appendChild(T('h4', 'lk-mk-h4', 'The last ' + rec.length + ' to go live'));
+          var ul = T('ul', 'lk-mk-recent');
+          rec.forEach(function (r) {
+            var li = T('li'); var top = T('div', 'top'); top.appendChild(link('https://www.golokali.com/' + r.slug, r.name, 'nm'));
+            top.appendChild(T('span', 'wh', when(r.published_at) + (r.ring ? '' : ' · outside the ring'))); li.appendChild(top);
+            var meta = T('div', 'meta', (r.categories || []).join(', ') + ' · ' + howLabel(r.how) + (num(r.photos) ? ' · ' + plural(r.photos, 'photo') : ' · no portfolio photos yet'));
+            li.appendChild(meta); ul.appendChild(li);
+          });
+          arr.el.appendChild(ul);
+          var noPhotos = rec.filter(function (r) { return !num(r.photos); }).length;
+          if (noPhotos) arr.el.appendChild(note(noPhotos + ' of these ' + rec.length + ' have no portfolio photos, so the Reel and the emails cannot feature them yet. A photo ask is the cheapest content move on this page.'));
+        }
+        row2.appendChild(arr.el);
+
+        var out = card('lk-mk-outreach', 'send', 'Outreach', '');
+        out.h.h.textContent = ''; out.h.h.appendChild(T('em', null, n(ou.sent))); out.h.h.appendChild(document.createTextNode(' personal notes sent, ' + n(ou.replied) + ' replied, ' + n(ou.signed_up) + ' signed up, ' + n(ou.live) + ' live.'));
+        var chips = T('div', 'lk-mk-chips');
+        chips.appendChild(T('span', 'lk-fq-chip' + (num(ou.due_now) ? ' r' : ''), n(ou.due_now) + ' due now'));
+        chips.appendChild(T('span', 'lk-fq-chip v', n(ou.waiting) + ' waiting'));
+        chips.appendChild(T('span', 'lk-fq-chip', n(ou.sent_period) + ' sent in the last ' + P + ' days'));
+        if (num(ou.quiet)) chips.appendChild(T('span', 'lk-fq-chip', n(ou.quiet) + ' went quiet'));
+        out.el.appendChild(chips);
+        var bc = (ou.by_channel || []);
+        if (bc.length) out.el.appendChild(table(['By channel', 'Sent', 'Replied', 'Signed up', 'Live'], bc.map(function (r) { return [CHAN[r.channel] || r.channel, n(r.sent), n(r.replied), n(r.signed_up), n(r.live)]; })));
+        var bcat = (ou.by_category || []);
+        if (bcat.length) out.el.appendChild(table(['By category', 'Sent', 'Replied', 'Signed up', 'Live'], bcat.map(function (r) { return [r.category, n(r.sent), n(r.replied), n(r.signed_up), n(r.live)]; })));
+        var tooFew = bc.filter(function (r) { return num(r.sent) < 15; }).length === bc.length;
+        out.el.appendChild(note(tooFew ? 'No channel has 15 sends yet, so none of these rates is a verdict. The table says what happened, not what works.' : 'A channel with 15 or more sends can be judged; the others cannot yet.'));
+        var goP = T('button', 'lk-ash-btn', 'Open Prospects'); goP.type = 'button'; goP.addEventListener('click', function () { go('prospects', true); }); out.el.appendChild(goP);
+        row2.appendChild(out.el);
+        body.appendChild(row2);
+
+        // ── row 3: Instagram · in person · shoppers ──
+        var row3 = T('div', 'lk-fq-row lk-mk-grid3');
+        var ig = card('lk-mk-ig', 'camera', 'Instagram', '');
+        ig.h.h.textContent = ''; ig.h.h.appendChild(T('em', null, plural(ct.published, 'Reel')));
+        ig.h.h.appendChild(document.createTextNode(' published through the pipeline' + (num(ct.published_by_hand) === num(ct.published) && num(ct.published) ? ', all posted by hand for the music.' : (num(ct.published_api) ? ', ' + n(ct.published_api) + ' through the API.' : '.'))));
+        var igT = T('div', 'lk-mk-tiles two');
+        igT.appendChild(tile('Drafts waiting', n(ct.drafts), null, num(ct.drafts) ? 'approve or skip from the review email' : 'nothing waiting', num(ct.drafts) ? 'warn' : ''));
+        igT.appendChild(tile('Last posted', ct.last_published_at ? ago(ct.last_published_at) : 'never', null, ct.last_published_at ? when(ct.last_published_at) : ''));
+        igT.appendChild(tile('Storefronts featured', n(ct.vendors_featured), null, 'in a published Reel'));
+        igT.appendChild(tile('Never featured', n(ct.vendors_never_featured), null, 'live storefronts waiting for a turn', num(ct.vendors_never_featured) ? 'warn' : ''));
+        ig.el.appendChild(igT);
+        var posts = (d.posts || []).slice(0, 5);
+        if (posts.length) {
+          var pl = T('ul', 'lk-mk-posts');
+          posts.forEach(function (p) {
+            var li = T('li'); var st = T('span', 'st ' + p.status, p.status === 'published' ? (p.by_hand ? 'Posted by hand' : 'Posted') : p.status === 'draft' ? 'Draft' : p.status);
+            li.appendChild(st); li.appendChild(T('span', 'tx', (p.kind === 'new_this_week_reel' ? 'New this week Reel' : p.kind) + ' · week of ' + when(p.week_start) + ' · ' + plural(p.vendors, 'storefront')));
+            if (p.permalink) li.appendChild(link(p.permalink, 'Open', 'op')); pl.appendChild(li);
+          });
+          ig.el.appendChild(pl);
+        }
+        ig.el.appendChild(note('Reach, saves and the follower count live inside Instagram and are not read here yet; the token never leaves the server. Meet the Vendor and the Referral Desk are posted from your phone and are not in this table.'));
+        row3.appendChild(ig.el);
+
+        var ip = card('lk-mk-inperson', 'pin', 'In person', '');
+        var ev = (d.events || []);
+        ip.h.h.textContent = '';
+        if (ev.length) { ip.h.h.appendChild(T('em', null, n(ev[0].yes) + ' said yes')); ip.h.h.appendChild(document.createTextNode(' to the ' + eventLabel(ev[0].event).replace('Vendor Circle, ', 'Vendor Circle on ') + '; ' + n(ev[0].yes_not_live) + ' of them had no live storefront.')); }
+        else ip.h.h.textContent = 'No event RSVPs recorded yet.';
+        var ipT = T('div', 'lk-mk-tiles two');
+        ipT.appendChild(tile('Pages you started', n(cc.period), 'in ' + P + ' days', n(cc.period_live) + ' of them live · ' + n(cc.total) + ' all time, ' + n(cc.signed_in) + ' owners signed in, ' + n(cc.live) + ' live'));
+        var qrP = 0, qrA = 0; (d.qr || []).forEach(function (q) { qrP += num(q.period); qrA += num(q.all); });
+        ipT.appendChild(tile('QR scans', n(qrP), 'in ' + P + ' days', n(qrA) + ' all time'));
+        ip.el.appendChild(ipT);
+        var qr = (d.qr || []).filter(function (q) { return num(q.all); });
+        if (qr.length) ip.el.appendChild(table(['QR code', 'Period', 'All', 'Last'], qr.map(function (q) { return [QRC[q.campaign + '/' + q.medium] || (q.campaign + (q.medium ? ' (' + q.medium + ')' : '')), n(q.period), n(q.all), when(q.last_at)]; })));
+        var qv = (d.qr_vendors || []);
+        if (qv.length) ip.el.appendChild(note('Scanned to: ' + qv.map(function (x) { return x.name + ' (' + n(x.n) + ')'; }).join(', ') + '.'));
+        if (ev.length > 1) ip.el.appendChild(table(['Event', 'Yes', 'No', 'Yes, live'], ev.map(function (e) { return [eventLabel(e.event), n(e.yes), n(e.no), n(e.yes_live)]; })));
+        ip.el.appendChild(note('Markets, the chamber and the Circle itself are not tracked by any table; what you log in Prospects under "Met where" is the only record. ' + ((ou.by_met || []).length ? 'So far: ' + (ou.by_met || []).slice(0, 4).map(function (m) { return m.met_where + ' (' + n(m.rows) + (num(m.signed_up) ? ', ' + n(m.signed_up) + ' signed up' : '') + ')'; }).join(', ') + '.' : '')));
+        row3.appendChild(ip.el);
+
+        var sp = card('lk-mk-shoppers', 'shop', 'Shoppers', '');
+        sp.h.h.textContent = ''; sp.h.h.appendChild(T('em', null, n(sh.subscribers))); sp.h.h.appendChild(document.createTextNode(' signed up for the Edit through the site. ' + plural(sh.followers, 'person follows', 'people follow') + ' a storefront.'));
+        var spT = T('div', 'lk-mk-tiles two teal');
+        spT.appendChild(tile('Vendor posts (dates)', n(sh.vendor_posts), null, num(sh.vendor_posts) ? plural(sh.vendors_posting, 'storefront') + ' posting · ' + n(sh.vendor_posts_period) + ' in ' + P + ' days' : 'nobody has posted a date yet', num(sh.vendor_posts) ? '' : 'warn'));
+        spT.appendChild(tile('Shopper accounts', n(sh.shopper_accounts), null, n(sh.shopper_accounts_period) + ' new in ' + P + ' days · ' + n(sh.waitlist) + ' on the city waitlist'));
+        spT.appendChild(tile('Reviews', n(sh.reviews), null, n(sh.reviews_invited) + ' from the review link · ' + n(sh.reviews_period) + ' in ' + P + ' days'));
+        spT.appendChild(tile('Shares', n(sh.shares_period), 'in ' + P + ' days', n(sh.share_landings_period) + ' landed, ' + n(sh.share_conversions_period) + ' did something after · ' + delta(sh.shares_period, sh.shares_prev)));
+        sp.el.appendChild(spT);
+        emailHost = T('div', 'lk-mk-emailhost'); emailHost.appendChild(note('Reading Brevo…')); sp.el.appendChild(emailHost);
+        row3.appendChild(sp.el);
+        body.appendChild(row3);
+
+        // ── row 4: email campaigns (filled by paintEmail) + where visits come from ──
+        var row4 = T('div', 'lk-fq-row lk-mk-grid2');
+        var em = card('lk-mk-email', 'mail', 'Email', 'Reading Brevo…'); em.el.setAttribute('data-mk', 'email'); row4.appendChild(em.el);
+        var tv = card('lk-mk-traffic', 'road', 'Where visits come from', '');
+        tv.h.h.textContent = ''; tv.h.h.appendChild(T('em', null, n(tr.visitors))); tv.h.h.appendChild(document.createTextNode(' visitors in ' + P + ' days' + (sinceNote ? sinceNote.replace(' · ', ', ') : '') + '.'));
+        var refs = (tr.by_ref || []).filter(function (r) { return num(r.visitors) || num(r.visitors_prev); });
+        if (refs.length) { tv.el.appendChild(T('h4', 'lk-mk-h4', 'By referrer, visitors (the period before after the slash)')); tv.el.appendChild(bars(refs.map(function (r) { return { label: REF[r.ref] || r.ref, n: r.visitors, prev: r.visitors_prev }; }))); }
+        var pages = (tr.by_page || []).slice(0, 7);
+        if (pages.length) { tv.el.appendChild(T('h4', 'lk-mk-h4', 'Pages opened')); tv.el.appendChild(bars(pages.map(function (p) { return { label: PAGE[p.source] || p.source, n: p.n }; }))); }
+        tv.el.appendChild(note('Instagram, Facebook and Google all land in "from another website": the browser does not say which, and no tracking link separates them yet. The Phase 2 attribution build (a per-vendor link) is what would.'));
+        row4.appendChild(tv.el);
+        body.appendChild(row4);
+
+        // ── row 5: twelve weeks ──
+        var wk = (d.weeks || []);
+        if (wk.length) {
+          var w = card('lk-mk-weeks', 'rhythm', 'Twelve weeks', 'Four lines that should all go up and to the right.');
+          var cols = T('div', 'lk-mk-cols');
+          [['live_ring', 'Went live in the ring'], ['created', 'Accounts created'], ['subscribers', 'Edit sign-ups'], ['posts', 'Reels posted']].forEach(function (s) {
+            var box = T('div', 'lk-mk-col'); var max = 0, tot = 0; wk.forEach(function (x) { max = Math.max(max, num(x[s[0]])); tot += num(x[s[0]]); });
+            box.appendChild(T('span', 'l', s[1])); box.appendChild(T('span', 'n', n(tot)));
+            var ch = T('div', 'ch'); ch.setAttribute('role', 'img'); ch.setAttribute('aria-label', s[1] + ' by week: ' + wk.map(function (x) { return num(x[s[0]]); }).join(', '));
+            wk.forEach(function (x, i) { var b = T('i'); b.style.height = (max ? Math.max(4, Math.round((num(x[s[0]]) / max) * 100)) : 4) + '%'; b.title = 'Week of ' + when(x.week) + ': ' + n(x[s[0]]); if (i === wk.length - 1) b.className = 'now'; ch.appendChild(b); });
+            box.appendChild(ch); box.appendChild(T('span', 'd', when(wk[0].week) + ' to this week'));
+            cols.appendChild(box);
+          });
+          w.el.appendChild(cols); body.appendChild(w.el);
+        }
+
+        body.appendChild(T('p', 'lk-mk-foot', 'Definitions: live = approved, active and published. The ring = storefronts that serve The Woodlands. Three in a category is a choice (TODO #233). Realtor and lender has no category of its own and is counted from its two subcategories. Your own storefront is left out of the category floor. Sources: admin_marketing() in Supabase, Brevo campaign statistics.'));
+      }
+
+      function paintEmail(r) {
+        var el = body.querySelector('[data-mk="email"]'); if (!el) return;
+        var hd = el.querySelector('h2'); var old = el.querySelectorAll('.lk-mk-table, .lk-mk-note, .lk-mk-tiles'); old.forEach(function (x) { x.remove(); });
+        var d = r && r.data;
+        if (!d || d.ok !== true) {
+          var why = r && r.error === 'no_route' ? 'The email read needs the newer client script.' : d && d.reason === 'no_key' ? 'Brevo is not connected on the server (BREVO_API_KEY).' : r && r.error === 'not_admin' ? 'Only the admin can read this.' : 'Brevo could not be read right now' + (r && r.error ? ' (' + r.error + ')' : '') + '. The list and campaign numbers are in Brevo itself.';
+          if (hd) hd.textContent = 'Brevo not read.'; el.appendChild(note(why));
+          if (emailHost) { emailHost.innerHTML = ''; emailHost.appendChild(note('The Brevo list total is not available right now.')); }
+          return;
+        }
+        var L = d.lists || {}, cs = (d.campaigns || []);
+        if (hd) { hd.textContent = ''; hd.appendChild(T('em', null, n(L.vendors ? L.vendors.total : 0))); hd.appendChild(document.createTextNode(' on the Circle list, ' + n(L.shoppers ? L.shoppers.total : 0) + ' on the Edit list.')); }
+        var t = T('div', 'lk-mk-tiles two');
+        var vend = cs.filter(function (c) { return c.audience === 'vendors' && c.delivered; }), best = null; vend.forEach(function (c) { if (!best || c.open_rate > best.open_rate) best = c; });
+        var avg = 0; if (vend.length) { var s = 0; vend.forEach(function (c) { s += num(c.open_rate); }); avg = Math.round(s / vend.length); }
+        t.appendChild(tile('Vendor email opens', vend.length ? avg + '%' : 'none sent', null, vend.length ? 'average unique opens across the last ' + plural(vend.length, 'vendor campaign') : ''));
+        var shop = cs.filter(function (c) { return c.audience === 'shoppers'; });
+        t.appendChild(tile('Shopper campaigns sent', n(shop.length), null, shop.length ? 'last: ' + when(shop[0].sent_at) : 'The Neighborhood Edit has not gone out yet', shop.length ? '' : 'warn'));
+        el.appendChild(t);
+        if (cs.length) {
+          el.appendChild(table(['Campaign', 'Sent', 'To', 'Delivered', 'Opened', 'Clicks'], cs.slice(0, 8).map(function (c) {
+            var nm = T('span', null, String(c.name || c.subject || '').slice(0, 44)); nm.title = c.subject || '';
+            var op = T('span', null, n(c.opened) + (c.open_rate != null ? ' (' + c.open_rate + '%)' : ''));
+            var ck = T('span', c.clicks_suspect ? 'sus' : null, n(c.clicks) + (c.clicks_suspect ? ' *' : '')); if (c.clicks_suspect) ck.title = 'More clicks than recipients: automated link checks. Ignore.';
+            return [nm, when(c.sent_at), c.audience === 'vendors' ? 'Vendors' : c.audience === 'shoppers' ? 'Shoppers' : 'Other', n(c.delivered), op, ck];
+          })));
+          if (cs.some(function (c) { return c.clicks_suspect; })) el.appendChild(note('* More clicks than recipients means a mail scanner opened the links; Brevo counts those. Opens are the number to read.'));
+        } else el.appendChild(note('No sent campaigns came back from Brevo.'));
+        if (emailHost) {
+          emailHost.innerHTML = '';
+          var ls = L.shoppers;
+          if (ls) emailHost.appendChild(note(n(ls.total) + ' on the Brevo Edit list in all. Most of those are vendor accounts; the site-form count above is the shopper number.'));
+        }
+      }
+
+      load();
+    }
+
     function go(view, push) {
       if (!views[view]) view = 'today';
       VIEWS.forEach(function (vw) {
@@ -3221,6 +3629,7 @@
       if (view === 'vendors') buildVendors();
       if (view === 'insights') buildInsights();
       if (view === 'prospects') buildProspects();
+      if (view === 'marketing') buildMarketing();
       drawer(false);
       if (push) { try { history.replaceState(null, '', view === 'today' ? location.pathname + location.search : '#' + view); } catch (e) {} try { window.scrollTo(0, 0); } catch (e2) {} }
     }

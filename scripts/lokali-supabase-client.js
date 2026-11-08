@@ -1795,6 +1795,16 @@
       visitInsights: function (days) {
         return withClient(function (c) { return c.rpc('admin_visit_insights', { p_days: days || 30 }); });
       },
+      // Marketing tab on Founder HQ (docs/supabase/patch_admin_marketing.sql,
+      // F 2026-11-08). Its OWN RPC; read-only, is_admin()-gated server-side.
+      marketing: function (days) {
+        return withClient(function (c) { return c.rpc('admin_marketing', { p_days: days || 30 }); });
+      },
+      // Brevo list sizes + last campaigns for the same tab; the key stays on the
+      // server (/admin/marketing-email verifies is_admin). Aggregates only.
+      marketingEmail: function () {
+        return postRoute('/admin/marketing-email', {}, true);
+      },
       // blind spot 3 (2026-10-10): what comes back after an outbound tap (patch_blind_spots.sql)
       closedLoop: function (days) {
         return withClient(function (c) { return c.rpc('admin_closed_loop', { p_days: days || 30 }); });
