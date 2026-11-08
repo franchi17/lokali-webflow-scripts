@@ -1248,7 +1248,7 @@
       : (fc && fc.name
           ? 'Create an account and we\u2019ll email you once a week when ' + (fc.first ? fc.first + ' posts' : 'they post') + ' where they\u2019ll be, what\u2019s new, or a sale. Unsubscribe anytime.'
           : (fc ? 'Create an account to follow vendors and get their market dates each week.'
-                : 'Follow local vendors and hear what they are up to each week.'))));
+                : 'Follow local vendors and hear what they are up to each week. The Neighborhood Edit, our occasional note about new neighbors, comes with your account. Both can be turned off any time.'))));
 
     var err = errorBox(); var info = infoBox();
     card.appendChild(err); card.appendChild(info);
