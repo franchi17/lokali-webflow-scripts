@@ -1486,16 +1486,18 @@
       { t: 'Dancing', d: '[class night]' },
       { t: 'Reading', d: '[your current book]' }
     ] },
+    // 2026-11-09: the Nov 5 gathering is over; the arch now carries the February 2027
+    // Content Day. No date yet (F sets it after the answers are in), so the arch shows
+    // the answer counts from the interest form instead of a countdown.
     event: {
-      name: 'Lokali’s first Vendor Circle gathering', date: '2026-11-05', when: '5 to 7 p.m.',
-      place: 'Hosted by Mia’s Table, Shenandoah', rsvp: 'nov5-2026',
+      name: 'Lokali Content Day', date: '', when: '', place: 'A studio in the area', rsvp: 'content-day-2027',
       prep: [
-        { t: 'Run of show, mixed tables', done: true },
-        { t: 'Category dots and envelope labels', done: true },
-        { t: 'Claim cards for guests not on Lokali yet' },
-        { t: 'Friday: thank-you email with the asks' }
+        { t: 'Read the answers, pick weekday or Saturday' },
+        { t: 'Price the day with the studio' },
+        { t: 'Set the date and tell the Circle' }
       ]
-    }
+    },
+    eventSeed: 'content-day-2027'
   };
   var FQ_ICO = {
     three: '<svg viewBox="0 0 512 512" aria-hidden="true"><path fill="currentColor" d="M152.1 38.2c9.9 8.9 10.7 24 1.8 33.9l-72 80c-4.4 4.9-10.6 7.8-17.2 7.9s-12.9-2.4-17.6-7L7 113C-2.3 103.6-2.3 88.4 7 79s24.6-9.4 33.9 0l22.1 22.1 55.1-61.2c8.9-9.9 24-10.7 33.9-1.8zm0 160c9.9 8.9 10.7 24 1.8 33.9l-72 80c-4.4 4.9-10.6 7.8-17.2 7.9s-12.9-2.4-17.6-7L7 273c-9.4-9.4-9.4-24.6 0-33.9s24.6-9.4 33.9 0l22.1 22.1 55.1-61.2c8.9-9.9 24-10.7 33.9-1.8zM224 96c0-17.7 14.3-32 32-32l224 0c17.7 0 32 14.3 32 32s-14.3 32-32 32l-224 0c-17.7 0-32-14.3-32-32zm0 160c0-17.7 14.3-32 32-32l224 0c17.7 0 32 14.3 32 32s-14.3 32-32 32l-224 0c-17.7 0-32-14.3-32-32zM160 416c0-17.7 14.3-32 32-32l288 0c17.7 0 32 14.3 32 32s-14.3 32-32 32l-288 0c-17.7 0-32-14.3-32-32zM48 368a48 48 0 1 1 0 96 48 48 0 1 1 0-96z"/></svg>',
@@ -1522,6 +1524,11 @@
     ['three', 'week', 'rhythm', 'protected'].forEach(function (k) { if (!Array.isArray(out[k].items)) out[k].items = []; });
     if (!out.three.done || typeof out.three.done !== 'object') out.three.done = {};
     if (!Array.isArray(out.event.prep)) out.event.prep = [];
+    // One-time seed (2026-11-09): a board saved before the Content Day existed, or one
+    // where the Nov 5 event was cleared, gets the Content Day card once. The marker is
+    // saved with the board, so "No event" stays cleared afterwards.
+    if (d && typeof d === 'object' && d.eventSeed !== FQ_DEFAULT.eventSeed && !out.event.name) out.event = fqClone(FQ_DEFAULT.event);
+    out.eventSeed = FQ_DEFAULT.eventSeed;
     return out;
   }
   function fqLocal() { try { var s = localStorage.getItem(FQ_KEY); return s ? JSON.parse(s) : null; } catch (e) { return null; } }
@@ -1693,7 +1700,7 @@
     function eventForm(ctl) {
       var ev = ctl.board.event || {}, form = fqT('div', 'lk-fq-form');
       form.appendChild(fqT('span', 'k', 'Next event'));
-      var fName = field(form, 'Event name', ev.name), fDate = field(form, 'Date', ev.date, 'date'), fWhen = field(form, 'Time', ev.when), fPlace = field(form, 'Where', ev.place), fRsvp = field(form, 'RSVP list key (empty if none)', ev.rsvp);
+      var fName = field(form, 'Event name', ev.name), fDate = field(form, 'Date (empty if not set yet)', ev.date, 'date'), fWhen = field(form, 'Time', ev.when), fPlace = field(form, 'Where', ev.place), fRsvp = field(form, 'Form key (empty if none)', ev.rsvp);
       var l = fqT('label', null, 'Prep, one per line'), ta = fqT('textarea'); ta.rows = 5; ta.value = (ev.prep || []).map(function (x) { return x.t; }).join('\n'); l.appendChild(ta); form.appendChild(l);
       var acts = fqT('div', 'acts'), save = fqT('button', 'lk-ash-btn primary', 'Save'), cancel = fqT('button', 'lk-ash-btn', 'Cancel'), clear = fqT('button', 'lk-ash-btn', 'No event');
       [save, cancel, clear].forEach(function (b) { b.type = 'button'; acts.appendChild(b); }); form.appendChild(acts);
@@ -1715,27 +1722,40 @@
       arch.innerHTML = ''; arch.hidden = !ctl.loaded;
       line2.textContent = ev.name && days != null && days >= 0 && days <= 7 ? 'Big week. You’re ready.' : 'Run the day.';
       if (editing) { arch.appendChild(eventForm(ctl)); return; }
-      if (!ev.name || days == null || days < 0) {
+      // No date yet (the Content Day, until F sets one) is still an event: the arch
+      // shows the form's answer counts in place of the countdown.
+      var dated = days != null;
+      if (!ev.name || (dated && days < 0)) {
         evt.textContent = '';
         arch.appendChild(fqT('span', 'k', 'Next up'));
         arch.appendChild(fqT('h2', null, 'Nothing on the calendar yet'));
         arch.appendChild(fqT('p', null, 'Add your next event and I’ll count it down for you.'));
         arch.appendChild(editBtn('Add an event', ctl)); return;
       }
-      arch.appendChild(fqT('span', 'k', 'The drop'));
-      arch.appendChild(fqT('span', 'big' + (days === 0 ? ' sm' : ''), days === 0 ? 'Today' : String(days)));
-      arch.appendChild(fqT('span', 'sub', days === 0 ? 'it’s happening' : days === 1 ? 'day to go' : 'days to go'));
+      arch.appendChild(fqT('span', 'k', dated ? 'The drop' : 'Next up'));
+      arch.appendChild(fqT('span', 'big' + (!dated || days === 0 ? ' sm' : ''), !dated ? 'Soon' : days === 0 ? 'Today' : String(days)));
+      arch.appendChild(fqT('span', 'sub', !dated ? 'date to come' : days === 0 ? 'it’s happening' : days === 1 ? 'day to go' : 'days to go'));
       arch.appendChild(fqT('h2', null, ev.name));
-      var dl = ''; try { dl = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }); } catch (e) {}
-      var info = fqT('p', null, dl + (ev.when ? ' · ' + ev.when : '')); if (ev.place) info.appendChild(fqT('span', 'pl', ev.place)); arch.appendChild(info);
+      var dl = ''; if (dated) { try { dl = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }); } catch (e) {} }
+      var info = fqT('p', null, dl + (ev.when ? (dl ? ' · ' : '') + ev.when : '')); if (ev.place) info.appendChild(fqT('span', 'pl', ev.place)); arch.appendChild(info);
       var chips = fqT('div', 'chips'); arch.appendChild(chips);
-      var word = dayWord(days, d);
-      evt.textContent = ' ' + word + ' is ' + ev.name.replace(/^Lokali’s /, 'your ') + '.';
+      var word = dated ? dayWord(days, d) : '';
+      evt.textContent = dated ? ' ' + word + ' is ' + ev.name.replace(/^Lokali’s /, 'your ') + '.' : '';
       function paintRsvp(r) {
         chips.innerHTML = '';
+        if (r.interest) {
+          // interest form (content-day-2027): who would use it, which day, who would sponsor
+          var i = r.interest;
+          chips.appendChild(fqT('span', 'w', i.interested + ' interested'));
+          if (i.weekday || i.saturday) chips.appendChild(fqT('span', null, i.weekday + ' weekday · ' + i.saturday + ' Saturday'));
+          if (i.sponsor) chips.appendChild(fqT('span', null, i.sponsor + ' would sponsor'));
+          if (i.notNow) chips.appendChild(fqT('span', null, i.notNow + ' not this time'));
+          if (i.answered) evt.textContent = ' ' + fqWords(i.answered) + (i.answered === 1 ? ' vendor has' : ' vendors have') + ' answered the ' + ev.name.replace(/^Lokali /, '') + ' form' + (i.interested ? ', ' + i.interested + ' interested.' : '.');
+          return;
+        }
         chips.appendChild(fqT('span', 'w', r.yes + ' yes'));
         if (r.no) chips.appendChild(fqT('span', null, r.no + ' can’t make it'));
-        if (r.yes) evt.textContent = ' ' + word + ', ' + r.yes + ' said yes' + (r.notLive ? ', and ' + r.notLive + (r.notLive === 1 ? ' of them still needs' : ' of them still need') + ' a claim card.' : '.');
+        if (r.yes && dated) evt.textContent = ' ' + word + ', ' + r.yes + ' said yes' + (r.notLive ? ', and ' + r.notLive + (r.notLive === 1 ? ' of them still needs' : ' of them still need') + ' a claim card.' : '.');
       }
       var api = window.LokaliSupabaseAPI && window.LokaliSupabaseAPI.vendors;
       if (ev.rsvp && rsvpCache[ev.rsvp]) paintRsvp(rsvpCache[ev.rsvp]);
@@ -1743,8 +1763,14 @@
         api.adminEventRsvps(ev.rsvp).then(function (res) {
           var x = res && res.data; if (!x || x.ok === false) return;
           var rows = x.rows || [];
-          rsvpCache[ev.rsvp] = { yes: Number(x.yes) || 0, no: Number(x.no) || 0, notLive: rows.filter(function (r) { return r.attending && r.storefront !== 'live'; }).length };
-          paintRsvp(rsvpCache[ev.rsvp]);
+          var ans = rows.filter(function (r) { return r.answers && typeof r.answers === 'object'; });
+          var c = { yes: Number(x.yes) || 0, no: Number(x.no) || 0, notLive: rows.filter(function (r) { return r.attending && r.storefront !== 'live'; }).length };
+          if (ans.length) {
+            var cnt = function (k, v) { return ans.filter(function (r) { return r.answers[k] === v; }).length; };
+            c.interest = { answered: ans.length, interested: ans.length - cnt('interest', 'not_this_time'), notNow: cnt('interest', 'not_this_time'), weekday: cnt('timing', 'weekday'), saturday: cnt('timing', 'saturday'), sponsor: cnt('sponsor', 'yes') };
+          }
+          rsvpCache[ev.rsvp] = c;
+          paintRsvp(c);
         }).catch(function () {});
       }
       if ((ev.prep || []).length) {
@@ -2557,7 +2583,6 @@
       appendReportsSection(grid, ov);              // trust and safety first
       appendAddressFlagsSection(grid);
       appendBlockedSendersSection(grid);           // #201
-      appendRsvpSection(grid);                     // #195
       appendInterestSection(grid);                 // Content Day 2027
       appendTagSuggestionsSection(grid, a, null);
       appendSpotlightCreativesSection(grid);
@@ -4010,55 +4035,8 @@
   // #147 — vendors whose address resolved OUTSIDE every area they list (> 50 mi).
   // Its own RPC (admin_address_flags) — admin_overview() stays untouched.
 
-  // ── #195: gathering RSVPs (patch_event_rsvps.sql, /rsvp page) ─────────────
-  // Not a queue: nothing here "needs" F, so rows use the -done class and do not
-  // count in the strip. Yes list first, with the storefront answer, so the
-  // seating chart can be drafted straight from it. "Copy list" = one line per
-  // RSVP for a spreadsheet or the chart.
-  var RSVP_EVENT = 'nov5-2026';
-  function appendRsvpSection(wrap) {
-    var API = window.LokaliSupabaseAPI && window.LokaliSupabaseAPI.vendors;
-    if (!API || !API.adminEventRsvps) return;
-    var host = el('div', 'lk-admin-section lk-admin-section-info');
-    wrap.appendChild(host);
-    var SF = { live: 'storefront live', not_yet: 'setting up a storefront', none: 'no storefront yet' };
-    function draw(d) {
-      host.innerHTML = '';
-      var rows = (d && d.rows) || [];
-      host.className = 'lk-admin-section lk-admin-section-info' + (rows.length ? ' lk-admin-section-wide' : '');
-      var t = el('div', 'lk-admin-qtitle');
-      t.appendChild(document.createTextNode('Gathering RSVPs, November 5'));
-      t.appendChild(el('span', 'lk-admin-qcount', String(d ? d.yes : 0)));
-      host.appendChild(t);
-      host.appendChild(el('p', 'lk-admin-sub', (d ? d.yes : 0) + ' coming, ' + (d ? d.no : 0) + ' can’t make it. From golokali.com/rsvp; a second submit from the same email updates the first.'));
-      if (!rows.length) { host.appendChild(el('div', 'lk-admin-empty', 'No RSVPs yet. They land here the moment the invite goes out.')); return; }
-      var copy = document.createElement('button');
-      copy.type = 'button'; copy.className = 'lk-admin-decline'; copy.textContent = 'Copy list';
-      copy.addEventListener('click', function () {
-        var txt = rows.map(function (r) { return [r.attending ? 'YES' : 'no', r.name, r.business || r.vendor_name || '', r.email, SF[r.storefront] || r.storefront, r.slug ? 'golokali.com/' + r.slug : ''].join('\t'); }).join('\n');
-        var okc = function () { copy.textContent = 'Copied'; setTimeout(function () { copy.textContent = 'Copy list'; }, 1800); };
-        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(okc, function () {});
-      });
-      host.appendChild(copy);
-      rows.forEach(function (r) {
-        var row = el('div', 'lk-admin-row-done');
-        var meta = el('div', 'lk-admin-row-meta');
-        var l1 = el('div', 'lk-admin-row-l1');
-        l1.textContent = (r.attending ? 'Yes · ' : 'No · ') + (r.name || '') + (r.business ? ' · ' + r.business : (r.vendor_name ? ' · ' + r.vendor_name : ''));
-        var l2 = el('div', 'lk-admin-row-l2');
-        var when = ''; try { when = new Date(r.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); } catch (e) {}
-        l2.textContent = (SF[r.storefront] || r.storefront || '') + (r.slug ? ' · golokali.com/' + r.slug : ' · not matched to a storefront') + ' · ' + (r.email || '') + (when ? ' · ' + when : '');
-        meta.appendChild(l1); meta.appendChild(l2); row.appendChild(meta); host.appendChild(row);
-      });
-    }
-    host.appendChild(el('div', 'lk-admin-empty', 'Loading RSVPs…'));
-    API.adminEventRsvps(RSVP_EVENT).then(function (res) {
-      var d = res && res.data;
-      if (!d || d.ok === false) { host.innerHTML = ''; host.appendChild(el('div', 'lk-admin-empty', 'RSVPs could not be loaded.')); return; }
-      draw(d);
-      if (window.__lokPaintAttn) window.__lokPaintAttn();
-    }).catch(function () { host.innerHTML = ''; host.appendChild(el('div', 'lk-admin-empty', 'RSVPs could not be loaded.')); if (window.__lokPaintAttn) window.__lokPaintAttn(); });
-  }
+  // The Nov 5 gathering RSVP list (#195) lived here until 2026-11-09; F no longer needs it on
+  // the dashboard. The rows stay in event_rsvps and admin_event_rsvps('nov5-2026') still reads them.
   // ── Content Day interest (patch_content_day_interest.sql, /rsvp?e=content-day-2027) ──
   // Same table and reader as the RSVPs; the per-person answers live in the jsonb
   // `answers` column (interest / timing / sponsor / note). Informational, like the
