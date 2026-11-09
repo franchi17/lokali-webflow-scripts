@@ -131,6 +131,15 @@
     }
     try { document.title = (EV.kind === 'interest' ? 'Content Day' : 'RSVP') + ' | Lokali'; } catch (e) {}
 
+    // The success / error blocks sit INSIDE the form on the duplicated page (the contact form
+    // keeps them there), so the innerHTML rewrite below would delete them. Lift them out first.
+    // Found 2026-11-09 on the Content Day form: without this no message ever shows after a submit.
+    var done = $('cf-success'), err = $('cf-error');
+    var wrapEl = form.parentElement;
+    if (wrapEl) {
+      if (done && form.contains(done)) wrapEl.appendChild(done);
+      if (err && form.contains(err)) wrapEl.appendChild(err);
+    }
     form.id = 'lokali-rsvp-form'; form.setAttribute('name', 'lokali-rsvp-form'); form.removeAttribute('data-lokali-contact');
     var head =
       '<div class="lok-cf-row">' +
@@ -156,7 +165,6 @@
           '<p class="lok-cf-hint">The gathering is for Lokali vendors. If a friend forwarded this and you’d like a storefront, <a href="/sign-up">it’s free to open one</a>.</p></div>' +
         '<input id="rs-submit" type="submit" class="lok-cf-btn w-button" value="Save my seat">';
 
-    var done = $('cf-success'), err = $('cf-error');
     if (done) { done.id = 'rs-success'; done.style.display = 'none'; }
     if (err) { err.id = 'rs-error'; err.style.display = 'none'; }
 
