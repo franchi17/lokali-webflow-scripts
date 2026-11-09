@@ -2558,6 +2558,7 @@
       appendAddressFlagsSection(grid);
       appendBlockedSendersSection(grid);           // #201
       appendRsvpSection(grid);                     // #195
+      appendInterestSection(grid);                 // Content Day 2027
       appendTagSuggestionsSection(grid, a, null);
       appendSpotlightCreativesSection(grid);
       appendPairingFeedbackSection(grid);
@@ -4057,6 +4058,69 @@
       draw(d);
       if (window.__lokPaintAttn) window.__lokPaintAttn();
     }).catch(function () { host.innerHTML = ''; host.appendChild(el('div', 'lk-admin-empty', 'RSVPs could not be loaded.')); if (window.__lokPaintAttn) window.__lokPaintAttn(); });
+  }
+  // ── Content Day interest (patch_content_day_interest.sql, /rsvp?e=content-day-2027) ──
+  // Same table and reader as the RSVPs; the per-person answers live in the jsonb
+  // `answers` column (interest / timing / sponsor / note). Informational, like the
+  // RSVP list: nothing here needs F, so it never counts in the strip. The counts
+  // at the top are what she prices the day from.
+  var INTEREST_EVENT = 'content-day-2027';
+  function appendInterestSection(wrap) {
+    var API = window.LokaliSupabaseAPI && window.LokaliSupabaseAPI.vendors;
+    if (!API || !API.adminEventRsvps) return;
+    var host = el('div', 'lk-admin-section lk-admin-section-info');
+    wrap.appendChild(host);
+    var IL = { photos: 'Photos', video: 'Video', both: 'Both', not_this_time: 'Not this time' };
+    var TL = { weekday: 'Weekday', saturday: 'Saturday', either: 'Either' };
+    var SL = { yes: 'Yes', maybe: 'Maybe', no: 'No' };
+    function draw(d) {
+      host.innerHTML = '';
+      var rows = ((d && d.rows) || []).filter(function (r) { return r.answers; });
+      host.className = 'lk-admin-section lk-admin-section-info' + (rows.length ? ' lk-admin-section-wide' : '');
+      var n = function (k) { return rows.filter(function (r) { return r.answers.interest === k; }).length; };
+      var interested = rows.length - n('not_this_time');
+      var sponsors = rows.filter(function (r) { return r.answers.sponsor === 'yes'; }).length;
+      var sat = rows.filter(function (r) { return r.answers.timing === 'saturday'; }).length;
+      var wk = rows.filter(function (r) { return r.answers.timing === 'weekday'; }).length;
+      var t = el('div', 'lk-admin-qtitle');
+      t.appendChild(document.createTextNode('Content Day, February 2027'));
+      t.appendChild(el('span', 'lk-admin-qcount', String(interested)));
+      host.appendChild(t);
+      host.appendChild(el('p', 'lk-admin-sub', interested + ' interested: ' + n('both') + ' both, ' + n('photos') + ' photos only, ' + n('video') + ' video only. ' + n('not_this_time') + ' not this time. ' + wk + ' prefer a weekday, ' + sat + ' a Saturday. ' + sponsors + ' would sponsor. From golokali.com/rsvp?e=content-day-2027.'));
+      if (!rows.length) { host.appendChild(el('div', 'lk-admin-empty', 'No answers yet. They land here as vendors fill in the Content Day form.')); return; }
+      var copy = document.createElement('button');
+      copy.type = 'button'; copy.className = 'lk-admin-decline'; copy.textContent = 'Copy list';
+      copy.addEventListener('click', function () {
+        var txt = rows.map(function (r) { var a = r.answers; return [r.name, r.business || r.vendor_name || '', r.email, IL[a.interest] || a.interest, TL[a.timing] || a.timing, SL[a.sponsor] || a.sponsor, a.note || '', r.slug ? 'golokali.com/' + r.slug : ''].join('\t'); }).join('\n');
+        var okc = function () { copy.textContent = 'Copied'; setTimeout(function () { copy.textContent = 'Copy list'; }, 1800); };
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(okc, function () {});
+      });
+      host.appendChild(copy);
+      var table = el('table', 'lk-ah-table');
+      var thead = document.createElement('thead'), hr = document.createElement('tr');
+      ['Who', 'Would use', 'Day', 'Sponsor', 'Note'].forEach(function (h) { var th = document.createElement('th'); th.textContent = h; hr.appendChild(th); });
+      thead.appendChild(hr); table.appendChild(thead);
+      var tb = document.createElement('tbody');
+      rows.forEach(function (r) {
+        var a = r.answers, tr = document.createElement('tr');
+        var who = document.createElement('td');
+        var b = document.createElement('b'); b.textContent = r.name || ''; who.appendChild(b);
+        var sub = el('div', 'lk-admin-row-l2');
+        sub.textContent = (r.business || r.vendor_name || '') + (r.slug ? ' · golokali.com/' + r.slug : '') + ' · ' + (r.email || '');
+        who.appendChild(sub);
+        tr.appendChild(who);
+        [IL[a.interest] || a.interest || '', TL[a.timing] || a.timing || '', SL[a.sponsor] || a.sponsor || '', a.note || ''].forEach(function (v) { var td = document.createElement('td'); td.textContent = v; tr.appendChild(td); });
+        tb.appendChild(tr);
+      });
+      table.appendChild(tb); host.appendChild(table);
+    }
+    host.appendChild(el('div', 'lk-admin-empty', 'Loading Content Day answers…'));
+    API.adminEventRsvps(INTEREST_EVENT).then(function (res) {
+      var d = res && res.data;
+      if (!d || d.ok === false) { host.innerHTML = ''; host.appendChild(el('div', 'lk-admin-empty', 'Content Day answers could not be loaded.')); return; }
+      draw(d);
+      if (window.__lokPaintAttn) window.__lokPaintAttn();
+    }).catch(function () { host.innerHTML = ''; host.appendChild(el('div', 'lk-admin-empty', 'Content Day answers could not be loaded.')); if (window.__lokPaintAttn) window.__lokPaintAttn(); });
   }
   // ── #201: blocked inquiry senders (patch_inquiry_sender_cap.sql) ──────────
   // Addresses on inquiry_blocklist: automatic (kept sending past the 2-per-hour
