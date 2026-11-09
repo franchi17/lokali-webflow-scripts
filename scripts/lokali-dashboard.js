@@ -268,6 +268,10 @@
     '.lok-gc-cr{position:absolute;top:8px;right:8px;}',
     '.lok-gc-chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;border-radius:100px;padding:3px 9px;line-height:1.4;white-space:nowrap;background:rgba(255,255,255,.92);}',
     '.lok-gc-chip.on{color:#1D6A45;}.lok-gc-chip.off{color:#6E6A85;}.lok-gc-chip.pick{color:#6002EE;}',
+    // Plan-capped listing (services.deactivated_by_limit): the server parked it, the vendor did not.
+    // Orange chip + dashed card so it reads as "waiting for the next plan", not as switched off (F 2026-11-09).
+    '.lok-gc-chip.lim{color:#8A4B00;background:#FFF1E3;}',
+    '.lok-gc.is-lim{border:1.5px dashed #E5D4FD;}.lok-gc.is-lim .lok-gc-cover.ph{background:#F7F4FD;}',
     '.lok-gc-chip svg{width:11px;height:11px;}',
     '.lok-gc .drag-handle{opacity:1!important;visibility:visible!important;width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,.92);display:flex;align-items:center;justify-content:center;color:#8E8BA6;cursor:grab;margin:0;}',
     '.lok-gc .drag-handle svg{width:12px;height:12px;}',
@@ -364,7 +368,8 @@
     photo: '<svg viewBox="0 0 512 512" fill="currentColor" aria-hidden="true"><path d="M0 96C0 60.7 28.7 32 64 32H448c35.3 0 64 28.7 64 64V416c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V96zM323.8 202.5c-4.5-6.6-11.9-10.5-19.8-10.5s-15.4 3.9-19.8 10.5l-87 127.6L170.7 297c-4.6-5.7-11.5-9-18.7-9s-14.2 3.3-18.7 9l-64 80c-5.8 7.2-6.9 17.1-2.9 25.4s12.4 13.6 21.6 13.6h96 32H424c8.9 0 17.1-4.9 21.2-12.8s3.6-17.4-1.4-24.7l-120-176zM112 192a48 48 0 1 0 0-96 48 48 0 1 0 0 96z"/></svg>',
     star: '<svg viewBox="0 0 576 512" fill="currentColor" aria-hidden="true"><path d="M316.9 18C311.6 7 300.4 0 288.1 0s-23.4 7-28.8 18L195 150.3 51.4 171.5c-12 1.8-22 10.2-25.7 21.7s-.7 24.2 7.9 32.7L137.8 329 113.2 474.7c-2 12 3 24.2 12.9 31.3s23 8 33.8 2.3l128.3-68.5 128.3 68.5c10.8 5.7 23.9 4.9 33.8-2.3s14.9-19.3 12.9-31.3L438.5 329 542.7 225.9c8.6-8.5 11.7-21.2 7.9-32.7s-13.7-19.9-25.7-21.7L381.2 150.3 316.9 18z"/></svg>',
     ok: '<svg viewBox="0 0 512 512" fill="currentColor" aria-hidden="true"><path d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM369 209L241 337c-9.4 9.4-24.6 9.4-33.9 0l-64-64c-9.4-9.4-9.4-24.6 0-33.9s24.6-9.4 33.9 0l47 47L335 175c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9z"/></svg>',
-    todo: '<svg viewBox="0 0 512 512" fill="currentColor" aria-hidden="true"><path d="M464 256A208 208 0 1 0 48 256a208 208 0 1 0 416 0zM0 256a256 256 0 1 1 512 0A256 256 0 1 1 0 256z"/></svg>'
+    todo: '<svg viewBox="0 0 512 512" fill="currentColor" aria-hidden="true"><path d="M464 256A208 208 0 1 0 48 256a208 208 0 1 0 416 0zM0 256a256 256 0 1 1 512 0A256 256 0 1 1 0 256z"/></svg>',
+    lock: '<svg viewBox="0 0 448 512" fill="currentColor" aria-hidden="true"><path d="M144 144v48H304V144c0-44.2-35.8-80-80-80s-80 35.8-80 80zM80 192V144C80 64.5 144.5 0 224 0s144 64.5 144 144v48h16c35.3 0 64 28.7 64 64V448c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V256c0-35.3 28.7-64 64-64H80z"/></svg>'
   };
   function luiEsc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function luiThumb(url, w) {
@@ -409,6 +414,7 @@
       card.classList.add('lok-gc');
       card.classList.toggle('is-pick', !!o.pick);
       card.classList.toggle('is-off', !o.live);
+      card.classList.toggle('is-lim', !o.live && !!o.byLimit);
       var cover = card.querySelector('.lok-gc-cover');
       if (!cover) {
         cover = luiEl('div', 'lok-gc-cover');
@@ -419,7 +425,7 @@
       luiCoverBg(cover, o.imgUrl || '', o.focus || '');
       var corner = cover.querySelector('.lok-gc-corner');
       corner.innerHTML = (o.pick ? '<span class="lok-gc-chip pick">' + LUI_ICO.star + 'Pick</span>' : '') +
-        '<span class="lok-gc-chip ' + (o.live ? 'on">Live' : 'off">Hidden') + '</span>';
+        '<span class="lok-gc-chip ' + (o.live ? 'on">Live' : (o.byLimit ? 'lim">' + LUI_ICO.lock + 'Unlocks with Pro' : 'off">Hidden')) + '</span>';
       var handle = card.querySelector('.drag-handle');
       var cr = cover.querySelector('.lok-gc-cr');
       if (handle && handle.parentNode !== cr) { handle.setAttribute('title', 'Drag to reorder'); cr.appendChild(handle); }
@@ -531,7 +537,7 @@
         inner.innerHTML = luiEsc(label) + (n != null ? '<span class="lok-seg-n">' + n + '</span>' : '');
         pill.setAttribute('role', 'button'); pill.setAttribute('tabindex', '0');
       }
-      paint(all, 'All', c.all); paint(live, 'Live', c.live); paint(hidden, 'Hidden', c.hidden);
+      paint(all, 'All', c.all); paint(live, 'Live', c.live); paint(hidden, c.hiddenLabel || 'Hidden', c.hidden);
     },
     // Count line moves under the page title; hint text shortened.
     // The count element itself stays where Webflow put it (the page scripts'

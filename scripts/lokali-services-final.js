@@ -77,6 +77,7 @@ const LokaliServicesPage = (() => {
   let _maxServices = null;
   let _maxServicePhotos = null;   // gallery cap (Free=1, Pro=3, Featured=5 — #82)
   let _isProPlan = false;
+  let _planLabel = 'Free';   // 'Free' | 'Pro' | 'Featured' — for the plan-cap copy
   let _hasGallery = false;  // cap > 1: the gallery is the photo widget (2026-09-22; was Pro-only)
   let _isFeaturedPlan = false;   // FEAT-PICKS: the star toggle is a Featured-plan perk         // gallery is a Pro/Featured perk
   let _imagePreviewObjectUrl = null;
@@ -284,6 +285,10 @@ const LokaliServicesPage = (() => {
     if (s.is_active === false || s.is_active === 0) return false;
     return true;
   };
+  // Parked by the plan cap (admin_enforce_plan_limits sets deactivated_by_limit), not by the
+  // vendor. These come back on their own when the plan grows, so the page shows them as
+  // "waiting for Pro" rather than "hidden" (F 2026-11-09: let them see the value of upgrading).
+  const isLimitHidden = (s) => !!s && s.deactivated_by_limit === true && !isServiceActive(s);
 
   const applyThumbPreview = (thumb, url) => {
     if (!thumb || !url) return;
@@ -725,10 +730,14 @@ const LokaliServicesPage = (() => {
 
     const activeCount = services.filter(s => isServiceActive(s)).length;
     const totalCount  = services.length;
+    const limitCount  = services.filter(isLimitHidden).length;
 
     const countEl = el.activeCount();
     if (countEl) {
-      if (_maxServices != null && _maxServices >= 100000) {
+      if (limitCount > 0 && _maxServices != null && _maxServices < 100000) {
+        countEl.textContent =
+          `${activeCount} live on the ${_planLabel} plan · ${limitCount} more written and waiting`;
+      } else if (_maxServices != null && _maxServices >= 100000) {
         // Pro/Featured store an "unlimited" cap as a large sentinel (e.g. 99999999).
         // Don't render the raw number — show that the plan is uncapped.
         countEl.textContent =
@@ -775,6 +784,34 @@ const LokaliServicesPage = (() => {
       if (orderHint) orderHint.style.display = '';
     } else if (orderHint) {
       orderHint.style.display = 'none';
+    }
+
+    // Plan-cap banner: only when the server has parked at least one service. Says what is
+    // true (N ready, plan shows M) and what upgrading does, with the way to the pricing page.
+    let capBanner = document.getElementById('services-pro-banner');
+    if (limitCount > 0 && _maxServices != null && _maxServices < 100000) {
+      if (!capBanner && stack.parentNode) {
+        capBanner = document.createElement('div');
+        capBanner.id = 'services-pro-banner';
+        capBanner.style.cssText =
+          'display:flex;align-items:center;gap:12px;background:#F3EBFF;border-radius:12px;' +
+          'padding:12px 14px;margin:0 0 12px;font-family:"Plus Jakarta Sans",sans-serif;';
+        stack.parentNode.insertBefore(capBanner, stack);
+      }
+      if (capBanner) {
+        const nextPlan = _planLabel === 'Pro' ? 'Featured' : 'Pro';
+        const room = nextPlan === 'Pro' ? ', with room for 15' : '';
+        capBanner.innerHTML =
+          '<svg viewBox="0 0 512 512" width="20" height="20" fill="#6002EE" aria-hidden="true" style="flex:none"><path d="M327.5 85.2c-4.5 1.7-7.5 6-7.5 10.8s3 9.1 7.5 10.8L384 128l21.2 56.5c1.7 4.5 6 7.5 10.8 7.5s9.1-3 10.8-7.5L448 128l56.5-21.2c4.5-1.7 7.5-6 7.5-10.8s-3-9.1-7.5-10.8L448 64 426.8 7.5C425.1 3 420.8 0 416 0s-9.1 3-10.8 7.5L384 64 327.5 85.2zM205.1 73.3c-2.6-5.7-8.3-9.3-14.5-9.3s-11.9 3.6-14.5 9.3L123.3 187.3 9.3 240C3.6 242.6 0 248.3 0 254.6s3.6 11.9 9.3 14.5l114.1 52.7L176 435.8c2.6 5.7 8.3 9.3 14.5 9.3s11.9-3.6 14.5-9.3l52.7-114.1 114.1-52.7c5.7-2.6 9.3-8.3 9.3-14.5s-3.6-11.9-9.3-14.5L257.8 187.4 205.1 73.3zM384 384l-56.5 21.2c-4.5 1.7-7.5 6-7.5 10.8s3 9.1 7.5 10.8L384 448l21.2 56.5c1.7 4.5 6 7.5 10.8 7.5s9.1-3 10.8-7.5L448 448l56.5-21.2c4.5-1.7 7.5-6 7.5-10.8s-3-9.1-7.5-10.8L448 384l-21.2-56.5c-1.7-4.5-6-7.5-10.8-7.5s-9.1 3-10.8 7.5L384 384z"/></svg>' +
+          '<p style="font-size:13px;color:#3C2A6E;margin:0;flex:1;line-height:1.5">' +
+            `You have ${totalCount} services ready. The ${_planLabel} plan shows ${_maxServices}. ` +
+            `On ${nextPlan} all ${totalCount} go live the minute you upgrade${room}.` +
+          '</p>' +
+          `<a href="/pricing" style="font-size:12.5px;font-weight:600;color:#fff;background:#6002EE;border-radius:100px;padding:7px 14px;white-space:nowrap;text-decoration:none">See ${nextPlan}</a>`;
+        capBanner.style.display = '';
+      }
+    } else if (capBanner) {
+      capBanner.style.display = 'none';
     }
 
     services.forEach((service, index) => {
@@ -916,7 +953,7 @@ const LokaliServicesPage = (() => {
       if (window.LokaliListingUI) window.LokaliListingUI.card(card, {
         kind: 'service', imgUrl: service.image_url || '', focus: lcFocusPos(service), hasPrice: !!formatPrice(service),
         spec: lcSpecLabel(service.subcategory), lead: service.lead_time || '',
-        ways: [service.remote ? 'Remote' : ''], live: isServiceActive(service), pick: service.is_featured_pick === true
+        ways: [service.remote ? 'Remote' : ''], live: isServiceActive(service), byLimit: isLimitHidden(service), pick: service.is_featured_pick === true
       });
       stack.appendChild(card);
     });
@@ -924,7 +961,9 @@ const LokaliServicesPage = (() => {
       const LUI = window.LokaliListingUI;
       const liveN = services.filter(isServiceActive).length;
       LUI.afterRender(stack, { picks: services.filter((x) => x.is_featured_pick === true).length, cap: 5, featured: _isFeaturedPlan, customOrder: (el.sortSelect()?.value || 'custom') === 'custom' });
-      LUI.segmented({ all: el.pillAll(), live: el.pillActive(), hidden: el.pillInactive() }, { all: services.length, live: liveN, hidden: services.length - liveN });
+      const hiddenAll = services.filter((s) => !isServiceActive(s));
+      const hiddenLabel = hiddenAll.length > 0 && hiddenAll.every(isLimitHidden) ? 'Waiting' : 'Hidden';
+      LUI.segmented({ all: el.pillAll(), live: el.pillActive(), hidden: el.pillInactive() }, { all: services.length, live: liveN, hidden: services.length - liveN, hiddenLabel });
       LUI.header(document.querySelector('#services-list-view .text-block-33'), el.activeCount(), document.getElementById('services-order-hint'));
       lcPaintViews();
     }
@@ -1176,6 +1215,12 @@ const LokaliServicesPage = (() => {
     if (el.fieldDuration())    el.fieldDuration().value    = service.duration_minutes || '';
     if (el.fieldRemote())      el.fieldRemote().checked    = service.remote || false;
     if (el.fieldIsActive())    el.fieldIsActive().checked  = service.is_active !== false;
+    // Under the Live switch: a parked service says so (the server refuses to switch it on
+    // past the cap, trg_limit_services_activate, so better to say it up front).
+    const liveSub = document.querySelector('.lok-sw-live-s');
+    if (liveSub) liveSub.textContent = isLimitHidden(service)
+      ? 'Waiting for a bigger plan. It goes live on its own the minute you upgrade.'
+      : 'Turn off to hide it without deleting.';
     const note = service.price_note || '';
     if (el.fieldPriceNote())          el.fieldPriceNote().value          = note;
     if (el.fieldPriceNoteStarting())  el.fieldPriceNoteStarting().value  = note;
@@ -2181,6 +2226,7 @@ const LokaliServicesPage = (() => {
         ?? 'free'
       ).toLowerCase();
       _isProPlan = planCode === 'pro' || planCode === 'featured';
+      _planLabel = planCode === 'featured' ? 'Featured' : (planCode === 'pro' ? 'Pro' : 'Free');
       _isFeaturedPlan = planCode === 'featured'; // FEAT-PICKS
       _maxServicePhotos = billing?.features?.max_service_photos
                        ?? billing?.subscription?.max_service_photos
