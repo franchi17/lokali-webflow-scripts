@@ -2331,6 +2331,7 @@
       ".lk-mk-recent .wh{font-size:12px;font-weight:600;color:#5E5873;white-space:nowrap;}",
       ".lk-mk-recent .meta{font-size:12.5px;font-weight:600;color:#5E5873;line-height:1.45;margin-top:2px;}",
       ".lk-mk-posts{list-style:none;margin:14px 0 0;padding:0;display:flex;flex-direction:column;gap:8px;}",
+      ".lk-mk-sub{font-size:11.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#5E5873;margin:16px 0 8px;}",
       ".lk-mk-posts li{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;color:#2B2640;}",
       ".lk-mk-posts .st{flex:0 0 auto;font-size:11.5px;font-weight:800;border-radius:999px;padding:3px 10px;background:#E4F7EE;color:#1A6640;}",
       ".lk-mk-posts .st.draft{background:#FBE9F2;color:#A63D74;}.lk-mk-posts .st.skipped{background:#F3EBFF;color:#4A1DB0;}",
@@ -3499,25 +3500,73 @@
         // ── row 3: Instagram · in person · shoppers ──
         var row3 = T('div', 'lk-fq-row lk-mk-grid3');
         var ig = card('lk-mk-ig', 'camera', 'Instagram', '');
-        ig.h.h.textContent = ''; ig.h.h.appendChild(T('em', null, plural(ct.published, 'Reel')));
-        ig.h.h.appendChild(document.createTextNode(' published through the pipeline' + (num(ct.published_by_hand) === num(ct.published) && num(ct.published) ? ', all posted by hand for the music.' : (num(ct.published_api) ? ', ' + n(ct.published_api) + ' through the API.' : '.'))));
-        var igT = T('div', 'lk-mk-tiles two');
-        igT.appendChild(tile('Drafts waiting', n(ct.drafts), null, num(ct.drafts) ? 'approve or skip from the review email' : 'nothing waiting', num(ct.drafts) ? 'warn' : ''));
-        igT.appendChild(tile('Last posted', ct.last_published_at ? ago(ct.last_published_at) : 'never', null, ct.last_published_at ? when(ct.last_published_at) : ''));
-        igT.appendChild(tile('Storefronts featured', n(ct.vendors_featured), null, 'in a published Reel'));
-        igT.appendChild(tile('Never featured', n(ct.vendors_never_featured), null, 'live storefronts waiting for a turn', num(ct.vendors_never_featured) ? 'warn' : ''));
-        ig.el.appendChild(igT);
-        var posts = (d.posts || []).slice(0, 5);
-        if (posts.length) {
-          var pl = T('ul', 'lk-mk-posts');
-          posts.forEach(function (p) {
-            var li = T('li'); var st = T('span', 'st ' + p.status, p.status === 'published' ? (p.by_hand ? 'Posted by hand' : 'Posted') : p.status === 'draft' ? 'Draft' : p.status);
-            li.appendChild(st); li.appendChild(T('span', 'tx', (p.kind === 'new_this_week_reel' ? 'New this week Reel' : p.kind) + ' · week of ' + when(p.week_start) + ' · ' + plural(p.vendors, 'storefront')));
-            if (p.permalink) li.appendChild(link(p.permalink, 'Open', 'op')); pl.appendChild(li);
-          });
-          ig.el.appendChild(pl);
+        // #242 (2026-11-09): the numbers come from admin_ig_insights(), filled daily by the
+        // cron/ig-insights pull. The old pipeline card (Reel drafts) is gone with the pipeline.
+        ig.h.h.textContent = 'Reading Instagram…';
+        var igBody = T('div'); ig.el.appendChild(igBody);
+        function fmtLabel(f) { return { reel: 'Reels', carousel: 'Carousels', image: 'Single images', video: 'Videos' }[f] || f; }
+        var SER = { meet_the_vendor: 'Meet the Vendor', new_this_week: 'New neighbors', referral_desk: 'Referral Desk', neighborhood_edit: 'The Neighborhood Edit', six_promises: 'Six promises', benefits: 'Benefits posts', other: 'Other posts' };
+        function serLabel(k) { return SER[k] || k; }
+        function hourLabel(h) { h = num(h); return (h % 12 || 12) + (h < 12 ? ' am' : ' pm'); }
+        var WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        function paintIg(res) {
+          var g = res && res.data; igBody.innerHTML = '';
+          if (!g || g.ok !== true) {
+            ig.h.h.textContent = 'Instagram numbers are not installed yet.';
+            igBody.appendChild(note(g && g.reason === 'not_admin' ? 'Only the admin can read this.' : 'Apply patch_ig_insights.sql; the daily pull fills the tables from the next morning.'));
+            return;
+          }
+          var acc = g.account || {}, tot = g.totals || {}, st = g.status || {};
+          if (!st.last_pull) {
+            ig.h.h.textContent = 'Waiting for the first Instagram pull.';
+            igBody.appendChild(note('The pull runs every morning at 3 am Central. Followers, reach and saves per post appear here after the first one.'));
+            return;
+          }
+          ig.h.h.textContent = '';
+          if (acc.followers != null) {
+            ig.h.h.appendChild(T('em', null, plural(acc.followers, 'follower')));
+            var d7 = acc.followers_7d_ago != null ? num(acc.followers) - num(acc.followers_7d_ago) : null;
+            var d28 = acc.followers_28d_ago != null ? num(acc.followers) - num(acc.followers_28d_ago) : null;
+            var tail = d7 != null ? (d7 >= 0 ? ', up ' + n(d7) : ', down ' + n(-d7)) + ' in 7 days' : '';
+            if (d28 != null) tail += (d7 != null ? ' and ' : ', ') + (d28 >= 0 ? 'up ' + n(d28) : 'down ' + n(-d28)) + ' in 28';
+            ig.h.h.appendChild(document.createTextNode(tail + '.'));
+          } else ig.h.h.textContent = 'Instagram, the last ' + P + ' days.';
+          var taps = 0, reachDays = 0; (g.daily || []).forEach(function (x) { taps += num(x.link_taps); reachDays += num(x.reach); });
+          var igT = T('div', 'lk-mk-tiles two');
+          igT.appendChild(tile('Posts', n(tot.posts), 'in ' + P + ' days', num(tot.with_numbers) < num(tot.posts) ? n(tot.with_numbers) + ' with numbers' : (tot.avg_reach != null ? 'reach ' + n(tot.avg_reach) + ' each on average' : '')));
+          igT.appendChild(tile('Saves', n(tot.saved), null, tot.avg_saved != null ? n(tot.avg_saved) + ' per post; the number that says a post was useful' : ''));
+          igT.appendChild(tile('Reach', n(reachDays || tot.reach), reachDays ? 'account, ' + P + ' days' : 'posts', reachDays ? 'accounts that saw anything from go.lokali' : 'from the posts in the period'));
+          igT.appendChild(tile('Taps to the site', n(taps), 'in ' + P + ' days', 'profile link taps', taps ? '' : 'warn'));
+          igBody.appendChild(igT);
+          var fmts = (g.by_format || []).filter(function (f) { return num(f.n); });
+          if (fmts.length) {
+            igBody.appendChild(T('p', 'lk-mk-sub', 'Saves per post, by format'));
+            igBody.appendChild(bars(fmts.map(function (f) { return { label: fmtLabel(f.format), sub: plural(f.n, 'post') + ' · reach ' + n(f.avg_reach), n: Math.round(num(f.avg_saved) * 10) / 10 }; })));
+          }
+          var sers = (g.by_series || []).filter(function (f) { return num(f.n); });
+          if (sers.length > 1) {
+            igBody.appendChild(T('p', 'lk-mk-sub', 'Saves per post, by series'));
+            igBody.appendChild(bars(sers.map(function (f) { return { label: serLabel(f.series), sub: plural(f.n, 'post') + ' · reach ' + n(f.avg_reach), n: Math.round(num(f.avg_saved) * 10) / 10 }; })));
+          }
+          var top = (g.top_saved || []).slice(0, 5);
+          if (top.length) {
+            igBody.appendChild(T('p', 'lk-mk-sub', 'Most saved'));
+            igBody.appendChild(table(['Post', 'Reach', 'Saves', 'Shares'], top.map(function (x) {
+              var cell = T('span'); var cap = (x.caption || '').replace(/\s+/g, ' ').trim() || (x.format === 'REELS' ? 'Reel' : 'Post');
+              if (x.permalink) cell.appendChild(link(x.permalink, cap.length > 60 ? cap.slice(0, 57) + '…' : cap)); else cell.textContent = cap.length > 60 ? cap.slice(0, 57) + '…' : cap;
+              cell.appendChild(T('small', null, ' ' + when(x.posted_at) + ' · ' + (x.format === 'REELS' ? 'Reel' : x.type === 'CAROUSEL_ALBUM' ? 'carousel' : 'image') + (x.series && x.series !== 'other' ? ' · ' + serLabel(x.series) : '')));
+              return [cell, n(x.reach), n(x.saved), n(x.shares)];
+            })));
+          }
+          var hrs = (g.by_hour || []).filter(function (h) { return num(h.n) >= 2; }).sort(function (a, b) { return num(b.avg_saved) - num(a.avg_saved); }).slice(0, 2);
+          var onl = (g.online || []).slice().sort(function (a, b) { return num(b.followers) - num(a.followers); }).slice(0, 3);
+          var lines = [];
+          if (hrs.length) lines.push('Your posts earned the most saves when posted around ' + hrs.map(function (h) { return hourLabel(h.hour); }).join(' and ') + ' (two or more posts each).');
+          if (onl.length) lines.push('Followers were online most on ' + onl.map(function (o) { return WD[num(o.weekday)] + ' ' + hourLabel(o.hour); }).join(', ') + ' over the last week.');
+          lines.push('Instagram does not say which post brought a sign-up. Read ' + when(st.last_pull) + (st.media_refused ? '; ' + plural(st.media_refused, 'older post') + ' refused numbers' : '') + '.');
+          igBody.appendChild(note(lines.join(' ')));
         }
-        ig.el.appendChild(note('Reach, saves and the follower count live inside Instagram and are not read here yet; the token never leaves the server. Meet the Vendor and the Referral Desk are posted from your phone and are not in this table.'));
+        if (SAPI.admin.igInsights) SAPI.admin.igInsights(P).then(paintIg).catch(function () { paintIg(null); }); else paintIg(null);
         row3.appendChild(ig.el);
 
         var ip = card('lk-mk-inperson', 'pin', 'In person', '');

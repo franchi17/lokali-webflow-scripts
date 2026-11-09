@@ -1805,6 +1805,12 @@
       marketingEmail: function () {
         return postRoute('/admin/marketing-email', {}, true);
       },
+      // Instagram insights (#242, patch_ig_insights.sql, 2026-11-09): what the daily
+      // cron/ig-insights pull wrote. Its OWN RPC; is_admin()-gated server-side; the
+      // page works without it (the card says the numbers are not installed yet).
+      igInsights: function (days) {
+        return withClient(function (c) { return c.rpc('admin_ig_insights', { p_days: days || 90 }); });
+      },
       // blind spot 3 (2026-10-10): what comes back after an outbound tap (patch_blind_spots.sql)
       closedLoop: function (days) {
         return withClient(function (c) { return c.rpc('admin_closed_loop', { p_days: days || 30 }); });
