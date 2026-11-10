@@ -223,6 +223,25 @@
     ".vl-save.vl-save-on .vl-heart{fill:#6002EE;stroke:#6002EE;}",
     // 2026-10-11 Follow: one line under the Share/Follow row says what following gets you.
     ".vl-follow-hint{margin:8px 0 0;font-size:12.5px;line-height:1.45;color:#6E6A85;}",
+    // #245 Follow by email (2026-11-10): signed-out visitors, no account. One quiet line that
+    // opens into a field; the server sends a confirm email before anything else is sent.
+    ".vl-ef{margin:6px 0 0;font-family:'Plus Jakarta Sans',sans-serif;}",
+    ".vl-ef *{box-sizing:border-box;font-family:'Plus Jakarta Sans',sans-serif;}",
+    ".vl-ef-open{background:none;border:0;padding:6px 0;min-height:36px;color:#6002EE;font-size:13px;font-weight:700;text-decoration:underline;text-underline-offset:3px;cursor:pointer;text-align:left;}",
+    ".vl-ef-open:hover{color:#4B02BB;}",
+    ".vl-ef-form{margin:6px 0 0;padding:12px;background:#F7F6FC;border:1px solid #EEEDF6;border-radius:12px;}",
+    ".vl-ef-form label{display:block;margin:0 0 6px;font-size:13px;font-weight:700;color:#1A1829;}",
+    ".vl-ef-row{display:flex;gap:8px;flex-wrap:wrap;}",
+    ".vl-ef-row input{flex:1 1 180px;min-width:0;min-height:44px;padding:10px 12px;border:1px solid #DEDAEE;border-radius:10px;background:#fff;color:#1A1829;font-size:16px;}",
+    ".vl-ef-row input:focus{outline:2px solid #6002EE;outline-offset:1px;border-color:#6002EE;}",
+    ".vl-ef-go{flex:0 0 auto;min-height:44px;padding:0 18px;border:0;border-radius:999px;background:#6002EE;color:#fff;font-size:14px;font-weight:700;cursor:pointer;}",
+    ".vl-ef-go:hover{background:#4B02BB;}.vl-ef-go[disabled]{background:#C4A8F7;cursor:default;}",
+    ".vl-ef-open:focus-visible,.vl-ef-go:focus-visible{outline:2px solid #6002EE;outline-offset:2px;}",
+    ".vl-ef-fine{margin:8px 0 0;font-size:12px;line-height:1.5;color:#6E6A85;}",
+    ".vl-ef-err{margin:8px 0 0;font-size:13px;color:#8A2A5C;}",
+    ".vl-ef-done{margin:6px 0 0;padding:10px 12px;background:#F3EBFF;border-radius:10px;font-size:13px;line-height:1.5;color:#3A3651;}",
+    ".vl-ef-done b{color:#4A1FB8;}",
+    ".vl-ef-hp{position:absolute!important;left:-9999px!important;width:1px;height:1px;overflow:hidden;}",
     // QR-scan nudge (utm_source=qr): someone who just met the maker at a booth.
     ".vl-qr-nudge{display:flex;align-items:center;gap:12px;background:#EEE6FF;border:1px solid #D4BFF9;border-radius:14px;padding:12px 12px 12px 14px;margin:0 0 16px;font-family:'Plus Jakarta Sans',sans-serif;}",
     ".vl-qr-nudge .vl-qr-ic{width:38px;height:38px;border-radius:10px;background:#fff;color:#6002EE;display:flex;align-items:center;justify-content:center;flex:0 0 auto;}",
@@ -350,7 +369,7 @@
       arow.appendChild(shareAnchor);
       arow.appendChild(btn);
       var fh = ce('p', 'vl-follow-hint'); fh.id = 'vl-follow-hint';
-      fh.textContent = 'Hear where they will be next. One email a week, only when they post.';
+      fh.textContent = 'Hear what is new and where they will be next. One email a week at most.';
       arow.parentNode.insertBefore(fh, arow.nextSibling);
     }
   }
@@ -363,8 +382,90 @@
     if (!fh) return;
     var who = _vlOwnerFirst || 'they';
     fh.textContent = following
-      ? 'You’ll hear from ' + (_vlOwnerFirst || 'them') + ' on Thursdays when they post.'
-      : 'Hear where ' + who + ' will be next. One email a week, only when they post.';
+      ? 'You’ll hear from ' + (_vlOwnerFirst || 'them') + ' on Thursdays when there is something new.'
+      : 'Hear what is new and where ' + who + ' will be next. One email a week at most.';
+  }
+
+  // ── #245 Follow by email (2026-11-10) ────────────────────────────────────
+  // F "Yes, both": most visits see one storefront and leave, and following needs
+  // an account. A signed-out visitor can now leave an email instead. The server
+  // (/api/lokali/follow-email) stores a pending follow and sends ONE confirm email;
+  // nothing else is sent until that link is clicked. The vendor never sees the
+  // address. Signed-in visitors keep the Follow button alone.
+  function vlEfBase() {
+    var b = window.LOKALI_VERCEL_API_BASE ||
+      (window.LOKALI_AUTH_SYNC_URL ? String(window.LOKALI_AUTH_SYNC_URL).replace(/\/(auth-sync|clerk-sync)\/?$/, '') : '');
+    return b ? String(b).replace(/\/$/, '') : 'https://lokali-api.vercel.app/api/lokali';
+  }
+  function vlEmailFollow(vid, v) {
+    var hint = document.getElementById('vl-follow-hint');
+    if (!hint || document.getElementById('vl-ef')) return;
+    var A = window.LokaliAuth;
+    var whenKnown = (A && A.ready && typeof A.ready.then === 'function') ? A.ready : Promise.resolve();
+    whenKnown.then(function () {
+      if (A && A.isSignedIn && A.isSignedIn()) return;
+      if (document.getElementById('vl-ef')) return;
+      var name = String((v && v.business_name) || '').trim();
+      var wrap = ce('div', 'vl-ef'); wrap.id = 'vl-ef';
+      var open = ce('button', 'vl-ef-open'); open.type = 'button';
+      open.textContent = 'Or get ' + (name ? name + '’s' : 'their') + ' news by email, no account';
+      open.setAttribute('aria-expanded', 'false');
+      wrap.appendChild(open);
+      hint.parentNode.insertBefore(wrap, hint.nextSibling);
+      window.addEventListener('lokali:authed', function () { if (wrap.parentNode) wrap.parentNode.removeChild(wrap); });
+
+      open.addEventListener('click', function () {
+        if (wrap.querySelector('.vl-ef-form')) return;
+        open.setAttribute('aria-expanded', 'true');
+        open.style.display = 'none';
+        var form = ce('form', 'vl-ef-form'); form.setAttribute('novalidate', 'novalidate');
+        var lab = ce('label'); lab.setAttribute('for', 'vl-ef-mail');
+        lab.textContent = 'Get ' + (name || 'their') + (name ? '’s' : '') + ' news by email';
+        var row = ce('div', 'vl-ef-row');
+        var inp = ce('input'); inp.type = 'email'; inp.id = 'vl-ef-mail'; inp.maxLength = 200; inp.autocomplete = 'email';
+        inp.placeholder = 'you@email.com';
+        var go = ce('button', 'vl-ef-go'); go.type = 'submit'; go.textContent = 'Follow by email';
+        row.appendChild(inp); row.appendChild(go);
+        var hp = ce('input', 'vl-ef-hp'); hp.type = 'text'; hp.name = 'website'; hp.tabIndex = -1; hp.autocomplete = 'off'; hp.setAttribute('aria-hidden', 'true');
+        var err = ce('p', 'vl-ef-err'); err.setAttribute('role', 'alert'); err.style.display = 'none';
+        var fine = ce('p', 'vl-ef-fine');
+        fine.textContent = 'One email a week at most, only when there is something new. We send one confirm email first. ' +
+          (_vlOwnerFirst ? _vlOwnerFirst + ' never sees' : 'They never see') + ' your email.';
+        form.appendChild(lab); form.appendChild(row); form.appendChild(hp); form.appendChild(err); form.appendChild(fine);
+        wrap.appendChild(form);
+        try { inp.focus(); } catch (e) {}
+        function fail(t) { err.textContent = t; err.style.display = ''; go.disabled = false; go.textContent = 'Follow by email'; }
+        form.addEventListener('submit', function (ev) {
+          ev.preventDefault();
+          err.style.display = 'none';
+          var em = String(inp.value || '').trim();
+          if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(em)) { fail('Enter your email address.'); try { inp.focus(); } catch (e) {} return; }
+          go.disabled = true; go.textContent = 'Sending…';
+          var src = /[?&]utm_source=qr\b/.test(String(window.location.search || '')) ? 'qr' : 'storefront';
+          fetch(vlEfBase() + '/follow-email', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ vendorId: Number(vid), email: em, source: src, website: hp.value || '' })
+          }).then(function (res) {
+            return res.json().catch(function () { return null; }).then(function (d) {
+              if (res.ok && d && d.ok) {
+                wrap.innerHTML = '';
+                var done = ce('p', 'vl-ef-done');
+                var b = ce('b'); b.textContent = 'Check your inbox. ';
+                done.appendChild(b);
+                done.appendChild(document.createTextNode('Tap the link in our email to start getting ' + (name || 'their') + (name ? '’s' : '') + ' news.'));
+                wrap.appendChild(done);
+                try { if (typeof window.gtag === 'function') window.gtag('event', 'follow_email_sent', { vendor_id: Number(vid), source: src }); } catch (e) {}
+                return;
+              }
+              var why = d && (d.reason || d.error);
+              if (res.status === 429 || why === 'rate_limited') return fail('Too many tries just now. Please try again later.');
+              if (why === 'invalid_email') return fail('That email does not look right. Check it and try again.');
+              fail('That did not go through. Try again in a moment.');
+            });
+          }).catch(function () { fail('That did not go through. Try again in a moment.'); });
+        });
+      });
+    }).catch(function () {});
   }
 
   // QR-scan nudge: a visit that starts from a booth card (utm_source=qr, set by
@@ -1945,7 +2046,8 @@
         var src = 'storefront'; try { src = sessionStorage.getItem('lokali_prompt_source') === 'qr_banner' ? 'qr_banner' : 'storefront'; sessionStorage.setItem('lokali_prompt_source', src); } catch (e) {}
         try { if (typeof window.gtag === 'function') window.gtag('event', 'account_prompt', { source: src }); } catch (e) {}
         var h1 = document.querySelector('h1'); var nm = h1 ? (h1.textContent || '').replace(/\s+/g, ' ').trim() : '';
-        if (window.LokaliAuth && typeof window.LokaliAuth.openSignUp === 'function') window.LokaliAuth.openSignUp({ intent: 'customer', follow: { name: nm.length <= 60 ? nm : '', first: _vlOwnerFirst }, source: src });
+        // 2026-11-10: come back to this storefront after the confirm email / Google, not the homepage.
+        if (window.LokaliAuth && typeof window.LokaliAuth.openSignUp === 'function') window.LokaliAuth.openSignUp({ intent: 'customer', follow: { name: nm.length <= 60 ? nm : '', first: _vlOwnerFirst }, source: src, returnTo: String(window.location.pathname || '/') });
         else window.location.href = '/sign-up';
         return;
       }
@@ -3762,6 +3864,7 @@
       _vlOwnerFirst = String(v.owner_name || '').trim().split(/\s+/)[0] || '';
       vlFollowHint(/vl-save-on/.test((document.getElementById('vl-save') || {}).className || ''));
       vlQrNudge(vid, v);
+      vlEmailFollow(vid, v); // #245
     });
   }
 
@@ -4372,7 +4475,10 @@
     open.addEventListener('click', function () {
       if (signedIn()) { showComposer(); return; }
       INVITE_PENDING = true;
-      if (window.LokaliAuth && typeof window.LokaliAuth.openSignUp === 'function') window.LokaliAuth.openSignUp({ intent: 'customer' });
+      // 2026-11-10: the confirm email (or Google) lands on /login, often in a new
+      // tab; returnTo brings the shopper back here with the invite still in the URL.
+      var back = String(window.location.pathname || '/') + '?review=' + code + '#reviews';
+      if (window.LokaliAuth && typeof window.LokaliAuth.openSignUp === 'function') window.LokaliAuth.openSignUp({ intent: 'customer', returnTo: back });
       else window.location.href = '/login';
     });
     window.addEventListener('lokali:authed', function () {

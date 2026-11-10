@@ -515,6 +515,8 @@
         if ((isAuthPage() || isHomePath()) && redirectBudgetOk()) window.location.href = AFTER_SIGN_IN_PATH;
       } else {
         // customer: only redirect away from a dedicated auth page; otherwise stay.
+        // A page that opened the overlay with returnTo gets the shopper back first.
+        if (isAuthPage() && takeAuthReturn()) return;
         if (isAuthPage() && redirectBudgetOk()) window.location.href = CUSTOMER_AFTER_SIGN_IN_PATH;
       }
     });
@@ -1390,6 +1392,35 @@
     if (low.indexOf('single') >= 0 || low.indexOf('at least') >= 0) return 'Google is the only way into this account right now, so it cannot be disconnected.';
     return friendlyAuthError(typeof err === 'string' ? { message: err } : err);
   }
+  // 2026-11-10 RETURN AFTER SIGN-UP (reviews campaign): a shopper who opens a
+  // vendor's review link signed out creates an account in the overlay. In
+  // production that means a confirm email, and the confirm link opens /login,
+  // usually in a NEW tab, so sessionStorage (and the review link) was gone and
+  // the customer branch below sent them to the homepage. Google sign-in landed
+  // on /login the same way. The page that opens the overlay may now pass
+  // opts.returnTo (a same-origin path); it is kept in localStorage for a day and
+  // honoured ONCE, for a customer landing on an auth page. Vendor and admin
+  // routing are untouched.
+  var AUTH_RETURN_KEY = 'lokali_auth_return';
+  var AUTH_RETURN_RE = /^\/(?!\/)[A-Za-z0-9\-_\/.]*(\?[A-Za-z0-9\-_=&%.]*)?(#[A-Za-z0-9\-_]*)?$/;
+  function setAuthReturn(path) {
+    try {
+      path = String(path || '');
+      if (!AUTH_RETURN_RE.test(path) || path.length > 300) return;
+      window.localStorage.setItem(AUTH_RETURN_KEY, JSON.stringify({ path: path, t: Date.now() }));
+    } catch (e) {}
+  }
+  function clearAuthReturn() { try { window.localStorage.removeItem(AUTH_RETURN_KEY); } catch (e) {} }
+  function takeAuthReturn() {
+    var st = null;
+    try { st = JSON.parse(window.localStorage.getItem(AUTH_RETURN_KEY) || 'null'); } catch (e) {}
+    clearAuthReturn();
+    if (!st || !st.path || !st.t || (Date.now() - st.t) > 24 * 60 * 60 * 1000) return false;
+    if (!AUTH_RETURN_RE.test(st.path)) return false;
+    if (!redirectBudgetOk()) return false;
+    window.location.href = st.path;
+    return true;
+  }
   // #215: a "link your storefronts" email opened signed-out had its token stashed
   // by lokali-dashboard.js. After sign-in, land on Settings, which reads the
   // stash and shows the confirm card. Half an hour, this tab only.
@@ -1698,6 +1729,7 @@
   // Post-auth handler for overlay flows: close the modal, sync+route (the
   // 'lokali:authed' event lets the pending page action — save/share — finish).
   function overlayAuthed() {
+    clearAuthReturn(); // finished on the page that asked: nothing to return to
     closeOverlay();
     syncUser().then(function () { routeAfterAuth(); });
   }
@@ -1886,6 +1918,7 @@
     openSignUp: function (opts) {
       opts = opts || {};
       if (opts.intent === 'customer' || opts.intent === 'vendor') setSignupIntent(opts.intent);
+      if (opts.returnTo) setAuthReturn(opts.returnTo); else clearAuthReturn();
       _promptSource = opts.source || '';
       openOverlay(function (body) {
         // Set INSIDE the build callback: openOverlay() runs closeOverlay() first,
@@ -1897,6 +1930,8 @@
     },
     /** Overlay sign-in. */
     openSignIn: function (opts) {
+      opts = opts || {};
+      if (opts.returnTo) setAuthReturn(opts.returnTo); else clearAuthReturn();
       openOverlay(function (body) {
         renderSignIn(body, { overlay: true, onAuthed: overlayAuthed });
       });
