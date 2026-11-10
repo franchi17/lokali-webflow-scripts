@@ -54,6 +54,8 @@
     { slug: 'children',     label: 'Children',                vid: 610, from: 'Engaged Minds Academy',     img: MEDIA + '610/service/muiez549uibmuv.webp', pos: '50% 40%' },
     { slug: 'business',     label: 'Business',                vid: 260, from: 'Laso Business Consulting',  img: MEDIA + '260/service/svc-b33d4144a2.jpg',   pos: '50% 50%' },
     { slug: 'professional', label: 'Professional Services',   vid: 672, from: 'The Fitzpatrick Group',     img: MEDIA + '672/service/mux09frtbzqy9t.webp',  pos: '50% 25%' },
+    // F 2026-11-10: Beauty added (Sunless Daze, the first live Beauty vendor; her spray-tan service photo)
+    { slug: 'beauty',       label: 'Beauty',                  vid: 821, from: 'Sunless Daze',              img: MEDIA + '821/service/mw1bq82ds5pwvd.webp',  pos: '50% 50%' },
     { slug: 'wellness',     label: 'Wellness',                vid: 688, from: 'ANIKO Lifestyle & Wellness', img: MEDIA + '688/service/mv06fj6sz6s6e3.jpg',   pos: '50% 50%' }
   ];
   // The nine open areas, in the order the city cards use (Conroe + Shenandoah
@@ -438,16 +440,8 @@
       a.appendChild(cap);
       grid.appendChild(a);
     });
-    var allTile = el('a', 'lok-cat lok-cat-all');
-    allTile.href = '/the-market';
-    var ab = el('span', 'lok-cat-img');
-    ab.appendChild(svgSpan('lok-arr', I_ARROW));
-    ab.appendChild(el('span', 'lok-big', 'Every storefront'));
-    ab.appendChild(el('span', 'lok-sm', 'All categories, all areas'));
-    allTile.appendChild(ab);
-    allTile.appendChild(el('span', 'lok-cat-t', 'The whole Market'));
-    allTile.appendChild(el('span', 'lok-cap', ' '));
-    grid.appendChild(allTile);
+    // F 2026-11-10: the "The whole Market" tile was retired so the ten category
+    // tiles make two even rows of five; "See every storefront" (top right) stays.
     wrap.appendChild(grid);
     sec.appendChild(wrap);
     return sec;
