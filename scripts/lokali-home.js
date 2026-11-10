@@ -54,8 +54,8 @@
     { slug: 'children',     label: 'Children',                vid: 610, from: 'Engaged Minds Academy',     img: MEDIA + '610/service/muiez549uibmuv.webp', pos: '50% 40%' },
     { slug: 'business',     label: 'Business',                vid: 260, from: 'Laso Business Consulting',  img: MEDIA + '260/service/svc-b33d4144a2.jpg',   pos: '50% 50%' },
     { slug: 'professional', label: 'Professional Services',   vid: 672, from: 'The Fitzpatrick Group',     img: MEDIA + '672/service/mux09frtbzqy9t.webp',  pos: '50% 25%' },
-    // F 2026-11-10: Beauty added (Sunless Daze, the first live Beauty vendor; her spray-tan service photo)
-    { slug: 'beauty',       label: 'Beauty',                  vid: 821, from: 'Sunless Daze',              img: MEDIA + '821/service/mw1bq82ds5pwvd.webp',  pos: '50% 50%' },
+    // F 2026-11-10: Beauty added (Sunless Daze, the first live Beauty vendor). Photo = her 'The 8 hour' tan cover, the blue-dress shot (F: the wedding photo 'looks like a wedding photographer')
+    { slug: 'beauty',       label: 'Beauty',                  vid: 821, from: 'Sunless Daze',              img: MEDIA + '821/service/mw1c33h2ttenkt.webp',  pos: '85% 50%' },
     { slug: 'wellness',     label: 'Wellness',                vid: 688, from: 'ANIKO Lifestyle & Wellness', img: MEDIA + '688/service/mv06fj6sz6s6e3.jpg',   pos: '50% 50%' }
   ];
   // The nine open areas, in the order the city cards use (Conroe + Shenandoah
