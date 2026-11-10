@@ -637,6 +637,28 @@
     ".browse-near-notice b{font-weight:700;color:#4A1FB8;overflow-wrap:anywhere;}",
     ".browse-near-clear{flex:0 0 auto;min-height:40px;padding:8px 16px;border:1px solid #C4A8F7;border-radius:100px;background:#fff;color:#4A1FB8;font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;}",
     ".browse-near-clear:hover{background:#E6DBFD;}",
+    // #244b "Tell us what you were looking for" (2026-11-10): a small note to Lokali from
+    // the zero-result notice. Reuses the live /contact route; no new table, no new email.
+    ".browse-near-acts{display:flex;gap:8px;flex-wrap:wrap;flex:0 1 auto;max-width:100%;min-width:0;}",
+    ".browse-near-tell{flex:0 0 auto;min-height:40px;padding:8px 16px;border:1px solid #6002EE;border-radius:100px;background:#6002EE;color:#fff;font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:700;cursor:pointer;}",
+    ".browse-near-tell:hover{background:#4B02BB;border-color:#4B02BB;}",
+    ".browse-near-tell:focus-visible,.browse-near-clear:focus-visible,.browse-tell-go:focus-visible{outline:2px solid #6002EE;outline-offset:2px;}",
+    ".browse-tell{flex:1 1 100%;box-sizing:border-box;margin:4px 0 0;padding:14px 0 2px;border-top:1px solid #DEDAEE;font-family:'Plus Jakarta Sans',sans-serif;}",
+    ".browse-tell *{box-sizing:border-box;font-family:'Plus Jakarta Sans',sans-serif;}",
+    ".browse-tell label{display:block;margin:0 0 5px;font-size:13px;font-weight:700;color:#1A1829;}",
+    ".browse-tell-f{margin:0 0 12px;}",
+    ".browse-tell-row{display:grid;grid-template-columns:minmax(0,1fr);gap:0 12px;}",
+    "@media (min-width:560px){.browse-tell-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr);}}",
+    ".browse-tell textarea,.browse-tell input[type=text],.browse-tell input[type=email]{width:100%;min-height:46px;padding:11px 13px;border:1px solid #DEDAEE;border-radius:12px;background:#fff;color:#1A1829;font-size:16px;line-height:1.4;}",
+    ".browse-tell textarea{min-height:84px;resize:vertical;}",
+    ".browse-tell textarea:focus,.browse-tell input:focus{outline:2px solid #6002EE;outline-offset:1px;border-color:#6002EE;}",
+    ".browse-tell-hp{position:absolute!important;left:-9999px!important;width:1px;height:1px;overflow:hidden;}",
+    ".browse-tell-err{margin:0 0 12px;padding:10px 12px;border-radius:10px;background:#FBE9F2;color:#8A2A5C;font-size:14px;line-height:1.45;}",
+    ".browse-tell-go{min-height:44px;padding:0 22px;border:0;border-radius:999px;background:#6002EE;color:#fff;font-size:14.5px;font-weight:700;cursor:pointer;}",
+    ".browse-tell-go:hover{background:#4B02BB;}.browse-tell-go[disabled]{background:#C4A8F7;cursor:default;}",
+    ".browse-tell-fine{margin:10px 0 0;font-size:12.5px;line-height:1.5;color:#6E6A85;}",
+    ".browse-tell-done{flex:1 1 100%;margin:4px 0 0;padding:12px 0 2px;border-top:1px solid #DEDAEE;font-size:14.5px;line-height:1.55;color:#3A3651;}",
+    ".browse-tell-done b{color:#4A1FB8;}",
     // Active-filter chips (no Webflow styles exist for them) — pill matching the
     // sidebar's .filter-item.active; the × is a real button with a 32px hit area.
     ".active-filter-chip{display:inline-flex;align-items:center;font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:500;background:#E6DBFD;color:#6002EE;border:1px solid #C4A8F7;border-radius:100px;padding:2px 2px 2px 12px;min-height:28px;box-sizing:border-box;margin:2px 6px 2px 0;}",
@@ -1654,16 +1676,118 @@
     var b = ce('b'); b.textContent = '\u201C' + q + '\u201D'; p.appendChild(b);
     p.appendChild(document.createTextNode(kind === 'near' ? '. The closest matches are below.' : '. Here are a few storefronts to start with instead.'));
     _nearNotice.appendChild(p);
+    var acts = ce('div', 'browse-near-acts');
+    // #244b: the shopper is about to leave empty-handed. One tap tells Lokali what was missing.
+    // Once sent for this search, the button is not offered again (the thank-you stays instead).
+    var told = _toldTerms[q] === true;
+    var tell = null;
+    if (!told) {
+      tell = ce('button', 'browse-near-tell'); tell.type = 'button'; tell.textContent = 'Tell us what you were looking for';
+      tell.setAttribute('aria-expanded', 'false');
+      acts.appendChild(tell);
+    }
     var clear = ce('button', 'browse-near-clear'); clear.type = 'button'; clear.textContent = 'Clear search';
     clear.addEventListener('click', function () {
       searchTerm = '';
       allSearchInputs().forEach(function (bx) { bx.value = ''; });
       applyFilters();
     });
-    _nearNotice.appendChild(clear);
+    acts.appendChild(clear);
+    _nearNotice.appendChild(acts);
+    if (told) _nearNotice.appendChild(tellDone());
+    if (tell) {
+      tell.addEventListener('click', function () {
+        var open = _nearNotice.querySelector('.browse-tell');
+        if (open) { open.parentNode.removeChild(open); tell.setAttribute('aria-expanded', 'false'); return; }
+        _nearNotice.appendChild(buildTellForm(q, tell));
+        tell.setAttribute('aria-expanded', 'true');
+      });
+    }
     showEl(_nearNotice, 'flex');
   }
   function hideNearNotice() { if (_nearNotice) hideEl(_nearNotice); }
+
+  // ── #244b "Tell us what you were looking for" (2026-11-10) ────────────────
+  // F 2026-11-10: the bigger "Ask your neighbors" build is PARKED until there are
+  // more vendors per category (docs/parked/ask-your-neighbors-244/); she kept only
+  // this note. It goes to Lokali, not to vendors: the live Contact route stores it
+  // (admin_submit_contact), emails hello@golokali.com with the shopper as Reply-To,
+  // and sends the shopper the usual "we got it" reply. Nothing new on the server.
+  var _toldTerms = {};
+  var TELL_ENDPOINT = (function () {
+    var base = window.LOKALI_VERCEL_API_BASE ||
+      (window.LOKALI_AUTH_SYNC_URL ? String(window.LOKALI_AUTH_SYNC_URL).replace(/\/(auth-sync|clerk-sync)\/?$/, '') : '');
+    return base ? String(base).replace(/\/$/, '') + '/contact' : 'https://lokali-api.vercel.app/api/lokali/contact';
+  })();
+  function tellDone() {
+    var d = ce('div', 'browse-tell-done'); d.setAttribute('role', 'status');
+    var b = ce('b'); b.textContent = 'Thank you. ';
+    d.appendChild(b);
+    d.appendChild(document.createTextNode('We read every one of these, and it shapes who we invite to Lokali next.'));
+    return d;
+  }
+  function tellField(labelText, control, id) {
+    var f = ce('div', 'browse-tell-f');
+    var l = ce('label'); l.textContent = labelText; l.setAttribute('for', id); control.id = id;
+    f.appendChild(l); f.appendChild(control);
+    return f;
+  }
+  function buildTellForm(q, opener) {
+    var form = ce('form', 'browse-tell'); form.setAttribute('novalidate', 'novalidate');
+    var err = ce('div', 'browse-tell-err'); err.setAttribute('role', 'alert'); hideEl(err); form.appendChild(err);
+    var ta = ce('textarea'); ta.maxLength = 600; ta.value = q ? 'I was looking for ' + q + '.' : '';
+    form.appendChild(tellField('What were you hoping to find?', ta, 'browse-tell-msg'));
+    var row = ce('div', 'browse-tell-row');
+    var inName = ce('input'); inName.type = 'text'; inName.maxLength = 100; inName.autocomplete = 'given-name';
+    row.appendChild(tellField('Your first name', inName, 'browse-tell-name'));
+    var inMail = ce('input'); inMail.type = 'email'; inMail.maxLength = 200; inMail.autocomplete = 'email';
+    row.appendChild(tellField('Your email', inMail, 'browse-tell-mail'));
+    form.appendChild(row);
+    var hp = ce('input', 'browse-tell-hp'); hp.type = 'text'; hp.name = 'website'; hp.tabIndex = -1; hp.autocomplete = 'off'; hp.setAttribute('aria-hidden', 'true');
+    form.appendChild(hp);
+    var go = ce('button', 'browse-tell-go'); go.type = 'submit'; go.textContent = 'Send to Lokali';
+    form.appendChild(go);
+    var fine = ce('p', 'browse-tell-fine');
+    fine.textContent = 'This goes to the Lokali team, not to any vendor. We use your email only to write back about this.';
+    form.appendChild(fine);
+    function fail(msg, focusEl) {
+      err.textContent = msg; showEl(err, 'block'); go.disabled = false; go.textContent = 'Send to Lokali';
+      try { if (focusEl) focusEl.focus(); } catch (e) {}
+    }
+    form.addEventListener('submit', function (ev) {
+      ev.preventDefault();
+      hideEl(err);
+      var msg = ta.value.trim(), nm = inName.value.trim(), em = inMail.value.trim();
+      if (msg.length < 5) return fail('Tell us a little about what you were looking for.', ta);
+      if (!nm) return fail('Add your first name.', inName);
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(em)) return fail('Enter your email so we can write back.', inMail);
+      var catName = activeCategory === 'all' ? '' : ((CAT_BY_ID[SLUG_TO_ID[activeCategory]] || {}).label || activeCategory);
+      var areaName = (activeLocationId !== 'all' && _locationsById[activeLocationId]) ? _locationsById[activeLocationId].name : '';
+      var ctx = 'Market search: \u201C' + q + '\u201D' + (catName ? ' in ' + catName : '') + (areaName ? ', ' + areaName : '') + '. No storefront matched.';
+      go.disabled = true; go.textContent = 'Sending\u2026';
+      fetch(TELL_ENDPOINT, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: nm, email: em, message: msg + '\n\n' + ctx,
+          topic: ('Looking for: ' + q).slice(0, 80), city: areaName, page_url: String(window.location.href).slice(0, 500), website: hp.value || '' })
+      }).then(function (res) {
+        return res.json().catch(function () { return null; }).then(function (d) {
+          if (res.ok && d && d.ok) {
+            _toldTerms[q] = true;
+            if (form.parentNode) form.parentNode.replaceChild(tellDone(), form);
+            if (opener && opener.parentNode) opener.parentNode.removeChild(opener);
+            try { if (typeof window.gtag === 'function') window.gtag('event', 'market_tell_us_sent', { search_term: String(q).slice(0, 50) }); } catch (e) {}
+            return;
+          }
+          var why = (d && d.error) || '';
+          if (res.status === 429 || why === 'rate_limited') return fail('You have sent a few of these already. Try again later.');
+          if (why === 'invalid_email') return fail('That email does not look right. Check it and try again.', inMail);
+          fail('That did not go through. Try again in a moment.');
+        });
+      }).catch(function () { fail('That did not go through. Try again in a moment.'); });
+    });
+    setTimeout(function () { try { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); } catch (e) {} }, 0);
+    return form;
+  }
 
   // ── filter + sort + render cards ──
   // Away mode chip helper: 'Sep 29' for a future vendors.away_until, else ''.
