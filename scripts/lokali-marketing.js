@@ -41,6 +41,12 @@
  * vendors still land and count server-side (placement_share_links /
  * share_landings untouched); only the dashboard card is gone.
  *
+ * Two QR codes, two jobs (F 2026-11-10): the storefront code card and the review
+ * code card are a matched pair in opposite inks (violet band + violet modules /
+ * blue band + blue modules), each captioned under the code, the review card
+ * ending in a box that says it is not the storefront code. The copy-ready
+ * text / email / packaging suggestions under the review code were removed.
+ *
  * Plan gates + queue caps (20 cta / 10 showcase) are DB-trigger enforced
  * (LOKALI_LIMIT_REACHED) — this page is honest UI, not the enforcement.
  * Free vendors never see the sidebar tab (lokali-sidebar-account.js hides it);
@@ -64,6 +70,10 @@
 
   var FONT = "'Plus Jakarta Sans', sans-serif";
   var BRAND = '#6002ee';
+  // Review-code blue (the brand blue of the email headlines). Two codes, two
+  // inks: storefront = violet, review = blue, so a printout tells them apart
+  // (F 2026-11-10: 'a visual differentiator so they don't use the wrong one').
+  var REVIEW_BLUE = '#021AEE';
   var CAPS = { cta: 20, showcase: 10 };
   // Spotlight ad creative (phase 2): backend is live and grid-proven, but the
   // vendor-facing flow is undesigned — Francesca 2026-08-18: keep it hidden
@@ -81,6 +91,9 @@
   var IMG_ICON = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true">' +
     '<path d="M448 80c8.8 0 16 7.2 16 16V415.8l-5-6.5-136-176c-4.5-5.9-11.6-9.3-19-9.3s-14.4 3.4-19 9.3L202 340.7l-30.5-42.7C167 291.7 159.8 288 152 288s-15 3.7-19.5 10.1l-80 112L48 416.3l0-.3V96c0-8.8 7.2-16 16-16H448zM64 32C28.7 32 0 60.7 0 96V416c0 35.3 28.7 64 64 64H448c35.3 0 64-28.7 64-64V96c0-35.3-28.7-64-64-64H64zm80 192a48 48 0 1 0 0-96 48 48 0 1 0 0 96z"/></svg>';
 
+  var ICON_STORE = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512" aria-hidden="true"><path d="M547.6 103.8L490.3 13.1C485.2 5 476.1 0 466.4 0H109.6C99.9 0 90.8 5 85.7 13.1L28.3 103.8c-29.6 46.8-3.4 111.9 51.9 119.4c4 .5 8.1 .8 12.1 .8c26.1 0 49.3-11.4 65.2-29c15.9 17.6 39.1 29 65.2 29c26.1 0 49.3-11.4 65.2-29c15.9 17.6 39.1 29 65.2 29c26.2 0 49.3-11.4 65.2-29c16 17.6 39.1 29 65.2 29c4.1 0 8.1-.3 12.1-.8c55.5-7.4 81.8-72.5 52.1-119.4zM499.7 254.9l-.1 0c-5.3 .7-10.7 1.1-16.2 1.1c-12.4 0-24.3-1.9-35.4-5.3V384H128V250.6c-11.2 3.5-23.2 5.4-35.6 5.4c-5.5 0-11-.4-16.3-1.1l-.1 0c-4.1-.6-8.1-1.3-12-2.3V384v64c0 35.3 28.7 64 64 64H448c35.3 0 64-28.7 64-64V384 252.6c-4 1-8 1.8-12.3 2.3z"/></svg>';
+  var ICON_STAR = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512" aria-hidden="true"><path d="M316.9 18C311.6 7 300.4 0 288.1 0s-23.4 7-28.8 18L195 150.3 51.4 171.5c-12 1.8-22 10.2-25.7 21.7s-.7 24.2 7.9 32.7L137.8 329 113.2 474.7c-2 12 3 24.2 12.9 31.3s23 8 33.8 2.3l128.3-68.5 128.3 68.5c10.8 5.7 23.9 4.9 33.8-2.3s14.9-19.3 12.9-31.3L438.5 329 542.7 225.9c8.6-8.5 11.7-21.2 7.9-32.7s-13.7-19.9-25.7-21.7L381.2 150.3 316.9 18z"/></svg>';
+  var ICON_INFO = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><path d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM216 336h24V272H216c-13.3 0-24-10.7-24-24s10.7-24 24-24h48c13.3 0 24 10.7 24 24v88h8c13.3 0 24 10.7 24 24s-10.7 24-24 24H216c-13.3 0-24-10.7-24-24s10.7-24 24-24zm40-208a32 32 0 1 1 0 64 32 32 0 1 1 0-64z"/></svg>';
   function esc(s) { return String(s == null ? '' : s).replace(/[<>&"]/g, function (c) {
     return ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' })[c];
   }); }
@@ -233,16 +246,36 @@
       '.mkt-qr-badge button{border:1px solid #E4DEF4;background:#fff;color:#5D4F9E;font-family:inherit;font-size:12px;' +
         'font-weight:600;border-radius:999px;padding:5px 11px;cursor:pointer;}' +
       '.mkt-qr-badge button.on{background:#F3EBFF;border-color:' + BRAND + ';color:' + BRAND + ';}' +
-      // Copy-ready text rows (shared by the "Ask for a review" card). Violet/gray only.
-      '.mkt-pl{border:1px solid #ECE8F8;border-radius:12px;background:#FDFCFF;padding:14px 16px;display:flex;gap:14px;align-items:flex-start;}' +
-      '.mkt-pl+.mkt-pl{margin-top:10px;}' +
-      '.mkt-pl-body{flex:1;min-width:0;}' +
-      '.mkt-pl-t{font-size:14.5px;font-weight:600;color:#3E3A55;margin:0 0 2px;}' +
-      '.mkt-pl-snip{display:flex;gap:8px;align-items:stretch;}' +
-      '.mkt-pl-txt{flex:1;min-width:0;background:#F7F6FC;border:1px solid #ECE8F8;border-radius:9px;padding:9px 12px;font-size:12.5px;color:#231D3F;line-height:1.45;overflow-wrap:anywhere;}' +
-      '.mkt-pl-copy{flex:0 0 auto;border:0;background:#F3EBFF;color:' + BRAND + ';font-weight:600;font-size:12.5px;border-radius:9px;padding:9px 14px;cursor:pointer;min-height:38px;}' +
-      '.mkt-pl-copy:hover{background:#E9DDFB;}' +
-      '@media (max-width:600px){.mkt-pl{flex-direction:column;gap:10px;}.mkt-pl-snip{flex-direction:column;}.mkt-pl-copy{width:100%;}}' +
+      // Two QR codes, two jobs (F 2026-11-10): each code card wears a band + tint in
+      // its own ink. Violet = storefront (for everyone), blue = review (customers only).
+      '.mkt-band{display:flex;align-items:center;gap:8px;margin:-22px -24px 16px;padding:9px 24px;border-radius:14px 14px 0 0;color:#fff;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;}' +
+      '.mkt-band svg{width:14px;height:14px;fill:#fff;flex:0 0 auto;}' +
+      '.mkt-band.store{background:' + BRAND + ';}' +
+      '.mkt-band.review{background:' + REVIEW_BLUE + ';}' +
+      '.mkt-card.store{background:#F9F6FF;border-color:#E4DEF4;}' +
+      '.mkt-card.review{background:#F1F4FF;border-color:#C9D3FB;}' +
+      '.mkt-card.store .mkt-h,.mkt-card.review .mkt-h{display:flex;align-items:center;gap:8px;}' +
+      '.mkt-card.store .mkt-h svg{width:18px;height:18px;fill:' + BRAND + ';flex:0 0 auto;}' +
+      '.mkt-card.review .mkt-h{color:#13227A;}' +
+      '.mkt-card.review .mkt-h svg{width:18px;height:18px;fill:' + REVIEW_BLUE + ';flex:0 0 auto;}' +
+      '.mkt-card.review .mkt-sub,.mkt-card.review .mkt-qr-url,.mkt-card.review .mkt-note{color:#5A66A0;}' +
+      '.mkt-card.review .mkt-qr-url b{color:#13227A;}' +
+      '.mkt-card.review .mkt-qr-dl{background:#E0E6FF;color:' + REVIEW_BLUE + ';}' +
+      '.mkt-card.review .mkt-qr-code{border-color:#C9D3FB;}' +
+      '.mkt-card.review .mkt-rv-rot button{color:' + REVIEW_BLUE + ';}' +
+      '.mkt-card.review .mkt-rv-rot button.warn{color:#B3261E;}' +
+      '.mkt-card.review .mkt-rv-rot button.plain{color:#6E6A85;}' +
+      '.mkt-tag{display:inline-block;font-size:11.5px;font-weight:600;border-radius:999px;padding:4px 10px;white-space:nowrap;}' +
+      '.mkt-tag.store{background:#F3EBFF;color:' + BRAND + ';}' +
+      '.mkt-tag.review{background:#E0E6FF;color:#13227A;}' +
+      '.mkt-qr-code{line-height:1.2;}' +
+      '.mkt-qr-cap{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;text-align:center;margin:8px 0 0;line-height:1;}' +
+      '.mkt-card.store .mkt-qr-cap{color:' + BRAND + ';}' +
+      '.mkt-card.review .mkt-qr-cap{color:' + REVIEW_BLUE + ';}' +
+      '.mkt-diff{display:flex;gap:10px;align-items:flex-start;background:#fff;border:1px dashed #8FA3F0;border-radius:10px;padding:10px 12px;margin-top:14px;font-size:12.5px;color:#5A66A0;line-height:1.5;}' +
+      '.mkt-diff svg{flex:0 0 auto;width:16px;height:16px;fill:' + REVIEW_BLUE + ';margin-top:2px;}' +
+      '.mkt-diff b{color:#13227A;font-weight:600;}' +
+      '@media (max-width:600px){.mkt-band{margin:-16px -16px 14px;padding:8px 16px;}.mkt-head{flex-wrap:wrap;}}' +
       '@media (max-width:600px){.mkt-card{padding:16px;}.mkt-acts{gap:0;}}';
     document.head.appendChild(st);
   }
@@ -342,8 +375,11 @@
       self.refreshQrPreview();
     });
   };
-  Page.prototype.qrOpts = function (px) {
-    var o = { px: px };
+  Page.prototype.qrOpts = function (px, ink) {
+    // ink = the module colour: violet for the storefront code (default), blue for
+    // the review code. lokali-qr-kit.js honours opts.dark in toSvg; PNGs go
+    // through svgToPng() below so the ink carries into the download too.
+    var o = { px: px, dark: ink || BRAND };
     if (this.qrBadge === 'own' && this.qrLogo) o.custom = this.qrLogo;
     return o;
   };
@@ -351,7 +387,7 @@
   // editor elsewhere on the page is untouched).
   Page.prototype.refreshQrPreview = function () {
     var box = this.mount.querySelector('.mkt-qr-code');
-    if (box) box.innerHTML = window.LokaliQR.toSvg(this.qrUrl(), this.qrOpts(168));
+    if (box) box.innerHTML = window.LokaliQR.toSvg(this.qrUrl(), this.qrOpts(168, BRAND)) + '<p class="mkt-qr-cap">Storefront</p>';
     // The slot is always rendered (empty until the logo lands), so the toggle
     // can appear AFTER the async logo load without a full re-render.
     var slot = this.mount.querySelector('.mkt-qr-badge-slot');
@@ -441,11 +477,12 @@
       // #163b: Featured also puts the vendor's own logo in the center.
       statsHtml += '<p class="mkt-note">Featured vendors can also put their own logo in the center of the code.</p>';
     }
-    return '<div class="mkt-card" data-kind="qr">' +
-      '<div class="mkt-head"><p class="mkt-h">Your QR code</p></div>' +
-      '<p class="mkt-sub">A code that opens your storefront. Put it on flyers, table tents, business cards, packaging, anywhere people can point a camera.</p>' +
+    return '<div class="mkt-card store" data-kind="qr">' +
+      '<div class="mkt-band store">' + ICON_STORE + ' For everyone &middot; opens your storefront</div>' +
+      '<div class="mkt-head"><p class="mkt-h">' + ICON_STORE + 'Your storefront QR code</p><span class="mkt-tag store">Opens your storefront</span></div>' +
+      '<p class="mkt-sub">For people who have not met you yet. Put it on flyers, table tents, business cards and packaging, anywhere people can point a camera.</p>' +
       '<div class="mkt-qr-row">' +
-        '<div class="mkt-qr-code">' + window.LokaliQR.toSvg(this.qrUrl(), this.qrOpts(168)) + '</div>' +
+        '<div class="mkt-qr-code">' + window.LokaliQR.toSvg(this.qrUrl(), this.qrOpts(168, BRAND)) + '<p class="mkt-qr-cap">Storefront</p></div>' +
         '<div class="mkt-qr-side">' +
           '<p class="mkt-qr-url">Opens <b>golokali.com/' + esc(this.vendor.slug) + '</b>. Scans are counted automatically.</p>' +
           '<div class="mkt-qr-btns">' +
@@ -460,20 +497,46 @@
     '</div>';
   };
 
-  Page.prototype.downloadQr = function (fmt) {
-    var name = 'lokali-qr-' + this.vendor.slug + '.' + fmt;
+  // Rasterise an SVG string to a 1024px PNG data URL (the kit's own toPngDataUrl
+  // always paints near-black; drawing its SVG keeps the card's ink).
+  function svgToPng(svg, px) {
+    return new Promise(function (resolve, reject) {
+      var img = new Image();
+      var url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
+      img.onload = function () {
+        try {
+          var c = document.createElement('canvas'); c.width = px; c.height = px;
+          var ctx = c.getContext('2d');
+          ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, px, px);
+          ctx.drawImage(img, 0, 0, px, px);
+          resolve(c.toDataURL('image/png'));
+        } catch (e) { reject(e); } finally { URL.revokeObjectURL(url); }
+      };
+      img.onerror = function (e) { URL.revokeObjectURL(url); reject(e); };
+      img.src = url;
+    });
+  }
+  function saveFile(href, name, revoke) {
     var a = document.createElement('a');
+    a.href = href; a.download = name;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    if (revoke) setTimeout(function () { URL.revokeObjectURL(href); }, 4000);
+  }
+  // Shared by both code cards: fmt 'svg' | 'png', url = what the code opens,
+  // ink = module colour, name = file name without the extension.
+  function downloadCode(url, ink, name, fmt, opts) {
+    var svg = window.LokaliQR.toSvg(url, opts);
     if (fmt === 'svg') {
-      var blob = new Blob([window.LokaliQR.toSvg(this.qrUrl(), this.qrOpts(1024))], { type: 'image/svg+xml' });
-      a.href = URL.createObjectURL(blob);
-    } else {
-      a.href = window.LokaliQR.toPngDataUrl(this.qrUrl(), 1024, this.qrOpts(1024));
+      saveFile(URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' })), name + '.svg', true);
+      return;
     }
-    a.download = name;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    if (fmt === 'svg') setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+    svgToPng(svg, 1024).then(function (dataUrl) { saveFile(dataUrl, name + '.png'); }, function () {
+      // Last resort: the kit's own PNG (dark ink, still a valid code).
+      saveFile(window.LokaliQR.toPngDataUrl(url, 1024, opts), name + '.png');
+    });
+  }
+  Page.prototype.downloadQr = function (fmt) {
+    downloadCode(this.qrUrl(), BRAND, 'lokali-storefront-qr-' + this.vendor.slug, fmt, this.qrOpts(1024, BRAND));
   };
 
   // ---- #197 Your launch post ---------------------------------------------------
@@ -633,47 +696,33 @@
   Page.prototype.reviewUrl = function () {
     return 'https://www.golokali.com/' + this.reviewPath() + (this.reviewCode ? '' : '?src=review-ask') + '#reviews';
   };
-  Page.prototype.reviewSnippets = function () {
-    var name = this.vendor.business_name || 'my shop';
-    var url = 'golokali.com/' + this.reviewPath() + '#reviews';
-    return [
-      { key: 'text', title: 'Text message', text: 'Thanks again for ordering from ' + name + '! If you have a minute, a short review on my Lokali page helps neighbors find me: ' + url },
-      { key: 'email', title: 'Email', text: 'Hi,\n\nThank you again for choosing ' + name + '. If you have a minute, a short review on my Lokali page helps other neighbors find me, and I read every one.\n\n' + url + '\n\nThank you!' },
-      { key: 'note', title: 'Packaging note', text: 'Enjoyed this? A quick review at ' + url + ' helps a small local business more than you know. Thank you!' }
-    ];
-  };
   Page.prototype.reviewCardHtml = function () {
     if (!this.vendor.slug) return '';
     var self = this;
-    var qr = window.LokaliQR ? '<div class="mkt-qr-code">' + window.LokaliQR.toSvg(this.reviewUrl(), this.qrOpts(148)) + '</div>' : '';
-    var rows = this.reviewSnippets().map(function (sn) {
-      return '<div class="mkt-pl" data-rv="' + sn.key + '">' +
-        '<div class="mkt-pl-body">' +
-          '<p class="mkt-pl-t">' + sn.title + '</p>' +
-          '<div class="mkt-pl-snip">' +
-            '<div class="mkt-pl-txt" data-f="pl-text" style="white-space:pre-line">' + esc(sn.text) + '</div>' +
-            '<button type="button" class="mkt-pl-copy" data-act="copy-place" aria-label="Copy the ' + sn.title + ' version">Copy</button>' +
-          '</div>' +
-        '</div>' +
-      '</div>';
-    }).join('');
-    return '<div class="mkt-card" data-kind="review">' +
-      '<div class="mkt-head"><p class="mkt-h">Ask for a review</p></div>' +
-      '<p class="mkt-sub">Reviews show on your Market card, and one or two change how a stranger reads it. The best moment to ask is right after a pickup or handoff, while the good feeling is fresh.</p>' +
+    var qr = window.LokaliQR
+      ? '<div class="mkt-qr-code">' + window.LokaliQR.toSvg(this.reviewUrl(), this.qrOpts(168, REVIEW_BLUE)) + '<p class="mkt-qr-cap">Review</p></div>'
+      : '';
+    // F 2026-11-10: no copy-ready text / email / packaging wording here any more.
+    // Vendors get the link and the code and say it their own way.
+    return '<div class="mkt-card review" data-kind="review">' +
+      '<div class="mkt-band review">' + ICON_STAR + ' For customers only &middot; asks for a review</div>' +
+      '<div class="mkt-head"><p class="mkt-h">' + ICON_STAR + 'Your review QR code</p><span class="mkt-tag review">Opens your Reviews tab, ready to post</span></div>' +
+      '<p class="mkt-sub">For customers you already served. Show it at pickup or print it on a thank-you note. The best moment to ask is right after a handoff, while the good feeling is fresh.</p>' +
       '<div class="mkt-qr-row">' + qr +
         '<div class="mkt-qr-side">' +
-          '<p class="mkt-qr-url">Your review link: <b style="overflow-wrap:anywhere">golokali.com/' + esc(self.reviewPath()) + '#reviews</b></p>' +
+          '<p class="mkt-qr-url">Opens <b style="overflow-wrap:anywhere">golokali.com/' + esc(self.reviewPath()) + '#reviews</b>: your storefront, straight to the Reviews tab' +
+            (self.reviewCode ? ', with posting unlocked for the person who scanned it.' : '.') + '</p>' +
           '<div class="mkt-qr-btns">' +
             '<button type="button" class="mkt-qr-dl" data-act="rv-copy-link">Copy link</button>' +
             (window.LokaliQR ? '<button type="button" class="mkt-qr-dl" data-act="rv-png">Download QR (PNG)</button><button type="button" class="mkt-qr-dl" data-act="rv-svg">Download QR (SVG)</button>' : '') +
           '</div>' +
-          '<p class="mkt-note">' + (self.reviewCode
-            ? 'The link opens your storefront on the Reviews tab. Anyone you give it to can sign in and post, including customers you met in person. Those reviews are labeled "Invited by the vendor", and reviews from people who contacted you through Lokali keep their "Verified contact" label.'
-            : 'The link opens your storefront on the Reviews tab. Reviewers sign in first, and only people who actually contacted you can post, so the ask never lowers your trust.') + '</p>' +
+          '<p class="mkt-note">Reviews show on your Market card, and one or two change how a stranger reads it. ' + (self.reviewCode
+            ? 'Anyone you give this to can sign in and post, including customers you met in person; those reviews are labeled "Invited by the vendor".'
+            : 'Reviewers sign in first, and only people who actually contacted you through Lokali can post.') + '</p>' +
           self.rotateRowHtml() +
         '</div>' +
       '</div>' +
-      rows +
+      '<div class="mkt-diff">' + ICON_INFO + '<div><b>Not the same as your storefront code above.</b> That one is for finding you. This one carries an invitation: whoever scans it can post a review. Keep it for customers you served.</div></div>' +
     '</div>';
   };
   // ---- "Get a new link" (SEC-074) ---------------------------------------------
@@ -733,32 +782,9 @@
   };
   Page.prototype.downloadReviewQr = function (fmt) {
     if (!window.LokaliQR) return;
-    var name = 'lokali-review-qr-' + this.vendor.slug + '.' + fmt;
-    var a = document.createElement('a');
-    if (fmt === 'svg') {
-      var blob = new Blob([window.LokaliQR.toSvg(this.reviewUrl(), this.qrOpts(1024))], { type: 'image/svg+xml' });
-      a.href = URL.createObjectURL(blob);
-    } else {
-      a.href = window.LokaliQR.toPngDataUrl(this.reviewUrl(), 1024, this.qrOpts(1024));
-    }
-    a.download = name;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    if (fmt === 'svg') setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+    downloadCode(this.reviewUrl(), REVIEW_BLUE, 'lokali-review-qr-' + this.vendor.slug, fmt, this.qrOpts(1024, REVIEW_BLUE));
   };
 
-  // Copy button on a text row ("Ask for a review" card).
-  Page.prototype.copyPlacement = function (btn) {
-    var row = btn.closest('.mkt-pl');
-    var txt = row && row.querySelector('[data-f="pl-text"]');
-    if (!txt) return;
-    var text = txt.textContent;
-    var done = function () { toast('Copied. Paste it where your customers already read you.'); };
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(done, function () { fallbackCopy(text); done(); });
-    } else { fallbackCopy(text); done(); }
-  };
   function fallbackCopy(text) {
     var ta = document.createElement('textarea');
     ta.value = text; ta.setAttribute('readonly', '');
@@ -1114,8 +1140,7 @@
       else if (act === 'qr-svg') self.downloadQr('svg');
       else if (act === 'qr-badge-l') self.setQrBadge('l');
       else if (act === 'qr-badge-own') self.setQrBadge('own');
-      // "Ask for a review" copy buttons
-      else if (act === 'copy-place') self.copyPlacement(btn);
+      // "Ask for a review" buttons
       else if (act === 'rv-copy-link') self.copyReviewLink();
       else if (act === 'rv-png') self.downloadReviewQr('png');
       else if (act === 'rv-svg') self.downloadReviewQr('svg');
