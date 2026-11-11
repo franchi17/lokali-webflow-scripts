@@ -9,8 +9,10 @@
  *
  * Site-wide (footer loader); it only acts where its anchors exist:
  *   1. Homepage: a "Ring the Desk" section right after "Shop by category"
- *      (#lok-cats, built by lokali-home.js), and a one-line "Rather ask a
- *      person?" link under the hero search (#lok-hs).
+ *      (#lok-cats, built by lokali-home.js), and "Rather ask a person? Ring
+ *      the Desk" as the last sentence of the hero lede (#lok-hero .lok-lede,
+ *      F 2026-11-11: reads on from "Lokali is where you meet them."). If the
+ *      lede is missing it falls back to its own line under the search (#lok-hs).
  *   2. The Market: a Desk card under the grid whenever fewer than 3 storefronts
  *      are showing (thin search or narrow filters), quoting the search term.
  *   3. Any element with [data-lokali-desk] opens the sheet (for Designer use).
@@ -250,6 +252,14 @@
       '.lkd-nudge{margin:12px 0 0;font-size:14.5px;color:#4A4761;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}',
       '.lkd-link{display:inline-flex;align-items:center;gap:6px;color:#4B02BB;font-weight:700;background:none;border:0;padding:4px 0;cursor:pointer;font-size:14.5px;font-family:' + F + ';text-decoration:none;}',
       '.lkd-link .lkd-mini{width:18px;height:18px;}',
+      // hero nudge as the lede's last sentence (inherits the lede's size and color)
+      // nowrap keeps "Rather ask a person? Ring the Desk" together instead of
+      // leaving "Ring the Desk" alone on the last line; tiny phones may wrap.
+      '.lkd-nudge-in{display:inline;white-space:nowrap;}',
+      '@media (max-width:359px){.lkd-nudge-in{white-space:normal;}}',
+      '.lkd-nudge-in .lkd-link{display:inline-flex;vertical-align:baseline;font-size:inherit;line-height:inherit;padding:0;gap:5px;color:#5A12D8;white-space:nowrap;}',
+      '.lkd-nudge-in .lkd-link .lkd-mini{width:1em;height:1em;align-self:center;}',
+      '.lkd-nudge-in .lkd-link:hover,.lkd-nudge-in .lkd-link:focus-visible{text-decoration:underline;text-underline-offset:3px;}',
       // market card
       '.lkd-thin{max-width:560px;margin:24px auto;background:#fff;border:2px solid #6002EE;border-radius:20px;padding:22px;display:flex;gap:16px;align-items:flex-start;}',
       '.lkd-thin .lkd-mini{width:48px;height:48px;flex:none;}',
@@ -527,8 +537,11 @@
     autoRing(sec);
     return sec;
   }
+  function heroLede() { return document.querySelector('#lok-hero .lok-lede'); }
   function buildNudge() {
-    var p = el('p', 'lkd lkd-nudge');
+    // Inside the lede it is a span (one more sentence); otherwise its own line.
+    var inLede = !!heroLede();
+    var p = el(inLede ? 'span' : 'p', inLede ? 'lkd lkd-nudge-in' : 'lkd lkd-nudge');
     p.id = 'lkd-nudge';
     p.appendChild(document.createTextNode(t('nudge') + ' '));
     var a = el('button', 'lkd-link');
@@ -547,7 +560,12 @@
     var cats = document.getElementById('lok-cats');
     if (cats && !document.getElementById('lokali-desk')) cats.parentNode.insertBefore(buildSection(), cats.nextSibling);
     var hs = document.getElementById('lok-hs');
-    if (hs && !document.getElementById('lkd-nudge')) hs.parentNode.insertBefore(buildNudge(), hs.nextSibling);
+    var lede = heroLede();
+    if (!document.getElementById('lkd-nudge')) {
+      // the space sits outside the (nowrap) span so the line can break there
+      if (lede) { lede.appendChild(document.createTextNode(' ')); lede.appendChild(buildNudge()); }
+      else if (hs) hs.parentNode.insertBefore(buildNudge(), hs.nextSibling);
+    }
     return !!(document.getElementById('lokali-desk') && document.getElementById('lkd-nudge'));
   }
 
