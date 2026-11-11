@@ -3056,6 +3056,15 @@
       var nb = ce('a', 'lk-cta-btn lk-cta-l'); nb.href = '/contact-us'; nb.textContent = 'Request your neighborhood →'; dark.appendChild(nb);
       dark.classList.add('lk-card');
     }
+    // Order (F 2026-11-11, "no one will read it and the Neighborhood Edit should
+    // be first"): newsletter band, the two cards, THEN the communities strip.
+    // A DOM move, not a copy: the text stays in the page HTML for crawlers.
+    var ctas = document.querySelector('.bottom-ctas');
+    var ctasWrap = ctas && ctas.parentNode;
+    while (about && ctasWrap && ctasWrap.parentNode && ctasWrap.parentNode !== about.parentNode) ctasWrap = ctasWrap.parentNode;
+    if (about && ctasWrap && ctasWrap.parentNode === about.parentNode && ctasWrap !== about) {
+      about.parentNode.insertBefore(about, ctasWrap.nextSibling);
+    }
   }
 
   function init() {
