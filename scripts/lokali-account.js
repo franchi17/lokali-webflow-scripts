@@ -2583,6 +2583,7 @@
       appendReportsSection(grid, ov);              // trust and safety first
       appendAddressFlagsSection(grid);
       appendBlockedSendersSection(grid);           // #201
+      appendHolidayGiftsSection(grid);             // #249 holiday gift page
       appendInterestSection(grid);                 // Content Day 2027
       appendTagSuggestionsSection(grid, a, null);
       appendSpotlightCreativesSection(grid);
@@ -3927,6 +3928,7 @@
     appendReportsSection(zAttn.grid, ov);
     appendAddressFlagsSection(zAttn.grid);   // #147
     appendBlockedSendersSection(zAttn.grid);  // #201
+    appendHolidayGiftsSection(zAttn.grid);    // #249
     appendSpotlightCreativesSection(zAttn.grid);
     appendPairingFeedbackSection(zAttn.grid); // #166 neighbor-referral flags + suggestions
     appendSpotlightSection(zAttn.grid, ov);
@@ -4099,6 +4101,90 @@
       draw(d);
       if (window.__lokPaintAttn) window.__lokPaintAttn();
     }).catch(function () { host.innerHTML = ''; host.appendChild(el('div', 'lk-admin-empty', 'Content Day answers could not be loaded.')); if (window.__lokPaintAttn) window.__lokPaintAttn(); });
+  }
+  // ── #249 Holiday gifts (patch_holiday_gifts.sql, /holiday?add=1) ──────────
+  // Gifts vendors added through the public form. A WAITING gift is a .lk-admin-row, so it
+  // counts in "needs you" by itself; gifts already on the page sit underneath as plain lines
+  // with a Take down button and never count. Data + actions go through the admin-only route
+  // /api/lokali/admin/holiday-gifts (service role behind requireAdmin), which also sends the
+  // vendor the "your gift is up" note. The signed button in F's alert email does the same thing.
+  function appendHolidayGiftsSection(wrap) {
+    var auth = window.LokaliAuth;
+    if (!auth || typeof auth.token !== 'function') return;
+    var base = (window.LOKALI_BILLING_BASE || 'https://lokali-api.vercel.app/api/lokali').replace(/\/$/, '');
+    var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    var KIND = { product: 'product', gift_card: 'gift card', session: 'booked session' };
+    function day(iso) { var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || ''); return m ? MON[+m[2] - 1] + ' ' + (+m[3]) : ''; }
+    function money(c) { var d = c / 100; return '$' + (d % 1 === 0 ? String(d) : d.toFixed(2)); }
+    function call(body) {
+      return auth.token().then(function (jwt) {
+        if (!jwt) throw new Error('not_signed_in');
+        return fetch(base + '/admin/holiday-gifts', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + jwt }, body: JSON.stringify(body) });
+      }).then(function (r) { return r.json().catch(function () { return {}; }); });
+    }
+    var host = el('div', 'lk-admin-section');
+    wrap.appendChild(host);
+    var gifts = [];
+    function line(g) { return (g.title || '') + ' · ' + money(g.price_cents) + ' · order by ' + day(g.order_by) + ' · ' + (KIND[g.kind] || g.kind); }
+    function act(btn, g, action, busy) {
+      var was = btn.textContent; btn.disabled = true; btn.textContent = busy;
+      call({ action: action, id: g.id }).then(function (d) {
+        if (!d || d.ok !== true) { btn.disabled = false; btn.textContent = was; toast('That did not save. Try again.'); return; }
+        g.status = d.status; draw();
+      }).catch(function () { btn.disabled = false; btn.textContent = was; toast('That did not save. Try again.'); });
+    }
+    function button(label, g, action, busy, quiet) {
+      var b = document.createElement('button'); b.type = 'button'; b.className = quiet ? 'lk-admin-decline' : 'lk-admin-btn'; b.textContent = label;
+      b.addEventListener('click', function () { act(b, g, action, busy); });
+      return b;
+    }
+    function draw() {
+      host.innerHTML = '';
+      var waiting = gifts.filter(function (g) { return g.status === 'pending'; });
+      var up = gifts.filter(function (g) { return g.status === 'approved'; });
+      host.className = 'lk-admin-section' + (waiting.length || up.length ? ' lk-admin-section-wide' : '');
+      var t = el('div', 'lk-admin-qtitle');
+      t.appendChild(document.createTextNode('Holiday gifts'));
+      t.appendChild(el('span', 'lk-admin-qcount', String(waiting.length)));
+      host.appendChild(t);
+      if (!waiting.length && !up.length) { host.appendChild(el('div', 'lk-admin-empty', 'No holiday gifts yet. They land here when a vendor fills in the form.')); if (window.__lokPaintAttn) window.__lokPaintAttn(); return; }
+      host.appendChild(el('p', 'lk-admin-sub', waiting.length + ' waiting for you, ' + up.length + ' on the holiday page. A gift shows to shoppers only after you put it up.'));
+      waiting.forEach(function (g) {
+        var row = el('div', 'lk-admin-row');
+        var meta = el('div', 'lk-admin-row-meta');
+        var l1 = el('div', 'lk-admin-row-l1'); l1.textContent = (g.business_name || 'Unknown vendor') + (g.live ? '' : ' · storefront not live');
+        var l2 = el('div', 'lk-admin-row-l2'); l2.textContent = line(g);
+        meta.appendChild(l1); meta.appendChild(l2); row.appendChild(meta);
+        if (g.slug) { var v = document.createElement('a'); v.className = 'lk-admin-btn'; v.textContent = 'View'; v.href = '/' + encodeURIComponent(g.slug); v.target = '_blank'; v.rel = 'noopener'; row.appendChild(v); }
+        row.appendChild(button('Put it up', g, 'approve', 'Putting it up…'));
+        row.appendChild(button('Decline', g, 'decline', 'Declining…', true));
+        host.appendChild(row);
+      });
+      if (up.length) {
+        var list = el('div', 'lk-hg-up');
+        list.style.cssText = 'margin-top:10px;display:flex;flex-direction:column;gap:6px;';
+        up.forEach(function (g) {
+          var r = el('div', 'lk-hg-line');
+          r.style.cssText = 'display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;font-size:13px;';
+          var tx = document.createElement('span'); tx.style.minWidth = '0';
+          var b = document.createElement('b'); b.textContent = g.business_name || 'Unknown vendor'; tx.appendChild(b);
+          tx.appendChild(document.createTextNode(' · ' + line(g) + ' · on the page'));
+          r.appendChild(tx); r.appendChild(button('Take down', g, 'decline', 'Taking down…', true));
+          list.appendChild(r);
+        });
+        host.appendChild(list);
+      }
+      var see = document.createElement('a'); see.className = 'lk-admin-btn'; see.textContent = 'Open the holiday page'; see.href = '/holiday'; see.target = '_blank'; see.rel = 'noopener';
+      see.style.cssText = 'display:inline-block;margin-top:12px;';
+      host.appendChild(see);
+      if (window.__lokPaintAttn) window.__lokPaintAttn();
+    }
+    host.appendChild(el('div', 'lk-admin-empty', 'Loading holiday gifts…'));
+    function failed() { host.innerHTML = ''; host.appendChild(el('div', 'lk-admin-empty', 'Holiday gifts could not be loaded.')); if (window.__lokPaintAttn) window.__lokPaintAttn(); }
+    call({ action: 'list' }).then(function (d) {
+      if (!d || d.ok !== true) { failed(); return; }
+      gifts = d.gifts || []; draw();
+    }).catch(failed);
   }
   // ── #201: blocked inquiry senders (patch_inquiry_sender_cap.sql) ──────────
   // Addresses on inquiry_blocklist: automatic (kept sending past the 2-per-hour
