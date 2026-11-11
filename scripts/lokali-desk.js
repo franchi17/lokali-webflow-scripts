@@ -262,8 +262,7 @@
       '.lkd-nudge-in .lkd-link:hover,.lkd-nudge-in .lkd-link:focus-visible{text-decoration:underline;text-underline-offset:3px;}',
       // market card
       '.lkd-thin{max-width:560px;margin:24px auto;background:#fff;border:2px solid #6002EE;border-radius:20px;padding:22px;display:flex;gap:16px;align-items:flex-start;}',
-      '.lkd-thin .lkd-mini{width:48px;height:48px;flex:none;}',
-      '.lkd-thin-b{display:flex;flex-direction:column;gap:8px;min-width:0;}',
+      '.lkd-thin-b{display:flex;flex-direction:column;gap:8px;min-width:0;flex:1;}',
       '.lkd-thin-b b{font-size:18px;line-height:1.3;color:#1A1829;}',
       '.lkd-thin-b p{margin:0 0 6px;font-size:15px;color:#4A4761;}',
       '.lkd-thin .lkd-btn{align-self:flex-start;}',
@@ -587,7 +586,7 @@
   function buildThin() {
     var box = el('div', 'lkd lkd-thin');
     box.id = 'lkd-thin';
-    box.appendChild(miniDial());
+    // no dial icon in the corner (F 2026-11-11: repeats the button right below)
     var b = el('div', 'lkd-thin-b');
     b.appendChild(el('b', null, t('thinTitle')));
     b.appendChild(el('p', null, t('thinSub')));
