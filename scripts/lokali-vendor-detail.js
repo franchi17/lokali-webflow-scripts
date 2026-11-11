@@ -143,6 +143,16 @@
     '#vd-book-btn + #vd-cta-btn,#vd-book-btn + #vd-cta-btn:hover{color:#6002EE !important;border-color:#6002EE !important;}',
     '#vd-book-btn + #vd-cta-btn *{color:#6002EE !important;}',
     '#vd-book-btn + #vd-cta-btn:hover{background:#F3EBFF !important;}',
+    // Visit website on a service page (F 2026-11-11, option A): it sits UNDER
+    // Inquire in lilac, so the two buttons no longer look the same and Inquire
+    // (the message that stays on Lokali) reads as the main one. #4A1FB8 on
+    // #EFE6FF = 7.6:1.
+    'html.vd2 #vd-link-btn,#vd-link-btn{margin:10px 0 0 !important;background:#EFE6FF !important;background-image:none !important;color:#4A1FB8 !important;border:1px solid #DCCBFB !important;box-shadow:none !important;gap:6px;}',
+    '#vd-link-btn *{color:#4A1FB8 !important;}',
+    '#vd-link-btn:hover{background:#E4D6FF !important;}',
+    '#vd-link-btn:focus-visible{outline:2px solid #6002EE !important;outline-offset:2px;}',
+    '#vd-link-btn .vd-link-arrow{display:inline-flex;width:13px;height:13px;flex:none;}',
+    '#vd-link-btn .vd-link-arrow svg{width:13px;height:13px;}',
     // pills: the storefront's exact styles (read off golokali.com 2026-09-19)
     '.vd2-ch{display:flex;gap:8px;}',
     '.vd2-ch:empty{display:none;}',
@@ -1115,9 +1125,10 @@
 
   // Visit website on a SERVICE page (2026-10-02, F punchlist 4): the service's
   // own link_url (patch_service_link.sql, the vendor's page about THIS
-  // service) becomes a "Visit website" button above Inquire, the same shape as
-  // the product Buy button. Book now (async, below) inserts itself before the
-  // CTA too and therefore lands ABOVE this one: Book now, Visit website, Inquire.
+  // service) becomes a "Visit website" button. Since 2026-11-11 (F, option A)
+  // it sits UNDER Inquire in lilac with a small arrow (it leaves Lokali), so it
+  // no longer looks like a second copy of Inquire. Book now (async, below)
+  // still inserts itself before the CTA: Book now, Inquire, Visit website.
   // Click logged as lead_events.event_type = 'service_link'.
   function mountServiceLink(s, vendorId) {
     try {
@@ -1135,12 +1146,16 @@
       var textHost = btn;
       while (textHost.children && textHost.children.length === 1) textHost = textHost.children[0];
       textHost.textContent = 'Visit website';
+      var arrow = document.createElement('span');
+      arrow.className = 'vd-link-arrow';
+      arrow.setAttribute('aria-hidden', 'true');
+      arrow.innerHTML = '<svg viewBox="0 0 384 512"><path fill="currentColor" d="M328 96c13.3 0 24 10.7 24 24V360c0 13.3-10.7 24-24 24s-24-10.7-24-24V177.9L73 409c-9.4 9.4-24.6 9.4-33.9 0s-9.4-24.6 0-33.9L270.1 144H88c-13.3 0-24-10.7-24-24s10.7-24 24-24H328z"/></svg>';
+      textHost.appendChild(arrow);
       btn.href = lkOutboundHref(u.href, 'service'); // property, never string-built markup
       btn.target = '_blank';
       btn.rel = 'noopener';
       btn.setAttribute('aria-label', 'Visit website (opens in a new tab)');
-      btn.style.marginBottom = '10px';
-      cta.parentNode.insertBefore(btn, cta);
+      cta.parentNode.insertBefore(btn, cta.nextSibling); // under Inquire (F 2026-11-11)
       btn.addEventListener('click', function () {
         if (window.LokaliAPI && window.LokaliAPI.leads && vendorId != null) {
           window.LokaliAPI.leads.trackEvent(vendorId, 'service_link', 'service', { kind: 'service', id: s.id }); // #206 price snapshot
@@ -1528,7 +1543,7 @@
       // card, inquiry form and Book now link.
       var vid = s.vendors_id || s.vendor_id || vendorParam;
       emitItemView(vid, 'service', s.id != null ? s.id : id);
-      mountServiceLink(s, vid); // 2026-10-02: Visit website above Inquire (sync, so Book now lands above it)
+      mountServiceLink(s, vid); // Visit website, lilac, under Inquire (F 2026-11-11)
       mountBookLink(vid, s.id != null ? s.id : id); // Book now above Inquire when the storefront has a booking link
       var vendorP = fillVendor(vid, name, false);
       mountItemNav('services', s.id != null ? s.id : id, vid, vendorP); // #174
