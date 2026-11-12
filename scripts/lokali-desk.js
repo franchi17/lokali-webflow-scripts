@@ -62,8 +62,8 @@
       connected: 'neighbors connected', wait: 'longest wait for an answer', oneDay: '1 day',
       spanish: 'hablamos español', si: 'Sí',
       nudge: 'Rather ask a person?',
-      thinTitle: 'Not quite it? The Desk knows people the search doesn’t.',
-      thinSub: 'Tell us what you need. Francesca writes back herself within a day, never AI.',
+      thinTitle: 'Not quite it?',
+      thinSub: 'Francesca knows people the search doesn’t.',
       sheetTitle: 'You’re ringing the Desk',
       qNeed: 'What do you need?', needPh: 'A birthday cake for 20, one guest is gluten free',
       qWhen: 'When?', when: ['This week', 'This weekend', 'Next month', 'No rush'],
@@ -87,8 +87,8 @@
       connected: 'vecinos conectados', wait: 'espera máxima por respuesta', oneDay: '1 día',
       spanish: 'hablamos español', si: 'Sí',
       nudge: '¿Prefieres preguntarle a una persona?',
-      thinTitle: '¿No es lo que buscas? El Desk conoce gente que la búsqueda no encuentra.',
-      thinSub: 'Cuéntanos qué necesitas. Francesca te responde en persona en un día, nunca IA.',
+      thinTitle: '¿No es lo que buscas?',
+      thinSub: 'Francesca conoce gente que la búsqueda no encuentra.',
       sheetTitle: 'Estás llamando al Desk',
       qNeed: '¿Qué necesitas?', needPh: 'Un pastel de cumpleaños para 20, un invitado sin gluten',
       qWhen: '¿Cuándo?', when: ['Esta semana', 'Este fin de semana', 'El próximo mes', 'Sin prisa'],
@@ -225,11 +225,11 @@
       '.lkd-ringing .lkd-body{animation:lkdBuzz 1.4s linear;}',
       '.lkd-ringing .lkd-wave0{animation:lkdWave 1.4s ease-in-out;}',
       '.lkd-ringing .lkd-wave1{animation:lkdWave 1.4s ease-in-out .08s;}',
-      '.lkd-thin.lkd-ringing > .lkd-mini{animation:lkdTiny 1.2s ease-in-out;transform-origin:50% 50%;}',
+      '.lkd-thin.lkd-ringing .lkd-mini{animation:lkdTiny 1.2s ease-in-out;transform-origin:50% 50%;}',
       '.lkd-human{display:flex;align-items:center;gap:8px;margin:0;font-size:14.5px;font-weight:700;color:#4B02BB;}',
       '.lkd-human svg{width:20px;height:20px;flex:none;padding:3px;border-radius:50%;background:#F3EBFF;box-sizing:content-box;}',
       '.lkd-human.lkd-human-sm{font-size:13px;}',
-      '@media (prefers-reduced-motion:reduce){.lkd-spin,.lkd-bigdial{transition:none;}.lkd-btn:hover .lkd-spin,.lkd-sec.lkd-dialing .lkd-bigdial{transform:none;}.lkd-ringing .lkd-handset,.lkd-ringing .lkd-body,.lkd-ringing .lkd-wave0,.lkd-ringing .lkd-wave1,.lkd-thin.lkd-ringing > .lkd-mini{animation:none;}}',
+      '@media (prefers-reduced-motion:reduce){.lkd-spin,.lkd-bigdial{transition:none;}.lkd-btn:hover .lkd-spin,.lkd-sec.lkd-dialing .lkd-bigdial{transform:none;}.lkd-ringing .lkd-handset,.lkd-ringing .lkd-body,.lkd-ringing .lkd-wave0,.lkd-ringing .lkd-wave1,.lkd-thin.lkd-ringing .lkd-mini{animation:none;}}',
       '.lkd-open{display:inline-flex;align-items:center;gap:8px;font-size:13.5px;font-weight:700;color:#4A4761;}',
       '.lkd-open i{width:9px;height:9px;border-radius:50%;background:#2BA84A;box-shadow:0 0 0 3px rgba(43,168,74,.18);}',
       '.lkd-open.lkd-closed i{background:#6E6A85;box-shadow:none;}',
@@ -261,12 +261,12 @@
       '.lkd-nudge-in .lkd-link .lkd-mini{width:1em;height:1em;align-self:center;}',
       '.lkd-nudge-in .lkd-link:hover,.lkd-nudge-in .lkd-link:focus-visible{text-decoration:underline;text-underline-offset:3px;}',
       // market card
-      '.lkd-thin{max-width:560px;margin:24px auto;background:#fff;border:2px solid #6002EE;border-radius:20px;padding:22px;display:flex;gap:16px;align-items:flex-start;}',
-      '.lkd-thin-b{display:flex;flex-direction:column;gap:8px;min-width:0;flex:1;}',
-      '.lkd-thin-b b{font-size:18px;line-height:1.3;color:#1A1829;}',
-      '.lkd-thin-b p{margin:0 0 6px;font-size:15px;color:#4A4761;}',
-      '.lkd-thin .lkd-btn{align-self:flex-start;}',
-      '@media (max-width:520px){.lkd-thin{flex-direction:column;margin:20px 0;}.lkd-thin .lkd-btn{width:100%;}}',
+      // F 2026-11-12 "the quiet line": one soft pill, sentence left, button (with the dial) right
+      '.lkd-thin{max-width:660px;margin:24px auto;background:#fff;border:1px solid #E2D4FF;border-radius:999px;padding:8px 8px 8px 24px;display:flex;gap:14px;align-items:center;}',
+      '.lkd-thin-b{flex:1;min-width:0;margin:0;font-size:14.5px;line-height:1.35;color:#4A4761;}',
+      '.lkd-thin-b b{font-weight:800;color:#1A1829;}',
+      '.lkd-thin .lkd-btn{flex:none;min-height:44px;padding:10px 18px;font-size:14px;}',
+      '@media (max-width:520px){.lkd-thin{flex-direction:column;align-items:stretch;text-align:center;border-radius:22px;padding:16px;margin:20px 0;}.lkd-thin .lkd-btn{width:100%;}}',
       // sheet
       '.lkd-sheet{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(75,2,187,.28);}',
       '.lkd-card{width:100%;max-width:440px;max-height:calc(100vh - 32px);overflow:auto;background:#fff;border-radius:24px;padding:22px 20px 20px;display:flex;flex-direction:column;gap:14px;box-shadow:0 24px 60px rgba(75,2,187,.25);color:#1A1829;}',
@@ -586,17 +586,17 @@
   function buildThin() {
     var box = el('div', 'lkd lkd-thin');
     box.id = 'lkd-thin';
-    // no dial icon in the corner (F 2026-11-11: repeats the button right below)
-    var b = el('div', 'lkd-thin-b');
+    // the dial lives in the button, never beside the sentence (F 2026-11-11, again 11-12)
+    var b = el('p', 'lkd-thin-b');
     b.appendChild(el('b', null, t('thinTitle')));
-    b.appendChild(el('p', null, t('thinSub')));
+    b.appendChild(document.createTextNode(' ' + t('thinSub')));
     var btn = el('button', 'lkd-btn');
     btn.type = 'button';
     btn.appendChild(miniDial());
     btn.appendChild(document.createTextNode(t('ring')));
     btn.addEventListener('click', function () { sheetPrefill = marketTerm(); openSheet('market', btn); });
-    b.appendChild(btn);
     box.appendChild(b);
+    box.appendChild(btn);
     return box;
   }
   function visible(n) { return !!(n && (n.offsetWidth || n.offsetHeight || n.getClientRects().length)); }
