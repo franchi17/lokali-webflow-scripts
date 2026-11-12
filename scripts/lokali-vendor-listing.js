@@ -50,6 +50,8 @@
       }).catch(function () {});
     } catch (e) {}
   }
+  // 2026-11-12 (The MoCo List): a service with its OWN link sends Book now
+  // there (data-own-link on the pill), not to the storefront-wide link.
   function wireBookNow(pill) {
     if (!pill || !_bookUrl || pill.getAttribute('data-book') === '1') return;
     pill.setAttribute('data-book', '1');
@@ -61,7 +63,8 @@
       if (window.LokaliAPI && window.LokaliAPI.leads && currentVendorId != null) {
         window.LokaliAPI.leads.trackEvent(currentVendorId, 'booking_link', 'listing');
       }
-      window.open(_bookUrl, '_blank', 'noopener');
+      var own = pill.getAttribute('data-own-link');
+      window.open(own || _bookUrl, '_blank', 'noopener');
     });
   }
   function applyBookNow() {
@@ -2135,6 +2138,7 @@
     // FEAT-PICKS: a small "Vendor's pick" chip on hand-picked items — makes the
     // curation visible to customers (and the perk visible to vendors). Static
     // markup only; positioned over the tinted image block.
+    if (opts.ownLink) a.querySelector('.vl-card-cta').setAttribute('data-own-link', opts.ownLink); // set even before the booking probe answers; applyBookNow() reads it later
     if (opts.book) wireBookNow(a.querySelector('.vl-card-cta'));
     if (opts.pick) {
       var pickChip = document.createElement('div');
@@ -2255,6 +2259,7 @@
         // (same promise-what-the-page-delivers rule as the product "Buy online").
         cta: _bookUrl ? 'Book now' : (/^https:\/\/\S+$/.test(String(s.link_url || '')) ? 'Visit website' : (p.quote ? 'Request quote' : 'Inquire')),
         book: !!_bookUrl,
+        ownLink: /^https:\/\/\S+$/.test(String(s.link_url || '').trim()) ? String(s.link_url).trim() : '',
         lead: leadText(s),
         href: itemHref('services', s)
       });

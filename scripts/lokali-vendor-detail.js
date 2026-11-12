@@ -1171,7 +1171,11 @@
   // to the storefront. The link is read through the same anon RPC the
   // storefront card uses (availability_booking_link, null when off the plan).
   // Async, so the phone bar may already exist: it gets its mirror here too.
-  function mountBookLink(vendorId, serviceId) {
+  // 2026-11-12 (The MoCo List): a service with its OWN link (link_url) sends
+  // Book now there, not to the storefront-wide link, which may be the page for
+  // the vendor's OTHER services. The separate Visit website button is then
+  // dropped: it would be a second button to the same place.
+  function mountBookLink(vendorId, serviceId, ownLink) {
     try {
       if (document.getElementById('vd-book-btn') || vendorId == null) return;
       var av = window.LokaliSupabaseAPI && window.LokaliSupabaseAPI.availability;
@@ -1182,6 +1186,16 @@
         var u;
         try { u = new URL(String(raw).trim()); } catch (e) { return; }
         if (u.protocol !== 'https:') return;
+        if (ownLink) {
+          try {
+            var ou = new URL(String(ownLink).trim());
+            if (ou.protocol === 'https:') {
+              u = ou;
+              var dup = document.getElementById('vd-link-btn');
+              if (dup && dup.parentNode) dup.parentNode.removeChild(dup);
+            }
+          } catch (e) {}
+        }
         var cta = $('vd-cta-btn');
         if (!cta || !cta.parentNode) return;
         var btn = cta.cloneNode(true);
@@ -1544,7 +1558,7 @@
       var vid = s.vendors_id || s.vendor_id || vendorParam;
       emitItemView(vid, 'service', s.id != null ? s.id : id);
       mountServiceLink(s, vid); // Visit website, lilac, under Inquire (F 2026-11-11)
-      mountBookLink(vid, s.id != null ? s.id : id); // Book now above Inquire when the storefront has a booking link
+      mountBookLink(vid, s.id != null ? s.id : id, s.link_url); // Book now above Inquire when the storefront has a booking link
       var vendorP = fillVendor(vid, name, false);
       mountItemNav('services', s.id != null ? s.id : id, vid, vendorP); // #174
     });
