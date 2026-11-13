@@ -207,8 +207,8 @@
   }
 
   function renderShop(mount, gifts) {
-    var head = hero('Holiday 2026 \u00b7 The Woodlands and nearby', 'Gifts from your neighbors',
-      'Made, baked and booked a few streets from you, for every table and every tradition this season.');
+    var head = hero('Holiday 2026', 'Gifts from your neighbors',
+      'Made, baked and booked by local vendors, for every table and every tradition this season.');
     var foot = '<p class="lkh-fine">Sell locally? <a href="/holiday?add=1">Add your gift</a>. It\'s free.</p>';
     if (!gifts.length) {
       mount.innerHTML = '<div class="lkh"><div class="lkh-wrap">' + head +
