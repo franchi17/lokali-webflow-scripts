@@ -251,7 +251,19 @@
   }
 
   /* ---------- vendor form ---------- */
-  function authToken() { try { var A = window.LokaliAuth; return (A && A.token && A.token()) || ''; } catch (e) { return ''; } }
+  // LokaliAuth.token() returns a PROMISE (it waits for the session). v1.4.617-.619 treated it as
+  // a string: a signed-out visitor got the wrong message and a signed-in vendor was refused
+  // (found in the live check 2026-11-13; the email-button route never used it). The token is
+  // now resolved first and kept here; authHeaders() stays synchronous.
+  var _tok = '';
+  function refreshToken() {
+    try {
+      var A = window.LokaliAuth;
+      if (!A || typeof A.token !== 'function') { _tok = ''; return Promise.resolve(''); }
+      return Promise.resolve(A.token()).then(function (t) { _tok = (typeof t === 'string' && t) ? t : ''; return _tok; }, function () { _tok = ''; return ''; });
+    } catch (e) { _tok = ''; return Promise.resolve(''); }
+  }
+  function authToken() { return _tok; }
   function authHeaders() {
     var h = { 'Content-Type': 'application/json' };
     var t = GIFT_KEY ? '' : authToken();
@@ -274,8 +286,7 @@
   function bootForm(mount) {
     if (todayIso() > LAST_DAY) { renderForm(mount, null); return; }
     gate(mount, 'One moment\u2026', 'Finding your storefront.');
-    var A = window.LokaliAuth;
-    var known = (!GIFT_KEY && A && A.ready && typeof A.ready.then === 'function') ? A.ready : Promise.resolve();
+    var known = GIFT_KEY ? Promise.resolve() : refreshToken();
     var go = function () {
       if (!GIFT_KEY && !authToken()) {
         gate(mount, 'Sign in to add your gift', 'Use the \u201cAdd my gift\u201d button in Francesca\u2019s email, or sign in to your Lokali storefront and come back to this page.', 'Sign in', '/login');
@@ -386,10 +397,10 @@
       sending = true;
       var btn = $('lkh-send'); btn.disabled = true; btn.textContent = 'Sending\u2026';
       function reset() { sending = false; btn.disabled = false; btn.textContent = 'Add my gift'; }
-      fetch(ENDPOINT, {
+      (GIFT_KEY ? Promise.resolve() : refreshToken()).then(function () { return fetch(ENDPOINT, {
         method: 'POST', headers: authHeaders(),
         body: JSON.stringify({ k: GIFT_KEY || undefined, kind: kind, title: title, price: price, order_by: date, website: $('lkh-website').value })
-      }).then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { return { ok: r.ok, d: d }; }); })
+      }); }).then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { return { ok: r.ok, d: d }; }); })
         .then(function (res) {
           reset();
           if (!res.ok || !res.d || res.d.ok !== true) { fail(MSG[res.d && res.d.error] || 'That didn\'t go through. Please try again in a moment.'); return; }
