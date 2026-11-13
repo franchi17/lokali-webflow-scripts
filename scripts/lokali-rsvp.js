@@ -9,6 +9,8 @@
  * Event key = ?e= (default nov5-2026). Fields: name, email, business, attending, storefront.
  * No "what do you need help with": that is for the room (F 2026-10-08).
  *
+ * 2026-11-13: Content Day is PHOTOS ONLY (F). The interest question is now yes ('photos') / 'not_this_time';
+ *   'video' and 'both' stay valid on the server for the old answers but are no longer offered.
  * 2026-11-09: events with kind 'interest' (first: content-day-2027, the February 2027 Content
  * Day from Circle issue 3) keep name / email / business and ask three choices instead of
  * attending + storefront: interest (photos / video / both / not this time), timing (weekday /
@@ -45,9 +47,9 @@
       eyebrow: 'Would you come to',
       title: 'Lokali Content Day',
       day: 'February', date: '2027', time: 'Date to come',
-      venue: 'A studio in the area', address: 'Professional photos of you and your work, and short clips for Instagram and your storefront. Done together, it costs each of us a fraction of booking it alone.',
+      venue: 'A studio in the area', address: 'A short photo session with a photographer who shoots for businesses: professional photos of you and your work for your storefront and Instagram. Done together, it costs each of us a fraction of booking it alone.',
       caps: 'Vendors only · Nothing is booked yet',
-      deadline: 'Tell me what you would use and I will price the day'
+      deadline: 'Tell me if you would come and I will price the day'
     }
   };
   var key = (function () { try { return (new URLSearchParams(window.location.search).get('e') || 'nov5-2026').toLowerCase(); } catch (e) { return 'nov5-2026'; } })();
@@ -123,7 +125,7 @@
         var lead = document.createElement('p');
         lead.className = 'lk-inv-formlead';
         lead.innerHTML = EV.kind === 'interest'
-          ? '<b>Four quick answers.</b> They decide whether I book a photographer, a videographer or both, and on which day.'
+          ? '<b>Four quick answers.</b> They decide how big a studio I book, and on which day.'
           : '<b>Save your seat.</b> Ten seconds, and Mia\u2019s Table knows how many to expect.';
         var inner = formWrap.querySelector('.lok-cf-inner') || formWrap;
         inner.insertBefore(lead, inner.firstChild);
@@ -154,7 +156,7 @@
     }
     form.innerHTML = EV.kind === 'interest'
       ? head +
-        radios('interest', 'What would you use?', [['photos', 'Photos'], ['video', 'Video'], ['both', 'Both'], ['not_this_time', 'Not this time']]) +
+        radios('interest', 'Would you come for photos?', [['photos', 'Yes, count me in'], ['not_this_time', 'Not this time']]) +
         radios('timing', 'Which day works for you?', [['weekday', 'A weekday'], ['saturday', 'A Saturday'], ['either', 'Either']]) +
         radios('sponsor', 'Would your business sponsor the day?', [['yes', 'Yes, let’s talk'], ['maybe', 'Maybe'], ['no', 'Not this time']]) +
         '<div class="lok-cf-field"><label for="rs-note" class="lok-cf-label">What would you want photographed or filmed? <span class="lok-cf-opt">(optional)</span></label><textarea class="lok-cf-input w-input lk-rg-note" maxlength="300" name="note" id="rs-note" placeholder="Your products, you at work, your space, a short clip talking about what you do"></textarea></div>' +
@@ -248,7 +250,7 @@
     if (changeToken) data.t = changeToken;
     if (!data.name) return show('bad', 'Please enter your name.');
     if (!data.email || data.email.indexOf('@') < 1) return show('bad', 'Please enter a valid email address.');
-    if (!data.interest) return show('bad', 'Tell me what you would use: photos, video, both, or not this time.');
+    if (!data.interest) return show('bad', 'Tell me if you would come: yes, or not this time.');
     if (!data.timing) return show('bad', 'One more: a weekday, a Saturday, or either?');
     if (!data.sponsor) return show('bad', 'Last one: would your business sponsor the day?');
     var btn = $('rs-submit'), label = btn ? btn.value : null;
@@ -268,7 +270,7 @@
         if (data.interest === 'not_this_time') {
           show('ok', '<b>Noted, ' + first + '. Thank you for telling me.</b> That helps me plan just as much as a yes. A short note is on its way to ' + esc(data.email) + ' with a link in case your mind changes.');
         } else {
-          show('ok', '<b>Got it, ' + first + '. You are on the Content Day list.</b> Once I know how many of us want photos, video or both, I will price the studio and the crew and come back with a date and a cost per person. A copy of your answers is on its way to ' + esc(data.email) + '.');
+          show('ok', '<b>Got it, ' + first + '. You are on the Content Day list.</b> Once I know how many of us are coming, I will price the studio and the photographer and come back with a date and a cost per person. A copy of your answers is on its way to ' + esc(data.email) + '.');
         }
       })
       .catch(function () { if (btn) { btn.disabled = false; btn.value = label; } show('bad', 'Something went wrong. Please try again, or reply to the Circle email with your answers.'); });
