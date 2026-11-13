@@ -2548,6 +2548,10 @@
       v.appendChild(band);
       var grid = T('div', 'lk-ash-needs'); grid.hidden = true; v.appendChild(grid);
       review.addEventListener('click', function () { grid.hidden = !grid.hidden; review.textContent = grid.hidden ? 'Review' : 'Hide'; review.setAttribute('aria-expanded', grid.hidden ? 'false' : 'true'); });
+      // Always-open cards (F 2026-11-13: "yes, change that. Also the content day"): Holiday gifts
+      // and Content Day stay visible on Today instead of folding away behind Review. A gift that
+      // is waiting still counts in "needs you" and keeps its chip on the strip above.
+      var pinned = T('div', 'lk-ash-needs lk-ash-pinned'); v.appendChild(pinned);
       var FB = fqBoardRow(now); v.appendChild(FB.el);
       var FW = fqBriefRow(now); v.appendChild(FW.el); // Clo's brief: waiting on you + decide (#237)
 
@@ -2558,19 +2562,21 @@
       }
       function paintNeeds() {
         var total = 0, open = 0, info = 0; chips.innerHTML = '';
-        grid.querySelectorAll('.lk-admin-section').forEach(function (sec) {
+        var secs = Array.prototype.slice.call(grid.querySelectorAll('.lk-admin-section')).concat(Array.prototype.slice.call(pinned.querySelectorAll('.lk-admin-section')));
+        secs.forEach(function (sec) {
+          var pin = sec.parentNode === pinned; // always open: never folds, never holds Review open
           var empty = sec.querySelector('.lk-admin-empty');
           var loading = empty && /loading/i.test(empty.textContent || '');
           var rows = sec.querySelectorAll('.lk-admin-row').length;
           var quiet = !!empty && !loading && !rows && !sec.querySelector('form');
-          sec.classList.toggle('lk-collapsed', quiet);
+          sec.classList.toggle('lk-collapsed', quiet && !pin);
           var title = sectionTitle(sec); if (!title) return;
           // Informational sections (the RSVP list, 2026-10-29): their rows are reading, not work.
           // They get no chip, never count as "needs you" and never read as "still loading";
           // they only keep the grid open so the list stays visible.
-          if (sec.classList.contains('lk-admin-section-info')) { if (!quiet) info++; return; }
+          if (sec.classList.contains('lk-admin-section-info')) { if (!quiet && !pin) info++; return; }
           var q = T('span', 'lk-ash-q' + (rows ? ' on' : ''), title); q.appendChild(T('b', null, String(rows))); chips.appendChild(q);
-          total += rows; if (!quiet) open++;
+          total += rows; if (!quiet && !pin) open++;
         });
         var waiting = total > 0 || open > 0 || info > 0;
         st.classList.toggle('wait', total > 0 || open > 0);
@@ -2583,8 +2589,8 @@
       appendReportsSection(grid, ov);              // trust and safety first
       appendAddressFlagsSection(grid);
       appendBlockedSendersSection(grid);           // #201
-      appendHolidayGiftsSection(grid);             // #249 holiday gift page
-      appendInterestSection(grid);                 // Content Day 2027
+      appendHolidayGiftsSection(pinned);           // #249 holiday gift page (always open)
+      appendInterestSection(pinned);               // Content Day 2027 (always open)
       appendTagSuggestionsSection(grid, a, null);
       appendSpotlightCreativesSection(grid);
       appendPairingFeedbackSection(grid);
@@ -4142,13 +4148,14 @@
       host.innerHTML = '';
       var waiting = gifts.filter(function (g) { return g.status === 'pending'; });
       var up = gifts.filter(function (g) { return g.status === 'approved'; });
-      host.className = 'lk-admin-section' + (waiting.length || up.length ? ' lk-admin-section-wide' : '');
+      var no = gifts.filter(function (g) { return g.status === 'declined'; });
+      host.className = 'lk-admin-section' + (waiting.length || up.length || no.length ? ' lk-admin-section-wide' : '');
       var t = el('div', 'lk-admin-qtitle');
       t.appendChild(document.createTextNode('Holiday gifts'));
       t.appendChild(el('span', 'lk-admin-qcount', String(waiting.length)));
       host.appendChild(t);
-      if (!waiting.length && !up.length) { host.appendChild(el('div', 'lk-admin-empty', 'No holiday gifts yet. They land here when a vendor fills in the form.')); if (window.__lokPaintAttn) window.__lokPaintAttn(); return; }
-      host.appendChild(el('p', 'lk-admin-sub', waiting.length + ' waiting for you, ' + up.length + ' on the holiday page. A gift shows to shoppers only after you put it up.'));
+      if (!waiting.length && !up.length && !no.length) { host.appendChild(el('div', 'lk-admin-empty', 'No holiday gifts yet. They land here when a vendor fills in the form.')); if (window.__lokPaintAttn) window.__lokPaintAttn(); return; }
+      host.appendChild(el('p', 'lk-admin-sub', waiting.length + ' waiting for you, ' + up.length + ' on the holiday page' + (no.length ? ', ' + no.length + ' declined' : '') + '. A gift shows to shoppers only after you put it up.'));
       waiting.forEach(function (g) {
         var row = el('div', 'lk-admin-row');
         var meta = el('div', 'lk-admin-row-meta');
@@ -4173,6 +4180,21 @@
           list.appendChild(r);
         });
         host.appendChild(list);
+      }
+      // Declined gifts stay listed (F 2026-11-13), each with a way back onto the page.
+      if (no.length) {
+        var nl = el('div', 'lk-hg-no');
+        nl.style.cssText = 'margin-top:10px;display:flex;flex-direction:column;gap:6px;';
+        no.forEach(function (g) {
+          var r = el('div', 'lk-hg-line');
+          r.style.cssText = 'display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;font-size:13px;opacity:.85;';
+          var tx = document.createElement('span'); tx.style.minWidth = '0';
+          var b = document.createElement('b'); b.textContent = g.business_name || 'Unknown vendor'; tx.appendChild(b);
+          tx.appendChild(document.createTextNode(' \u00b7 ' + line(g) + ' \u00b7 declined, not shown'));
+          r.appendChild(tx); r.appendChild(button('Put it up', g, 'approve', 'Putting it up\u2026', true));
+          nl.appendChild(r);
+        });
+        host.appendChild(nl);
       }
       var see = document.createElement('a'); see.className = 'lk-admin-btn'; see.textContent = 'Open the holiday page'; see.href = '/holiday'; see.target = '_blank'; see.rel = 'noopener';
       see.style.cssText = 'display:inline-block;margin-top:12px;';
