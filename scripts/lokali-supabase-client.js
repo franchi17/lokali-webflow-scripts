@@ -216,7 +216,11 @@
     'subcategory', // #96-LISTING: one optional taxonomy slug per listing
     'lead_time',   // #78: free-text per-item lead time (display only)
     'is_featured_pick', // FEAT-PICKS: Featured-plan shop window (cap+plan gate = DB trigger)
-    'image_focus_x', 'image_focus_y' // #149: main-image focal point (0-100 %, null = center)
+    'image_focus_x', 'image_focus_y', // #149: main-image focal point (0-100 %, null = center)
+    // #251 (patch_inquiry_questions.sql): how shoppers reach you. The editor only
+    // sends these once it has seen the form function answer (a key the table does
+    // not have yet would fail the whole save).
+    'inquiry_questions', 'inquiry_hint', 'inquiry_phone', 'cta_mode'
   ];
   var PRODUCT_EDITABLE = [
     'product_name', 'product_description', 'price', 'stock_quantity', 'image_url',
@@ -1019,8 +1023,21 @@
           phone: payload.phone || null,
           message: payload.message || null,
           context: payload.context || null,
-          source: payload.source || 'listing'
+          source: payload.source || 'listing',
+          // #251: sent from a service page. The route checks both against
+          // service_inquiry_form(), never trusting the browser's copy.
+          serviceId: payload.serviceId != null ? payload.serviceId : null,
+          answers: Array.isArray(payload.answers) ? payload.answers : null
         }, false);
+      },
+      // #251: the Inquire form for one service: { vendors_id, phone, hint,
+      // cta_mode, questions } or null. Anon RPC; questions come back for
+      // Pro / Featured only (server-side). Until patch_inquiry_questions.sql is
+      // applied the RPC does not exist: callers treat an error as "no form".
+      form: function (serviceId) {
+        return withClient(function (c) {
+          return c.rpc('service_inquiry_form', { p_service_id: serviceId });
+        });
       }
     },
     // (tracking.recordView / recordLeadEvent removed 2026-09-21, CLEAN-C33: they were a

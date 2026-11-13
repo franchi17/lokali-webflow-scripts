@@ -438,6 +438,27 @@
     return call;
   }
 
+  // #251: the Inquire form for THIS service (phone setting, hint, the vendor's
+  // own questions), read once per page through service_inquiry_form. Products
+  // and a failed read leave it null = the box as it always was.
+  var _svcFormP = null;
+  function loadSvcForm(serviceId) {
+    try {
+      var api = window.LokaliSupabaseAPI && window.LokaliSupabaseAPI.inquiries;
+      if (!api || typeof api.form !== 'function' || serviceId == null) return;
+      _svcFormP = api.form(serviceId).then(function (res) {
+        var f = res && !res.error ? res.data : null;
+        if (!f || typeof f !== 'object') return null;
+        return { serviceId: serviceId, phone: f.phone, hint: f.hint, questions: f.questions };
+      }).catch(function () { return null; });
+    } catch (e) { _svcFormP = null; }
+  }
+  // Never keep a shopper waiting on it: after 1.5s the box opens plain.
+  function svcFormSoon() {
+    if (!_svcFormP) return Promise.resolve(null);
+    return Promise.race([_svcFormP, new Promise(function (r) { setTimeout(function () { r(null); }, 1500); })]);
+  }
+
   function v2Contact(v, vendorId, itemName, isProduct) {
     if (!_v2) return false;
     var cta = $('vd-cta-btn');
@@ -450,12 +471,16 @@
     cta.addEventListener('click', function (ev) {
       ev.preventDefault();
       if (window.LokaliInquiry && typeof window.LokaliInquiry.open === 'function') {
-        window.LokaliInquiry.open(((isProduct ? 'Product: ' : 'Service: ') + (itemName || '')).slice(0, 200));
-        // a head start on the message; the shopper can type over it
-        setTimeout(function () {
-          var ta = document.getElementById('lok-inq-msg');
-          if (ta && !ta.value && itemName) ta.value = "Hi! I'm interested in " + itemName + '.';
-        }, 0);
+        var ctx = ((isProduct ? 'Product: ' : 'Service: ') + (itemName || '')).slice(0, 200);
+        (isProduct ? Promise.resolve(null) : svcFormSoon()).then(function (form) {
+          window.LokaliInquiry.open(ctx, form ? { form: form } : undefined);
+          // a head start on the message; the shopper can type over it. Not when
+          // the vendor wrote their own hint: the hint is the prompt then.
+          setTimeout(function () {
+            var ta = document.getElementById('lok-inq-msg');
+            if (ta && !ta.value && itemName && !(form && form.hint)) ta.value = "Hi! I'm interested in " + itemName + '.';
+          }, 0);
+        });
         return;
       }
       // the form script failed to load: the old mailto beats a dead button
@@ -1175,26 +1200,27 @@
   // Book now there, not to the storefront-wide link, which may be the page for
   // the vendor's OTHER services. The separate Visit website button is then
   // dropped: it would be a second button to the same place.
-  function mountBookLink(vendorId, serviceId, ownLink) {
+  // #251 (2026-11-13): the vendor may pick the service's main button. mode
+  // 'link' = "They go to my website": the service's own link is the main button
+  // even when the storefront has no booking link (it then reads Visit website).
+  // mode 'inquire' never reaches this function (the caller skips it).
+  function mountBookLink(vendorId, serviceId, ownLink, mode) {
     try {
       if (document.getElementById('vd-book-btn') || vendorId == null) return;
       var av = window.LokaliSupabaseAPI && window.LokaliSupabaseAPI.availability;
       if (!av || typeof av.bookingLink !== 'function') return;
       av.bookingLink(vendorId).then(function (res) {
         var raw = res && !res.error ? res.data : null;
-        if (!raw || document.getElementById('vd-book-btn')) return;
-        var u;
-        try { u = new URL(String(raw).trim()); } catch (e) { return; }
-        if (u.protocol !== 'https:') return;
-        if (ownLink) {
-          try {
-            var ou = new URL(String(ownLink).trim());
-            if (ou.protocol === 'https:') {
-              u = ou;
-              var dup = document.getElementById('vd-link-btn');
-              if (dup && dup.parentNode) dup.parentNode.removeChild(dup);
-            }
-          } catch (e) {}
+        if (document.getElementById('vd-book-btn')) return;
+        var u = null, ou = null, label = 'Book now', evt = 'booking_link';
+        if (raw) { try { u = new URL(String(raw).trim()); } catch (e) { u = null; } if (u && u.protocol !== 'https:') u = null; }
+        if (ownLink) { try { ou = new URL(String(ownLink).trim()); } catch (e) { ou = null; } if (ou && ou.protocol !== 'https:') ou = null; }
+        if (!u && !(mode === 'link' && ou)) return;
+        if (!u) { label = 'Visit website'; evt = 'service_link'; } // no storefront booking link: do not promise a booking
+        if (ou) {
+          u = ou;
+          var dup = document.getElementById('vd-link-btn');
+          if (dup && dup.parentNode) dup.parentNode.removeChild(dup);
         }
         var cta = $('vd-cta-btn');
         if (!cta || !cta.parentNode) return;
@@ -1203,22 +1229,22 @@
         btn.querySelectorAll('[id]').forEach(function (n) { n.removeAttribute('id'); });
         var textHost = btn;
         while (textHost.children && textHost.children.length === 1) textHost = textHost.children[0];
-        textHost.textContent = 'Book now';
+        textHost.textContent = label;
         btn.href = lkOutboundHref(u.href, 'booking'); // property, never string-built markup
         btn.target = '_blank';
         btn.rel = 'noopener';
-        btn.setAttribute('aria-label', 'Book now (opens in a new tab)');
+        btn.setAttribute('aria-label', label + ' (opens in a new tab)');
         btn.style.marginBottom = '10px';
         cta.parentNode.insertBefore(btn, cta);
         btn.addEventListener('click', function () {
           if (window.LokaliAPI && window.LokaliAPI.leads) {
-            window.LokaliAPI.leads.trackEvent(vendorId, 'booking_link', 'service', serviceId != null ? { kind: 'service', id: serviceId } : null); // #206 price snapshot
+            window.LokaliAPI.leads.trackEvent(vendorId, evt, 'service', serviceId != null ? { kind: 'service', id: serviceId } : null); // #206 price snapshot
           }
         });
         var bar = document.getElementById('vd2-bar');
         if (bar && !bar.querySelector('.vd2-bar-buy')) {
           var bb = v2el('button', 'vd2-bar-buy vd2-bar-book'); bb.type = 'button';
-          bb.textContent = 'Book now';
+          bb.textContent = label;
           bb.addEventListener('click', function () { btn.click(); });
           bar.insertBefore(bb, bar.firstChild);
           var side = bar.querySelector('.vd2-bar-side'); if (side) side.parentNode.removeChild(side);
@@ -1558,7 +1584,10 @@
       var vid = s.vendors_id || s.vendor_id || vendorParam;
       emitItemView(vid, 'service', s.id != null ? s.id : id);
       mountServiceLink(s, vid); // Visit website, lilac, under Inquire (F 2026-11-11)
-      mountBookLink(vid, s.id != null ? s.id : id, s.link_url); // Book now above Inquire when the storefront has a booking link
+      // #251: 'inquire' = the vendor chose "They message me on Lokali": no Book now
+      // on this service, Inquire stays the main button.
+      if (s.cta_mode !== 'inquire') mountBookLink(vid, s.id != null ? s.id : id, s.link_url, s.cta_mode); // Book now above Inquire when the storefront has a booking link
+      loadSvcForm(s.id != null ? s.id : id);
       var vendorP = fillVendor(vid, name, false);
       mountItemNav('services', s.id != null ? s.id : id, vid, vendorP); // #174
     });

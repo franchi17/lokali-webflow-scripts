@@ -53,7 +53,7 @@
   // 2026-11-12 (The MoCo List): a service with its OWN link sends Book now
   // there (data-own-link on the pill), not to the storefront-wide link.
   function wireBookNow(pill) {
-    if (!pill || !_bookUrl || pill.getAttribute('data-book') === '1') return;
+    if (!pill || !_bookUrl || pill.getAttribute('data-book') === '1' || pill.getAttribute('data-no-book') === '1') return;
     pill.setAttribute('data-book', '1');
     pill.textContent = 'Book now';
     pill.setAttribute('role', 'link');
@@ -2139,6 +2139,7 @@
     // curation visible to customers (and the perk visible to vendors). Static
     // markup only; positioned over the tinted image block.
     if (opts.ownLink) a.querySelector('.vl-card-cta').setAttribute('data-own-link', opts.ownLink); // set even before the booking probe answers; applyBookNow() reads it later
+    if (opts.noBook) a.querySelector('.vl-card-cta').setAttribute('data-no-book', '1'); // #251: applyBookNow() skips it when the booking probe answers late
     if (opts.book) wireBookNow(a.querySelector('.vl-card-cta'));
     if (opts.pick) {
       var pickChip = document.createElement('div');
@@ -2257,8 +2258,11 @@
         pick: s.is_featured_pick === true, // FEAT-PICKS
         // 2026-10-02: a service with its own website link reads "Visit website"
         // (same promise-what-the-page-delivers rule as the product "Buy online").
-        cta: _bookUrl ? 'Book now' : (/^https:\/\/\S+$/.test(String(s.link_url || '')) ? 'Visit website' : (p.quote ? 'Request quote' : 'Inquire')),
-        book: !!_bookUrl,
+        // #251: cta_mode 'inquire' = the vendor chose "They message me on Lokali"
+        // for this service, so its card never becomes a Book now link.
+        cta: (_bookUrl && s.cta_mode !== 'inquire') ? 'Book now' : (s.cta_mode !== 'inquire' && /^https:\/\/\S+$/.test(String(s.link_url || '')) ? 'Visit website' : (p.quote ? 'Request quote' : 'Inquire')),
+        book: !!_bookUrl && s.cta_mode !== 'inquire',
+        noBook: s.cta_mode === 'inquire',
         ownLink: /^https:\/\/\S+$/.test(String(s.link_url || '').trim()) ? String(s.link_url).trim() : '',
         lead: leadText(s),
         href: itemHref('services', s)

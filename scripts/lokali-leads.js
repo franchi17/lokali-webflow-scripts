@@ -97,6 +97,10 @@
     '#lok-leads-page .lq-who{font-size:13.5px;font-weight:700;color:' + INK + ';line-height:1.4;}',
     '#lok-leads-page .lq-who span{font-weight:500;color:' + DUSK + ';}',
     '#lok-leads-page .lq-about{font-size:12px;color:' + GRAY + ';margin-top:2px;line-height:1.5;word-break:break-word;}',
+    '#lok-leads-page .lq-ans{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 0;}',
+    '#lok-leads-page .lq-an{background:#F3EBFF;border-radius:10px;padding:7px 11px;min-width:0;}',
+    '#lok-leads-page .lq-an small{display:block;font-size:11.5px;font-weight:700;color:#4A1FB8;}',
+    '#lok-leads-page .lq-an b{font-size:13.5px;font-weight:600;color:' + INK + ';word-break:break-word;}',
     '#lok-leads-page .lq-msg{font-size:13px;color:' + INK + ';line-height:1.5;margin:8px 0 10px;padding:10px 12px;background:' + SNOW + ';border-radius:10px;border-left:3px solid ' + VIOLET_B + ';white-space:pre-wrap;word-break:break-word;}',
     '#lok-leads-page .lq-wait{font-size:12px;font-weight:700;color:' + PINK + ';background:' + PINK_L + ';border-radius:100px;padding:3px 9px;white-space:nowrap;justify-self:end;}',
     '#lok-leads-page .lq-wait.fresh{color:' + GREEN + ';background:' + GREEN_L + ';}',
@@ -301,6 +305,14 @@
   }
 
   // ── render ──
+  // #251: a YYYY-MM-DD answer (a "Date" question) reads as a date.
+  function answerText(a) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(a));
+    if (!m) return String(a);
+    var d = new Date(+m[1], +m[2] - 1, +m[3]);
+    return isNaN(d.getTime()) ? String(a) : d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+  }
+
   function render(mount, leadsData, analytics) {
     var inquiries = ((leadsData && leadsData.inquiries) || []).map(function (i) {
       return {
@@ -313,7 +325,9 @@
         // #194 Business from Lokali: self-reported worth of a Won lead (cents) + server stamp
         worth: (i.won_value_cents == null ? null : Number(i.won_value_cents)), won_at: i.won_at || null,
         // #206: the shopper's own answer from the follow-up email (hired | not_hired | null)
-        shopper: i.shopper_outcome || null
+        shopper: i.shopper_outcome || null,
+        // #251: the vendor's own questions with this shopper's answers [{q,a}]
+        answers: (Array.isArray(i.answers) ? i.answers : []).filter(function (x) { return x && typeof x.q === 'string' && typeof x.a === 'string' && x.a; }).slice(0, 3)
       };
     });
     var events = (leadsData && leadsData.events_30d) || [];
@@ -540,6 +554,17 @@
       bits.push('via your ' + (l.source === 'service' ? 'service page' : l.source === 'product' ? 'product page' : 'storefront'));
       body.appendChild(html('div', 'lq-about', bits.join(' · ')));
       if (l.prior && l.prior.length) body.appendChild(html('div', 'lq-hist', historyLine(l)));
+      // #251: answers to the vendor's own questions, above the message
+      if (l.answers && l.answers.length) {
+        var ans = el('div', 'lq-ans');
+        l.answers.forEach(function (x) {
+          var box = el('div', 'lq-an');
+          box.appendChild(el('small', '', x.q.replace(/[:?\s]+$/, '')));
+          box.appendChild(el('b', '', answerText(x.a)));
+          ans.appendChild(box);
+        });
+        body.appendChild(ans);
+      }
       if (l.message) body.appendChild(el('div', 'lq-msg', l.message));
       var acts = el('div', 'lq-acts');
       var primaryDone = false;

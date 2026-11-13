@@ -1125,7 +1125,8 @@ const LokaliServicesPage = (() => {
         }).observe(fv, { childList: true, subtree: true, attributes: true, attributeFilter: ['src', 'style'] });
       }
     }
-    if (!_lcOrg) _lcOrg = LUI.organize(fv, { kind: 'service', ids: { img: 'service-img-input', name: 'service-name', desc: 'service-description', priceType: 'service-price-type', active: 'service-is-active', remote: 'service-remote' }, hosts: { gallery: 'lok-service-gallery', video: 'lok-service-video', buy: 'lok-service-link' } }); // buy = Website link host (2026-10-03): the organiser's settle() only pulls hosts.video + hosts.buy into Details, so without this the link field stayed in the hidden raw grid
+    reachHost(); // #251: must exist before the organiser builds its sections
+    if (!_lcOrg) _lcOrg = LUI.organize(fv, { kind: 'service', ids: { img: 'service-img-input', name: 'service-name', desc: 'service-description', priceType: 'service-price-type', active: 'service-is-active', remote: 'service-remote' }, hosts: { gallery: 'lok-service-gallery', video: 'lok-service-video', buy: 'lok-service-link', reach: 'lok-service-reach' } }); // buy = Website link host (2026-10-03): the organiser's settle() only pulls hosts.video + hosts.buy into Details, so without this the link field stayed in the hidden raw grid
     if (_lcOrg && _lcOrg.reset) _lcOrg.reset(!!editingId);
     setTimeout(lcRefreshPreview, 0);
     setTimeout(lcRefreshPreview, 500);
@@ -1260,6 +1261,7 @@ const LokaliServicesPage = (() => {
     renderGallery(service.id);
     setVideoUrl(service.video_url);
     setLinkUrl(service.link_url);   // 2026-10-02 website link
+    setReach(service);              // #251 how shoppers reach you (after the link: it moves that field)
   };
 
   const resetForm = () => {
@@ -1289,6 +1291,7 @@ const LokaliServicesPage = (() => {
     renderGallery(null);
     setVideoUrl('');
     setLinkUrl('');   // 2026-10-02 website link
+    setReach(null);   // #251
   };
 
   const revokeImagePreviewUrl = () => {
@@ -1405,6 +1408,350 @@ const LokaliServicesPage = (() => {
   const linkInput = () => { linkHost(); return document.getElementById('lok-service-link-input'); };
   const readLinkUrl = () => (linkInput()?.value || '').trim();
   const setLinkUrl = (v) => { const inp = linkInput(); if (inp) inp.value = v || ''; markLinkValidity(); };
+
+  // ---------------------------------------------------------------------------
+  // #251 "How shoppers reach you" (F 2026-11-12/13, mockup
+  // docs/mockups/inquire-custom-questions-2026-11-12.html in the main repo).
+  // One section, drawn by this file and placed by the organiser in
+  // lokali-dashboard.js (hosts.reach): a first choice (message me on Lokali /
+  // go to my website), then, for the Lokali choice, whether a phone number is
+  // asked, up to three of the vendor's own questions (Pro and Featured), a live
+  // preview and, under More options, the message hint. The Website link field
+  // (#lok-service-link, 2026-10-02) is MOVED in here, never rebuilt, so its
+  // input, validator and save path are untouched.
+  //
+  // Nothing is written unless the vendor changes something here: an existing
+  // service keeps cta_mode NULL (= the behaviour before #251) until they pick.
+  // The section only appears once service_inquiry_form answers, i.e. after
+  // patch_inquiry_questions.sql is applied; before that this block is inert.
+  const REACH_STARTERS = [
+    { q: 'Event date', t: 'date' },
+    { q: 'Preferred day or time', t: 'text' },
+    { q: 'Your address or area', t: 'text' },
+    { q: 'How did you hear about us?', t: 'text' }
+  ];
+  const REACH_TYPES = { text: 'Short answer', date: 'Date', pick: 'Pick one' };
+  const REACH_ICON = {
+    date: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="2" y="3" width="12" height="11" rx="2"/><path d="M2 7h12M5 1.5v3M11 1.5v3"/></svg>',
+    pick: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="4" cy="4.5" r="1.6"/><circle cx="4" cy="11.5" r="1.6"/><path d="M8 4.5h6M8 11.5h6"/></svg>',
+    text: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 4h10M3 8h10M3 12h6"/></svg>'
+  };
+  const REACH_CSS = [
+    '#lok-service-reach{font-family:"Plus Jakarta Sans",system-ui,sans-serif;white-space:normal;display:flex;flex-direction:column;gap:14px;margin-top:10px;}',
+    '#lok-service-reach [hidden]{display:none!important;}',
+    '.lok-rc-pick{display:grid;grid-template-columns:1fr 1fr;gap:10px;}',
+    '.lok-rc-opt{display:flex;gap:10px;align-items:flex-start;text-align:left;padding:12px;border:1.5px solid #E6E4F0;border-radius:12px;background:#fff;cursor:pointer;color:#4A4761;font:500 13px/1.45 "Plus Jakarta Sans",system-ui,sans-serif;}',
+    '.lok-rc-opt b{display:block;color:#1A1829;font-size:14.5px;font-weight:700;}',
+    '.lok-rc-dot{width:18px;height:18px;border-radius:50%;border:2px solid #DCCBFB;flex:none;margin-top:2px;box-sizing:border-box;}',
+    '.lok-rc-opt[aria-pressed="true"]{border-color:#6002EE;background:#FDFCFF;}',
+    '.lok-rc-opt[aria-pressed="true"] .lok-rc-dot{border:5px solid #6002EE;}',
+    '.lok-rc-note{font-size:13px;color:#6B6880;line-height:1.5;margin:0;}',
+    '.lok-rc-note b{color:#1A1829;}',
+    '.lok-rc-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:13px;font-weight:600;color:#1A1829;}',
+    '.lok-rc-seg{font:600 13px/1.2 "Plus Jakarta Sans",system-ui,sans-serif;padding:8px 13px;border-radius:999px;border:1px solid #E6E4F0;background:#fff;color:#4A4761;cursor:pointer;}',
+    '.lok-rc-seg[aria-pressed="true"]{background:#F3EBFF;border-color:#6002EE;color:#4A1FB8;}',
+    '.lok-rc-sub{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#4A4761;display:flex;gap:8px;align-items:center;flex-wrap:wrap;}',
+    '.lok-rc-sub span{font-weight:600;text-transform:none;letter-spacing:0;color:#8E8BA6;}',
+    '.lok-rc-list{display:flex;flex-direction:column;gap:8px;}',
+    '.lok-rc-q{border:1px solid #E6E4F0;border-radius:12px;background:#fff;overflow:hidden;}',
+    '.lok-rc-line{display:flex;align-items:center;gap:10px;padding:10px 12px;min-width:0;}',
+    '.lok-rc-ic{width:30px;height:30px;border-radius:8px;background:#F3EBFF;color:#4A1FB8;display:inline-flex;align-items:center;justify-content:center;flex:none;}',
+    '.lok-rc-ic svg{width:15px;height:15px;}',
+    '.lok-rc-tx{min-width:0;flex:1;}',
+    '.lok-rc-tx b{display:block;color:#1A1829;font-size:14.5px;font-weight:700;overflow-wrap:anywhere;}',
+    '.lok-rc-tx span{font-size:12.5px;color:#8E8BA6;}',
+    '.lok-rc-link{font:700 13px/1.2 "Plus Jakarta Sans",system-ui,sans-serif;color:#6002EE;background:none;border:none;padding:6px;cursor:pointer;border-radius:8px;}',
+    '.lok-rc-link.quiet{color:#8E8BA6;font-weight:600;}',
+    '.lok-rc-edit{border-top:1px solid #E6E4F0;background:#FBFAFE;padding:12px;display:flex;flex-direction:column;gap:10px;}',
+    '.lok-rc-f{display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:600;color:#1A1829;min-width:0;}',
+    '.lok-rc-f small{font-weight:500;color:#6B6880;}',
+    '#lok-service-reach input[type="text"]{width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #E6E4F0;border-radius:10px;font:500 14px/1.4 "Plus Jakarta Sans",system-ui,sans-serif;color:#1A1829;background:#fff;margin:0;}',
+    '#lok-service-reach input[type="text"].lok-rc-choice{width:120px;padding:6px 10px;font-size:13px;border-radius:999px;}',
+    '.lok-rc-wrap{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}',
+    '.lok-rc-add{font:700 14px/1.2 "Plus Jakarta Sans",system-ui,sans-serif;color:#6002EE;background:none;border:1.5px dashed #DCCBFB;border-radius:12px;padding:11px;cursor:pointer;width:100%;}',
+    '.lok-rc-starters{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:12px;border:1.5px dashed #DCCBFB;border-radius:12px;}',
+    '.lok-rc-lock{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;border:1px solid #DCCBFB;background:#F3EBFF;border-radius:12px;padding:12px 14px;color:#4A1FB8;font-weight:600;font-size:14px;}',
+    '.lok-rc-lock a{font:700 13px/1.2 "Plus Jakarta Sans",system-ui,sans-serif;color:#fff;background:#6002EE;border-radius:10px;padding:8px 14px;text-decoration:none;}',
+    '.lok-rc-prev{background:#FBFAFE;border:1px dashed #DCCBFB;border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px;}',
+    '.lok-rc-box{background:#fff;border:1px solid #E6E4F0;border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;}',
+    '.lok-rc-pl{display:flex;justify-content:space-between;gap:10px;font-size:13px;color:#1A1829;font-weight:600;}',
+    '.lok-rc-pl span{font-weight:500;color:#8E8BA6;white-space:nowrap;}',
+    '.lok-rc-pl em{font-style:normal;font-weight:500;color:#8E8BA6;}',
+    '.lok-rc-more{border-top:1px solid #E6E4F0;padding-top:10px;display:flex;flex-direction:column;gap:12px;}',
+    '.lok-rc-chk{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#1A1829;cursor:pointer;}',
+    '.lok-rc-chk input{width:17px;height:17px;accent-color:#6002EE;margin:0;}',
+    '#lok-service-reach button:focus-visible,#lok-service-reach input:focus-visible{outline:2px solid #6002EE;outline-offset:2px;}',
+    '#lok-service-reach #lok-service-link{margin-top:0!important;}',
+    '@media(max-width:560px){.lok-rc-pick{grid-template-columns:1fr;}}'
+  ].join('');
+
+  let _reach = null;          // the open form's state (reachBlank shape)
+  let _reachOn = false;       // service_inquiry_form answered: the columns exist
+  let _reachProbe = null;     // the one probe promise
+  let _reachBook = {};        // vendors_id -> storefront booking link ('' = none)
+  const reachBlank = () => ({
+    mode: null, modeTouched: false,   // null = never chosen (pre-#251 behaviour)
+    phone: 'optional', hint: '', qs: [], touched: false,
+    also: false,                      // inquire mode: also show a Visit website link
+    open: -1, starters: false, more: false, vid: null
+  });
+  const reachEl = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  const reachBtn = (cls, text, onClick) => { const b = reachEl('button', cls, text); b.type = 'button'; b.addEventListener('click', onClick); return b; };
+
+  const reachHost = () => {
+    let host = document.getElementById('lok-service-reach');
+    if (host) return host;
+    const form = el.fieldName()?.closest('form');
+    if (!form) return null;
+    if (!document.getElementById('lok-reach-css')) {
+      const st = document.createElement('style'); st.id = 'lok-reach-css'; st.textContent = REACH_CSS;
+      document.head.appendChild(st);
+    }
+    host = document.createElement('div');
+    host.id = 'lok-service-reach';
+    host.style.display = 'none';          // shown only once the probe passes
+    host.setAttribute('data-on', '0');
+    form.appendChild(host);
+    return host;
+  };
+  const reachProbe = () => {
+    if (_reachProbe) return _reachProbe;
+    const api = window.LokaliSupabaseAPI?.inquiries;
+    if (!api || typeof api.form !== 'function') return (_reachProbe = Promise.resolve(false));
+    _reachProbe = api.form(0).then((res) => !(res && res.error)).catch(() => false)
+      .then((ok) => { _reachOn = ok; return ok; });
+    return _reachProbe;
+  };
+  // What the storefront does today when cta_mode was never chosen.
+  const reachMode = () => {
+    if (!_reach) return 'inquire';
+    if (_reach.mode) return _reach.mode;
+    return (readLinkUrl() || _reachBook[_reach.vid]) ? 'link' : 'inquire';
+  };
+  // Clean copy for saving. false = a question is half-written (never saved by
+  // a background autosave; the explicit Save names it).
+  const reachCleanQs = () => {
+    const out = [];
+    for (const q of (_reach ? _reach.qs : [])) {
+      const text = String(q.q || '').trim().slice(0, 200);
+      if (!text) return false;
+      const row = { q: text, t: REACH_TYPES[q.t] ? q.t : 'text', req: q.req === true };
+      if (row.t === 'pick') {
+        const c = [];
+        (q.c || []).forEach((ch) => { const v = String(ch || '').trim().slice(0, 60); if (v && c.indexOf(v) < 0 && c.length < 6) c.push(v); });
+        if (c.length < 2) return false;
+        row.c = c;
+      }
+      out.push(row);
+    }
+    return out.slice(0, 3);
+  };
+  const reachSummary = () => {
+    if (reachMode() === 'link') return 'The main button opens your link';
+    const n = _isProPlan ? _reach.qs.filter((q) => String(q.q || '').trim()).length : 0;
+    return 'Shoppers message you on Lokali' + (n ? ' · ' + n + (n === 1 ? ' question of your own' : ' questions of your own') : '');
+  };
+  const reachTouch = (host) => {
+    // the form's own dirty tracking + card preview listen for input events
+    try { host.dispatchEvent(new Event('input', { bubbles: true })); } catch (e) {}
+  };
+
+  const reachPaintPreview = () => {
+    const box = document.getElementById('lok-rc-preview');
+    const host = document.getElementById('lok-service-reach');
+    if (host && _reach) { host.setAttribute('data-sum', reachSummary()); host.setAttribute('data-set', (_reach.mode || _reach.qs.length) ? '1' : '0'); }
+    if (!box || !_reach) return;
+    box.textContent = '';
+    const line = (label, note, muted) => { const r = reachEl('div', 'lok-rc-pl'); if (muted) r.appendChild(reachEl('em', '', label)); else r.appendChild(document.createTextNode(label)); if (note) r.appendChild(reachEl('span', '', note)); box.appendChild(r); };
+    line('Your name'); line('Email');
+    if (_reach.phone !== 'none') line('Phone', _reach.phone === 'required' ? '' : 'optional');
+    if (_isProPlan) _reach.qs.forEach((q) => {
+      const text = String(q.q || '').trim(); if (!text) return;
+      line(text, REACH_TYPES[q.t] + (q.req ? '' : ' · optional'));
+    });
+    line('Message');
+    line(_reach.hint.trim() || 'Hi! I’m interested in...', '', true);
+  };
+
+  const reachPaint = () => {
+    const host = reachHost();
+    if (!host || !_reach) return;
+    host.style.display = _reachOn ? '' : 'none';
+    host.setAttribute('data-on', _reachOn ? '1' : '0');
+    if (!_reachOn) return;
+    const mode = reachMode();              // reads the link input: before anything moves
+    const link = linkHost();               // may be null (capability off)
+    // Keep the link field IN the document across the rebuild (its helpers look it
+    // up by id and would build a second one if it were detached): step it out to
+    // the host's parent, clear, then place it again below.
+    const outside = host.parentElement;
+    if (link && outside && host.contains(link)) outside.appendChild(link);
+    host.textContent = '';
+    const repaint = () => { reachPaint(); reachTouch(host); };
+
+    // 1. the one choice
+    const pick = reachEl('div', 'lok-rc-pick'); pick.setAttribute('role', 'group'); pick.setAttribute('aria-label', 'Main button on this service');
+    [['inquire', 'They message me on Lokali', 'The main button says Inquire. Requests land in your Leads.'],
+     ['link', 'They go to my website', 'The main button opens your link.']].forEach((o) => {
+      const b = reachBtn('lok-rc-opt', null, () => { _reach.mode = o[0]; _reach.modeTouched = true; repaint(); });
+      b.setAttribute('aria-pressed', mode === o[0] ? 'true' : 'false');
+      b.appendChild(reachEl('span', 'lok-rc-dot'));
+      const t = reachEl('span'); t.appendChild(reachEl('b', '', o[1])); t.appendChild(document.createTextNode(o[2])); b.appendChild(t);
+      pick.appendChild(b);
+    });
+    host.appendChild(pick);
+
+    if (mode === 'link') {
+      if (link) { link.style.display = ''; host.appendChild(link); }
+      if (_reachBook[_reach.vid]) host.appendChild(reachEl('p', 'lok-rc-note', 'Leave the link blank and the button opens your storefront booking link.'));
+      reachPaintPreview();
+      return;
+    }
+
+    // 2. always asked + phone
+    const always = reachEl('p', 'lok-rc-note'); always.appendChild(document.createTextNode('Every shopper gives their ')); always.appendChild(reachEl('b', '', 'name, email and a message')); always.appendChild(document.createTextNode('. Those three are always required.'));
+    host.appendChild(always);
+    const ph = reachEl('div', 'lok-rc-row'); ph.setAttribute('role', 'group'); ph.setAttribute('aria-label', 'Phone number');
+    ph.appendChild(reachEl('span', '', 'Phone number:'));
+    [['none', 'Don’t ask'], ['optional', 'Optional'], ['required', 'Required']].forEach((o) => {
+      const b = reachBtn('lok-rc-seg', o[1], () => { _reach.phone = o[0]; _reach.touched = true; repaint(); });
+      b.setAttribute('aria-pressed', _reach.phone === o[0] ? 'true' : 'false'); ph.appendChild(b);
+    });
+    host.appendChild(ph);
+
+    // 3. the vendor's own questions (Pro and Featured)
+    if (_isProPlan) {
+      const sub = reachEl('div', 'lok-rc-sub', 'Your questions'); sub.appendChild(reachEl('span', '', _reach.qs.length + ' of 3')); host.appendChild(sub);
+      const list = reachEl('div', 'lok-rc-list');
+      _reach.qs.forEach((q, n) => {
+        const row = reachEl('div', 'lok-rc-q'), ln = reachEl('div', 'lok-rc-line');
+        const ic = reachEl('span', 'lok-rc-ic'); ic.innerHTML = REACH_ICON[q.t] || REACH_ICON.text; ln.appendChild(ic);
+        const tx = reachEl('div', 'lok-rc-tx'); const title = reachEl('b', '', String(q.q || '').trim() || 'New question'); tx.appendChild(title);
+        const meta = reachEl('span', '', REACH_TYPES[q.t] + ' · ' + (q.req ? 'required' : 'optional') + (q.t === 'pick' ? ' · ' + (q.c || []).filter((c) => String(c || '').trim()).length + ' choices' : '')); tx.appendChild(meta);
+        ln.appendChild(tx);
+        ln.appendChild(reachBtn('lok-rc-link', _reach.open === n ? 'Done' : 'Edit', () => { _reach.open = _reach.open === n ? -1 : n; reachPaint(); }));
+        ln.appendChild(reachBtn('lok-rc-link quiet', 'Remove', () => { _reach.qs.splice(n, 1); _reach.open = -1; _reach.touched = true; repaint(); }));
+        row.appendChild(ln);
+        if (_reach.open === n) {
+          const ed = reachEl('div', 'lok-rc-edit');
+          const f = reachEl('label', 'lok-rc-f', 'Question'); f.setAttribute('for', 'lok-rc-qtext');
+          const inp = reachEl('input'); inp.type = 'text'; inp.id = 'lok-rc-qtext'; inp.maxLength = 200; inp.value = q.q || ''; inp.placeholder = 'What do you want to ask?';
+          inp.addEventListener('input', () => { q.q = inp.value; _reach.touched = true; title.textContent = inp.value.trim() || 'New question'; reachPaintPreview(); });
+          f.appendChild(inp); ed.appendChild(f);
+          const types = reachEl('div', 'lok-rc-wrap'); types.setAttribute('role', 'group'); types.setAttribute('aria-label', 'Answer type');
+          ['text', 'date', 'pick'].forEach((t) => {
+            const b = reachBtn('lok-rc-seg', REACH_TYPES[t], () => { q.t = t; if (t === 'pick' && (!q.c || q.c.length < 2)) q.c = ['Yes', 'No']; _reach.touched = true; repaint(); });
+            b.setAttribute('aria-pressed', q.t === t ? 'true' : 'false'); types.appendChild(b);
+          });
+          ed.appendChild(types);
+          if (q.t === 'pick') {
+            const cs = reachEl('div', 'lok-rc-wrap'); cs.appendChild(reachEl('span', 'lok-rc-note', 'Your choices:'));
+            (q.c || []).forEach((ch, k) => {
+              const ci = reachEl('input', 'lok-rc-choice'); ci.type = 'text'; ci.maxLength = 60; ci.value = ch || ''; ci.setAttribute('aria-label', 'Choice ' + (k + 1));
+              ci.addEventListener('input', () => { q.c[k] = ci.value; _reach.touched = true; reachPaintPreview(); });
+              cs.appendChild(ci);
+            });
+            if ((q.c || []).length < 6) cs.appendChild(reachBtn('lok-rc-link', '+ Add a choice', () => { q.c.push(''); _reach.touched = true; reachPaint(); }));
+            ed.appendChild(cs);
+          }
+          const rq = reachEl('label', 'lok-rc-chk'); const cb = reachEl('input'); cb.type = 'checkbox'; cb.checked = q.req === true;
+          cb.addEventListener('change', () => { q.req = cb.checked; _reach.touched = true; repaint(); });
+          rq.appendChild(cb); rq.appendChild(document.createTextNode('Shoppers must answer this')); ed.appendChild(rq);
+          row.appendChild(ed);
+        }
+        list.appendChild(row);
+      });
+      host.appendChild(list);
+      if (_reach.qs.length < 3) {
+        if (_reach.starters) {
+          const st = reachEl('div', 'lok-rc-starters'); st.appendChild(reachEl('span', 'lok-rc-note', 'Start from one of these, or write your own:'));
+          const add = (s) => { _reach.qs.push({ q: s.q, t: s.t, req: false, c: [] }); _reach.open = s.q ? -1 : _reach.qs.length - 1; _reach.starters = false; _reach.touched = true; repaint(); };
+          REACH_STARTERS.forEach((s) => st.appendChild(reachBtn('lok-rc-seg', s.q, () => add(s))));
+          st.appendChild(reachBtn('lok-rc-seg', 'Write your own', () => add({ q: '', t: 'text' })));
+          host.appendChild(st);
+        } else {
+          host.appendChild(reachBtn('lok-rc-add', '+ Add a question', () => { _reach.starters = true; reachPaint(); }));
+        }
+      }
+    } else {
+      const lock = reachEl('div', 'lok-rc-lock'); lock.appendChild(reachEl('span', '', 'Ask shoppers your own questions. Unlocks with Pro.'));
+      const a = reachEl('a', '', 'See plans'); a.href = '/pricing'; lock.appendChild(a); host.appendChild(lock);
+    }
+
+    // 4. what shoppers see
+    const prev = reachEl('div', 'lok-rc-prev'); const psub = reachEl('div', 'lok-rc-sub', 'What shoppers see'); psub.appendChild(reachEl('span', '', 'updates as you edit')); prev.appendChild(psub);
+    const box = reachEl('div', 'lok-rc-box'); box.id = 'lok-rc-preview'; prev.appendChild(box); host.appendChild(prev);
+
+    // 5. more options
+    const more = reachEl('div', 'lok-rc-more');
+    const mb = reachBtn('lok-rc-link', _reach.more ? 'Fewer options' : 'More options', () => { _reach.more = !_reach.more; reachPaint(); }); mb.style.cssText = 'align-self:flex-start;padding-left:0;';
+    more.appendChild(mb);
+    if (_reach.more) {
+      const hf = reachEl('label', 'lok-rc-f', 'Hint inside the message box '); hf.setAttribute('for', 'lok-rc-hint'); hf.appendChild(reachEl('small', '', 'Tell shoppers what to write'));
+      const hi = reachEl('input'); hi.type = 'text'; hi.id = 'lok-rc-hint'; hi.maxLength = 200; hi.value = _reach.hint; hi.placeholder = 'For example: Tell me a little about what you need';
+      hi.addEventListener('input', () => { _reach.hint = hi.value; _reach.touched = true; reachPaintPreview(); });
+      hf.appendChild(hi); more.appendChild(hf);
+      if (link) {
+        const al = reachEl('label', 'lok-rc-chk'); const ac = reachEl('input'); ac.type = 'checkbox'; ac.checked = _reach.also;
+        ac.addEventListener('change', () => { _reach.also = ac.checked; if (!ac.checked) setLinkUrl(''); repaint(); });
+        al.appendChild(ac); al.appendChild(document.createTextNode('Also show a "Visit website" link under Inquire')); more.appendChild(al);
+        if (_reach.also) { link.style.display = ''; more.appendChild(link); }
+      }
+    }
+    host.appendChild(more);
+    // not shown in this state: park it, hidden, inside the section (still in the document for its save path)
+    if (link && !host.contains(link)) { const park = reachEl('div'); park.hidden = true; park.appendChild(link); host.appendChild(park); }
+    reachPaintPreview();
+  };
+
+  // service = the row being edited, or null for a new service.
+  const setReach = (service) => {
+    _reach = reachBlank();
+    if (service) {
+      _reach.mode = service.cta_mode === 'inquire' || service.cta_mode === 'link' ? service.cta_mode : null;
+      _reach.phone = service.inquiry_phone === 'none' || service.inquiry_phone === 'required' ? service.inquiry_phone : 'optional';
+      _reach.hint = typeof service.inquiry_hint === 'string' ? service.inquiry_hint : '';
+      _reach.qs = (Array.isArray(service.inquiry_questions) ? service.inquiry_questions : []).slice(0, 3).map((q) => ({
+        q: typeof q?.q === 'string' ? q.q : '', t: REACH_TYPES[q?.t] ? q.t : 'text', req: q?.req === true,
+        c: Array.isArray(q?.c) ? q.c.filter((c) => typeof c === 'string').slice(0, 6) : []
+      }));
+      _reach.also = !!service.link_url;
+      _reach.more = !!_reach.hint;
+    }
+    _reach.vid = service?.vendors_id ?? services[0]?.vendors_id ?? null;
+    const mine = _reach;
+    reachProbe().then((ok) => {
+      if (_reach !== mine) return;         // another service was opened meanwhile
+      reachPaint();
+      // the storefront booking link decides what "never chosen" looks like today
+      const vid = mine.vid, av = window.LokaliSupabaseAPI?.availability;
+      if (!ok || vid == null || _reachBook[vid] != null || !av || typeof av.bookingLink !== 'function') return;
+      av.bookingLink(vid).then((res) => {
+        _reachBook[vid] = (res && !res.error && typeof res.data === 'string') ? res.data : '';
+        if (_reach === mine && _reachBook[vid]) reachPaint();
+      }).catch(() => {});
+    });
+  };
+  // Adds only what the vendor changed in this section.
+  const reachPayload = (payload) => {
+    if (!_reachOn || !_reach) return;
+    if (_reach.modeTouched && _reach.mode) payload.cta_mode = _reach.mode;
+    if (!_reach.touched) return;
+    payload.inquiry_phone = _reach.phone;
+    payload.inquiry_hint = _reach.hint.trim() ? _reach.hint.trim().slice(0, 200) : null;
+    if (_isProPlan) {
+      const qs = reachCleanQs();
+      if (qs !== false) payload.inquiry_questions = qs.length ? qs : null;
+    }
+  };
+  const reachProblem = () => {
+    if (!_reachOn || !_reach) return null;
+    if (_isProPlan && _reach.touched && reachCleanQs() === false)
+      return 'Finish or remove the question you started under "How shoppers reach you". A "Pick one" question needs at least two choices.';
+    if (_reach.modeTouched && _reach.mode === 'link' && !readLinkUrl() && !_reachBook[_reach.vid])
+      return 'Add your link under "How shoppers reach you", or choose "They message me on Lokali".';
+    return null;
+  };
 
   // ---------------------------------------------------------------------------
   // Per-service photo gallery (Pro & Featured). Self-mounting — no Webflow edits.
@@ -1839,6 +2186,7 @@ const LokaliServicesPage = (() => {
     // #78: only send the key once the box is really on the page, so a form that
     // never mounted it can't null out a saved lead time.
     if (_leadUiMounted) payload.lead_time = _leadTime;
+    reachPayload(payload); // #251: only the keys the vendor changed, only once the columns exist
 
     return payload;
   };
@@ -1850,6 +2198,8 @@ const LokaliServicesPage = (() => {
       return 'Your video link must be a YouTube or Vimeo URL (or leave it blank).';
     if (readLinkUrl() && !isValidLinkUrl(readLinkUrl()))
       return 'Your website link must be a full https:// address with no spaces (or leave it blank).';
+    const reachErr = reachProblem(); // #251
+    if (reachErr) return reachErr;
 
     if (payload.price_type === 'free' && !freeSupported())
       return 'Free services are not available yet. Please refresh the page and try again.';
@@ -2226,6 +2576,7 @@ const LokaliServicesPage = (() => {
         ?? 'free'
       ).toLowerCase();
       _isProPlan = planCode === 'pro' || planCode === 'featured';
+      try { if (_reach) reachPaint(); } catch (e) {} // #251: the questions block depends on the plan
       _planLabel = planCode === 'featured' ? 'Featured' : (planCode === 'pro' ? 'Pro' : 'Free');
       _isFeaturedPlan = planCode === 'featured'; // FEAT-PICKS
       _maxServicePhotos = billing?.features?.max_service_photos
@@ -2242,6 +2593,7 @@ const LokaliServicesPage = (() => {
       let cached = null;
       try { cached = JSON.parse(sessionStorage.getItem(PLAN_CACHE_KEY) || 'null'); } catch (e) {}
       _isProPlan = cached ? !!cached.pro : false;
+      try { if (_reach) reachPaint(); } catch (e) {} // #251
       _isFeaturedPlan = cached ? !!cached.feat : false; // FEAT-PICKS
       _maxServicePhotos = cached ? (cached.maxPhotos ?? (_isFeaturedPlan ? 10 : _isProPlan ? 5 : 2)) : 2;
       _hasGallery = (_maxServicePhotos || 0) > 1;

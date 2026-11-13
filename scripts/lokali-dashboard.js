@@ -823,6 +823,18 @@
       if (blk && blk !== row && !blk.querySelector('input,select,textarea')) blk.style.display = 'none';
     });
     if (!swGrid.children.length) S4.el.style.display = 'none';
+    // 5 How shoppers reach you (#251, services only for now). The page script
+    // owns the whole body (#lok-service-reach) and reports through three
+    // attributes on it: data-on (the section exists server-side), data-sum (the
+    // one-line summary) and data-set (the vendor has chosen something). Sits
+    // after How they get it (F 2026-11-13). No host = no section, so an older
+    // page script, or products, are untouched.
+    var S6 = null, reachEl = hosts.reach ? byId(hosts.reach) : null;
+    if (reachEl) {
+      S6 = section('reach', { num: 5, title: 'How shoppers reach you', optional: true });
+      used.push(reachEl); S6.body.appendChild(reachEl);
+      S6.el.style.display = 'none';
+    }
     // Live
     var S5 = section('live', { title: '' });
     S5.el.querySelector('.lok-fs-h').style.display = 'none';
@@ -891,6 +903,7 @@
     function settle() {
       [hosts.video, hosts.buy].forEach(function (id) {
         var h = id && byId(id); if (!h || h.parentElement === S3.body) return;
+        if (reachEl && reachEl.contains(h)) return; // #251: the reach section holds the Website link field
         used.push(h); S3.body.appendChild(h);
       });
     }
@@ -913,6 +926,7 @@
         bar.classList.remove('dirty');
       }
       S1.collapse(false); S2.collapse(false);
+      if (S6) S6.collapse(true); // #251: one quiet line until the vendor taps Change
       api._editing = !!editing;
       if (api._paintSeg) api._paintSeg();
       paintCover();
@@ -928,6 +942,13 @@
       S1.cnt.textContent = s.photoCap ? (s.photos || 0) + ' of ' + s.photoCap : ((s.photos || 0) + (s.photos === 1 ? ' photo' : ' photos'));
       S1.sum.textContent = (s.photos || 0) + (s.photoCap ? ' of ' + s.photoCap : '') + ' · the first one is your cover';
       S2.sum.textContent = (s.name || 'Untitled') + (s.hasPrice ? ' · ' + s.price : '');
+      if (S6) {
+        // write only on change: this runs from a MutationObserver on the form
+        var show6 = reachEl.getAttribute('data-on') === '1' ? '' : 'none', sum6 = reachEl.getAttribute('data-sum') || '';
+        if (S6.el.style.display !== show6) S6.el.style.display = show6;
+        if (S6.sum.textContent !== sum6) S6.sum.textContent = sum6;
+        markDone(S6, reachEl.getAttribute('data-set') === '1');
+      }
       if (api._editing && !api._resetDone) {
         // first paint after opening an existing listing: finished sections fold to a line
         api._resetDone = true;

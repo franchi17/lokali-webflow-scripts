@@ -17,6 +17,10 @@
   var vendor = null;   // { id, name } once known
   var mounted = false;
   var modal = null;
+  // #251: the form for the SERVICE the box was opened from (service_inquiry_form):
+  // { serviceId, phone: 'none'|'optional'|'required', hint, questions: [{q,t,req,c}] }.
+  // null on the storefront and on products = the box exactly as it always was.
+  var itemForm = null;
 
   var CSS = [
     '#lok-inq-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px 18px;margin:0 0 10px;border:0;border-radius:10px;background:#6002EE;color:#fff;font-family:"Plus Jakarta Sans",sans-serif;font-size:15px;font-weight:600;cursor:pointer;transition:background .15s;}',
@@ -38,6 +42,12 @@
     '#lok-inq-done .lok-inq-check{width:52px;height:52px;border-radius:50%;background:#EAFAF2;color:#1D6A45;font-size:26px;line-height:52px;margin:0 auto 12px;}',
     '#lok-inq-done h4{margin:0 0 6px;font-size:18px;color:#1A1530;}',
     '#lok-inq-done p{margin:0;font-size:13px;color:#6B6680;}',
+    // #251 vendor questions: "pick one" choices are pills, not a native select
+    '.lok-inq-opt{font-weight:500;color:#8E8BA6;}',
+    '.lok-inq-picks{display:flex;flex-wrap:wrap;gap:6px;}',
+    '.lok-inq-pick{font-family:inherit;font-size:13px;font-weight:600;padding:8px 13px;border-radius:999px;border:1px solid #E2E0EC;background:#fff;color:#4A4761;cursor:pointer;}',
+    '.lok-inq-pick[aria-pressed="true"]{background:#F3EBFF;border-color:#6002EE;color:#4A1FB8;}',
+    '.lok-inq-pick:focus-visible{outline:2px solid #6002EE;outline-offset:2px;}',
     // Honeypot: visually gone but still in the form for bots.
     '.lok-inq-hp{position:absolute;left:-9999px;top:-9999px;height:0;overflow:hidden;}'
   ].join('');
@@ -63,8 +73,9 @@
             '<input id="lok-inq-name" type="text" autocomplete="name" maxlength="100"/></div>' +
           '<div class="lok-inq-field"><label for="lok-inq-email">Email</label>' +
             '<input id="lok-inq-email" type="email" autocomplete="email" maxlength="200"/></div>' +
-          '<div class="lok-inq-field"><label for="lok-inq-phone">Phone (optional)</label>' +
+          '<div class="lok-inq-field" id="lok-inq-phone-field"><label for="lok-inq-phone">Phone (optional)</label>' +
             '<input id="lok-inq-phone" type="tel" autocomplete="tel" maxlength="30"/></div>' +
+          '<div id="lok-inq-extra"></div>' +
           '<div class="lok-inq-field"><label for="lok-inq-msg">Message</label>' +
             '<textarea id="lok-inq-msg" maxlength="2000" placeholder="Hi! I’m interested in..."></textarea></div>' +
           '<div class="lok-inq-hp" aria-hidden="true"><label>Website<input id="lok-inq-website" type="text" tabindex="-1" autocomplete="off"/></label></div>' +
@@ -152,13 +163,104 @@
     try { ov.querySelector('[data-sn-go]').focus(); } catch (e) {}
   }
 
-  function open(context) {
+  // #251: keep only what the box can draw. Everything shown later goes through
+  // textContent / .value, never markup. Returns null when there is nothing to apply.
+  var DEFAULT_HINT = 'Hi! I\u2019m interested in...';
+  function cleanForm(f) {
+    if (!f || typeof f !== 'object' || f.serviceId == null) return null;
+    var phone = f.phone === 'none' || f.phone === 'required' ? f.phone : 'optional';
+    var qs = [];
+    var raw = Array.isArray(f.questions) ? f.questions.slice(0, 3) : [];
+    for (var i = 0; i < raw.length; i++) {
+      var q = raw[i] || {};
+      var text = typeof q.q === 'string' ? q.q.trim().slice(0, 200) : '';
+      var t = q.t === 'date' || q.t === 'pick' ? q.t : 'text';
+      var c = [];
+      if (t === 'pick' && Array.isArray(q.c)) {
+        for (var k = 0; k < q.c.length && c.length < 6; k++) {
+          var ch = typeof q.c[k] === 'string' ? q.c[k].trim().slice(0, 60) : '';
+          if (ch && c.indexOf(ch) < 0) c.push(ch);
+        }
+      }
+      // Position matters (answers[i] answers questions[i] on the server), so a
+      // question that cannot be drawn keeps its slot as null instead of shifting.
+      qs.push(text && (t !== 'pick' || c.length >= 2) ? { q: text, t: t, req: q.req === true, c: c } : null);
+    }
+    return { serviceId: f.serviceId, phone: phone, hint: typeof f.hint === 'string' ? f.hint.trim().slice(0, 200) : '', questions: qs };
+  }
+  function paintItemForm() {
+    var f = itemForm;
+    var phoneField = modal.querySelector('#lok-inq-phone-field');
+    var phoneMode = f ? f.phone : 'optional';
+    var away = awayInfo(), paused = !!(away && !away.accepts); // messages paused: paintAway hid the fields
+    phoneField.style.display = phoneMode === 'none' || paused ? 'none' : '';
+    phoneField.querySelector('label').textContent = phoneMode === 'required' ? 'Phone' : 'Phone (optional)';
+    if (phoneMode === 'none') modal.querySelector('#lok-inq-phone').value = '';
+    modal.querySelector('#lok-inq-msg').setAttribute('placeholder', (f && f.hint) || DEFAULT_HINT);
+    var host = modal.querySelector('#lok-inq-extra');
+    host.textContent = '';
+    if (!f) return;
+    f.questions.forEach(function (q, i) {
+      if (!q) return;
+      var wrap = document.createElement('div'); wrap.className = 'lok-inq-field'; wrap.setAttribute('data-q', String(i));
+      var id = 'lok-inq-q' + i;
+      var lab = document.createElement(q.t === 'pick' ? 'div' : 'label');
+      lab.id = id + '-l';
+      if (q.t !== 'pick') lab.setAttribute('for', id);
+      // the modal's label rule targets <label>; a pick group's caption matches it by hand
+      if (q.t === 'pick') lab.style.cssText = 'display:block;font-size:12px;font-weight:600;color:#4A4761;margin-bottom:5px;';
+      lab.appendChild(document.createTextNode(q.q));
+      if (!q.req) { var o = document.createElement('span'); o.className = 'lok-inq-opt'; o.textContent = ' (optional)'; lab.appendChild(o); }
+      wrap.appendChild(lab);
+      if (q.t === 'pick') {
+        var grp = document.createElement('div'); grp.className = 'lok-inq-picks'; grp.setAttribute('role', 'group'); grp.setAttribute('aria-labelledby', id + '-l');
+        q.c.forEach(function (ch) {
+          var b = document.createElement('button'); b.type = 'button'; b.className = 'lok-inq-pick'; b.textContent = ch; b.setAttribute('aria-pressed', 'false');
+          b.addEventListener('click', function () {
+            var was = b.getAttribute('aria-pressed') === 'true';
+            for (var n = 0; n < grp.children.length; n++) grp.children[n].setAttribute('aria-pressed', 'false');
+            // an optional question can be un-picked; a required one keeps a choice
+            b.setAttribute('aria-pressed', was && !q.req ? 'false' : 'true');
+          });
+          grp.appendChild(b);
+        });
+        wrap.appendChild(grp);
+      } else {
+        var inp = document.createElement('input'); inp.id = id; inp.type = q.t === 'date' ? 'date' : 'text';
+        if (q.t !== 'date') inp.maxLength = 200;
+        wrap.appendChild(inp);
+      }
+      host.appendChild(wrap);
+    });
+  }
+  // One answer per question slot ('' = not answered), or { error } naming the
+  // first required question left blank.
+  function readAnswers() {
+    var out = [];
+    if (!itemForm) return { answers: out };
+    for (var i = 0; i < itemForm.questions.length; i++) {
+      var q = itemForm.questions[i], a = '';
+      if (q) {
+        var wrap = modal.querySelector('#lok-inq-extra [data-q="' + i + '"]');
+        if (q.t === 'pick') { var on = wrap && wrap.querySelector('.lok-inq-pick[aria-pressed="true"]'); a = on ? on.textContent : ''; }
+        else { var inp = wrap && wrap.querySelector('input'); a = inp ? String(inp.value || '').trim() : ''; }
+        if (!a && q.req) return { error: 'Please answer: ' + q.q };
+      }
+      out.push(a);
+    }
+    return { answers: out };
+  }
+
+  // opts (#251, optional): { form } from service_inquiry_form for the service
+  // the shopper is on. Leave it out anywhere else.
+  function open(context, opts) {
     if (!vendor) return;
+    var f = cleanForm(opts && opts.form);
     if (vendorNeedsShopNotice()) {
-      showShopNotice(function () { reallyOpen(context); });
+      showShopNotice(function () { reallyOpen(context, f); });
       return;
     }
-    reallyOpen(context);
+    reallyOpen(context, f);
   }
   var lastFocus = null; // restored on close (keyboard/SR users otherwise land at document top)
   // Away mode (2026-09-17): the storefront hands the vendor's away fields over
@@ -174,6 +276,8 @@
   }
   function paintAway() {
     var a = awayInfo();
+    var extra = modal.querySelector('#lok-inq-extra');
+    if (extra) extra.style.display = a && !a.accepts ? 'none' : '';
     var host = modal.querySelector('#lok-inq-away');
     if (!host) {
       host = document.createElement('div'); host.id = 'lok-inq-away';
@@ -188,16 +292,19 @@
     host.style.display = 'block';
     for (var j = 0; j < fields.length; j++) fields[j].style.display = a.accepts ? '' : 'none';
   }
-  function reallyOpen(context) {
+  function reallyOpen(context, form) {
     if (!vendor) return;
     injectStyles();
     if (!modal) modal = buildModal();
     modal.setAttribute('data-context', context || '');
+    itemForm = form || null;
     modal.querySelector('#lok-inq-vname').textContent = vendor.name || 'this vendor';
     modal.querySelector('#lok-inq-form').style.display = '';
     modal.querySelector('#lok-inq-done').style.display = 'none';
     modal.querySelector('#lok-inq-error').style.display = 'none';
     try { paintAway(); } catch (e) {}
+    // after paintAway: it resets every field's display, the phone field included
+    try { paintItemForm(); } catch (e) { itemForm = null; }
     lastFocus = document.activeElement;
     document.body.style.overflow = 'hidden'; // lock the page behind the overlay
     modal.style.display = 'flex';
@@ -228,6 +335,9 @@
 
     if (!name) return showError('Please enter your name.');
     if (!email || email.indexOf('@') < 1) return showError('Please enter a valid email address.');
+    if (itemForm && itemForm.phone === 'required' && !phone) return showError('Please enter your phone number.');
+    var ans = readAnswers();
+    if (ans.error) return showError(ans.error);
     if (msg.length < 5) return showError('Please write a short message (at least a few words).');
 
     var btn = modal.querySelector('#lok-inq-send');
@@ -241,6 +351,8 @@
       message: msg,
       context: modal.getAttribute('data-context') || '',
       source: 'listing',
+      serviceId: itemForm ? itemForm.serviceId : null,
+      answers: itemForm ? ans.answers : null,
       website: modal.querySelector('#lok-inq-website').value
     }).then(function (res) {
       btn.disabled = false;
@@ -254,6 +366,11 @@
         // Say so plainly instead of "HTTP 429", and do not invite a retry: a
         // 4th try inside the hour marks the earlier messages as spam.
         var capped = res.data && res.data.reason === 'rate_limited';
+        // #251: the server re-checks the vendor's questions; say what it wants.
+        var why = res.data && res.data.reason;
+        if (why === 'phone_required') return showError('Please enter your phone number.');
+        if (why === 'answer_required') return showError('Please answer the questions above your message.');
+        if (why === 'invalid_answer') return showError('One of your answers was not accepted. Please check the questions above your message.');
         showError(isAway ? 'This vendor is away right now and not taking messages. Please check back after their return date.' :
           capped ? 'You\u2019ve reached the hourly limit for messages on Lokali. Anything you already sent has reached the vendor, and they can reply by email. Please wait an hour before sending more.' :
           (res.error === 'Request failed' ? 'Something went wrong. Please try again.' : res.error));
