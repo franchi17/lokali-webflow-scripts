@@ -54,9 +54,7 @@
   /* ICONS are taken as published, never redrawn (F 2026-11-11: "I want it to look precise"):
    *   check, tag, snowflake      = Font Awesome Free 7.3.1 solid (fontawesome.com/license/free, icons CC BY 4.0)
    *   four-point sparkle         = Phosphor Icons 2.1.1 "star-four" fill (MIT)
-   *   bow                        = Twemoji 15.0.0 "ribbon" (1f380), graphics CC BY 4.0, recolored gold
-   *                                (F: "go back to a bow"; neither free icon set has one)
-   * The ribbon is a plain stripe. */
+   *   (the gold bow of 11-11 was replaced by the hero photo on 2026-11-13) */
   var IC = {
     check: ['0 0 448 512', 'M434.8 70.1c14.3 10.4 17.5 30.4 7.1 44.7l-256 352c-5.5 7.6-14 12.3-23.4 13.1s-18.5-2.7-25.1-9.3l-128-128c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l101.5 101.5 234-321.7c10.4-14.3 30.4-17.5 44.7-7.1z'],
     tag: ['0 0 512 512', 'M32.5 96l0 149.5c0 17 6.7 33.3 18.7 45.3l192 192c25 25 65.5 25 90.5 0L483.2 333.3c25-25 25-65.5 0-90.5l-192-192C279.2 38.7 263 32 246 32L96.5 32c-35.3 0-64 28.7-64 64zm112 16a32 32 0 1 1 0 64 32 32 0 1 1 0-64z'],
@@ -76,10 +74,15 @@
       '</svg>';
     return 'url("data:image/svg+xml,' + encodeURIComponent(svg) + '")';
   })();
-  var BOW = '<span class="lkh-rib" aria-hidden="true"></span><svg class="lkh-bow" viewBox="0 0 36 36" aria-hidden="true">' +
-    '<path fill="#F2C860" d="M19.281 6.392c0 .405-2.37.405-2.37 0 0-.9-14.911-9.899-14.911-2.7v13.499c0 2.487 3.476 1.947 7.193.361-1.429 3.525-4.498 9.68-7.05 13.934a1 1 0 0 0 1.305 1.409l5.258-2.629c.441.726.931 1.868 1.376 2.906.333.778.678 1.582 1.024 2.275A1.003 1.003 0 0 0 12 36a1 1 0 0 0 .707-.293c1.42-1.419 3.429-8.395 4.793-14.093 1.364 5.698 3.373 12.674 4.793 14.093a.998.998 0 0 0 1.601-.26c.347-.693.691-1.497 1.024-2.275.445-1.038.935-2.181 1.376-2.906l5.258 2.629a1.002 1.002 0 0 0 1.305-1.409c-2.735-4.558-6.061-11.296-7.328-14.643C29.652 18.933 34 20.02 34 17.19V3.691c0-7.198-14.719 1.801-14.719 2.701z"/><path fill="#D9A534" d="M2.114 17.869c1.177 3.199 11.468-1.787 14.86-5.179.31-.31.549-.602.758-.885-10.446.252-14.542 3.857-15.618 6.064zm16.482-6.068c.212.285.453.578.765.89 3.6 3.6 14.639 8.999 14.639 4.5v-.209c-1.671-2.199-6.037-5.022-15.404-5.181z"/><path fill="#F8DC8A" d="M22 11.4a3.6 3.6 0 0 1-3.599 3.6h-1.802A3.6 3.6 0 0 1 13 11.4V7.6A3.6 3.6 0 0 1 16.599 4h1.802A3.6 3.6 0 0 1 22 7.6v3.8z"/></svg>';
+  // Hero photo (F 2026-11-13: "make the holiday page also have that picture like we did in the
+  // email"): the same Unsplash free-licence photo (Mel Poole) as the invitation, pinned to the
+  // commit that added it. The words sit on the photo's upper part (the dark green wall) as REAL
+  // text over a soft shade, so they stay readable, selectable and translatable. The gold bow
+  // and ribbon are gone: the photo has its own. The form view (narrow wrap) uses a short strip
+  // of the same photo so the form is not pushed down the page.
+  var HERO_IMG = 'https://cdn.jsdelivr.net/gh/franchi17/lokali-webflow-scripts@d652be3252f8c0cdf14e8cb23044cfcfc65b88a4/assets/holiday-page-hero.jpg';
   function hero(eyebrow, title, lede) {
-    return '<div class="lkh-hero">' + BOW + '<span class="lkh-eyebrow">' + eyebrow + '</span><h1>' + title + '</h1><p class="lkh-lede">' + lede + '</p></div>';
+    return '<div class="lkh-hero">' + '<span class="lkh-eyebrow">' + eyebrow + '</span><h1>' + title + '</h1><p class="lkh-lede">' + lede + '</p></div>';
   }
 
   var styled = false;
@@ -99,13 +102,15 @@
       '.lkh-eyebrow{display:block;font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#1F5B3A;margin:0 0 8px;}',
       '.lkh h1{font-size:34px;line-height:1.15;font-weight:800;color:#1A1829;letter-spacing:-.02em;margin:0 0 10px;}',
       '.lkh-lede{max-width:56ch;margin:0 0 26px;}',
-      '.lkh-hero{position:relative;overflow:hidden;border-radius:24px;background:linear-gradient(90deg,#1F5B3A 0%,rgba(31,91,58,.94) 48%,rgba(31,91,58,0) 82%),' + SPARKLE + ' 0 0/260px 150px,linear-gradient(135deg,#1F5B3A,#2C7A50);color:#fff;padding:40px 150px 38px 36px;margin:0 0 26px;}',
+      '.lkh-hero{position:relative;overflow:hidden;border-radius:24px;background:#22483B url(' + HERO_IMG + ') center bottom/cover no-repeat;color:#fff;padding:40px 36px 0;margin:0 0 26px;height:clamp(380px,60vw,580px);}',
+      '.lkh-hero::before{content:"";position:absolute;left:0;right:0;top:0;height:62%;background:linear-gradient(180deg,rgba(18,48,36,.78),rgba(18,48,36,0));}',
+      '.lkh-hero > *{position:relative;}',
+      '.lkh-wrap.narrow .lkh-hero{height:auto;padding:36px 44% 34px 36px;background:linear-gradient(90deg,#1F5B3A 0%,rgba(31,91,58,.97) 44%,rgba(31,91,58,0) 72%),#22483B url(' + HERO_IMG + ') right 78%/cover no-repeat;}',
+      '.lkh-wrap.narrow .lkh-hero::before{display:none;}',
       '.lkh-hero .lkh-eyebrow{color:#F2C860;}',
       '.lkh .lkh-hero h1{color:#fff;font-size:40px;}',
       '.lkh-hero .lkh-lede{color:#E9F4EC;margin:0;font-size:17px;}',
       '.lkh-hero .lkh-link{color:#F2C860;}',
-      '.lkh-rib{position:absolute;top:0;bottom:0;right:78px;width:22px;background:#F2C860;box-shadow:inset 6px 0 0 rgba(255,255,255,.25);}',
-      '.lkh-bow{position:absolute;right:33px;top:50%;margin-top:-52px;width:112px;height:112px;filter:drop-shadow(0 6px 10px rgba(0,0,0,.18));}',
       '.lkh-ic{width:1em;height:1em;flex:none;display:inline-block;vertical-align:-.125em;}',
       '.lkh-sub{display:flex;align-items:center;gap:12px;margin:6px 0 16px;font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#1F5B3A;}',
       '.lkh-sub::before,.lkh-sub::after{content:"";flex:1;height:1px;background:#CFE0D5;}',
@@ -172,7 +177,7 @@
       '.lkh-done .lkh-btn{margin:0 8px 8px 0;}',
       '.lkh-hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0;}',
       '.lkh [hidden]{display:none!important;}',
-      '@media (max-width:720px){.lkh{padding:28px 16px 48px;}.lkh h1{font-size:27px;}.lkh .lkh-hero h1{font-size:28px;}.lkh-hero{padding:28px 84px 26px 22px;border-radius:20px;background:linear-gradient(90deg,#1F5B3A 0%,rgba(31,91,58,.94) 62%,rgba(31,91,58,.35) 100%),' + SPARKLE + ' 0 0/260px 150px,linear-gradient(135deg,#1F5B3A,#2C7A50);}.lkh-sub{letter-spacing:.06em;font-size:12px;}.lkh-rib{right:30px;width:14px;}.lkh-bow{right:1px;width:72px;height:72px;margin-top:-34px;}.lkh-card{grid-template-columns:1fr;padding:22px 18px;gap:24px;}.lkh-side{position:static;}.lkh-two{grid-template-columns:1fr;}.lkh-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;}}',
+      '@media (max-width:720px){.lkh{padding:28px 16px 48px;}.lkh h1{font-size:27px;}.lkh .lkh-hero h1{font-size:28px;}.lkh-hero{padding:26px 22px 0;border-radius:20px;height:auto;aspect-ratio:1/1;}.lkh-wrap:not(.narrow) .lkh-hero .lkh-lede{display:none;}.lkh-wrap.narrow .lkh-hero{aspect-ratio:auto;padding:26px 22px 26px;background:linear-gradient(180deg,rgba(31,91,58,.97) 0%,rgba(31,91,58,.9) 55%,rgba(31,91,58,.5) 100%),#22483B url(' + HERO_IMG + ') center bottom/cover no-repeat;}.lkh-sub{letter-spacing:.06em;font-size:12px;}.lkh-card{grid-template-columns:1fr;padding:22px 18px;gap:24px;}.lkh-side{position:static;}.lkh-two{grid-template-columns:1fr;}.lkh-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;}}',
       '@media (prefers-reduced-motion:reduce){.lkh-gift{transition:none;}}'
     ].join('');
     document.head.appendChild(s);
