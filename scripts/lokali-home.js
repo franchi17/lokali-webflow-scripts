@@ -477,7 +477,7 @@
       areas.appendChild(chip);
     });
     s1.appendChild(areas);
-    var ask = el('a', 'lok-ul lok-ask', "Don't see your neighborhood? Let us know");
+    var ask = el('a', 'lok-ul lok-ask', "Not where you live? Tell us where you are and we'll work on bringing Lokali to you");
     ask.href = '/contact-us';
     s1.appendChild(ask);
     ol.appendChild(s1);
