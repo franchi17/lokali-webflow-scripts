@@ -111,6 +111,9 @@
       '.lkh .lkh-hero h1{color:#fff;font-size:40px;}',
       '.lkh-hero .lkh-lede{color:#E9F4EC;margin:0;font-size:17px;}',
       '.lkh-hero .lkh-link{color:#F2C860;}',
+      /* F 2026-11-13: on wide screens the words sit on a plain green band with the photo under it
+         (clear space between words and picture); the sentence may use the full width. */
+      '@media (min-width:721px){.lkh-wrap:not(.narrow) .lkh-hero{height:auto;padding:40px 36px 0;background:#1F5B3A;}.lkh-wrap:not(.narrow) .lkh-hero::before{display:none;}.lkh-wrap:not(.narrow) .lkh-hero .lkh-lede{max-width:none;text-wrap:balance;}.lkh-wrap:not(.narrow) .lkh-hero::after{content:"";display:block;height:clamp(300px,40vw,460px);margin:32px -36px 0;background:#22483B url(' + HERO_IMG + ') center 72%/cover no-repeat;}}',
       '.lkh-ic{width:1em;height:1em;flex:none;display:inline-block;vertical-align:-.125em;}',
       '.lkh-sub{display:flex;align-items:center;gap:12px;margin:6px 0 16px;font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#1F5B3A;}',
       '.lkh-sub::before,.lkh-sub::after{content:"";flex:1;height:1px;background:#CFE0D5;}',
