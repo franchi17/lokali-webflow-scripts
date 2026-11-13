@@ -3,9 +3,13 @@
  * ONE Webflow page, /holiday, with a mount <div id="lokali-holiday">. Two views:
  *   /holiday          shoppers: approved gifts from live storefronts, soonest order-by date first,
  *                     each card opens the vendor's storefront (the order happens with the vendor).
- *   /holiday?add=1    vendors: the "Add my gift" form (the button in F's invitation email).
+ *   /holiday?add=1    vendors: the "Add my gift" form. Only the storefront itself can add a
+ *                     gift (SEC-123, 2026-11-12): the button in F's invitation email carries
+ *                     a personal key in the URL fragment (#k=...), read once and removed from
+ *                     the address bar; without it the vendor signs in. The form never sends a
+ *                     storefront id: the server reads it from the key or the session.
  *
- * Data: /api/lokali/holiday-gift on lokali-api (GET feed, GET ?list=vendors, POST the form).
+ * Data: /api/lokali/holiday-gift on lokali-api (GET feed; POST {who:true} names the storefront; POST the form).
  * Nothing a vendor submits is public until F approves it from her alert email. No Supabase
  * client and no sign-in needed here, so this file has no dependency on the other scripts.
  * Colors (F 2026-11-11: "make the holiday page green and red too"): evergreen #1F5B3A + berry
@@ -32,7 +36,18 @@
   function shortDate(iso) { var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return m ? MONTHS[+m[2] - 1] + ' ' + (+m[3]) : ''; }
   function money(cents) { var d = cents / 100; return '$' + (d % 1 === 0 ? String(d) : d.toFixed(2)); }
   function todayIso() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
-  function isAdd() { try { return new URLSearchParams(window.location.search).has('add') || window.location.hash === '#add'; } catch (e) { return false; } }
+  // The personal key from the email button. Kept in memory only; the fragment is cleared so
+  // it is not left in the address bar, the history entry or a copied link.
+  var GIFT_KEY = (function () {
+    try {
+      var m = /(?:^#|&)k=([A-Za-z0-9_\-.%]{20,300})(?:&|$)/.exec(String(window.location.hash || ''));
+      if (!m) return '';
+      var k = decodeURIComponent(m[1]);
+      if (window.history && history.replaceState) history.replaceState(null, '', window.location.pathname + window.location.search);
+      return /^[A-Za-z0-9_\-.]{20,300}$/.test(k) ? k : '';
+    } catch (e) { return ''; }
+  })();
+  function isAdd() { try { return !!GIFT_KEY || new URLSearchParams(window.location.search).has('add') || window.location.hash === '#add'; } catch (e) { return false; } }
 
   /* Festive, for every tradition (F 2026-11-11: "pretty, festive, open to all faiths"): winter
    * greenery colors, gold sparkles, snow and a wrapped-gift ribbon. No symbol of any one holiday. */
@@ -231,7 +246,50 @@
   }
 
   /* ---------- vendor form ---------- */
+  function authToken() { try { var A = window.LokaliAuth; return (A && A.token && A.token()) || ''; } catch (e) { return ''; } }
+  function authHeaders() {
+    var h = { 'Content-Type': 'application/json' };
+    var t = GIFT_KEY ? '' : authToken();
+    if (t) h.Authorization = 'Bearer ' + t;
+    return h;
+  }
+  function gate(mount, title, text, btnLabel, btnHref) {
+    mount.innerHTML = '<div class="lkh"><div class="lkh-wrap narrow">' +
+      hero('Holiday 2026 \u00b7 for Lokali vendors', 'Add your gift to the holiday page', 'One gift, one minute. <a class="lkh-link" href="/holiday">See the page</a>') +
+      '<div class="lkh-empty"><h2 id="lkh-gate-h"></h2><p id="lkh-gate-p"></p>' +
+      (btnLabel ? '<div><a class="lkh-btn" id="lkh-gate-b"></a></div>' : '') + '</div></div></div>';
+    document.getElementById('lkh-gate-h').textContent = title;
+    document.getElementById('lkh-gate-p').textContent = text;
+    if (btnLabel) { var b = document.getElementById('lkh-gate-b'); b.textContent = btnLabel; b.href = btnHref; }
+  }
+  function askWho() {
+    return fetch(ENDPOINT, { method: 'POST', headers: authHeaders(), body: JSON.stringify({ who: true, k: GIFT_KEY || undefined }) })
+      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { return { status: r.status, d: d || {} }; }); });
+  }
   function bootForm(mount) {
+    if (todayIso() > LAST_DAY) { renderForm(mount, null); return; }
+    gate(mount, 'One moment\u2026', 'Finding your storefront.');
+    var A = window.LokaliAuth;
+    var known = (!GIFT_KEY && A && A.ready && typeof A.ready.then === 'function') ? A.ready : Promise.resolve();
+    var go = function () {
+      if (!GIFT_KEY && !authToken()) {
+        gate(mount, 'Sign in to add your gift', 'Use the \u201cAdd my gift\u201d button in Francesca\u2019s email, or sign in to your Lokali storefront and come back to this page.', 'Sign in', '/login');
+        window.addEventListener('lokali:authed', function () { bootForm(mount); }, { once: true });
+        return;
+      }
+      askWho().then(function (res) {
+        var name = res.d && res.d.vendor && res.d.vendor.name;
+        if (res.status === 200 && res.d.ok === true && name) { renderForm(mount, { name: String(name) }); return; }
+        var why = res.d && res.d.error;
+        if (why === 'not_live') gate(mount, 'Your storefront isn\u2019t live yet', 'Finish your storefront first, then come back to add your gift.', 'Open my dashboard', '/vendor-dashboard');
+        else if (why === 'rate_limited') gate(mount, 'Please try again in a little while', 'That was a lot of tries in a short time.');
+        else if (GIFT_KEY) gate(mount, 'This link didn\u2019t work', 'Open the \u201cAdd my gift\u201d button in Francesca\u2019s email again, or sign in to your storefront.', 'Sign in', '/login');
+        else gate(mount, 'We couldn\u2019t find a storefront on this account', 'Only Lokali storefronts can add a gift. Sign in with your storefront\u2019s account, or reply to Francesca\u2019s email.', 'Browse The Market', '/the-market');
+      }).catch(function () { gate(mount, 'That didn\u2019t load', 'Check your connection and open the page again.'); });
+    };
+    known.then(go, go);
+  }
+  function renderForm(mount, who) {
     var today = todayIso();
     var closed = today > LAST_DAY;
     if (closed) {
@@ -245,10 +303,8 @@
       '<div class="lkh-card" id="lkh-card">' +
       '<form class="lkh-form" id="lkh-form" novalidate autocomplete="off">' +
         '<div class="lkh-field"><label for="lkh-name">Your business</label>' +
-          '<input type="text" id="lkh-name" placeholder="Start typing your business name" role="combobox" aria-expanded="false" aria-controls="lkh-list" aria-autocomplete="list">' +
-          '<div class="lkh-list" id="lkh-list" role="listbox" hidden></div>' +
-          '<div class="lkh-picked" id="lkh-picked" hidden>' + ic('check') + ' Found your storefront</div>' +
-          '<div class="lkh-err" id="lkh-name-err" hidden>Pick your business from the list, so the gift goes to the right storefront.</div></div>' +
+          '<input type="text" id="lkh-name" readonly aria-readonly="true" value="">' +
+          '<div class="lkh-picked" id="lkh-picked">' + ic('check') + ' This gift goes on your storefront</div></div>' +
         '<div class="lkh-field"><span class="lkh-lab" id="lkh-kind-lab">What kind of gift is it?</span>' +
           '<div class="lkh-chips" id="lkh-kind" role="group" aria-labelledby="lkh-kind-lab" style="margin:0">' +
             '<button type="button" class="lkh-chip" data-k="product" aria-pressed="true">A product</button>' +
@@ -277,54 +333,9 @@
       '</div></div>';
 
     function $(id) { return document.getElementById(id); }
-    var nameIn = $('lkh-name'), list = $('lkh-list');
-    var vendors = [], loaded = false, picked = null, active = -1, shown = [], kind = 'product', sending = false;
-
-    fetch(ENDPOINT + '?list=vendors', { method: 'GET' })
-      .then(function (r) { return r.ok ? r.json() : { vendors: [] }; })
-      .then(function (d) { vendors = (d && Array.isArray(d.vendors)) ? d.vendors : []; loaded = true; if (nameIn.value.trim().length >= 2 && !picked) renderList(); })
-      .catch(function () { loaded = true; });
-
-    function closeList() { list.hidden = true; nameIn.setAttribute('aria-expanded', 'false'); active = -1; }
-    function choose(v) { picked = v; nameIn.value = v.name; closeList(); $('lkh-picked').hidden = false; $('lkh-name-err').hidden = true; preview(); $('lkh-gift').focus(); }
-    function matches(q) {
-      return vendors.filter(function (v) {
-        var n = String(v.name || '').toLowerCase();
-        return n.indexOf(q) === 0 || n.split(/\s+/).some(function (w) { return w.indexOf(q) === 0; });
-      }).slice(0, 8);
-    }
-    function renderList() {
-      var q = nameIn.value.trim().toLowerCase();
-      if (q.length < 2) { closeList(); return; }
-      shown = matches(q);
-      if (!shown.length) {
-        list.innerHTML = '<div class="lkh-none">' + (loaded
-          ? 'No live Lokali storefront with that name. <a class="lkh-link" href="/sign-up">Open yours first</a>, it takes a few minutes.'
-          : 'Looking up storefronts\u2026') + '</div>';
-      } else {
-        list.innerHTML = shown.map(function (v, i) {
-          var n = String(v.name), at = n.toLowerCase().indexOf(q);
-          return '<button type="button" class="lkh-opt' + (i === active ? ' on' : '') + '" role="option" data-i="' + i + '"><i>' + esc(initials(n)) + '</i><span>' +
-            esc(n.slice(0, at)) + '<mark>' + esc(n.slice(at, at + q.length)) + '</mark>' + esc(n.slice(at + q.length)) + '</span></button>';
-        }).join('');
-      }
-      list.hidden = false; nameIn.setAttribute('aria-expanded', 'true');
-    }
-    function hl() { Array.prototype.forEach.call(list.querySelectorAll('.lkh-opt'), function (o, i) { o.classList.toggle('on', i === active); if (i === active && o.scrollIntoView) o.scrollIntoView({ block: 'nearest' }); }); }
-    nameIn.addEventListener('input', function () { picked = null; $('lkh-picked').hidden = true; active = -1; preview(); renderList(); });
-    nameIn.addEventListener('keydown', function (e) {
-      if (list.hidden || !shown.length) return;
-      if (e.key === 'ArrowDown') { active = (active + 1) % shown.length; e.preventDefault(); hl(); }
-      else if (e.key === 'ArrowUp') { active = (active - 1 + shown.length) % shown.length; e.preventDefault(); hl(); }
-      else if (e.key === 'Enter') { e.preventDefault(); choose(shown[active < 0 ? 0 : active]); }
-      else if (e.key === 'Escape') { closeList(); }
-    });
-    list.addEventListener('mousedown', function (e) {
-      var b = e.target.closest ? e.target.closest('.lkh-opt') : null;
-      if (b) { e.preventDefault(); choose(shown[+b.getAttribute('data-i')]); }
-      else if (!(e.target.closest && e.target.closest('a'))) e.preventDefault();
-    });
-    nameIn.addEventListener('blur', function () { setTimeout(closeList, 150); });
+    var nameIn = $('lkh-name');
+    var picked = who, kind = 'product', sending = false;
+    nameIn.value = who.name;
 
     $('lkh-kind').addEventListener('click', function (e) {
       var b = e.target.closest ? e.target.closest('.lkh-chip') : null; if (!b) return;
@@ -349,7 +360,8 @@
     preview();
 
     var MSG = {
-      invalid_vendor: 'Pick your business from the list. Only live Lokali storefronts can add a gift.',
+      link_required: 'This page lost track of your storefront. Open the button in Francesca\'s email again, or sign in.',
+      not_live: 'Your storefront isn\'t live on Lokali yet. Finish it first, then add your gift.',
       invalid_title: 'Give the gift a short name, 2 to 60 characters.',
       invalid_price: 'Enter the price as a number, like 58 or 22.50.',
       invalid_date: 'Pick a last day to order between today and December 24.',
@@ -362,7 +374,6 @@
       e.preventDefault();
       if (sending) return;
       $('lkh-err').hidden = true;
-      if (!picked) { $('lkh-name-err').hidden = false; nameIn.focus(); return; }
       var title = $('lkh-gift').value.trim().replace(/\s+/g, ' '), price = priceVal(), date = $('lkh-date').value;
       if (title.length < 2) { fail(MSG.invalid_title); $('lkh-gift').focus(); return; }
       if (!/^\d{1,4}(\.\d{1,2})?$/.test(price) || parseFloat(price) < 1) { fail(MSG.invalid_price); $('lkh-price').focus(); return; }
@@ -371,8 +382,8 @@
       var btn = $('lkh-send'); btn.disabled = true; btn.textContent = 'Sending\u2026';
       function reset() { sending = false; btn.disabled = false; btn.textContent = 'Add my gift'; }
       fetch(ENDPOINT, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ vendors_id: picked.id, kind: kind, title: title, price: price, order_by: date, website: $('lkh-website').value })
+        method: 'POST', headers: authHeaders(),
+        body: JSON.stringify({ k: GIFT_KEY || undefined, kind: kind, title: title, price: price, order_by: date, website: $('lkh-website').value })
       }).then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { return { ok: r.ok, d: d }; }); })
         .then(function (res) {
           reset();
