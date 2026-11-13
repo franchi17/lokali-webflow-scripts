@@ -177,7 +177,7 @@
       '.lkh-done .lkh-btn{margin:0 8px 8px 0;}',
       '.lkh-hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0;}',
       '.lkh [hidden]{display:none!important;}',
-      '@media (max-width:720px){.lkh{padding:28px 16px 48px;}.lkh h1{font-size:27px;}.lkh .lkh-hero h1{font-size:28px;}.lkh-hero{padding:26px 22px 0;border-radius:20px;height:auto;aspect-ratio:1/1;}.lkh-wrap:not(.narrow) .lkh-hero .lkh-lede{display:none;}.lkh-wrap.narrow .lkh-hero{aspect-ratio:auto;padding:26px 22px 26px;background:linear-gradient(180deg,rgba(31,91,58,.97) 0%,rgba(31,91,58,.9) 55%,rgba(31,91,58,.5) 100%),#22483B url(' + HERO_IMG + ') center bottom/cover no-repeat;}.lkh-sub{letter-spacing:.06em;font-size:12px;}.lkh-card{grid-template-columns:1fr;padding:22px 18px;gap:24px;}.lkh-side{position:static;}.lkh-two{grid-template-columns:1fr;}.lkh-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;}}',
+      '@media (max-width:720px){.lkh{padding:28px 16px 48px;}.lkh h1{font-size:27px;}.lkh .lkh-hero h1{font-size:28px;}.lkh-hero{padding:26px 22px 0;border-radius:20px;height:auto;aspect-ratio:1/1;}.lkh-wrap:not(.narrow) .lkh-hero .lkh-lede{display:none;}.lkh-wrap.narrow .lkh-hero{aspect-ratio:auto;padding:26px 22px 0;background:#1F5B3A;}.lkh-wrap.narrow .lkh-hero .lkh-lede{margin:0 0 22px;}.lkh-wrap.narrow .lkh-hero::after{content:"";display:block;height:150px;margin:0 -22px;background:#22483B url(' + HERO_IMG + ') center 74%/cover no-repeat;}.lkh-sub{letter-spacing:.06em;font-size:12px;}.lkh-card{grid-template-columns:1fr;padding:22px 18px;gap:24px;}.lkh-side{position:static;}.lkh-two{grid-template-columns:1fr;}.lkh-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;}}',
       '@media (prefers-reduced-motion:reduce){.lkh-gift{transition:none;}}'
     ].join('');
     document.head.appendChild(s);
@@ -209,7 +209,7 @@
   function renderShop(mount, gifts) {
     var head = hero('Holiday 2026', 'Gifts from your neighbors',
       'Made, baked and booked by local vendors, for every table and every tradition this season.');
-    var foot = '<p class="lkh-fine">Sell locally? <a href="/holiday?add=1">Add your gift</a>. It\'s free.</p>';
+    var foot = '<p class="lkh-fine">Sell locally? <a href="/holiday?add=1">Add your gift</a>.</p>';
     if (!gifts.length) {
       mount.innerHTML = '<div class="lkh"><div class="lkh-wrap">' + head +
         '<div class="lkh-empty"><h2>The gifts are on their way</h2>' +
@@ -315,7 +315,7 @@
     var defDate = today < '2026-12-15' ? '2026-12-15' : LAST_DAY;
     mount.innerHTML = '<div class="lkh"><div class="lkh-wrap narrow">' +
       hero('Holiday 2026 \u00b7 for Lokali vendors', 'Add your gift to the holiday page',
-        'One gift, one minute. It\'s free, and it\'s up to you. <a class="lkh-link" href="/holiday">See the page</a>') +
+        'One gift, one minute, and it\'s up to you. <a class="lkh-link" href="/holiday">See the page</a>') +
       '<div class="lkh-card" id="lkh-card">' +
       '<form class="lkh-form" id="lkh-form" novalidate autocomplete="off">' +
         '<div class="lkh-field"><label for="lkh-name">Your business</label>' +
