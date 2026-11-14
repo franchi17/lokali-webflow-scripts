@@ -3019,7 +3019,7 @@
         var link = note.querySelector('a');
         var href = (link && link.getAttribute('href')) || '/contact-us';
         note.textContent = '';
-        var a1 = ce('a'); a1.href = href; a1.textContent = 'Request your neighborhood'; note.appendChild(a1);
+        var a1 = ce('a'); a1.href = href; a1.textContent = 'Tell us where you live'; note.appendChild(a1);
         var a2 = ce('a'); a2.href = '/for-customers'; a2.textContent = 'How Lokali works →'; note.appendChild(a2);
       }
       about.classList.add('lk-strip');
@@ -3053,7 +3053,11 @@
     var dark = document.querySelector('.bottom-cta-card-cta-card-dark');
     if (dark) {
       setText(dark.querySelector('.text-block-125'), 'Coming soon');
-      var nb = ce('a', 'lk-cta-btn lk-cta-l'); nb.href = '/contact-us'; nb.textContent = 'Request your neighborhood →'; dark.appendChild(nb);
+      // F 2026-11-13: say plainly this means anywhere in the country, not a
+      // Houston neighborhood (matches the homepage step-1 line, v1.4.625).
+      setText(dark.querySelector('.text-block-123'), 'Not where you live?');
+      setText(dark.querySelector('.text-block-124'), "Tell us where you are, anywhere in the country, and we'll work on bringing Lokali to you.");
+      var nb = ce('a', 'lk-cta-btn lk-cta-l'); nb.href = '/contact-us'; nb.textContent = 'Tell us where you live →'; dark.appendChild(nb);
       dark.classList.add('lk-card');
     }
     // Order (F 2026-11-11, "no one will read it and the Neighborhood Edit should
