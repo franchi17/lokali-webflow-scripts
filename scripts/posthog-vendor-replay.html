@@ -1,0 +1,30 @@
+<!-- PostHog visit replays: VENDOR DASHBOARD PAGES ONLY (F 2026-11-14).
+     Lives in Webflow Site Settings > footer custom code. Copy kept here as the record.
+     - Loads only on /vendor-dashboard and its sub-pages; skips leads, followers and
+       orders (they show shoppers' names, emails and messages).
+     - Every input AND every piece of text is masked in recordings (shopper names
+       also appear on the dashboard home); the recording shows layout, clicks and
+       where people stop, not what is written.
+     - No identify(): visitors stay anonymous; no network bodies, no console logs.
+     - Project 736661 "Lokali". The phc_ key is PostHog's public write-only key. -->
+<script>
+(function () {
+  var p = location.pathname.replace(/\/+$/, '');
+  if (!/^\/vendor-dashboard(\/|$)/.test(p)) return;
+  if (/^\/vendor-dashboard\/(leads|followers|orders)(\/|$)/.test(p)) return;
+  !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="init capture register register_once unregister opt_out_capturing has_opted_out_capturing opt_in_capturing reset startSessionRecording stopSessionRecording".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
+  posthog.init('phc_BN5XanDFiMF5XSDqF9xRZK9DWeiwJcszkPhHV2oBG679', {
+    api_host: 'https://us.i.posthog.com',
+    person_profiles: 'identified_only',
+    capture_pageleave: true,
+    respect_dnt: true,
+    disable_surveys: true,
+    session_recording: {
+      maskAllInputs: true,
+      maskTextSelector: '*',
+      recordHeaders: false,
+      recordBody: false
+    }
+  });
+})();
+</script>
