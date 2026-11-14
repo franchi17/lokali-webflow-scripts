@@ -9,6 +9,10 @@
  *                     the address bar; without it the vendor signs in. The form never sends a
  *                     storefront id: the server reads it from the key or the session.
  *
+ * Description + photo (F 2026-11-13): the form asks for a short description (required, 10 to
+ * 140 characters) and an optional photo, picked from the storefront's own listing photos or
+ * uploaded (shrunk here to a 1600 px JPEG; the server re-saves it). The shopper card shows both.
+ *
  * Data: /api/lokali/holiday-gift on lokali-api (GET feed; POST {who:true} names the storefront; POST the form).
  * Nothing a vendor submits is public until F approves it from her alert email. No Supabase
  * client and no sign-in needed here, so this file has no dependency on the other scripts.
@@ -30,6 +34,12 @@
   var LAST_DAY = '2026-12-24';
   var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   var KIND_HINT = { product: 'Holiday candle trio, boxed', gift_card: '$50 gift card', session: 'Spa afternoon for four' };
+  var DESC_MIN = 10, DESC_MAX = 140;
+  var DESC_HINT = {
+    product: 'Three soy candles in winter scents, poured by hand and boxed with a ribbon.',
+    gift_card: 'Good for anything in the shop, sent by email the same day.',
+    session: 'A two-hour afternoon for up to four people, tea included.'
+  };
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function initials(n) { return String(n || '?').replace(/^The\s+/i, '').split(/\s+/).slice(0, 2).map(function (w) { return w.charAt(0); }).join('').toUpperCase() || '?'; }
@@ -130,6 +140,20 @@
       '.lkh-gb{padding:14px 16px 16px;display:flex;flex-direction:column;gap:4px;flex:1;}',
       '.lkh-who{font-size:13px;color:#6B6880;overflow-wrap:anywhere;}',
       '.lkh-title{font-size:16px;font-weight:700;color:#1A1829;overflow-wrap:anywhere;}',
+      '.lkh-desc{font-size:14px;line-height:1.5;color:#4A4761;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}',
+      '.lkh textarea{font-size:16px;font-weight:500;color:#1A1829;background:#fff;border:1px solid #D3E3D9;border-radius:12px;padding:12px 14px;width:100%;min-height:84px;margin:0;resize:vertical;line-height:1.5;font-family:inherit;}',
+      '.lkh textarea:focus{outline:3px solid #8FBFA4;outline-offset:1px;border-color:#1F5B3A;}',
+      '.lkh-count{align-self:flex-end;font-size:12px;color:#6B6880;font-variant-numeric:tabular-nums;}',
+      '.lkh-count.over{color:#B3263E;font-weight:700;}',
+      '.lkh-pics{display:grid;grid-template-columns:repeat(auto-fill,minmax(68px,1fr));gap:8px;max-height:232px;overflow-y:auto;padding:3px;}',
+      '.lkh-pic{position:relative;aspect-ratio:1/1;border-radius:12px;border:1px solid #D3E3D9;background:#E3F1E8;padding:0;overflow:hidden;cursor:pointer;}',
+      '.lkh-pic img{width:100%;height:100%;object-fit:cover;display:block;}',
+      '.lkh-pic[aria-pressed="true"]{outline:3px solid #1F5B3A;outline-offset:2px;}',
+      '.lkh-pic[aria-pressed="true"]::after{content:"";position:absolute;right:5px;top:5px;width:18px;height:18px;border-radius:999px;background:#1F5B3A url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 448 512%27%3E%3Cpath fill=%27%23fff%27 d=%27' + IC.check[1].replace(/ /g, '%20') + '%27/%3E%3C/svg%3E") center/11px no-repeat;}',
+      '.lkh-pic:focus-visible{outline:3px solid #8FBFA4;outline-offset:2px;}',
+      '.lkh-up{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:1.5px dashed #8FBFA4;background:#fff;color:#1F5B3A;font-size:12px;font-weight:700;}',
+      '.lkh-file{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;}',
+      '.lkh-clear{align-self:flex-start;background:none;border:0;padding:0;color:#1F5B3A;font-weight:700;font-size:13px;text-decoration:underline;cursor:pointer;}',
       '.lkh-meta{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-top:auto;padding-top:10px;}',
       '.lkh-price{font-weight:700;color:#1A1829;font-variant-numeric:tabular-nums;}',
       '.lkh-pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:5px 11px 5px 9px;border-radius:999px;background:#FBF0D2;color:#7A5A0C;white-space:nowrap;}',
@@ -200,11 +224,13 @@
     var days = Math.round((Date.parse(g.order_by + 'T00:00:00') - Date.parse(todayIso() + 'T00:00:00')) / 86400000);
     var soon = days <= 3;
     var when = days <= 0 ? 'Order today' : 'Order by ' + shortDate(g.order_by);
-    var ph = v.photo ? '<img src="' + esc(v.photo) + '" alt="" loading="lazy">' : esc(initials(v.name));
+    var src = g.photo || v.photo;
+    var ph = src ? '<img src="' + esc(src) + '" alt="" loading="lazy">' : esc(initials(v.name));
     return '<a class="lkh-gift" href="/' + encodeURIComponent(v.slug || '') + '">' +
       '<span class="lkh-ph">' + ph + '</span>' +
       '<span class="lkh-gb"><span class="lkh-who">' + esc(v.name) + '</span>' +
       '<span class="lkh-title">' + esc(g.title) + '</span>' +
+      (g.description ? '<span class="lkh-desc">' + esc(g.description) + '</span>' : '') +
       '<span class="lkh-meta"><span class="lkh-price">' + esc(money(g.price_cents)) + '</span>' +
       '<span class="lkh-pill' + (soon ? ' soon' : '') + '">' + ic('tag') + esc(when) + '</span></span></span></a>';
   }
@@ -298,7 +324,10 @@
       }
       askWho().then(function (res) {
         var name = res.d && res.d.vendor && res.d.vendor.name;
-        if (res.status === 200 && res.d.ok === true && name) { renderForm(mount, { name: String(name) }); return; }
+        if (res.status === 200 && res.d.ok === true && name) {
+          var pics = Array.isArray(res.d.photos) ? res.d.photos.filter(function (p) { return p && typeof p.url === 'string' && /^https:\/\//.test(p.url); }) : [];
+          renderForm(mount, { name: String(name), photos: pics }); return;
+        }
         var why = res.d && res.d.error;
         if (why === 'not_live') gate(mount, 'Your storefront isn\u2019t live yet', 'Finish your storefront first, then come back to add your gift.', 'Open my dashboard', '/vendor-dashboard');
         else if (why === 'rate_limited') gate(mount, 'Please try again in a little while', 'That was a lot of tries in a short time.');
@@ -332,20 +361,29 @@
         '<div class="lkh-field"><label for="lkh-gift">The gift</label>' +
           '<input type="text" id="lkh-gift" maxlength="60" placeholder="' + esc(KIND_HINT.product) + '">' +
           '<small>A few words, the way you\'d say it at your table.</small></div>' +
+        '<div class="lkh-field"><label for="lkh-desc">Tell shoppers a little more</label>' +
+          '<textarea id="lkh-desc" maxlength="' + DESC_MAX + '" rows="3" placeholder="' + esc(DESC_HINT.product) + '"></textarea>' +
+          '<small>One or two sentences: what it is, and what makes it a good gift. <span class="lkh-count" id="lkh-desc-n">0 / ' + DESC_MAX + '</span></small></div>' +
+        '<div class="lkh-field"><span class="lkh-lab" id="lkh-pic-lab">Pick a photo <span class="lkh-ghost">(optional)</span></span>' +
+          '<div class="lkh-pics" id="lkh-pics" role="group" aria-labelledby="lkh-pic-lab"></div>' +
+          '<input class="lkh-file" type="file" id="lkh-file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" tabindex="-1">' +
+          '<small id="lkh-pic-note"></small>' +
+          '<button type="button" class="lkh-clear" id="lkh-pic-clear" hidden>Use my storefront photo instead</button></div>' +
         '<div class="lkh-two">' +
           '<div class="lkh-field"><label for="lkh-price">Price</label><div class="lkh-pricebox"><span>$</span><input type="text" id="lkh-price" inputmode="decimal" placeholder="58"></div></div>' +
           '<div class="lkh-field"><label for="lkh-date">Last day to order</label><input type="date" id="lkh-date" min="' + today + '" max="' + LAST_DAY + '" value="' + defDate + '"></div></div>' +
-        '<p class="lkh-note">The photo comes from your storefront, so there\'s nothing to upload.</p>' +
+
         '<input class="lkh-hp" type="text" id="lkh-website" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">' +
         '<div class="lkh-err" id="lkh-err" hidden></div>' +
         '<div><button class="lkh-btn" id="lkh-send" type="submit">Add my gift</button></div>' +
       '</form>' +
       '<aside class="lkh-side" id="lkh-side"><span class="lkh-eyebrow" style="margin:0">How shoppers will see it</span>' +
-        '<div class="lkh-gift"><span class="lkh-gb">' +
+        '<div class="lkh-gift"><span class="lkh-ph" id="lkh-pv-ph"></span><span class="lkh-gb">' +
           '<span class="lkh-who"><i id="lkh-pv-i">?</i><span id="lkh-pv-who" class="lkh-ghost">Your business</span></span>' +
           '<span class="lkh-title lkh-ghost" id="lkh-pv-gift">Your gift</span>' +
+          '<span class="lkh-desc lkh-ghost" id="lkh-pv-desc">A line or two about it</span>' +
           '<span class="lkh-meta"><span class="lkh-price" id="lkh-pv-amt">$ \u2014</span><span class="lkh-pill" id="lkh-pv-date"></span></span></span></div>' +
-        '<p class="lkh-note">It fills in as you type. Your storefront photo is added on the page.</p></aside>' +
+        '<p class="lkh-note">It fills in as you type.</p></aside>' +
       '</div>' +
       '<div class="lkh-done" id="lkh-done" hidden><h2 id="lkh-done-h"></h2><p id="lkh-done-p"></p>' +
         '<button class="lkh-btn ghost" id="lkh-again" type="button">Add another gift</button><a class="lkh-btn" href="/holiday">See the holiday page</a></div>' +
@@ -356,11 +394,69 @@
     var picked = who, kind = 'product', sending = false;
     nameIn.value = who.name;
 
+    /* photo: one of the storefront's listing photos, an upload, or none (storefront photo) */
+    var photos = (who.photos || []).slice(0, 48);
+    var chosen = null; // { url } for a listing photo, { data } for an upload
+    var upData = '';
+    function drawPics() {
+      var box = $('lkh-pics');
+      box.innerHTML = photos.map(function (p, i) {
+        var on = chosen && chosen.url === p.url;
+        return '<button type="button" class="lkh-pic" data-i="' + i + '" aria-pressed="' + (on ? 'true' : 'false') + '" aria-label="' + esc(p.label || 'Listing photo') + '"><img src="' + esc(p.url) + '" alt="" loading="lazy"></button>';
+      }).join('') +
+        (upData ? '<button type="button" class="lkh-pic" data-up="1" aria-pressed="' + (chosen && chosen.data ? 'true' : 'false') + '" aria-label="Your uploaded photo"><img src="' + upData + '" alt=""></button>' : '') +
+        '<button type="button" class="lkh-pic lkh-up" id="lkh-up-b" aria-pressed="false">Upload<span style="font-weight:500">a photo</span></button>';
+      $('lkh-pic-note').textContent = chosen ? 'This photo goes on your gift.' :
+        (photos.length ? 'Tap one of your listing photos, or upload one. Skip it and we use your storefront photo.' : 'Upload a photo of the gift if you like. Skip it and we use your storefront photo.');
+      $('lkh-pic-clear').hidden = !chosen;
+      preview();
+    }
+    $('lkh-pics').addEventListener('click', function (e) {
+      var b = e.target.closest ? e.target.closest('.lkh-pic') : null; if (!b) return;
+      if (b.id === 'lkh-up-b') { $('lkh-file').click(); return; }
+      if (b.getAttribute('data-up')) chosen = { data: upData };
+      else { var p = photos[+b.getAttribute('data-i')]; if (p) chosen = (chosen && chosen.url === p.url) ? null : { url: p.url }; }
+      drawPics();
+    });
+    $('lkh-pic-clear').addEventListener('click', function () { chosen = null; drawPics(); });
+    $('lkh-file').addEventListener('change', function () {
+      var f = this.files && this.files[0]; this.value = '';
+      if (!f) return;
+      if (f.size > 25 * 1024 * 1024) { fail('That photo is too large. Please pick one under 25 MB.'); return; }
+      $('lkh-pic-note').textContent = 'Getting your photo ready\u2026';
+      shrink(f).then(function (d) { upData = d; chosen = { data: d }; $('lkh-err').hidden = true; drawPics(); },
+        function () { drawPics(); fail('That photo didn\'t open. Please try a JPEG or PNG photo.'); });
+    });
+    // Shrink in the browser: at most 1600 px on the long side, saved as a JPEG. Keeps the
+    // upload small on a phone connection; the server re-saves it again anyway.
+    function shrink(file) {
+      return new Promise(function (ok, no) {
+        var url = (window.URL || window.webkitURL).createObjectURL(file);
+        var img = new Image();
+        img.onload = function () {
+          try {
+            var w = img.naturalWidth, h = img.naturalHeight;
+            if (!w || !h || w < 200 || h < 200) { no(); return; }
+            var k = Math.min(1, 1600 / Math.max(w, h));
+            var c = document.createElement('canvas'); c.width = Math.round(w * k); c.height = Math.round(h * k);
+            var g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(img, 0, 0, c.width, c.height);
+            var d = c.toDataURL('image/jpeg', 0.85);
+            (window.URL || window.webkitURL).revokeObjectURL(url);
+            if (!/^data:image\/jpeg;base64,/.test(d) || d.length > 3900000) { no(); return; }
+            ok(d);
+          } catch (e) { no(); }
+        };
+        img.onerror = function () { (window.URL || window.webkitURL).revokeObjectURL(url); no(); };
+        img.src = url;
+      });
+    }
+
     $('lkh-kind').addEventListener('click', function (e) {
       var b = e.target.closest ? e.target.closest('.lkh-chip') : null; if (!b) return;
       kind = b.getAttribute('data-k');
       Array.prototype.forEach.call(this.querySelectorAll('.lkh-chip'), function (c) { c.setAttribute('aria-pressed', c === b ? 'true' : 'false'); });
       $('lkh-gift').placeholder = KIND_HINT[kind];
+      $('lkh-desc').placeholder = DESC_HINT[kind];
     });
 
     function priceVal() { return $('lkh-price').value.replace(/[$,\s]/g, ''); }
@@ -371,17 +467,27 @@
       $('lkh-pv-i').textContent = picked ? initials(picked.name) : '?';
       $('lkh-pv-gift').textContent = g || 'Your gift';
       $('lkh-pv-gift').className = 'lkh-title' + (g ? '' : ' lkh-ghost');
+      var ds = $('lkh-desc').value.trim().replace(/\s+/g, ' ');
+      $('lkh-pv-desc').textContent = ds || 'A line or two about it';
+      $('lkh-pv-desc').className = 'lkh-desc' + (ds ? '' : ' lkh-ghost');
+      var n = $('lkh-desc').value.length, cnt = $('lkh-desc-n');
+      cnt.textContent = n + ' / ' + DESC_MAX; cnt.className = 'lkh-count' + (n > DESC_MAX ? ' over' : '');
+      var src = chosen ? (chosen.url || chosen.data) : '';
+      $('lkh-pv-ph').innerHTML = src ? '<img src="' + esc(src) + '" alt="">' : '<span style="font-size:13px;font-weight:600;color:#1F5B3A;padding:0 16px;text-align:center">Your storefront photo</span>';
       $('lkh-pv-amt').textContent = /^\d+(\.\d{1,2})?$/.test(p) ? '$' + p : '$ \u2014';
       $('lkh-pv-date').innerHTML = ic('tag') + esc(d ? 'Order by ' + shortDate(d) : 'Order by \u2026');
     }
     $('lkh-price').addEventListener('input', function () { var c = this.value.replace(/[^0-9.]/g, ''); if (c !== this.value) this.value = c; });
-    ['lkh-gift', 'lkh-price', 'lkh-date'].forEach(function (id) { $(id).addEventListener('input', preview); });
-    preview();
+    ['lkh-gift', 'lkh-desc', 'lkh-price', 'lkh-date'].forEach(function (id) { $(id).addEventListener('input', preview); });
+    drawPics();
 
     var MSG = {
       link_required: 'This page lost track of your storefront. Open the button in Francesca\'s email again, or sign in.',
       not_live: 'Your storefront isn\'t live on Lokali yet. Finish it first, then add your gift.',
       invalid_title: 'Give the gift a short name, 2 to 60 characters.',
+      invalid_description: 'Tell shoppers a little more about the gift, 10 to 140 characters.',
+      invalid_photo: 'That photo didn\'t work. Pick another one, or skip the photo.',
+      photo_failed: 'The photo didn\'t save. Please try again in a moment, or skip the photo.',
       invalid_price: 'Enter the price as a number, like 58 or 22.50.',
       invalid_date: 'Pick a last day to order between today and December 24.',
       too_many: 'This storefront already has three gifts on the list. Reply to Francesca\'s email to swap one.',
@@ -394,7 +500,9 @@
       if (sending) return;
       $('lkh-err').hidden = true;
       var title = $('lkh-gift').value.trim().replace(/\s+/g, ' '), price = priceVal(), date = $('lkh-date').value;
+      var desc = $('lkh-desc').value.trim().replace(/\s+/g, ' ');
       if (title.length < 2) { fail(MSG.invalid_title); $('lkh-gift').focus(); return; }
+      if (desc.length < DESC_MIN || desc.length > DESC_MAX) { fail(MSG.invalid_description); $('lkh-desc').focus(); return; }
       if (!/^\d{1,4}(\.\d{1,2})?$/.test(price) || parseFloat(price) < 1) { fail(MSG.invalid_price); $('lkh-price').focus(); return; }
       if (!date || date < today || date > LAST_DAY) { fail(MSG.invalid_date); $('lkh-date').focus(); return; }
       sending = true;
@@ -402,7 +510,9 @@
       function reset() { sending = false; btn.disabled = false; btn.textContent = 'Add my gift'; }
       (GIFT_KEY ? Promise.resolve() : refreshToken()).then(function () { return fetch(ENDPOINT, {
         method: 'POST', headers: authHeaders(),
-        body: JSON.stringify({ k: GIFT_KEY || undefined, kind: kind, title: title, price: price, order_by: date, website: $('lkh-website').value })
+        body: JSON.stringify({ k: GIFT_KEY || undefined, kind: kind, title: title, description: desc, price: price, order_by: date,
+          photo_url: chosen && chosen.url ? chosen.url : undefined, photo_data: chosen && chosen.data ? chosen.data : undefined,
+          website: $('lkh-website').value })
       }); }).then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { return { ok: r.ok, d: d }; }); })
         .then(function (res) {
           reset();
@@ -416,7 +526,7 @@
         .catch(function () { reset(); fail('That didn\'t go through. Check your connection and try again.'); });
     });
     $('lkh-again').addEventListener('click', function () {
-      $('lkh-gift').value = ''; $('lkh-price').value = ''; preview();
+      $('lkh-gift').value = ''; $('lkh-desc').value = ''; $('lkh-price').value = ''; chosen = null; upData = ''; drawPics();
       $('lkh-done').hidden = true; $('lkh-card').hidden = false; $('lkh-gift').focus();
     });
   }

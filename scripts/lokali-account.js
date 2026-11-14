@@ -4161,7 +4161,16 @@
         var meta = el('div', 'lk-admin-row-meta');
         var l1 = el('div', 'lk-admin-row-l1'); l1.textContent = (g.business_name || 'Unknown vendor') + (g.live ? '' : ' · storefront not live');
         var l2 = el('div', 'lk-admin-row-l2'); l2.textContent = line(g);
-        meta.appendChild(l1); meta.appendChild(l2); row.appendChild(meta);
+        // Description + photo (F 2026-11-13): what the gift is, so it can be judged from here.
+        if (g.photo_url && /^https:\/\//.test(g.photo_url)) {
+          var th = document.createElement('img'); th.src = g.photo_url; th.alt = ''; th.loading = 'lazy';
+          th.style.cssText = 'width:56px;height:56px;object-fit:cover;border-radius:10px;flex:none;';
+          row.appendChild(th);
+        }
+        meta.appendChild(l1); meta.appendChild(l2);
+        var l3 = el('div', 'lk-admin-row-l2'); l3.textContent = g.description ? '\u201c' + g.description + '\u201d' : 'No description (added before the form asked for one)';
+        if (!g.description) l3.style.fontStyle = 'italic';
+        meta.appendChild(l3); row.appendChild(meta);
         if (g.slug) { var v = document.createElement('a'); v.className = 'lk-admin-btn'; v.textContent = 'View'; v.href = '/' + encodeURIComponent(g.slug); v.target = '_blank'; v.rel = 'noopener'; row.appendChild(v); }
         row.appendChild(button('Put it up', g, 'approve', 'Putting it up…'));
         row.appendChild(button('Decline', g, 'decline', 'Declining…', true));
@@ -4175,7 +4184,7 @@
           r.style.cssText = 'display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;font-size:13px;';
           var tx = document.createElement('span'); tx.style.minWidth = '0';
           var b = document.createElement('b'); b.textContent = g.business_name || 'Unknown vendor'; tx.appendChild(b);
-          tx.appendChild(document.createTextNode(' · ' + line(g) + ' · on the page'));
+          tx.appendChild(document.createTextNode(' · ' + line(g) + ' · on the page' + (g.description ? '' : ' · no description yet')));
           r.appendChild(tx); r.appendChild(button('Take down', g, 'decline', 'Taking down…', true));
           list.appendChild(r);
         });
