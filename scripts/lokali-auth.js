@@ -807,7 +807,7 @@
   function friendlyAuthError(err) {
     var msg = (err && (err.message || err.error_description)) || 'Something went wrong. Please try again.';
     var low = msg.toLowerCase();
-    if (low.indexOf('invalid login credentials') >= 0) return 'That email and password don’t match. Please try again.';
+    if (low.indexOf('invalid login credentials') >= 0) return 'That email and password don’t match. Please try again. Just signed up? Open the confirmation email we sent you first, then log in.';
     if (low.indexOf('user already registered') >= 0) return 'An account with this email already exists. Try logging in instead.';
     if (low.indexOf('password should') >= 0 || low.indexOf('password must') >= 0) {
       return 'Password needs at least 8 characters, with an uppercase letter, a lowercase letter, a number, and a symbol.';
