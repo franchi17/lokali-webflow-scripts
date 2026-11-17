@@ -61,7 +61,7 @@
       { label: 'Guides for vendors', href: '/vendor-resources' }
     ] },
     { label: 'Contact us',      href: '/contact-us' },
-    { label: 'Open a storefront', href: '/sign-up', cta: true }, // 2026-10-11: matches the desktop header wording
+    { label: 'Sign up', href: '/sign-up', cta: true }, // 2026-11-17 (F): one Sign up for shoppers and vendors; /sign-up asks which
     { label: 'Login',           href: '/login' } // under the pill, as a quiet text link (auth-nav hides it once signed in)
   ];
 
@@ -667,7 +667,7 @@
       var cta = document.createElement('a');
       cta.id = 'lok-row1-cta';
       cta.href = '/sign-up';
-      cta.textContent = 'Open a storefront';
+      cta.textContent = 'Sign up';
       right.insertBefore(cta, right.firstChild);
     }
     document.documentElement.classList.add('lok-row2');
