@@ -473,6 +473,7 @@
   // kind: market|search|view|contact. Fire-and-forget, keepalive (a contact click
   // navigates to tel:/wa.me at once). The token rides along only so the server
   // can flag a signed-in vendor/admin as internal; it is not stored.
+  var VISIT_URL = 'https://lokali-api.vercel.app/api/lokali/visit';
   function trackVisit(kind, p) {
     try {
       p = p || {};
@@ -484,10 +485,14 @@
       if (p.term) body.p_term = String(p.term).slice(0, 60);
       if (p.results != null) body.p_results = Number(p.results) || 0;
       if (p.vendorIds) body.p_vendor_ids = p.vendorIds.slice(0, 24).map(Number);
+      // SEC-069 (2026-11-17): visits go to the Lokali server, not straight to the
+      // database. The server caps by network address (which a script cannot pick),
+      // then writes the visit; the database refuses direct calls from browsers.
       var send = function (token) {
-        fetch(SUPABASE_URL + '/rest/v1/rpc/log_visit_event', {
-          method: 'POST', keepalive: true, body: JSON.stringify(body),
-          headers: { 'Content-Type': 'application/json', apikey: SUPABASE_KEY, Authorization: 'Bearer ' + (token || SUPABASE_KEY) }
+        var headers = { 'Content-Type': 'application/json' };
+        if (token) headers.Authorization = 'Bearer ' + token;
+        fetch(VISIT_URL, {
+          method: 'POST', keepalive: true, body: JSON.stringify(body), headers: headers
         }).catch(function () {});
       };
       authTokenP().then(send, function () { send(null); });
