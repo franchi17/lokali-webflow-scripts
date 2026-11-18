@@ -949,6 +949,149 @@
   // link lands on this page as ?link=<token>.
   // #217 Add another business: a NEW storefront without a second inbox (its login
   // is a "+" version of this one's email); its emailed link uses the same param.
+  // #253 Shop as yourself (F 2026-11-15: "I don't want to use my work email when
+  // contacting a vendor as myself"). The owner links ONE personal (shopping) login on
+  // their personal email. Type the address -> that inbox gets a confirm link (it
+  // creates the login if there is none yet) -> the menus' "{First} · shopping" row
+  // then switches into that login with one tap. Either side can disconnect; the
+  // business email is told both times. Patch: docs/supabase/patch_personal_login.sql.
+  // Deep link from the "a personal login was linked" email: #lok-pl.
+  function mountPersonalCard(sYou) {
+    var A = window.LokaliSupabaseAPI, PL = A && A.personalLink;
+    if (!sYou || !PL || !PL.mine || $('lok-pl')) return;
+    var card = mk('div', 'lok-sf'); card.id = 'lok-pl';
+    card.appendChild(mk('div', 'lok-sf-head', 'Shop as yourself'));
+    var sub = mk('p', 'lok-sf-sub'); card.appendChild(sub);
+    var body = mk('div'); card.appendChild(body);
+    var msg = mk('p', 'lok-sf-msg'); msg.hidden = true; card.appendChild(msg);
+    var sf = $('lok-sf');
+    if (sf && sf.parentNode === sYou) sYou.insertBefore(card, sf.nextSibling); else sYou.appendChild(card);
+    var state = null, formOpen = false, confirmOff = false;
+    var ERR = {
+      email_invalid: 'That email does not look right.',
+      same_login: 'That is the email this storefront signs in with. Enter your personal email.',
+      already_linked: 'A personal login is already linked. Disconnect it first to link a different one.',
+      not_a_vendor: 'Only a storefront login can link a personal login.',
+      admin_account: 'This account cannot link a personal login.',
+      too_many: 'You have a few links waiting already. Open one of those emails, or try again in an hour.',
+      email_failed: 'The email could not be sent. Nothing was linked. Try again in a minute.',
+      rpc_unavailable: 'This is not switched on yet. Try again later.',
+      not_enabled: 'This is not switched on yet. Try again later.'
+    };
+    function say(kind, text) { msg.hidden = !text; msg.textContent = text || ''; msg.className = 'lok-sf-msg' + (kind ? ' ' + kind : ''); }
+    function first() { return String((_user && _user.first_name) || '').trim(); }
+    function when(iso) {
+      try { return new Date(iso).toLocaleString(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit' }); } catch (e) { return ''; }
+    }
+    function form() {
+      var f = document.createElement('form'); f.className = 'lok-sf-panel'; f.setAttribute('novalidate', '');
+      var lab = mk('label', 'lok-sf-field'); lab.appendChild(mk('span', '', 'Your personal email'));
+      var em = document.createElement('input'); em.type = 'email'; em.maxLength = 254; em.autocomplete = 'off'; em.placeholder = 'you@gmail.com';
+      lab.appendChild(em); f.appendChild(lab);
+      var acts = mk('div', 'lok-sf-acts');
+      var go = mk('button', 'lok-set-btn pri', 'Send the link'); go.type = 'submit'; acts.appendChild(go);
+      if (state && state.pending) {
+        var cancel = mk('button', 'lok-set-btn quiet', 'Cancel'); cancel.type = 'button';
+        cancel.addEventListener('click', function () { formOpen = false; say('', ''); render(); });
+        acts.appendChild(cancel);
+      }
+      f.appendChild(acts);
+      f.appendChild(mk('p', 'lok-sf-msg', 'Use an email that doesn’t have a Lokali login yet. The link sets one up.'));
+      f.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var v = String(em.value || '').trim();
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) { say('err', ERR.email_invalid); em.focus(); return; }
+        go.disabled = true; go.textContent = 'Sending…'; say('', '');
+        PL.request(v).then(function (r) {
+          go.disabled = false; go.textContent = 'Send the link';
+          if (r && r.error) { say('err', ERR[r.error] || 'Something went wrong. Nothing was linked. Try again.'); return; }
+          formOpen = false;
+          say('ok', 'Sent. Open the email at ' + v + ' on this device and tap the button. If it doesn’t arrive in a few minutes, check spam. No email comes if that address already has a Lokali login: write to hello@golokali.com and we’ll link it for you.');
+          load();
+        }).catch(function () { go.disabled = false; go.textContent = 'Send the link'; say('err', 'Something went wrong. Try again.'); });
+      });
+      setTimeout(function () { try { em.focus(); } catch (e) {} }, 0);
+      return f;
+    }
+    function render() {
+      body.innerHTML = '';
+      var d = state || { linked: false };
+      if (d.linked && d.side === 'business') {
+        sub.textContent = 'Messages to vendors, reviews, saves and follows go out from your personal login, not this storefront’s email. Switch between the two from your menu.';
+        var row = mk('div', 'lok-sf-row');
+        var nm = String(d.personal_first_name || first() || '').trim();
+        row.appendChild(mk('div', 'lok-sf-av', (nm.charAt(0) || '•')));
+        var txt = mk('div', 'lok-sf-txt');
+        txt.appendChild(mk('b', '', (nm ? nm + ' · ' : '') + 'shopping'));
+        txt.appendChild(mk('span', 'on', (d.personal_email_masked || 'Personal login') + ' · linked'));
+        row.appendChild(txt);
+        var acts = mk('div', 'lok-sf-acts');
+        if (!confirmOff) {
+          var sw = mk('button', 'lok-set-btn pri', 'Switch to shopping'); sw.type = 'button';
+          sw.addEventListener('click', function () {
+            sw.disabled = true; sw.textContent = 'Switching…';
+            PL.switchTo().then(function (r) {
+              if (r && r.error) { sw.disabled = false; sw.textContent = 'Switch to shopping'; say('err', 'Could not switch. Try again.'); return; }
+              window.location.href = r.data.landing;
+            }).catch(function () { sw.disabled = false; sw.textContent = 'Switch to shopping'; });
+          });
+          var dc = mk('button', 'lok-set-btn quiet', 'Disconnect'); dc.type = 'button';
+          dc.addEventListener('click', function () { confirmOff = true; say('', ''); render(); });
+          acts.appendChild(sw); acts.appendChild(dc);
+        }
+        row.appendChild(acts);
+        body.appendChild(row);
+        if (confirmOff) {
+          var ask = mk('div', 'lok-sf-ask');
+          ask.appendChild(mk('b', '', 'Disconnect your personal login?'));
+          ask.appendChild(mk('p', '', 'Neither login will be able to switch into the other. Both keep working on their own, and your saves and reviews stay where they are.'));
+          var aa = mk('div', 'lok-sf-acts');
+          var yes = mk('button', 'lok-set-btn danger', 'Yes, disconnect'); yes.type = 'button';
+          var no = mk('button', 'lok-set-btn quiet', 'Keep it'); no.type = 'button';
+          yes.addEventListener('click', function () {
+            yes.disabled = true; yes.textContent = 'Disconnecting…';
+            PL.disconnect().then(function (r) {
+              confirmOff = false;
+              if (r && r.error) { say('err', 'Could not disconnect. Try again.'); render(); return; }
+              say('ok', 'Disconnected. We sent a note to this storefront’s email.');
+              load();
+            }).catch(function () { confirmOff = false; say('err', 'Could not disconnect. Try again.'); render(); });
+          });
+          no.addEventListener('click', function () { confirmOff = false; render(); });
+          aa.appendChild(yes); aa.appendChild(no); ask.appendChild(aa);
+          body.appendChild(ask);
+          setTimeout(function () { try { no.focus(); } catch (e) {} }, 0);
+        }
+        return;
+      }
+      sub.textContent = 'Keep your shopping on your personal email, apart from this storefront: messages to vendors, reviews, saves and follows. Then switch between the two from your menu, with no password.';
+      if (d.pending && !formOpen) {
+        var p = mk('div', 'lok-sf-ask');
+        p.appendChild(mk('b', '', 'Check your personal inbox'));
+        p.appendChild(mk('p', '', 'We sent a link to ' + (d.pending.email_masked || 'your personal email') + '. Open it on this device and tap the button.' +
+          (d.pending.expires_at ? ' It works until ' + when(d.pending.expires_at) + '.' : '')));
+        var pa = mk('div', 'lok-sf-acts');
+        var again = mk('button', 'lok-set-btn quiet', 'Use a different email'); again.type = 'button';
+        again.addEventListener('click', function () { formOpen = true; say('', ''); render(); });
+        pa.appendChild(again); p.appendChild(pa);
+        body.appendChild(p);
+        return;
+      }
+      body.appendChild(form());
+    }
+    function load() {
+      PL.mine().then(function (r) {
+        if (r && r.error) { card.hidden = true; return; } // patch not applied yet: show nothing
+        card.hidden = false;
+        state = r.data || { linked: false };
+        render();
+        if ((location.hash || '') === '#lok-pl') { try { card.scrollIntoView({ block: 'start' }); } catch (e) {} }
+      }).catch(function () { card.hidden = true; });
+    }
+    card.hidden = true;
+    load();
+  }
+
   function mountStorefrontsCard(sYou) {
     var A = window.LokaliSupabaseAPI, SF = A && A.storefronts;
     if (!sYou || !SF || !SF.linked || $('lok-sf')) return;
@@ -1357,6 +1500,7 @@
       if (pwHead && !pwHead.children.length) pwHead.textContent = 'HOW YOU SIGN IN';
     }
     mountStorefrontsCard(sYou); // #215
+    mountPersonalCard(sYou); // #253
     var bar = mk('div'); bar.id = 'lok-set-namebar';
     bar.appendChild(mk('span', '', 'You changed your name'));
     var acts = mk('span');

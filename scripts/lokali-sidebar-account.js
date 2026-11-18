@@ -364,6 +364,29 @@
     if (ref && ref.nextSibling) ref.parentNode.insertBefore(a, ref.nextSibling);
     else if (ref) ref.parentNode.appendChild(a);
     else menu.appendChild(a);
+    // #253: with a linked personal (shopping) login, this row switches into that
+    // login instead of opening the shopping side of the storefront login. The
+    // cache answers instantly; mine() keeps it current.
+    function linked() { var c = readCache(); return !!(c && c.plink && c.plink.side === 'business'); }
+    function paintRow() { a.title = linked() ? 'Switch to your personal login' : ''; }
+    a.addEventListener('click', function (e) {
+      if (!linked()) return;
+      var PL = window.LokaliSupabaseAPI && window.LokaliSupabaseAPI.personalLink;
+      if (!PL || !PL.switchTo) return; // falls back to the plain /account link
+      e.preventDefault(); e.stopPropagation();
+      if (a.getAttribute('aria-disabled') === 'true') return;
+      a.setAttribute('aria-disabled', 'true'); a.textContent = 'Switching to shopping\u2026';
+      PL.switchTo().then(function (res) {
+        if (res && res.error) { a.removeAttribute('aria-disabled'); a.textContent = 'Could not switch. Try again.'; return; }
+        window.location.href = res.data.landing;
+      }).catch(function () { a.removeAttribute('aria-disabled'); a.textContent = personShoppingLabel(); });
+    });
+    paintRow();
+    (function fetchPersonal(tries) {
+      var PL = window.LokaliSupabaseAPI && window.LokaliSupabaseAPI.personalLink;
+      if (!PL || !PL.mine) { if (tries < 40) setTimeout(function () { fetchPersonal(tries + 1); }, 250); return; }
+      PL.mine().then(paintRow).catch(function () {});
+    })(0);
   }
 
   // 2026-09-20 (F: "shouldn't the manage sign in live on the settings tab?"): the

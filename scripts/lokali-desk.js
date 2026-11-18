@@ -3,7 +3,8 @@
  *
  * A shopper "rings the Desk": three quick questions (what, when, where), then
  * WhatsApp opens on Francesca's business number with the answers already
- * written as her first message. A person answers within a day with one to three
+ * written as her first message. Francesca answers within one business day (F 2026-11-15:
+ * weekends are not promised) with one to three
  * neighbors. Mockup F approved: https://claude.ai/artifact/Qpokps1QCRWuc968xA8knd
  * (look = "rotary phone modern", F 2026-11-10; NOT a case file).
  *
@@ -54,12 +55,12 @@
     en: {
       hello: '“Referral Desk. This is Francesca.”',
       title: 'Can’t find who you need? Ring the Desk.',
-      lede: 'Tell us what you’re looking for. A real person who knows the neighborhood writes back within a day with one to three neighbors who can help.',
+      lede: 'Tell us what you’re looking for. Francesca knows the neighborhood and writes back within one business day with one to three neighbors who can help.',
       ring: 'Ring the Desk',
       openNow: 'Desk open today, 9 to 6',
       opensToday: 'The Desk opens at 9 today',
       opensTomorrow: 'The Desk opens at 9 tomorrow',
-      connected: 'neighbors connected', wait: 'longest wait for an answer', oneDay: '1 day',
+      connected: 'neighbors connected', wait: 'longest wait for an answer', oneDay: '1 business day',
       spanish: 'hablamos español', si: 'Sí',
       nudge: 'Rather ask a person?',
       thinTitle: 'Not quite it?',
@@ -79,12 +80,12 @@
     es: {
       hello: '“Referral Desk. Habla Francesca.”',
       title: '¿No encuentras a quien necesitas? Llama al Desk.',
-      lede: 'Cuéntanos qué buscas. Una persona real que conoce el vecindario te responde en un día con uno a tres vecinos que pueden ayudarte.',
+      lede: 'Cuéntanos qué buscas. Francesca conoce el vecindario y te responde en un día hábil con uno a tres vecinos que pueden ayudarte.',
       ring: 'Llama al Desk',
       openNow: 'Desk abierto hoy, de 9 a 6',
       opensToday: 'El Desk abre hoy a las 9',
       opensTomorrow: 'El Desk abre mañana a las 9',
-      connected: 'vecinos conectados', wait: 'espera máxima por respuesta', oneDay: '1 día',
+      connected: 'vecinos conectados', wait: 'espera máxima por respuesta', oneDay: '1 día hábil',
       spanish: 'hablamos español', si: 'Sí',
       nudge: '¿Prefieres preguntarle a una persona?',
       thinTitle: '¿No es lo que buscas?',

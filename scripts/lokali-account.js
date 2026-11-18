@@ -6508,3 +6508,218 @@
 
   window.LokaliAccount = { reload: function () { return loadAll().then(rerender); } };
 })();
+
+/* ── #253 Shop as yourself: the emailed confirm link (F 2026-11-15) ────────────────
+   The "Confirm your personal Lokali login" email links to /account?plink=<token>.
+   This block takes the token out of the address bar at once (kept for this tab
+   only, 30 minutes) and shows a small dialog over the page:
+     - signed out          -> sign in first (the overlay keeps them on /account);
+     - the right login     -> "Link them?" (existing personal login) or
+                              "Create and link?" (no login on that address yet);
+     - the storefront login, when the address already has a login -> sign out and
+                              sign in with the personal one, then the dialog comes back;
+     - anything else       -> a plain sentence (used, expired, wrong login...).
+   Everything is decided server-side by /api/lokali/personal-link/confirm; this is
+   only the conversation. Plus Jakarta Sans, violet/orange/light, no em dashes. */
+(function () {
+  'use strict';
+  if (window.__lokPlinkConfirm) return;
+  window.__lokPlinkConfirm = true;
+  var KEY = 'LOKALI_PLINK', TOKEN_RE = /^[A-Za-z0-9_-]{20,128}$/;
+
+  try {
+    var q = new URLSearchParams(location.search), t = q.get('plink');
+    if (t) {
+      if (TOKEN_RE.test(t)) sessionStorage.setItem(KEY, JSON.stringify({ token: t, t: Date.now() }));
+      q.delete('plink');
+      var rest = q.toString();
+      history.replaceState(null, '', location.pathname + (rest ? '?' + rest : '') + location.hash);
+    }
+  } catch (e) {}
+  function stash() {
+    try {
+      var st = JSON.parse(sessionStorage.getItem(KEY) || 'null');
+      if (!st || !st.token || (Date.now() - st.t) > 30 * 60 * 1000) { sessionStorage.removeItem(KEY); return null; }
+      return st.token;
+    } catch (e) { return null; }
+  }
+  function drop() { try { sessionStorage.removeItem(KEY); } catch (e) {} }
+  if (!stash()) return;
+
+  function css() {
+    if (document.getElementById('lok-pl-css')) return;
+    var s = document.createElement('style'); s.id = 'lok-pl-css';
+    s.textContent =
+      '#lok-pl-dlg{position:fixed;inset:0;z-index:2147482000;display:flex;align-items:center;justify-content:center;' +
+        'padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));' +
+        'background:rgba(35,29,63,.38);font-family:"Plus Jakarta Sans",system-ui,sans-serif;}' +
+      '#lok-pl-dlg .bx{background:#fff;border-radius:18px;max-width:440px;width:100%;padding:24px 22px 20px;box-shadow:0 24px 60px rgba(35,29,63,.25);color:#1A1829;}' +
+      '#lok-pl-dlg .ey{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#6002EE;margin:0 0 8px;}' +
+      '#lok-pl-dlg h2{font-size:20px;line-height:1.3;font-weight:800;margin:0 0 10px;font-family:inherit;}' +
+      '#lok-pl-dlg p{font-size:14.5px;line-height:1.55;color:#4A4761;margin:0 0 12px;}' +
+      '#lok-pl-dlg .warn{background:#FFF4E5;border-radius:10px;padding:10px 12px;font-size:13.5px;color:#5C3A00;}' +
+      '#lok-pl-dlg .acts{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;}' +
+      '#lok-pl-dlg button{font-family:inherit;font-size:14px;font-weight:700;min-height:44px;padding:0 18px;border-radius:10px;cursor:pointer;border:1px solid #DEDAEE;background:#fff;color:#4A4761;}' +
+      '#lok-pl-dlg button.pri{background:#6002EE;border-color:#6002EE;color:#fff;}' +
+      '#lok-pl-dlg button[disabled]{opacity:.6;cursor:default;}' +
+      '#lok-pl-dlg button:focus-visible{outline:2px solid #FF8D00;outline-offset:2px;}' +
+      '#lok-pl-dlg .err{color:#B42318;font-size:13.5px;margin:10px 0 0;}';
+    document.head.appendChild(s);
+  }
+  var dlg = null;
+  function close() { if (dlg && dlg.parentNode) dlg.parentNode.removeChild(dlg); dlg = null; }
+  // content: { eyebrow, title, paras:[text|{warn:text}], buttons:[{label, pri, run}] }
+  function show(c) {
+    css();
+    if (!dlg) {
+      dlg = document.createElement('div'); dlg.id = 'lok-pl-dlg';
+      dlg.setAttribute('role', 'dialog'); dlg.setAttribute('aria-modal', 'true'); dlg.setAttribute('aria-labelledby', 'lok-pl-t');
+      document.body.appendChild(dlg);
+    }
+    dlg.innerHTML = '';
+    var bx = document.createElement('div'); bx.className = 'bx';
+    var ey = document.createElement('div'); ey.className = 'ey'; ey.textContent = c.eyebrow || 'Shop as yourself'; bx.appendChild(ey);
+    var h = document.createElement('h2'); h.id = 'lok-pl-t'; h.textContent = c.title; bx.appendChild(h);
+    (c.paras || []).forEach(function (p) {
+      var e = document.createElement('p');
+      if (p && p.warn) { e.className = 'warn'; e.textContent = p.warn; } else e.textContent = p;
+      bx.appendChild(e);
+    });
+    var err = document.createElement('p'); err.className = 'err'; err.hidden = true;
+    var acts = document.createElement('div'); acts.className = 'acts';
+    var firstBtn = null;
+    (c.buttons || [{ label: 'Close', run: close }]).forEach(function (b) {
+      var btn = document.createElement('button'); btn.type = 'button'; btn.textContent = b.label;
+      if (b.pri) btn.className = 'pri';
+      btn.addEventListener('click', function () { b.run(btn, function (m) { err.hidden = !m; err.textContent = m || ''; }); });
+      acts.appendChild(btn); if (!firstBtn) firstBtn = btn;
+    });
+    bx.appendChild(acts); bx.appendChild(err);
+    dlg.appendChild(bx);
+    setTimeout(function () { try { firstBtn && firstBtn.focus(); } catch (e) {} }, 0);
+  }
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && dlg) close(); });
+
+  function API() { return window.LokaliSupabaseAPI && window.LokaliSupabaseAPI.personalLink; }
+  function signedIn() {
+    try {
+      return window.LokaliSupabaseReady.then(function (c) { return c.auth.getSession(); })
+        .then(function (r) { return !!(r && r.data && r.data.session); }).catch(function () { return false; });
+    } catch (e) { return Promise.resolve(false); }
+  }
+  function signOutThenBack() {
+    var A = window.LokaliAuth;
+    var go = function () { location.href = '/account'; };
+    try { if (A && typeof A.signOut === 'function') { A.signOut().then(go).catch(go); return; } } catch (e) {}
+    go();
+  }
+  function done(btn) { close(); drop(); }
+
+  function askSignIn() {
+    show({
+      title: 'Sign in to finish linking',
+      paras: ['Sign in with the login the email asked about, and this will pick up where you left off.'],
+      buttons: [
+        { label: 'Sign in', pri: true, run: function () {
+          var A = window.LokaliAuth; close();
+          if (A && typeof A.openSignIn === 'function') A.openSignIn({ source: 'personal_link', returnTo: '/account' });
+          else location.href = '/login';
+        } },
+        { label: 'Not now', run: close }
+      ]
+    });
+    window.addEventListener('lokali:authed', function once() {
+      window.removeEventListener('lokali:authed', once);
+      setTimeout(start, 400);
+    });
+  }
+
+  function linkedNew(r, email) {
+    var PL = API();
+    show({
+      title: 'Your personal login is ready',
+      paras: ['It’s linked to ' + (r.business_name || 'your storefront') + '. Use “shopping” in your menu to switch into it. We sent a note about the link to your storefront’s email.',
+        'To sign in to it directly some day, use “Forgot password” with ' + (email || 'your personal email') + '.'],
+      buttons: [
+        { label: 'Switch to shopping now', pri: true, run: function (btn, err) {
+          btn.disabled = true; btn.textContent = 'Switching…';
+          PL.switchTo().then(function (s) {
+            if (s && s.error) { btn.disabled = false; btn.textContent = 'Switch to shopping now'; err('Could not switch. Try again from the menu.'); return; }
+            location.href = s.data.landing;
+          });
+        } },
+        { label: 'Later', run: function () { close(); location.reload(); } }
+      ]
+    });
+  }
+
+  function answer(token, accept, v) {
+    var PL = API();
+    return function (btn, err) {
+      btn.disabled = true; btn.textContent = accept ? 'Linking…' : 'One moment…';
+      PL.answer(token, accept).then(function (r) {
+        if (r && r.error) { btn.disabled = false; btn.textContent = 'Try again'; err(MSG[r.error] ? MSG[r.error](r.data || {}).paras[0] : 'Something went wrong. Nothing was linked.'); return; }
+        drop();
+        if (!accept) { show({ title: 'Not linked', paras: ['Nothing changed. The link in that email no longer works.'] }); return; }
+        PL.mine();
+        if (v.mode === 'new') { linkedNew(r.data || {}, v.email); return; }
+        show({
+          title: 'Linked',
+          paras: ['This login is now your shopping login for ' + ((r.data && r.data.business_name) || v.from_business || 'your storefront') + '. Use the menu to switch to the storefront and back, with no password.'],
+          buttons: [{ label: 'Done', pri: true, run: function () { close(); location.reload(); } }]
+        });
+      }).catch(function () { btn.disabled = false; btn.textContent = 'Try again'; err('Something went wrong. Nothing was linked.'); });
+    };
+  }
+
+  var MSG = {
+    sign_in_personal: function (d) { return { title: 'Sign in with your personal login', paras: [
+      'This link is for ' + (d.to_email_masked || 'your personal email') + ', which already has a Lokali login. You’re signed in to ' + (d.from_business || 'your storefront') + ' right now.',
+      'Sign out, sign in with ' + (d.to_email_masked || 'your personal login') + ', and this will come back.'],
+      buttons: [{ label: 'Sign out', pri: true, run: function () { signOutThenBack(); } }, { label: 'Not now', run: close }] }; },
+    wrong_account: function (d) { return { title: 'Wrong login', paras: [
+      'This link belongs to ' + (d.to_email_masked || d.from_email_masked || 'a different login') + '. Sign out, sign in with that one, and open the link again.'],
+      buttons: [{ label: 'Sign out', pri: true, run: function () { signOutThenBack(); } }, { label: 'Close', run: done }] }; },
+    used: function () { return { title: 'Already done', paras: ['This link has already been used. Nothing else to do.'], buttons: [{ label: 'Close', run: done }] }; },
+    declined: function () { return { title: 'Not linked', paras: ['This request was turned down, so the link no longer works.'], buttons: [{ label: 'Close', run: done }] }; },
+    expired: function () { return { title: 'This link has expired', paras: ['Links work for 48 hours. Send a new one from your storefront’s Settings, under Shop as yourself.'], buttons: [{ label: 'Close', run: done }] }; },
+    no_request: function () { return { title: 'This link doesn’t work', paras: ['It may have been copied only partly. Open the email again and tap the button.'], buttons: [{ label: 'Close', run: done }] }; },
+    cannot_link: function () { return { title: 'These can’t be linked', paras: ['That email already has a Lokali login, so it can’t be linked from an email link. Write to hello@golokali.com and we’ll link it for you, or use a different personal email.'], buttons: [{ label: 'Close', run: done }] }; },
+    already_linked: function (d) { return { title: 'Already has a personal login', paras: [(d.from_business || 'This storefront') + ' already has a personal login linked. Disconnect it in Settings first to link a different one.'], buttons: [{ label: 'Close', run: done }] }; },
+    no_storefront: function () { return { title: 'These can’t be linked', paras: ['The storefront that asked can’t link a personal login.'], buttons: [{ label: 'Close', run: done }] }; }
+  };
+
+  function start() {
+    var token = stash(); if (!token) return;
+    var PL = API();
+    if (!PL || !PL.view) { setTimeout(start, 300); return; }
+    signedIn().then(function (yes) {
+      if (!yes) { askSignIn(); return; }
+      show({ title: 'One moment…', paras: ['Checking the link.'], buttons: [] });
+      PL.view(token).then(function (r) {
+        if (r && r.error) {
+          var m = MSG[r.error];
+          show(m ? m(r.data || {}) : { title: 'Something went wrong', paras: ['Nothing was linked. Open the email link again in a minute.'], buttons: [{ label: 'Close', run: close }] });
+          return;
+        }
+        var v = r.data || {}, biz = v.from_business || 'your storefront';
+        if (v.mode === 'new') {
+          show({
+            title: 'Create your personal login?',
+            paras: ['This creates a shopping login for ' + v.email + ', linked to ' + biz + '. Messages to vendors, reviews, saves and follows from it use your personal email.',
+              { warn: 'Linking works both ways: each login can switch into the other from the menu, with no password. Only continue if both are yours.' }],
+            buttons: [{ label: 'Create and link', pri: true, run: answer(token, true, v) }, { label: 'Not now', run: close }]
+          });
+        } else {
+          show({
+            title: 'Link this login to ' + biz + '?',
+            paras: ['You’re signed in with your personal login. Once linked, you can switch between shopping as yourself and ' + biz + ' from the menu, with no password.',
+              { warn: biz + (v.from_email_masked ? ' (login ' + v.from_email_masked + ')' : '') + ' asked for this. Only link it if that storefront is yours.' }],
+            buttons: [{ label: 'Yes, link them', pri: true, run: answer(token, true, v) }, { label: 'No, don’t link', run: answer(token, false, v) }]
+          });
+        }
+      });
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+})();

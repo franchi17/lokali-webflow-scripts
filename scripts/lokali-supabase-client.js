@@ -448,6 +448,44 @@
       localStorage.setItem('LOKALI_ACCT_CACHE', JSON.stringify(c));
     } catch (e) {}
   }
+  // #253 "Shop as yourself": the caller's side of a personal-login link, kept in
+  // LOKALI_ACCT_CACHE.plink (names + ids + masked address only) so the menus can
+  // paint the shopping/storefront switch row on the first frame of the next page.
+  // null = not linked.
+  function cachePersonal(d) {
+    try {
+      var c = JSON.parse(localStorage.getItem('LOKALI_ACCT_CACHE') || 'null');
+      if (!c) return;
+      if (d && d.linked === true) {
+        c.plink = { side: d.side === 'personal' ? 'personal' : 'business', business_name: d.business_name || '',
+          personal_first_name: d.personal_first_name || '', personal_email_masked: d.personal_email_masked || '',
+          vendors_id: d.vendors_id || null, slug: d.slug || '', profile_photo: d.profile_photo || '' };
+      } else {
+        c.plink = null;
+      }
+      localStorage.setItem('LOKALI_ACCT_CACHE', JSON.stringify(c));
+    } catch (e) {}
+  }
+  // After a personal-login switch: same person, the OTHER login. Going to the
+  // personal side drops everything storefront-shaped from the cache (role becomes
+  // customer); going back restores the vendor role + storefront name.
+  function afterPersonalSwitch(d) {
+    try { SWITCH_SESSION_KEYS.forEach(function (k) { sessionStorage.removeItem(k); }); } catch (e) {}
+    try {
+      localStorage.removeItem('lok_import_store_v1');
+      var c = JSON.parse(localStorage.getItem('LOKALI_ACCT_CACHE') || 'null') || {};
+      var pl = c.plink || {};
+      var toPersonal = d.direction === 'to_personal';
+      var next = { role: toPersonal ? 'customer' : 'vendor', first_name: c.first_name || '', last_name: c.last_name || '',
+        business_name: toPersonal ? '' : (d.business_name || pl.business_name || ''),
+        store_photo: toPersonal ? '' : (pl.profile_photo || '') };
+      next.plink = { side: toPersonal ? 'personal' : 'business', business_name: d.business_name || pl.business_name || '',
+        personal_first_name: pl.personal_first_name || '', personal_email_masked: pl.personal_email_masked || '',
+        vendors_id: d.vendors_id || pl.vendors_id || null, slug: d.slug || pl.slug || '', profile_photo: pl.profile_photo || '' };
+      localStorage.setItem('LOKALI_ACCT_CACHE', JSON.stringify(next));
+      localStorage.setItem(SWITCH_KEY, JSON.stringify({ name: toPersonal ? (pl.personal_first_name || 'Shopping') : (d.business_name || ''), at: Date.now() }));
+    } catch (e) {}
+  }
   function afterSwitch(d) {
     try { SWITCH_SESSION_KEYS.forEach(function (k) { sessionStorage.removeItem(k); }); } catch (e) {}
     try {
@@ -1780,6 +1818,63 @@
               appUserId = null;
               afterSwitch(d);
               return { data: { vendors_id: d.vendors_id, slug: d.slug, business_name: d.business_name }, error: null };
+            });
+          });
+        });
+      }
+    },
+    // #253 "Shop as yourself" (patch_personal_login.sql): a storefront owner links
+    // ONE personal (shopping) login on their personal email. Every call resolves
+    // { data, error }. The routes re-check everything server-side.
+    personalLink: {
+      // My side: { linked:false, pending:{email_masked, expires_at}|null } or
+      // { linked:true, side:'business'|'personal', business_name, personal_first_name,
+      //   personal_email_masked, vendors_id, slug, profile_photo }. Refreshes the cache.
+      mine: function () {
+        return withClient(function (c) { return c.rpc('my_personal_link'); }).then(function (r) {
+          var d = (r && r.data) || null;
+          if (r && !r.error && d) cachePersonal(d);
+          return { data: d || { linked: false }, error: (r && r.error) || null };
+        });
+      },
+      // Business login: email a confirm link to my personal address.
+      request: function (email) {
+        return postRoute('/personal-link/request', { email: String(email || '').trim() }, true);
+      },
+      // The emailed link (/account?plink=<token>): look first, then answer.
+      view: function (token) {
+        return postRoute('/personal-link/confirm', { token: String(token || '') }, true);
+      },
+      answer: function (token, accept) {
+        return postRoute('/personal-link/confirm', { token: String(token || ''), accept: accept === true }, true);
+      },
+      disconnect: function () {
+        return postRoute('/personal-link/disconnect', {}, true).then(function (r) {
+          if (r && !r.error) cachePersonal({ linked: false });
+          return r;
+        });
+      },
+      // Swap THIS browser to the other side of my personal link (same one-time
+      // sign-in mechanism as storefronts.switchTo). Resolves { data: { direction,
+      // landing, business_name }, error }; the caller navigates to data.landing.
+      switchTo: function () {
+        var oldToken = null;
+        return sessionAccessToken().then(function (t) {
+          oldToken = t;
+          if (!t) return { data: null, error: 'not_signed_in' };
+          return postRoute('/personal-link/switch', {}, true);
+        }).then(function (r) {
+          if (r.error) return r;
+          var d = r.data || {};
+          if (!d.token_hash) return { data: null, error: 'switch_failed' };
+          return withClient(function (c) {
+            return c.auth.verifyOtp({ token_hash: d.token_hash, type: 'magiclink' }).then(function (v) {
+              if (v && v.error) return { data: null, error: 'verify_failed' };
+              retireSession(oldToken);
+              appUserId = null;
+              afterPersonalSwitch(d);
+              var landing = d.landing === '/account' ? '/account' : '/vendor-dashboard/dashboard';
+              return { data: { direction: d.direction, landing: landing, business_name: d.business_name || '' }, error: null };
             });
           });
         });

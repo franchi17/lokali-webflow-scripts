@@ -61,7 +61,10 @@
       { label: 'Guides for vendors', href: '/vendor-resources' }
     ] },
     { label: 'Contact us',      href: '/contact-us' },
-    { label: 'Sign up', href: '/sign-up', cta: true }, // 2026-11-17 (F): one Sign up for shoppers and vendors; /sign-up asks which
+    // 2026-11-15 (F: shoppers kept asking how to sign up): 'Sign up' for everyone. The label
+    // no longer matches auth-nav's seller wording, so no seller answer is stashed and /sign-up
+    // shows the shop-or-sell chooser. Seller pages keep their own 'Open your storefront' CTAs.
+    { label: 'Sign up', href: '/sign-up', cta: true },
     { label: 'Login',           href: '/login' } // under the pill, as a quiet text link (auth-nav hides it once signed in)
   ];
 
@@ -667,7 +670,7 @@
       var cta = document.createElement('a');
       cta.id = 'lok-row1-cta';
       cta.href = '/sign-up';
-      cta.textContent = 'Sign up';
+      cta.textContent = 'Sign up'; // 2026-11-15: same wording as the phone menu + desktop header
       right.insertBefore(cta, right.firstChild);
     }
     document.documentElement.classList.add('lok-row2');
@@ -935,4 +938,139 @@
   // Code islands (The Market search) hydrate later than DOMContentLoaded — retry the shadow patch.
   setTimeout(patchCodeIslands, 2000);
   setTimeout(patchCodeIslands, 5000);
+})();
+
+/* ── Home-screen app: show the newest Lokali (F 2026-11-15) ─────────────────────────
+   Opened from the iPhone/Android home-screen icon (standalone, no browser bar), the
+   phone FREEZES the page when you leave and thaws the same page when you come back,
+   with no reload button. So a release could take days to reach someone who uses the
+   icon. Only in that standalone mode:
+     - back after 15+ minutes away -> reload, unless the person typed on this page
+       (an unsaved message or editor) -> then the update bar instead;
+     - back sooner -> ask the server once whether a newer version of THIS page is
+       out (Webflow's "Last Published" stamp, or a different scripts pin); if so,
+       show a violet "Lokali has an update · Refresh" bar. Never reloads on its own.
+   Browsers (Safari/Chrome tabs) are untouched. Nothing is cached anywhere: the
+   service worker stays pass-through. */
+(function () {
+  'use strict';
+  if (window.__lokAppFresh) return;
+  window.__lokAppFresh = true;
+
+  function standalone() {
+    try {
+      if (window.navigator.standalone === true) return true;
+      return !!(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+    } catch (e) { return false; }
+  }
+  if (!standalone()) return;
+  // Payment hand-offs: never reload or interrupt these.
+  if (/^\/(checkout|paypal-checkout|order-confirmation)(\/|$)/.test(location.pathname)) return;
+
+  var AWAY_RELOAD_MS = 15 * 60 * 1000; // away this long -> fresh page
+  var MIN_AWAY_CHECK_MS = 60 * 1000;   // shorter trips away don't trigger a check
+  var CHECK_GAP_MS = 2 * 60 * 1000;    // at most one server check per 2 minutes
+  var hiddenAt = 0, lastCheck = 0, typed = false, barShown = false;
+
+  // "Typed on this page" = a real keystroke/choice in a field since the page loaded.
+  // Fields the page fills in by itself don't count (those events aren't trusted).
+  function markTyped(e) {
+    if (!e || e.isTrusted === false) return;
+    var t = e.target;
+    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) typed = true;
+  }
+  document.addEventListener('input', markTyped, true);
+  document.addEventListener('change', markTyped, true);
+
+  // Webflow writes "<!-- Last Published: ... -->" at the top of every page it publishes.
+  function stampOfDoc(doc) {
+    var n = doc && doc.childNodes ? doc.childNodes : [];
+    for (var i = 0; i < n.length; i++) {
+      if (n[i].nodeType === 8 && /Last Published/i.test(n[i].nodeValue || '')) return String(n[i].nodeValue).trim();
+    }
+    var root = doc && doc.documentElement;
+    var m = root && root.firstChild;
+    for (; m; m = m.nextSibling) if (m.nodeType === 8 && /Last Published/i.test(m.nodeValue || '')) return String(m.nodeValue).trim();
+    return '';
+  }
+  function stampOfHtml(html) {
+    var m = /<!--\s*(Last Published:[^>]*?)\s*-->/i.exec(html || '');
+    return m ? m[1].trim() : '';
+  }
+  function pinsOf(text) {
+    var re = /lokali-webflow-scripts@(\d+\.\d+\.\d+)\//g, m, out = {};
+    while ((m = re.exec(text || ''))) out[m[1]] = 1;
+    return Object.keys(out).sort().join(',');
+  }
+  function pinsOfDoc() {
+    var s = document.querySelectorAll('script[src]'), src = '';
+    for (var i = 0; i < s.length; i++) src += ' ' + s[i].getAttribute('src');
+    return pinsOf(src);
+  }
+  var myStamp = stampOfDoc(document);
+  var myPins = pinsOfDoc();
+
+  function showBar() {
+    if (barShown || document.getElementById('lok-app-update')) return;
+    barShown = true;
+    if (!document.getElementById('lok-app-update-css')) {
+      var st = document.createElement('style');
+      st.id = 'lok-app-update-css';
+      st.textContent =
+        '#lok-app-update{position:fixed;left:0;right:0;top:0;z-index:2147483000;display:flex;align-items:center;gap:10px;' +
+        'padding:calc(10px + env(safe-area-inset-top,0px)) max(14px,env(safe-area-inset-right,0px)) 10px max(14px,env(safe-area-inset-left,0px));' +
+        'background:#6002EE;color:#fff;font:600 14px/1.3 "Plus Jakarta Sans",system-ui,sans-serif;box-shadow:0 6px 18px rgba(30,10,80,.18);}' +
+        '#lok-app-update .t{flex:1;min-width:0;}' +
+        '#lok-app-update button{font:700 13px/1 "Plus Jakarta Sans",system-ui,sans-serif;border:0;cursor:pointer;border-radius:999px;}' +
+        '#lok-app-update .go{background:#fff;color:#6002EE;padding:9px 14px;}' +
+        '#lok-app-update .x{background:transparent;color:#fff;font-size:20px;padding:4px 6px;line-height:1;}' +
+        '#lok-app-update button:focus-visible{outline:2px solid #FF8D00;outline-offset:2px;}';
+      document.head.appendChild(st);
+    }
+    var bar = document.createElement('div');
+    bar.id = 'lok-app-update';
+    bar.setAttribute('role', 'status');
+    var t = document.createElement('span'); t.className = 't'; t.textContent = 'Lokali has an update';
+    var go = document.createElement('button'); go.type = 'button'; go.className = 'go'; go.textContent = 'Refresh';
+    var x = document.createElement('button'); x.type = 'button'; x.className = 'x'; x.setAttribute('aria-label', 'Not now'); x.textContent = '×';
+    go.addEventListener('click', function () { location.reload(); });
+    x.addEventListener('click', function () { if (bar.parentNode) bar.parentNode.removeChild(bar); });
+    bar.appendChild(t); bar.appendChild(go); bar.appendChild(x);
+    document.body.appendChild(bar);
+  }
+
+  function checkForUpdate() {
+    var now = Date.now();
+    if (barShown || now - lastCheck < CHECK_GAP_MS || !window.fetch) return;
+    lastCheck = now;
+    fetch(location.href, { cache: 'no-store', credentials: 'same-origin' })
+      .then(function (r) { return r.ok ? r.text() : ''; })
+      .then(function (html) {
+        if (!html) return;
+        var stamp = stampOfHtml(html), pins = pinsOf(html);
+        var newer = (myStamp && stamp && stamp !== myStamp) || (myPins && pins && pins !== myPins);
+        if (newer) showBar();
+      })
+      .catch(function () {});
+  }
+
+  function onBack() {
+    if (!hiddenAt) return;
+    var away = Date.now() - hiddenAt;
+    hiddenAt = 0;
+    if (away >= AWAY_RELOAD_MS) {
+      if (!typed) { location.reload(); return; }
+      lastCheck = 0; // typed: never reload on them, but do look for an update now
+      checkForUpdate();
+      return;
+    }
+    if (away >= MIN_AWAY_CHECK_MS) checkForUpdate();
+  }
+
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'hidden') hiddenAt = Date.now();
+    else onBack();
+  });
+  window.addEventListener('pagehide', function () { if (!hiddenAt) hiddenAt = Date.now(); });
+  window.addEventListener('pageshow', function (e) { if (e && e.persisted) onBack(); });
 })();

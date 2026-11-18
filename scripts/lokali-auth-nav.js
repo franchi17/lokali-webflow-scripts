@@ -327,7 +327,27 @@
           '<span class="lok-idsw-txt"><span class="lok-idsw-name">' + esc(L.business_name || 'Storefront') + '</span>' +
           '<span class="lok-idsw-sub">Storefront</span>' + unreadText(n) + '</span></button>';
       }
-      html += idRow(ACCOUNT_URL, IC_SHOP, person || 'Shopping', person ? 'Shopping' : 'Following & reviews', !inStore, true);
+      // #253: with a linked PERSONAL login, the shopping row switches into it (its own
+      // email, its own saves and reviews) instead of the shopping side of this login.
+      var pl = a && a.plink;
+      if (pl && pl.side === 'business') {
+        html += '<button type="button" role="menuitem" class="lok-idsw lok-idsw--shop" data-lok-pswitch="1">' +
+          '<span class="lok-idsw-ic">' + IC_SHOP + '</span>' +
+          '<span class="lok-idsw-txt"><span class="lok-idsw-name">' + esc(pl.personal_first_name || person || 'Shopping') + '</span>' +
+          '<span class="lok-idsw-sub">Shopping, personal login</span></span></button>';
+      } else {
+        html += idRow(ACCOUNT_URL, IC_SHOP, person || 'Shopping', person ? 'Shopping' : 'Following & reviews', !inStore, true);
+      }
+    } else if (a && a.plink && a.plink.side === 'personal') {
+      // #253: the personal (shopping) login of a storefront owner: same switcher, other way round.
+      var pp = a.plink, me = (a.first_name || '').trim();
+      html += '<div class="lok-acct-cap">Switch to</div>';
+      var pic = storeIc(pp.profile_photo || '', 0);
+      html += '<button type="button" role="menuitem" class="lok-idsw" data-lok-pswitch="1">' +
+        '<span class="lok-idsw-ic' + pic.cls + '">' + pic.html + '</span>' +
+        '<span class="lok-idsw-txt"><span class="lok-idsw-name">' + esc(pp.business_name || 'My storefront') + '</span>' +
+        '<span class="lok-idsw-sub">Storefront</span></span></button>';
+      html += idRow(ACCOUNT_URL, IC_SHOP, me || 'Shopping', 'Shopping, personal login', true, true);
     } else {
       html += '<a href="' + ACCOUNT_URL + '" role="menuitem">My Account</a>';
     }
@@ -379,7 +399,9 @@
       var so = e.target.closest && e.target.closest('.lok-acct-signout');
       if (so) { e.preventDefault(); signOut(); return; }
       var sw = e.target.closest && e.target.closest('[data-lok-switch]');
-      if (sw) { e.preventDefault(); e.stopPropagation(); switchStorefront(sw); }
+      if (sw) { e.preventDefault(); e.stopPropagation(); switchStorefront(sw); return; }
+      var ps = e.target.closest && e.target.closest('[data-lok-pswitch]');
+      if (ps) { e.preventDefault(); e.stopPropagation(); switchPersonal(ps); }
     });
     return wrap;
   }
@@ -447,6 +469,38 @@
       var path = (window.location.pathname || '').replace(/\/+$/, '');
       window.location.href = path.indexOf('/vendor-dashboard') === 0 ? path : DASH_URL;
     }).catch(function () { btn.disabled = false; if (sub) sub.textContent = 'Could not switch. Try again.'; });
+  }
+  // #253: hop between a storefront login and its linked personal (shopping) login.
+  // The route re-checks the link; the browser lands on /account (personal side) or
+  // the dashboard (storefront side) as the other login.
+  function switchPersonal(btn) {
+    var PL = window.LokaliSupabaseAPI && window.LokaliSupabaseAPI.personalLink;
+    var sub = btn.querySelector('.lok-idsw-sub');
+    if (!PL || !PL.switchTo) { if (sub) sub.textContent = 'Not available right now'; return; }
+    btn.disabled = true; if (sub) sub.textContent = 'Switching\u2026';
+    PL.switchTo().then(function (res) {
+      if (res && res.error) { btn.disabled = false; if (sub) sub.textContent = 'Could not switch. Try again.'; return; }
+      window.location.href = res.data.landing;
+    }).catch(function () { btn.disabled = false; if (sub) sub.textContent = 'Could not switch. Try again.'; });
+  }
+  // Keep acct.plink current (a link or disconnect made elsewhere). Storefront
+  // logins check every page, like refreshLinked; shopper logins once per tab
+  // session (most are never linked; the confirm flow updates the cache itself).
+  function refreshPersonal(tries) {
+    if (!acct || !acct.role) return;
+    var PL = window.LokaliSupabaseAPI && window.LokaliSupabaseAPI.personalLink;
+    if (!PL || !PL.mine) { if ((tries || 0) < 40) setTimeout(function () { refreshPersonal((tries || 0) + 1); }, 250); return; }
+    if (acct.role !== 'vendor' && !acct.plink) {
+      try { if (sessionStorage.getItem('lok_plink_checked')) return; sessionStorage.setItem('lok_plink_checked', '1'); } catch (e) {}
+    }
+    PL.mine().then(function (res) {
+      if (!res || res.error || !res.data) return;
+      var d = res.data;
+      var next = d.linked === true ? { side: d.side, business_name: d.business_name || '', personal_first_name: d.personal_first_name || '',
+        personal_email_masked: d.personal_email_masked || '', vendors_id: d.vendors_id || null, slug: d.slug || '', profile_photo: d.profile_photo || '' } : null;
+      if (JSON.stringify(next) === JSON.stringify(acct.plink || null)) return;
+      acct.plink = next; setCache({ plink: next }); refreshExisting();
+    }).catch(function () {});
   }
   // Keep the linked list fresh (a link or disconnect made on another device).
   // The RPC returns [] for everyone not linked, so this costs one small call.
@@ -613,9 +667,13 @@
 
   // Refresh role/name from the server and re-render (updates cache for next load).
   fetchAccount().then(function (a) {
-    if (a && (a.role || a.first_name)) { acct = a; setCache(a); render(); refreshExisting(); hideBecomeVendorForVendor(); }
+    if (a && (a.role || a.first_name)) {
+      if (acct && acct.plink !== undefined && a.plink === undefined) a.plink = acct.plink; // #253: keep until refreshPersonal answers
+      acct = a; setCache(a); render(); refreshExisting(); hideBecomeVendorForVendor();
+    }
     ensureStoreName();
     refreshLinked(0);
+    refreshPersonal(0);
   });
 
   // Failsafe: stop observing, final pass, reveal anything still hidden.
