@@ -372,7 +372,7 @@
 
   function buildTrust() {
     var ul = el('ul', 'lok-trust');
-    ['Verified people', 'Reviews from real customers', 'Message them directly'].forEach(function (t) { ul.appendChild(el('li', null, t)); });
+    ['Real people, real names', 'Reviews from real customers', 'Message them directly'].forEach(function (t) { ul.appendChild(el('li', null, t)); });
     return ul;
   }
 
@@ -467,7 +467,7 @@
       li.appendChild(el('p', null, text));
       return li;
     }
-    var s1 = step('01', 'Pick your area', 'Our vendors already reach nine areas around The Woodlands and Greater Houston.');
+    var s1 = step('01', 'Pick your area', 'Choose where you live. Nine areas across Greater Houston so far.');
     var areas = el('div', 'lok-areas');
     AREAS.forEach(function (a) {
       var chip = el('a', 'lok-area');

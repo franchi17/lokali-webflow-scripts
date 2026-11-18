@@ -378,7 +378,7 @@
     txt.appendChild(h1);
     if (lede) txt.appendChild(take(lede, 'lok-lede'));
     var trust = el('ul', 'lok-trust');
-    ['Woman-owned', 'Independent, no outside investors', 'Built in The Woodlands, TX'].forEach(function (t) { trust.appendChild(el('li', null, t)); });
+    ['Woman-owned', 'Independent, no outside investors'].forEach(function (t) { trust.appendChild(el('li', null, t)); });
     txt.appendChild(trust);
     var acts = el('div', 'lok-acts');
     acts.appendChild(link('lok-btn lok-or', 'Browse the Market', '/the-market'));

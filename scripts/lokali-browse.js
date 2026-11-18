@@ -2990,7 +2990,7 @@
     var b = ce('b'); b.textContent = n + (n === 1 ? ' storefront' : ' storefronts'); meta.appendChild(b);
     meta.appendChild(document.createTextNode(c ? ' across ' + numberWord(c) + ' communities' : ''));
     meta.appendChild(ce('br'));
-    meta.appendChild(document.createTextNode('Verified people · Reviews from real customers · Message them directly'));
+    meta.appendChild(document.createTextNode('Real people, real names · Reviews from real customers · Message them directly'));
   }
   function frameTail() {
     // The SEO block: keep the paragraph, drop the duplicates.
