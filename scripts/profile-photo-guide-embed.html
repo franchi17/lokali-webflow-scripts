@@ -1,0 +1,196 @@
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@800&display=swap" rel="stylesheet">
+
+<style>
+  .lg-wrap { display: block; width: 100%; font-family: 'Plus Jakarta Sans', sans-serif; color: #0f0f14; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  .lg-wrap *, .lg-wrap *::before, .lg-wrap *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  .lg-hero { display: block; width: 100%; background: #f8f7fc; border-bottom: 1px solid rgba(0,0,0,0.1); padding: 5rem 1.5rem 4rem; text-align: center; }
+  .lg-eyebrow { display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #6002EE; background: #f0e6ff; border-radius: 20px; padding: 4px 14px; margin-bottom: 1.25rem; }
+  .lg-h1 { display: block; font-size: clamp(28px, 5vw, 48px); font-weight: 800; color: #0f0f14; letter-spacing: -1px; line-height: 1.15; margin: 0 0 1rem; }
+  .lg-h1 span { color: #6002EE; }
+  .lg-sub { display: block; font-size: 18px; color: #4a4a5a; line-height: 1.65; }
+
+  .lg-section { display: block; width: 100%; padding: 3.5rem 1.5rem; border-bottom: 1px solid rgba(0,0,0,0.1); }
+  .lg-section:last-of-type { border-bottom: none; }
+  .lg-section-eye { display: block; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #888898; margin-bottom: 0.5rem; }
+  .lg-section-title { display: block; font-size: clamp(20px, 3vw, 26px); font-weight: 800; color: #0f0f14; letter-spacing: -0.4px; margin-bottom: 0.75rem; line-height: 1.25; }
+  .lg-section-body { display: block; font-size: 17px; color: #4a4a5a; line-height: 1.7; margin-bottom: 2rem; }
+
+  .lg-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; width: 100%; }
+  .lg-card { display: block; border-radius: 16px; border: 1px solid rgba(0,0,0,0.1); background: #ffffff; overflow: hidden; }
+  .lg-visual { height: 150px; display: flex; align-items: center; justify-content: center; position: relative; }
+  .lg-card-body { display: block; padding: 12px 14px 16px; }
+  .lg-tag { font-size: 11px; font-weight: 700; border-radius: 20px; padding: 3px 10px; display: inline-block; margin-bottom: 7px; }
+  .lg-good { background: #e6f4ea; color: #1a5c2e; }
+  .lg-bad { background: #fce8e6; color: #b33224; }
+  .lg-caption { display: block; font-size: 15px; font-weight: 700; color: #0f0f14; margin-bottom: 4px; }
+  .lg-note { display: block; font-size: 14px; color: #4a4a5a; line-height: 1.5; }
+
+  .lg-tips { display: flex; flex-direction: column; gap: 12px; width: 100%; }
+  .lg-tip { display: flex; align-items: flex-start; gap: 14px; padding: 16px 18px; background: #f0e6ff; border-radius: 14px; }
+  .lg-tip-num { width: 28px; height: 28px; border-radius: 50%; background: #6002EE; color: #fff; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
+  .lg-tip-title { display: block; font-size: 16px; font-weight: 700; color: #0f0f14; margin-bottom: 3px; }
+  .lg-tip-body { display: block; font-size: 15px; color: #4a4a5a; line-height: 1.55; }
+</style>
+
+<div class="lg-wrap">
+
+  <div class="lg-hero">
+    <div class="lg-eyebrow">Vendor Resources</div>
+    <div class="lg-h1">Your profile photo:<br><span>make a great first impression</span></div>
+    <div class="lg-sub">No photographer, no ring light, no problem. Here's how to put your best foot forward, in under five minutes.</div>
+  </div>
+
+  <div class="lg-section">
+    <div class="lg-section-eye">What works</div>
+    <div class="lg-section-title">Three photos that always land well</div>
+    <div class="lg-section-body">Your profile photo is the first thing people see. It doesn't have to be perfect. It just has to feel real and clear.</div>
+    <div class="lg-grid">
+
+      <div class="lg-card">
+        <div class="lg-visual" style="background:#f5f0ff;">
+          <svg width="70" height="70" viewBox="0 0 80 80" fill="none">
+            <circle cx="40" cy="40" r="40" fill="#ede0ff"/>
+            <circle cx="40" cy="30" r="14" fill="#6002EE"/>
+            <ellipse cx="40" cy="68" rx="22" ry="16" fill="#6002EE"/>
+          </svg>
+          <div style="position:absolute;top:10px;right:10px;background:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid #c8e6c9;">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="5.5" stroke="#1a5c2e" stroke-width="1.5"/><path d="M3.5 6.5l2 2 4-4" stroke="#1a5c2e" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+        </div>
+        <div class="lg-card-body">
+          <div class="lg-tag lg-good">Great</div>
+          <div class="lg-caption">A clear headshot</div>
+          <div class="lg-note">Face visible, good light, simple background. Friendly goes a long way.</div>
+        </div>
+      </div>
+
+      <div class="lg-card">
+        <div class="lg-visual" style="background:#fff5f0;">
+          <svg width="74" height="74" viewBox="0 0 80 80" fill="none">
+            <rect x="8" y="20" width="64" height="48" rx="8" fill="#ffe0cc"/>
+            <rect x="14" y="28" width="30" height="22" rx="4" fill="#EE6002" opacity="0.25"/>
+            <circle cx="29" cy="39" r="8" fill="#EE6002" opacity="0.8"/>
+            <rect x="50" y="30" width="16" height="3" rx="2" fill="#EE6002" opacity="0.5"/>
+            <rect x="50" y="38" width="12" height="3" rx="2" fill="#EE6002" opacity="0.3"/>
+            <rect x="50" y="46" width="14" height="3" rx="2" fill="#EE6002" opacity="0.3"/>
+          </svg>
+          <div style="position:absolute;top:10px;right:10px;background:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid #c8e6c9;">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="5.5" stroke="#1a5c2e" stroke-width="1.5"/><path d="M3.5 6.5l2 2 4-4" stroke="#1a5c2e" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+        </div>
+        <div class="lg-card-body">
+          <div class="lg-tag lg-good">Great</div>
+          <div class="lg-caption">A photo of your work</div>
+          <div class="lg-note">Cakes, flowers, a finished room. Let what you do speak for you.</div>
+        </div>
+      </div>
+
+      <div class="lg-card">
+        <div class="lg-visual" style="background:#f0f4ff;">
+          <svg width="74" height="60" viewBox="0 0 80 70" fill="none">
+            <rect x="4" y="10" width="72" height="52" rx="8" fill="#e8eeff"/>
+            <circle cx="25" cy="36" r="11" fill="#6002EE" opacity="0.75"/>
+            <rect x="40" y="24" width="28" height="4" rx="2" fill="#6002EE" opacity="0.5"/>
+            <rect x="40" y="32" width="20" height="3" rx="1.5" fill="#6002EE" opacity="0.3"/>
+            <rect x="40" y="39" width="24" height="3" rx="1.5" fill="#6002EE" opacity="0.3"/>
+          </svg>
+          <div style="position:absolute;top:10px;right:10px;background:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid #c8e6c9;">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="5.5" stroke="#1a5c2e" stroke-width="1.5"/><path d="M3.5 6.5l2 2 4-4" stroke="#1a5c2e" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+        </div>
+        <div class="lg-card-body">
+          <div class="lg-tag lg-good">Great</div>
+          <div class="lg-caption">Your logo</div>
+          <div class="lg-note">Clean logo on a white or light background. Simple and instantly professional.</div>
+        </div>
+      </div>
+
+      <div class="lg-card">
+        <div class="lg-visual" style="background:#f8f8f8;">
+          <svg width="64" height="64" viewBox="0 0 80 80" fill="none">
+            <circle cx="40" cy="30" r="14" fill="#ccc"/>
+            <ellipse cx="40" cy="68" rx="22" ry="16" fill="#ccc"/>
+            <circle cx="25" cy="28" r="10" fill="#bbb"/>
+            <circle cx="55" cy="32" r="8" fill="#bbb"/>
+          </svg>
+        </div>
+        <div class="lg-card-body">
+          <div class="lg-tag lg-bad">Skip this</div>
+          <div class="lg-caption">Group photos</div>
+          <div class="lg-note">People won't know which one is you, and that's the whole point.</div>
+        </div>
+      </div>
+
+      <div class="lg-card">
+        <div class="lg-visual" style="background:#1a1a2e;">
+          <svg width="64" height="64" viewBox="0 0 80 80" fill="none">
+            <circle cx="40" cy="30" r="14" fill="#333"/>
+            <ellipse cx="40" cy="68" rx="22" ry="16" fill="#333"/>
+            <rect width="80" height="80" fill="rgba(0,0,0,0.5)"/>
+          </svg>
+        </div>
+        <div class="lg-card-body">
+          <div class="lg-tag lg-bad">Skip this</div>
+          <div class="lg-caption">Dark or blurry</div>
+          <div class="lg-note">Hard to see means hard to trust. A window and 30 seconds is all it takes.</div>
+        </div>
+      </div>
+
+      <div class="lg-card">
+        <div class="lg-visual" style="background:#fff8f5;">
+          <svg width="64" height="64" viewBox="0 0 80 80" fill="none">
+            <circle cx="40" cy="30" r="14" fill="#EE6002" opacity="0.35"/>
+            <ellipse cx="40" cy="68" rx="22" ry="16" fill="#EE6002" opacity="0.35"/>
+            <circle cx="62" cy="18" r="12" fill="#EE6002" opacity="0.2"/>
+            <circle cx="18" cy="58" r="9" fill="#EE6002" opacity="0.2"/>
+            <circle cx="65" cy="55" r="7" fill="#EE6002" opacity="0.15"/>
+          </svg>
+        </div>
+        <div class="lg-card-body">
+          <div class="lg-tag lg-bad">Skip this</div>
+          <div class="lg-caption">Busy backgrounds</div>
+          <div class="lg-note">A cluttered background competes with you. You should be the main event.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="lg-section">
+    <div class="lg-section-eye">Quick tips</div>
+    <div class="lg-section-title">Four things that make a real difference</div>
+    <div class="lg-section-body">None of these require anything you don't already have.</div>
+    <div class="lg-tips">
+      <div class="lg-tip">
+        <div class="lg-tip-num">1</div>
+        <div>
+          <div class="lg-tip-title">Use natural light</div>
+          <div class="lg-tip-body">Sit near a window with the light facing you, not behind you. Your phone camera will handle the rest. No ring light needed.</div>
+        </div>
+      </div>
+      <div class="lg-tip">
+        <div class="lg-tip-num">2</div>
+        <div>
+          <div class="lg-tip-title">Find a plain background</div>
+          <div class="lg-tip-body">A white wall, a tidy kitchen counter, a clean outdoor spot. Simple backgrounds keep the focus where it belongs: on you.</div>
+        </div>
+      </div>
+      <div class="lg-tip">
+        <div class="lg-tip-num">3</div>
+        <div>
+          <div class="lg-tip-title">Think square, think centered</div>
+          <div class="lg-tip-body">Your photo displays in a circle on Lokali. Center your face or logo in the frame so nothing important gets cropped out.</div>
+        </div>
+      </div>
+      <div class="lg-tip">
+        <div class="lg-tip-num">4</div>
+        <div>
+          <div class="lg-tip-title">Real beats polished</div>
+          <div class="lg-tip-body">An attorney at their desk. A plumber on the job. A woodworker at the bench. Authentic photos build more trust than studio shots.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>

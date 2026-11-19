@@ -1,0 +1,135 @@
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@800&display=swap" rel="stylesheet">
+
+<style>
+  .lg-wrap { display: block; width: 100%; font-family: 'Plus Jakarta Sans', sans-serif; color: #0f0f14; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  .lg-wrap *, .lg-wrap *::before, .lg-wrap *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  .lg-hero { display: block; width: 100%; background: #f8f7fc; border-bottom: 1px solid rgba(0,0,0,0.1); padding: 5rem 1.5rem 4rem; text-align: center; }
+  .lg-eyebrow { display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #6002EE; background: #f0e6ff; border-radius: 20px; padding: 4px 14px; margin-bottom: 1.25rem; }
+  .lg-h1 { display: block; font-size: clamp(28px, 5vw, 48px); font-weight: 800; color: #0f0f14; letter-spacing: -1px; line-height: 1.15; margin: 0 0 1rem; }
+  .lg-h1 span { color: #6002EE; }
+  .lg-sub { display: block; font-size: 18px; color: #4a4a5a; line-height: 1.65; }
+  .lg-section { display: block; width: 100%; padding: 3.5rem 1.5rem; border-bottom: 1px solid rgba(0,0,0,0.1); }
+  .lg-section:last-of-type { border-bottom: none; }
+  .lg-section-eye { display: block; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #888898; margin-bottom: 0.5rem; }
+  .lg-section-title { display: block; font-size: clamp(20px, 3vw, 26px); font-weight: 800; color: #0f0f14; letter-spacing: -0.4px; margin-bottom: 0.75rem; line-height: 1.25; }
+  .lg-section-body { display: block; font-size: 17px; color: #4a4a5a; line-height: 1.7; margin-bottom: 2rem; }
+  .lg-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; width: 100%; }
+  .lg-card { display: block; border-radius: 16px; border: 1px solid rgba(0,0,0,0.1); background: #ffffff; overflow: hidden; }
+  .lg-card-body { display: block; padding: 16px 18px 18px; }
+  .lg-tag { font-size: 11px; font-weight: 700; border-radius: 20px; padding: 3px 10px; display: inline-block; margin-bottom: 9px; }
+  .lg-good { background: #f0e6ff; color: #6002EE; }
+  .lg-amber { background: #fdf3e0; color: #8a6420; }
+  .lg-ul { display: block; margin: 0; padding-left: 18px; }
+  .lg-ul li { font-size: 14.5px; color: #4a4a5a; line-height: 1.55; margin: 5px 0; }
+  .lg-tips { display: flex; flex-direction: column; gap: 12px; width: 100%; }
+  .lg-tip { display: flex; align-items: flex-start; gap: 14px; padding: 16px 18px; background: #f0e6ff; border-radius: 14px; }
+  .lg-tip-num { width: 28px; height: 28px; border-radius: 50%; background: #6002EE; color: #fff; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
+  .lg-tip-title { display: block; font-size: 16px; font-weight: 700; color: #0f0f14; margin-bottom: 3px; }
+  .lg-tip-body { display: block; font-size: 15px; color: #4a4a5a; line-height: 1.55; }
+  .lg-spec { display: flex; flex-wrap: wrap; gap: 14px; width: 100%; }
+  .lg-spec-card { flex: 1 1 200px; border: 1px solid rgba(0,0,0,0.1); border-radius: 16px; background: #fff; padding: 20px 18px; }
+  .lg-spec-ico { width: 40px; height: 40px; border-radius: 11px; background: #f0e6ff; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; }
+  .lg-spec-k { display: block; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #888898; margin-bottom: 4px; }
+  .lg-spec-v { display: block; font-size: 21px; font-weight: 800; color: #0f0f14; letter-spacing: -0.3px; line-height: 1.2; }
+  .lg-spec-sub { display: block; font-size: 13px; color: #888898; margin-top: 3px; }
+  .lg-callout { display: flex; gap: 12px; align-items: flex-start; background: #f0e6ff; border-radius: 14px; padding: 16px 18px; margin-top: 18px; }
+  .lg-callout svg { flex-shrink: 0; margin-top: 1px; }
+  .lg-callout-t { font-size: 15px; color: #0f0f14; line-height: 1.55; }
+  .lg-callout-t strong { font-weight: 700; }
+  .lg-chip-live { display: inline-block; font-size: 12px; font-weight: 700; border-radius: 20px; padding: 3px 12px; background: #E7F3EC; color: #3E7C5E; }
+</style>
+<div class="lg-wrap">
+
+  <div class="lg-hero">
+    <div class="lg-eyebrow">Vendor Resources</div>
+    <div class="lg-h1">Marketing Tools:<br><span>the promo button &amp; showcase of the week</span></div>
+    <div class="lg-sub">Two ways to keep your storefront fresh without touching it every day. You write a handful of entries once, and Lokali shows a different one each week. The promo button comes with Pro and Featured; the Showcase is a Featured perk.</div>
+  </div>
+
+  <div class="lg-section">
+    <div class="lg-section-eye">The big idea</div>
+    <div class="lg-section-title">How the weekly rotation works</div>
+    <div class="lg-tips">
+      <div class="lg-tip"><div class="lg-tip-num">1</div><div>
+        <div class="lg-tip-title">One at a time, in your order</div>
+        <div class="lg-tip-body">Your entries show one at a time, top of your list first. Reorder with the arrows, and the dates on each card update so you can plan weeks ahead.</div></div></div>
+      <div class="lg-tip"><div class="lg-tip-num">2</div><div>
+        <div class="lg-tip-title">Changes every Monday, automatically</div>
+        <div class="lg-tip-body">Nothing to schedule and nothing to remember. Every entry in your dashboard shows the week it goes live, and the current one is marked <span class="lg-chip-live">Live this week</span>.</div></div></div>
+      <div class="lg-tip"><div class="lg-tip-num">3</div><div>
+        <div class="lg-tip-title">Pin one during a promotion</div>
+        <div class="lg-tip-body">A pinned entry stays up until you switch back to rotating, perfect for a launch week or a holiday special.</div></div></div>
+      <div class="lg-tip"><div class="lg-tip-num">4</div><div>
+        <div class="lg-tip-title">Hide instead of delete</div>
+        <div class="lg-tip-body">Hiding skips an entry without losing it, so seasonal ones can come back next year exactly as you wrote them.</div></div></div>
+    </div>
+  </div>
+
+  <div class="lg-section">
+    <div class="lg-section-eye">Tool one &middot; Pro &amp; Featured</div>
+    <div class="lg-section-title">The promo button</div>
+    <div class="lg-section-body">A button at the top of your contact card, the first thing a visitor can tap. Give it a question or an invitation. If you add a link, the button opens it; with no link, it opens your message form so the visitor can reply right there.</div>
+    <div class="lg-spec">
+      <div class="lg-spec-card"><div class="lg-spec-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6002EE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 6.1H3M21 12.1H3M15.1 18H3"/></svg></div><div class="lg-spec-k">Button text</div><div class="lg-spec-v">Up to 120 characters</div><div class="lg-spec-sub">aim for under 40 so it reads as a button, not a sentence</div></div>
+      <div class="lg-spec-card"><div class="lg-spec-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6002EE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg></div><div class="lg-spec-k">Link (optional)</div><div class="lg-spec-v">https:// only</div><div class="lg-spec-sub">anything else is rejected; leave empty to open your Lokali message form</div></div>
+      <div class="lg-spec-card"><div class="lg-spec-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6002EE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg></div><div class="lg-spec-k">How many</div><div class="lg-spec-v">Up to 20</div><div class="lg-spec-sub">3&ndash;5 active ones is the sweet spot</div></div>
+      <div class="lg-spec-card"><div class="lg-spec-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6002EE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg></div><div class="lg-spec-k">Clicks</div><div class="lg-spec-v">Tracked in Leads</div><div class="lg-spec-sub">every tap shows in your Leads page, labeled <strong>Promo</strong></div></div>
+    </div>
+    <div class="lg-section-body" style="margin:2rem 0 1rem;">Ideas to borrow:</div>
+    <div class="lg-grid">
+      <div class="lg-card"><div class="lg-card-body"><div class="lg-tag lg-good">Start a conversation</div>
+        <ul class="lg-ul"><li>&ldquo;Looking for something specific?&rdquo;</li><li>&ldquo;What can I help you find?&rdquo;</li><li>&ldquo;First time here? Say hi&rdquo;</li></ul></div></div>
+      <div class="lg-card"><div class="lg-card-body"><div class="lg-tag lg-amber">Share what&rsquo;s open now</div>
+        <ul class="lg-ul"><li>&ldquo;Two spots left this month&rdquo;</li><li>&ldquo;Fall booking calendar is open&rdquo;</li><li>&ldquo;Holiday orders close Dec 15&rdquo;</li></ul></div></div>
+      <div class="lg-card"><div class="lg-card-body"><div class="lg-tag lg-good">Point somewhere</div>
+        <ul class="lg-ul"><li>&ldquo;See this week&rsquo;s menu&rdquo;</li><li>&ldquo;New work, take a look&rdquo;</li><li>&ldquo;Book your free consult&rdquo;</li></ul></div></div>
+      <div class="lg-card"><div class="lg-card-body"><div class="lg-tag lg-amber">Ask &amp; learn</div>
+        <ul class="lg-ul"><li>&ldquo;Tell me what you&rsquo;d love to see&rdquo;</li><li>&ldquo;Ask about custom orders&rdquo;</li><li>&ldquo;Want a quote? It takes 2 minutes&rdquo;</li></ul></div></div>
+    </div>
+    <div class="lg-callout"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#6002EE" stroke-width="2"/><path d="M12 8h.01M11 12h1v4h1" stroke="#6002EE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><div class="lg-callout-t"><strong>Questions out-perform statements here.</strong> A question invites a reply, and the reply lands in your Leads inbox.</div></div>
+  </div>
+
+  <div class="lg-section">
+    <div class="lg-section-eye">Tool two &middot; Featured</div>
+    <div class="lg-section-title">Showcase of the week</div>
+    <div class="lg-section-body">A section at the very top of your storefront, above your services, for the one thing you want everyone to see this week: a new item, an event, a favorite piece of work. Photo on top, your headline and a couple of sentences underneath, plus an optional button that links wherever you choose.</div>
+    <div class="lg-spec">
+      <div class="lg-spec-card"><div class="lg-spec-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6002EE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg></div><div class="lg-spec-k">Photo</div><div class="lg-spec-v">Landscape, under 1&thinsp;MB</div><div class="lg-spec-sub">about twice as wide as tall, at least 1200&thinsp;px wide; JPG or PNG, and we compress automatically, so most photos are fine as-is</div></div>
+      <div class="lg-spec-card"><div class="lg-spec-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6002EE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 6.1H3M21 12.1H3M15.1 18H3"/></svg></div><div class="lg-spec-k">Headline &amp; text</div><div class="lg-spec-v">120 + 600 characters</div><div class="lg-spec-sub">&ldquo;This week: &hellip;&rdquo; is a reliable headline shape; two or three sentences of text</div></div>
+      <div class="lg-spec-card"><div class="lg-spec-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6002EE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg></div><div class="lg-spec-k">Link &amp; button label</div><div class="lg-spec-v">https:// + 40 characters</div><div class="lg-spec-sub">the link renders as a button on the card. Name it &ldquo;Pre-order now&rdquo;, &ldquo;RSVP&rdquo;&hellip; or leave empty for &ldquo;Take a look&rdquo;</div></div>
+      <div class="lg-spec-card"><div class="lg-spec-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6002EE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg></div><div class="lg-spec-k">How many &amp; clicks</div><div class="lg-spec-v">Up to 10</div><div class="lg-spec-sub">link taps show in Leads, labeled <strong>Showcase</strong></div></div>
+    </div>
+    <div class="lg-section-body" style="margin:2rem 0 1rem;">Ideas by what you do:</div>
+    <div class="lg-grid">
+      <div class="lg-card"><div class="lg-card-body"><div class="lg-tag lg-good">Makers &amp; food</div>
+        <ul class="lg-ul"><li>This week&rsquo;s menu or flavor</li><li>A just-finished custom piece</li><li>Where to find you Saturday</li></ul></div></div>
+      <div class="lg-card"><div class="lg-card-body"><div class="lg-tag lg-amber">Service pros</div>
+        <ul class="lg-ul"><li>A before &amp; after from this week</li><li>A seasonal package</li><li>One open slot this week</li></ul></div></div>
+      <div class="lg-card"><div class="lg-card-body"><div class="lg-tag lg-good">Beauty &amp; wellness</div>
+        <ul class="lg-ul"><li>A look you did this week</li><li>New service on the menu</li><li>A returning-client special</li></ul></div></div>
+      <div class="lg-card"><div class="lg-card-body"><div class="lg-tag lg-amber">Events &amp; classes</div>
+        <ul class="lg-ul"><li>Next date, few seats left</li><li>Photos from the last one</li><li>Early-bird ends Friday</li></ul></div></div>
+      <div class="lg-card"><div class="lg-card-body"><div class="lg-tag lg-good">Professionals</div>
+        <ul class="lg-ul"><li>A deadline worth knowing about</li><li>A question clients ask every week</li><li>One opening for new clients</li></ul></div></div>
+    </div>
+    <div class="lg-callout"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#6002EE" stroke-width="2"/><path d="M12 8h.01M11 12h1v4h1" stroke="#6002EE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><div class="lg-callout-t"><strong>The photo does most of the work.</strong> If you only change one thing each week, change the photo.</div></div>
+  </div>
+
+  <div class="lg-section">
+    <div class="lg-section-eye">Day to day</div>
+    <div class="lg-section-title">Good habits</div>
+    <div class="lg-tips">
+      <div class="lg-tip"><div class="lg-tip-num">1</div><div>
+        <div class="lg-tip-title">Write 3&ndash;5 entries in one sitting</div>
+        <div class="lg-tip-body">Then let the rotation do the work. Your storefront stays fresh for a month without another visit.</div></div></div>
+      <div class="lg-tip"><div class="lg-tip-num">2</div><div>
+        <div class="lg-tip-title">Pin during promotions, unpin after</div>
+        <div class="lg-tip-body">Launch week, holiday special, market weekend: pin it so it stays front and center, then switch back to rotating.</div></div></div>
+      <div class="lg-tip"><div class="lg-tip-num">3</div><div>
+        <div class="lg-tip-title">Check Leads once a week</div>
+        <div class="lg-tip-body">The <strong>Promo</strong> and <strong>Showcase</strong> labels tell you which entries actually get taps. Keep the winners, rewrite the rest.</div></div></div>
+    </div>
+    <div class="lg-callout"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#6002EE" stroke-width="2"/><path d="M12 8h.01M11 12h1v4h1" stroke="#6002EE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><div class="lg-callout-t"><strong>Ready?</strong> Go to <strong>Dashboard &rarr; Marketing</strong>, write your first promo button, and it&rsquo;s on your storefront the moment you save.</div></div>
+  </div>
+
+</div>
