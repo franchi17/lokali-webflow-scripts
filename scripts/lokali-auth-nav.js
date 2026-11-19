@@ -380,6 +380,31 @@
     }
   }
 
+  // 2026-11-19 (F, after the Shop as yourself test): a signed-in SHOPPER still saw the
+  // header "Sign up" button, and /sign-up bounces an authenticated user to the homepage
+  // (dead end, #66). Shoppers have a dashboard (/account: Home, Following, Reviews,
+  // Badges, Settings), so for them the same button reads "My dashboard" and goes there.
+  // Vendors and the admin never see it (hidden above). Seller-page CTAs that read
+  // "Open your storefront" keep their wording; only the plain "Sign up" button changes.
+  function relabelSignupForShopper() {
+    if (!acct || acct.role === 'vendor' || acct.is_admin) return;
+    var scopes = document.querySelectorAll(SCOPES);
+    for (var s = 0; s < scopes.length; s++) {
+      var links = scopes[s].querySelectorAll('a');
+      for (var i = 0; i < links.length; i++) {
+        var a = links[i];
+        if (a.getAttribute('data-lok-dash') === '1') continue;
+        var href = pathOf(a.getAttribute('href') || '');
+        var txt = (a.textContent || '').trim().toLowerCase();
+        if (href === '/sign-up' && (txt === 'sign up' || txt === 'become a vendor')) {
+          a.setAttribute('href', ACCOUNT_URL);
+          a.textContent = 'My dashboard';
+          a.setAttribute('data-lok-dash', '1');
+        }
+      }
+    }
+  }
+
   function buildAcctEl() {
     var wrap = document.createElement('div');
     wrap.className = 'lok-acct';
@@ -560,6 +585,7 @@
       login.parentNode.insertBefore(el, login);
     }
     hideBecomeVendorForVendor();
+    relabelSignupForShopper();
   }
 
   // Refill already-inserted menus with the current acct (initials/name/items).
@@ -669,7 +695,7 @@
   fetchAccount().then(function (a) {
     if (a && (a.role || a.first_name)) {
       if (acct && acct.plink !== undefined && a.plink === undefined) a.plink = acct.plink; // #253: keep until refreshPersonal answers
-      acct = a; setCache(a); render(); refreshExisting(); hideBecomeVendorForVendor();
+      acct = a; setCache(a); render(); refreshExisting(); hideBecomeVendorForVendor(); relabelSignupForShopper();
     }
     ensureStoreName();
     refreshLinked(0);
