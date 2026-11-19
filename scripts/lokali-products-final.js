@@ -2986,7 +2986,9 @@ const LokaliProductsPage = (() => {
     pl.textContent = 'What do you call these?';
     pick.appendChild(pl);
     const pickMsg = document.createElement('span'); pickMsg.style.cssText = 'font-size:12.5px;color:#B42318;';
-    ['collections', 'artists', 'makers'].forEach((key) => {
+    // Two words on offer (F 2026-11-19: Makers was one choice too many). A stored
+    // 'makers' still renders everywhere; it just is not offered.
+    ['collections', 'artists'].forEach((key) => {
       const on = _galLabel === key;
       const b = document.createElement('button'); b.type = 'button';
       b.textContent = GAL_WORDS[key].title;
@@ -3052,12 +3054,28 @@ const LokaliProductsPage = (() => {
     const fOrigin = mk('Where they are from (optional)', 60);
     const fBio = document.createElement('textarea'); fBio.className = 'w-input'; fBio.placeholder = W.bio; fBio.maxLength = 600; fBio.rows = 2;
     fBio.style.cssText = 'width:100%;box-sizing:border-box;font-family:inherit;margin:0;grid-column:1/-1;min-height:64px;';
-    const photoWrap = document.createElement('label');
-    photoWrap.style.cssText = 'grid-column:1/-1;font-size:13px;color:#4A4761;display:flex;flex-wrap:wrap;align-items:center;gap:8px;';
-    const photoTxt = document.createElement('span'); photoTxt.textContent = galArtMode() ? 'Photo (optional):' : 'Cover photo (optional):';
+    // Photo picker in the dashboard's own style: the browser's file button is
+    // hidden and a quiet button stands in for it, with the chosen file's name beside it.
+    const photoWrap = document.createElement('div');
+    photoWrap.style.cssText = 'grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:10px;';
     const fPhoto = document.createElement('input'); fPhoto.type = 'file'; fPhoto.accept = 'image/*';
-    fPhoto.style.cssText = 'font-family:inherit;font-size:13px;color:#4A4761;';
-    photoWrap.appendChild(photoTxt); photoWrap.appendChild(fPhoto);
+    fPhoto.id = 'lok-collection-photo';
+    fPhoto.style.cssText = 'position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;clip:rect(0 0 0 0);';
+    const photoBtn = document.createElement('label'); photoBtn.htmlFor = 'lok-collection-photo';
+    photoBtn.style.cssText = 'display:inline-flex;align-items:center;gap:8px;padding:9px 14px;border:1px solid #E6E4F0;border-radius:12px;background:#fff;color:#4A4761;font-size:13.5px;font-weight:600;line-height:1.2;cursor:pointer;';
+    photoBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>';
+    const photoBtnTxt = document.createElement('span'); photoBtnTxt.textContent = galArtMode() ? 'Add a photo' : 'Add a cover photo';
+    photoBtn.appendChild(photoBtnTxt);
+    const photoName = document.createElement('span'); photoName.style.cssText = 'font-size:12.5px;color:#6B6880;';
+    photoName.textContent = 'Optional';
+    fPhoto.addEventListener('change', () => {
+      const f = fPhoto.files && fPhoto.files[0];
+      photoName.textContent = f ? f.name : 'Optional';
+      photoBtnTxt.textContent = f ? 'Change photo' : (galArtMode() ? 'Add a photo' : 'Add a cover photo');
+    });
+    fPhoto.addEventListener('focus', () => { photoBtn.style.outline = '2px solid #6002EE'; photoBtn.style.outlineOffset = '2px'; });
+    fPhoto.addEventListener('blur', () => { photoBtn.style.outline = ''; });
+    photoWrap.appendChild(fPhoto); photoWrap.appendChild(photoBtn); photoWrap.appendChild(photoName);
     const msg = document.createElement('div'); msg.style.cssText = 'grid-column:1/-1;font-size:13px;color:#B42318;min-height:1em;';
     const addB = document.createElement('button'); addB.type = 'button'; addB.textContent = W.add;
     addB.style.cssText = galBtnCss + 'background:#6002EE;border:1px solid #6002EE;color:#fff;justify-self:start;';
@@ -3089,6 +3107,7 @@ const LokaliProductsPage = (() => {
         addB.disabled = false; addB.textContent = W.add;
       }
     });
+    if (!galArtMode()) fName.style.gridColumn = '1/-1'; // alone on its row: as wide as the description under it
     form.appendChild(fName);
     if (galArtMode()) form.appendChild(fOrigin);
     form.appendChild(fBio); form.appendChild(photoWrap); form.appendChild(msg); form.appendChild(addB);

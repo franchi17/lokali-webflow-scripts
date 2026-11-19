@@ -58,21 +58,22 @@
       // The badge is the whole point of a bell — peach/orange so it reads as
       // "new" against the violet chrome without shouting.
       '.lok-notif-dot{position:absolute;top:5px;right:5px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:#FF8D00;color:#fff;font-size:10.5px;font-weight:700;line-height:17px;text-align:center;box-shadow:0 0 0 2px #fff;}',
-      '.lok-notif-panel{position:absolute;top:calc(100% + 8px);right:0;width:340px;max-width:calc(100vw - 32px);background:#fff;border:.5px solid #EEEDF6;border-radius:14px;box-shadow:0 12px 32px rgba(26,24,41,.14);display:none;z-index:1100;overflow:hidden;}',
+      '.lok-notif-panel{position:absolute;top:calc(100% + 8px);right:0;width:340px;max-width:calc(100vw - 32px);background:#fff;border:.5px solid #EEEDF6;border-radius:14px;box-shadow:0 12px 32px rgba(26,24,41,.14);display:none;z-index:1100;overflow:hidden;white-space:normal;text-align:left;}', // white-space: the dashboard sidebar sets nowrap on its links; inherited, it kept every line on one row and cut the text off (F 2026-11-19)
       '.lok-notif.open .lok-notif-panel{display:block;}',
       '.lok-notif-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px 8px;}',
       '.lok-notif-title{font-size:13px;font-weight:700;color:#1A1829;letter-spacing:-.2px;}',
       '.lok-notif-clear{border:none;background:none;color:#6002EE;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;padding:4px 6px;border-radius:6px;}',
       '.lok-notif-clear:hover{background:#F7F6FC;}',
       '.lok-notif-clear[disabled]{color:#B3B1C6;cursor:default;background:none;}',
-      '.lok-notif-list{max-height:min(60vh,420px);overflow-y:auto;padding:0 6px 6px;}',
+      '.lok-notif-list{max-height:min(60vh,420px);overflow-y:auto;overflow-x:hidden;padding:0 6px 6px;}',
       '.lok-notif-item{display:block;width:100%;text-align:left;border:none;background:none;font-family:inherit;padding:10px 10px;border-radius:10px;cursor:pointer;text-decoration:none;box-sizing:border-box;}',
       '.lok-notif-item:hover{background:#F7F6FC;}',
       '.lok-notif-it-top{display:flex;align-items:flex-start;gap:8px;}',
+      '.lok-notif-it-top>div{flex:1 1 auto;min-width:0;}', // the text column may shrink, so long lines wrap instead of widening the list
       '.lok-notif-unread{flex:0 0 auto;width:7px;height:7px;border-radius:50%;background:#6002EE;margin-top:6px;}',
       '.lok-notif-unread.is-read{background:transparent;}',
-      '.lok-notif-it-title{font-size:13.5px;font-weight:700;color:#1A1829;line-height:1.35;}',
-      '.lok-notif-it-body{font-size:12.5px;color:#4A4761;line-height:1.45;margin-top:2px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}',
+      '.lok-notif-it-title{font-size:13.5px;font-weight:700;color:#1A1829;line-height:1.35;white-space:normal;overflow-wrap:anywhere;}',
+      '.lok-notif-it-body{font-size:12.5px;color:#4A4761;line-height:1.45;margin-top:2px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;white-space:normal;overflow-wrap:anywhere;}',
       '.lok-notif-it-when{font-size:11px;color:#8E8BA6;margin-top:3px;}',
       // Dismiss (×). Hidden until hover on a pointer device so the panel stays
       // calm; ALWAYS visible on touch, where there is no hover to reveal it.
