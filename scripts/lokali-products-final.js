@@ -3033,7 +3033,7 @@ const LokaliProductsPage = (() => {
       rm.addEventListener('click', async () => {
         const q = galArtMode()
           ? 'Remove ' + a.name + '? Their pieces stay listed, without a name beside them.'
-          : 'Remove the ' + a.name + ' collection? Its items stay listed, just not grouped.';
+          : 'Remove the ' + (/collection$/i.test(String(a.name).trim()) ? a.name : a.name + ' collection') + '? Its items stay listed, just not grouped.';
         if (!window.confirm(q)) return;
         rm.disabled = true;
         const r = await galSAPI().artists.remove(a.id);
@@ -3122,12 +3122,12 @@ const LokaliProductsPage = (() => {
     if (!host) return;
     const wrap = document.createElement('div');
     wrap.id = 'lok-artwork-details';
-    wrap.style.cssText = 'margin:14px 0 0;width:100%;box-sizing:border-box;font-family:' + GAL_FONT + ';';
+    wrap.style.cssText = 'margin:14px 0 16px;width:100%;box-sizing:border-box;font-family:' + GAL_FONT + ';';
     wrap.innerHTML =
       '<div style="font-size:13px;font-weight:600;color:#1A1829;margin-bottom:2px;"><span data-gal-title></span> <span style="font-weight:400;color:#8E8BA6;">(optional)</span></div>' +
       '<p data-gal-sub style="font-size:12.5px;color:#8E8BA6;margin:0 0 8px;"></p>' +
       '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;">' +
-      '<select data-gal-artist class="w-select" style="width:100%;box-sizing:border-box;font-family:inherit;margin:0;"></select>' +
+      '<select data-gal-artist class="w-select" style="width:100%;box-sizing:border-box;font-family:inherit;margin:0;background-color:#fff;color:#1A1829;border:1px solid #CCCCCC;border-radius:8px;min-height:42px;padding:8px 12px;"></select>' +
       '<input data-gal-medium class="w-input" maxlength="80" placeholder="Medium, e.g. Oil on canvas" style="width:100%;box-sizing:border-box;font-family:inherit;margin:0;">' +
       '<input data-gal-dims class="w-input" maxlength="60" placeholder="Size, e.g. 24 x 36 in" style="width:100%;box-sizing:border-box;font-family:inherit;margin:0;">' +
       '</div>' +
