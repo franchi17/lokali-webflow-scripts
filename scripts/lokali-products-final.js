@@ -1086,6 +1086,8 @@ const LokaliProductsPage = (() => {
     ensureSubcatUI();      // #96-LISTING
     renderSubcatPills();
     ensureLeadTimeUI();    // #78
+    ensureGalleryFieldsUI(); // GALLERY: artwork details (Featured storefronts with artists)
+    syncGalleryFields();
     syncLeadInput(_legacyTurnaroundDays);
     renderLeadPresets();
     lcMountPreview();
@@ -1144,6 +1146,9 @@ const LokaliProductsPage = (() => {
     _selectedSubcat = product.subcategory || null; // #96-LISTING (pills re-render in showFormView)
     _subcatDefaulted = false;
     _leadTime = product.lead_time || null;         // #78 (input + chips re-render in showFormView)
+    _galArtistId = product.artist_id != null ? product.artist_id : null; // GALLERY
+    _galMedium = product.medium || null;
+    _galDimensions = product.dimensions || null;
     _legacyTurnaroundDays = product.turnaround_days != null ? product.turnaround_days : null;
     if (el.fieldName())        el.fieldName().value        = product.product_name || '';
     if (el.fieldDescription()) el.fieldDescription().value = product.product_description || '';
@@ -1200,6 +1205,7 @@ const LokaliProductsPage = (() => {
     _selectedSubcat = defaultSubcatForNew(); // #96-LISTING: a new product starts on the vendor's usual tag
     _subcatDefaulted = !!_selectedSubcat;
     _leadTime = null;       // #78
+    _galArtistId = null; _galMedium = null; _galDimensions = null; syncGalleryFields(); // GALLERY
     _legacyTurnaroundDays = null;
     syncLeadInput(null);
 
@@ -1763,6 +1769,7 @@ const LokaliProductsPage = (() => {
     // explicit Save persists the tag.
     delete payload.subcategory;
     delete payload.lead_time;   // #78: same reason — only explicit Save persists it
+    delete payload.artist_id; delete payload.medium; delete payload.dimensions; // GALLERY: same
     const res = await window.LokaliAPI.products.update(editingId, payload);
     if (res && !res.error && prod) prod.image_url = desired;
   };
@@ -1823,6 +1830,9 @@ const LokaliProductsPage = (() => {
     // #78: only send the key once the box is really on the page, so a form that
     // never mounted it can't null out a saved lead time.
     if (_leadUiMounted) payload.lead_time = _leadTime;
+    // GALLERY: only sent when the fields are on screen, so every other storefront's
+    // save never names these columns (they may not exist before the patch).
+    if (_galFieldsMounted) { payload.artist_id = _galArtistId; payload.medium = _galMedium; payload.dimensions = _galDimensions; }
 
     return payload;
   };
@@ -2665,6 +2675,7 @@ const LokaliProductsPage = (() => {
 
     renderList();
     ensureImportButton(); // #173 — plan known by now
+    loadGalleryArtists();  // GALLERY — plan known by now
     requestAnimationFrame(reconcileListDom);
   };
 
@@ -2866,6 +2877,180 @@ const LokaliProductsPage = (() => {
     inp.placeholder = (!_leadTime && legacyDays != null && legacyDays !== '')
       ? 'Currently showing: ' + legacyDays + ' days'
       : 'e.g. Ready in ~2 weeks';
+  };
+
+  // ── GALLERY STOREFRONT (F 2026-11-19; patch_gallery_storefront.sql) ────────
+  // A Featured storefront can keep a list of ARTISTS and tag each product (an
+  // artwork) with an artist, a medium and a size; the public page then shows
+  // the gallery layout. Nothing here appears unless ALL of these hold: the
+  // loaded client knows the feature, the plan is Featured, and the artists
+  // table answers (before the patch is applied it errors, and we stay silent).
+  let _galAvailable = false;      // table reachable + Featured
+  let _galVendorId = null;
+  let _galArtists = [];
+  let _galFieldsMounted = false;
+  let _galArtistId = null, _galMedium = null, _galDimensions = null;
+  const GAL_FONT = "'Plus Jakarta Sans',system-ui,sans-serif";
+  const galSAPI = () => window.LokaliSupabaseAPI;
+
+  const loadGalleryArtists = async () => {
+    const S = galSAPI();
+    if (!_isFeaturedPlan || !S?.capabilities?.galleryStorefront || !S.artists) return;
+    try {
+      if (_galVendorId == null) {
+        const me = await S.vendors.me();
+        _galVendorId = me?.data?.id ?? me?.id ?? null;
+      }
+      if (_galVendorId == null) return;
+      const res = await S.artists.forVendor(_galVendorId);
+      if (!res || res.error) { _galAvailable = false; return; }
+      _galArtists = Array.isArray(res.data) ? res.data : [];
+      _galAvailable = true;
+      renderArtistsPanel();
+      syncGalleryFields();
+    } catch (e) { _galAvailable = false; }
+  };
+
+  const galBtnCss = 'font-family:inherit;font-size:13.5px;font-weight:600;padding:9px 16px;border-radius:12px;cursor:pointer;line-height:1.2;';
+
+  const renderArtistsPanel = () => {
+    if (!_galAvailable) return;
+    const add = el.addBtn(); if (!add || !add.parentNode || !add.parentNode.parentNode) return;
+    let panel = document.getElementById('lok-gallery-artists');
+    if (!panel) {
+      panel = document.createElement('details');
+      panel.id = 'lok-gallery-artists';
+      panel.style.cssText = 'margin:14px 0 18px;width:100%;box-sizing:border-box;background:#fff;border:1px solid #E6E4F0;border-radius:14px;padding:14px 18px;font-family:' + GAL_FONT + ';';
+      add.parentNode.parentNode.insertBefore(panel, add.parentNode.nextSibling);
+    }
+    const wasOpen = panel.open || _galArtists.length === 0;
+    panel.innerHTML = '';
+    const sum = document.createElement('summary');
+    sum.style.cssText = 'cursor:pointer;font-size:15px;font-weight:700;color:#1A1829;list-style-position:inside;';
+    sum.textContent = 'Gallery artists (' + _galArtists.length + ')';
+    panel.appendChild(sum);
+    const help = document.createElement('p');
+    help.style.cssText = 'font-size:13px;color:#6B6880;margin:8px 0 12px;line-height:1.5;';
+    help.textContent = _galArtists.length
+      ? 'Your storefront shows these artists above your collection. Open any listing to choose its artist, medium and size.'
+      : 'Add your first artist and your storefront becomes a gallery: an artists row, and each piece shows who made it.';
+    panel.appendChild(help);
+
+    _galArtists.forEach((a) => {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:12px;padding:9px 0;border-top:1px solid #F1F0F5;';
+      const av = document.createElement('div');
+      av.style.cssText = 'flex:none;width:40px;height:40px;border-radius:50%;background:#F3EBFF;color:#6002EE;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;overflow:hidden;';
+      if (a.photo_url && /^https:\/\//.test(a.photo_url)) {
+        const im = document.createElement('img'); im.src = a.photo_url; im.alt = '';
+        im.style.cssText = 'width:100%;height:100%;object-fit:cover;'; av.appendChild(im);
+      } else av.textContent = String(a.name || '?').trim().charAt(0).toUpperCase();
+      const txt = document.createElement('div'); txt.style.cssText = 'flex:1;min-width:0;';
+      const nm = document.createElement('div'); nm.style.cssText = 'font-size:14px;font-weight:600;color:#1A1829;'; nm.textContent = a.name;
+      const sub = document.createElement('div'); sub.style.cssText = 'font-size:12.5px;color:#6B6880;';
+      const n = products.filter((p) => p.artist_id === a.id).length;
+      sub.textContent = (a.origin ? a.origin + ' · ' : '') + n + (n === 1 ? ' piece' : ' pieces');
+      txt.appendChild(nm); txt.appendChild(sub);
+      const rm = document.createElement('button'); rm.type = 'button'; rm.textContent = 'Remove';
+      rm.style.cssText = galBtnCss + 'background:#fff;border:1px solid #E6E4F0;color:#4A4761;padding:7px 12px;';
+      rm.addEventListener('click', async () => {
+        if (!window.confirm('Remove ' + a.name + ' from your gallery? Their pieces stay listed, without an artist name.')) return;
+        rm.disabled = true;
+        const r = await galSAPI().artists.remove(a.id);
+        if (r && r.error) { rm.disabled = false; window.alert('That did not save. Please try again.'); return; }
+        _galArtists = _galArtists.filter((x) => x.id !== a.id);
+        products.forEach((p) => { if (p.artist_id === a.id) p.artist_id = null; });
+        renderArtistsPanel(); syncGalleryFields();
+      });
+      row.appendChild(av); row.appendChild(txt); row.appendChild(rm);
+      panel.appendChild(row);
+    });
+
+    const form = document.createElement('div');
+    form.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;padding-top:12px;margin-top:4px;border-top:1px solid #F1F0F5;';
+    const mk = (ph, max) => { const i = document.createElement('input'); i.className = 'w-input'; i.placeholder = ph; i.maxLength = max; i.style.cssText = 'width:100%;box-sizing:border-box;font-family:inherit;margin:0;'; return i; };
+    const fName = mk('Artist name', 80);
+    const fOrigin = mk('Where they are from (optional)', 60);
+    const fBio = document.createElement('textarea'); fBio.className = 'w-input'; fBio.placeholder = 'A few lines about the artist (optional)'; fBio.maxLength = 600; fBio.rows = 2;
+    fBio.style.cssText = 'width:100%;box-sizing:border-box;font-family:inherit;margin:0;grid-column:1/-1;min-height:64px;';
+    const fPhoto = document.createElement('input'); fPhoto.type = 'file'; fPhoto.accept = 'image/*';
+    fPhoto.style.cssText = 'font-family:inherit;font-size:13px;color:#4A4761;grid-column:1/-1;';
+    const msg = document.createElement('div'); msg.style.cssText = 'grid-column:1/-1;font-size:13px;color:#B42318;min-height:1em;';
+    const addB = document.createElement('button'); addB.type = 'button'; addB.textContent = 'Add artist';
+    addB.style.cssText = galBtnCss + 'background:#6002EE;border:1px solid #6002EE;color:#fff;justify-self:start;';
+    addB.addEventListener('click', async () => {
+      const name = fName.value.trim();
+      msg.textContent = '';
+      if (!name) { msg.textContent = 'Enter the artist’s name first.'; fName.focus(); return; }
+      addB.disabled = true; addB.textContent = 'Adding…';
+      try {
+        let photo = null;
+        const file = fPhoto.files && fPhoto.files[0];
+        if (file) {
+          const up = await galSAPI().storage.uploadImage(_galVendorId, 'artist', file);
+          photo = up?.url || up?.data?.url || null;
+          if (!photo) throw new Error('photo');
+        }
+        const r = await galSAPI().artists.create(_galVendorId, {
+          name, origin: fOrigin.value.trim() || null, bio: fBio.value.trim() || null,
+          photo_url: photo, sort_order: _galArtists.length
+        });
+        if (!r || r.error || !r.data) throw new Error((r && r.error && r.error.message) || 'save');
+        _galArtists.push(r.data);
+        renderArtistsPanel(); syncGalleryFields();
+      } catch (e) {
+        const m = String((e && e.message) || '');
+        msg.textContent = /LOKALI_LIMIT_REACHED:/.test(m) ? m.split('LOKALI_LIMIT_REACHED:')[1].trim()
+          : (m === 'photo' ? 'The photo did not upload. Try a smaller image, or add the artist without one.' : 'That did not save. Please try again.');
+        addB.disabled = false; addB.textContent = 'Add artist';
+      }
+    });
+    form.appendChild(fName); form.appendChild(fOrigin); form.appendChild(fBio); form.appendChild(fPhoto); form.appendChild(msg); form.appendChild(addB);
+    panel.appendChild(form);
+    panel.open = wasOpen;
+  };
+
+  const ensureGalleryFieldsUI = () => {
+    if (_galFieldsMounted || !_galAvailable || !_galArtists.length) return;
+    const anchor = el.fieldDescription();
+    const host = anchor ? anchor.parentElement : null;
+    if (!host) return;
+    const wrap = document.createElement('div');
+    wrap.id = 'lok-artwork-details';
+    wrap.style.cssText = 'margin:14px 0 0;width:100%;box-sizing:border-box;font-family:' + GAL_FONT + ';';
+    wrap.innerHTML =
+      '<div style="font-size:13px;font-weight:600;color:#1A1829;margin-bottom:2px;">Artwork details <span style="font-weight:400;color:#8E8BA6;">(optional)</span></div>' +
+      '<p style="font-size:12.5px;color:#8E8BA6;margin:0 0 8px;">Shown on your gallery storefront under the title of the piece.</p>' +
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;">' +
+      '<select data-gal-artist class="w-select" style="width:100%;box-sizing:border-box;font-family:inherit;margin:0;"></select>' +
+      '<input data-gal-medium class="w-input" maxlength="80" placeholder="Medium, e.g. Oil on canvas" style="width:100%;box-sizing:border-box;font-family:inherit;margin:0;">' +
+      '<input data-gal-dims class="w-input" maxlength="60" placeholder="Size, e.g. 24 x 36 in" style="width:100%;box-sizing:border-box;font-family:inherit;margin:0;">' +
+      '</div>' +
+      '<p style="font-size:12px;color:#8E8BA6;margin:8px 0 0;line-height:1.45;">For a one-of-a-kind piece set the stock to 1. When it sells, set it to 0 and the page shows it as Sold.</p>';
+    host.appendChild(wrap);
+    wrap.querySelector('[data-gal-artist]').addEventListener('change', (e) => {
+      const v = e.target.value; _galArtistId = v === '' ? null : Number(v);
+    });
+    wrap.querySelector('[data-gal-medium]').addEventListener('input', (e) => { _galMedium = e.target.value.trim() || null; });
+    wrap.querySelector('[data-gal-dims]').addEventListener('input', (e) => { _galDimensions = e.target.value.trim() || null; });
+    _galFieldsMounted = true;
+  };
+
+  const syncGalleryFields = () => {
+    const wrap = document.getElementById('lok-artwork-details');
+    if (!wrap) return;
+    const sel = wrap.querySelector('[data-gal-artist]');
+    sel.innerHTML = '';
+    const none = document.createElement('option'); none.value = ''; none.textContent = 'No artist';
+    sel.appendChild(none);
+    _galArtists.forEach((a) => {
+      const o = document.createElement('option'); o.value = String(a.id); o.textContent = a.name;
+      sel.appendChild(o);
+    });
+    if (_galArtistId != null && !_galArtists.some((a) => a.id === _galArtistId)) _galArtistId = null;
+    sel.value = _galArtistId == null ? '' : String(_galArtistId);
+    wrap.querySelector('[data-gal-medium]').value = _galMedium || '';
+    wrap.querySelector('[data-gal-dims]').value = _galDimensions || '';
   };
 
   // ── #96-LISTING: per-product specialty (one optional subcategory slug) ─────

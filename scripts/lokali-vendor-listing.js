@@ -2177,6 +2177,20 @@
       var foot = a.querySelector('.vl-card-foot');
       foot.insertBefore(leadEl, foot.firstChild); // same row: chip left, button right
     }
+    // GALLERY: artist line + medium/size under the title, and a chip on the image.
+    // textContent only — every value here is vendor free text.
+    if (opts.artist || opts.artMeta) {
+      var top = a.querySelector('.vl-card-top');
+      if (opts.artist) { var by = ce('div', 'vl-gal-by'); by.textContent = 'by ' + opts.artist; top.parentNode.insertBefore(by, top.nextSibling); }
+      if (opts.artMeta) { var mt = ce('div', 'vl-gal-meta'); mt.textContent = opts.artMeta; a.querySelector('.vl-card-body').insertBefore(mt, a.querySelector('.vl-card-desc')); }
+    }
+    if (opts.galChip) {
+      var gc = ce('div', 'vl-card-pick vl-gal-chip' + (opts.sold ? ' vl-gal-chip-sold' : ''));
+      gc.textContent = opts.galChip;
+      if (opts.pick) gc.style.top = '40px'; // sits under the "Vendor's pick" chip
+      a.querySelector('.vl-card-img').appendChild(gc);
+    }
+    if (opts.sold) a.className += ' vl-gal-sold';
     return a;
   }
 
@@ -2271,6 +2285,96 @@
     ensureActiveTab();
   }
 
+  // ---- GALLERY storefront (F 2026-11-19; patch_gallery_storefront.sql) -----
+  // A Featured storefront with at least one artist renders its products as a
+  // collection: an artists row (tap one to see only their pieces), and each
+  // card carries the artist, medium and size. Every other storefront never
+  // enters this path: _galArtists stays empty and the cards are unchanged.
+  var _galArtists = [];      // live artists of this storefront, in the owner's order
+  var _galById = {};         // id -> artist
+  var _galAll = null;        // the full product list (the filter re-renders from it)
+  var _galFilter = null;     // artist id being viewed, or null = everyone
+  var GAL_FONT = '"Plus Jakarta Sans",sans-serif';
+  var GAL_CSS = [
+    '.vl-gal-by{font:500 12.5px/1.35 ' + GAL_FONT + ';color:#6002EE;margin-top:2px;}',
+    '.vl-gal-meta{font:500 12px/1.35 ' + GAL_FONT + ';color:#6B6880;margin-top:2px;}',
+    '.vl-gal-chip{color:#5A4A7A;background:#fff;box-shadow:0 1px 4px rgba(96,2,238,.10);}', // lilac family: no orange beside the violet artist line
+    '.vl-gal-chip-sold{color:#4A4761;background:#EEEDF6;}',
+    '.vl-gal-sold .vl-card-img img{opacity:.55;}',
+    '.vl-gal-sold .vl-card-price{color:#6B6880;font-weight:500;}',
+    '.vl-gal-row{display:flex;align-items:flex-start;gap:14px;overflow-x:auto;padding:2px 2px 14px;margin:0 0 6px;scrollbar-width:thin;-webkit-overflow-scrolling:touch;}',
+    '.vl-gal-artist{flex:none;display:block;width:92px;background:none;border:0;padding:0;cursor:pointer;text-align:center;font-family:' + GAL_FONT + ';}',
+    '.vl-gal-av{width:64px;height:64px;border-radius:50%;margin:0 auto 7px;background:#F3EBFF;color:#6002EE;display:flex;align-items:center;justify-content:center;font:700 18px/1 ' + GAL_FONT + ';overflow:hidden;border:2px solid transparent;transition:border-color .15s;}',
+    '.vl-gal-av img{width:100%;height:100%;object-fit:cover;display:block;}',
+    '.vl-gal-artist[aria-pressed="true"] .vl-gal-av{border-color:#6002EE;}',
+    '.vl-gal-artist:focus-visible .vl-gal-av{outline:2px solid #6002EE;outline-offset:2px;}',
+    '.vl-gal-name{font:600 12.5px/1.3 ' + GAL_FONT + ';color:#1A1829;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}',
+    '.vl-gal-sub{font:500 11.5px/1.3 ' + GAL_FONT + ';color:#6B6880;margin-top:2px;}',
+    '.vl-gal-about{background:#F7F6FC;border:.5px solid #DEDAEE;border-radius:12px;padding:12px 14px;margin:0 0 16px;font:400 13.5px/1.55 ' + GAL_FONT + ';color:#4A4761;}',
+    '.vl-gal-about strong{color:#1A1829;font-weight:600;}',
+    '.vl-gal-clear{background:none;border:0;padding:0;margin-left:8px;font:600 13px/1 ' + GAL_FONT + ';color:#6002EE;cursor:pointer;text-decoration:underline;}',
+    '.vl-gal-eyebrow{font:700 11px/1 ' + GAL_FONT + ';letter-spacing:.8px;text-transform:uppercase;color:#6002EE;margin:0 0 12px;}'
+  ].join('');
+  function galInitials(name) {
+    var parts = String(name || '').trim().split(/\s+/);
+    return ((parts[0] || '').charAt(0) + (parts.length > 1 ? parts[parts.length - 1].charAt(0) : '')).toUpperCase();
+  }
+  function setGalleryArtists(list) {
+    _galArtists = (list || []).filter(function (a) { return a && a.id != null && String(a.name || '').trim(); });
+    _galById = {};
+    _galArtists.forEach(function (a) { _galById[a.id] = a; });
+  }
+  function galleryOn() { return _galArtists.length > 0; }
+  function renderGalleryRow(grid) {
+    if (!document.getElementById('vl-gal-css')) {
+      var st = document.createElement('style'); st.id = 'vl-gal-css'; st.textContent = GAL_CSS;
+      document.head.appendChild(st);
+    }
+    var host = grid.parentNode;
+    var old = host.querySelector('.vl-gal-wrap');
+    if (old) old.parentNode.removeChild(old);
+    var wrap = ce('div', 'vl-gal-wrap');
+    var eb = ce('div', 'vl-gal-eyebrow'); eb.textContent = 'The artists';
+    wrap.appendChild(eb);
+    var row = ce('div', 'vl-gal-row');
+    var counts = {};
+    (_galAll || []).forEach(function (p) { if (p.artist_id != null) counts[p.artist_id] = (counts[p.artist_id] || 0) + 1; });
+    _galArtists.forEach(function (a) {
+      var b = ce('button', 'vl-gal-artist'); b.type = 'button';
+      b.setAttribute('aria-pressed', _galFilter === a.id ? 'true' : 'false');
+      var av = ce('div', 'vl-gal-av');
+      var photo = imgUrl(a.photo_url);
+      if (photo) { var im = document.createElement('img'); im.loading = 'lazy'; imgSet(im, photo, 160); im.alt = ''; av.appendChild(im); }
+      else av.textContent = galInitials(a.name);
+      var nm = ce('div', 'vl-gal-name'); nm.textContent = a.name;
+      var n = counts[a.id] || 0;
+      var sub = ce('div', 'vl-gal-sub');
+      sub.textContent = (a.origin ? a.origin + ' · ' : '') + n + (n === 1 ? ' piece' : ' pieces');
+      b.appendChild(av); b.appendChild(nm); b.appendChild(sub);
+      b.addEventListener('click', function () {
+        _galFilter = (_galFilter === a.id) ? null : a.id;
+        renderProducts(_galAll || [], true);
+      });
+      row.appendChild(b);
+    });
+    wrap.appendChild(row);
+    var cur = _galFilter != null ? _galById[_galFilter] : null;
+    if (cur) {
+      var about = ce('div', 'vl-gal-about');
+      var st2 = document.createElement('strong'); st2.textContent = cur.name;
+      about.appendChild(st2);
+      if (cur.bio) about.appendChild(document.createTextNode(' · ' + cur.bio));
+      var clr = ce('button', 'vl-gal-clear'); clr.type = 'button'; clr.textContent = 'Show all artists';
+      clr.addEventListener('click', function () { _galFilter = null; renderProducts(_galAll || [], true); });
+      about.appendChild(clr);
+      wrap.appendChild(about);
+    }
+    host.insertBefore(wrap, grid);
+    var sec = document.getElementById('vl-op-sec-products');
+    var h = sec && sec.querySelector('.vl-op-h');
+    if (h && h.firstChild && h.firstChild.nodeType === 3) h.firstChild.nodeValue = 'The collection';
+  }
+
   function renderProducts(list, ok) {
     if (ok === false) { console.warn('[lokali-vendor-listing] products fetch failed — keeping Products tab'); ensureActiveTab(); return; } // fetch failed — leave the tab as-is
     var grid = document.getElementById('vl-products-grid');
@@ -2281,6 +2385,15 @@
     grid.innerHTML = '';
     if (!list.length) { show(grid, false); show(empty, true); ensureActiveTab(); return; }
     show(grid, true); show(empty, false);
+    // GALLERY: keep the whole list for the artist filter, draw the artists row,
+    // then narrow to the artist being viewed (the tab count stays the full total).
+    var gal = galleryOn();
+    if (gal) {
+      _galAll = list;
+      if (_galFilter != null && !_galById[_galFilter]) _galFilter = null;
+      renderGalleryRow(grid);
+      if (_galFilter != null) list = list.filter(function (p) { return p.artist_id === _galFilter; });
+    }
     // FEAT-PICKS: picks first (see services note); stable, so drag order holds.
     list = list.slice().sort(function (a, b) {
       return (b.is_featured_pick === true ? 1 : 0) - (a.is_featured_pick === true ? 1 : 0);
@@ -2289,6 +2402,30 @@
     opProgressiveList(grid, list, 'products', function (p, i) {
       var pr = productPrice(p);
       var buy = /^https:\/\/\S+$/.test(String(p.buy_url || ''));
+      var art = gal ? _galById[p.artist_id] : null;
+      var stock = (p.stock_quantity == null || p.stock_quantity === '') ? null : Number(p.stock_quantity);
+      var sold = gal && stock === 0;
+      if (gal) {
+        var bits = [];
+        if (p.medium) bits.push(String(p.medium).trim());
+        if (p.dimensions) bits.push(String(p.dimensions).trim());
+        return cardEl({
+          name: p.product_name || p.name,
+          desc: p.product_description || p.description || '',
+          price: sold ? 'Found a home' : pr.text, quote: sold ? false : pr.quote,
+          image: imgUrl(p.image_url || p.image),
+          focusX: p.image_focus_x, focusY: p.image_focus_y,
+          tint: IMG_TINTS[(i + 1) % IMG_TINTS.length],
+          pick: p.is_featured_pick === true,
+          artist: art ? art.name : '',
+          artMeta: bits.join(' · '),
+          sold: sold,
+          galChip: sold ? 'Sold' : (stock === 1 ? 'One of a kind' : ''),
+          cta: (buy && !sold) ? 'Buy online' : 'View piece', orange: false, buy: buy && !sold,
+          lead: sold ? '' : leadText(p),
+          href: itemHref('products', p)
+        });
+      }
       return cardEl({
         name: p.product_name || p.name,
         desc: p.product_description || p.description || '',
@@ -3771,8 +3908,22 @@
       probeBookingLink(vid); // Book now pills on service cards
       fetchListWithRetry(function () { return API.services.listByVendor(vid); })
         .then(function (sres) { renderServices(asArray(unwrap(sres)), !(sres && sres.error)); });
+      // GALLERY: only a Featured storefront (plan_rank 2) can have artists, so
+      // nobody else pays for the extra read. Any failure (including the table
+      // not existing yet) means "no artists" and the page renders as before.
+      var galSB = window.LokaliSupabaseAPI;
+      var artistsP = (Number(v.plan_rank) === 2 && galSB && galSB.artists)
+        ? Promise.resolve(galSB.artists.forVendor(vid)).then(function (ares) {
+            return (ares && ares.error) ? [] : asArray(unwrap(ares));
+          }, function () { return []; })
+        : Promise.resolve([]);
       fetchListWithRetry(function () { return API.products.listByVendor(vid); })
-        .then(function (pres) { renderProducts(asArray(unwrap(pres)), !(pres && pres.error)); });
+        .then(function (pres) {
+          return artistsP.then(function (arts) {
+            setGalleryArtists(arts);
+            renderProducts(asArray(unwrap(pres)), !(pres && pres.error));
+          });
+        });
       renderReviews(vid, v.business_name || '');
       renderUpdates(vid, v.business_name || '');
       _vlOwnerFirst = String(v.owner_name || '').trim().split(/\s+/)[0] || '';

@@ -230,7 +230,8 @@
     'subcategory', // #96-LISTING
     'lead_time',   // #78: free-text per-item lead time (supersedes turnaround_days for display)
     'is_featured_pick', // FEAT-PICKS: Featured-plan shop window (cap+plan gate = DB trigger)
-    'image_focus_x', 'image_focus_y' // #149: main-image focal point (0-100 %, null = center)
+    'image_focus_x', 'image_focus_y', // #149: main-image focal point (0-100 %, null = center)
+    'artist_id', 'medium', 'dimensions' // GALLERY (patch_gallery_storefront.sql): artwork details; artist must be the storefront's own (DB trigger)
   ];
   // Author may edit only these (vendor_reply is stamped by the guard trigger).
   var REVIEW_EDITABLE = ['comment', 'is_recommended', 'rating'];
@@ -311,7 +312,7 @@
   var MAX_STORED_BYTES = 5 * 1024 * 1024;  // refuse to store more than this
   // Long-edge cap by kind. Avatars render small; gallery shots open in the
   // #63 lightbox, so they keep more detail.
-  var EDGE_CAP = { profile: 800, owner: 800, showcase: 1200 };
+  var EDGE_CAP = { profile: 800, owner: 800, artist: 800, showcase: 1200 };
   var EDGE_CAP_DEFAULT = 1600;
   var WEBP_QUALITY = 0.82;
   // CLEAN-P19: Safari (macOS and every iOS browser) has never encoded WebP —
@@ -789,6 +790,47 @@
       // email); the route re-verifies the vendor session + row ownership.
       notifyOffered: function (waitlistId) {
         return postRoute('/availability/notify', { kind: 'offer', waitlistId: waitlistId }, true);
+      }
+    },
+    // ---- Gallery storefront: artists (patch_gallery_storefront.sql, 2026-11-19) --
+    // RLS does the gating: anyone reads a live storefront's artists, only the
+    // owner writes, and the DB guard keeps it to the Featured plan. Removal is a
+    // soft delete. Before the patch is applied every call here errors, and the
+    // callers treat an error as "no artists" (the storefront stays standard).
+    artists: {
+      forVendor: function (vendorId) {
+        return withClient(function (c) {
+          return c.from('vendor_artists')
+            .select('id,vendors_id,name,origin,bio,photo_url,sort_order')
+            .eq('vendors_id', vendorId).is('deleted_at', null)
+            .order('sort_order').order('id').limit(60);
+        });
+      },
+      create: function (vendorId, f) {
+        f = f || {};
+        return withClient(function (c) {
+          return c.from('vendor_artists').insert({
+            vendors_id: vendorId, name: String(f.name || '').trim(),
+            origin: f.origin || null, bio: f.bio || null, photo_url: f.photo_url || null,
+            sort_order: Number(f.sort_order) || 0
+          }).select('id,vendors_id,name,origin,bio,photo_url,sort_order').single();
+        });
+      },
+      update: function (artistId, f) {
+        f = f || {};
+        var row = {};
+        ['name', 'origin', 'bio', 'photo_url', 'sort_order'].forEach(function (k) {
+          if (Object.prototype.hasOwnProperty.call(f, k)) row[k] = f[k];
+        });
+        return withClient(function (c) {
+          return c.from('vendor_artists').update(row).eq('id', artistId)
+            .select('id,vendors_id,name,origin,bio,photo_url,sort_order').single();
+        });
+      },
+      remove: function (artistId) {
+        return withClient(function (c) {
+          return c.from('vendor_artists').update({ deleted_at: new Date().toISOString() }).eq('id', artistId);
+        });
       }
     },
     // ---- Followers: vendor updates (patch_vendor_posts.sql, 2026-09-20) --------
@@ -1702,7 +1744,7 @@
     // selector when the LOADED client actually whitelists the column —
     // otherwise pick() would strip it and the save would silently drop the
     // vendor's choice under a success toast.
-    capabilities: { listingSubcategory: true, itemLeadTime: true, productBuyLink: true, linkFetch: true, serviceLink: true, servicePriceFree: true, vendorLinkedin: true }, // serviceLink / servicePriceFree / vendorLinkedin = punchlist 2026-10-02 (link_url + price_type 'free' + linkedin_url) // itemLeadTime = #78 (lead_time in both EDITABLE lists); productBuyLink = #172 (buy_url in PRODUCT_EDITABLE)
+    capabilities: { galleryStorefront: true, listingSubcategory: true, itemLeadTime: true, productBuyLink: true, linkFetch: true, serviceLink: true, servicePriceFree: true, vendorLinkedin: true }, // serviceLink / servicePriceFree / vendorLinkedin = punchlist 2026-10-02 (link_url + price_type 'free' + linkedin_url) // itemLeadTime = #78 (lead_time in both EDITABLE lists); productBuyLink = #172 (buy_url in PRODUCT_EDITABLE)
     // #96-SUGGEST — admin surface (is_admin()-gated server-side; non-admins
     // get { ok:false } — safe to call from any session).
     // #137 — the notification feed behind the header bell. All three RPCs are

@@ -1678,8 +1678,29 @@
         if (p.is_custom) rows.push({ b: 'Made to order' });
         if (pLead) rows.push({ b: 'Lead time:', t: pLead });
         if (fulfilParts.length) rows.push({ b: 'How you get it:', t: fulfil });
+        // GALLERY (patch_gallery_storefront.sql): artwork details lead the list.
+        // Empty on every non-gallery product, so nothing changes there.
+        var art = [];
+        if (p.medium && String(p.medium).trim()) art.push({ b: 'Medium:', t: String(p.medium).trim() });
+        if (p.dimensions && String(p.dimensions).trim()) art.push({ b: 'Size:', t: String(p.dimensions).trim() });
+        rows = art.concat(rows);
         v2Facts(rows);
         v2Clamp();
+        // The artist's name lives in vendor_artists; add the row when it arrives.
+        // Any failure simply leaves the facts as they are.
+        var galSB = window.LokaliSupabaseAPI;
+        if (p.artist_id != null && p.vendors_id != null && galSB && galSB.artists) {
+          Promise.resolve(galSB.artists.forVendor(p.vendors_id)).then(function (res) {
+            var list = (res && !res.error && res.data) || [];
+            for (var i = 0; i < list.length; i++) {
+              if (list[i].id === p.artist_id && String(list[i].name || '').trim()) {
+                v2Facts([{ b: 'Artist:', t: String(list[i].name).trim() + (list[i].origin ? ', ' + list[i].origin : '') }].concat(rows));
+                v2Clamp();
+                break;
+              }
+            }
+          }, function () {});
+        }
       })();
       fetchPhotos('products', PRODUCT_PHOTOS_PATH, (p.id != null ? p.id : id), imgUrl(p.image_url || p.image))
         .then(function (imgs) { buildGallery(imgs, name); }); // #97: item name = alt
