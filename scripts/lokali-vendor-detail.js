@@ -1690,11 +1690,23 @@
         // Any failure simply leaves the facts as they are.
         var galSB = window.LokaliSupabaseAPI;
         if (p.artist_id != null && p.vendors_id != null && galSB && galSB.artists) {
-          Promise.resolve(galSB.artists.forVendor(p.vendors_id)).then(function (res) {
+          Promise.all([
+            Promise.resolve(galSB.artists.forVendor(p.vendors_id)),
+            (window.LokaliSupabaseReady && window.LokaliSupabaseReady.then)
+              ? window.LokaliSupabaseReady.then(function (c) {
+                  return c.from('vendor_collection_prefs').select('label').eq('vendors_id', p.vendors_id).maybeSingle();
+                }).then(function (l) {
+                  var w = l && !l.error && l.data && l.data.label;
+                  return (w === 'artists' || w === 'makers') ? w : 'collections';
+                }, function () { return 'collections'; })
+              : 'collections'
+          ]).then(function (both) {
+            var res = both[0], word = both[1];
+            var head = word === 'artists' ? 'Artist:' : (word === 'makers' ? 'Maker:' : 'Collection:');
             var list = (res && !res.error && res.data) || [];
             for (var i = 0; i < list.length; i++) {
               if (list[i].id === p.artist_id && String(list[i].name || '').trim()) {
-                v2Facts([{ b: 'Artist:', t: String(list[i].name).trim() + (list[i].origin ? ', ' + list[i].origin : '') }].concat(rows));
+                v2Facts([{ b: head, t: String(list[i].name).trim() + (list[i].origin ? ', ' + list[i].origin : '') }].concat(rows));
                 v2Clamp();
                 break;
               }

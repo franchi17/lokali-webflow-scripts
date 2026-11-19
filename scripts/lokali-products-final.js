@@ -2879,19 +2879,58 @@ const LokaliProductsPage = (() => {
       : 'e.g. Ready in ~2 weeks';
   };
 
-  // ── GALLERY STOREFRONT (F 2026-11-19; patch_gallery_storefront.sql) ────────
-  // A Featured storefront can keep a list of ARTISTS and tag each product (an
-  // artwork) with an artist, a medium and a size; the public page then shows
-  // the gallery layout. Nothing here appears unless ALL of these hold: the
-  // loaded client knows the feature, the plan is Featured, and the artists
-  // table answers (before the patch is applied it errors, and we stay silent).
+  // ── COLLECTIONS (F 2026-11-19; patch_gallery_storefront.sql + patch_collections_label.sql)
+  // A Featured storefront can group its listings into COLLECTIONS and choose
+  // what to call them: "Collections" (default), "Artists" or "Makers". With
+  // Artists / Makers the public page uses the gallery presentation and each
+  // listing also takes a medium and a size. Nothing here appears unless ALL of
+  // these hold: the loaded client knows the feature, the plan is Featured, and
+  // the table answers (an error = we stay silent).
   let _galAvailable = false;      // table reachable + Featured
   let _galVendorId = null;
   let _galArtists = [];
+  let _galLabel = 'collections';  // 'collections' | 'artists' | 'makers'
+  let _galPanelOpen = false;      // folded to one line until the vendor opens it
   let _galFieldsMounted = false;
   let _galArtistId = null, _galMedium = null, _galDimensions = null;
   const GAL_FONT = "'Plus Jakarta Sans',system-ui,sans-serif";
   const galSAPI = () => window.LokaliSupabaseAPI;
+  const GAL_WORDS = {
+    collections: { title: 'Collections', one: 'collection', none: 'No collection', add: 'Add collection', name: 'Collection name', bio: 'A few lines about this collection (optional)', count1: 'item', countN: 'items',
+      helpEmpty: 'Group your listings into collections, such as Holiday, Baby gifts or New in. Shoppers can tap one on your storefront to see just those items.',
+      help: 'Your storefront shows these above your listings. Open any listing to choose its collection.' },
+    artists: { title: 'Artists', one: 'artist', none: 'No artist', add: 'Add artist', name: 'Artist name', bio: 'A few lines about the artist (optional)', count1: 'piece', countN: 'pieces',
+      helpEmpty: 'Add your first artist and your storefront becomes a gallery: an artists row, and each piece shows who made it.',
+      help: 'Your storefront shows these artists above your collection. Open any listing to choose its artist, medium and size.' },
+    makers: { title: 'Makers', one: 'maker', none: 'No maker', add: 'Add maker', name: 'Maker name', bio: 'A few lines about the maker (optional)', count1: 'piece', countN: 'pieces',
+      helpEmpty: 'Add your first maker and your storefront shows a makers row, and each piece shows who made it.',
+      help: 'Your storefront shows these makers above your collection. Open any listing to choose its maker, medium and size.' }
+  };
+  const galW = () => GAL_WORDS[_galLabel] || GAL_WORDS.collections;
+  // The word lives in vendor_collection_prefs (patch_collections_label.sql); read
+  // and written with the shared Supabase client directly, so this needs no change
+  // to lokali-supabase-client.js. RLS: only the owner can write their own row.
+  const galLabelGet = async (vendorId) => {
+    try {
+      const c = await window.LokaliSupabaseReady;
+      const res = await c.from('vendor_collection_prefs').select('label').eq('vendors_id', vendorId).maybeSingle();
+      const w = res && !res.error && res.data && res.data.label;
+      return (w === 'artists' || w === 'makers') ? w : 'collections';
+    } catch (e) { return 'collections'; }
+  };
+  const galLabelSet = async (vendorId, label) => {
+    try {
+      const c = await window.LokaliSupabaseReady;
+      // Update first, insert only when there is no row yet. NOT an upsert: an
+      // upsert also "updates" vendors_id, and the column grant covers label only.
+      const up = await c.from('vendor_collection_prefs').update({ label }).eq('vendors_id', vendorId).select('vendors_id');
+      if (up && up.error) return false;
+      if (up && Array.isArray(up.data) && up.data.length) return true;
+      const ins = await c.from('vendor_collection_prefs').insert({ vendors_id: vendorId, label }).select('vendors_id');
+      return !!(ins && !ins.error);
+    } catch (e) { return false; }
+  };
+  const galArtMode = () => _galLabel === 'artists' || _galLabel === 'makers';
 
   const loadGalleryArtists = async () => {
     const S = galSAPI();
@@ -2905,6 +2944,7 @@ const LokaliProductsPage = (() => {
       const res = await S.artists.forVendor(_galVendorId);
       if (!res || res.error) { _galAvailable = false; return; }
       _galArtists = Array.isArray(res.data) ? res.data : [];
+      _galLabel = await galLabelGet(_galVendorId);
       _galAvailable = true;
       renderArtistsPanel();
       syncGalleryFields();
@@ -2916,25 +2956,60 @@ const LokaliProductsPage = (() => {
   const renderArtistsPanel = () => {
     if (!_galAvailable) return;
     const add = el.addBtn(); if (!add || !add.parentNode || !add.parentNode.parentNode) return;
+    const W = galW();
     let panel = document.getElementById('lok-gallery-artists');
     if (!panel) {
       panel = document.createElement('details');
       panel.id = 'lok-gallery-artists';
-      panel.style.cssText = 'margin:14px 0 18px;width:100%;box-sizing:border-box;background:#fff;border:1px solid #E6E4F0;border-radius:14px;padding:14px 18px;font-family:' + GAL_FONT + ';';
+      panel.style.cssText = 'margin:14px 0 18px;width:100%;box-sizing:border-box;background:#fff;border:1px solid #E6E4F0;border-radius:14px;padding:12px 18px;font-family:' + GAL_FONT + ';';
+      panel.addEventListener('toggle', () => { _galPanelOpen = panel.open; });
       add.parentNode.parentNode.insertBefore(panel, add.parentNode.nextSibling);
     }
-    const wasOpen = panel.open || _galArtists.length === 0;
     panel.innerHTML = '';
     const sum = document.createElement('summary');
-    sum.style.cssText = 'cursor:pointer;font-size:15px;font-weight:700;color:#1A1829;list-style-position:inside;';
-    sum.textContent = 'Gallery artists (' + _galArtists.length + ')';
+    sum.style.cssText = 'cursor:pointer;font-size:14.5px;font-weight:700;color:#1A1829;list-style-position:inside;';
+    sum.textContent = W.title + ' (' + _galArtists.length + ')';
+    const hint = document.createElement('span');
+    hint.style.cssText = 'font-weight:500;font-size:12.5px;color:#6B6880;margin-left:8px;';
+    hint.textContent = 'A Featured perk: group your listings';
+    sum.appendChild(hint);
     panel.appendChild(sum);
     const help = document.createElement('p');
-    help.style.cssText = 'font-size:13px;color:#6B6880;margin:8px 0 12px;line-height:1.5;';
-    help.textContent = _galArtists.length
-      ? 'Your storefront shows these artists above your collection. Open any listing to choose its artist, medium and size.'
-      : 'Add your first artist and your storefront becomes a gallery: an artists row, and each piece shows who made it.';
+    help.style.cssText = 'font-size:13px;color:#6B6880;margin:10px 0 12px;line-height:1.5;';
+    help.textContent = _galArtists.length ? W.help : W.helpEmpty;
     panel.appendChild(help);
+
+    // What the storefront calls its groups.
+    const pick = document.createElement('div');
+    pick.style.cssText = 'display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 12px;';
+    const pl = document.createElement('span'); pl.style.cssText = 'font-size:13px;font-weight:600;color:#1A1829;margin-right:2px;';
+    pl.textContent = 'What do you call these?';
+    pick.appendChild(pl);
+    const pickMsg = document.createElement('span'); pickMsg.style.cssText = 'font-size:12.5px;color:#B42318;';
+    ['collections', 'artists', 'makers'].forEach((key) => {
+      const on = _galLabel === key;
+      const b = document.createElement('button'); b.type = 'button';
+      b.textContent = GAL_WORDS[key].title;
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      b.style.cssText = 'font-family:inherit;font-size:13px;padding:6px 13px;border-radius:999px;cursor:pointer;line-height:1.3;' +
+        (on ? 'background:#F3EBFF;border:1px solid #6002EE;color:#6002EE;font-weight:600;' : 'background:#fff;border:1px solid #CCCCCC;color:#5A5570;');
+      b.addEventListener('click', async () => {
+        if (on) return;
+        const prev = _galLabel;
+        _galLabel = key; _galPanelOpen = true;
+        renderArtistsPanel(); syncGalleryFields();
+        const ok = await galLabelSet(_galVendorId, key);
+        if (!ok) {
+          _galLabel = prev; renderArtistsPanel(); syncGalleryFields();
+          const m = document.querySelector('#lok-gallery-artists [data-gal-pickmsg]');
+          if (m) m.textContent = 'That did not save. Please try again.';
+        }
+      });
+      pick.appendChild(b);
+    });
+    pickMsg.setAttribute('data-gal-pickmsg', '1');
+    pick.appendChild(pickMsg);
+    panel.appendChild(pick);
 
     _galArtists.forEach((a) => {
       const row = document.createElement('div');
@@ -2949,17 +3024,21 @@ const LokaliProductsPage = (() => {
       const nm = document.createElement('div'); nm.style.cssText = 'font-size:14px;font-weight:600;color:#1A1829;'; nm.textContent = a.name;
       const sub = document.createElement('div'); sub.style.cssText = 'font-size:12.5px;color:#6B6880;';
       const n = products.filter((p) => p.artist_id === a.id).length;
-      sub.textContent = (a.origin ? a.origin + ' · ' : '') + n + (n === 1 ? ' piece' : ' pieces');
+      sub.textContent = (a.origin ? a.origin + ' · ' : '') + n + ' ' + (n === 1 ? W.count1 : W.countN);
       txt.appendChild(nm); txt.appendChild(sub);
       const rm = document.createElement('button'); rm.type = 'button'; rm.textContent = 'Remove';
       rm.style.cssText = galBtnCss + 'background:#fff;border:1px solid #E6E4F0;color:#4A4761;padding:7px 12px;';
       rm.addEventListener('click', async () => {
-        if (!window.confirm('Remove ' + a.name + ' from your gallery? Their pieces stay listed, without an artist name.')) return;
+        const q = galArtMode()
+          ? 'Remove ' + a.name + '? Their pieces stay listed, without a name beside them.'
+          : 'Remove the ' + a.name + ' collection? Its items stay listed, just not grouped.';
+        if (!window.confirm(q)) return;
         rm.disabled = true;
         const r = await galSAPI().artists.remove(a.id);
         if (r && r.error) { rm.disabled = false; window.alert('That did not save. Please try again.'); return; }
         _galArtists = _galArtists.filter((x) => x.id !== a.id);
         products.forEach((p) => { if (p.artist_id === a.id) p.artist_id = null; });
+        _galPanelOpen = true;
         renderArtistsPanel(); syncGalleryFields();
       });
       row.appendChild(av); row.appendChild(txt); row.appendChild(rm);
@@ -2969,19 +3048,23 @@ const LokaliProductsPage = (() => {
     const form = document.createElement('div');
     form.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;padding-top:12px;margin-top:4px;border-top:1px solid #F1F0F5;';
     const mk = (ph, max) => { const i = document.createElement('input'); i.className = 'w-input'; i.placeholder = ph; i.maxLength = max; i.style.cssText = 'width:100%;box-sizing:border-box;font-family:inherit;margin:0;'; return i; };
-    const fName = mk('Artist name', 80);
+    const fName = mk(W.name, 80);
     const fOrigin = mk('Where they are from (optional)', 60);
-    const fBio = document.createElement('textarea'); fBio.className = 'w-input'; fBio.placeholder = 'A few lines about the artist (optional)'; fBio.maxLength = 600; fBio.rows = 2;
+    const fBio = document.createElement('textarea'); fBio.className = 'w-input'; fBio.placeholder = W.bio; fBio.maxLength = 600; fBio.rows = 2;
     fBio.style.cssText = 'width:100%;box-sizing:border-box;font-family:inherit;margin:0;grid-column:1/-1;min-height:64px;';
+    const photoWrap = document.createElement('label');
+    photoWrap.style.cssText = 'grid-column:1/-1;font-size:13px;color:#4A4761;display:flex;flex-wrap:wrap;align-items:center;gap:8px;';
+    const photoTxt = document.createElement('span'); photoTxt.textContent = galArtMode() ? 'Photo (optional):' : 'Cover photo (optional):';
     const fPhoto = document.createElement('input'); fPhoto.type = 'file'; fPhoto.accept = 'image/*';
-    fPhoto.style.cssText = 'font-family:inherit;font-size:13px;color:#4A4761;grid-column:1/-1;';
+    fPhoto.style.cssText = 'font-family:inherit;font-size:13px;color:#4A4761;';
+    photoWrap.appendChild(photoTxt); photoWrap.appendChild(fPhoto);
     const msg = document.createElement('div'); msg.style.cssText = 'grid-column:1/-1;font-size:13px;color:#B42318;min-height:1em;';
-    const addB = document.createElement('button'); addB.type = 'button'; addB.textContent = 'Add artist';
+    const addB = document.createElement('button'); addB.type = 'button'; addB.textContent = W.add;
     addB.style.cssText = galBtnCss + 'background:#6002EE;border:1px solid #6002EE;color:#fff;justify-self:start;';
     addB.addEventListener('click', async () => {
       const name = fName.value.trim();
       msg.textContent = '';
-      if (!name) { msg.textContent = 'Enter the artist’s name first.'; fName.focus(); return; }
+      if (!name) { msg.textContent = 'Enter a name first.'; fName.focus(); return; }
       addB.disabled = true; addB.textContent = 'Adding…';
       try {
         let photo = null;
@@ -2992,22 +3075,25 @@ const LokaliProductsPage = (() => {
           if (!photo) throw new Error('photo');
         }
         const r = await galSAPI().artists.create(_galVendorId, {
-          name, origin: fOrigin.value.trim() || null, bio: fBio.value.trim() || null,
+          name, origin: (galArtMode() && fOrigin.value.trim()) || null, bio: fBio.value.trim() || null,
           photo_url: photo, sort_order: _galArtists.length
         });
         if (!r || r.error || !r.data) throw new Error((r && r.error && r.error.message) || 'save');
         _galArtists.push(r.data);
+        _galPanelOpen = true;
         renderArtistsPanel(); syncGalleryFields();
       } catch (e) {
         const m = String((e && e.message) || '');
         msg.textContent = /LOKALI_LIMIT_REACHED:/.test(m) ? m.split('LOKALI_LIMIT_REACHED:')[1].trim()
-          : (m === 'photo' ? 'The photo did not upload. Try a smaller image, or add the artist without one.' : 'That did not save. Please try again.');
-        addB.disabled = false; addB.textContent = 'Add artist';
+          : (m === 'photo' ? 'The photo did not upload. Try a smaller image, or add it without one.' : 'That did not save. Please try again.');
+        addB.disabled = false; addB.textContent = W.add;
       }
     });
-    form.appendChild(fName); form.appendChild(fOrigin); form.appendChild(fBio); form.appendChild(fPhoto); form.appendChild(msg); form.appendChild(addB);
+    form.appendChild(fName);
+    if (galArtMode()) form.appendChild(fOrigin);
+    form.appendChild(fBio); form.appendChild(photoWrap); form.appendChild(msg); form.appendChild(addB);
     panel.appendChild(form);
-    panel.open = wasOpen;
+    panel.open = _galPanelOpen;
   };
 
   const ensureGalleryFieldsUI = () => {
@@ -3019,14 +3105,14 @@ const LokaliProductsPage = (() => {
     wrap.id = 'lok-artwork-details';
     wrap.style.cssText = 'margin:14px 0 0;width:100%;box-sizing:border-box;font-family:' + GAL_FONT + ';';
     wrap.innerHTML =
-      '<div style="font-size:13px;font-weight:600;color:#1A1829;margin-bottom:2px;">Artwork details <span style="font-weight:400;color:#8E8BA6;">(optional)</span></div>' +
-      '<p style="font-size:12.5px;color:#8E8BA6;margin:0 0 8px;">Shown on your gallery storefront under the title of the piece.</p>' +
+      '<div style="font-size:13px;font-weight:600;color:#1A1829;margin-bottom:2px;"><span data-gal-title></span> <span style="font-weight:400;color:#8E8BA6;">(optional)</span></div>' +
+      '<p data-gal-sub style="font-size:12.5px;color:#8E8BA6;margin:0 0 8px;"></p>' +
       '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;">' +
       '<select data-gal-artist class="w-select" style="width:100%;box-sizing:border-box;font-family:inherit;margin:0;"></select>' +
       '<input data-gal-medium class="w-input" maxlength="80" placeholder="Medium, e.g. Oil on canvas" style="width:100%;box-sizing:border-box;font-family:inherit;margin:0;">' +
       '<input data-gal-dims class="w-input" maxlength="60" placeholder="Size, e.g. 24 x 36 in" style="width:100%;box-sizing:border-box;font-family:inherit;margin:0;">' +
       '</div>' +
-      '<p style="font-size:12px;color:#8E8BA6;margin:8px 0 0;line-height:1.45;">For a one-of-a-kind piece set the stock to 1. When it sells, set it to 0 and the page shows it as Sold.</p>';
+      '<p data-gal-hint style="font-size:12px;color:#8E8BA6;margin:8px 0 0;line-height:1.45;">For a one-of-a-kind piece set the stock to 1. When it sells, set it to 0 and the page shows it as Sold.</p>';
     host.appendChild(wrap);
     wrap.querySelector('[data-gal-artist]').addEventListener('change', (e) => {
       const v = e.target.value; _galArtistId = v === '' ? null : Number(v);
@@ -3039,9 +3125,15 @@ const LokaliProductsPage = (() => {
   const syncGalleryFields = () => {
     const wrap = document.getElementById('lok-artwork-details');
     if (!wrap) return;
+    const W = galW(), art = galArtMode();
+    wrap.style.display = _galArtists.length ? '' : 'none';
+    wrap.querySelector('[data-gal-title]').textContent = art ? 'Artwork details' : 'Collection';
+    wrap.querySelector('[data-gal-sub]').textContent = art
+      ? 'Shown on your storefront under the title of the piece.'
+      : 'Which collection this listing belongs to on your storefront.';
     const sel = wrap.querySelector('[data-gal-artist]');
     sel.innerHTML = '';
-    const none = document.createElement('option'); none.value = ''; none.textContent = 'No artist';
+    const none = document.createElement('option'); none.value = ''; none.textContent = W.none;
     sel.appendChild(none);
     _galArtists.forEach((a) => {
       const o = document.createElement('option'); o.value = String(a.id); o.textContent = a.name;
@@ -3049,8 +3141,11 @@ const LokaliProductsPage = (() => {
     });
     if (_galArtistId != null && !_galArtists.some((a) => a.id === _galArtistId)) _galArtistId = null;
     sel.value = _galArtistId == null ? '' : String(_galArtistId);
-    wrap.querySelector('[data-gal-medium]').value = _galMedium || '';
-    wrap.querySelector('[data-gal-dims]').value = _galDimensions || '';
+    const med = wrap.querySelector('[data-gal-medium]'), dim = wrap.querySelector('[data-gal-dims]');
+    med.value = _galMedium || ''; dim.value = _galDimensions || '';
+    med.style.display = art ? '' : 'none';
+    dim.style.display = art ? '' : 'none';
+    wrap.querySelector('[data-gal-hint]').style.display = art ? '' : 'none';
   };
 
   // ── #96-LISTING: per-product specialty (one optional subcategory slug) ─────

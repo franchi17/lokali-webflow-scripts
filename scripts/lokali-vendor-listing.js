@@ -2179,9 +2179,10 @@
     }
     // GALLERY: artist line + medium/size under the title, and a chip on the image.
     // textContent only — every value here is vendor free text.
-    if (opts.artist || opts.artMeta) {
+    if (opts.artist || opts.artistLine || opts.artMeta) {
       var top = a.querySelector('.vl-card-top');
-      if (opts.artist) { var by = ce('div', 'vl-gal-by'); by.textContent = 'by ' + opts.artist; top.parentNode.insertBefore(by, top.nextSibling); }
+      var byLine = opts.artistLine || (opts.artist ? 'by ' + opts.artist : '');
+      if (byLine) { var by = ce('div', 'vl-gal-by'); by.textContent = byLine; if (opts.artistLine) by.style.color = '#6B6880'; top.parentNode.insertBefore(by, top.nextSibling); }
       if (opts.artMeta) { var mt = ce('div', 'vl-gal-meta'); mt.textContent = opts.artMeta; a.querySelector('.vl-card-body').insertBefore(mt, a.querySelector('.vl-card-desc')); }
     }
     if (opts.galChip) {
@@ -2294,6 +2295,34 @@
   var _galById = {};         // id -> artist
   var _galAll = null;        // the full product list (the filter re-renders from it)
   var _galFilter = null;     // artist id being viewed, or null = everyone
+  // COLLECTIONS (F 2026-11-19): the same groups under the storefront's own word.
+  // 'collections' (default) keeps the standard product cards and adds a quiet
+  // '<Name> collection' line; 'artists' / 'makers' is the gallery presentation.
+  var _galLabel = 'collections';
+  var GAL_WORDS = {
+    collections: { eyebrow: 'Collections', all: 'Show all collections', one: 'item', many: 'items' },
+    artists:     { eyebrow: 'The artists', all: 'Show all artists', one: 'piece', many: 'pieces' },
+    makers:      { eyebrow: 'The makers', all: 'Show all makers', one: 'piece', many: 'pieces' }
+  };
+  // The storefront's word for its groups (patch_collections_label.sql). Read with
+  // the shared Supabase client directly, so this needs no change to
+  // lokali-supabase-client.js. Any failure, or no row = 'collections'.
+  function galFetchLabel(vendorId) {
+    var ready = window.LokaliSupabaseReady;
+    if (!ready || !ready.then) return Promise.resolve('collections');
+    return ready.then(function (c) {
+      return c.from('vendor_collection_prefs').select('label').eq('vendors_id', vendorId).maybeSingle();
+    }).then(function (res) {
+      var w = res && !res.error && res.data && res.data.label;
+      return (w === 'artists' || w === 'makers') ? w : 'collections';
+    }, function () { return 'collections'; });
+  }
+  function galWords() { return GAL_WORDS[_galLabel] || GAL_WORDS.collections; }
+  function galArtMode() { return _galLabel === 'artists' || _galLabel === 'makers'; }
+  function galCollectionLine(name) {
+    var n = String(name || '').trim();
+    return /collection$/i.test(n) ? n : n + ' collection';
+  }
   var GAL_FONT = '"Plus Jakarta Sans",sans-serif';
   var GAL_CSS = [
     '.vl-gal-by{font:500 12.5px/1.35 ' + GAL_FONT + ';color:#6002EE;margin-top:2px;}',
@@ -2334,7 +2363,7 @@
     var old = host.querySelector('.vl-gal-wrap');
     if (old) old.parentNode.removeChild(old);
     var wrap = ce('div', 'vl-gal-wrap');
-    var eb = ce('div', 'vl-gal-eyebrow'); eb.textContent = 'The artists';
+    var eb = ce('div', 'vl-gal-eyebrow'); eb.textContent = galWords().eyebrow;
     wrap.appendChild(eb);
     var row = ce('div', 'vl-gal-row');
     var counts = {};
@@ -2349,7 +2378,7 @@
       var nm = ce('div', 'vl-gal-name'); nm.textContent = a.name;
       var n = counts[a.id] || 0;
       var sub = ce('div', 'vl-gal-sub');
-      sub.textContent = (a.origin ? a.origin + ' · ' : '') + n + (n === 1 ? ' piece' : ' pieces');
+      sub.textContent = (a.origin ? a.origin + ' · ' : '') + n + ' ' + (n === 1 ? galWords().one : galWords().many);
       b.appendChild(av); b.appendChild(nm); b.appendChild(sub);
       b.addEventListener('click', function () {
         _galFilter = (_galFilter === a.id) ? null : a.id;
@@ -2364,7 +2393,7 @@
       var st2 = document.createElement('strong'); st2.textContent = cur.name;
       about.appendChild(st2);
       if (cur.bio) about.appendChild(document.createTextNode(' · ' + cur.bio));
-      var clr = ce('button', 'vl-gal-clear'); clr.type = 'button'; clr.textContent = 'Show all artists';
+      var clr = ce('button', 'vl-gal-clear'); clr.type = 'button'; clr.textContent = galWords().all;
       clr.addEventListener('click', function () { _galFilter = null; renderProducts(_galAll || [], true); });
       about.appendChild(clr);
       wrap.appendChild(about);
@@ -2372,7 +2401,7 @@
     host.insertBefore(wrap, grid);
     var sec = document.getElementById('vl-op-sec-products');
     var h = sec && sec.querySelector('.vl-op-h');
-    if (h && h.firstChild && h.firstChild.nodeType === 3) h.firstChild.nodeValue = 'The collection';
+    if (galArtMode() && h && h.firstChild && h.firstChild.nodeType === 3) h.firstChild.nodeValue = 'The collection';
   }
 
   function renderProducts(list, ok) {
@@ -2405,10 +2434,12 @@
       var art = gal ? _galById[p.artist_id] : null;
       var stock = (p.stock_quantity == null || p.stock_quantity === '') ? null : Number(p.stock_quantity);
       var sold = gal && stock === 0;
+      var bits = [];
       if (gal) {
-        var bits = [];
         if (p.medium) bits.push(String(p.medium).trim());
         if (p.dimensions) bits.push(String(p.dimensions).trim());
+      }
+      if (gal && galArtMode()) {
         return cardEl({
           name: p.product_name || p.name,
           desc: p.product_description || p.description || '',
@@ -2438,6 +2469,8 @@
         // card promises what the detail page delivers (the card still opens
         // the detail page; the actual outbound button + click log live there).
         cta: buy ? 'Buy online' : 'Order', orange: true, buy: buy,
+        artistLine: art ? galCollectionLine(art.name) : '',   // COLLECTIONS: only when this storefront has groups
+        artMeta: bits.join(' · '),
         lead: leadText(p),
         href: itemHref('products', p)
       });
@@ -3914,7 +3947,10 @@
       var galSB = window.LokaliSupabaseAPI;
       var artistsP = (Number(v.plan_rank) === 2 && galSB && galSB.artists)
         ? Promise.resolve(galSB.artists.forVendor(vid)).then(function (ares) {
-            return (ares && ares.error) ? [] : asArray(unwrap(ares));
+            var arts = (ares && ares.error) ? [] : asArray(unwrap(ares));
+            // The word is only needed when there are groups to show.
+            if (!arts.length) return arts;
+            return galFetchLabel(vid).then(function (word) { _galLabel = word; return arts; });
           }, function () { return []; })
         : Promise.resolve([]);
       fetchListWithRetry(function () { return API.products.listByVendor(vid); })
