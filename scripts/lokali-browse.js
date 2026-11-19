@@ -3011,7 +3011,7 @@
         var first = names.length ? names[0] : 'The Woodlands';
         var rest = names.slice(1);
         var served = rest.length > 1 ? rest.slice(0, -1).join(', ') + ' and ' + rest[rest.length - 1] : rest.join('');
-        intro.textContent = 'The Market is Lokali’s directory of independent local vendors: the makers, bakers, stylists, tutors, and service pros working right in your neighborhood. ' +
+        intro.textContent = 'The Market is Lokali’s directory of independent local vendors: the makers and service professionals working right in your neighborhood. ' +
           'Lokali started in ' + first + (served ? ', and our vendors already serve ' + served + '.' : '.') + ' Every storefront belongs to a real person nearby.';
       }
       var note = about.querySelector('.mkt-about-note');
