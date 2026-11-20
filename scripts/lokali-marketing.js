@@ -4,8 +4,11 @@
  * Two rotating-content queues the vendor feeds herself, rendered on her PUBLIC
  * storefront by lokali-vendor-listing.js via the anon RPC marketing_current():
  *
- *   · "Promo button" (kind 'cta')       — Pro + Featured
  *   · "Showcase of the week" ('showcase') — Featured only
+ *   · "Promo button" ('cta') — REMOVED from this page 2026-11-20 (F: "no one
+ *     knows what it is and it makes no sense"; 0 entries had ever been written).
+ *     The kind still exists in the DB and the storefront still renders one if
+ *     an entry existed, so nothing breaks; there is just no way to create one.
  *
  * Rotation modes per queue (derived, not stored): a pinned active entry means
  * "Pin one" (that entry always shows); no pin means "Rotate weekly" — the
@@ -86,6 +89,9 @@
   // unlike an earlier realtor-specific line that leaked into every vendor's
   // page as if it were universal advice.
   var CTA_EXAMPLE = 'Looking for something specific?';
+  // What the Showcase is FOR, in words that fit every kind of business
+  // (F 2026-11-20: the old 'a listing, an open house' read as real estate only).
+  var SHOWCASE_WHAT = 'You choose what people see first on your storefront: something new you made, an opening in your schedule, or a tip your clients always ask about.';
   // Font Awesome Free 6 'image' (regular), inlined — the dashboard doesn't load
   // the FA font, and one glyph doesn't justify it. License: CC BY 4.0.
   var IMG_ICON = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true">' +
@@ -417,7 +423,6 @@
       return;
     }
     this.mount.innerHTML =
-      this.cardHtml('cta') +
       (this.premium ? this.cardHtml('showcase') : this.lockedShowcaseHtml()) +
       this.qrCardHtml() +
       this.reviewCardHtml() +
@@ -951,7 +956,7 @@
     var pinned = this.pinnedId(kind);
     var sub = kind === 'cta'
       ? 'A button at the top of your contact card: a question, an invite, a link. You feed the list; we show a different one each week.'
-      : 'A section at the top of your storefront for what’s new: a listing, an event, a favorite.';
+      : SHOWCASE_WHAT + ' Write a few and we change it every Monday.';
     var storeUrl = (this.vendor && this.vendor.slug) ? ('/' + this.vendor.slug) : null;
 
     var html =
@@ -959,7 +964,7 @@
         '<div class="mkt-head"><p class="mkt-h">' + KIND_LABEL[kind] +
           (list.length ? '<span class="mkt-count">' + list.length + ' / ' + CAPS[kind] + '</span>' : '') +
           '</p>' +
-          (kind === 'cta'
+          (kind === 'showcase'
             ? '<a class="mkt-live-link" style="color:#8E8BA6;" href="/vendor-resources/marketing-tools-guide" target="_blank" rel="noopener">How it works</a>' : '') +
           (list.length && storeUrl
             ? '<a class="mkt-live-link" href="' + storeUrl + '" target="_blank" rel="noopener">See it on your page &#8599;</a>' : '') +
@@ -1105,7 +1110,7 @@
   Page.prototype.lockedShowcaseHtml = function () {
     return '<div class="mkt-card mkt-lock">' +
       '<p class="mkt-lockh">Showcase of the week</p>' +
-      '<p>Lead your storefront with a rotating feature: this week’s listing, an open house, a seasonal special. Available on the Featured plan.</p>' +
+      '<p>' + SHOWCASE_WHAT + ' It changes every Monday. Comes with the Featured plan.</p>' +
       '<a class="mkt-up" href="/pricing">Upgrade to unlock</a>' +
     '</div>';
   };
@@ -1356,9 +1361,8 @@
   // ---- upsell (free plan, direct URL) -----------------------------------------
   function upsellHtml() {
     return '<div class="mkt-card mkt-lock">' +
-        '<span class="mkt-cta-demo">' + esc(CTA_EXAMPLE) + '</span>' +
-        '<p class="mkt-lockh">Marketing tools</p>' +
-        '<p>Rotate a weekly promo button and a Showcase of the week on your storefront. You feed the list, we keep it fresh. Available on paid plans.</p>' +
+        '<p class="mkt-lockh">Showcase of the week</p>' +
+        '<p>' + SHOWCASE_WHAT + ' It changes every Monday. Comes with the Featured plan.</p>' +
         '<a class="mkt-up" href="/pricing">See plans</a>' +
       '</div>';
   }
