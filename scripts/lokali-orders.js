@@ -9,7 +9,7 @@
  *   POST {BASE}/checkout/fulfil  { orders_id, note }                           -> shopper emailed
  *   POST {BASE}/checkout/refund  { orders_id, amount_cents?, reason, restock } -> Stripe refund on
  *                                                                               the vendor's account
- * Groups: "To fulfil" (paid, newest first) then "Done" (fulfilled), with
+ * Groups: "Waiting on you" (paid, newest first) then "Done" (fulfilled), with
  * refunded / disputed / canceled folded under "Everything else". Money state
  * only ever changes through the Connect webhook or the two routes above.
  */
@@ -58,6 +58,7 @@
       '.op-amt{font-size:16px;font-weight:700;white-space:nowrap;text-align:right;}' +
       '.op-pill{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;padding:4px 9px;border-radius:999px;margin-top:6px;}' +
       '.op-pill.paid{background:' + VIOLET_L + ';color:' + VIOLET + ';}.op-pill.fulfilled{background:' + GREEN_L + ';color:' + GREEN + ';}' +
+      '.op-pill.due{background:#FFF7E8;color:#7A4A00;margin-left:4px;}.op-pill.due.late{background:' + PINK_L + ';color:' + PINK + ';}' +
       '.op-pill.refunded,.op-pill.partially_refunded,.op-pill.canceled{background:' + SNOW + ';color:' + GRAY + ';}.op-pill.disputed{background:' + PINK_L + ';color:' + PINK + ';}' +
       '.op-who{font-size:13px;color:' + DUSK + ';margin-top:10px;line-height:1.5;}.op-who a{color:' + VIOLET + ';font-weight:600;text-decoration:none;}' +
       '.op-note{font-size:13px;background:' + SNOW + ';border-radius:10px;padding:8px 10px;margin-top:8px;color:' + DUSK + ';}' +
@@ -83,7 +84,28 @@
 
   function fulfilLabel(o) { return o.fulfilment === 'pickup' ? 'Pickup' : o.fulfilment === 'delivery' ? 'Local delivery' : 'Shipping'; }
   function statusLabel(o) {
-    return { paid: 'Paid, to fulfil', fulfilled: 'Done', refunded: 'Refunded', partially_refunded: 'Partly refunded', disputed: 'Disputed', canceled: 'Canceled' }[o.status] || o.status;
+    return { paid: 'Paid, waiting on you', fulfilled: 'Done', refunded: 'Refunded', partially_refunded: 'Partly refunded', disputed: 'Disputed', canceled: 'Canceled' }[o.status] || o.status;
+  }
+  // "You promised: by Dec 5" on a paid order, from the vendor's own "ready
+  // within N days" (Settings, Get paid on Lokali). Uses today's setting.
+  var _promise = { pickup: null, ship: null };
+  function duePill(o) {
+    if (o.status !== 'paid' && o.status !== 'partially_refunded') return '';
+    var n = Number(o.fulfilment === 'shipping' ? _promise.ship : _promise.pickup);
+    var start = new Date(o.paid_at || o.created_at);
+    if (!(n >= 1) || isNaN(start)) return '';
+    var due = new Date(start.getTime() + n * 864e5);
+    var late = Date.now() > due.getTime() + 864e5;
+    return '<span class="op-pill due' + (late ? ' late' : '') + '">You promised: by ' + due.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + '</span>';
+  }
+  function loadPromise(c, orders) {
+    try {
+      var id = orders && orders[0] && orders[0].vendors_id;
+      if (id == null) return Promise.resolve();
+      return c.from('vendors').select('checkout_pickup_days, checkout_ship_days').eq('id', id).maybeSingle().then(function (q) {
+        if (q && !q.error && q.data) _promise = { pickup: q.data.checkout_pickup_days, ship: q.data.checkout_ship_days };
+      }).catch(function () {});
+    } catch (e) { return Promise.resolve(); }
   }
   function addr(a) { if (!a) return ''; return [a.name, a.line1, a.line2, [a.city, a.state].filter(Boolean).join(', '), a.postal_code].filter(function (p) { return p && String(p).trim(); }).map(esc).join('<br>'); }
 
@@ -98,7 +120,7 @@
         (o.product_image_url ? '<img class="op-img" src="' + esc(o.product_image_url) + '" alt="">' : '<div class="op-img"></div>') +
         '<div class="op-main"><div class="op-name">' + esc(o.product_name) + (o.quantity > 1 ? ' <span style="color:' + GRAY + ';font-weight:600;">x ' + o.quantity + '</span>' : '') + '</div>' +
         '<div class="op-sub"><b>' + fulfilLabel(o) + '</b> · ' + when(o.paid_at || o.created_at) + (o.status === 'paid' ? ' · ' + ago(o.paid_at || o.created_at) : '') + '</div>' +
-        '<span class="op-pill ' + esc(o.status) + '">' + statusLabel(o) + '</span></div>' +
+        '<span class="op-pill ' + esc(o.status) + '">' + statusLabel(o) + '</span>' + duePill(o) + '</div>' +
         '<div class="op-amt">' + money(o.total_cents) + refunded + '</div>' +
       '</div>' +
       '<div class="op-who"><b>' + esc(o.shopper_name || 'Shopper') + '</b>' + (contact.length ? ' · ' + contact.join(' · ') : '') +
@@ -191,9 +213,9 @@
     var net = month.reduce(function (s, o) { return s + (o.total_cents - o.refunded_cents); }, 0);
     var fees = month.reduce(function (s, o) { return s + (o.platform_fee_cents || 0); }, 0);
     var strip = el('div', 'op-strip');
-    strip.innerHTML = tile(paid.length, 'to fulfil') + tile(month.length, 'orders this month') + tile(money(net), 'sales this month') + tile(money(fees), 'Lokali fees this month');
+    strip.innerHTML = tile(paid.length, 'waiting on you') + tile(month.length, 'orders this month') + tile(money(net), 'sales this month') + tile(money(fees), 'Lokali fees this month');
     mount.appendChild(strip);
-    section(mount, 'To fulfil', paid, 'Nothing waiting on you.');
+    section(mount, 'Waiting on you', paid, 'Nothing waiting on you.');
     section(mount, 'Done', done.slice(0, 20), 'Nothing fulfilled yet.');
     if (rest.length) {
       var h = el('div', 'op-h'); h.innerHTML = 'Everything else <small>' + rest.length + '</small>'; mount.appendChild(h);
@@ -217,7 +239,8 @@
     if (!c || typeof c.rpc !== 'function') { if (attempt < 120) { setTimeout(function () { load(mount, attempt + 1); }, 250); return; } showError(mount, "We couldn't load your orders."); return; }
     c.rpc('my_orders', { p_limit: 300 }).then(function (r) {
       if (r.error) { if (attempt < 8 && /JWT|401|403/i.test(String(r.error.message || ''))) { setTimeout(function () { load(mount, attempt + 1); }, 500); return; } showError(mount, "We couldn't load your orders."); return; }
-      render(mount, Array.isArray(r.data) ? r.data : []);
+      var rows = Array.isArray(r.data) ? r.data : [];
+      loadPromise(c, rows).then(function () { render(mount, rows); });
     }).catch(function () { showError(mount, "We couldn't load your orders."); });
   }
 

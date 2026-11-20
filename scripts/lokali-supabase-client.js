@@ -231,6 +231,7 @@
     'lead_time',   // #78: free-text per-item lead time (supersedes turnaround_days for display)
     'is_featured_pick', // FEAT-PICKS: Featured-plan shop window (cap+plan gate = DB trigger)
     'image_focus_x', 'image_focus_y', // #149: main-image focal point (0-100 %, null = center)
+    'shipping_cents', // #205 flat shipping price for Lokali checkout (patch_onsite_checkout.sql, applied 2026-11-19)
     'artist_id', 'medium', 'dimensions' // GALLERY (patch_gallery_storefront.sql): artwork details; artist must be the storefront's own (DB trigger)
   ];
   // Author may edit only these (vendor_reply is stamped by the guard trigger).
@@ -1744,7 +1745,7 @@
     // selector when the LOADED client actually whitelists the column —
     // otherwise pick() would strip it and the save would silently drop the
     // vendor's choice under a success toast.
-    capabilities: { galleryStorefront: true, listingSubcategory: true, itemLeadTime: true, productBuyLink: true, linkFetch: true, serviceLink: true, servicePriceFree: true, vendorLinkedin: true }, // serviceLink / servicePriceFree / vendorLinkedin = punchlist 2026-10-02 (link_url + price_type 'free' + linkedin_url) // itemLeadTime = #78 (lead_time in both EDITABLE lists); productBuyLink = #172 (buy_url in PRODUCT_EDITABLE)
+    capabilities: { onsiteCheckout: true, galleryStorefront: true, listingSubcategory: true, itemLeadTime: true, productBuyLink: true, linkFetch: true, serviceLink: true, servicePriceFree: true, vendorLinkedin: true }, // serviceLink / servicePriceFree / vendorLinkedin = punchlist 2026-10-02 (link_url + price_type 'free' + linkedin_url) // itemLeadTime = #78 (lead_time in both EDITABLE lists); productBuyLink = #172 (buy_url in PRODUCT_EDITABLE)
     // #96-SUGGEST — admin surface (is_admin()-gated server-side; non-admins
     // get { ok:false } — safe to call from any session).
     // #137 — the notification feed behind the header bell. All three RPCs are
