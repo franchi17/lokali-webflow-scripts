@@ -20,8 +20,9 @@
  * it never pushes the status, tiles or next step down. Self-hides when the
  * list is empty or the call fails.
  *
- * Mount: none needed. Page-level <script defer> on the dashboard page only,
- * after the sitewide bundle (needs window.LokaliSupabaseReady). Idempotent.
+ * Mount: none needed. Registered Webflow page script (SRI-pinned, footer) on
+ * the dashboard page only. Waits for window.LokaliSupabaseReady, so its
+ * position relative to the sitewide bundle does not matter. Idempotent.
  *
  * Two mirrored copies (repo rule — edit BOTH, byte-identical):
  *   scripts/lokali-grants.js
@@ -156,9 +157,18 @@
     }, function () { /* hide on failure */ });
   }
 
-  if (!window.LokaliSupabaseReady) return;
-  window.LokaliSupabaseReady.then(function () {
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
-    else boot();
-  });
+  // Order-proof start: this file is a registered page script, so it may run
+  // before OR after the sitewide bundle that creates LokaliSupabaseReady.
+  // Wait for it (up to ~15s), then for the DOM, then boot once.
+  var waited = 0;
+  (function start() {
+    if (window.LokaliSupabaseReady && typeof window.LokaliSupabaseReady.then === 'function') {
+      window.LokaliSupabaseReady.then(function () {
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+        else boot();
+      }, function () { /* client failed to start: no card */ });
+      return;
+    }
+    if (++waited < 150) setTimeout(start, 100);
+  })();
 })();
