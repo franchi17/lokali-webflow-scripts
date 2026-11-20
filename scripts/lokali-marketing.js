@@ -209,8 +209,14 @@
       '.mkt-focusframe img{width:100%;height:100%;object-fit:cover;display:block;touch-action:none;cursor:grab;}' +
       '.mkt-note{font-size:12px;color:#8E8BA6;margin-top:8px;}' +
       '.mkt-post-row{display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;}' +
+      '.mkt-post-prevs{display:flex;gap:10px;flex:0 0 auto;align-items:flex-start;}' +
       '.mkt-post-prev{flex:0 0 auto;width:188px;height:188px;border:1px solid #ECE8F8;border-radius:12px;overflow:hidden;background:#F7F6FC;line-height:0;}' +
       '.mkt-post-prev canvas{width:188px;height:188px;display:block;}' +
+      '.mkt-post-prev.mkt-post-story{width:106px;}' +
+      '.mkt-post-prev.mkt-post-story canvas{width:106px;height:188px;}' +
+      '.mkt-post-lbl{display:block;font-size:13px;font-weight:700;color:#2E2A3B;margin:0 0 6px;}' +
+      '.mkt-post-in{width:100%;box-sizing:border-box;font-family:"Plus Jakarta Sans",sans-serif;font-size:14px;color:#2E2A3B;border:1px solid #DCD6EE;border-radius:9px;padding:9px 12px;}' +
+      '.mkt-post-in:focus{outline:2px solid ' + BRAND + ';outline-offset:1px;}' +
       '.mkt-post-cap{margin:10px 0 0;background:#F7F6FC;border:1px solid #ECE8F8;border-radius:10px;padding:10px 12px;font-size:13px;color:#3E3A55;line-height:1.5;white-space:pre-wrap;}' +
       // "Get a new link" (SEC-074): quiet on purpose, it is a rare, destructive-ish
       // action. #6E6A85 is 5.17:1 on white (the slate above is 3.3:1); 44px tap area.
@@ -545,9 +551,21 @@
   };
 
   // ---- #197 Your launch post ---------------------------------------------------
-  // The square is drawn into a <canvas> after render (fonts + wordmark are async),
-  // at 1080px and shown scaled; the download hands over the full-size PNG.
+  // Redesign 2026-11-19 (F, "the design hat": Ogilvy/Rand/Vignelli rules, mockup
+  // approved in the Vendor Kit Redesign page). One frame for every vendor: their
+  // Market-card photo across the top (same chain + pin as the browse card, via
+  // LokaliAPI.vendors.coverCandidates, focal point honored), a white shelf with
+  // their logo on the seam, their business name as a small violet kicker, their
+  // own promise as the headline (business_tagline by default, editable here and
+  // remembered per browser; the storefront itself is never written), the link and
+  // the wordmark. Two sizes: 1080x1080 post and 1080x1920 Story. "Another photo"
+  // cycles their candidates. Every image loads with crossOrigin=anonymous: a host
+  // without CORS (some logos live off-site) fails to load and is simply skipped,
+  // so the canvas never taints and the download always works. No photo at all ->
+  // a lavender band with their logo (or name) instead.
   var WORDMARK = 'https://cdn.prod.website-files.com/6989095758ae17edfc424d30/698b5bd9a395418e4c895175_Lokali%20Logo.png'; // CORS: allow-origin *
+  var PF = '"Plus Jakarta Sans", Helvetica, Arial, sans-serif';
+  var POST_INK = '#2B2A35', POST_LAV = '#EFE6FF';
   var _lookups = null;
   function lookups() {
     if (_lookups) return _lookups;
@@ -564,19 +582,42 @@
     });
     return _lookups;
   }
+  var _imgCache = {};
+  function loadImg(src) {
+    if (!src) return Promise.resolve(null);
+    if (_imgCache[src]) return _imgCache[src];
+    _imgCache[src] = new Promise(function (res) {
+      var im = new Image(); im.crossOrigin = 'anonymous';
+      im.onload = function () { res(im.naturalWidth ? im : null); };
+      im.onerror = function () { res(null); };
+      im.src = src;
+    });
+    return _imgCache[src];
+  }
+  function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function lsSet(k, v) { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} }
 
   Page.prototype.postCardHtml = function () {
     if (!this.vendor.slug || !document.createElement('canvas').getContext) return '';
+    var nm = esc(this.vendor.business_name || '');
     return '<div class="mkt-card" data-kind="post">' +
       '<div class="mkt-head"><p class="mkt-h">Your launch post</p></div>' +
-      '<p class="mkt-sub">A square image made for your storefront. Post it once on Instagram or Facebook, pin it, and you are done.</p>' +
+      '<p class="mkt-sub">Made from your own photo. Post the square once and pin it, and share the Story the same day.</p>' +
       '<div class="mkt-post-row">' +
-        '<div class="mkt-post-prev"><canvas id="mkt-post-canvas" width="1080" height="1080" aria-label="Now on Lokali: ' + esc(this.vendor.business_name || '') + '"></canvas></div>' +
+        '<div class="mkt-post-prevs">' +
+          '<div class="mkt-post-prev"><canvas id="mkt-post-canvas" width="1080" height="1080" aria-label="Your launch post: ' + nm + '"></canvas></div>' +
+          '<div class="mkt-post-prev mkt-post-story"><canvas id="mkt-story-canvas" width="1080" height="1920" aria-label="Your launch Story: ' + nm + '"></canvas></div>' +
+        '</div>' +
         '<div class="mkt-qr-side">' +
-          '<div class="mkt-qr-btns"><button type="button" class="mkt-qr-dl" data-act="post-png">Download image (PNG)</button>' +
+          '<label class="mkt-post-lbl" for="mkt-post-hl">The big words on your post</label>' +
+          '<input type="text" id="mkt-post-hl" class="mkt-post-in" maxlength="120" placeholder="What you make, in one line">' +
+          '<p class="mkt-note">Starts with your tagline. Say what you make and who it is for. This only changes the image, not your storefront.</p>' +
+          '<div class="mkt-qr-btns"><button type="button" class="mkt-qr-dl" data-act="post-png">Download post</button>' +
+          '<button type="button" class="mkt-qr-dl" data-act="post-story">Download Story</button>' +
+          '<button type="button" class="mkt-qr-dl" data-act="post-photo" id="mkt-post-photo" style="display:none">Try another photo</button>' +
           '<button type="button" class="mkt-qr-dl" data-act="post-copy">Copy caption</button></div>' +
           '<div class="mkt-post-cap" id="mkt-post-cap">' + esc(this.postCaption()) + '</div>' +
-          '<p class="mkt-note">1080 x 1080, the size Instagram and Facebook want. The caption is a starting point, say it your way.</p>' +
+          '<p class="mkt-note">Post 1080 x 1080, Story 1080 x 1920. The caption is a starting point, say it your way.</p>' +
         '</div>' +
       '</div>' +
     '</div>';
@@ -589,11 +630,43 @@
       'And if you are a neighbor with a business of your own, there is a free storefront waiting for you too.';
   };
 
-  // Text wrap that fits the business name: starts at 96px, shrinks until it
-  // takes at most two lines of 900px, then shrinks further for three.
-  function fitName(ctx, text, maxW, maxLines, size, min) {
-    for (var s = size; s >= min; s -= 4) {
-      ctx.font = '800 ' + s + 'px "Plus Jakarta Sans", Helvetica, Arial, sans-serif';
+  // Fonts, wordmark, logo, photo candidates (pin first) and lookups, loaded once
+  // per page and reused by every redraw.
+  Page.prototype.postAssets = function () {
+    if (this._postAssets) return this._postAssets;
+    var v = this.vendor;
+    var fontsReady = (document.fonts && document.fonts.load)
+      ? Promise.all([document.fonts.load('800 96px "Plus Jakarta Sans"'), document.fonts.load('700 30px "Plus Jakarta Sans"')]).catch(function () {})
+      : Promise.resolve();
+    var api = window.LokaliAPI && window.LokaliAPI.vendors;
+    var photos = (api && typeof api.coverCandidates === 'function' && v.id != null)
+      ? api.coverCandidates(v.id).then(function (out) {
+          var d = (out && !out.error && out.data) || {}, seen = {}, list = [];
+          (d.candidates || []).forEach(function (c) { if (c && c.url && !seen[c.url]) { seen[c.url] = true; list.push(c); } });
+          var pin = d.pinned || v.card_photo_url;
+          for (var i = 0; pin && i < list.length; i++) if (list[i].url === pin) { list.unshift(list.splice(i, 1)[0]); break; }
+          return list;
+        }, function () { return []; })
+      : Promise.resolve([]);
+    this._postAssets = Promise.all([fontsReady, loadImg(WORDMARK), loadImg(v.profile_photo), photos, lookups()])
+      .then(function (rs) { return { wm: rs[1], logo: rs[2], photos: rs[3], lk: rs[4] }; });
+    return this._postAssets;
+  };
+
+  Page.prototype.postDefaultHeadline = function (lk) {
+    var v = this.vendor;
+    var tl = String(v.business_tagline || '').replace(/\s+/g, ' ').trim();
+    if (tl.length >= 8 && tl.length <= 120) return tl;
+    var locIds = Array.isArray(v.locations_id) ? v.locations_id : (v.locations_id != null ? [v.locations_id] : []);
+    var loc = locIds.length && lk ? (lk.locs[locIds[0]] || '') : '';
+    return loc ? 'Your neighbors in ' + loc + ', now on Lokali.' : 'Your neighbors, now on Lokali.';
+  };
+
+  // Left-aligned wrap that fits a box: largest size whose lines fit maxW, at most
+  // maxLines, and whose block fits maxH. Long single words shrink, never break.
+  function fitBlock(ctx, text, maxW, maxLines, maxH, size, min, lh) {
+    for (var s = size; s >= min; s -= 2) {
+      ctx.font = '800 ' + s + 'px ' + PF;
       var words = text.split(/\s+/), lines = [], cur = '';
       for (var i = 0; i < words.length; i++) {
         var t = cur ? cur + ' ' + words[i] : words[i];
@@ -601,90 +674,158 @@
       }
       if (cur) lines.push(cur);
       var tooWide = lines.some(function (l) { return ctx.measureText(l).width > maxW; });
-      if (lines.length <= maxLines && !tooWide) return { lines: lines, size: s };
+      if (lines.length <= maxLines && !tooWide && lines.length * s * lh <= maxH) return { lines: lines, size: s };
     }
+    ctx.font = '800 ' + min + 'px ' + PF;
     return { lines: [text], size: min };
   }
+  // Letter-spaced single line (canvas letterSpacing is not everywhere yet).
+  function spacedWidth(ctx, text, sp) {
+    var w = 0; text.split('').forEach(function (ch) { w += ctx.measureText(ch).width + sp; });
+    return w - sp;
+  }
+  function drawSpaced(ctx, text, x, y, sp) {
+    ctx.textAlign = 'left';
+    text.split('').forEach(function (ch) { ctx.fillText(ch, x, y); x += ctx.measureText(ch).width + sp; });
+  }
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath(); ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y); ctx.arc(x + w - r, y + r, r, -Math.PI / 2, 0);
+    ctx.lineTo(x + w, y + h - r); ctx.arc(x + w - r, y + h - r, r, 0, Math.PI / 2); ctx.lineTo(x + r, y + h);
+    ctx.arc(x + r, y + h - r, r, Math.PI / 2, Math.PI); ctx.lineTo(x, y + r); ctx.arc(x + r, y + r, r, Math.PI, Math.PI * 1.5); ctx.closePath();
+  }
+  // object-fit:cover with object-position fx% fy% (the #149 focal point).
+  function drawCover(ctx, im, x, y, w, h, fx, fy) {
+    var s = Math.max(w / im.naturalWidth, h / im.naturalHeight);
+    var dw = im.naturalWidth * s, dh = im.naturalHeight * s;
+    var px = fx != null ? fx / 100 : 0.5, py = fy != null ? fy / 100 : 0.5;
+    ctx.save(); ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
+    ctx.drawImage(im, x + (w - dw) * px, y + (h - dh) * py, dw, dh);
+    ctx.restore();
+  }
+
+  // One frame, two sizes. L = layout numbers for the size being drawn.
+  function drawLaunchFrame(cv, L, a) {
+    var W = cv.width, H = cv.height, ctx = cv.getContext('2d'), M = L.margin;
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = L.shelf; ctx.fillRect(0, 0, W, H);
+    // Photo band, or a lavender band carrying the logo / name when there is no photo.
+    if (a.photo) {
+      drawCover(ctx, a.photo.im, 0, 0, W, L.photoH, a.photo.fx, a.photo.fy);
+    } else {
+      ctx.fillStyle = POST_LAV; ctx.fillRect(0, 0, W, L.photoH);
+      if (a.logo) {
+        var ls = Math.min(L.photoH * 0.5, W * 0.42);
+        ctx.save(); ctx.beginPath(); ctx.arc(W / 2, L.photoH / 2, ls / 2, 0, Math.PI * 2); ctx.fillStyle = '#fff'; ctx.fill(); ctx.clip();
+        drawCover(ctx, a.logo, W / 2 - ls / 2, L.photoH / 2 - ls / 2, ls, ls); ctx.restore();
+      } else {
+        ctx.fillStyle = BRAND; ctx.textAlign = 'center';
+        var nf = fitBlock(ctx, a.name, W - 2 * M, 2, L.photoH * 0.6, 110, 48, 1.04);
+        nf.lines.forEach(function (l, i) { ctx.fillText(l, W / 2, L.photoH / 2 - (nf.lines.length * nf.size * 1.04) / 2 + nf.size * 0.85 + i * nf.size * 1.04); });
+      }
+    }
+    // "NEW ON LOKALI" stamp on the photo.
+    ctx.font = '800 ' + L.stamp + 'px ' + PF;
+    var st = 'NEW ON LOKALI', ssp = L.stamp * 0.09, sw = spacedWidth(ctx, st, ssp);
+    var dot = L.stamp * 0.62, ph = L.stamp * 2.1, pw = sw + dot + L.stamp * 2.3;
+    roundRect(ctx, M * 0.75, L.stampY, pw, ph, ph / 2); ctx.fillStyle = '#fff'; ctx.fill();
+    ctx.beginPath(); ctx.arc(M * 0.75 + L.stamp * 0.95 + dot / 2, L.stampY + ph / 2, dot / 2, 0, Math.PI * 2); ctx.fillStyle = BRAND; ctx.fill();
+    drawSpaced(ctx, st, M * 0.75 + L.stamp * 1.35 + dot, L.stampY + ph / 2 + L.stamp * 0.36, ssp);
+    // Logo disc on the seam (only when there is a photo above it).
+    var y = L.photoH + L.kickerGap;
+    if (a.photo && a.logo) {
+      var d = L.disc, cx = M + d / 2, cy = L.photoH - d * 0.05, ring = d * 0.08;
+      ctx.save(); ctx.shadowColor = 'rgba(43,42,53,.18)'; ctx.shadowBlur = d * 0.08; ctx.shadowOffsetY = d * 0.02;
+      ctx.beginPath(); ctx.arc(cx, cy, d / 2 + ring, 0, Math.PI * 2); ctx.fillStyle = L.shelf; ctx.fill(); ctx.restore();
+      ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, d / 2, 0, Math.PI * 2); ctx.fillStyle = '#fff'; ctx.fill(); ctx.clip();
+      drawCover(ctx, a.logo, cx - d / 2, cy - d / 2, d, d); ctx.restore();
+      y = cy + d / 2 + L.kickerGap * 0.55;
+    }
+    // Kicker: the business name, small violet caps.
+    var kname = String(a.name || '').toUpperCase(), ks = L.kicker;
+    for (; ks > L.kicker * 0.6; ks -= 1) { ctx.font = '800 ' + ks + 'px ' + PF; if (spacedWidth(ctx, kname, ks * 0.1) <= W - 2 * M) break; }
+    ctx.fillStyle = BRAND; drawSpaced(ctx, kname, M, y + ks * 0.8, ks * 0.1);
+    y += ks + L.kicker * 0.55;
+    // Headline: their promise, as big as the space allows.
+    var bottom = L.footY - L.foot * 1.9;
+    var hl = fitBlock(ctx, a.headline, W - 2 * M, L.hlLines, bottom - y, L.hlMax, L.hlMin, 1.05);
+    ctx.fillStyle = POST_INK; ctx.textAlign = 'left';
+    hl.lines.forEach(function (l, i) { ctx.fillText(l, M, y + hl.size * 0.86 + i * hl.size * 1.05); });
+    // Foot: hairline, link, wordmark.
+    ctx.fillStyle = L.rule; ctx.fillRect(M, L.footY - L.foot * 1.55, W - 2 * M, 3);
+    var link = 'golokali.com/' + a.slug, fs = L.foot;
+    for (; fs > L.foot * 0.55; fs -= 1) { ctx.font = '800 ' + fs + 'px ' + PF; if (ctx.measureText(link).width <= W - 2 * M) break; }
+    ctx.fillStyle = BRAND; ctx.textAlign = 'left';
+    ctx.fillText(link, M, L.footY);
+    if (a.wm && L.wm) {
+      var wh = L.wm, ww = a.wm.naturalWidth * (wh / a.wm.naturalHeight);
+      if (ctx.measureText(link).width + ww + 40 <= W - 2 * M) ctx.drawImage(a.wm, W - M - ww, L.footY - wh * 0.9, ww, wh);
+    }
+  }
+  var LAYOUT_POST = { margin: 66, photoH: 594, stamp: 26, stampY: 48, disc: 150, kickerGap: 34, kicker: 32,
+    hlMax: 82, hlMin: 40, hlLines: 3, foot: 36, footY: 1080 - 56, wm: 40, shelf: '#FFFFFF', rule: '#EFE6FF' };
+  // Story: the top ~250px and bottom ~330px sit under Instagram's own buttons.
+  var LAYOUT_STORY = { margin: 72, photoH: 960, stamp: 32, stampY: 250, disc: 196, kickerGap: 44, kicker: 40,
+    hlMax: 112, hlMin: 52, hlLines: 4, foot: 46, footY: 1920 - 300, wm: 0, shelf: POST_LAV, rule: '#DCCDFB' };
 
   Page.prototype.drawPost = function () {
-    var cv = document.getElementById('mkt-post-canvas');
+    var cv = document.getElementById('mkt-post-canvas'), sv = document.getElementById('mkt-story-canvas');
     if (!cv) return Promise.resolve(null);
-    var self = this, v = this.vendor, W = 1080;
-    var fontsReady = (document.fonts && document.fonts.load)
-      ? Promise.all([document.fonts.load('800 96px "Plus Jakarta Sans"'), document.fonts.load('700 30px "Plus Jakarta Sans"'), document.fonts.load('600 30px "Plus Jakarta Sans"')]).catch(function () {})
-      : Promise.resolve();
-    var logo = new Promise(function (res) {
-      var im = new Image(); im.crossOrigin = 'anonymous';
-      im.onload = function () { res(im); }; im.onerror = function () { res(null); };
-      im.src = WORDMARK;
-    });
-    return Promise.all([fontsReady, logo, lookups()]).then(function (rs) {
-      var img = rs[1], lk = rs[2];
-      var catIds = Array.isArray(v.categories_id) ? v.categories_id : (v.categories_id != null ? [v.categories_id] : []);
-      var locIds = Array.isArray(v.locations_id) ? v.locations_id : (v.locations_id != null ? [v.locations_id] : []);
-      var cat = catIds.length ? (lk.cats[catIds[0]] || '') : '';
-      var loc = locIds.length ? (lk.locs[locIds[0]] || '') : '';
-      var sub = cat ? (loc ? cat + ' in ' + loc + ' and nearby' : cat) : (loc ? 'Local business in ' + loc + ' and nearby' : 'A local business, now on Lokali');
-      var ctx = cv.getContext('2d');
-      ctx.clearRect(0, 0, W, W);
-      ctx.fillStyle = '#F7F6FC'; ctx.fillRect(0, 0, W, W);
-      // soft blobs, same as the kit's square
-      function blob(x, y, r, c) { ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fillStyle = c; ctx.fill(); }
-      blob(W + 220 - 310, -240 + 310, 310, '#EFE5FD');
-      blob(-150 + 190, W + 150 - 190, 190, '#FCE8F1');
-      blob(W - 120 - 110, W + 90 - 110, 110, '#E0F5F1');
-      ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
-      var name = fitName(ctx, v.business_name || 'Your business', 900, 3, 96, 56);
-      var lh = name.size * 1.02, nameH = name.lines.length * lh;
-      var subH = 30 * 1.3, pillH = 76;
-      var block = 26 + 26 + nameH + 26 + subH + 44 + pillH;  // eyebrow + gap + name + gap + sub + gap + pill
-      var y = (W - block) / 2 - 20;
-      ctx.fillStyle = BRAND;
-      ctx.font = '700 26px "Plus Jakarta Sans", Helvetica, Arial, sans-serif';
-      var eyebrow = 'NOW ON LOKALI';
-      // letter-spacing by hand (canvas letterSpacing is not everywhere yet)
-      var sp = 26 * 0.14, ew = 0, chars = eyebrow.split('');
-      chars.forEach(function (ch) { ew += ctx.measureText(ch).width + sp; });
-      var ex = (W - ew + sp) / 2; ctx.textAlign = 'left';
-      chars.forEach(function (ch) { ctx.fillText(ch, ex, y + 26); ex += ctx.measureText(ch).width + sp; });
-      ctx.textAlign = 'center';
-      y += 26 + 26;
-      ctx.fillStyle = '#2E2A3B';
-      ctx.font = '800 ' + name.size + 'px "Plus Jakarta Sans", Helvetica, Arial, sans-serif';
-      name.lines.forEach(function (l, i) { ctx.fillText(l, W / 2, y + name.size * 0.9 + i * lh); });
-      y += nameH + 26;
-      ctx.fillStyle = '#625C75';
-      ctx.font = '600 30px "Plus Jakarta Sans", Helvetica, Arial, sans-serif';
-      if (ctx.measureText(sub).width > 900) { ctx.font = '600 24px "Plus Jakarta Sans", Helvetica, Arial, sans-serif'; }
-      ctx.fillText(sub, W / 2, y + 30);
-      y += subH + 44;
-      ctx.font = '700 30px "Plus Jakarta Sans", Helvetica, Arial, sans-serif';
-      var url = 'golokali.com/' + v.slug, pw = ctx.measureText(url).width + 72;
-      ctx.fillStyle = BRAND;
-      ctx.beginPath();
-      var px = (W - pw) / 2, r = pillH / 2;
-      ctx.moveTo(px + r, y); ctx.lineTo(px + pw - r, y); ctx.arc(px + pw - r, y + r, r, -Math.PI / 2, Math.PI / 2);
-      ctx.lineTo(px + r, y + pillH); ctx.arc(px + r, y + r, r, Math.PI / 2, -Math.PI / 2); ctx.closePath(); ctx.fill();
-      ctx.fillStyle = '#fff'; ctx.fillText(url, W / 2, y + pillH / 2 + 11);
-      if (img && img.naturalHeight) {
-        var h = 54, w = img.naturalWidth * (h / img.naturalHeight);
-        ctx.drawImage(img, (W - w) / 2, W - 64 - h, w, h);
-      } else {
-        ctx.fillStyle = BRAND; ctx.font = '800 36px "Plus Jakarta Sans", Helvetica, Arial, sans-serif';
-        ctx.fillText('Lokali', W / 2, W - 64);
+    var self = this, v = this.vendor;
+    return this.postAssets().then(function (a) {
+      var inp = document.getElementById('mkt-post-hl');
+      var saved = lsGet('lok-post-hl:' + v.id);
+      if (self.postHeadline == null) self.postHeadline = saved != null ? saved : self.postDefaultHeadline(a.lk);
+      if (inp && !inp._lokBound) {
+        inp._lokBound = true; inp.value = self.postHeadline;
+        var timer = null;
+        inp.addEventListener('input', function () {
+          self.postHeadline = inp.value;
+          lsSet('lok-post-hl:' + v.id, inp.value.trim() ? inp.value : null);
+          clearTimeout(timer); timer = setTimeout(function () { self.drawPost(); }, 150);
+        });
       }
-      return cv;
+      var list = a.photos || [];
+      var pb = document.getElementById('mkt-post-photo');
+      if (pb) pb.style.display = list.length < 2 ? 'none' : '';
+      if (self.postPhotoIdx == null) {
+        var want = lsGet('lok-post-photo:' + v.id), idx = 0;
+        for (var i = 0; want && i < list.length; i++) if (list[i].url === want) { idx = i; break; }
+        self.postPhotoIdx = idx;
+      }
+      var c = list[self.postPhotoIdx] || null;
+      return loadImg(c && c.url).then(function (im) {
+        var data = {
+          photo: im ? { im: im, fx: c.fx, fy: c.fy } : null, logo: a.logo, wm: a.wm, slug: v.slug,
+          name: v.business_name || 'Your business',
+          headline: String(self.postHeadline || '').trim() || self.postDefaultHeadline(a.lk)
+        };
+        drawLaunchFrame(cv, LAYOUT_POST, data);
+        if (sv) drawLaunchFrame(sv, LAYOUT_STORY, data);
+        return cv;
+      });
     }).catch(function (e) { console.warn('[marketing] post draw failed', e); return null; });
   };
 
-  Page.prototype.downloadPost = function () {
-    var cv = document.getElementById('mkt-post-canvas');
-    if (!cv) return;
+  Page.prototype.nextPostPhoto = function () {
+    var self = this;
+    this.postAssets().then(function (a) {
+      var list = a.photos || [];
+      if (list.length < 2) return;
+      self.postPhotoIdx = ((self.postPhotoIdx || 0) + 1) % list.length;
+      lsSet('lok-post-photo:' + self.vendor.id, list[self.postPhotoIdx].url);
+      self.drawPost();
+    });
+  };
+
+  Page.prototype.downloadPost = function (kind) {
+    var id = kind === 'story' ? 'mkt-story-canvas' : 'mkt-post-canvas';
     var self = this;
     this.drawPost().then(function () {
+      var cv = document.getElementById(id);
+      if (!cv) return;
       var a = document.createElement('a');
       try { a.href = cv.toDataURL('image/png'); } catch (e) { toast('The image could not be exported in this browser.'); return; }
-      a.download = 'now-on-lokali-' + self.vendor.slug + '.png';
+      a.download = (kind === 'story' ? 'lokali-story-' : 'now-on-lokali-') + self.vendor.slug + '.png';
       document.body.appendChild(a); a.click(); document.body.removeChild(a);
     });
   };
@@ -1139,7 +1280,9 @@
         if (f) f.click();
       }
       // #163 QR code downloads
-      else if (act === 'post-png') self.downloadPost();
+      else if (act === 'post-png') self.downloadPost('post');
+      else if (act === 'post-story') self.downloadPost('story');
+      else if (act === 'post-photo') self.nextPostPhoto();
       else if (act === 'post-copy') { var capEl = document.getElementById('mkt-post-cap'); if (capEl) { var capTxt = capEl.textContent, capDone = function () { toast('Caption copied'); }; if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(capTxt).then(capDone, function () { fallbackCopy(capTxt); capDone(); }); else { fallbackCopy(capTxt); capDone(); } } }
       else if (act === 'qr-png') self.downloadQr('png');
       else if (act === 'qr-svg') self.downloadQr('svg');
