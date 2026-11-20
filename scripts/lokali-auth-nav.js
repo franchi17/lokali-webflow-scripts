@@ -383,9 +383,11 @@
   // 2026-11-19 (F, after the Shop as yourself test): a signed-in SHOPPER still saw the
   // header "Sign up" button, and /sign-up bounces an authenticated user to the homepage
   // (dead end, #66). Shoppers have a dashboard (/account: Home, Following, Reviews,
-  // Badges, Settings), so for them the same button reads "My dashboard" and goes there.
-  // Vendors and the admin never see it (hidden above). Seller-page CTAs that read
-  // "Open your storefront" keep their wording; only the plain "Sign up" button changes.
+  // Badges, Settings), so for them the same button read "My dashboard" and went there.
+  // 2026-11-20 (F): "My dashboard" next to the name menu's "My Account" was confusing
+  // (two buttons, same place). Now a signed-in shopper sees NO button, same as vendors
+  // and the admin; the name menu's "My Account" is the one way in. Seller-page CTAs
+  // that read "Open your storefront" are untouched; only the plain "Sign up" button hides.
   function relabelSignupForShopper() {
     if (!acct || acct.role === 'vendor' || acct.is_admin) return;
     var scopes = document.querySelectorAll(SCOPES);
@@ -397,8 +399,7 @@
         var href = pathOf(a.getAttribute('href') || '');
         var txt = (a.textContent || '').trim().toLowerCase();
         if (href === '/sign-up' && (txt === 'sign up' || txt === 'become a vendor')) {
-          a.setAttribute('href', ACCOUNT_URL);
-          a.textContent = 'My dashboard';
+          a.style.setProperty('display', 'none', 'important');
           a.setAttribute('data-lok-dash', '1');
         }
       }
