@@ -1194,7 +1194,7 @@
       'Your own web address, golokali.com/your-name',
       '5 photos per listing and a 5-photo portfolio',
       'Verified badge and replies to reviews',
-      'Booking link, promo button and a monthly report'
+      'Booking link and a monthly report'
     ],
     featured: [
       'Everything in Pro',
