@@ -82,6 +82,12 @@
   function showLoading(mount, text) { mount.innerHTML = ''; var c = el('div', 'op-load'); c.appendChild(el('div', 'op-spin')); c.appendChild(el('div', null, text)); mount.appendChild(c); }
   function showError(mount, text) { mount.innerHTML = ''; var c = el('div', 'op-load', text); var b = el('button', 'op-btn', 'Try again'); b.style.marginTop = '12px'; b.addEventListener('click', function () { load(mount, 0); }); c.appendChild(document.createElement('br')); c.appendChild(b); mount.appendChild(c); }
 
+  // "+16175553082" / "6175553082" -> "(617) 555-3082"; anything else is shown as typed.
+  function phoneText(p) {
+    var d = String(p || '').replace(/\D/g, '');
+    if (d.length === 11 && d.charAt(0) === '1') d = d.slice(1);
+    return d.length === 10 ? '(' + d.slice(0, 3) + ') ' + d.slice(3, 6) + '-' + d.slice(6) : String(p || '');
+  }
   function fulfilLabel(o) { return o.fulfilment === 'pickup' ? 'Pickup' : o.fulfilment === 'delivery' ? 'Local delivery' : 'Shipping'; }
   function statusLabel(o) {
     return { paid: 'Paid, waiting on you', fulfilled: 'Done', refunded: 'Refunded', partially_refunded: 'Partly refunded', disputed: 'Disputed', canceled: 'Canceled' }[o.status] || o.status;
@@ -114,7 +120,7 @@
     var refunded = o.refunded_cents > 0 ? '<div style="color:' + GRAY + ';font-weight:600;font-size:12px;">' + money(o.refunded_cents) + ' refunded</div>' : '';
     var contact = [];
     if (o.shopper_email) contact.push('<a href="mailto:' + esc(o.shopper_email) + '?subject=' + encodeURIComponent('Your Lokali order ' + o.id + ': ' + o.product_name) + '">' + esc(o.shopper_email) + '</a>');
-    if (o.shopper_phone) contact.push('<a href="tel:' + esc(o.shopper_phone) + '">' + esc(o.shopper_phone) + '</a>');
+    if (o.shopper_phone) contact.push('<a href="tel:' + esc(o.shopper_phone) + '">' + esc(phoneText(o.shopper_phone)) + '</a>');
     c.innerHTML =
       '<div class="op-top">' +
         (o.product_image_url ? '<img class="op-img" src="' + esc(o.product_image_url) + '" alt="">' : '<div class="op-img"></div>') +

@@ -1035,8 +1035,13 @@
             '#vd-lok-sheet .lb-way input{margin:0;accent-color:#6002EE;}#vd-lok-sheet .lb-way small{color:#6E6A85;font-size:12px;margin-left:auto;}' +
             '#vd-lok-sheet .lb-way{flex-wrap:wrap;}#vd-lok-sheet .lb-way em{flex:1 0 100%;font-style:normal;font-size:12px;color:#6E6A85;padding-left:23px;margin-top:-4px;}' +
             '#vd-lok-sheet .lb-tax{font-size:12px;color:#6E6A85;margin-top:4px;}#vd-lok-sheet .lb-ret{font-size:12px;color:#4A4761;margin-top:10px;line-height:1.5;}#vd-lok-sheet .lb-ret b{font-weight:700;}' +
-            '#vd-lok-pay{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:0 0 10px;font-family:"Plus Jakarta Sans",system-ui,sans-serif;}' +
+            '#vd-lok-pay{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:center;margin:0 0 10px;font-family:"Plus Jakarta Sans",system-ui,sans-serif;}' +
             '#vd-lok-pay span{font-size:11px;font-weight:700;color:#4A4761;background:#fff;border:1px solid #DEDAEE;border-radius:6px;padding:3px 8px;}' +
+            '#vd-lok-pay em{font-style:normal;font-size:11px;color:#6E6A85;flex:1 0 100%;text-align:center;}' +
+            // The button is a clone of the page's orange CTA: Buy on Lokali is violet (no orange beside the violet sheet, F's palette rule; rehearsal 2026-11-21).
+            'html #vd-lok-buy,html #vd-lok-buy:hover{background:#6002EE !important;background-image:none !important;border-color:#6002EE !important;color:#fff !important;}' +
+            'html #vd-lok-buy *{color:#fff !important;}html #vd-lok-buy:hover{background:#4F02C4 !important;}' +
+            '#vd2-bar #vd2-bar-lok.vd2-bar-buy{background:#6002EE;color:#fff;}' +
             '#vd-lok-sheet .lb-total{display:flex;justify-content:space-between;font-weight:700;font-size:15px;border-top:1px solid #EEEDF6;padding-top:10px;margin-top:10px;}' +
             '#vd-lok-sheet .lb-go{display:block;width:100%;margin-top:12px;min-height:46px;border:0;border-radius:999px;background:#6002EE;color:#fff;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;}#vd-lok-sheet .lb-go[disabled]{opacity:.6;cursor:default;}' +
             '#vd-lok-sheet .lb-note{font-size:12px;color:#6E6A85;margin-top:8px;line-height:1.5;}#vd-lok-sheet .lb-err{font-size:13px;color:#B1006A;margin-top:8px;display:none;}' +
@@ -1055,9 +1060,11 @@
         cta.parentNode.insertBefore(btn, cta);
         // Ways to pay, right under the button (Baymard: recognised payment marks
         // near the pay action; 1 in 10 leave for "not enough ways to pay").
-        // Words, not logos: Stripe's page decides which wallets a device shows.
-        var pay = document.createElement('div'); pay.id = 'vd-lok-pay'; pay.setAttribute('aria-label', 'Ways to pay');
-        pay.innerHTML = '<span>Card</span><span>Apple Pay</span><span>Google Pay</span>';
+        // Only what EVERY shopper is offered: the four card brands. The rehearsal
+        // (2026-11-21) showed Card / Cash App Pay / Klarna and no Apple Pay, so
+        // wallets are not promised here; Stripe's page shows what the device has.
+        var pay = document.createElement('div'); pay.id = 'vd-lok-pay'; pay.setAttribute('aria-label', 'Cards accepted');
+        pay.innerHTML = '<span>Visa</span><span>Mastercard</span><span>Amex</span><span>Discover</span><em>More ways to pay may show at checkout.</em>';
         cta.parentNode.insertBefore(pay, cta);
         // Phones: .vd-cta is hidden and the pinned bar proxies the controls, so
         // mirror this button there too (otherwise there is no checkout entry on phones).
