@@ -517,6 +517,7 @@
   // 2026-08-29, and the bulk list shape was a one-request contact export.
   var VENDOR_LIST_COLS = 'id,business_name,business_tagline,business_description,website_url,' +
     'locations_id,categories_id,subcategories,profile_photo,text_messages,whatsapp_messages,phone_calls,' + // subcategories = #96 card pills/filter
+    'profile_focus_x,profile_focus_y,' + // logo focal point (patch_focus_all_photos.sql, F 2026-11-21)
     'slug,created_at,published_at,is_founding_member,is_verified,is_spotlight,is_featured,plan_rank,' + // published_at = first went-live stamp (patch_published_at.sql): Newest sort + New chip
     'owner_name,' + // #162d person-first: 'by {first name}' line on market cards (already in the anon column grant, rls.sql #76)
     'is_active,' + // browse guards v.is_active !== false — unselected it was always undefined (column-granted in patch_vendor_columns.sql)
@@ -1397,7 +1398,7 @@
 
   // Public vendor-card fields (SEC-002 list) for the my-reviews join.
   var VENDOR_CARD_COLS = 'id,business_name,business_tagline,business_description,' +
-    'profile_photo,locations_id,categories_id,slug,is_founding_member,is_verified,is_spotlight,is_featured';
+    'profile_photo,profile_focus_x,profile_focus_y,locations_id,categories_id,slug,is_founding_member,is_verified,is_spotlight,is_featured';
 
   var reviews = {
     forVendor: function (vendorId) {

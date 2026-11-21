@@ -25,7 +25,7 @@ const LokaliServicesPage = (() => {
     s.textContent =
       '@media (max-width:991px){' +
       '#lok-service-gallery button[data-photo-id],#lok-service-gallery button[data-move-id],' +
-      '#lok-service-gallery button[data-pending-remove],#lok-service-gallery button[data-pending-move]' +
+      '#lok-service-gallery button[data-pending-remove],#lok-service-gallery button[data-pending-move],#lok-service-gallery button[data-center-photo]' +
       '{width:34px!important;height:34px!important;font-size:18px!important;}' +
       '.lok-pick-star{min-width:44px!important;min-height:44px!important;}' +
       '}';
@@ -1920,6 +1920,43 @@ const LokaliServicesPage = (() => {
     _coverViews = [];
     wireCoverFocusDrag(body.querySelector('img[data-photo-idx="0"]'), true);
     renderCoverPreview(body, _galleryPhotos.length ? photoUrl(_galleryPhotos[0].image_url) : null, true);
+    // F 2026-11-21 ("Focal point: all of them"): the item page now crops every
+    // gallery photo with its own focal point, so photos 2+ get a "Center photo"
+    // corner button (the cover keeps its drag above, which writes the listing's
+    // focus). Saves straight away through the photo row's own columns.
+    body.querySelectorAll('img[data-photo-idx]').forEach((im) => {
+      const i = parseInt(im.getAttribute('data-photo-idx'), 10);
+      const gp = _galleryPhotos[i];
+      if (!gp || i === 0 || gp.id == null) return;
+      const posOf = (r) => (r.image_focus_x != null && r.image_focus_y != null) ? (r.image_focus_x + '% ' + r.image_focus_y + '%') : 'center';
+      im.style.objectPosition = posOf(gp);
+      const FP = window.LokaliFocusPicker;
+      if (!FP || !im.parentNode) return;
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.setAttribute('aria-label', 'Center photo ' + (i + 1));
+      b.setAttribute('data-center-photo', String(gp.id));
+      b.title = 'Center this photo';
+      b.style.cssText = 'position:absolute;top:4px;left:4px;width:22px;height:22px;border:none;border-radius:50%;background:rgba(96,2,238,.85);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;';
+      b.innerHTML = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><path d="M12 1v4M12 19v4M1 12h4M19 12h4"/></svg>';
+      b.addEventListener('click', (e) => {
+        e.preventDefault(); e.stopPropagation();
+        FP.open({
+          url: photoUrl(gp.image_url), x: gp.image_focus_x, y: gp.image_focus_y,
+          shapes: ['card', 'square'], title: 'Center photo ' + (i + 1),
+          onSave: async (x, y) => {
+            const S = window.LokaliSupabaseAPI;
+            if (!S || !S.photos || !S.photos.setFocus) return false;
+            const r = await S.photos.setFocus('service', gp.id, x, y);
+            if (r && r.error) return false;
+            gp.image_focus_x = x; gp.image_focus_y = y;
+            im.style.objectPosition = posOf(gp);
+            return true;
+          }
+        });
+      });
+      im.parentNode.appendChild(b);
+    });
 
     const addBtn = document.getElementById('lok-gallery-add');
     if (addBtn) addBtn.addEventListener('click', () => { const gi = galleryInput(); if (gi) gi.click(); });

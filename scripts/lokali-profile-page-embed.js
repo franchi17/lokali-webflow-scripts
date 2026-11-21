@@ -1033,6 +1033,78 @@ var LokaliProfilePage = (function () {
   // Vendor below). 2026-07-18 follow-up: the page's big inline guide card
   // (.photo-tip-card) MOVES INTO the popover — same look, no page space; a
   // "Read the full guide" link is appended under it. Click works on mobile.
+
+  // ---- Focal point for the logo and the owner photo (F 2026-11-21) ---------
+  // "Center photo" opens the shared LokaliFocusPicker; Save writes the two
+  // percent columns straight away (like photo uploads, no SAVE needed).
+  // kind: 'logo' -> profile_focus_x/y, 'owner' -> owner_focus_x/y.
+  function _focusKeys(kind) { return kind === 'owner' ? ['owner_focus_x', 'owner_focus_y'] : ['profile_focus_x', 'profile_focus_y']; }
+  function _focusPreviewEl(kind) { return kind === 'owner' ? document.getElementById('lok-owner-photo-preview') : _getProfilePhotoPreviewEl(); }
+  function _focusUrl(kind) {
+    if (kind === 'owner') return _profilePhotoDisplayUrl(_uploadedOwnerPhotoUrl || (_vendor && _vendor.owner_photo) || '');
+    return _profilePhotoDisplayUrl(_uploadedProfilePhotoUrl || (_vendor && (_vendor.profile_photo || _vendor.profilePhoto)) || '');
+  }
+  function _paintFocus(kind) {
+    var k = _focusKeys(kind), el = _focusPreviewEl(kind);
+    if (!el || el.tagName !== 'IMG') return;
+    var x = _vendor ? _vendor[k[0]] : null, y = _vendor ? _vendor[k[1]] : null;
+    el.style.objectFit = 'cover';
+    el.style.objectPosition = (x != null && y != null) ? (x + '% ' + y + '%') : 'center';
+  }
+  function _saveFocus(kind, x, y) {
+    var S = window.LokaliSupabaseAPI, k = _focusKeys(kind);
+    if (!S || !S.vendors || !S.vendors.updateProfile || !_vendor || _vendor.id == null) return Promise.resolve(false);
+    var f = {}; f[k[0]] = x; f[k[1]] = y;
+    return Promise.resolve(S.vendors.updateProfile(_vendor.id, f)).then(function (res) {
+      if (!res || res.error) return false;
+      _vendor[k[0]] = x; _vendor[k[1]] = y;
+      _paintFocus(kind);
+      return true;
+    }, function () { return false; });
+  }
+  // A new photo starts centered again: the old point belonged to the old photo.
+  function _resetFocus(kind) {
+    var k = _focusKeys(kind);
+    if (!_vendor || (_vendor[k[0]] == null && _vendor[k[1]] == null)) { _paintFocus(kind); return; }
+    _saveFocus(kind, null, null);
+  }
+  function _ensureCenterBtn(kind) {
+    var FP = window.LokaliFocusPicker, el = _focusPreviewEl(kind);
+    var id = 'lok-center-' + kind;
+    var btn = document.getElementById(id);
+    if (!FP || !el || !el.parentNode) return;
+    if (!btn) {
+      btn = FP.button('Center photo');
+      btn.id = id;
+      btn.style.marginTop = kind === 'owner' ? '0' : '8px';
+      btn.addEventListener('click', function (e) {
+        e.preventDefault();
+        var url = _focusUrl(kind); if (!url) return;
+        var k = _focusKeys(kind);
+        FP.open({
+          url: url, x: _vendor && _vendor[k[0]], y: _vendor && _vendor[k[1]],
+          shapes: kind === 'owner' ? ['circle', 'card'] : ['circle', 'square'],
+          title: kind === 'owner' ? 'Center your photo' : 'Center your logo',
+          onSave: function (x, y) {
+            return _saveFocus(kind, x, y).then(function (ok) {
+              if (ok) _showToast('success', 'Saved. Your storefront uses it right away.');
+              return ok;
+            });
+          }
+        });
+      });
+      if (kind === 'owner') {
+        // the owner row is [preview][Upload] — the button joins that row
+        var pick = document.getElementById('lok-owner-photo-file');
+        el.parentNode.insertBefore(btn, pick || null);
+      } else {
+        el.parentNode.insertBefore(btn, el.nextSibling);
+      }
+    }
+    btn.style.display = _focusUrl(kind) ? '' : 'none';
+    _paintFocus(kind);
+  }
+
   function _polishLogoSection() {
     var heads = document.querySelectorAll('.section-heading');
     for (var i = 0; i < heads.length; i++) {
@@ -1117,6 +1189,7 @@ var LokaliProfilePage = (function () {
         }
         _uploadedOwnerPhotoUrl = res.data.url;
         prev.src = res.data.url; prev.style.display = '';
+        _resetFocus('owner'); _ensureCenterBtn('owner');
         // Unlike the logo/portfolio, the owner photo only reaches the vendor
         // row via save() — flag it dirty (the guard skips file inputs) and
         // tell the vendor, or the photo is silently lost on leave.
@@ -2455,6 +2528,8 @@ var LokaliProfilePage = (function () {
       if (_vendor.owner_photo) { ownerPrev.src = _vendor.owner_photo; ownerPrev.style.display = ''; }
       else { ownerPrev.style.display = 'none'; }
     }
+    _ensureCenterBtn('owner');
+    _ensureCenterBtn('logo');
     window.LokaliDashboard.setCheckboxValue('checkbox-phone-calls', _vendor.phone_calls !== false);
     _renderPortfolio();
     _dbg('[LokaliProfile] tagline value from API:', JSON.stringify(_vendor.tagline), '| business_tagline:', JSON.stringify(_vendor.business_tagline));
@@ -2826,6 +2901,7 @@ var LokaliProfilePage = (function () {
               // Feedback 2026-08-13: uploads persist server-side instantly, but
               // nothing said so — vendors went hunting for a save button.
               _showToast('success', 'Logo uploaded and saved automatically.');
+              _resetFocus('logo'); _ensureCenterBtn('logo');
             } else {
 
               window.LokaliAPI.vendors.me()

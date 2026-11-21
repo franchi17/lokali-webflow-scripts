@@ -342,7 +342,8 @@
     list.forEach(function (src, i) {
       var b = v2el('button', 'vd2-thumb'); b.type = 'button';
       b.setAttribute('aria-label', 'Show photo ' + (i + 1) + ' of ' + list.length);
-      var im = document.createElement('img'); imgSet(im, src, 240); im.alt = ''; // at most a handful of 240px tiles: no lazy-load, they must paint at once
+      var im = document.createElement('img'); imgSet(im, src, 240); im.alt = '';
+      if (_focusByUrl[src]) im.style.objectPosition = _focusByUrl[src]; // at most a handful of 240px tiles: no lazy-load, they must paint at once
       b.appendChild(im);
       b.addEventListener('click', function () {
         // smooth only when it can actually run (a background tab or a
@@ -540,6 +541,7 @@
       var ph = imgUrl(v.owner_photo), av = $('vd-mini-avatar-img');
       if (ph && av) {
         imgSet(av, ph, 240); av.alt = owner; av.style.display = 'block';
+        if (focusPos(v.owner_focus_x, v.owner_focus_y)) av.style.objectPosition = focusPos(v.owner_focus_x, v.owner_focus_y);
         av.addEventListener('error', function () { av.style.display = 'none'; }); // 2026-10-01: blocked photo -> no alt text in the ring
         makeZoomable(av, ph, owner); // 2026-10-02 (F punchlist 10): tap to enlarge
       }
@@ -603,7 +605,12 @@
     if (I && typeof I.set === 'function') I.set(img, url, w); else img.src = url;
   }
 
-  function fetchPhotos(base, pathTpl, id, fallback) {
+  // Focal point per photo URL (F 2026-11-21): filled as photo rows load; the
+  // gallery frames and thumbs look a URL up here. The listing's cover keeps
+  // the listing's own focal point (mainPos), which wins for that URL.
+  var _focusByUrl = {};
+  function fetchPhotos(base, pathTpl, id, fallback, mainPos) {
+    if (fallback && mainPos) _focusByUrl[fallback] = mainPos;
     var fb = fallback ? [fallback] : [];
     if (!id || !window.LokaliAPI) return Promise.resolve(fb);
     var path = pathTpl.replace('{id}', encodeURIComponent(id));
@@ -612,7 +619,12 @@
       var arr = asArray(unwrap(res))
         .filter(function (p) { return p && p.is_active !== false && imgUrl(p.image_url || p.image); })
         .sort(function (a, b) { return (a.sort_order || 0) - (b.sort_order || 0); })
-        .map(function (p) { return imgUrl(p.image_url || p.image); })
+        .map(function (p) {
+          var u = imgUrl(p.image_url || p.image);
+          var fp = focusPos(p.image_focus_x, p.image_focus_y);
+          if (fp && !(u === fallback && mainPos)) _focusByUrl[u] = fp;
+          return u;
+        })
         .slice(0, PHOTOS_MAX);
       return arr.length ? arr : fb;
     }).catch(function () { return fb; });
@@ -756,6 +768,11 @@
   // column, so the item name (+ photo index when there are several) is the best
   // truthful alt available — derived, set via property (never interpolated
   // into markup), and photo N numbering matches the visible pips.
+  function focusPos(x, y) { // focal point (patch_focus_all_photos.sql, F 2026-11-21); '' = keep centering
+    if (x == null || y == null || x === '' || y === '') return '';
+    x = Math.max(0, Math.min(100, Math.round(Number(x)))); y = Math.max(0, Math.min(100, Math.round(Number(y))));
+    return (isFinite(x) && isFinite(y)) ? x + '% ' + y + '%' : '';
+  }
   function buildGallery(images, label) {
     var gallery = $('vd-gallery');
     var pips = $('vd-pips');
@@ -773,6 +790,7 @@
       f.className = 'vd-frame ' + (i === 0 ? 'vd-frame-main' : 'vd-frame-peek');
       var img = document.createElement('img');
       img.src = src; img.alt = altFor(i);
+      if (_focusByUrl[src]) img.style.objectPosition = _focusByUrl[src];
       img.style.cursor = 'zoom-in';
       // Click to enlarge — but ignore the click that ends a drag-scroll (#63).
       f.addEventListener('click', function () {
@@ -930,6 +948,7 @@
       var photo = imgUrl(v.profile_photo);
       if (av && photo) {
         imgSet(av, photo, 240); // CLEAN-P23
+        if (focusPos(v.profile_focus_x, v.profile_focus_y)) av.style.objectPosition = focusPos(v.profile_focus_x, v.profile_focus_y);
         av.addEventListener('error', function () { av.style.display = 'none'; }); // 2026-10-01: blocked photo -> no alt text in the ring
         makeZoomable(av, photo, v.business_name); // 2026-10-02 (F punchlist 10): tap to enlarge
       } else if (av) av.style.display = 'none';
@@ -1575,7 +1594,7 @@
         v2Facts(rows);
         v2Clamp();
       })();
-      fetchPhotos('services', SERVICE_PHOTOS_PATH, (s.id != null ? s.id : id), imgUrl(s.image_url || s.image))
+      fetchPhotos('services', SERVICE_PHOTOS_PATH, (s.id != null ? s.id : id), imgUrl(s.image_url || s.image), focusPos(s.image_focus_x, s.image_focus_y))
         .then(function (imgs) { buildGallery(imgs, name); }); // #97: item name = alt
       renderVideo(s.video_url);
       // SEC-079: the service's own owner wins; ?vendor= is only a fallback. With the
@@ -1714,7 +1733,7 @@
           }, function () {});
         }
       })();
-      fetchPhotos('products', PRODUCT_PHOTOS_PATH, (p.id != null ? p.id : id), imgUrl(p.image_url || p.image))
+      fetchPhotos('products', PRODUCT_PHOTOS_PATH, (p.id != null ? p.id : id), imgUrl(p.image_url || p.image), focusPos(p.image_focus_x, p.image_focus_y))
         .then(function (imgs) { buildGallery(imgs, name); }); // #97: item name = alt
       renderVideo(p.video_url);
       var vid = p.vendors_id || p.vendor_id || vendorParam; // SEC-079: owner first

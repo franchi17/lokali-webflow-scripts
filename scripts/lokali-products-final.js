@@ -27,7 +27,7 @@ const LokaliProductsPage = (() => {
     s.textContent =
       '@media (max-width:991px){' +
       '#lok-product-gallery button[data-photo-id],#lok-product-gallery button[data-move-id],' +
-      '#lok-product-gallery button[data-pending-remove],#lok-product-gallery button[data-pending-move]' +
+      '#lok-product-gallery button[data-pending-remove],#lok-product-gallery button[data-pending-move],#lok-product-gallery button[data-center-photo]' +
       '{width:34px!important;height:34px!important;font-size:18px!important;}' +
       '.lok-pick-star{min-width:44px!important;min-height:44px!important;}' +
       '}';
@@ -1574,6 +1574,43 @@ const LokaliProductsPage = (() => {
     _coverViews = [];
     wireCoverFocusDrag(body.querySelector('img[data-photo-idx="0"]'), true);
     renderCoverPreview(body, _galleryPhotos.length ? photoUrl(_galleryPhotos[0].image_url) : null, true);
+    // F 2026-11-21 ("Focal point: all of them"): the item page now crops every
+    // gallery photo with its own focal point, so photos 2+ get a "Center photo"
+    // corner button (the cover keeps its drag above, which writes the listing's
+    // focus). Saves straight away through the photo row's own columns.
+    body.querySelectorAll('img[data-photo-idx]').forEach((im) => {
+      const i = parseInt(im.getAttribute('data-photo-idx'), 10);
+      const gp = _galleryPhotos[i];
+      if (!gp || i === 0 || gp.id == null) return;
+      const posOf = (r) => (r.image_focus_x != null && r.image_focus_y != null) ? (r.image_focus_x + '% ' + r.image_focus_y + '%') : 'center';
+      im.style.objectPosition = posOf(gp);
+      const FP = window.LokaliFocusPicker;
+      if (!FP || !im.parentNode) return;
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.setAttribute('aria-label', 'Center photo ' + (i + 1));
+      b.setAttribute('data-center-photo', String(gp.id));
+      b.title = 'Center this photo';
+      b.style.cssText = 'position:absolute;top:4px;left:4px;width:22px;height:22px;border:none;border-radius:50%;background:rgba(96,2,238,.85);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;';
+      b.innerHTML = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><path d="M12 1v4M12 19v4M1 12h4M19 12h4"/></svg>';
+      b.addEventListener('click', (e) => {
+        e.preventDefault(); e.stopPropagation();
+        FP.open({
+          url: photoUrl(gp.image_url), x: gp.image_focus_x, y: gp.image_focus_y,
+          shapes: ['card', 'square'], title: 'Center photo ' + (i + 1),
+          onSave: async (x, y) => {
+            const S = window.LokaliSupabaseAPI;
+            if (!S || !S.photos || !S.photos.setFocus) return false;
+            const r = await S.photos.setFocus('product', gp.id, x, y);
+            if (r && r.error) return false;
+            gp.image_focus_x = x; gp.image_focus_y = y;
+            im.style.objectPosition = posOf(gp);
+            return true;
+          }
+        });
+      });
+      im.parentNode.appendChild(b);
+    });
 
     const addBtn = document.getElementById('lok-gallery-add');
     if (addBtn) addBtn.addEventListener('click', () => { const gi = galleryInput(); if (gi) gi.click(); });
@@ -3021,7 +3058,27 @@ const LokaliProductsPage = (() => {
       if (a.photo_url && /^https:\/\//.test(a.photo_url)) {
         const im = document.createElement('img'); im.src = a.photo_url; im.alt = '';
         im.style.cssText = 'width:100%;height:100%;object-fit:cover;'; av.appendChild(im);
+        if (a.photo_focus_x != null && a.photo_focus_y != null) im.style.objectPosition = a.photo_focus_x + '% ' + a.photo_focus_y + '%';
       } else av.textContent = String(a.name || '?').trim().charAt(0).toUpperCase();
+      // F 2026-11-21: "Center photo" for a Collections/artist photo (round on the storefront)
+      let ctr = null;
+      if (a.photo_url && /^https:\/\//.test(a.photo_url) && window.LokaliFocusPicker) {
+        ctr = document.createElement('button'); ctr.type = 'button'; ctr.textContent = 'Center photo';
+        ctr.style.cssText = galBtnCss + 'background:#F3EEFF;border:1px solid #E2D8FD;color:#4A1FB0;padding:7px 12px;';
+        ctr.addEventListener('click', () => {
+          window.LokaliFocusPicker.open({
+            url: a.photo_url, x: a.photo_focus_x, y: a.photo_focus_y, shapes: ['circle'],
+            title: 'Center the photo for ' + a.name,
+            onSave: async (x, y) => {
+              const r = await galSAPI().artists.update(a.id, { photo_focus_x: x, photo_focus_y: y });
+              if (r && r.error) return false;
+              a.photo_focus_x = x; a.photo_focus_y = y;
+              const im2 = av.querySelector('img'); if (im2) im2.style.objectPosition = (x != null && y != null) ? x + '% ' + y + '%' : 'center';
+              return true;
+            }
+          });
+        });
+      }
       const txt = document.createElement('div'); txt.style.cssText = 'flex:1;min-width:0;';
       const nm = document.createElement('div'); nm.style.cssText = 'font-size:14px;font-weight:600;color:#1A1829;'; nm.textContent = a.name;
       const sub = document.createElement('div'); sub.style.cssText = 'font-size:12.5px;color:#6B6880;';
@@ -3043,7 +3100,7 @@ const LokaliProductsPage = (() => {
         _galPanelOpen = true;
         renderArtistsPanel(); syncGalleryFields();
       });
-      row.appendChild(av); row.appendChild(txt); row.appendChild(rm);
+      row.appendChild(av); row.appendChild(txt); if (ctr) row.appendChild(ctr); row.appendChild(rm);
       panel.appendChild(row);
     });
 
