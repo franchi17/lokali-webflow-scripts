@@ -304,7 +304,8 @@
     h.textContent = 'Meet your neighbors';
     var sub = document.createElement('p');
     sub.className = 'lok-nb-sub';
-    sub.textContent = 'A few of the people behind the work near you. New faces every week.';
+    // F 2026-11-22 homepage words v2 (the attorney/plumber/woodworker trio, used once on the page)
+    sub.textContent = 'The attorney, the plumber, the woodworker down the road. New faces every week.';
     hwrap.appendChild(h); hwrap.appendChild(sub);
     var all = document.createElement('a');
     all.className = 'lok-nb-all';
