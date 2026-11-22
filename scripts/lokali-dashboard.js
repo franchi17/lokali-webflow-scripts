@@ -17,7 +17,6 @@
       'Your profile has been successfully saved! Go forth and conquer.': 'Saved. Your storefront is up to date.',
       'Danger Zone': 'Hide or close your storefront',
       'Rotate a weekly promo button and showcase on your storefront. You feed the list, we keep it fresh': 'Pick a Showcase of the week for your storefront. You choose what goes in, we keep it rotating.',
-      'Every local favorite had to start somewhere. Show your community what you offer. Add your first listing.': 'Every local favorite started with one thing. Show your neighbors yours.',
       'SAVE': 'Save',
       'Logout': 'Log out'
     };
@@ -29,6 +28,18 @@
         if (t && Object.prototype.hasOwnProperty.call(MAP, t)) hits.push(n);
       }
       hits.forEach(function (x) { x.nodeValue = MAP[x.nodeValue.trim()]; });
+      // The empty Products / Services line is split into an <em> plus plain text.
+      var EMPTY = 'Every local favorite had to start somewhere. Show your community what you offer. Add your first listing.';
+      var els = document.querySelectorAll('.empty-state div');
+      for (var i = 0; i < els.length; i++) {
+        var d = els[i];
+        if (d.textContent.replace(/\s+/g, ' ').trim() !== EMPTY) continue;
+        var em = d.querySelector('em');
+        d.textContent = '';
+        if (em) { em.textContent = 'Every local favorite started with one thing. '; d.appendChild(em); }
+        else d.appendChild(document.createTextNode('Every local favorite started with one thing. '));
+        d.appendChild(document.createTextNode('Show your neighbors yours.'));
+      }
     }
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run); else run();
   })();
