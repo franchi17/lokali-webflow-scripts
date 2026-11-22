@@ -2059,7 +2059,7 @@ const LokaliServicesPage = (() => {
         if (res.data?.error_code === 'SERVICE_PHOTO_LIMIT_REACHED' || /PHOTO_LIMIT/i.test(String(res.error))) {
           alert('You’ve reached the photo limit for this service on your current plan.');
         } else {
-          alert('Could not add photo: ' + res.error);
+          console.warn('[photo] add failed', res.error); alert('That photo didn\u2019t upload. Try a smaller JPG or PNG, or try again in a minute.');
         }
       }
     } catch (e) {
@@ -2202,7 +2202,7 @@ const LokaliServicesPage = (() => {
     if (reachErr) return reachErr;
 
     if (payload.price_type === 'free' && !freeSupported())
-      return 'Free services are not available yet. Please refresh the page and try again.';
+      return 'Refresh the page to use the Free price option, then save again.';
     if (payload.price_type === 'fixed' && !payload.price_cents)
       return 'Please enter a price.';
     if (payload.price_type === 'starting_at' && !payload.price_min_cents)
@@ -2271,7 +2271,7 @@ const LokaliServicesPage = (() => {
       if (imgFile) {
 
         const uploadRes = await window.LokaliAPI.services.uploadServiceImage(imgFile);
-        if (uploadRes.error) throw new Error('Image upload failed: ' + uploadRes.error);
+        if (uploadRes.error) { console.warn('[photo] upload failed', uploadRes.error); throw new Error('That photo didn\u2019t upload. Try a smaller JPG or PNG, or try again in a minute.'); }
         // Supabase storage returns a full public URL; the old Xano path-concat
         // fallback is gone (XANO-DECOMM 2026-07-24).
         imageUrl = uploadRes.data?.url || uploadRes.data?.image_url || null;
@@ -2371,7 +2371,7 @@ const LokaliServicesPage = (() => {
       showListView();
 
     } catch (err) {
-      showError(err.message || 'Something went wrong. Please try again.');
+      showError(err.message || 'That didn\u2019t save. Give it another try in a moment.');
     } finally {
       saveInProgress = false;
       if (saveBtn) {

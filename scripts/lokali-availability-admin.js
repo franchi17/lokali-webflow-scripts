@@ -167,16 +167,16 @@
       if (!act) return;
       if (act.getAttribute('data-armed') !== '1') {
         act.setAttribute('data-armed', '1');
-        act.textContent = act.hasAttribute('data-wremove') ? 'Sure? Remove' : 'Sure? Withdraw';
+        act.textContent = act.hasAttribute('data-wremove') ? 'Yes, remove' : 'Yes, withdraw';
         act.style.color = '#9E5F44';
         return;
       }
-      act.textContent = 'Working…';
+      act.textContent = 'Saving…';
       var isRemove = act.hasAttribute('data-wremove');
       var id = Number(act.getAttribute(isRemove ? 'data-wremove' : 'data-wwithdraw'));
       (isRemove ? API.removeWaitlist(id) : API.withdrawOffer(id)).then(function (r) {
         if (r && r.error) {
-          act.textContent = 'Couldn’t ' + (isRemove ? 'remove' : 'withdraw');
+          act.textContent = 'That didn\u2019t save. Try again in a minute.';
           console.warn('[availability] waitlist action failed', r.error);
           return;
         }
@@ -416,7 +416,7 @@
         if (toMin(close) <= toMin(open)) { closeEl.style.borderColor = '#DFA284'; closeEl.focus(); return; }
         add.textContent = '…'; add.disabled = true;
         API.addHours(self.vendorId, wd, open, close).then(function (r) {
-          if (r && r.error) { add.textContent = 'Add'; add.disabled = false; return; }
+          if (r && r.error) { add.textContent = 'Add'; add.disabled = false; var hx = add.parentNode && add.parentNode.querySelector('.ava-herr'); if (!hx) { add.insertAdjacentHTML('afterend', '<span class="ava-sub ava-herr" style="color:#9E5F44;margin-left:8px;"></span>'); hx = add.nextElementSibling; } hx.textContent = 'That didn\u2019t save. Try again in a minute.'; return; }
           self.reloadHours();
         });
       }
@@ -511,7 +511,7 @@
         }).then(function (r) {
           if (r && r.error) {
             acceptCb.checked = !next;
-            acceptMsg.textContent = 'Couldn’t save';
+            acceptMsg.textContent = 'That didn\u2019t save. Try again in a minute.';
             console.warn('[availability] accepting_new_clients save failed (SQL patch applied?)', r.error);
           } else {
             self.cfg.accepting_new_clients = next;
@@ -654,7 +654,7 @@
     function save(fields, okText) {
       msg.textContent = 'Saving\u2026';
       S.vendors.updateProfile(vendor.id, fields).then(function (r) {
-        if (r && r.error) { msg.textContent = 'Couldn\u2019t save. Try again.'; console.warn('[availability] away save failed', r.error); return; }
+        if (r && r.error) { msg.textContent = 'That didn\u2019t save. Try again in a minute.'; console.warn('[availability] away save failed', r.error); return; }
         vendor.away_until = fields.away_until; vendor.away_note = fields.away_note; vendor.away_accepts_inquiries = fields.away_accepts_inquiries;
         active = !!fields.away_until;
         var chip = card.querySelector('.aw-chip'); if (chip) chip.parentNode.removeChild(chip);

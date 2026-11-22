@@ -1714,7 +1714,7 @@ const LokaliProductsPage = (() => {
         if (res.data?.error_code === 'PRODUCT_PHOTO_LIMIT_REACHED' || /PHOTO_LIMIT/i.test(String(res.error))) {
           alert('You’ve reached the photo limit for this product on your current plan.');
         } else {
-          alert('Could not add photo: ' + res.error);
+          console.warn('[photo] add failed', res.error); alert('That photo didn\u2019t upload. Try a smaller JPG or PNG, or try again in a minute.');
         }
       }
     } catch (e) {
@@ -1908,7 +1908,7 @@ const LokaliProductsPage = (() => {
         // Products upload through the PRODUCT uploader — the services one filed
         // the file under the {vendorId}/service/ storage path.
         const uploadRes = await window.LokaliAPI.products.uploadProductImage(imgFile);
-        if (uploadRes.error) throw new Error('Image upload failed: ' + uploadRes.error);
+        if (uploadRes.error) { console.warn('[photo] upload failed', uploadRes.error); throw new Error('That photo didn\u2019t upload. Try a smaller JPG or PNG, or try again in a minute.'); }
         // Supabase storage returns a full public URL; the old Xano path-concat
         // fallback is gone (XANO-DECOMM 2026-07-24).
         imageUrl = uploadRes.data?.url || uploadRes.data?.image_url || null;
@@ -2019,7 +2019,7 @@ const LokaliProductsPage = (() => {
       showListView();
 
     } catch (err) {
-      showError(err.message || 'Something went wrong. Please try again.');
+      showError(err.message || 'That didn\u2019t save. Give it another try in a moment.');
     } finally {
       saveInProgress = false;
       if (saveBtn) {
@@ -2286,7 +2286,7 @@ const LokaliProductsPage = (() => {
   const csvToItems = (rows) => {
     if (!rows.length) return { error: 'That file looks empty.' };
     const cols = csvColumns(rows[0]);
-    if (cols.title < 0) return { error: 'No title column found. Etsy exports have TITLE, DESCRIPTION, PRICE and QUANTITY columns; any sheet with a "title" or "name" column works.' };
+    if (cols.title < 0) return { error: 'We couldn\u2019t find your product names in that file. Make sure one column is headed Title or Name (Etsy files already are), then upload it again.' };
     const seen = new Set(products.map(p => csvTitleKey(p.product_name)));
     const items = [];
     for (let r = 1; r < rows.length && items.length < CSV_MAX_ROWS; r++) {
@@ -2557,7 +2557,7 @@ const LokaliProductsPage = (() => {
       await loadData();
       var pill = (out.live ? el.pillActive() : el.pillInactive()); if (pill && out.done) { try { pill.click(); } catch (e) {} }
       var notLive = out.done - (out.live || 0);
-      if (out.failed) showImportSummary('Imported ' + out.done + ' of ' + choice.items.length + ', then stopped: ' + out.failed, 'error');
+      if (out.failed) { console.warn('[import] stopped', out.failed); showImportSummary('We added ' + out.done + ' of your ' + choice.items.length + ' products before we hit a bump. Those ' + out.done + ' are in your list. Try the rest again in a minute.', 'error'); }
       else showImportSummary('Imported ' + out.done + ' product' + (out.done === 1 ? '' : 's') + (out.photos ? ' and ' + out.photos + ' photo' + (out.photos === 1 ? '' : 's') : '') + (choice.store ? ', with buy links' : '') + '. ' + (out.live ? (out.live === out.done ? 'All are live on your storefront now' : out.live + ' are live on your storefront') : 'They are in your Inactive list') + (notLive && out.live ? '; ' + notLive + ' stayed in your Inactive list' : '') + '. Open any item to add a Specialty, pickup or delivery, or a friendlier title.', 'ok');
     });
     document.body.appendChild(input);

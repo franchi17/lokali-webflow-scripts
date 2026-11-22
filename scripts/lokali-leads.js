@@ -525,12 +525,19 @@
     }
     // move a lead between the two groups after a status change
     function repaintAll() { partition(); paintNeeds(); paintRest(); paintClosed(); paintSpam(); refreshStats(); paintWorthStat(); }
+    // Small bottom note for failed saves (2026-11-22 words pass: never fail silently).
+    function leadNote(msg) {
+      var n = document.getElementById('lq-note');
+      if (!n) { n = document.createElement('div'); n.id = 'lq-note'; n.setAttribute('role', 'status'); n.style.cssText = 'position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);max-width:min(92vw,420px);background:#F3EBFF;color:#2B2840;border:1px solid #E5D4FD;border-radius:12px;padding:12px 16px;font:500 14px/1.45 "Plus Jakarta Sans",sans-serif;box-shadow:0 6px 24px rgba(96,2,238,.12);z-index:9999;'; document.body.appendChild(n); }
+      n.textContent = msg; n.style.display = '';
+      clearTimeout(leadNote._t); leadNote._t = setTimeout(function () { n.style.display = 'none'; }, 6000);
+    }
     function moveLead(l, status) {
       var prev = l.status; l.status = status;
       if (status === 'won' && l.worth == null) { l._askWorth = true; l._skipWorth = false; }   // #194: ask at the moment of the win
       repaintAll();
       setStatus(l, status).then(function (res) {
-        if (res && res.error) { l.status = prev; repaintAll(); }
+        if (res && res.error) { l.status = prev; repaintAll(); leadNote('That didn\u2019t save, so the lead is back where it was. Try again in a minute.'); }
       });
     }
     // Delete = only from the Closed group, two taps (Delete -> Delete for good),
@@ -698,7 +705,7 @@
           if (!armed) { armed = true; d.classList.add('arm'); d.textContent = 'Delete for good'; timer = setTimeout(function () { armed = false; d.classList.remove('arm'); d.textContent = 'Delete'; }, 4000); return; }
           clearTimeout(timer); d.disabled = true; d.textContent = 'Deleting';
           deleteLead(l).then(function (res) {
-            if (res && res.error) { d.disabled = false; armed = false; d.classList.remove('arm'); d.textContent = 'Delete'; return; }
+            if (res && res.error) { d.disabled = false; armed = false; d.classList.remove('arm'); d.textContent = 'Delete'; leadNote('That didn\u2019t delete. Try again in a minute.'); return; }
             inquiries = inquiries.filter(function (x) { return x !== l; });
             repaintAll();
           });

@@ -100,12 +100,12 @@
       chip('free', 'No monthly fee', f.free) + chip('pro', 'Pro', f.pro) + chip('featured', 'Featured', f.featured) + '</div>' +
       '<div class="gp-ex"><strong>On a $100 sale you keep ' + usd(keep) + '</strong>' +
       '<div><span>Lokali (' + fmtPct(rate) + ')</span><span>' + usd(lokali) + '</span></div>' +
-      '<div><span>Stripe card fee (2.9% + 30c)</span><span>' + usd(stripeFee) + '</span></div></div>';
+      '<div><span>Card fee from Stripe, our payment partner (2.9% + 30 cents)</span><span>' + usd(stripeFee) + '</span></div></div>';
     if (state.fee && state.fee.needs_card) {
-      html += '<div class="gp-card">Your plan\'s rate is ' + fmtPct(state.fee.with_card_percent) + ' once a card is on file for your plan. Until then, orders are charged ' + fmtPct(state.fee.percent) + '. ' +
+      html += '<div class="gp-card">Your plan\'s ' + fmtPct(state.fee.with_card_percent) + ' rate starts once your card is on file. Until then, Lokali\'s fee is ' + fmtPct(state.fee.percent) + ' per order. ' +
         '<a href="#settings-current-plan">Add a card under Your plan</a></div>';
     }
-    html += '<div class="gp-intro">Fees come out automatically; the rest pays out to your bank on Stripe\'s schedule.</div>';
+    html += '<div class="gp-intro">Fees come out on their own. The rest goes to your bank on Stripe\'s usual payout schedule.</div>';
     return html;
     function chip(code, label, pct) { return '<span class="gp-chip' + (code === p ? ' you' : '') + '">' + label + ': ' + fmtPct(pct) + (code === p ? ' (you)' : '') + '</span>'; }
   }
@@ -214,7 +214,7 @@
       if (!r.ok) { say(r.data.error || 'Stripe did not answer. Try again in a moment.'); busy(btn, false); return; }
       if (r.data.url) { window.location.assign(r.data.url); return; }
       state.st = r.data.state || state.st; if (r.data.fee) state.fee = r.data.fee; render();
-    }).catch(function () { say('Please sign in again and retry.'); busy(btn, false); });
+    }).catch(function () { say('That didn\u2019t go through. Check your connection and try again. If it keeps happening, sign out and back in.'); busy(btn, false); });
   }
 
   function loadPlanAndFees() {

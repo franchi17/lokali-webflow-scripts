@@ -154,7 +154,7 @@
   function deltaChip(cur, prev, unit) {
     var d = cur - prev, cls, arrow, txt;
     if (d > 0) { cls = 'up'; arrow = '▲'; } else if (d < 0) { cls = 'down'; arrow = '▼'; } else { cls = 'flat'; arrow = '→'; }
-    if (unit === 'pts') txt = (d >= 0 ? '+' : '') + d.toFixed(1) + 'pts';
+    if (unit === 'pts') txt = d === 0 ? 'same as the 30 days before' : (d > 0 ? 'up ' : 'down ') + Math.abs(d).toFixed(1) + ' from the 30 days before';
     else if (prev === 0 && cur === 0) txt = 'no change';
     else if (prev === 0) txt = 'new';
     else txt = (d >= 0 ? '+' : '−') + Math.abs(Math.round(d / prev * 100)) + '%';
@@ -246,17 +246,18 @@
         bar.style.height = Math.max(2, Math.round(cnt / max * 100)) + '%';
         if (cnt === max && cnt > 0) bar.style.background = VIOLET;
         var ago = n - 1 - i;
-        var label = ago === 0 ? (unit === 'd' ? 'today' : 'this ' + unit)
-                              : ago + unit + ' ago';
+        var uw = unit === 'd' ? 'day' : unit === 'wk' ? 'week' : 'month';
+        var label = ago === 0 ? (unit === 'd' ? 'today' : 'this ' + uw)
+                              : ago + ' ' + uw + (ago === 1 ? '' : 's') + ' ago';
         var tip = el('div', 'tip', cnt + (cnt === 1 ? ' view · ' : ' views · ') + label);
         bar.appendChild(tip); col.appendChild(bar); bars.appendChild(col);
       });
       body.appendChild(bars);
       var axis = el('div', 'an-axis');
-      var axisLabels = days === 30 ? ['30d ago', '3 wks', '2 wks', 'last wk', 'today']
-                     : days === 90 ? ['90d ago', '60d', '30d', 'today']
-                     : days === 180 ? ['6mo ago', '4mo', '2mo', 'today']
-                                    : ['12mo ago', '8mo', '4mo', 'today'];
+      var axisLabels = days === 30 ? ['30 days ago', '3 weeks', '2 weeks', 'last week', 'today']
+                     : days === 90 ? ['90 days ago', '60 days', '30 days', 'today']
+                     : days === 180 ? ['6 months ago', '4 months', '2 months', 'today']
+                                    : ['12 months ago', '8 months', '4 months', 'today'];
       axisLabels.forEach(function (t) { axis.appendChild(el('span', null, t)); });
       body.appendChild(axis);
     }
@@ -265,7 +266,7 @@
       var locked = r.days > maxDays;
       // The 12-month tab is Featured-only; 90d/6mo are Pro+Featured.
       var msg = r.days > 180
-        ? '12-month view history is a Featured-plan perk.'
+        ? 'See a whole year of visits on the Featured plan.'
         : '90-day and 6-month view history is included with the Pro and Featured plans.';
       var b = el('button', 'an-tab' + (r.days === 30 ? ' on' : '') + (locked ? ' locked' : ''), r.label);
       // Icon: Font Awesome Free 6.7.2 lock (CC BY 4.0); was an emoji (F rule 2026-09-02).
@@ -512,7 +513,7 @@
     // to two lines and pushed its number below the neighbours'. The chart card
     // below is still titled 'Storefront views'.
     grid.appendChild(kpiCard('Views', String(views30), deltaChip(views30, viewsPrev), 'vs. previous 30 days'));
-    grid.appendChild(kpiCard('View → Lead rate', rate.toFixed(1) + '<small>%</small>', deltaChip(rate, ratePrev, 'pts'), 'Views that became leads'));
+    grid.appendChild(kpiCard('Visits that turned into a neighbor reaching out', rate.toFixed(1) + '<small>%</small>', deltaChip(rate, ratePrev, 'pts'), 'Out of every 100 visits'));
     var leadsLink = el('a', 'an-klink', 'See all in Leads →'); leadsLink.href = '/vendor-dashboard/leads';
     grid.appendChild(kpiCard('Leads', String(leads30), null, leadsLink));
 
@@ -536,7 +537,7 @@
       });
       if (payBits.length) payDetail = payBits.join(' · ');
     }
-    grid.appendChild(kpiCard('Payment clicks', String(pay30), deltaChip(pay30, payPrev), payDetail));
+    grid.appendChild(kpiCard('Payment taps', String(pay30), deltaChip(pay30, payPrev), payDetail));
 
     // Shares KPI — word-of-mouth. Fetched separately from the Shares endpoint
     // (unique customer sharers; the vendor's own Share & Grow links don't count).
@@ -571,8 +572,8 @@
       var tail = ck.open.length
         ? 'The quickest lift below: <strong>' + ck.open[0].title.charAt(0).toLowerCase() + ck.open[0].title.slice(1) + '</strong>.'
         : 'Your storefront has everything shoppers look for. Fresh photos and a new listing now and then keep it that way.';
-      ins.innerHTML = '<strong>' + views30 + '</strong> people viewed your storefront in the last 30 days, and <strong>' +
-        rate.toFixed(0) + '%</strong> of them reached out. ' + tail;
+      ins.innerHTML = 'Your storefront was opened <strong>' + views30 + (views30 === 1 ? ' time' : ' times') + '</strong> in the last 30 days, and <strong>' +
+        rate.toFixed(0) + ' in every 100 visits</strong> ended with a neighbor reaching out. ' + tail;
       mount.appendChild(ins);
     }
     if (ck.total) {

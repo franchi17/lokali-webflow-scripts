@@ -108,7 +108,7 @@
               // yet" notice) are user-facing; only network/5xx get the generic.
               var msg = err && err.message && !/^Request failed/.test(err.message)
                 ? err.message
-                : 'Sorry, we could not start checkout. Please try again.';
+                : 'The payment page didn\u2019t open, and nothing was charged. Please try again in a minute.';
               alert(msg);
             });
             return;

@@ -162,7 +162,7 @@
     go.addEventListener('click', function () {
       go.disabled = true; go.textContent = 'Saving';
       post('/checkout/fulfil', { orders_id: o.id, note: host.querySelector('#op-fn-' + o.id).value }).then(function (r) {
-        if (!r.ok) { host.querySelector('#op-ferr-' + o.id).textContent = r.data.error === 'not_fulfillable' ? 'This order cannot be marked done any more (' + (r.data.status || '') + ').' : 'Could not save. Try again.'; go.disabled = false; go.textContent = 'Confirm and email them'; return; }
+        if (!r.ok) { host.querySelector('#op-ferr-' + o.id).textContent = r.data.error === 'not_fulfillable' ? (r.data.status === 'partially_refunded' ? 'This order was partly refunded, so it can\u2019t be marked done.' : r.data.status === 'refunded' ? 'This order was refunded, so it can\u2019t be marked done.' : 'This order can\u2019t be marked done any more.') : 'Could not save. Try again.'; go.disabled = false; go.textContent = 'Confirm and email them'; return; }
         replaceCard(o.id, r.data.order);
       }).catch(function () { host.querySelector('#op-ferr-' + o.id).textContent = 'Could not save. Try again.'; go.disabled = false; go.textContent = 'Confirm and email them'; });
     });

@@ -114,6 +114,9 @@
       var st = rs[0] && rs[0].data; self.stats = (st && st.ok) ? st : null;
       self.posts = (rs[1] && Array.isArray(rs[1].data)) ? rs[1].data : [];
       self.render();
+    }).catch(function (e) {
+      console.warn('[followers] load failed', e);
+      self.mount.innerHTML = '<p style="font-family:\'Plus Jakarta Sans\',sans-serif;color:#45415A;background:#F3EBFF;border-radius:12px;padding:16px;">We couldn\u2019t load your followers just now. Refresh to try again.</p>';
     });
   };
   Page.prototype.onInput = function (e) {
@@ -191,7 +194,7 @@
         return '<button type="button" class="lkf-chip" data-kind="' + x.k + '" aria-pressed="' + (x.k === k ? 'true' : 'false') + '">' + esc(x.t) + '</button>';
       }).join('') + '</div>';
     if (k === 'where') {
-      html += '<div class="lkf-row"><div class="lkf-f wide"><label for="lkf-place">Place</label><input class="lkf-in" id="lkf-place" data-d="place" maxlength="120" placeholder="e.g. The Woodlands Farmers Market" value="' + esc(d.place) + '"></div></div>' +
+      html += '<div class="lkf-row"><div class="lkf-f wide"><label for="lkf-place">Place</label><input class="lkf-in" id="lkf-place" data-d="place" maxlength="120" placeholder="e.g. Saturday farmers market" value="' + esc(d.place) + '"></div></div>' +
         '<div class="lkf-row">' +
           '<div class="lkf-f"><label for="lkf-date">Date</label><input class="lkf-in" type="date" id="lkf-date" data-d="date" value="' + esc(d.date) + '"></div>' +
           '<div class="lkf-f"><label for="lkf-from">From</label><input class="lkf-in" type="time" id="lkf-from" data-d="from" value="' + esc(d.from) + '"></div>' +
