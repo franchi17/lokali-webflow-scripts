@@ -121,7 +121,9 @@
       '.section-3,.section-4,.section-5,.section-6,.lcs-section{display:none!important;}' +
       'html.lok-home3 .wi-section{display:none!important;}' +
       'html.lok-home3 .section.hero.v18>div:not(#lok-hero){display:none!important;}' +
-      'html.lok-home3 .section.hero.v18{background:#fff!important;padding:56px 0 72px!important;min-height:0!important;}' +
+      // F 2026-11-22: the hero needs its own band, so it is lavender with a scalloped white bottom edge
+      'html.lok-home3 .section.hero.v18{background:#F3EBFF!important;padding:56px 0 100px!important;min-height:0!important;position:relative;}' +
+      '.lok-hero-wave{position:absolute;left:0;right:0;bottom:-1px;display:block;width:100%;height:28px;}' +
       // shared
       '.lok-wrap{max-width:1240px;margin:0 auto;padding:0 40px;font-family:' + F + ';}' +
       '.lok-ul{color:#6002EE!important;font-weight:700;text-decoration:underline!important;text-underline-offset:3px;text-decoration-thickness:1.5px;}' +
@@ -259,7 +261,7 @@
         '#lok-hero h1{font-size:56px!important;}#lok-hero .lok-lede{margin:18px auto 0!important;}.lok-hs{margin:26px auto 0;}' +
         '.lok-arch{margin:36px auto 0;justify-self:center;}.lok-tiles{grid-template-columns:repeat(2,minmax(0,1fr));}.lok-tile{min-height:0;}}' +
       '@media(max-width:991px){.lok-wrap{padding:0 24px;}.lok-cat-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:26px 16px;}' +
-        '.lok-band,.lok-cats,html.lok-home3 .section.hero.v18{padding-top:56px!important;padding-bottom:56px!important;}.lok-worries{padding-top:40px!important;}.lok-end{padding:80px 0!important;}' +
+        '.lok-band,.lok-cats{padding-top:56px!important;padding-bottom:56px!important;}html.lok-home3 .section.hero.v18{padding-top:40px!important;padding-bottom:76px!important;}.lok-worries{padding-top:40px!important;}.lok-end{padding:80px 0!important;}' +
         '.lok-h2{font-size:34px;}.lok-end .lok-h2{font-size:40px;}.lok-sec-head h2{font-size:30px;}.lok-answer{font-size:24px;}' +
         '.lok-steps{grid-template-columns:1fr;}.lok-fol-grid{grid-template-columns:1fr;gap:32px;}.lok-fol-pic img{max-width:360px;}' +
         '.lok-stats{grid-template-columns:1fr;}}' +
@@ -488,6 +490,13 @@
     grid.appendChild(txt);
     grid.appendChild(buildArch(HERO));
     hero.appendChild(grid);
+    var wave = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    wave.setAttribute('class', 'lok-hero-wave');
+    wave.setAttribute('viewBox', '0 0 1440 28');
+    wave.setAttribute('preserveAspectRatio', 'none');
+    wave.setAttribute('aria-hidden', 'true');
+    wave.innerHTML = '<path fill="#FFFFFF" d="M0 28V14C60 14 60 0 120 0s60 14 120 14 60-14 120-14 60 14 120 14 60-14 120-14 60 14 120 14 60-14 120-14 60 14 120 14 60-14 120-14 60 14 120 14 60-14 120-14 60 14 120 14V28Z"/>';
+    hero.appendChild(wave);
   }
 
   // ---- the worries ---------------------------------------------------------
