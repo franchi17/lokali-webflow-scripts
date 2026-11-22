@@ -106,7 +106,7 @@
 
   // DB guard errors arrive raw from PostgREST: "LOKALI_LIMIT_REACHED: <human>".
   function humanError(err) {
-    var m = (err && (err.message || err.error_description)) || 'Something went wrong. Try again.';
+    var m = (err && (err.message || err.error_description)) || 'That didn\u2019t work. Try again in a minute.';
     var i = m.indexOf('LOKALI_LIMIT_REACHED:');
     return i >= 0 ? m.slice(i + 'LOKALI_LIMIT_REACHED:'.length).trim() : m;
   }
@@ -497,8 +497,8 @@
         '<div class="mkt-qr-side">' +
           '<p class="mkt-qr-url">Opens <b>golokali.com/' + esc(this.vendor.slug) + '</b>. Scans are counted automatically.</p>' +
           '<div class="mkt-qr-btns">' +
-            '<button type="button" class="mkt-qr-dl" data-act="qr-png">Download PNG</button>' +
-            '<button type="button" class="mkt-qr-dl" data-act="qr-svg">Download SVG</button>' +
+            '<button type="button" class="mkt-qr-dl" data-act="qr-png">Download for phone and web</button>' +
+            '<button type="button" class="mkt-qr-dl" data-act="qr-svg">Download for print</button>' +
           '</div>' +
           '<p class="mkt-note">Print it at least 1 inch (2.5 cm) wide and keep the white border, cameras need it. The SVG stays sharp at any size.</p>' +
           '<div class="mkt-qr-badge-slot">' + this.qrBadgeHtml() + '</div>' +
@@ -824,7 +824,7 @@
       var cv = document.getElementById(id);
       if (!cv) return;
       var a = document.createElement('a');
-      try { a.href = cv.toDataURL('image/png'); } catch (e) { toast('The image could not be exported in this browser.'); return; }
+      try { a.href = cv.toDataURL('image/png'); } catch (e) { toast('Your browser wouldn\u2019t save the picture. Try Chrome or Safari, or take a screenshot.'); return; }
       a.download = (kind === 'story' ? 'lokali-story-' : 'now-on-lokali-') + self.vendor.slug + '.png';
       document.body.appendChild(a); a.click(); document.body.removeChild(a);
     });
@@ -860,7 +860,7 @@
             (self.reviewCode ? ', with posting unlocked for the person who scanned it.' : '.') + '</p>' +
           '<div class="mkt-qr-btns">' +
             '<button type="button" class="mkt-qr-dl" data-act="rv-copy-link">Copy link</button>' +
-            (window.LokaliQR ? '<button type="button" class="mkt-qr-dl" data-act="rv-png">Download QR (PNG)</button><button type="button" class="mkt-qr-dl" data-act="rv-svg">Download QR (SVG)</button>' : '') +
+            (window.LokaliQR ? '<button type="button" class="mkt-qr-dl" data-act="rv-png">Download for phone and web</button><button type="button" class="mkt-qr-dl" data-act="rv-svg">Download for print</button>' : '') +
           '</div>' +
           '<p class="mkt-note">Reviews show on your Market card, and one or two change how a stranger reads it. ' + (self.reviewCode
             ? 'Anyone you give this to can sign in and post, including customers you met in person; those reviews are labeled "Invited by the vendor".'
@@ -1211,7 +1211,7 @@
     // The edit form REPLACES the entry's [data-id] card, so it must carry the id itself or
     // Save resolves no id and inserts a duplicate (2026-10-19 bug review H4).
     return '<div class="mkt-form" data-kind="' + kind + '"' + (e && e.id ? ' data-id="' + e.id + '"' : '') + '>' +
-      '<label>' + (kind === 'cta' ? 'Button text' : 'Heading') + '</label>' +
+      '<label>' + (kind === 'cta' ? 'Button text' : 'Headline') + '</label>' +
       '<input class="mkt-in" data-f="title" maxlength="120" value="' + esc(t) + '" placeholder="' +
         (kind === 'cta' ? esc(CTA_EXAMPLE) : 'This week: your headline') + '">' +
       (kind === 'showcase'
@@ -1252,7 +1252,7 @@
     return '<div class="mkt-card mkt-lock">' +
       '<p class="mkt-lockh">Showcase of the week</p>' +
       '<p>' + SHOWCASE_WHAT + ' It changes every Monday. Comes with the Featured plan.</p>' +
-      '<a class="mkt-up" href="/pricing">Upgrade to unlock</a>' +
+      '<a class="mkt-up" href="/pricing">See plans</a>' +
     '</div>';
   };
 
@@ -1384,7 +1384,7 @@
       payload.image_focus_x = get('image_focus_x') !== '' ? parseInt(get('image_focus_x'), 10) : null;
       payload.image_focus_y = get('image_focus_y') !== '' ? parseInt(get('image_focus_y'), 10) : null;
     }
-    if (!payload.title) { toast('Give it a title first.'); return; }
+    if (!payload.title) { toast('Add a headline first.'); return; }
     // Mirrors the DB constraint (marketing_entries_url_https) with a friendlier
     // message than a raw check_violation.
     if (payload.url && !/^https:\/\//i.test(payload.url)) {

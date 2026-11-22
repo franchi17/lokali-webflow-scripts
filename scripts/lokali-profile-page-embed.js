@@ -3054,7 +3054,7 @@ var LokaliProfilePage = (function () {
   }
 
   function _showErrorPopup(message) {
-    _showToast('error', message || 'Hit a snag. Please check your info and try again.');
+    _showToast('error', message || 'That didn\u2019t save. Look over your details and try again.');
   }
 
   function _normalizePayload(payload) {

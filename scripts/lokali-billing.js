@@ -184,7 +184,7 @@
             // yet" notice) are user-facing; only network/5xx get the generic.
             var msg = err && err.message && !/^Request failed/.test(err.message)
               ? err.message
-              : 'Sorry, we could not start checkout. Please try again.';
+              : 'The payment page didn\u2019t open, and nothing was charged. Please try again in a minute.';
             // Spotlight purchases closed server-side: say it in our words, with no
             // launch date (F 2026-09-21), whatever the deployed route's text says.
             if (err && err.code === 'prelaunch' && (plan === 'spotlight' || plan === 'spotlight_home')) msg = SPOT_NOT_OPEN_MSG;
@@ -207,7 +207,7 @@
         console.error('[lokali-billing] setup checkout failed', err);
         var msg = err && err.message && !/^Request failed/.test(err.message)
           ? err.message
-          : 'Sorry, we could not start checkout. Please try again.';
+          : 'The payment page didn\u2019t open, and nothing was charged. Please try again in a minute.';
         alert(msg);
       });
   }
@@ -222,7 +222,7 @@
           .catch(function (err) {
             setButtonBusy(btn, false);
             console.error('[lokali-billing] portal failed', err);
-            alert('Sorry, we could not open billing management. Please try again.');
+            alert('Your card and invoices page didn\u2019t open. Please try again in a minute.');
           });
       });
     });
@@ -317,7 +317,9 @@
         el.textContent = whenText ? 'Cancels on ' + whenText : 'Cancellation pending';
         el.style.display = '';
       } else if (status && status !== 'active' && status !== 'trialing' && !isFree) {
-        el.textContent = status.replace('_', ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+        el.textContent = (status === 'past_due' || status === 'unpaid') ? 'Your last payment didn\u2019t go through. Update your card to keep your plan.'
+          : status === 'incomplete_expired' ? 'Checkout wasn\u2019t finished, so nothing was charged.'
+          : status.replace('_', ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); });
         el.style.display = '';
       } else {
         el.style.display = 'none';
@@ -341,7 +343,7 @@
       if (link.hasAttribute('data-lokali-setup-plan')) {
         link.removeAttribute('data-lokali-setup-plan');
         link.removeAttribute('data-interval');
-        (link.querySelector('.text-link') || link).textContent = 'Manage billing';
+        (link.querySelector('.text-link') || link).textContent = 'Manage card and invoices';
       }
       if (yearly) yearly.parentNode.removeChild(yearly);
       return;
@@ -782,7 +784,7 @@
           setButtonBusy(btn, false);
           var msg = err && err.message && !/^Request failed/.test(err.message)
             ? err.message
-            : 'Sorry, we could not start checkout. Please try again.';
+            : 'The payment page didn\u2019t open, and nothing was charged. Please try again in a minute.';
           if (err && err.code === 'prelaunch') msg = SPOT_NOT_OPEN_MSG;
           alert(msg);
         });
@@ -1201,13 +1203,13 @@
       'Top of your category',
       '10 photos per listing and a 15-photo portfolio',
       'Calendar on your page, plus a waitlist',
-      'Catalog import, showcase banner and your logo on your QR code'
+      'Import your catalog from a spreadsheet, Showcase of the week, and your logo on your QR code'
     ]
   };
   var UP_CHECK_SVG = '<svg viewBox="0 0 512 512" aria-hidden="true" focusable="false"><path fill="currentColor" d="M470.6 105.4c12.5 12.5 12.5 32.8 0 45.3l-256 256c-12.5 12.5-32.8 12.5-45.3 0l-128-128c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0L192 338.7 425.4 105.4c12.5-12.5 32.8-12.5 45.3 0z"/></svg>';
   var UP_CLOSE_SVG = '<svg viewBox="0 0 384 512" aria-hidden="true" focusable="false"><path fill="currentColor" d="M342.6 150.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 210.7 86.6 105.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L146.7 256 41.4 361.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192 301.3l105.4 105.4c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.3 256l105.3-105.4z"/></svg>';
-  var UP_GENERIC_ERR = 'Sorry, we could not start checkout. Please try again.';
-  var UP_PORTAL_ERR = 'Sorry, we could not open billing management. Please try again.';
+  var UP_GENERIC_ERR = 'The payment page didn\u2019t open, and nothing was charged. Please try again in a minute.';
+  var UP_PORTAL_ERR = 'Your card and invoices page didn\u2019t open. Please try again in a minute.';
 
   // Palette = the values lokali-inquiry.js already uses (violet #6002EE / #4D02BE,
   // text #1A1530, muted #6B6680, border #E2E0EC); soft lavender tints, no ink.
@@ -1511,7 +1513,7 @@
     if (upState.busy) return;
     var interval = upState.interval;
     upShowError('');
-    upSetBusy(btn, 'Opening secure checkout...');
+    upSetBusy(btn, 'Opening the secure payment page...');
     // Same GA4 funnel event pricingcta.js fires (#110); source tells them apart.
     try {
       if (typeof window.gtag === 'function') {

@@ -213,7 +213,7 @@
     }
 
     var currentSlug = (_vendor && _vendor.slug) || '';
-    var label = '<div style="font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#8E8BA6;margin-bottom:6px;">Custom profile URL</div>';
+    var label = '<div style="font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#8E8BA6;margin-bottom:6px;">Your own web address</div>';
 
     if (!slugAllowed()) {
       host.innerHTML = label +
@@ -227,7 +227,7 @@
       '<span style="color:#8E8BA6;font-size:14px;">golokali.com/</span>' +
       '<input id="lok-slug-input" type="text" value="' + escapeHtml(currentSlug) + '" maxlength="30" autocomplete="off" spellcheck="false" ' +
       'style="flex:1;min-width:140px;border:1px solid #c8c6d8;border-radius:8px;padding:9px 12px;font-size:14px;color:#1A1829;background:#fff;font-family:inherit;">' +
-      '<button type="button" id="lok-slug-save" style="border:none;border-radius:8px;background:#6002ee;color:#fff;padding:10px 16px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">Save URL</button>' +
+      '<button type="button" id="lok-slug-save" style="border:none;border-radius:8px;background:#6002ee;color:#fff;padding:10px 16px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">Save address</button>' +
       '</div>' +
       '<div id="lok-slug-status" style="font-size:13px;margin-top:6px;min-height:18px;color:#8E8BA6;"></div>' +
       '<div style="font-size:12px;color:#8E8BA6;margin-top:2px;">Lowercase letters, numbers, hyphens. One change every 30 days; your old link keeps working.</div>';
@@ -251,7 +251,7 @@
       invalid_slug:  'Use 2–30 characters: lowercase letters, numbers and hyphens only.',
       plan_required: 'A custom URL is a Pro and Featured feature. Upgrade to claim yours.',
       not_found:     'We couldn’t find your storefront. Try reloading the page.',
-      unauthorized:  'Your session expired. Please log in again.'
+      unauthorized:  'You were signed out to keep your account safe. Sign in again, then save once more.'
     };
     function slugErrorMessage(code) { return SLUG_ERRORS[code] || SLUG_OUR_FAULT; }
 
@@ -296,10 +296,10 @@
           toast('success', 'Custom URL saved.');
         }
       }).catch(function () {
-        toast('error', 'Network error. Please try again.');
+        toast('error', 'We couldn\u2019t reach Lokali, so nothing changed. Check your connection and try again.');
       }).then(function () {
         saveBtn.disabled = false;
-        saveBtn.textContent = 'Save URL';
+        saveBtn.textContent = 'Save address';
       });
     });
   }
@@ -379,7 +379,7 @@
       } catch (e) {}
       flashSaved(inputEl);
     }).catch(function () {
-      toast('error', 'Network error. Please try again.');
+      toast('error', 'We couldn\u2019t reach Lokali, so nothing changed. Check your connection and try again.');
       if (inputEl) inputEl.checked = !value;
     });
   }
@@ -444,7 +444,7 @@
       } catch (e) {}
       flashSaved(inputEl);
     }).catch(function () {
-      toast('error', 'Network error. Please try again.');
+      toast('error', 'We couldn\u2019t reach Lokali, so nothing changed. Check your connection and try again.');
       if (inputEl) inputEl.checked = !value;
     });
   }
@@ -462,7 +462,7 @@
         flashSaved(inputEl);
       }
     }).catch(function () {
-      toast('error', 'Network error. Please try again.');
+      toast('error', 'We couldn\u2019t reach Lokali, so nothing changed. Check your connection and try again.');
       if (inputEl) inputEl.checked = !value;
     });
   }
@@ -513,7 +513,7 @@
     var deact = $('settings-deactivate');
     if (deact) deact.addEventListener('click', function (e) {
       e.preventDefault();
-      if (!confirm('Hide your listing? Customers won’t find it until you reactivate. Your data is preserved.')) return;
+      if (!confirm('Hide your storefront for now? Neighbors won’t find it until you turn it back on. Everything you’ve added stays put.')) return;
       setListingVisible(false, visInput);
     });
 
@@ -1631,13 +1631,13 @@
       toast('success', kept ? 'Saved. Blank fields kept their previous value.' : 'Name saved.');
       syncNameBar();
     }).catch(function () {
-      toast('error', 'Network error. Please try again.');
+      toast('error', 'We couldn\u2019t reach Lokali, so nothing changed. Check your connection and try again.');
     }).then(function () { if (btn) btn.removeAttribute('disabled'); });
   }
 
   function setListingVisible(visible, visInput) {
     var fn = visible ? window.LokaliAPI.vendors.reactivate : window.LokaliAPI.vendors.deactivate;
-    if (!fn) { toast('error', 'Action unavailable.'); return; }
+    if (!fn) { toast('error', 'That button isn\u2019t working right now. Refresh the page and try again.'); return; }
     fn().then(function (res) {
       if (res.error) {
         toast('error', res.error || 'Could not update visibility.');
@@ -1650,7 +1650,7 @@
       syncBreakRow();
       toast('success', visible ? 'Your storefront is live.' : 'Your storefront is hidden. Nothing was deleted.');
     }).catch(function () {
-      toast('error', 'Network error. Please try again.');
+      toast('error', 'We couldn\u2019t reach Lokali, so nothing changed. Check your connection and try again.');
       if (visInput) visInput.checked = !visible;
     });
   }

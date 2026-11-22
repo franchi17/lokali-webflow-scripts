@@ -8,6 +8,31 @@
   // narrower. Reserving the rail's width as body padding-left offsets all
   // in-flow content uniformly; the fixed sidebar ignores body padding and
   // stays pinned at left:0. Scoped to >=992px (tablet/mobile collapse the nav).
+  // 2026-11-22 words pass (F: "Yes, all seven"): a few lines are typed into the
+  // Webflow pages as plain div text, which the Webflow API cannot edit. Swap
+  // them here on dashboard pages only. Exact whole-text matches, nothing else.
+  (function rewordStaticText() {
+    if (String(location.pathname || '').indexOf('/vendor-dashboard') === -1) return;
+    var MAP = {
+      'Your profile has been successfully saved! Go forth and conquer.': 'Saved. Your storefront is up to date.',
+      'Danger Zone': 'Hide or close your storefront',
+      'Rotate a weekly promo button and showcase on your storefront. You feed the list, we keep it fresh': 'Pick a Showcase of the week for your storefront. You choose what goes in, we keep it rotating.',
+      'Every local favorite had to start somewhere. Show your community what you offer. Add your first listing.': 'Every local favorite started with one thing. Show your neighbors yours.',
+      'SAVE': 'Save',
+      'Logout': 'Log out'
+    };
+    function run() {
+      if (!document.body) return;
+      var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null), n, hits = [];
+      while ((n = w.nextNode())) {
+        var t = n.nodeValue && n.nodeValue.trim();
+        if (t && Object.prototype.hasOwnProperty.call(MAP, t)) hits.push(n);
+      }
+      hits.forEach(function (x) { x.nodeValue = MAP[x.nodeValue.trim()]; });
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run); else run();
+  })();
+
   (function injectLayoutFix() {
     // Dashboard pages only — never pad the body on public pages (no sidebar).
     if (String(location.pathname || '').indexOf('/vendor-dashboard') === -1) return;
@@ -203,7 +228,7 @@
       'Add a card', '/vendor-dashboard/settings', bridgeComp);
     add('pay', paidWays,
       'Add a way to get paid', 'Ways to get paid listed',
-      'Venmo, Cash App, PayPal or Zelle. Taps on these show up as Payment clicks above.',
+      'Venmo, Cash App, PayPal or Zelle. Taps on these show up as Payment taps above.',
       'Add payment', CK_PROFILE + '#lok-pay-card', true, 'Skipped: ways to get paid');
     add('buy', prd.some(function (p) { return !!p.buy_url; }),
       'Link your online store', 'Online store linked',
@@ -570,7 +595,7 @@
           '<ul class="lok-steps">' +
             '<li><i>1</i><span><b>One photo.</b> Phone photos are fine. Natural light, plain background.</span></li>' +
             '<li><i>2</i><span><b>A name and a price.</b> "Ask for a quote" counts as a price.</span></li>' +
-            '<li><i>3</i><span><b>Save.</b> It is live on your storefront the moment you do. Everything else can come later.</span></li>' +
+            '<li><i>3</i><span><b>Save it,</b> and neighbors see it as soon as your storefront is live. Everything else can come later.</span></li>' +
           '</ul>' +
           '<div class="lok-btns"><button type="button" class="lok-btn primary" data-lui-add>Add a ' + noun + '</button>' +
           (isP && o.onImport ? '<button type="button" class="lok-btn" data-lui-import>Import from Etsy or Shopify</button>' : '') + '</div>' +

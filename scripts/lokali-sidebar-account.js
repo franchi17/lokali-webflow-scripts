@@ -313,12 +313,12 @@
         b.addEventListener('click', function (e) {
           e.preventDefault(); e.stopPropagation();
           var SF = window.LokaliSupabaseAPI && window.LokaliSupabaseAPI.storefronts;
-          if (!SF || !SF.switchTo) { nm.textContent = 'Not available right now'; return; }
+          if (!SF || !SF.switchTo) { nm.textContent = 'Switching isn\u2019t working right now. Refresh the page and try again.'; return; }
           b.disabled = true; nm.textContent = 'Switching to ' + (x.business_name || 'storefront') + '…';
           SF.switchTo(x.vendors_id).then(function (res) {
-            if (res && res.error) { b.disabled = false; nm.textContent = 'Could not switch. Try again.'; return; }
+            if (res && res.error) { b.disabled = false; nm.textContent = 'Switching isn\u2019t working right now. Refresh the page and try again.'; return; }
             window.location.href = (window.location.pathname || '/vendor-dashboard/dashboard');
-          }).catch(function () { b.disabled = false; nm.textContent = 'Could not switch. Try again.'; });
+          }).catch(function () { b.disabled = false; nm.textContent = 'Switching isn\u2019t working right now. Refresh the page and try again.'; });
         });
         nodes.push(b);
       });
@@ -377,7 +377,7 @@
       if (a.getAttribute('aria-disabled') === 'true') return;
       a.setAttribute('aria-disabled', 'true'); a.textContent = 'Switching to shopping\u2026';
       PL.switchTo().then(function (res) {
-        if (res && res.error) { a.removeAttribute('aria-disabled'); a.textContent = 'Could not switch. Try again.'; return; }
+        if (res && res.error) { a.removeAttribute('aria-disabled'); a.textContent = 'Switching isn\u2019t working right now. Refresh the page and try again.'; return; }
         window.location.href = res.data.landing;
       }).catch(function () { a.removeAttribute('aria-disabled'); a.textContent = personShoppingLabel(); });
     });

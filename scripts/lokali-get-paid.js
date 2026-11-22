@@ -67,7 +67,7 @@
     return '<div class="gp-fee">' +
       chip('free', 'No monthly fee', f.free) + chip('pro', 'Pro', f.pro) + chip('featured', 'Featured', f.featured) +
       '</div><div class="gp-intro">On your plan a shopper\'s payment costs you <strong>' + fmtPct(mine) + ' to Lokali plus Stripe\'s card rate (2.9% + 30c)</strong>. ' +
-      'For comparison, Etsy takes about 9.5% plus 45c and Shopify charges a monthly store fee on top of the same card rate. Fees come out automatically; the rest pays out to your bank on Stripe\'s schedule.</div>';
+      'For comparison, Etsy takes about 9.5% plus 45c and Shopify charges a monthly store fee on top of the same card rate. Fees come out on their own. The rest goes to your bank on Stripe\'s usual payout schedule.</div>';
     function chip(code, label, pct) { return '<span class="gp-chip' + (code === p ? ' you' : '') + '">' + label + ': ' + fmtPct(pct) + (code === p ? ' (you)' : '') + '</span>'; }
   }
   function fmtPct(n) { var v = Number(n); return (isFinite(v) ? (Math.round(v * 100) / 100) : 5) + '%'; }
@@ -117,7 +117,7 @@
       if (!r.ok) { say(r.data.error || 'Stripe did not answer. Try again in a moment.'); busy(btn, false); return; }
       if (r.data.url) { window.location.assign(r.data.url); return; }
       state.st = r.data.state || state.st; render();
-    }).catch(function () { say('Please sign in again and retry.'); busy(btn, false); });
+    }).catch(function () { say('That didn\u2019t go through. Check your connection and try again. If it keeps happening, sign out and back in.'); busy(btn, false); });
   }
 
   function loadPlanAndFees() {

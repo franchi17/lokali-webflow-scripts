@@ -484,14 +484,14 @@
     var quiet = !extra && !unread && l7 === 0 && p7 === 0 && landings === 0 && v7 < QUIET_VIEWS;
     if (quiet) {
       box.className = 'lok-kpis quiet';
-      var opened = v7 === 0 ? 'Nobody opened your storefront this week, and no reach-outs yet.'
-        : v7 === 1 ? 'One person opened your storefront this week, no reach-outs yet.'
-        : v7 + ' people opened your storefront this week, no reach-outs yet.';
+      var opened = v7 === 0 ? 'Sharing your link is the quickest way to bring neighbors by.'
+        : v7 === 1 ? 'One person opened your storefront this week. Nobody has reached out yet.'
+        : v7 + ' people opened your storefront this week. Nobody has reached out yet.';
       // The three figures keep the tile ids so the skeleton loader clears on them.
       box.innerHTML = '<div class="lok-quiet"><div class="lok-qt"><b>A quiet week. ' + opened + '</b>' +
         '<span>The full numbers come back here once there is more to show. Until then, the step below is what moves them.</span></div>' +
         '<div class="lok-qm"><div><b id="stat-profile-views">' + v7 + '</b>' + (v7 === 1 ? 'view' : 'views') + '</div>' +
-        '<div><b id="stat-profile-complete">0</b>reach-outs</div><div><b id="stat-active-products">0</b>shares</div></div>' +
+        '<div><b id="stat-profile-complete">0</b>reached out</div><div><b id="stat-active-products">0</b>shares</div></div>' +
         sparkline(views) + '</div>';
       return true;
     }
@@ -704,7 +704,7 @@
     } else if (gateReady) {
       html = oneThingCard();
     } else {
-      html += '<div class="lok-feed-empty">Once your storefront is live, inquiries, contact taps, payment taps and reviews show up here as they happen.</div>';
+      html += '<div class="lok-feed-empty">This is where neighbors show up: messages, taps and reviews, as they happen. Finish setting up and they\u2019ll start arriving.</div>';
     }
     card.innerHTML = html;
     placeQuiet();
@@ -889,7 +889,7 @@
       '<div class="lok-gam-moment-sub">' + gamEsc(meta.moment.sub) + '</div>' +
       '<div class="lok-gam-actions">' +
         (meta.moment.cta ? '<a class="lok-gam-btn" href="' + meta.moment.cta.href + '">' + gamEsc(meta.moment.cta.label) + '</a>' : '') +
-        '<button type="button" class="lok-gam-ghost" data-gam-dismiss>Dismiss</button>' +
+        '<button type="button" class="lok-gam-ghost" data-gam-dismiss>Not now</button>' +
       '</div></div>';
     card.querySelector('[data-gam-dismiss]').addEventListener('click', function () {
       if (card.parentNode) card.parentNode.removeChild(card);
@@ -1197,7 +1197,7 @@
         '<button data-wz-x aria-label="Close" style="position:absolute;top:14px;right:14px;background:none;' +
           'border:none;cursor:pointer;font-size:18px;color:#9A9AB0;line-height:1;">✕</button>' +
         '<div style="font-size:12px;font-weight:700;letter-spacing:.06em;color:#6E3CFF;margin-bottom:6px;">' +
-          'STEP ' + (stepIdx + 1) + ' OF ' + steps.length + '</div>' +
+          'Step ' + (stepIdx + 1) + ' of ' + steps.length + '</div>' +
         '<h3 id="lok-wz-title" style="font-size:21px;font-weight:700;color:#231d3f;margin:0 0 6px;font-family:inherit;">' + title + '</h3>' +
         '<p style="font-size:14px;line-height:1.55;margin:0 0 16px;">' + sub + '</p>' +
         '<div data-wz-body>' + bodyHtml + '</div>' +
@@ -1289,7 +1289,7 @@
         var name = (input.value || '').trim();
         if (!name) { showErr('Enter a name (or use Skip for now).'); return; }
         SB.vendors.updateProfile(v.id, { business_name: name }).then(function (res) {
-          if (res && res.error) { showErr('Could not save. Try again.'); return; }
+          if (res && res.error) { showErr('That didn\u2019t save. Try again in a minute.'); return; }
           v.business_name = name;
           setId('vendor-name', name); // heading was 'Vendor' until now
           next();
@@ -1306,7 +1306,7 @@
         var ids = getSel ? getSel() : [];
         if (!ids.length) { showErr('Pick a category (or use Skip for now).'); return; }
         SB.vendors.updateProfile(v.id, { categories_id: ids }).then(function (res) {
-          if (res && res.error) { showErr('Could not save. Try again.'); return; }
+          if (res && res.error) { showErr('That didn\u2019t save. Try again in a minute.'); return; }
           next();
         });
       });
@@ -1325,14 +1325,14 @@
 
     // Step: service area (multi pick — a vendor can serve several communities)
     if (!(v.locations_id && v.locations_id.length)) steps.push(function () {
-      var body = shell('Where do you serve?', 'Choose your community: pick every area you serve.', '<div>Loading areas…</div>');
+      var body = shell('Where do you serve?', 'Pick every area you serve. Neighbors there will find you.', '<div>Loading areas…</div>');
       var getSel = null;
       // Bound before the fetch so Continue always answers, even mid-load.
       card.querySelector('[data-wz-next]').addEventListener('click', function () {
         var ids = getSel ? getSel() : [];
         if (!ids.length) { showErr('Pick at least one area (or use Skip for now).'); return; }
         SB.vendors.updateProfile(v.id, { locations_id: ids }).then(function (res) {
-          if (res && res.error) { showErr('Could not save. Try again.'); return; }
+          if (res && res.error) { showErr('That didn\u2019t save. Try again in a minute.'); return; }
           next();
         });
       });
@@ -1361,7 +1361,7 @@
       var body = shell('Where is your business based?',
         'Never shown to customers. We use it to confirm you’re in the neighborhood you list under. A home address is fine.',
         '<input data-wz-addr type="text" maxlength="300" autocomplete="street-address" ' +
-          'placeholder="123 Main St, The Woodlands, TX 77380" aria-label="Business address" ' +
+          'placeholder="Street, city and ZIP" aria-label="Business address" ' +
           'style="font-family:inherit;font-size:15px;color:#3b3654;background:#FAF7FF;border:1.5px solid #E4DCF7;' +
           'border-radius:12px;padding:11px 14px;width:100%;box-sizing:border-box;">',
         { nextLabel: 'Save and continue' });
@@ -1412,11 +1412,11 @@
           // The gate only needs non-blank text; write it through the owner
           // grant so a down route still leaves the address on file.
           return SB.vendors.updateProfile(v.id, { address: finalAddr }).then(function (res) {
-            if (res && res.error) { busy(false); showErr('Could not save. Try again.'); return; }
+            if (res && res.error) { busy(false); showErr('That didn\u2019t save. Try again in a minute.'); return; }
             v.address = finalAddr;
             next();
           });
-        }).catch(function () { busy(false); showErr('Could not save. Try again.'); });
+        }).catch(function () { busy(false); showErr('That didn\u2019t save. Try again in a minute.'); });
       });
     });
 
@@ -1464,7 +1464,7 @@
       box.innerHTML = '<span style="flex:1;min-width:200px;">We couldn’t load your dashboard. ' +
         'Check your connection and try again.</span>' +
         '<button type="button" data-dash-load-retry style="font-family:inherit;font-weight:700;font-size:14px;' +
-        'color:#fff;background:#6002EE;border:none;border-radius:999px;padding:10px 22px;cursor:pointer;min-height:44px;">Retry</button>';
+        'color:#fff;background:#6002EE;border:none;border-radius:999px;padding:10px 22px;cursor:pointer;min-height:44px;">Try again</button>';
       var anchor = document.querySelector('[data-listing-strength]');
       if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(box, anchor);
       else document.body.insertBefore(box, document.body.firstChild);
