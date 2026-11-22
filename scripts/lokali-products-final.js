@@ -1147,6 +1147,7 @@ const LokaliProductsPage = (() => {
     _subcatDefaulted = false;
     _leadTime = product.lead_time || null;         // #78 (input + chips re-render in showFormView)
     _galArtistId = product.artist_id != null ? product.artist_id : null; // GALLERY
+    _galSel = (_galLinks[product.id] || []).slice(); // GALLERY PAGE SETUP
     _galMedium = product.medium || null;
     _galDimensions = product.dimensions || null;
     _legacyTurnaroundDays = product.turnaround_days != null ? product.turnaround_days : null;
@@ -1205,7 +1206,7 @@ const LokaliProductsPage = (() => {
     _selectedSubcat = defaultSubcatForNew(); // #96-LISTING: a new product starts on the vendor's usual tag
     _subcatDefaulted = !!_selectedSubcat;
     _leadTime = null;       // #78
-    _galArtistId = null; _galMedium = null; _galDimensions = null; syncGalleryFields(); // GALLERY
+    _galArtistId = null; _galMedium = null; _galDimensions = null; _galSel = []; syncGalleryFields(); // GALLERY
     _legacyTurnaroundDays = null;
     syncLeadInput(null);
 
@@ -1832,7 +1833,9 @@ const LokaliProductsPage = (() => {
     if (_leadUiMounted) payload.lead_time = _leadTime;
     // GALLERY: only sent when the fields are on screen, so every other storefront's
     // save never names these columns (they may not exist before the patch).
-    if (_galFieldsMounted) { payload.artist_id = _galArtistId; payload.medium = _galMedium; payload.dimensions = _galDimensions; }
+    // GALLERY PAGE SETUP: with the 2026-11-21 patch the database keeps artist_id
+    // (the main collection) in step with product_collections, so it is not sent.
+    if (_galFieldsMounted) { if (!_galV2) payload.artist_id = _galArtistId; payload.medium = _galMedium; payload.dimensions = _galDimensions; }
 
     return payload;
   };
@@ -2004,6 +2007,13 @@ const LokaliProductsPage = (() => {
         }
       }
       _pendingSubcatLabels = [];
+
+      // GALLERY PAGE SETUP: which collections this listing sits in.
+      const galPid = editingId != null ? editingId : newId;
+      if (_galV2 && _galFieldsMounted && galPid != null) {
+        const okLinks = await galSaveLinks(galPid, _galSel);
+        if (!okLinks) _galNotice = 'Your listing saved, but its collections did not. Open it and try again.';
+      }
 
       await loadData();
       showListView();
@@ -2941,6 +2951,13 @@ const LokaliProductsPage = (() => {
         _galVendorId = me?.data?.id ?? me?.id ?? null;
       }
       if (_galVendorId == null) return;
+      // GALLERY PAGE SETUP: the new panel when the 2026-11-21 patch is in;
+      // otherwise the older Collections box below, exactly as before.
+      if (await galLoadV2(_galVendorId)) {
+        _galV2 = true; _galAvailable = true;
+        renderGalleryPanel(); syncGalleryFields();
+        return;
+      }
       const res = await S.artists.forVendor(_galVendorId);
       if (!res || res.error) { _galAvailable = false; return; }
       _galArtists = Array.isArray(res.data) ? res.data : [];
@@ -2999,10 +3016,10 @@ const LokaliProductsPage = (() => {
         if (on) return;
         const prev = _galLabel;
         _galLabel = key; _galPanelOpen = true;
-        renderArtistsPanel(); syncGalleryFields();
+        galRerender(); syncGalleryFields();
         const ok = await galLabelSet(_galVendorId, key);
         if (!ok) {
-          _galLabel = prev; renderArtistsPanel(); syncGalleryFields();
+          _galLabel = prev; galRerender(); syncGalleryFields();
           const m = document.querySelector('#lok-gallery-artists [data-gal-pickmsg]');
           if (m) m.textContent = 'That did not save. Please try again.';
         }
@@ -3041,12 +3058,464 @@ const LokaliProductsPage = (() => {
         _galArtists = _galArtists.filter((x) => x.id !== a.id);
         products.forEach((p) => { if (p.artist_id === a.id) p.artist_id = null; });
         _galPanelOpen = true;
-        renderArtistsPanel(); syncGalleryFields();
+        galRerender(); syncGalleryFields();
       });
       row.appendChild(av); row.appendChild(txt); row.appendChild(rm);
       panel.appendChild(row);
     });
 
+    panel.appendChild(galBuildAddForm());
+    panel.open = _galPanelOpen;
+  };
+
+  // ── GALLERY PAGE SETUP (F 2026-11-21; patch_gallery_page_setup.sql) ──────────
+  // Mockups: docs/mockups/gallery-portfolio/gallery-page-setup.html.
+  // One panel at the top of Products for Featured storefronts, "Your Gallery
+  // page", with two tabs:
+  //   Look        Classic or Gallery. Saved through set_storefront_look(), which
+  //               checks ownership and the Featured plan in the database.
+  //   Collections what shoppers narrow the Gallery page by (own collections or
+  //               Lokali's kinds), the word, the order, show or hide each one,
+  //               and which listings sit in each. A listing can sit in several
+  //               (product_collections).
+  // Needs the patch: if any of its reads errors, _galV2 stays false and the
+  // older Collections box renders exactly as before.
+  let _galV2 = false;
+  let _galLook = 'classic';
+  let _galBrowseBy = 'collections';
+  let _galSlug = '';
+  let _galLinks = {};       // product id -> [collection ids]
+  let _galTab = 'look';
+  let _galPicking = null;   // collection id whose listing picker is open
+  let _galSel = [];         // collection ids chosen in the open product form
+  let _galNotice = '';
+
+  const galRerender = () => { if (_galV2) renderGalleryPanel(); else renderArtistsPanel(); };
+
+  const galLoadV2 = async (vid) => {
+    try {
+      const c = await window.LokaliSupabaseReady;
+      if (!c || !c.from) return false;
+      const r = await Promise.all([
+        c.from('vendor_artists').select('id,vendors_id,name,origin,bio,photo_url,sort_order,is_hidden')
+          .eq('vendors_id', vid).is('deleted_at', null).order('sort_order').order('id').limit(60),
+        c.from('vendor_collection_prefs').select('label,browse_by').eq('vendors_id', vid).maybeSingle(),
+        c.from('vendors').select('slug,storefront_look').eq('id', vid).maybeSingle(),
+        c.from('product_collections').select('product_id,collection_id').eq('vendors_id', vid).limit(5000)
+      ]);
+      if (r.some((x) => !x || x.error)) return false;
+      _galArtists = r[0].data || [];
+      const w = r[1].data && r[1].data.label;
+      _galLabel = (w === 'artists' || w === 'makers') ? w : 'collections';
+      _galBrowseBy = r[1].data && r[1].data.browse_by === 'kinds' ? 'kinds' : 'collections';
+      _galSlug = (r[2].data && r[2].data.slug) || '';
+      _galLook = r[2].data && r[2].data.storefront_look === 'gallery' ? 'gallery' : 'classic';
+      _galLinks = {};
+      (r[3].data || []).forEach((l) => { (_galLinks[l.product_id] = _galLinks[l.product_id] || []).push(l.collection_id); });
+      return true;
+    } catch (e) { return false; }
+  };
+
+  // Update first, insert only when there is no row yet (column grants, see galLabelSet).
+  const galPrefsSet = async (fields) => {
+    try {
+      const c = await window.LokaliSupabaseReady;
+      const up = await c.from('vendor_collection_prefs').update(fields).eq('vendors_id', _galVendorId).select('vendors_id');
+      if (up && up.error) return false;
+      if (up && Array.isArray(up.data) && up.data.length) return true;
+      const ins = await c.from('vendor_collection_prefs').insert(Object.assign({ vendors_id: _galVendorId }, fields)).select('vendors_id');
+      return !!(ins && !ins.error);
+    } catch (e) { return false; }
+  };
+
+  const galLinkAdd = async (pid, cid) => {
+    const c = await window.LokaliSupabaseReady;
+    const r = await c.from('product_collections').insert({ product_id: pid, collection_id: cid, vendors_id: _galVendorId });
+    if (r && r.error && !/duplicate|23505/i.test(String(r.error.message || r.error.code || ''))) throw new Error(r.error.message || 'link');
+    const cur = _galLinks[pid] = _galLinks[pid] || [];
+    if (cur.indexOf(cid) < 0) cur.push(cid);
+  };
+  const galLinkDel = async (pid, cid) => {
+    const c = await window.LokaliSupabaseReady;
+    const r = await c.from('product_collections').delete().eq('product_id', pid).eq('collection_id', cid);
+    if (r && r.error) throw new Error(r.error.message || 'unlink');
+    _galLinks[pid] = (_galLinks[pid] || []).filter((x) => x !== cid);
+  };
+  // Make a listing's collections exactly `wanted`. False if any step failed.
+  const galSaveLinks = async (pid, wanted) => {
+    const cur = (_galLinks[pid] || []).slice();
+    let ok = true;
+    for (const cid of wanted) { if (cur.indexOf(cid) < 0) { try { await galLinkAdd(pid, cid); } catch (e) { ok = false; } } }
+    for (const cid of cur) { if (wanted.indexOf(cid) < 0) { try { await galLinkDel(pid, cid); } catch (e) { ok = false; } } }
+    return ok;
+  };
+  const galCount = (cid) => products.filter((p) => (_galLinks[p.id] || []).indexOf(cid) >= 0).length;
+
+  // The buttons shoppers will see above the Gallery page, same rules as
+  // lokali-storefront-look.js: hidden collections and empty ones are left out;
+  // kinds with only one listing are left out.
+  const galShopperChips = () => {
+    const live = products.filter((p) => p.is_active !== false);
+    const art = galArtMode();
+    const out = [{ t: art ? 'All ' + galW().title.toLowerCase() : 'All', n: live.length, on: true }];
+    const useKinds = _galBrowseBy === 'kinds' || !_galArtists.some((a) => !a.is_hidden && galCount(a.id) > 0);
+    if (!useKinds) {
+      _galArtists.forEach((a) => {
+        if (a.is_hidden) return;
+        const n = live.filter((p) => (_galLinks[p.id] || []).indexOf(a.id) >= 0).length;
+        if (n) out.push({ t: a.name, n });
+      });
+    } else {
+      const counts = {};
+      live.forEach((p) => { if (p.subcategory) counts[p.subcategory] = (counts[p.subcategory] || 0) + 1; });
+      Object.keys(counts).filter((k) => counts[k] >= 2).sort((a, b) => counts[b] - counts[a]).forEach((k) => {
+        const hit = (_subcatList || []).find((r) => r.slug === k);
+        out.push({ t: hit ? hit.label : k.replace(/-/g, ' ').replace(/^./, (ch) => ch.toUpperCase()), n: counts[k] });
+      });
+    }
+    return { chips: out, kinds: useKinds };
+  };
+
+  const GP_CSS = [
+    '#lok-gallery-page{margin:14px 0 20px;width:100%;box-sizing:border-box;background:linear-gradient(#fff,#FBF8FF);border:2px solid #E9DDFF;border-radius:18px;overflow:hidden;font-family:' + GAL_FONT + ';color:#2A2838;}',
+    '#lok-gallery-page *{box-sizing:border-box;font-family:inherit;}',
+    '.lokgp-h{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid #E7E2F3;flex-wrap:wrap;}',
+    '.lokgp-ic{width:40px;height:40px;border-radius:12px;background:#F3EBFF;color:#6002EE;display:flex;align-items:center;justify-content:center;flex:none;}',
+    '.lokgp-h h3{font-size:16.5px;font-weight:700;margin:0;color:#1A1829;line-height:1.3;}',
+    '.lokgp-h p{font-size:13px;color:#6B6880;margin:2px 0 0;}',
+    '.lokgp-sp{flex:1;}',
+    '.lokgp-feat{font-size:11px;font-weight:700;letter-spacing:.05em;color:#6002EE;background:#F3EBFF;padding:4px 9px;border-radius:999px;}',
+    '.lokgp-tabs{display:flex;gap:4px;padding:6px 12px 0;border-bottom:1px solid #E7E2F3;}',
+    '.lokgp-tabs button{border:0;background:none;font-size:14px;font-weight:600;color:#6B6880;padding:10px 12px;border-bottom:2.5px solid transparent;cursor:pointer;}',
+    '.lokgp-tabs button[aria-selected="true"]{color:#6002EE;border-color:#6002EE;}',
+    '.lokgp-b{padding:16px 18px 18px;}',
+    '.lokgp-opts{display:grid;grid-template-columns:repeat(2,minmax(0,260px));gap:12px;}',
+    '.lokgp-opt{position:relative;text-align:left;border:1.5px solid #E7E2F3;border-radius:14px;padding:10px;background:#fff;cursor:pointer;}',
+    '.lokgp-opt[aria-pressed="true"]{border-color:#6002EE;box-shadow:0 0 0 3px #F3EBFF;}',
+    '.lokgp-opt b{display:block;font-size:14.5px;margin:8px 0 2px;color:#1A1829;}',
+    '.lokgp-opt span{display:block;font-size:12.5px;color:#6B6880;line-height:1.4;}',
+    '.lokgp-now{display:inline-block!important;font-size:11px!important;font-weight:700;color:#0E8A5F!important;background:#E6F6EF;padding:3px 8px;border-radius:999px;margin-top:6px;}',
+    '.lokgp-th{height:84px;border-radius:9px;background:#F4F2FA;padding:6px;display:flex;flex-direction:column;gap:4px;overflow:hidden;}',
+    '.lokgp-th i{display:block;border-radius:4px;}',
+    '.lokgp-cl .a{height:18px;background:linear-gradient(90deg,#D9CCF7,#EEE6FF);}',
+    '.lokgp-cl .r{flex:1;display:flex;gap:4px;}.lokgp-cl .s{width:34%;background:#fff;}.lokgp-cl .m{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:3px;}.lokgp-cl .m i{background:#fff;}',
+    '.lokgp-gl .a{height:32px;background:linear-gradient(160deg,#8D5CF0,#4A1FB8);}',
+    '.lokgp-gl .g{flex:1;display:grid;grid-template-columns:repeat(4,1fr);gap:3px;}.lokgp-gl .g i{background:#CDBEF2;}.lokgp-gl .g i:nth-child(2n){background:#E3D8FA;}',
+    '.lokgp-acts{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:14px;}',
+    '.lokgp-btn{font-size:13.5px;font-weight:600;line-height:1.2;padding:10px 16px;border-radius:999px;border:1.5px solid #6002EE;background:#6002EE;color:#fff;cursor:pointer;text-decoration:none;display:inline-block;}',
+    '.lokgp-btn.q{background:#fff;color:#6002EE;}',
+    '.lokgp-btn[disabled]{opacity:.5;cursor:default;}',
+    '.lokgp-note{font-size:12.5px;color:#6B6880;line-height:1.45;margin:10px 0 0;}',
+    '.lokgp-err{font-size:13px;color:#B42318;margin:10px 0 0;}',
+    '.lokgp-lbl{font-size:13px;font-weight:700;color:#1A1829;margin:0 0 8px;}',
+    '.lokgp-two{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:18px;align-items:start;}',
+    '.lokgp-radio{display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;border:1.5px solid #E7E2F3;border-radius:12px;padding:10px 12px;margin:0 0 8px;background:#fff;cursor:pointer;}',
+    '.lokgp-radio[aria-pressed="true"]{border-color:#6002EE;background:#FCFAFF;}',
+    '.lokgp-dot{flex:none;width:17px;height:17px;border-radius:50%;border:2px solid #D8D4E4;margin-top:2px;}',
+    '.lokgp-radio[aria-pressed="true"] .lokgp-dot{border-color:#6002EE;background:radial-gradient(#6002EE 45%,#fff 50%);}',
+    '.lokgp-radio b{display:block;font-size:13.5px;color:#1A1829;}.lokgp-radio span{font-size:12.5px;color:#6B6880;line-height:1.4;}',
+    '.lokgp-pills{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px;}',
+    '.lokgp-pill{font-size:13px;padding:6px 13px;border-radius:999px;border:1px solid #D8D4E4;background:#fff;color:#5A5570;cursor:pointer;}',
+    '.lokgp-pill[aria-pressed="true"]{background:#F3EBFF;border-color:#6002EE;color:#6002EE;font-weight:600;}',
+    '.lokgp-list{border:1px solid #E7E2F3;border-radius:12px;background:#fff;overflow:hidden;}',
+    '.lokgp-row{display:flex;align-items:center;gap:10px;padding:9px 10px;border-top:1px solid #F1F0F5;}',
+    '.lokgp-row:first-child{border-top:0;}',
+    '.lokgp-av{flex:none;width:36px;height:36px;border-radius:10px;background:#F3EBFF;color:#6002EE;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;overflow:hidden;}',
+    '.lokgp-av img{width:100%;height:100%;object-fit:cover;}',
+    '.lokgp-nm{flex:1;min-width:0;}.lokgp-nm b{display:block;font-size:14px;font-weight:600;color:#1A1829;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}.lokgp-nm span{font-size:12px;color:#6B6880;}',
+    '.lokgp-row.off .lokgp-nm,.lokgp-row.off .lokgp-av{opacity:.45;}',
+    '.lokgp-mini{width:28px;height:28px;border-radius:8px;border:1px solid #E7E2F3;background:#fff;color:#6B6880;cursor:pointer;font-size:13px;line-height:1;flex:none;}',
+    '.lokgp-mini[disabled]{opacity:.35;cursor:default;}',
+    '.lokgp-link{font-size:12.5px;font-weight:600;color:#6002EE;background:none;border:0;padding:4px 6px;cursor:pointer;flex:none;}',
+    '.lokgp-sw{position:relative;width:36px;height:20px;border-radius:999px;border:0;background:#6002EE;cursor:pointer;flex:none;}',
+    '.lokgp-sw:after{content:"";position:absolute;top:3px;right:3px;width:14px;height:14px;border-radius:50%;background:#fff;transition:right .15s;}',
+    '.lokgp-sw[aria-checked="false"]{background:#D8D4E4;}.lokgp-sw[aria-checked="false"]:after{right:19px;}',
+    '.lokgp-pick{padding:8px 10px 10px 56px;border-top:1px dashed #E9DDFF;background:#FCFAFF;}',
+    '.lokgp-pick label{display:flex;align-items:center;gap:8px;font-size:13px;padding:4px 0;cursor:pointer;color:#2A2838;}',
+    '.lokgp-pick input{width:16px;height:16px;accent-color:#6002EE;flex:none;}',
+    '.lokgp-add{border-top:1px dashed #E9DDFF;background:#FCFAFF;padding:10px 12px;}',
+    '.lokgp-add summary{cursor:pointer;color:#6002EE;font-size:14px;font-weight:600;}',
+    '.lokgp-prev{border:1px solid #E7E2F3;border-radius:12px;background:#fff;overflow:hidden;}',
+    '.lokgp-prev .t{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#6B6880;padding:8px 12px;border-bottom:1px solid #E7E2F3;background:#FBFAFE;}',
+    '.lokgp-prev .c{display:flex;flex-wrap:wrap;gap:6px;padding:12px;}',
+    '.lokgp-prev .c span{font-size:12px;font-weight:600;border:1px solid #E7E2F3;border-radius:999px;padding:5px 10px;color:#3B3850;}',
+    '.lokgp-prev .c span.on{border-color:#6002EE;background:#F3EBFF;color:#6002EE;}',
+    '.lokgp-prev .c small{font-weight:500;color:#6B6880;margin-left:3px;}',
+    '.lokgp-prev p{font-size:12px;color:#6B6880;margin:0;padding:0 12px 12px;line-height:1.45;}',
+    '.lokgp-radio,.lokgp-opt{white-space:normal;}',
+    '@media (max-width:767px){.lokgp-opts,.lokgp-two{grid-template-columns:minmax(0,1fr);}.lokgp-h{padding:12px 14px;}.lokgp-b{padding:14px;}.lokgp-pick{padding-left:12px;}' +
+      '.lokgp-row{flex-wrap:wrap;row-gap:6px;}.lokgp-nm{flex:1 1 calc(100% - 50px);}.lokgp-row .lokgp-mini:first-of-type{margin-left:46px;}}'
+  ].join('');
+
+  const gpEl = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  const gpThumb = (kind) => {
+    const t = gpEl('div', 'lokgp-th ' + (kind === 'gallery' ? 'lokgp-gl' : 'lokgp-cl'));
+    if (kind === 'gallery') {
+      t.appendChild(gpEl('i', 'a'));
+      const g = gpEl('i', 'g'); for (let i = 0; i < 8; i++) g.appendChild(gpEl('i')); t.appendChild(g);
+    } else {
+      t.appendChild(gpEl('i', 'a'));
+      const r = gpEl('i', 'r'); r.appendChild(gpEl('i', 's'));
+      const m = gpEl('i', 'm'); for (let i = 0; i < 4; i++) m.appendChild(gpEl('i')); r.appendChild(m); t.appendChild(r);
+    }
+    return t;
+  };
+  const gpStoreUrl = (look) => _galSlug ? '/' + encodeURIComponent(_galSlug) + '?look=' + (look === 'gallery' ? 'portfolio' : 'classic') : '';
+
+  let _gpPendingLook = null;  // the look card the owner tapped, before saving
+  const renderGalleryPanel = () => {
+    if (!_galV2) return;
+    const old = document.getElementById('lok-gallery-artists'); if (old) old.remove();
+    const add = el.addBtn(); if (!add || !add.parentNode || !add.parentNode.parentNode) return;
+    if (!document.getElementById('lok-gp-css')) {
+      const st = document.createElement('style'); st.id = 'lok-gp-css'; st.textContent = GP_CSS; document.head.appendChild(st);
+    }
+    let panel = document.getElementById('lok-gallery-page');
+    if (!panel) {
+      panel = document.createElement('section'); panel.id = 'lok-gallery-page';
+      panel.setAttribute('aria-label', 'Your Gallery page');
+      add.parentNode.parentNode.insertBefore(panel, add.parentNode.nextSibling);
+      // Arriving from the Profile / Services notice ("Set it up").
+      if (location.hash === '#gallery') {
+        _galTab = 'look';
+        setTimeout(() => { try { panel.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) {} }, 60);
+      }
+    }
+    panel.innerHTML = '';
+    const W = galW();
+    const shown = _galArtists.filter((a) => !a.is_hidden).length;
+
+    // header
+    const h = gpEl('div', 'lokgp-h');
+    const ic = gpEl('div', 'lokgp-ic');
+    ic.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>';
+    const ht = gpEl('div');
+    ht.appendChild(gpEl('h3', null, 'Your Gallery page'));
+    ht.appendChild(gpEl('p', null, 'Shoppers see: ' + (_galLook === 'gallery' ? 'Gallery look' : 'Classic look') + ' · ' + shown + ' ' + (shown === 1 ? W.one : W.title.toLowerCase()) + ' on show'));
+    h.appendChild(ic); h.appendChild(ht); h.appendChild(gpEl('span', 'lokgp-sp')); h.appendChild(gpEl('span', 'lokgp-feat', 'FEATURED'));
+    if (_galSlug) {
+      const open = gpEl('a', 'lokgp-btn q', 'Open my storefront');
+      open.href = '/' + encodeURIComponent(_galSlug); open.target = '_blank'; open.rel = 'noopener';
+      h.appendChild(open);
+    }
+    panel.appendChild(h);
+    if (_galNotice) { const n = gpEl('p', 'lokgp-err', _galNotice); n.style.margin = '10px 18px 0'; panel.appendChild(n); _galNotice = ''; }
+
+    // tabs
+    const tabs = gpEl('div', 'lokgp-tabs'); tabs.setAttribute('role', 'tablist');
+    [['look', 'Look'], ['cols', W.title]].forEach(([k, label]) => {
+      const b = gpEl('button', null, label); b.type = 'button'; b.setAttribute('role', 'tab');
+      b.setAttribute('aria-selected', _galTab === k ? 'true' : 'false');
+      b.addEventListener('click', () => { _galTab = k; renderGalleryPanel(); });
+      tabs.appendChild(b);
+    });
+    panel.appendChild(tabs);
+    const body = gpEl('div', 'lokgp-b'); body.setAttribute('role', 'tabpanel');
+    panel.appendChild(body);
+    if (_galTab === 'look') gpLookTab(body); else gpColsTab(body, W);
+  };
+
+  const gpLookTab = (body) => {
+    const pick = _gpPendingLook || _galLook;
+    const opts = gpEl('div', 'lokgp-opts');
+    [['classic', 'Classic', 'Your details on the left, listings beside them.'],
+     ['gallery', 'Gallery', 'A big cover photo and a wall of your work, with search and filters.']].forEach(([k, name, desc]) => {
+      const b = gpEl('button', 'lokgp-opt'); b.type = 'button';
+      b.setAttribute('aria-pressed', pick === k ? 'true' : 'false');
+      b.appendChild(gpThumb(k)); b.appendChild(gpEl('b', null, name)); b.appendChild(gpEl('span', null, desc));
+      if (_galLook === k) b.appendChild(gpEl('span', 'lokgp-now', 'Showing now'));
+      b.addEventListener('click', () => { _gpPendingLook = k === _galLook ? null : k; renderGalleryPanel(); });
+      opts.appendChild(b);
+    });
+    body.appendChild(opts);
+    const acts = gpEl('div', 'lokgp-acts');
+    // Nothing picked yet: offer a look at the OTHER layout on their own page.
+    const pvLook = _gpPendingLook || (_galLook === 'gallery' ? 'classic' : 'gallery');
+    if (_galSlug) {
+      const pv = gpEl('a', 'lokgp-btn q', 'Preview ' + (pvLook === 'gallery' ? 'Gallery' : 'Classic') + ' on my storefront');
+      pv.href = gpStoreUrl(pvLook); pv.target = '_blank'; pv.rel = 'noopener';
+      acts.appendChild(pv);
+    }
+    const use = gpEl('button', 'lokgp-btn', 'Use ' + (pick === 'gallery' ? 'Gallery' : 'Classic')); use.type = 'button';
+    if (!_gpPendingLook) use.style.display = 'none';
+    const err = gpEl('p', 'lokgp-err'); err.style.display = 'none';
+    use.addEventListener('click', async () => {
+      if (!_gpPendingLook) return;
+      use.disabled = true; use.textContent = 'Saving…';
+      try {
+        const c = await window.LokaliSupabaseReady;
+        const r = await c.rpc('set_storefront_look', { p_vendors_id: _galVendorId, p_look: _gpPendingLook });
+        if (r && r.error) throw new Error(r.error.message || 'save');
+        _galLook = _gpPendingLook; _gpPendingLook = null;
+        renderGalleryPanel();
+      } catch (e) {
+        const m = String((e && e.message) || '');
+        err.textContent = /LOKALI_LIMIT_REACHED:/.test(m) ? m.split('LOKALI_LIMIT_REACHED:')[1].trim() : 'That did not save. Please try again.';
+        err.style.display = '';
+        use.disabled = false; use.textContent = 'Use ' + (pick === 'gallery' ? 'Gallery' : 'Classic');
+      }
+    });
+    acts.appendChild(use);
+    acts.appendChild(gpEl('span', 'lokgp-note', 'Your listings, prices and reviews stay the same in both. Switch back any time.'));
+    body.appendChild(acts);
+    body.appendChild(err);
+    body.appendChild(gpEl('p', 'lokgp-note', 'The big cover photo uses the first photos in your portfolio on the Profile page. Drag your best one to the front there.'));
+  };
+
+  const gpColsTab = (body, W) => {
+    const two = gpEl('div', 'lokgp-two');
+    const left = gpEl('div'); const right = gpEl('div');
+    two.appendChild(left); two.appendChild(right); body.appendChild(two);
+    const err = gpEl('p', 'lokgp-err'); err.style.display = 'none';
+    const fail = (m) => { err.textContent = m || 'That did not save. Please try again.'; err.style.display = ''; };
+
+    // what shoppers narrow by
+    left.appendChild(gpEl('p', 'lokgp-lbl', 'On the Gallery page, shoppers narrow your work by'));
+    [['collections', 'My own ' + W.title.toLowerCase(), 'You name them, put them in order and choose which listings go in each.'],
+     ['kinds', "Lokali's kinds", "Picked from each listing's kind. Kinds with only one listing are left out so the row stays tidy."]].forEach(([k, name, desc]) => {
+      const b = gpEl('button', 'lokgp-radio'); b.type = 'button';
+      b.setAttribute('aria-pressed', _galBrowseBy === k ? 'true' : 'false');
+      b.appendChild(gpEl('span', 'lokgp-dot'));
+      const t = gpEl('div'); t.appendChild(gpEl('b', null, name)); t.appendChild(gpEl('span', null, desc)); b.appendChild(t);
+      b.addEventListener('click', async () => {
+        if (_galBrowseBy === k) return;
+        const prev = _galBrowseBy; _galBrowseBy = k; renderGalleryPanel();
+        if (!(await galPrefsSet({ browse_by: k }))) { _galBrowseBy = prev; _galNotice = 'That did not save. Please try again.'; renderGalleryPanel(); }
+      });
+      left.appendChild(b);
+    });
+
+    // the word
+    left.appendChild(gpEl('p', 'lokgp-lbl', 'Call them')).style.marginTop = '14px';
+    const pills = gpEl('div', 'lokgp-pills');
+    ['collections', 'artists'].forEach((key) => {
+      const on = _galLabel === key;
+      const b = gpEl('button', 'lokgp-pill', GAL_WORDS[key].title); b.type = 'button';
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      b.addEventListener('click', async () => {
+        if (on) return;
+        const prev = _galLabel; _galLabel = key; renderGalleryPanel(); syncGalleryFields();
+        if (!(await galLabelSet(_galVendorId, key))) { _galLabel = prev; _galNotice = 'That did not save. Please try again.'; renderGalleryPanel(); syncGalleryFields(); }
+      });
+      pills.appendChild(b);
+    });
+    left.appendChild(pills);
+
+    // the list
+    left.appendChild(gpEl('p', 'lokgp-lbl', _galArtists.length ? 'Your ' + W.title.toLowerCase() + ', in the order shoppers see them' : 'Your ' + W.title.toLowerCase()));
+    const list = gpEl('div', 'lokgp-list');
+    const move = async (i, d) => {
+      const j = i + d; if (j < 0 || j >= _galArtists.length) return;
+      const arr = _galArtists.slice(); const tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+      _galArtists = arr; renderGalleryPanel();
+      try {
+        const c = await window.LokaliSupabaseReady;
+        for (let k = 0; k < arr.length; k++) {
+          if (arr[k].sort_order === k) continue;
+          const r = await c.from('vendor_artists').update({ sort_order: k }).eq('id', arr[k].id);
+          if (r && r.error) throw new Error('order');
+          arr[k].sort_order = k;
+        }
+      } catch (e) { _galNotice = 'The new order did not save. Please try again.'; renderGalleryPanel(); }
+    };
+    _galArtists.forEach((a, i) => {
+      const row = gpEl('div', 'lokgp-row' + (a.is_hidden ? ' off' : ''));
+      const av = gpEl('div', 'lokgp-av');
+      if (a.photo_url && /^https:\/\//.test(a.photo_url)) { const im = document.createElement('img'); im.src = a.photo_url; im.alt = ''; av.appendChild(im); }
+      else av.textContent = String(a.name || '?').trim().charAt(0).toUpperCase();
+      const nm = gpEl('div', 'lokgp-nm'); nm.appendChild(gpEl('b', null, a.name));
+      const n = galCount(a.id);
+      nm.appendChild(gpEl('span', null, n + ' ' + (n === 1 ? W.count1 : W.countN) + (a.is_hidden ? ' · hidden from shoppers' : '')));
+      const up = gpEl('button', 'lokgp-mini', '↑'); up.type = 'button'; up.setAttribute('aria-label', 'Move ' + a.name + ' up'); up.disabled = i === 0;
+      const dn = gpEl('button', 'lokgp-mini', '↓'); dn.type = 'button'; dn.setAttribute('aria-label', 'Move ' + a.name + ' down'); dn.disabled = i === _galArtists.length - 1;
+      up.addEventListener('click', () => move(i, -1)); dn.addEventListener('click', () => move(i, 1));
+      const items = gpEl('button', 'lokgp-link', _galPicking === a.id ? 'Done' : 'Choose listings'); items.type = 'button';
+      items.addEventListener('click', () => { _galPicking = _galPicking === a.id ? null : a.id; renderGalleryPanel(); });
+      const sw = gpEl('button', 'lokgp-sw'); sw.type = 'button'; sw.setAttribute('role', 'switch');
+      sw.setAttribute('aria-checked', a.is_hidden ? 'false' : 'true'); sw.setAttribute('aria-label', 'Show ' + a.name + ' to shoppers');
+      sw.addEventListener('click', async () => {
+        const next = !a.is_hidden; a.is_hidden = next; renderGalleryPanel();
+        try {
+          const c = await window.LokaliSupabaseReady;
+          const r = await c.from('vendor_artists').update({ is_hidden: next }).eq('id', a.id);
+          if (r && r.error) throw new Error('hide');
+        } catch (e) { a.is_hidden = !next; _galNotice = 'That did not save. Please try again.'; renderGalleryPanel(); }
+      });
+      const rm = gpEl('button', 'lokgp-link', 'Remove'); rm.type = 'button'; rm.style.color = '#6B6880';
+      rm.addEventListener('click', async () => {
+        const q = galArtMode()
+          ? 'Remove ' + a.name + '? Their pieces stay listed, without a name beside them.'
+          : 'Remove the ' + (/collection$/i.test(String(a.name).trim()) ? a.name : a.name + ' collection') + '? Its listings stay on your storefront, just not grouped.';
+        if (!window.confirm(q)) return;
+        const r = await galSAPI().artists.remove(a.id);
+        if (r && r.error) { _galNotice = 'That did not save. Please try again.'; renderGalleryPanel(); return; }
+        _galArtists = _galArtists.filter((x) => x.id !== a.id);
+        Object.keys(_galLinks).forEach((pid) => { _galLinks[pid] = _galLinks[pid].filter((x) => x !== a.id); });
+        if (_galPicking === a.id) _galPicking = null;
+        renderGalleryPanel(); syncGalleryFields();
+      });
+      row.appendChild(av); row.appendChild(nm); row.appendChild(up); row.appendChild(dn); row.appendChild(items); row.appendChild(sw); row.appendChild(rm);
+      list.appendChild(row);
+      if (_galPicking === a.id) {
+        const pk = gpEl('div', 'lokgp-pick');
+        if (!products.length) pk.appendChild(gpEl('p', 'lokgp-note', 'Add a listing first, then come back to put it here.'));
+        products.forEach((p) => {
+          const lab = document.createElement('label');
+          const cb = document.createElement('input'); cb.type = 'checkbox';
+          cb.checked = (_galLinks[p.id] || []).indexOf(a.id) >= 0;
+          cb.addEventListener('change', async () => {
+            cb.disabled = true;
+            try { if (cb.checked) await galLinkAdd(p.id, a.id); else await galLinkDel(p.id, a.id); }
+            catch (e) {
+              cb.checked = !cb.checked;
+              const m = String((e && e.message) || '');
+              fail(/LOKALI_LIMIT_REACHED:/.test(m) ? m.split('LOKALI_LIMIT_REACHED:')[1].trim() : null);
+            }
+            cb.disabled = false;
+            const sub = row.querySelector('.lokgp-nm span');
+            const nn = galCount(a.id);
+            if (sub) sub.textContent = nn + ' ' + (nn === 1 ? W.count1 : W.countN) + (a.is_hidden ? ' · hidden from shoppers' : '');
+            gpDrawPreview(right, W);
+          });
+          lab.appendChild(cb); lab.appendChild(document.createTextNode(p.product_name || 'Untitled listing'));
+          pk.appendChild(lab);
+        });
+        list.appendChild(pk);
+      }
+    });
+    const addWrap = document.createElement('details'); addWrap.className = 'lokgp-add';
+    addWrap.open = !_galArtists.length;
+    addWrap.appendChild(gpEl('summary', null, '+ ' + W.add));
+    addWrap.appendChild(galBuildAddForm());
+    list.appendChild(addWrap);
+    left.appendChild(list);
+    const unsorted = products.filter((p) => !(_galLinks[p.id] || []).length).length;
+    if (_galArtists.length && unsorted) {
+      left.appendChild(gpEl('p', 'lokgp-note', unsorted + (unsorted === 1 ? ' listing is' : ' listings are') + ' in no ' + W.one + ' yet. ' + (unsorted === 1 ? 'It still shows' : 'They still show') + ' under "All". Tap "Choose listings" on a ' + W.one + ', or open any listing to pick.'));
+    }
+    left.appendChild(err);
+    gpDrawPreview(right, W);
+  };
+
+  const gpDrawPreview = (host, W) => {
+    host.innerHTML = '';
+    const box = gpEl('div', 'lokgp-prev');
+    box.appendChild(gpEl('div', 't', 'Buttons shoppers see on the Gallery page'));
+    const { chips, kinds } = galShopperChips();
+    const c = gpEl('div', 'c');
+    chips.forEach((x) => { const s = gpEl('span', x.on ? 'on' : null, x.t); s.appendChild(gpEl('small', null, String(x.n))); c.appendChild(s); });
+    box.appendChild(c);
+    let why = '';
+    if (chips.length < 3) why = 'The row only appears once there are at least two buttons to choose from.';
+    else if (kinds && _galBrowseBy === 'collections') why = 'No ' + W.title.toLowerCase() + ' with listings on show yet, so shoppers get Lokali\'s kinds for now.';
+    if (why) box.appendChild(gpEl('p', null, why));
+    if (_galLook !== 'gallery') box.appendChild(gpEl('p', null, 'Your storefront is on the Classic look. Switch on the Look tab to show these.'));
+    host.appendChild(box);
+  };
+
+  // The add-a-collection form, shared by the older box and the Gallery panel.
+  const galBuildAddForm = () => {
+    const W = galW();
     const form = document.createElement('div');
     form.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;padding-top:12px;margin-top:4px;border-top:1px solid #F1F0F5;';
     const mk = (ph, max) => { const i = document.createElement('input'); i.className = 'w-input'; i.placeholder = ph; i.maxLength = max; i.style.cssText = 'width:100%;box-sizing:border-box;font-family:inherit;margin:0;'; return i; };
@@ -3099,7 +3568,7 @@ const LokaliProductsPage = (() => {
         if (!r || r.error || !r.data) throw new Error((r && r.error && r.error.message) || 'save');
         _galArtists.push(r.data);
         _galPanelOpen = true;
-        renderArtistsPanel(); syncGalleryFields();
+        galRerender(); syncGalleryFields();
       } catch (e) {
         const m = String((e && e.message) || '');
         msg.textContent = /LOKALI_LIMIT_REACHED:/.test(m) ? m.split('LOKALI_LIMIT_REACHED:')[1].trim()
@@ -3111,8 +3580,7 @@ const LokaliProductsPage = (() => {
     form.appendChild(fName);
     if (galArtMode()) form.appendChild(fOrigin);
     form.appendChild(fBio); form.appendChild(photoWrap); form.appendChild(msg); form.appendChild(addB);
-    panel.appendChild(form);
-    panel.open = _galPanelOpen;
+    return form;
   };
 
   const ensureGalleryFieldsUI = () => {
@@ -3131,6 +3599,7 @@ const LokaliProductsPage = (() => {
       '<input data-gal-medium class="w-input" maxlength="80" placeholder="Medium, e.g. Oil on canvas" style="width:100%;box-sizing:border-box;font-family:inherit;margin:0;">' +
       '<input data-gal-dims class="w-input" maxlength="60" placeholder="Size, e.g. 24 x 36 in" style="width:100%;box-sizing:border-box;font-family:inherit;margin:0;">' +
       '</div>' +
+      '<div data-gal-multi style="display:none;flex-wrap:wrap;gap:8px;margin-top:2px;"></div>' +
       '<p data-gal-hint style="font-size:12px;color:#8E8BA6;margin:8px 0 0;line-height:1.45;">For a one-of-a-kind piece set the stock to 1. When it sells, set it to 0 and the page shows it as Sold.</p>';
     host.appendChild(wrap);
     wrap.querySelector('[data-gal-artist]').addEventListener('change', (e) => {
@@ -3160,6 +3629,32 @@ const LokaliProductsPage = (() => {
     });
     if (_galArtistId != null && !_galArtists.some((a) => a.id === _galArtistId)) _galArtistId = null;
     sel.value = _galArtistId == null ? '' : String(_galArtistId);
+    // GALLERY PAGE SETUP: a listing can sit in several collections (F 2026-11-21).
+    const multi = wrap.querySelector('[data-gal-multi]');
+    sel.style.display = _galV2 ? 'none' : '';
+    multi.style.display = _galV2 ? 'flex' : 'none';
+    if (_galV2) {
+      wrap.querySelector('[data-gal-title]').textContent = art ? 'Artist and artwork details' : 'Collections';
+      wrap.querySelector('[data-gal-sub]').textContent = art
+        ? 'Tap who made it (more than one is fine), then add the medium and size.'
+        : 'Tap every collection this listing belongs to. Tap again to take it out.';
+      _galSel = _galSel.filter((id) => _galArtists.some((a) => a.id === id));
+      multi.innerHTML = '';
+      _galArtists.forEach((a) => {
+        const on = _galSel.indexOf(a.id) >= 0;
+        const b = document.createElement('button'); b.type = 'button';
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
+        b.textContent = (on ? '\u2713 ' : '') + a.name;
+        b.style.cssText = 'font-family:inherit;font-size:13px;padding:7px 13px;border-radius:999px;cursor:pointer;line-height:1.3;' +
+          (on ? 'background:#F3EBFF;border:1px solid #6002EE;color:#6002EE;font-weight:600;' : 'background:#fff;border:1px solid #CCCCCC;color:#5A5570;');
+        b.addEventListener('click', () => {
+          const i = _galSel.indexOf(a.id);
+          if (i >= 0) _galSel.splice(i, 1); else _galSel.push(a.id);
+          syncGalleryFields();
+        });
+        multi.appendChild(b);
+      });
+    }
     const med = wrap.querySelector('[data-gal-medium]'), dim = wrap.querySelector('[data-gal-dims]');
     med.value = _galMedium || ''; dim.value = _galDimensions || '';
     med.style.display = art ? '' : 'none';

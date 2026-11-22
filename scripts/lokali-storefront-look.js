@@ -10,11 +10,13 @@
  * so their behaviour, lead tracking and inquiry modal stay exactly as they are.
  * Contact buttons proxy-click the real hidden controls for the same reason.
  *
- * Who sees it:
- *   - nobody by default;
- *   - any storefront with ?look=portfolio in the address (preview / testing);
- *   - vendor ids listed in ON_FOR (Francesca decides who; add an id = switch on).
+ * Who sees it (F 2026-11-21, patch_gallery_page_setup.sql):
+ *   - a storefront whose owner chose Gallery (vendors.storefront_look) AND is
+ *     still on Featured (plan_rank 2). A downgrade shows Classic again; the
+ *     choice is kept. Before the patch the read errors and nobody gets it;
+ *   - any storefront with ?look=portfolio in the address (preview / testing).
  * ?look=classic always shows the normal storefront.
+ * The hand-kept ON_FOR list is gone: owners switch on their Products page.
  *
  * Safety: every vendor-typed value goes in through textContent or a property,
  * never innerHTML. Images only from http(s) URLs. Fails closed: if anything
@@ -25,7 +27,6 @@
   if (window.__lkpLook) return;
   window.__lkpLook = true;
 
-  var ON_FOR = []; // vendor ids that get the new layout without ?look=portfolio
   var q = location.search || '';
   if (/[?&]look=classic\b/.test(q)) return;
   var FORCED = /[?&]look=portfolio\b/.test(q);
@@ -258,14 +259,26 @@
   }, 20000).then(function (lv) {
     if (!lv) return;
     var vid = Number(lv.id);
-    if (!FORCED && ON_FOR.indexOf(vid) < 0) return;
-    start(vid).catch(function (e) {
+    (FORCED ? Promise.resolve(true) : chosen(vid)).then(function (on) {
+      if (!on) return;
+      return start(vid);
+    }).catch(function (e) {
       // Fail closed: show the normal storefront again.
       document.documentElement.classList.remove('lkp-on');
       var host = document.getElementById('lkp'); if (host) host.parentNode.removeChild(host);
       if (window.console) console.warn('[lokali-storefront-look] fell back to the normal storefront', e);
     });
   });
+
+  // Did the owner choose Gallery, and is the storefront still Featured?
+  function chosen(vid) {
+    return client().then(function (c) {
+      return c.from('vendors').select('storefront_look,plan_rank').eq('id', vid).maybeSingle();
+    }).then(function (res) {
+      var v = unwrap(res);
+      return !!(v && v.storefront_look === 'gallery' && Number(v.plan_rank) === 2);
+    }, function () { return false; });
+  }
 
   function client() {
     return Promise.resolve(window.LokaliSupabaseReady).then(function (c) { if (!c || !c.from) throw new Error('no client'); return c; });
@@ -279,7 +292,7 @@
         c.from('products').select('*').eq('vendors_id', vid).order('sort_order', { ascending: true }).order('id', { ascending: true }),
         c.from('locations').select('id,location_name'),
         SB.subcategories && SB.subcategories.list ? Promise.resolve(SB.subcategories.list()).catch(function () { return null; }) : null,
-        (SB.artists && SB.artists.forVendor) ? Promise.resolve(SB.artists.forVendor(vid)).catch(function () { return null; }) : null,
+        loadGroups(c, SB, vid),
         waitFor(function () { return portfolioUrls().length ? portfolioUrls() : null; }, 5000)
       ]);
     }).then(function (r) {
@@ -288,10 +301,41 @@
       var products = (unwrap(r[1]) || []).filter(function (p) { return p && p.is_active !== false; });
       var locs = {}; (unwrap(r[2]) || []).forEach(function (l) { locs[l.id] = l.location_name; });
       var subs = {}; (unwrap(r[3]) || []).forEach(function (s) { if (s && s.slug && !subs[s.slug]) subs[s.slug] = s.label; });
-      var artists = (unwrap(r[4]) || []);
+      var g = r[4] || {};
       var photos = r[5] || [];
-      build(v, products, locs, subs, artists, photos);
+      build(v, products, locs, subs, g, photos);
     });
+  }
+
+  // The owner's collections, their word, what shoppers narrow by, and which
+  // listings sit in each (a listing can sit in several). Needs
+  // patch_gallery_page_setup.sql; before it, falls back to one collection per
+  // listing (products.artist_id) and every collection shown.
+  function loadGroups(c, SB, vid) {
+    var empty = { artists: [], label: 'collections', browseBy: 'collections', links: null };
+    var arts = c.from('vendor_artists').select('id,name,origin,bio,photo_url,sort_order,is_hidden')
+      .eq('vendors_id', vid).is('deleted_at', null).order('sort_order').order('id').limit(60)
+      .then(function (res) {
+        if (res && !res.error) return res.data || [];
+        return (SB.artists && SB.artists.forVendor) ? Promise.resolve(SB.artists.forVendor(vid)).then(function (r2) { return unwrap(r2) || []; }) : [];
+      });
+    var prefs = c.from('vendor_collection_prefs').select('label,browse_by').eq('vendors_id', vid).maybeSingle()
+      .then(function (res) {
+        if (res && !res.error) return res.data || {};
+        return c.from('vendor_collection_prefs').select('label').eq('vendors_id', vid).maybeSingle()
+          .then(function (r2) { return (r2 && !r2.error && r2.data) || {}; });
+      });
+    var links = c.from('product_collections').select('product_id,collection_id').eq('vendors_id', vid).limit(5000)
+      .then(function (res) { return (res && !res.error) ? (res.data || []) : null; });
+    return Promise.all([arts, prefs, links]).then(function (r) {
+      var p = r[1] || {};
+      return {
+        artists: (r[0] || []).filter(function (a) { return a && a.id != null && String(a.name || '').trim(); }),
+        label: (p.label === 'artists' || p.label === 'makers') ? p.label : 'collections',
+        browseBy: p.browse_by === 'kinds' ? 'kinds' : 'collections',
+        links: r[2]
+      };
+    }, function () { return empty; });
   }
 
   // Photos the normal page already loaded (plan caps already applied there).
@@ -330,13 +374,27 @@
     window.scrollTo({ top: y, behavior: REDUCED.matches ? 'auto' : 'smooth' });
   }
 
-  function build(v, products, locs, subs, artists, photos) {
+  function build(v, products, locs, subs, G, photos) {
     var name = v.business_name || (window.LOKALI_LOADED_VENDOR && window.LOKALI_LOADED_VENDOR.name) || '';
     var owner = String(v.owner_name || '').trim();
     var vendorSlug = v.slug || '';
     var areas = (Array.isArray(v.locations_id) ? v.locations_id : []).map(function (id) { return locs[id]; }).filter(Boolean);
-    var gallery = Number(v.plan_rank) === 2 && artists.length > 0;
+    // Collections are a Featured perk. "Art" presentation (by-line, medium and
+    // size, Sold / One of a kind) only when the owner calls them Artists.
+    var featured = Number(v.plan_rank) === 2;
+    var artists = featured ? (G.artists || []) : [];
     var artistById = {}; artists.forEach(function (a) { artistById[a.id] = a; });
+    var gallery = artists.length > 0 && (G.label === 'artists' || G.label === 'makers');
+    var linksOf = {};
+    if (G.links) G.links.forEach(function (l) { (linksOf[l.product_id] = linksOf[l.product_id] || []).push(l.collection_id); });
+    function collectionsOf(p) {
+      var ids = G.links ? (linksOf[p.id] || []) : (p.artist_id != null ? [p.artist_id] : []);
+      return ids.filter(function (id) { return artistById[id]; });
+    }
+    var shownArtists = artists.filter(function (a) {
+      return !a.is_hidden && products.some(function (p) { return collectionsOf(p).indexOf(a.id) >= 0; });
+    });
+    var byCollections = G.browseBy !== 'kinds' && shownArtists.length > 0;
 
     var st = ce('style'); st.id = 'lkp-css'; st.textContent = CSS; document.head.appendChild(st);
     var host = ce('div'); host.id = 'lkp';
@@ -462,8 +520,8 @@
     sh.appendChild(ce('h2', null, gallery ? 'The art' : 'The work'));
     var cnt = ce('span', 'lkp-cnt'); sh.appendChild(cnt);
     work.appendChild(sh);
-    work.appendChild(ce('p', 'lkp-lede', gallery
-      ? 'Pick an artist to see only their work.'
+    work.appendChild(ce('p', 'lkp-lede', byCollections
+      ? (gallery ? 'Pick an artist to see only their work.' : 'Pick a collection to narrow things down.')
       : (quoteMostly ? 'Everything is made to order. Pick what you need and ask for a quote.' : 'Pick a kind to narrow things down.')));
     var fbar = ce('div', 'lkp-fbar');
     var fbtn = ce('button', 'lkp-fbtn'); fbtn.type = 'button'; fbtn.appendChild(svg(IC.filter, 18)); fbtn.appendChild(document.createTextNode('Filter and sort'));
@@ -474,19 +532,25 @@
     work.appendChild(fbar); work.appendChild(chips); work.appendChild(grid); work.appendChild(moreBtn);
     wrap.appendChild(work);
 
-    // groups: artists for a gallery, otherwise the listing's kind (subcategory)
-    function groupOf(p) {
-      if (gallery) return p.artist_id != null && artistById[p.artist_id] ? 'a' + p.artist_id : '';
-      return p.subcategory ? 's' + p.subcategory : '';
+    // groups: the owner's collections (their order, hidden ones left out) when
+    // they browse by collections; otherwise the listing's kind, leaving out
+    // kinds with a single listing so the row stays tidy (F 2026-11-21). A
+    // listing can sit in several collections.
+    function groupsOf(p) {
+      if (byCollections) return collectionsOf(p).map(function (id) { return 'a' + id; });
+      return p.subcategory ? ['s' + p.subcategory] : [];
     }
     function groupLabel(g) {
-      if (g.charAt(0) === 'a') return (artistById[g.slice(1)] || {}).name || 'Artist';
+      if (g.charAt(0) === 'a') return (artistById[g.slice(1)] || {}).name || 'Collection';
       var slug = g.slice(1);
       return subs[slug] || slug.replace(/-/g, ' ').replace(/^./, function (c) { return c.toUpperCase(); });
     }
     var counts = {};
-    products.forEach(function (p) { var g = groupOf(p); if (g) counts[g] = (counts[g] || 0) + 1; });
-    var groups = Object.keys(counts).sort(function (a, b) { return counts[b] - counts[a] || groupLabel(a).localeCompare(groupLabel(b)); });
+    products.forEach(function (p) { groupsOf(p).forEach(function (g) { counts[g] = (counts[g] || 0) + 1; }); });
+    var groups = byCollections
+      ? shownArtists.map(function (a) { return 'a' + a.id; }).filter(function (g) { return counts[g]; })
+      : Object.keys(counts).filter(function (g) { return counts[g] >= 2; })
+          .sort(function (a, b) { return counts[b] - counts[a] || groupLabel(a).localeCompare(groupLabel(b)); });
     var hasFilters = groups.length >= 2;
     var state = { group: '', sort: 'picks', shown: 0 };
     var PAGE_FIRST = 12, PAGE_MORE = 24;
@@ -504,7 +568,7 @@
         b.addEventListener('click', function () { state.group = g; render(true); });
         chips.appendChild(b);
       }
-      chip(gallery ? 'All artists' : 'All', products.length, '', 0);
+      chip(gallery && byCollections ? (G.label === 'makers' ? 'All makers' : 'All artists') : 'All', products.length, '', 0);
       groups.forEach(function (g, i) { chip(groupLabel(g), counts[g], g, i + 1); });
       var hiddenPhone = Math.max(0, groups.length - 2), hiddenWide = Math.max(0, groups.length - 6);
       if (hiddenPhone > 0) {
@@ -524,7 +588,7 @@
       return l;
     }
     function priceNum(p) { var n = Number(p.price); return (!p.is_quote_based && p.price != null && p.price !== '' && isFinite(n)) ? n : 1e12; }
-    function current() { return sorted(products.filter(function (p) { return !state.group || groupOf(p) === state.group; })); }
+    function current() { return sorted(products.filter(function (p) { return !state.group || groupsOf(p).indexOf(state.group) >= 0; })); }
     function href(p) {
       if (vendorSlug && p.slug) return '/' + encodeURIComponent(vendorSlug) + '/products/' + encodeURIComponent(p.slug);
       return '/product-detail?id=' + encodeURIComponent(p.id) + '&vendor=' + encodeURIComponent(v.id);
@@ -545,7 +609,10 @@
       if (tag) im.appendChild(ce('span', 'lkp-tg', tag));
       a.appendChild(im);
       a.appendChild(ce('h3', null, p.product_name || 'Untitled'));
-      if (gallery && artistById[p.artist_id]) a.appendChild(ce('div', 'lkp-by', artistById[p.artist_id].name));
+      if (gallery) {
+        var by = collectionsOf(p).filter(function (id) { return !artistById[id].is_hidden; }).map(function (id) { return artistById[id].name; });
+        if (by.length) a.appendChild(ce('div', 'lkp-by', by.join(' & ')));
+      }
       var row = ce('div', 'lkp-row');
       var n = Number(p.price), pr;
       if (sold) pr = ce('span', 'lkp-pr q', 'Found a home');
@@ -564,7 +631,7 @@
     function render(reset) {
       var list = current();
       if (reset) { grid.innerHTML = ''; state.shown = 0; drawChips(); }
-      cnt.textContent = list.length + (list.length === 1 ? ' piece' : ' pieces') + (gallery ? ' · ' + artists.length + (artists.length === 1 ? ' artist' : ' artists') : '');
+      cnt.textContent = list.length + (list.length === 1 ? ' piece' : ' pieces') + (gallery && byCollections ? ' · ' + shownArtists.length + (shownArtists.length === 1 ? ' artist' : ' artists') : '');
       if (!list.length) { grid.innerHTML = ''; grid.appendChild(ce('div', 'lkp-none', 'Nothing here yet.')); moreBtn.style.display = 'none'; return; }
       var end = Math.min(list.length, state.shown + (state.shown ? PAGE_MORE : PAGE_FIRST));
       if (!state.shown && list.length <= PAGE_FIRST + 2) end = list.length;
@@ -589,7 +656,7 @@
       var top = ce('div', 'lkp-st'); top.appendChild(ce('b', null, 'Filter and sort'));
       var x = ce('button'); x.type = 'button'; x.setAttribute('aria-label', 'Close'); x.appendChild(svg(IC.close, 20)); x.addEventListener('click', closeSheet);
       top.appendChild(x); sheet.appendChild(top);
-      sheet.appendChild(ce('div', 'lkp-shh', gallery ? 'Artist' : 'What are you looking for?'));
+      sheet.appendChild(ce('div', 'lkp-shh', byCollections ? (gallery ? 'Artist' : 'Collection') : 'What are you looking for?'));
       var opts = [];
       function opt(label, n, g) {
         var b = ce('button', 'lkp-opt' + (pick.group === g ? ' on' : '')); b.type = 'button';
@@ -597,7 +664,7 @@
         b.addEventListener('click', function () { pick.group = g; opts.forEach(function (o) { o.el.classList.toggle('on', o.g === g); }); updateGo(); });
         opts.push({ el: b, g: g }); sheet.appendChild(b);
       }
-      opt(gallery ? 'All artists' : 'All pieces', products.length, '');
+      opt(gallery && byCollections ? (G.label === 'makers' ? 'All makers' : 'All artists') : 'All pieces', products.length, '');
       groups.forEach(function (g) { opt(groupLabel(g), counts[g], g); });
       sheet.appendChild(ce('div', 'lkp-shh', 'Sort by'));
       var sorts = ce('div', 'lkp-sorts');

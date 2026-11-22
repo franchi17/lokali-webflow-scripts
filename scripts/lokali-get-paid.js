@@ -76,6 +76,10 @@
     '#lokali-checkout .gp-set textarea{min-height:64px;resize:vertical;}' +
     '#lokali-checkout .gp-days{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;}' +
     '#lokali-checkout .gp-saved{font-size:13px;color:#1D6A45;font-weight:600;margin-left:4px;display:none;}' +
+    '#lokali-checkout .gp-terms{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border:1px solid #DEDAEE;border-radius:14px;margin-top:14px;font-size:13px;line-height:1.5;color:#3A3550;cursor:pointer;}' +
+    '#lokali-checkout .gp-terms input{flex:none;width:18px;height:18px;margin:1px 0 0;accent-color:#6002EE;cursor:pointer;}' +
+    '#lokali-checkout .gp-terms a{color:#6002EE;font-weight:600;}' +
+    '#lokali-checkout .gp-agreed{font-size:12px;color:#1D6A45;margin-top:10px;}' +
     '@media(max-width:480px){#lokali-checkout .gp-days{grid-template-columns:1fr;}}';
 
   var state = { plan: 'free', fees: FEES_DEFAULT, st: null, fee: null };
@@ -124,6 +128,7 @@
         '<span class="gp-chip ' + (st.payouts_enabled ? 'on' : 'warn') + '">' + (st.payouts_enabled ? 'Payouts on' : 'Payouts pending') + '</span>' +
         '<span class="gp-chip ' + (st.tax_active ? 'on' : '') + '">' + (st.tax_active ? 'Sales tax: automatic' : 'Sales tax: not set up') + '</span></div>' +
         settingsBox(st) +
+        termsBox(st) +
         '<div class="gp-switch"><div><strong>Show Buy on Lokali on my products</strong><span>Priced, in-stock products get a Buy button above Inquire. Quote-based items keep Inquire.</span></div>' +
         '<button type="button" class="gp-tog" role="switch" aria-checked="' + (st.checkout_enabled ? 'true' : 'false') + '" aria-label="Show Buy on Lokali on my products" data-gp="toggle"></button></div>' +
         '<div class="gp-row"><a class="gp-btn ghost" href="/vendor-dashboard/orders">Your orders</a><button type="button" class="gp-btn ghost" data-gp="dashboard">Open Stripe dashboard</button><button type="button" class="gp-btn ghost" data-gp="status">Refresh status</button></div>' +
@@ -152,10 +157,23 @@
       '</div>';
   }
 
+  // Card payment terms (F 2026-11-20): a vendor ticks this once before the Buy
+  // switch can go on; the server keeps the dated record (vendor_checkout_consent).
+  function termsBox(st) {
+    if (st.terms_agreed_at) {
+      var d = new Date(st.terms_agreed_at);
+      var when = isNaN(d) ? '' : ' on ' + d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+      return '<div class="gp-agreed">You agreed to the card payment terms' + esc(when) + '.</div>';
+    }
+    return '<label class="gp-terms" for="lk-gp-terms"><input type="checkbox" id="lk-gp-terms">' +
+      '<span>I agree to the card payment terms in section 6 of Lokali\'s <a href="/terms" target="_blank" rel="noopener">Terms of Service</a>: I am the seller, payments go to my own Stripe account, and Lokali keeps the fee shown above on each order.</span></label>';
+  }
+
   function say(msg) { var m = $('lk-gp-msg'); if (!m) return; m.textContent = msg || ''; m.style.display = msg ? '' : 'none'; }
   function busy(b, on, label) { if (!b) return; if (on) { b.dataset.t = b.textContent; b.disabled = true; b.textContent = label || 'One moment'; } else { b.disabled = false; if (b.dataset.t) b.textContent = b.dataset.t; } }
 
   var NEED_RULE = 'Add your return rule above and save it first. Shoppers see it before they pay.';
+  var NEED_TERMS = 'Tick the box to agree to the card payment terms first.';
   function dayVal(id) { var el = $(id); var v = el ? String(el.value || '').trim() : ''; if (!v) return null; var n = Math.floor(Number(v)); return (isFinite(n) && n >= 1 && n <= 60) ? n : NaN; }
   function act(kind, btn) {
     if (kind === 'settings') {
@@ -174,10 +192,20 @@
     if (kind === 'toggle') {
       var next = btn.getAttribute('aria-checked') !== 'true';
       if (next && !(state.st && String(state.st.return_policy || '').trim())) { say(NEED_RULE); var pf = $('lk-gp-policy'); if (pf) pf.focus(); return; }
+      var tb = $('lk-gp-terms');
+      var agree = !!(tb && tb.checked);
+      if (next && !(state.st && state.st.terms_agreed_at) && !agree) { say(NEED_TERMS); if (tb) tb.focus(); return; }
       btn.setAttribute('aria-checked', next ? 'true' : 'false');
-      post({ action: 'toggle', enabled: next }).then(function (r) {
-        if (!r.ok) { btn.setAttribute('aria-checked', next ? 'false' : 'true'); say(r.data.error === 'return_policy_required' ? NEED_RULE : (r.data.error || 'Could not save that.')); return; }
-        state.st = r.data.state; say('');
+      post({ action: 'toggle', enabled: next, agree_terms: agree }).then(function (r) {
+        if (!r.ok) {
+          btn.setAttribute('aria-checked', next ? 'false' : 'true');
+          var e = r.data.error;
+          say(e === 'return_policy_required' ? NEED_RULE : e === 'terms_required' ? NEED_TERMS : (e || 'Could not save that.'));
+          return;
+        }
+        var hadTerms = !!(state.st && state.st.terms_agreed_at);
+        state.st = Object.assign({}, state.st || {}, r.data.state || {}); say('');
+        if (!hadTerms && state.st.terms_agreed_at) render();
       }).catch(function () { btn.setAttribute('aria-checked', next ? 'false' : 'true'); say('Could not save that.'); });
       return;
     }

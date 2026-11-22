@@ -6,6 +6,9 @@
        also appear on the dashboard home); the recording shows layout, clicks and
        where people stop, not what is written.
      - No identify(): visitors stay anonymous; no network bodies, no console logs.
+     - 2026-11-15 (SEC-125): click events masked too (mask_all_text +
+       mask_all_element_attributes): no button words or link targets (e.g. a shopper's
+       mailto on the dashboard home) reach PostHog.
      - Project 736661 "Lokali". The phc_ key is PostHog's public write-only key. -->
 <script>
 (function () {
@@ -19,6 +22,8 @@
     capture_pageleave: true,
     respect_dnt: true,
     disable_surveys: true,
+    mask_all_text: true,
+    mask_all_element_attributes: true,
     session_recording: {
       maskAllInputs: true,
       maskTextSelector: '*',
