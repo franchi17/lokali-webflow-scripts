@@ -219,17 +219,17 @@
       '.lok-fol-pic .lok-cap{margin:12px 0 0;}' +
       '.lok-fol .lok-btn{margin-top:28px;}' +
       // for businesses (light orange, no violet inside)
-      '.lok-door{background:#FFF2DF;}' +
-      '.lok-door .lok-eye{color:#8A3D06;}' +
-      '.lok-door .lok-h2 span{color:#B8471B;}' +
+      '.lok-door{background:#E6EFFB;}' + // sky family (F 2026-11-22): orange off the site; this band previews the For vendors page color
+      '.lok-door .lok-eye{color:#1D4E9E;}' +
+      '.lok-door .lok-h2 span{color:#1D4E9E;}' +
       '.lok-faces{display:flex;align-items:center;justify-content:center;gap:12px;margin:26px 0;flex-wrap:wrap;}' +
       '.lok-stack{display:flex;flex:none;}' +
-      '.lok-stack img{width:44px;height:44px;border-radius:50%;object-fit:cover;border:3px solid #FFF2DF;margin-left:-12px;background:#FFE3BF;}' +
+      '.lok-stack img{width:44px;height:44px;border-radius:50%;object-fit:cover;border:3px solid #E6EFFB;margin-left:-12px;background:#CFDDF3;}' +
       '.lok-stack img:first-child{margin-left:0;}' +
-      '.lok-faces span{font-size:15px;font-weight:600;color:#8A3D06;}' +
-      '.lok-obtn{display:inline-flex;align-items:center;justify-content:center;background:#FF8D00;color:#1A1829!important;font-weight:800;border-radius:999px;padding:16px 28px;font-size:15.5px;text-decoration:none!important;}' +
-      '.lok-obtn:hover{background:#F07F00;}' +
-      '.lok-door small{display:block;margin-top:14px;font-size:14px;color:#8A3D06;line-height:1.5;}' +
+      '.lok-faces span{font-size:15px;font-weight:600;color:#1D4E9E;}' +
+      '.lok-obtn{display:inline-flex;align-items:center;justify-content:center;background:#1D4E9E;color:#fff!important;font-weight:800;border-radius:999px;padding:16px 28px;font-size:15.5px;text-decoration:none!important;}' +
+      '.lok-obtn:hover{background:#163E7E;}' +
+      '.lok-door small{display:block;margin-top:14px;font-size:14px;color:#1D4E9E;line-height:1.5;}' +
       // why people trust it
       '.lok-proof{background:#F3EBFF;}' +
       '.lok-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin:44px 0 0;padding:0;list-style:none;text-align:left;}' +
