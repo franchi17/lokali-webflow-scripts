@@ -42,7 +42,7 @@
     '#lok-grants{background:#fff;border:.5px solid #EEEDF6;border-radius:12px;padding:18px;margin-top:16px;min-width:0;box-sizing:border-box;' +
       'font-family:"Plus Jakarta Sans",-apple-system,sans-serif;color:#1A1829;}' +
     '#lok-grants *{box-sizing:border-box;font-family:inherit;}' +
-    '#lok-grants{padding:0;}#lok-grants.open{padding:0 0 18px;}#lok-grants #lok-grants-body{padding:0 18px;}#lok-grants #lok-grants-body[hidden]{display:none;}' +
+    '#lok-grants{padding:0;}#lok-grants.open{padding:0 0 18px;}#lok-grants #lok-grants-body{padding:0 18px;}#lok-grants #lok-grants-body[hidden]{display:none;}#lok-grants #lok-grants-body .lg-t{display:none;}' +
     '#lok-grants .lg-line{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;background:none;border:0;padding:14px 18px;cursor:pointer;font-size:14.5px;color:#1A1829;text-align:left;}' +
     '#lok-grants .lg-line b{font-weight:700;}' +
     '#lok-grants .lg-see{color:#6002EE;font-weight:700;white-space:nowrap;}' +
