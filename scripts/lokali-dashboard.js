@@ -1262,7 +1262,7 @@
     var s = document.createElement('style'); s.id = 'lok-undo-css';
     s.textContent =
       '#lok-undo{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:2147483000;' +
-      'display:flex;align-items:center;gap:16px;max-width:calc(100vw - 32px);box-sizing:border-box;background:#6002EE;color:#fff;' +
+      'display:flex;align-items:center;gap:16px;width:max-content;max-width:calc(100vw - 32px);box-sizing:border-box;background:#6002EE;color:#fff;' +
       'border-radius:14px;padding:12px 14px 12px 18px;box-shadow:0 10px 30px rgba(42,37,64,.22);font:500 14.5px/1.4 "Plus Jakarta Sans",-apple-system,sans-serif;}' +
       '#lok-undo[hidden]{display:none;}' +
       '#lok-undo span{min-width:0;}' +
