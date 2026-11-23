@@ -54,7 +54,7 @@
   };
   // Stroke icons for the channel row (same drawings as before).
   var CH = {
-    inquiry:   { label: 'Inquiries',      icon: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z', brand: true },
+    inquiry:   { label: 'Messages',      icon: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z', brand: true },
     email:     { label: 'Email taps',     icon: 'M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z|M22 6 12 13 2 6' },
     phone:     { label: 'Phone taps',     icon: 'M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z' },
     whatsapp:  { label: 'WhatsApp taps',  icon: 'M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8z' },
@@ -266,7 +266,7 @@
   function historyLine(l) {
     var n = l.prior.length;
     var parts = l.prior.slice(0, 2).map(function (o) {
-      var what = o.context ? escapeHtml(o.context) : 'a general inquiry';
+      var what = o.context ? escapeHtml(o.context) : 'a general question';
       var when = new Date(o.t).toLocaleDateString(undefined, { month: 'long' });
       var out = o.status === 'won' ? 'won' : o.status === 'closed' ? 'closed' : o.status === 'replied' ? 'replied' : 'new';
       return what + ' in ' + when + ' (' + out + ')';
@@ -394,7 +394,7 @@
       // F 2026-09-27: '3 since you joined' beside 'Your first lead usually follows...' read as a
       // contradiction. Those 3 were contact taps (call / email / website), not inquiries: say so.
       var ct = totals.contacts || 0;
-      s2s.appendChild(el('span', 'lq-chip quiet', ct + (ct === 1 ? ' contact tap' : ' contact taps') + ', no inquiries yet'));
+      s2s.appendChild(el('span', 'lq-chip quiet', ct + (ct === 1 ? ' tap to call or email' : ' taps to call or email') + ', no messages yet'));
     } else {
       s2s.appendChild(el('span', 'lq-chip quiet', sinceJoin + ' since you joined'));
     }
@@ -409,7 +409,7 @@
       var s4 = el('div', 'lq-stat');
       s4.appendChild(el('div', 'l', 'Came back'));
       s4.appendChild(el('div', 'v', repeatN + ' of ' + inquiries.length));
-      s4.appendChild(el('div', 's', 'Inquiries from someone who had contacted you before'));
+      s4.appendChild(el('div', 's', 'Messages from someone who had contacted you before'));
       stats.appendChild(s4); stats.classList.add('four');
     }
     // #194 Business from Lokali: confirmed sum of what Won leads were worth, and the
@@ -468,7 +468,7 @@
       sh.appendChild(el('span', 'lq-cnt' + (needs.length ? '' : ' soft'), String(needs.length)));
       if (needs.length) sh.appendChild(el('span', 'lq-hint', 'Tapping Reply marks it replied for you'));
       needsHost.appendChild(sh);
-      if (!needs.length) { needsHost.appendChild(el('div', 'lq-clear', 'Nothing waiting on you. New inquiries land here.')); return; }
+      if (!needs.length) { needsHost.appendChild(el('div', 'lq-clear', 'Nothing waiting on you. New leads land here.')); return; }
       needs.forEach(function (l) { needsHost.appendChild(leadCard(l)); });
       s1.className = 'lq-stat hot';
     }
@@ -552,7 +552,7 @@
       var card = el('div', 'lq-lead');
       card.appendChild(el('div', 'lq-av', initials(l.name)));
       var body = el('div');
-      var who = html('div', 'lq-who', escapeHtml(l.name) + (l.context ? ' <span>asked about</span> ' + escapeHtml(l.context) : ' <span>sent a general inquiry</span>'));
+      var who = html('div', 'lq-who', escapeHtml(l.name) + (l.context ? ' <span>asked about</span> ' + escapeHtml(l.context) : ' <span>sent a general question</span>'));
       body.appendChild(who);
       var bits = [];
       if (l.email) bits.push(escapeHtml(l.email));
@@ -576,7 +576,7 @@
       var acts = el('div', 'lq-acts');
       var primaryDone = false;
       if (l.email) {
-        var subject = 'Re: your ' + (l.context ? 'question about ' + l.context : 'inquiry') + ' on Lokali';
+        var subject = 'Re: your ' + (l.context ? 'question about ' + l.context : 'message') + ' on Lokali';
         var bodyTxt = 'Hi ' + (firstName(l.name) || 'there') + ',\n\n';
         var a = html('a', 'lq-btn p', FA.envelope + '<span>Reply by email</span>');
         a.href = 'mailto:' + encodeURIComponent(l.email).replace(/%40/g, '@') + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(bodyTxt);
@@ -666,7 +666,7 @@
       row.id = 'inq-' + l.id;   // nudge emails deep-link here (#inq-<id>)
       row.appendChild(html('div', 'lq-ic', strokeIcon(CH.inquiry.icon)));
       var body = el('div');
-      body.appendChild(html('div', 'lq-t1', escapeHtml(l.name) + (l.context ? ' <span>asked about</span> ' + escapeHtml(l.context) : ' <span>sent a general inquiry</span>')));
+      body.appendChild(html('div', 'lq-t1', escapeHtml(l.name) + (l.context ? ' <span>asked about</span> ' + escapeHtml(l.context) : ' <span>sent a general question</span>')));
       var t2 = [];
       if (l.first_reply_at) t2.push('Replied ' + shortDate(ts(l.first_reply_at)));
       else t2.push(l.status === 'closed' ? 'Closed' : l.status === 'spam' ? 'Marked as spam' : l.status.charAt(0).toUpperCase() + l.status.slice(1));
@@ -826,9 +826,10 @@
     var ol = el('ol'); left.appendChild(ol);
     var btns = el('div', 'lq-acts'); left.appendChild(btns);
     var ghost = el('div', 'lq-ghostcard');
+    ghost.appendChild(html('div', '', '<span style="display:inline-block;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:#F1ECFE;color:#6002EE;border-radius:6px;padding:2px 8px;margin-bottom:6px">Example</span>')); // quick fixes 2026-11-23
     ghost.appendChild(html('div', 'lq-who', 'A shopper <span>asked about</span> your listing'));
     ghost.appendChild(el('div', 'lq-msg', '“Hi, is this available next week?”'));
-    ghost.appendChild(html('div', 'lq-acts', '<span class="lq-btn p">' + FA.envelope + '<span>Reply by email</span></span><span class="lq-btn">' + FA.phone + '<span>Call</span></span>'));
+    ghost.appendChild(html('div', 'lq-acts', '<span class="lq-btn p" aria-hidden="true" style="pointer-events:none">' + FA.envelope + '<span>Reply by email</span></span><span class="lq-btn" aria-hidden="true" style="pointer-events:none">' + FA.phone + '<span>Call</span></span>'));
     box.appendChild(left); box.appendChild(ghost);
     host.appendChild(box);
 
@@ -845,7 +846,7 @@
       var see = el('a', 'lq-btn q', 'See your storefront checkup'); see.href = '/vendor-dashboard/analytics'; btns.appendChild(see);
     }
     var fallback = [
-      { done: false, title: 'A way to reach you', why: 'A phone number or email so an inquiry has somewhere to land.', action: 'Add contact', href: '/vendor-dashboard/profile#lok-sec-business' },
+      { done: false, title: 'A way to reach you', why: 'A phone number or email so a lead has somewhere to land.', action: 'Add contact', href: '/vendor-dashboard/profile#lok-sec-business' },
       { done: false, title: 'A photo on every listing', why: 'A listing with no photo is the one nobody opens.', action: 'Add photos', href: '/vendor-dashboard/services' },
       { done: false, title: 'A price or "ask for a quote"', why: 'Shoppers skip listings with no price.', action: 'Add prices', href: '/vendor-dashboard/services' }
     ];

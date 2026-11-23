@@ -20,6 +20,16 @@
 (function () {
   'use strict';
 
+  // Quick fixes 2026-11-23 (team review, F 'Yes, all eight'): the Webflow switch
+  // embeds on this page carry their own orange (#FF8C35); Availability's switches
+  // are violet. One rule makes them match the brand guide's one violet.
+  (function () {
+    if (document.getElementById('lok-settings-switch-violet')) return;
+    var st = document.createElement('style'); st.id = 'lok-settings-switch-violet';
+    st.textContent = '.lk-toggle input:checked + .lk-toggle-track{background:#6002EE !important;}';
+    (document.head || document.documentElement).appendChild(st);
+  })();
+
   var PRO_PLANS = ['pro', 'featured'];
   // Toggles that are a paid-plan perk (disabled + dimmed on Free).
   var PRO_ONLY_TOGGLES = ['toggle-visibility-reviews', 'toggle-notify-promotional', 'toggle-notify-review'];
@@ -1614,7 +1624,7 @@
     if (firstRow && firstRow.parentNode === sStore) {
       sStore.insertBefore(mk('div', 'lok-set-sub', 'Three ways to step back, from lightest to heaviest.'), firstRow);
       [['Not taking new clients', 'Your storefront stays up and shoppers see you are full. On Availability.'],
-       ['Away until a date', 'Shows shoppers the day you are back, then switches itself off. On Availability.']].forEach(function (l) {
+       ['Away', 'Shows shoppers the day you are back, then switches itself off. On Availability.']].forEach(function (l) {
         var a = mk('a', 'lok-set-link'); a.href = '/vendor-dashboard/availability';
         var d = mk('div'); d.appendChild(mk('b', '', l[0])); d.appendChild(mk('span', '', l[1]));
         a.appendChild(d); a.appendChild(mk('i', '', 'Open'));

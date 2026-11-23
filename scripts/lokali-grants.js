@@ -53,11 +53,10 @@
     '#lok-grants .lg-who{font-size:13px;color:#4A4761;line-height:1.45;margin:2px 0 0;}' +
     '#lok-grants .lg-side{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;}' +
     '#lok-grants .lg-amt{font-size:16px;font-weight:800;color:#6002EE;white-space:nowrap;font-variant-numeric:tabular-nums;}' +
-    '#lok-grants .lg-due{font-size:11.5px;font-weight:700;border-radius:20px;padding:3px 9px;white-space:nowrap;background:#E8F3FF;color:#1F5FB8;}' +
-    '#lok-grants .lg-due.soon{background:#FFF1E0;color:#B35A00;}' +
+    '#lok-grants .lg-due{font-size:11.5px;font-weight:700;border-radius:20px;padding:3px 9px;white-space:nowrap;background:#F1ECFE;color:#6002EE;}' + // quick fixes 2026-11-23: one lavender chip for every grant, no peach 'soon' state
     '#lok-grants .lg-go{display:inline-block;font-size:13px;font-weight:700;color:#6002EE;background:#fff;border:1px solid #6002EE;border-radius:10px;padding:6px 12px;text-decoration:none;white-space:nowrap;}' +
     '#lok-grants .lg-go:hover{background:#F0E6FF;}' +
-    '#lok-grants .lg-go:focus-visible,#lok-grants .lg-more:focus-visible{outline:3px solid #FF8D00;outline-offset:2px;}' +
+    '#lok-grants .lg-go:focus-visible,#lok-grants .lg-more:focus-visible{outline:3px solid #6002EE;outline-offset:2px;}' +
     '#lok-grants .lg-more{margin-top:10px;font-size:13.5px;font-weight:700;color:#6002EE;background:none;border:0;padding:4px 0;cursor:pointer;}' +
     '#lok-grants .lg-note{margin:10px 0 0;font-size:12px;color:#6E6A85;line-height:1.45;}' +
     '@media (max-width:560px){#lok-grants .lg-row{grid-template-columns:minmax(0,1fr);}#lok-grants .lg-side{justify-content:flex-start;}}';
@@ -77,15 +76,13 @@
   function shortDate(iso) { var d = parseDay(iso); return d ? MONTHS[d.getMonth()] + ' ' + d.getDate() : ''; }
 
   function dueChip(g) {
-    var left = daysLeft(g.closes_on);
-    var soon = left != null && left <= SOON_DAYS;
+    // Quick fixes 2026-11-23 (team review, F 'Yes, all eight'): always the date,
+    // never a countdown ('Closes today' / 'Closes tomorrow' read as pressure).
     var text;
     if (g.closes_label) text = g.closes_label;
-    else if (left == null) text = 'Open all year';
-    else if (left <= 0) text = 'Closes today';
-    else if (left === 1) text = 'Closes tomorrow';
-    else text = 'Closes ' + shortDate(g.closes_on);
-    return '<span class="lg-due' + (soon ? ' soon' : '') + '">' + esc(text) + '</span>';
+    else if (!parseDay(g.closes_on)) text = 'Open all year';
+    else text = 'Open until ' + shortDate(g.closes_on);
+    return '<span class="lg-due">' + esc(text) + '</span>';
   }
 
   function render(list) {

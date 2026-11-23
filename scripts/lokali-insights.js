@@ -45,7 +45,7 @@
     '#lok-analytics-section .an-kvalue small{font-size:14px;font-weight:400;}',
     '#lok-analytics-section .an-delta{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;border-radius:100px;padding:2px 8px;width:fit-content;}',
     '#lok-analytics-section .an-delta.up{color:' + GREEN + ';background:' + GREEN_L + ';}',
-    '#lok-analytics-section .an-delta.down{color:' + RED + ';background:' + RED_L + ';}',
+    '#lok-analytics-section .an-delta.down{color:' + SLATE + ';background:' + MIST + ';}', // quick fixes 2026-11-23: never red, a drop is not a grade
     '#lok-analytics-section .an-delta.flat{color:' + SLATE + ';background:' + MIST + ';}',
     '#lok-analytics-section .an-kdetail{font-size:11px;color:' + SLATE + ';}',
     '#lok-analytics-section .an-klink{font-size:11px;font-weight:600;color:' + VIOLET + ';text-decoration:none;}',
@@ -132,6 +132,7 @@
     '#lok-analytics-section .an-ck-feat .an-ck-fix{background:#fff;}',
     '@media(max-width:720px){#lok-analytics-section .an-ck-row{grid-template-columns:22px 1fr;}#lok-analytics-section .an-ck-fix{grid-column:2;justify-self:start;min-height:44px;padding:8px 14px;}#lok-analytics-section .an-ck-more{min-height:44px;}}',
     '@media(prefers-reduced-motion:reduce){#lok-analytics-section .an-ck-more svg{transition:none;}}',
+    '#lok-analytics-section .an-grid>*{min-width:0;}#lok-analytics-section .an-klabel{overflow-wrap:anywhere;}',
     '@media(max-width:720px){#lok-analytics-section .an-grid{grid-template-columns:1fr;}#lok-analytics-section .an-two{grid-template-columns:1fr;}}',
     // loading card — same spinner language as the auth "Signing you in…" card
     '#lok-analytics-section .an-load{background:#fff;border:.5px solid ' + BORDER + ';border-radius:10px;padding:36px 20px;text-align:center;}',
@@ -193,11 +194,15 @@
   // tally views by item_id for a given source, map ids → names, top N
   function topItems(views, source, items, n) {
     var byId = {};
-    views.forEach(function (v) { if (v.source === source && v.item_id != null) byId[v.item_id] = (byId[v.item_id] || 0) + 1; });
+    // Quick fixes 2026-11-23: last 30 days only, the same count the Services and
+    // Products cards show, so the two pages agree.
+    var now = Date.now();
+    views.forEach(function (v) { if (v.source === source && v.item_id != null && now - ts(v.created_at) < DAY30) byId[v.item_id] = (byId[v.item_id] || 0) + 1; });
     var nameById = {};
     (items || []).forEach(function (it) { if (it && it.id != null) nameById[it.id] = nameOf(it); });
     return Object.keys(byId)
-      .map(function (id) { return { name: nameById[id] || ('#' + id), count: byId[id] }; })
+      .filter(function (id) { return nameById[id] != null; }) // quick fixes 2026-11-23: a deleted item is left off, never '#722'
+      .map(function (id) { return { name: nameById[id], count: byId[id] }; })
       .sort(function (a, b) { return b.count - a.count; })
       .slice(0, n);
   }
@@ -478,14 +483,14 @@
     var hasFace = !!(v.owner_photo && String(v.owner_photo).trim());
     var hasIg = !!((v.instagram_url || v.instagram_handle || v.instagram || '') && String(v.instagram_url || v.instagram_handle || v.instagram).trim());
     var box = el('div', 'an-ck-feat');
-    box.setAttribute('role', 'region'); box.setAttribute('aria-label', 'Get featured on Instagram');
-    box.appendChild(el('div', 'an-ck-feat-t', 'Get featured on Lokali\u2019s Instagram'));
+    box.setAttribute('role', 'region'); box.setAttribute('aria-label', 'Lokali on Instagram');
+    box.appendChild(el('div', 'an-ck-feat-t', 'Lokali on Instagram'));
     box.appendChild(el('div', 'an-ck-feat-w', (hasFace && hasIg)
-      ? 'We share new storefronts on Lokali\u2019s Instagram. You\u2019re set: we can show your face and tag you so the post appears on your profile too.'
-      : 'We share new storefronts on Lokali\u2019s Instagram. Two things make yours land better:'));
+      ? 'Now and then we share new neighbors together in one post. You\u2019re set: we can show your face and tag you.'
+      : 'Now and then we share new neighbors together in one post. A photo of you and your Instagram handle let us tag you:'));
     var ul = el('ul', 'an-ck-list');
     ul.appendChild(ckRow({ done: hasFace, title: 'A photo of you', why: 'Posts with a face get far more attention than a logo, and shoppers trust a person.', action: 'Add your photo', href: '/vendor-dashboard/profile#lok-about-you' }));
-    ul.appendChild(ckRow({ done: hasIg, title: 'Your Instagram handle', why: 'Private, never shown on your storefront. It lets us tag you as a collaborator so the post lands on your profile too.', action: 'Add your handle', href: '/vendor-dashboard/profile#lok-field-input-instagram' }));
+    ul.appendChild(ckRow({ done: hasIg, title: 'Your Instagram handle', why: 'Private, never shown on your storefront. It lets us tag you when you are in a post.', action: 'Add your handle', href: '/vendor-dashboard/profile#lok-field-input-instagram' }));
     box.appendChild(ul);
     return box;
   }
@@ -512,10 +517,19 @@
     // Label shortened 2026-08-22 (F): at five-across 'Storefront views' wrapped
     // to two lines and pushed its number below the neighbours'. The chart card
     // below is still titled 'Storefront views'.
-    grid.appendChild(kpiCard('Views', String(views30), deltaChip(views30, viewsPrev), 'vs. previous 30 days'));
-    grid.appendChild(kpiCard('Visits that turned into a neighbor reaching out', rate.toFixed(1) + '<small>%</small>', deltaChip(rate, ratePrev, 'pts'), 'Out of every 100 visits'));
+    // Quick fixes 2026-11-23 (team review, F 'Yes, all eight'): under 50 visits
+    // in 30 days the numbers are too small for percentages to mean anything
+    // ('+192%' on 35 visits, '0.0%'), so the page shows plain counts only.
+    var small = views30 < 50;
+    grid.appendChild(kpiCard('Views', String(views30), small ? null : deltaChip(views30, viewsPrev), small ? 'last 30 days' : 'vs. previous 30 days'));
+    if (!small) grid.appendChild(kpiCard('Visits that turned into a lead', rate.toFixed(1) + '<small>%</small>', deltaChip(rate, ratePrev, 'pts'), 'Out of every 100 visits'));
     var leadsLink = el('a', 'an-klink', 'See all in Leads →'); leadsLink.href = '/vendor-dashboard/leads';
-    grid.appendChild(kpiCard('Leads', String(leads30), null, leadsLink));
+    var leadsDetail = leadsLink;
+    if (small && leads30 === 0) {
+      leadsDetail = el('div', 'an-kdetail', 'None yet in the last 30 days. That’s normal early on: most first messages come after a few weeks of sharing your page. ');
+      leadsDetail.appendChild(leadsLink);
+    }
+    grid.appendChild(kpiCard('Leads', String(leads30), null, leadsDetail));
 
     // Payment clicks — taps on the vendor's Venmo/Cash App/PayPal/other pay links.
     // A distinct, high-intent signal; deliberately NOT folded into Leads.
@@ -537,7 +551,7 @@
       });
       if (payBits.length) payDetail = payBits.join(' · ');
     }
-    grid.appendChild(kpiCard('Payment taps', String(pay30), deltaChip(pay30, payPrev), payDetail));
+    grid.appendChild(kpiCard('Payment taps', String(pay30), small ? null : deltaChip(pay30, payPrev), payDetail));
 
     // Shares KPI — word-of-mouth. Fetched separately from the Shares endpoint
     // (unique customer sharers; the vendor's own Share & Grow links don't count).
@@ -572,8 +586,9 @@
       var tail = ck.open.length
         ? 'The quickest lift below: <strong>' + ck.open[0].title.charAt(0).toLowerCase() + ck.open[0].title.slice(1) + '</strong>.'
         : 'Your storefront has everything shoppers look for. Fresh photos and a new listing now and then keep it that way.';
-      ins.innerHTML = 'Your storefront was opened <strong>' + views30 + (views30 === 1 ? ' time' : ' times') + '</strong> in the last 30 days, and <strong>' +
-        rate.toFixed(0) + ' in every 100 visits</strong> ended with a neighbor reaching out. ' + tail;
+      ins.innerHTML = 'Your storefront was opened <strong>' + views30 + (views30 === 1 ? ' time' : ' times') + '</strong> in the last 30 days' + (small
+        ? (leads30 ? ', and <strong>' + leads30 + (leads30 === 1 ? ' lead' : ' leads') + '</strong> came in. ' : '. ')
+        : ', and <strong>' + rate.toFixed(0) + ' in every 100 visits</strong> turned into a lead. ') + tail;
       mount.appendChild(ins);
     }
     if (ck.total) {
@@ -605,8 +620,8 @@
     var topSvc = topItems(views, 'service', services, 5);
     var topProd = topItems(views, 'product', products, 5);
     var two = el('div', 'an-two');
-    two.appendChild(rankCard('Top services by views', topSvc, VIOLET));
-    two.appendChild(rankCard('Top products by views', topProd, ORANGE));
+    two.appendChild(rankCard('Top services · last 30 days', topSvc, VIOLET));
+    if ((products || []).length) two.appendChild(rankCard('Top products · last 30 days', topProd, ORANGE)); // no products on the storefront: the box is left off
     mount.appendChild(two);
 
     // tier-aware upsell — hidden once the vendor is on the top tier (#67:

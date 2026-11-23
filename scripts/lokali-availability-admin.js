@@ -629,21 +629,21 @@
     var active = !!until && until >= today;
     var card = document.createElement('div'); card.id = 'lok-away-card'; if (active) card.className = 'on';
     card.innerHTML =
-      '<div class="aw-row"><div><h3>Away mode' + (active ? '<span class="aw-chip">Back ' + until.slice(5).replace('-', '/') + '</span>' : '') + '</h3>' +
+      '<div class="aw-row"><div><h3>Away' + (active ? '<span class="aw-chip">Back ' + until.slice(5).replace('-', '/') + '</span>' : '') + '</h3>' +
         '<div class="aw-s">Tell shoppers you\u2019re not taking orders right now. Your storefront stays up, nothing else changes, and it ends by itself on the date.</div></div>' +
-        '<input type="checkbox" class="aw-sw" id="lok-away-on"' + (active ? ' checked' : '') + ' aria-label="Away mode"></div>' +
+        '<input type="checkbox" class="aw-sw" id="lok-away-on"' + (active ? ' checked' : '') + ' aria-label="Away"></div>' +
       '<div class="aw-body">' +
         '<label class="aw-l" for="lok-away-until">Back on</label><input type="date" id="lok-away-until" min="' + today + '" value="' + (active ? until : '') + '">' +
         '<label class="aw-l" for="lok-away-note">Note shoppers see (optional)</label><textarea id="lok-away-note" maxlength="240" placeholder="Taking a short break. Orders placed now will be answered when I\u2019m back.">' + String(vendor.away_note || '').replace(/[<>&]/g, function (c) { return { '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]; }) + '</textarea>' +
-        '<div class="aw-row" style="margin-top:12px"><div><div style="font-size:13px;font-weight:700">Keep taking inquiries while away</div><div class="aw-s">On: the form works and shows your note. Off: the form says "back on" and nothing is sent.</div></div>' +
-        '<input type="checkbox" class="aw-sw" id="lok-away-inq"' + (vendor.away_accepts_inquiries !== false ? ' checked' : '') + ' aria-label="Keep taking inquiries while away"></div>' +
+        '<div class="aw-row" style="margin-top:12px"><div><div style="font-size:13px;font-weight:700">Keep taking messages while away</div><div class="aw-s">On: the form works and shows your note. Off: the form says "back on" and nothing is sent.</div></div>' +
+        '<input type="checkbox" class="aw-sw" id="lok-away-inq"' + (vendor.away_accepts_inquiries !== false ? ' checked' : '') + ' aria-label="Keep taking messages while away"></div>' +
         '<div class="aw-acts"><button type="button" class="aw-save" id="lok-away-save">Save</button><span class="aw-msg" id="lok-away-msg"></span></div>' +
       '</div>';
     mount.parentNode.insertBefore(card, mount);
     var on = card.querySelector('#lok-away-on'), msg = card.querySelector('#lok-away-msg');
     on.addEventListener('change', function () {
       card.classList.toggle('on', on.checked);
-      if (!on.checked && active) save({ away_until: null, away_note: null, away_accepts_inquiries: true }, 'Away mode is off.');
+      if (!on.checked && active) save({ away_until: null, away_note: null, away_accepts_inquiries: true }, 'Away is off.');
     });
     card.querySelector('#lok-away-save').addEventListener('click', function () {
       var d = card.querySelector('#lok-away-until').value;

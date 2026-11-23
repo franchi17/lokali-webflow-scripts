@@ -186,7 +186,7 @@
       'Write an intro', CK_PROFILE + '#lok-about-you');
     add('contact', !!(v.contact_email || v.phone_number),
       'Add a way to reach you', 'Shoppers can reach you',
-      'A phone number or email so an inquiry has somewhere to land.',
+      'A phone number or email so a lead has somewhere to land.',
       'Add contact', CK_PROFILE + '#lok-sec-business');
     // 2026-10-09 (F): a bridge comp, a paid plan on us until billing starts
     // (comp_kind 'until_billing'), is asked for a card early so billing day
@@ -507,7 +507,7 @@
         var c = cards[i], stat = c.querySelector('.lok-gc-stat');
         if (!stat || c.classList.contains('is-off')) continue;
         var n = byItem[String(c.getAttribute(attr))] || 0;
-        stat.innerHTML = '<b>' + n + '</b> ' + (n === 1 ? 'view' : 'views');
+        stat.innerHTML = '<b>' + n + '</b> ' + (n === 1 ? 'view' : 'views') + ' \u00b7 30 days'; // quick fixes 2026-11-23: say the time span, same count as Analytics
         stat.setAttribute('title', 'Last 30 days');
       }
     },
@@ -575,7 +575,7 @@
           '<div class="lok-btns"><button type="button" class="lok-btn primary" data-lui-add>Add a ' + noun + '</button>' +
           (isP && o.onImport ? '<button type="button" class="lok-btn" data-lui-import>Import from Etsy or Shopify</button>' : '') + '</div>' +
         '</div><div class="lok-ghosts">' +
-          '<div class="lok-gc"><div class="lok-gc-cover" style="background-image:linear-gradient(135deg,#d9c7f5,#f7d2b8)"><div class="lok-gc-corner"><span class="lok-gc-chip on">Live</span></div></div><div class="lok-gc-body"><div class="service-name">Your first ' + noun + '</div><div class="lok-gc-line"><span style="font-weight:700">' + (isP ? '$24' : 'from $60') + '</span></div><div class="lok-gc-meta"><span class="lok-tagc way">' + (isP ? 'Pickup' : 'About a week') + '</span></div></div></div>' +
+          '<div class="lok-gc"><div class="lok-gc-cover" style="background-image:linear-gradient(135deg,#d9c7f5,#f7d2b8)"><div class="lok-gc-corner"><span class="lok-gc-chip" style="background:#F1ECFE;color:#6002EE">Example</span></div></div><div class="lok-gc-body"><div class="service-name">Your first ' + noun + '</div><div class="lok-gc-line"><span style="font-weight:700">' + (isP ? '$24' : 'from $60') + '</span></div><div class="lok-gc-meta"><span class="lok-tagc way">' + (isP ? 'Pickup' : 'About a week') + '</span></div></div></div>' +
           '<div class="lok-gc"><div class="lok-gc-cover ph">' + LUI_ICO.photo + '</div><div class="lok-gc-body"><div class="service-name" style="color:#8E8BA6">The next one</div><div class="lok-gc-line"><span class="lok-gc-noprice">Price</span></div></div></div>' +
         '</div></div>';
       host.style.background = 'transparent'; host.style.border = 'none'; host.style.padding = '0';
