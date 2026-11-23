@@ -1858,6 +1858,7 @@
     }, 0);
   }
   function applyFilters() {
+    try { mktV3SyncCats(); } catch (e) {} // v3 round category buttons follow every route in (deep link, shortcut, restore)
     // A shortcut lives only while its own filter is still applied: editing the
     // search or picking another category turns it into an ordinary filter state.
     if (_occ && !occMatches(_occ)) {
@@ -2351,6 +2352,7 @@
 
   // Reflect the (restored) state into controls that renderFilterPanel doesn't pre-set.
   function syncFilterUI() {
+    try { mktV3SyncCats(); } catch (e) {}
     if (activeLocationId !== 'all' && !_locationsById[activeLocationId]) activeLocationId = 'all';
     TOGGLE_LIST.forEach(function (t) {
       var on = t.key === 'new' ? showNewOnly : (t.key === 'founding' ? showFoundingOnly : showVerifiedOnly);
@@ -2963,7 +2965,7 @@
     var text = (title.textContent || '').replace(/\s+/g, ' ').trim();
     var h1 = ce('h1', 'lk-mkt-h1');
     if (/^browse local vendors near you\.?$/i.test(text)) {
-      h1.appendChild(document.createTextNode('Browse local vendors'));
+      h1.appendChild(document.createTextNode('Meet the neighbors')); // v3 (F 2026-11-23)
       h1.appendChild(ce('br'));
       var v = ce('span', 'lk-v'); v.textContent = 'near you.'; h1.appendChild(v);
     } else { h1.textContent = text; }
@@ -2997,6 +2999,90 @@
     meta.appendChild(ce('br'));
     meta.appendChild(document.createTextNode('Real people, real names · Reviews from real customers · Message them directly'));
   }
+  // ── v3 (F 2026-11-23 'Yes, all three', site consistency mockups) ─────────
+  // A lavender top, round category buttons under the heading (the Market's own
+  // icons, short labels), and the two bottom cards folded into one soft pink
+  // "Have a business?" band. Orange leaves the page (brand guide 2026-11-22:
+  // orange is the logo only), so the newsletter box turns lavender + violet.
+  var MKT_V3_SHORT = { all: 'Everyone', fashion: 'Clothing', events: 'Events', handcrafted: 'Handmade', home: 'Home', professional: 'Professional' };
+  var MKT_V3_CSS = [
+    '.browse-hero{background:#F3EBFF!important;padding-bottom:22px!important;}',
+    '.lk-mkt-cats{flex:1 0 100%;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin:14px 0 0;padding:4px 2px 2px;}',
+    '.lk-mkt-cats::-webkit-scrollbar{display:none;}',
+    '.lk-mkt-cat{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:7px;width:84px;padding:0;background:none;border:0;cursor:pointer;font:600 12px/1.25 "Plus Jakarta Sans",sans-serif;color:#45415A;text-align:center;}',
+    '.lk-mkt-ci{display:flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(40,32,90,.06);transition:background .15s,transform .15s;}',
+    '.lk-mkt-ci span{transition:background-color .15s;}',
+    '.lk-mkt-cat:hover .lk-mkt-ci{transform:translateY(-2px);}',
+    '.lk-mkt-cat.on{color:#6002EE;font-weight:700;}',
+    '.lk-mkt-cat.on .lk-mkt-ci{background:#6002EE;}',
+    '.lk-mkt-cat.on .lk-mkt-ci span{background-color:#fff!important;}',
+    '.lk-mkt-cat:focus-visible{outline:none;}.lk-mkt-cat:focus-visible .lk-mkt-ci{outline:2px solid #6002EE;outline-offset:2px;}',
+    '@media (min-width:1200px){.lk-mkt-cats{justify-content:space-between;}}',
+    '@media (max-width:767px){.lk-mkt-cats{margin:6px -16px 0;padding:4px 16px 2px;}.lk-mkt-cat{width:72px;font-size:11.5px;}.lk-mkt-ci{width:50px;height:50px;}}',
+    // newsletter box: lavender + violet (was light orange)
+    '.newsletter-nudge.lk-warm{background:#F3EBFF!important;}',
+    '.lk-warm .newsletter-nudge-eyebrow{color:#6002EE!important;}',
+    '.lk-warm .newsletter-nudge-headline{color:#45415A!important;}',
+    // one pink band instead of two cards
+    '.bottom-ctas.lk-door{display:block!important;background:#FDE6F2!important;border-radius:16px;padding:34px 36px!important;}',
+    '.bottom-ctas.lk-door .bottom-cta-card-cta-card-dark{display:none!important;}',
+    '.bottom-ctas.lk-door .lk-card{background:transparent!important;border:0!important;box-shadow:none!important;padding:0!important;flex-direction:row!important;flex-wrap:wrap;align-items:center!important;justify-content:space-between;gap:16px 32px!important;width:100%;max-width:none!important;}',
+    '.bottom-ctas.lk-door .lk-card .text-block-122{display:none!important;}',
+    '.bottom-ctas.lk-door .lk-door-txt{flex:1 1 380px;min-width:0;}',
+    '.bottom-ctas.lk-door .lk-card .text-block-123{color:#45415A!important;font-size:24px;}',
+    '.bottom-ctas.lk-door .lk-card .text-block-124{margin:6px 0 0!important;}',
+    '.lk-door-act{display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;}',
+    '.lk-cta-btn.lk-cta-p{background:#B0006A;color:#fff;min-height:46px;padding:0 22px;}.lk-cta-btn.lk-cta-p:hover{background:#8E0056;color:#fff;}',
+    '.lk-door-link{font:700 14px/1.3 "Plus Jakarta Sans",sans-serif;color:#B0006A;text-decoration:underline;text-underline-offset:3px;}',
+    '.lk-door-link:hover{color:#8E0056;}',
+    '.lk-cta-btn.lk-cta-p:focus-visible,.lk-door-link:focus-visible{outline:2px solid #B0006A;outline-offset:2px;}',
+    '@media (max-width:767px){.bottom-ctas.lk-door{padding:24px 20px!important;}.bottom-ctas.lk-door .lk-card .text-block-123{font-size:21px;}}'
+  ].join('');
+  function mktV3Styles() {
+    if (el('lk-mkt-v3')) return;
+    var st = ce('style'); st.id = 'lk-mkt-v3'; st.textContent = MKT_V3_CSS; document.head.appendChild(st);
+  }
+  function mktV3Cats() {
+    var inner = document.querySelector('.browse-hero .browse-hero-inner');
+    if (!inner || inner.querySelector('.lk-mkt-cats')) return;
+    var row = ce('div', 'lk-mkt-cats'); row.setAttribute('role', 'group'); row.setAttribute('aria-label', 'Categories');
+    CATEGORY_LIST.forEach(function (c) {
+      var b = ce('button', 'lk-mkt-cat' + (c.slug === activeCategory ? ' on' : ''));
+      b.type = 'button'; b.setAttribute('data-category-slug', c.slug);
+      b.setAttribute('aria-pressed', c.slug === activeCategory ? 'true' : 'false');
+      var ci = ce('span', 'lk-mkt-ci'); ci.appendChild(maskIcon(c.url, ICON_VIOLET, 22)); b.appendChild(ci);
+      b.appendChild(document.createTextNode(MKT_V3_SHORT[c.slug] || c.label));
+      b.title = c.label;
+      b.addEventListener('click', function () { setCategory(c.slug); });
+      row.appendChild(b);
+    });
+    inner.appendChild(row);
+  }
+  function mktV3SyncCats() {
+    var bs = document.querySelectorAll('.lk-mkt-cat');
+    for (var i = 0; i < bs.length; i++) {
+      var on = bs[i].getAttribute('data-category-slug') === activeCategory;
+      bs[i].classList.toggle('on', on); bs[i].setAttribute('aria-pressed', on ? 'true' : 'false');
+    }
+  }
+  function mktV3Door() {
+    var ctas = document.querySelector('.bottom-ctas');
+    var light = document.querySelector('.bottom-cta-card-cta-card-light');
+    if (!ctas || !light || ctas.classList.contains('lk-door')) return;
+    setText(light.querySelector('.text-block-123'), 'Have a business? Your neighbors are already looking.');
+    setText(light.querySelector('.text-block-124'), 'Open a storefront in minutes. Start free.');
+    var txt = ce('div', 'lk-door-txt');
+    var h = light.querySelector('.text-block-123'), p = light.querySelector('.text-block-124');
+    if (h) txt.appendChild(h); if (p) txt.appendChild(p);
+    light.insertBefore(txt, light.firstChild);
+    var old = light.querySelector('.lk-cta-btn'); if (old) old.parentNode.removeChild(old);
+    var act = ce('div', 'lk-door-act');
+    var b = ce('a', 'lk-cta-btn lk-cta-p'); b.href = '/sign-up'; b.textContent = 'Open my storefront'; act.appendChild(b);
+    var l = ce('a', 'lk-door-link'); l.href = '/contact-us'; l.textContent = 'Not where you live? Tell us.'; act.appendChild(l);
+    light.appendChild(act);
+    ctas.classList.add('lk-door');
+  }
+
   function frameTail() {
     // The SEO block: keep the paragraph, drop the duplicates.
     var about = document.querySelector('.mkt-about');
@@ -3029,7 +3115,7 @@
       }
       about.classList.add('lk-strip');
     }
-    // The newsletter block: the page's one light-orange section. The input and
+    // The newsletter block (lavender + violet since v3; was the page's one light-orange section). The input and
     // button live in a Webflow code island (open shadow DOM), so their colors
     // are set inside it; the band itself is light DOM.
     var news = document.querySelector('.newsletter-nudge');
@@ -3038,10 +3124,10 @@
       var island = news.querySelector('code-island');
       if (island && island.shadowRoot && !island.shadowRoot.querySelector('#lk-warm-css')) {
         var st = ce('style'); st.id = 'lk-warm-css';
-        st.textContent = 'input{background:#fff!important;border:1.5px solid #F2D9B8!important;border-radius:100px!important;color:#1A1829!important;min-height:46px;padding-left:18px!important;}' +
-          'input:focus{outline:none!important;border-color:#FF8D00!important;box-shadow:0 0 0 3px rgba(255,141,0,.18)!important;}' +
-          'button{background:#FF8D00!important;border:0!important;border-radius:100px!important;color:#fff!important;font-weight:700!important;min-height:46px;padding:0 20px!important;cursor:pointer;}' +
-          'button:hover{background:#F07F00!important;}';
+        st.textContent = 'input{background:#fff!important;border:1.5px solid #DCCBFB!important;border-radius:100px!important;color:#1A1829!important;min-height:46px;padding-left:18px!important;}' +
+          'input:focus{outline:none!important;border-color:#6002EE!important;box-shadow:0 0 0 3px rgba(96,2,238,.16)!important;}' +
+          'button{background:#6002EE!important;border:0!important;border-radius:100px!important;color:#fff!important;font-weight:700!important;min-height:46px;padding:0 20px!important;cursor:pointer;}' +
+          'button:hover{background:#4F02C4!important;}';
         island.shadowRoot.appendChild(st);
       }
     }
@@ -3085,6 +3171,7 @@
     injectStyles();
     try { frameHero(); } catch (e) { console.warn('[lokali-browse] frameHero:', e); }
     try { frameTail(); } catch (e) { console.warn('[lokali-browse] frameTail:', e); }
+    try { mktV3Styles(); mktV3Cats(); mktV3Door(); } catch (e) { console.warn('[lokali-browse] v3:', e); }
     ensureLoadingEl();
     // Hand-off from the page-head pre-script guard (the-market head CSS hides
     // the Webflow-baked "No vendors found"/"0 vendors" and spins a pure-CSS

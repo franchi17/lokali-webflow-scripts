@@ -248,6 +248,92 @@
     '@media (prefers-reduced-motion:reduce){#vd2-bar,#vd2-bar.vd2-bar-away{transition:none;}}'
   ].join('');
 
+  // v3 (F 2026-11-23 'Yes, all three'): the editorial look from the site
+  // consistency mockups. A layer on top of V2 (same structure, same buttons):
+  // white page, no card boxes, a small-caps business name over a bold title,
+  // thumbnails under the photo, square More-from photos with a thin rule.
+  // Each page keeps ONE colour family (brand guide 2026-11-22): products =
+  // logo pink, services = violet. Nothing orange (orange is logo-only now).
+  var V3_CSS = [
+    'html.vd3-p{--f3:#B0006A;--f3h:#8E0056;--f3s:#FDE6F2;}',
+    'html.vd3-s{--f3:#6002EE;--f3h:#4F02C4;--f3s:#F3EBFF;}',
+    'html.vd3 body,html.vd3 .vd-bg{background:#fff !important;}',
+    'html.vd3 .vd2-grid{grid-template-columns:minmax(0,1fr) 380px;gap:56px;}',
+    'html.vd3 .vd2-box{background:transparent;border:0;box-shadow:none;border-radius:0;padding:6px 0 0;gap:16px;}',
+    '.vd3-k{margin:0 0 14px !important;font:700 11px/1.4 ' + V2_FONT + ';letter-spacing:.28em;text-transform:uppercase;color:var(--f3);}',
+    '.vd3-k:empty{display:none;}',
+    'html.vd3 .vd-name{font:800 30px/1.14 ' + V2_FONT + ' !important;letter-spacing:-.02em;color:#45415A !important;margin:0 0 12px !important;text-wrap:balance;}',
+    'html.vd3 .vd-price{font:600 20px/1.3 ' + V2_FONT + ' !important;color:#45415A !important;}',
+    'html.vd3 .vd2-facts{border-top:1px solid #EDE8F2;padding-top:16px !important;}',
+    'html.vd3 .vd2-fact{color:#4A4761;}html.vd3 .vd2-fact b{color:#45415A;font-weight:700;}',
+    'html.vd3 .vd2-fact svg{color:var(--f3);}',
+    // buttons: the first one filled in the family's dark shade, any second one outlined
+    'html.vd3 .vd2-box .vd-cta-btn,html.vd3 .vd2-box .vd-cta-btn:hover{background:var(--f3) !important;background-image:none !important;color:#fff !important;border:1.5px solid var(--f3) !important;box-shadow:none !important;border-radius:999px !important;font-weight:700 !important;}',
+    'html.vd3 .vd2-box .vd-cta-btn *{color:#fff !important;}',
+    'html.vd3 .vd2-box .vd-cta-btn:hover{background:var(--f3h) !important;border-color:var(--f3h) !important;}',
+    'html.vd3 #vd-buy-btn + #vd-cta-btn,html.vd3 #vd-book-btn + #vd-cta-btn,html.vd3 #vd-buy-btn + #vd-cta-btn:hover,html.vd3 #vd-book-btn + #vd-cta-btn:hover{background:#fff !important;color:var(--f3) !important;border:1.5px solid var(--f3) !important;}',
+    'html.vd3 #vd-buy-btn + #vd-cta-btn *,html.vd3 #vd-book-btn + #vd-cta-btn *{color:var(--f3) !important;}',
+    'html.vd3 #vd-buy-btn + #vd-cta-btn:hover,html.vd3 #vd-book-btn + #vd-cta-btn:hover{background:var(--f3s) !important;}',
+    'html.vd3 .vd2-box #vd-link-btn,html.vd3 .vd2-box #vd-link-btn:hover{background:var(--f3s) !important;color:var(--f3) !important;border:1.5px solid var(--f3s) !important;}',
+    'html.vd3 .vd2-box #vd-link-btn *{color:var(--f3) !important;}',
+    // Text / WhatsApp / Call: one quiet outline style
+    'html.vd3 .vd2-pill,html.vd3 .vd2-pill-wa,html.vd3 .vd2-pill-call{background:#fff;color:#45415A;border:1px solid #DEDAEE;border-radius:999px;font-weight:600;}',
+    'html.vd3 .vd2-pill:hover{border-color:var(--f3);color:var(--f3);box-shadow:none;}',
+    'html.vd3 .vd2-note{color:#6E6A85;}',
+    'html.vd3 .vd2-box a:focus-visible,html.vd3 .vd2-box button:focus-visible,html.vd3 .vd2-thumb:focus-visible{outline-color:var(--f3);}',
+    // photo: crisp, thumbnails in a row underneath
+    'html.vd3 #vd-gallery{border:0 !important;border-radius:4px !important;background:#F7F5FA !important;}',
+    'html.vd3 .vd2-galrow.vd2-has-thumbs{grid-template-columns:minmax(0,1fr);}',
+    'html.vd3 .vd2-thumbs{flex-direction:row;flex-wrap:wrap;order:2;gap:10px;}',
+    'html.vd3 .vd2-thumb{width:72px;height:72px;border:0;border-radius:2px;opacity:.55;transition:opacity .15s;}',
+    'html.vd3 .vd2-thumb:hover{opacity:.85;}',
+    'html.vd3 .vd2-thumb[aria-current="true"]{opacity:1;outline:1px solid #45415A;outline-offset:2px;}',
+    // sections: small-caps labels, roomier text
+    'html.vd3 .vd2-sec{margin-top:44px;}',
+    'html.vd3 .vd2-h{font:700 11px/1.4 ' + V2_FONT + ';letter-spacing:.28em;text-transform:uppercase;color:var(--f3);margin:0 0 14px;}',
+    'html.vd3 #vd-desc{font:500 16px/1.75 ' + V2_FONT + ';color:#4A4761;}',
+    'html.vd3 .vd2-more{color:var(--f3);}',
+    // the person, not a card
+    'html.vd3 .vd-vendor-mini{background:transparent !important;border:0 !important;box-shadow:none !important;border-radius:0 !important;padding:0 !important;gap:18px;}',
+    'html.vd3 .vd-mini-avatar{width:88px !important;height:88px !important;min-width:88px;}',
+    'html.vd3 .vd-mini-name{font:800 19px/1.3 ' + V2_FONT + ';color:#45415A;}',
+    'html.vd3 .vd-mini-cat{font:500 13.5px/1.4 ' + V2_FONT + ';color:#6E6A85;}',
+    'html.vd3 .vd-mini-link{color:var(--f3);}',
+    'html.vd3 .vd2-trust{color:var(--f3);}',
+    // Back + pager
+    'html.vd3 .lok-pg-btn{background:var(--f3s);color:var(--f3);}',
+    'html.vd3 .lok-pg-btn:hover{background:var(--f3s);color:var(--f3h);}',
+    'html.vd3 .lok-pg-off{background:#F7F6FC;color:#B9B6C9;}',
+    // More from: square photos, a thin rule, no boxes
+    'html.vd3 .lok-more{margin-top:64px;padding-top:40px;border-top:1px solid #EDE8F2;}',
+    'html.vd3 .lok-more-head h2{font:700 11px/1.4 ' + V2_FONT + ';letter-spacing:.28em;text-transform:uppercase;color:var(--f3);}',
+    'html.vd3 .lok-more-all,html.vd3 .lok-more-all:hover{background:var(--f3s);color:var(--f3);}',
+    'html.vd3 .lok-more-grid{gap:20px;}',
+    'html.vd3 .lok-more-card,html.vd3 .lok-more-card:hover{background:transparent;border:0 !important;border-radius:0;box-shadow:none !important;transform:none;overflow:visible;}',
+    'html.vd3 .lok-more-img{aspect-ratio:1/1;border-radius:2px;background:#F7F5FA;}',
+    'html.vd3 .lok-more-img img{transition:opacity .15s;}',
+    'html.vd3 .lok-more-card:hover .lok-more-img img{opacity:.88;}',
+    'html.vd3 .lok-more-kind{display:none;}',
+    'html.vd3 .lok-more-body{padding:10px 0 0;margin-top:10px;border-top:1px solid #EDE8F2;}',
+    'html.vd3 .lok-more-name{font:700 13.5px/1.35 ' + V2_FONT + ';color:#45415A;}',
+    'html.vd3 .lok-more-price{font:600 12.5px/1.3 ' + V2_FONT + ';color:#6E6A85;}',
+    '@media (min-width:768px) and (max-width:991px){html.vd3 .vd2-grid{grid-template-columns:minmax(0,1fr) 300px;gap:28px;}}',
+    '@media (max-width:767px){',
+    'html.vd3 #vd-gallery{border-radius:0 !important;}',
+    'html.vd3 .vd2-box{padding:18px 0 0;}',
+    'html.vd3 .vd-name{font-size:25px !important;}',
+    'html.vd3 .vd-price{font-size:18px !important;}',
+    'html.vd3 .vd2-sec{margin-top:34px;}',
+    'html.vd3 #vd-desc{font-size:15px;}',
+    'html.vd3 .vd-mini-avatar{width:72px !important;height:72px !important;min-width:72px;}',
+    'html.vd3 .lok-more{margin-top:44px;padding-top:30px;}',
+    'html.vd3 .lok-more-card{flex:0 0 56%;}',
+    'html.vd3 #vd2-bar .vd2-bar-main,html.vd3 #vd2-bar .vd2-bar-main.vd2-bar-orange,html.vd3 #vd2-bar .vd2-bar-buy,html.vd3 #vd2-bar .vd2-bar-buy.vd2-bar-book{background:var(--f3);color:#fff;border:0;border-radius:999px;}',
+    'html.vd3 #vd2-bar .vd2-bar-buy ~ .vd2-bar-main,html.vd3 #vd2-bar .vd2-bar-buy ~ .vd2-bar-main.vd2-bar-orange,html.vd3 #vd2-bar .vd2-bar-book ~ .vd2-bar-main{background:#fff;color:var(--f3);border:1.5px solid var(--f3);}',
+    'html.vd3 #vd2-bar .vd2-bar-side{border-radius:999px;color:#45415A;border-color:#DEDAEE;}',
+    '}'
+  ].join('');
+
   var V2_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10" stroke-width="1.6" opacity=".35"/><polyline points="16.5 9 10.8 15 7.5 11.8"/></svg>';
   var V2_ICON = { // the storefront pills' own glyphs
     sms: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
@@ -267,6 +353,9 @@
     document.documentElement.classList.add('vd2');
     var st = document.createElement('style'); st.id = 'vd2-css'; st.textContent = V2_CSS;
     (document.head || document.documentElement).appendChild(st);
+    document.documentElement.classList.add('vd3', isProduct ? 'vd3-p' : 'vd3-s');
+    var st3 = document.createElement('style'); st3.id = 'vd3-css'; st3.textContent = V3_CSS;
+    (document.head || document.documentElement).appendChild(st3);
 
     var grid = v2el('div', 'vd2-grid'), main = v2el('div', 'vd2-main'), rail = v2el('div', 'vd2-rail'), box = v2el('div', 'vd2-box');
     // photo stage (+ thumbnails, added by v2Gallery once the photos are known)
@@ -288,11 +377,12 @@
     var mini = document.querySelector('.vd-vendor-mini');
     if (mini) {
       var vs = v2el('section', 'vd2-sec'); vs.id = 'vd2-sec-vendor';
-      var vh = v2el('h2', 'vd2-h'); vh.textContent = 'Meet the vendor';
+      var vh = v2el('h2', 'vd2-h'); vh.textContent = isProduct ? 'The maker' : 'Who you\u2019ll work with';
       vs.appendChild(vh); vs.appendChild(mini); main.appendChild(vs);
     }
     // contact box: name + price, facts, button(s), pills, note
-    var top = document.querySelector('.vd-top'); if (top) box.appendChild(top);
+    var top = document.querySelector('.vd-top');
+    if (top) { var k3 = v2el('p', 'vd3-k'); k3.id = 'vd3-k'; top.insertBefore(k3, top.firstChild); box.appendChild(top); }
     var facts = v2el('ul', 'vd2-facts'); facts.id = 'vd2-facts'; box.appendChild(facts);
     var cta = document.querySelector('.vd-cta'); if (cta) box.appendChild(cta);
     var ch = v2el('div', 'vd2-ch'); ch.id = 'vd2-ch'; box.appendChild(ch);
@@ -912,6 +1002,7 @@
         if (link) link.href = '/' + v.slug;
       }
       setText('vd-mini-name', v.business_name);
+      setText('vd3-k', v.business_name); // the small-caps name over the title (v3)
       // Real category. The template shipped #vd-mini-cat with a hardcoded
       // "Food & Catering" placeholder that nothing overwrote, so every vendor's
       // card showed that regardless of their actual category. The vendor
