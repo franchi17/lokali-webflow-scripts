@@ -134,6 +134,14 @@
     '#lok-leads-page .lq-step button.closed.on{background:' + DUSK + ';color:#fff;}',
     // #194 worth line under a Won row: full width, one question, tap-sized
     '#lok-leads-page .lq-stats.five{grid-template-columns:repeat(5,minmax(0,1fr));}',
+    // One-page changes 2026-11-23 (F 'Build all four'): a Won lead asks for a review.
+    '#lok-leads-page .lq-ask{grid-column:1/-1;margin:2px 0 4px 40px;background:#F1ECFE;border-radius:10px;padding:12px 14px;display:grid;gap:8px;font:500 13px/1.5 ' + FONT + ';color:#45415A;}',
+    '#lok-leads-page .lq-ask b{color:#231D3F;font-weight:700;}',
+    '#lok-leads-page .lq-ask .acts{display:flex;flex-wrap:wrap;gap:8px;}',
+    '#lok-leads-page .lq-ask .acts a,#lok-leads-page .lq-ask .acts button{font:600 13px/1 ' + FONT + ';border-radius:10px;padding:9px 13px;border:1px solid #6002EE;background:#fff;color:#6002EE;cursor:pointer;text-decoration:none;}',
+    '#lok-leads-page .lq-ask .acts .p{background:#6002EE;color:#fff;}',
+    '#lok-leads-page .lq-ask .lnk{font:600 12px/1.2 ' + FONT + ';color:#6002EE;background:none;border:none;padding:6px 2px;cursor:pointer;text-decoration:underline;text-underline-offset:2px;}',
+    '#lok-leads-page .lq-ask.done{background:none;padding:0 0 0 0;font-size:12.5px;color:#6E6A85;}',
     '#lok-leads-page .lq-worth{grid-column:1/-1;display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:-4px 0 2px 40px;font:500 12.5px/1.4 ' + FONT + ';color:' + DUSK + ';}',
     '#lok-leads-page .lq-worth b{color:' + GREEN + ';font-weight:700;}',
     '#lok-leads-page .lq-worth .in{display:inline-flex;align-items:center;border:1px solid ' + VIOLET_B + ';border-radius:9px;background:#fff;padding:0 0 0 10px;min-height:36px;}',
@@ -197,6 +205,7 @@
     '#lok-leads-page .lq-row{grid-template-columns:24px minmax(0,1fr);row-gap:6px;}',
     '#lok-leads-page .lq-row .lq-when,#lok-leads-page .lq-row .lq-step,#lok-leads-page .lq-row .lq-notspam{grid-column:2;justify-self:start;}',
     '#lok-leads-page .lq-worth{margin-left:36px;}',
+    '#lok-leads-page .lq-ask{margin-left:36px;}',
     '#lok-leads-page .lq-worth .go,#lok-leads-page .lq-worth .lnk,#lok-leads-page .lq-worth .in{min-height:44px;}',
     '#lok-leads-page .lq-empty{grid-template-columns:1fr;}',
     '#lok-leads-page .lq-hint{margin-left:0;flex-basis:100%;}',
@@ -609,6 +618,82 @@
       return card;
     }
 
+    // One-page changes 2026-11-23 (team review 'Bring your customers in', F 'Build
+    // all four'): under a Won lead, ask that happy customer for a review. The link
+    // is the vendor's review link (same as the Marketing page's review QR:
+    // ?review=CODE when the vendor has one, else ?src=review-ask). The email opens
+    // in the vendor's own mail app, so they can change the words. Once they've
+    // asked (email or copy), the box shrinks to one line; remembered per lead in
+    // this browser.
+    var RV_ASKED = 'lok_rv_asked_v1:';
+    var _rvLinkP = null;
+    function reviewLink() {
+      if (_rvLinkP) return _rvLinkP;
+      var A = window.LokaliAPI, RV = window.LokaliSupabaseAPI && window.LokaliSupabaseAPI.reviews;
+      _rvLinkP = Promise.all([
+        (A && A.vendors && A.vendors.me) ? A.vendors.me().catch(function () { return null; }) : Promise.resolve(null),
+        (RV && RV.myLink) ? RV.myLink().catch(function () { return null; }) : Promise.resolve(null)
+      ]).then(function (rs) {
+        var v = (rs[0] && rs[0].data) || {}; if (v && v.vendor) v = v.vendor;
+        var rl = rs[1] && rs[1].data;
+        var code = (rl && rl.ok && /^[a-f0-9]{10}$/.test(rl.code || '')) ? rl.code : null;
+        if (!v || !v.slug) return null;
+        return 'https://www.golokali.com/' + v.slug + (code ? '?review=' + code : '?src=review-ask') + '#reviews';
+      }).catch(function () { return null; });
+      return _rvLinkP;
+    }
+    function rvAsked(l) { try { return !!localStorage.getItem(RV_ASKED + l.id); } catch (e) { return false; } }
+    function rvMark(l) { try { localStorage.setItem(RV_ASKED + l.id, '1'); } catch (e) {} }
+    function askLine(l) {
+      var first = String(l.name || '').split(/\s+/)[0];
+      if (!first || first === 'Someone' || first.indexOf('@') > -1) first = '';
+      var who = first || 'them';
+      var box = el('div', 'lq-ask');
+      if (rvAsked(l)) {
+        box.className = 'lq-ask done';
+        box.textContent = 'You asked ' + who + ' for a review. ';
+        var again = el('button', 'lnk', 'Ask again'); again.type = 'button';
+        again.addEventListener('click', function () { try { localStorage.removeItem(RV_ASKED + l.id); } catch (e) {} repaintAll(); });
+        box.appendChild(again);
+        return box;
+      }
+      reviewLink(); // warm it up so the tap is instant
+      box.appendChild(html('div', null, '<b>Ask ' + escapeHtml(who) + ' for a review</b>'));
+      box.appendChild(el('div', null, l.email
+        ? 'A happy customer\u2019s few words help the next neighbor decide. One tap opens an email to ' + who + ' with your review link already in it.'
+        : 'A happy customer\u2019s few words help the next neighbor decide. Copy your review link and send it to ' + who + ' by text.'));
+      var acts = el('div', 'acts');
+      var note = el('div', null, ''); note.style.display = 'none';
+      function fail() { note.textContent = 'We couldn\u2019t get your review link just now. It\u2019s also on your Marketing page.'; note.style.display = ''; }
+      if (l.email) {
+        var em = el('a', 'p', 'Email ' + (first || 'them') + ' the link'); em.href = '#';
+        em.addEventListener('click', function (e) {
+          e.preventDefault();
+          reviewLink().then(function (url) {
+            if (!url) return fail();
+            var body = 'Hi' + (first ? ' ' + first : '') + ',\n\nThank you again for choosing me. If you have a minute, a few words on my Lokali page would mean a lot and help the next neighbor decide:\n\n' + url + '\n\nThank you!';
+            rvMark(l);
+            window.location.href = 'mailto:' + encodeURIComponent(l.email).replace(/%40/g, '@') + '?subject=' + encodeURIComponent('A quick favor') + '&body=' + encodeURIComponent(body);
+            setTimeout(repaintAll, 600);
+          });
+        });
+        acts.appendChild(em);
+      }
+      var cp = el('button', l.email ? '' : 'p', 'Copy link'); cp.type = 'button';
+      cp.addEventListener('click', function () {
+        reviewLink().then(function (url) {
+          if (!url) return fail();
+          var done = function () { cp.textContent = 'Copied'; rvMark(l); setTimeout(repaintAll, 1500); };
+          if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done, function () { window.prompt('Copy your review link:', url); rvMark(l); });
+          else { window.prompt('Copy your review link:', url); rvMark(l); }
+        });
+      });
+      acts.appendChild(cp);
+      box.appendChild(acts);
+      box.appendChild(note);
+      return box;
+    }
+
     // #194: one question under a Won row. Value known -> "Worth $125 · Edit".
     // Unknown -> the input (skippable for this visit; it comes back next load,
     // by design: an unvalued Won lead is the gap the dashboard tile reports).
@@ -697,6 +782,7 @@
       });
       row.appendChild(step);
       if (l.status === 'won' && worthEnabled()) row.appendChild(worthLine(l));
+      if (l.status === 'won') row.appendChild(askLine(l)); // one-page changes 2026-11-23
       if ((inClosed || inSpam) && window.LokaliAPI && window.LokaliAPI.leads && typeof window.LokaliAPI.leads.deleteInquiry === 'function') {
         row.style.gridTemplateColumns = '28px minmax(0,1fr) auto auto auto';
         var d = el('button', 'lq-del', 'Delete'); d.type = 'button'; d.setAttribute('aria-label', 'Delete this lead for good');

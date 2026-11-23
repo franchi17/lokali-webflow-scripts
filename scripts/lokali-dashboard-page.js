@@ -661,7 +661,7 @@
       '<div class="lok-next calm"><div class="n">' + ICO.horn + '</div><div>' +
         '<p class="t">Tell your followers where you will be</p>' +
         '<p class="w">A post shows on your storefront at once and goes out in the weekly email to everyone who saved you. It takes about thirty seconds.</p>' +
-        '<a class="lok-btn" href="/vendor-dashboard/followers">Post an update →</a></div></div>' +
+        '<a class="lok-btn" href="/vendor-dashboard/followers#post">Post an update →</a></div></div>' +
       '<ul class="lok-also"><li>' + ICO.circle + '<span>Send your link to three past customers</span><a href="#" data-quiet-copy>Copy link →</a></li></ul>';
   }
   // ── This week, one thing (F 2026-11-22, UX review finding 1; Fogg: a small
@@ -704,7 +704,7 @@
       post: { key: 'post', ok: true, done: lastPost > now - WEEK, ico: ICO.horn,
         t: 'Tell your followers what’s happening this week',
         w: 'Where you’ll be, what’s new, or when you have openings. It shows on your storefront and goes out in the weekly email to everyone who follows you.',
-        a: 'Write a post', href: '/vendor-dashboard/followers', mins: 'About 2 minutes', did: 'You wrote a post' },
+        a: 'Write a post', href: '/vendor-dashboard/followers#post', mins: 'About 2 minutes', did: 'You wrote a post' },
       share: { key: 'share', ok: true, done: lsGet(WK_DONE + sfx) === '1', ico: ICO.copy,
         t: 'Share your page with one customer',
         w: 'People who already know your work are the best ones to pass it to a neighbor.',
@@ -797,6 +797,25 @@
         qrow.classList.remove('lok-inline'); fc.classList.remove('lok-inline');
       }
     }
+    // One-page changes 2026-11-23 (team review, F 'Build all four'): on phones the
+    // grid is one column, so 'What happened' sat under next step, quick actions and
+    // the grants. It now goes right above that block (under the weekly card and the
+    // numbers); desktop keeps the two columns. The quiet week keeps its own placement.
+    function placeFeedPhone() {
+      var fc = document.getElementById('lok-feed-card');
+      if (quiet || !fc) return;
+      if (mqPhone && mqPhone.matches) {
+        if (fc.nextSibling !== cols) cols.parentNode.insertBefore(fc, cols);
+        fc.classList.add('lok-inline');
+      } else if (fc.parentNode !== cols) {
+        cols.appendChild(fc); fc.classList.remove('lok-inline');
+      }
+    }
+    if (!quiet && mqPhone && !mqPhone.__lokFeed) {
+      mqPhone.__lokFeed = true;
+      if (mqPhone.addEventListener) mqPhone.addEventListener('change', placeFeedPhone);
+      else if (mqPhone.addListener) mqPhone.addListener(placeFeedPhone);
+    }
     if (quiet && mqPhone && !mqPhone.__lokQuiet) {
       mqPhone.__lokQuiet = true;
       if (mqPhone.addEventListener) mqPhone.addEventListener('change', placeQuiet);
@@ -819,6 +838,7 @@
     }
     card.innerHTML = html;
     placeQuiet();
+    placeFeedPhone();
     var qc = card.querySelector('[data-quiet-copy]');
     if (qc) qc.addEventListener('click', function (e) {
       e.preventDefault();
@@ -860,7 +880,7 @@
     // sidebar badge and the Leads tile already carry the count); otherwise the
     // slot is the one weekly action that reaches people, a post to followers.
     if (unread) qaCard('qa-settings', '/vendor-dashboard/leads', ICO.mail, 'Reply to leads', unread + ' unread');
-    else qaCard('qa-settings', '/vendor-dashboard/followers', ICO.horn, 'Post an update', 'Reaches people who saved you');
+    else qaCard('qa-settings', '/vendor-dashboard/followers#post', ICO.horn, 'Post an update', 'Reaches people who saved you');
     qaCard('qa-preview', '/vendor-dashboard/marketing', ICO.qr, 'Marketing', 'Link, caption, printable code');
     var share = document.querySelector('.div-block-43'); if (share) share.style.display = 'none';
   }

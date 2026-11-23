@@ -42,6 +42,11 @@
     '#lok-grants{background:#fff;border:.5px solid #EEEDF6;border-radius:12px;padding:18px;margin-top:16px;min-width:0;box-sizing:border-box;' +
       'font-family:"Plus Jakarta Sans",-apple-system,sans-serif;color:#1A1829;}' +
     '#lok-grants *{box-sizing:border-box;font-family:inherit;}' +
+    '#lok-grants{padding:0;}#lok-grants.open{padding:0 0 18px;}#lok-grants #lok-grants-body{padding:0 18px;}#lok-grants #lok-grants-body[hidden]{display:none;}' +
+    '#lok-grants .lg-line{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;background:none;border:0;padding:14px 18px;cursor:pointer;font-size:14.5px;color:#1A1829;text-align:left;}' +
+    '#lok-grants .lg-line b{font-weight:700;}' +
+    '#lok-grants .lg-see{color:#6002EE;font-weight:700;white-space:nowrap;}' +
+    '#lok-grants .lg-line:focus-visible{outline:3px solid #6002EE;outline-offset:-3px;border-radius:12px;}' +
     '#lok-grants .lg-hd{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:12px;}' +
     '#lok-grants .lg-t{font-size:17px;font-weight:800;letter-spacing:-.2px;line-height:1.3;margin:0;}' +
     '#lok-grants .lg-s{font-size:13.5px;color:#4A4761;margin:2px 0 0;line-height:1.45;}' +
@@ -110,15 +115,29 @@
     var card = document.createElement('section');
     card.id = 'lok-grants';
     card.setAttribute('aria-labelledby', 'lok-grants-t');
-    card.innerHTML =
+    // One-page changes 2026-11-23 (team review, F 'Build all four'): the card starts
+    // as one line, '5 grants you can apply for · See the list'; the list opens in
+    // place. It used to take about two phone screens above 'What happened'.
+    var line = '<button type="button" class="lg-line" aria-expanded="false" aria-controls="lok-grants-body">' +
+      '<span><b>' + list.length + (list.length === 1 ? ' grant' : ' grants') + '</b> you can apply for</span><span class="lg-see">See the list \u203a</span></button>';
+    card.innerHTML = line + '<div id="lok-grants-body" hidden>' +
       '<div class="lg-hd"><div><h2 class="lg-t" id="lok-grants-t">Grants you can apply for</h2>' +
         '<p class="lg-s">Free money for small businesses. Nothing to pay back.</p></div>' +
         (newest ? '<span class="lg-upd">Updated ' + esc(shortDate(newest)) + '</span>' : '') + '</div>' +
       '<ul class="lg-list">' + rows + '</ul>' +
       (list.length > SHOW_FIRST ? '<button type="button" class="lg-more" aria-expanded="false">Show all ' + list.length + ' grants</button>' : '') +
-      '<p class="lg-note">We check every grant on its own website each month and only list ones that are free to apply for. Lokali isn\'t part of these programs.</p>';
+      '<p class="lg-note">We check every grant on its own website each month and only list ones that are free to apply for. Lokali isn\'t part of these programs.</p></div>';
 
     anchor.parentNode.appendChild(card);
+
+    var ln = card.querySelector('.lg-line'), bodyEl = card.querySelector('#lok-grants-body');
+    ln.addEventListener('click', function () {
+      var open = ln.getAttribute('aria-expanded') === 'true';
+      bodyEl.hidden = open;
+      ln.setAttribute('aria-expanded', String(!open));
+      ln.querySelector('.lg-see').textContent = open ? 'See the list \u203a' : 'Hide the list';
+      card.classList.toggle('open', !open);
+    });
 
     var more = card.querySelector('.lg-more');
     if (more) more.addEventListener('click', function () {
