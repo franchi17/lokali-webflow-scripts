@@ -16,8 +16,10 @@
  *   - "The people your neighbors actually recommend": one big quote (the
  *     three storefront cards are gone, so no single business is singled out).
  *   - What we believe: the four principles with their icons, two columns.
- *   - Built for two kinds of people, and Built for everywhere: kept, in pink.
- *   - Francesca's letter last, word for word, with her photo in a circle.
+ *   - Built for two kinds of people: the two cards look different (vendors on
+ *     soft pink, customers on white with a bright pink icon).
+ *   - Francesca's letter, word for word, with her photo in a circle.
+ *   - Built for everywhere last, on a bold deep-pink band (F 2026-11-22).
  * Colors follow docs/design/brand-guide.html (F 2026-11-22 "Yes, change the
  * rule"): About is a PINK page, so pink does every job: #FDE6F2 ground,
  * #EE0290 big words, #B0006A buttons and small words. No violet inside the
@@ -142,6 +144,8 @@
       '.lok-ab-two .lok-h2{margin-bottom:30px!important;}' +
       '.lok-two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;}' +
       '.lok-who{background:' + C.pk + ';border-radius:22px;padding:34px 36px 32px;display:flex;flex-direction:column;min-width:0;}' +
+      '.lok-who.lok-cust{background:#fff;border:1.5px solid ' + C.line + ';}' +
+      '.lok-cust .lok-who-ic{background:' + C.pb + ';color:#fff;}' +
       '.lok-who-top{display:flex;align-items:center;gap:12px;}' +
       '.lok-who-ic{width:44px;height:44px;border-radius:50%;background:#fff;color:' + C.pd + ';display:flex;align-items:center;justify-content:center;flex:none;}' +
       '.lok-who-ic svg{width:18px;height:18px;}' +
@@ -165,7 +169,9 @@
       '.lok-ab .lok-fnd-p{font:400 14.5px/1.6 ' + F + '!important;color:' + C.body + '!important;margin:4px 0 0!important;max-width:62em;}' +
       '.lok-fnd .lok-ul{white-space:nowrap;font-size:15px;}' +
       // built for everywhere + waitlist
-      '.lok-ab-where{background:' + C.pk + ';}' +
+      '.lok-ab-where{background:' + C.pd + ';}' +
+      '.lok-ab.lok-ab-where .lok-h2,.lok-ab.lok-ab-where .lok-h2 *{color:#fff!important;}' +
+      '.lok-ab.lok-ab-where .lok-wh-grid>div>.lok-copy{color:' + C.pk + '!important;}' +
       '.lok-wh-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:64px;align-items:start;}' +
       '.lok-wh-grid .lok-copy{margin-top:16px!important;}' +
       '.lok-ab .lok-h2 strong{font-weight:800!important;}' +
@@ -366,7 +372,7 @@
   // ---- built for two kinds of people ---------------------------------------
   function whoCard(src, kind) {
     var cust = kind === 'cust';
-    var card = el('div', 'lok-who');
+    var card = el('div', 'lok-who' + (cust ? ' lok-cust' : ''));
     var top = el('div', 'lok-who-top');
     top.appendChild(svgSpan('lok-who-ic', cust ? I_HEART : I_STORE));
     top.appendChild(el('span', 'lok-who-k', cust ? 'Customers' : 'Vendors'));
@@ -555,6 +561,9 @@
       else if (s.querySelector('.vendors-grid')) buildTwo(s);
     }
     buildLetter(founder);
+    // F 2026-11-22: the letter sits above Built for everywhere.
+    var whereSec = document.querySelector('section.section-13.lcustom-background');
+    if (whereSec && whereSec.parentNode && founder !== whereSec) whereSec.parentNode.insertBefore(founder, whereSec);
     reconcile();
   }
 
