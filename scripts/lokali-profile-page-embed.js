@@ -430,6 +430,7 @@ var LokaliProfilePage = (function () {
         _dbg('[ProfilePage] populateUI done, #business-name value:', (document.getElementById('business-name') || {}).value);
         bindEvents();
         try { _injectAddressInfo(); } catch (e0) {}
+        try { _fixHintWords(); } catch (e0b) {}
         setTimeout(function () {
           populateUI();
           _dbg('[ProfilePage] 2nd populateUI done, #business-name value:', (document.getElementById('business-name') || {}).value);
@@ -3222,6 +3223,16 @@ var LokaliProfilePage = (function () {
     return Promise.race([lookup, timeout]);
   }
 
+  // Word list (F 2026-11-23 'fix the rest'): three Webflow boxes still carry an
+  // 'eg.' hint the Webflow API can't change. Swap only a hint that still starts
+  // with 'eg.', so a later Designer edit always wins.
+  function _fixHintWords() {
+    var map = { 'website': 'For example, www.yourbusiness.com', 'input-instagram': 'For example, @yourbusiness', 'phone': 'For example, 415 555 0123' };
+    Object.keys(map).forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el && /^\s*eg\./i.test(el.getAttribute('placeholder') || '')) el.setAttribute('placeholder', map[id]);
+    });
+  }
   function _injectAddressInfo() {
     var input = _getAddressEl();
     if (!input || input.getAttribute('data-lok-addr-info') === '1') return;
