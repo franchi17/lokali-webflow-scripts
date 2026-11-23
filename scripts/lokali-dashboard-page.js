@@ -648,7 +648,7 @@
     '.lok-gl li b{display:block;font-size:14.5px;color:#1A1829;line-height:1.35;}',
     '.lok-gl li.ok b{color:#6E6987;text-decoration:line-through;font-weight:600;}',
     '.lok-gl li small{display:block;font-size:12.5px;color:#6E6987;line-height:1.45;margin-top:2px;}',
-    '.lok-gl .lok-btn{display:flex;justify-content:center;width:100%;box-sizing:border-box;}'
+    '.lok-gl .lok-btn{display:flex;justify-content:center;width:100%;box-sizing:border-box;min-height:44px;font-size:14px;}'
   ].join('');
   function goLiveCard(root, v, hasListing, waiting) {
     if ((waiting || []).length) return null;
@@ -690,7 +690,7 @@
         return '<li class="' + (x.ok ? 'ok' : '') + '"><span class="d" aria-hidden="true">' + (x.ok ? '\u2713' : (i + 1)) + '</span>' +
           '<div><b>' + esc(x.t) + (x.ok ? '<span class="lok-sr" style="position:absolute;left:-9999px"> (done)</span>' : '') + '</b><small>' + esc(x.s) + '</small></div></li>';
       }).join('') + '</ol>' +
-      '<a class="lok-btn" href="' + esc(next.href) + '">' + esc(next.act) + ' \u2192</a>';
+      '<a class="lok-btn primary" href="' + esc(next.href) + '">' + esc(next.act) + ' \u2192</a>';
     return false;
   }
 
