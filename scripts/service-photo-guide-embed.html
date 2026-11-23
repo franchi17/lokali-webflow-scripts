@@ -161,6 +161,19 @@
         </div>
       </div>
 
+      <!-- AI info (#259, F 2026-11-23). lokali-ai-info.js inserts these two cards on the live page when they are missing; data-lk-ai-card stops it doubling them after a re-paste. -->
+      <div class="lg-card" data-lk-ai-card="good">
+        <div class="lg-visual" style="background:linear-gradient(160deg,#F3EBFF,#ffffff);">
+          <svg width="58" height="72" viewBox="0 0 58 72" fill="none"><rect x="9" y="8" width="40" height="56" rx="8" fill="#6002EE" opacity=".5"/></svg>
+          <span style="position:absolute;left:10px;bottom:10px;font:600 11px/1 Plus Jakarta Sans,sans-serif;color:#6E6A85;background:#fff;border:1px solid #E7E1F3;border-radius:999px;padding:4px 9px;">AI info</span>
+        </div>
+        <div class="lg-card-body">
+          <div class="lg-tag lg-good">Fine, with the label</div>
+          <div class="lg-caption">A real product, AI background</div>
+          <div class="lg-note">Your real product, untouched, with a studio-style scene added behind it. Turn on "AI info" so neighbors know the setting was made with AI.</div>
+        </div>
+      </div>
+
       <div class="lg-card">
         <div class="lg-visual" style="background:#f8f8f8;">
           <svg width="72" height="72" viewBox="0 0 80 80" fill="none">
@@ -202,6 +215,17 @@
           <div class="lg-tag lg-bad">Skip this</div>
           <div class="lg-caption">Just a logo</div>
           <div class="lg-note">A logo with no work behind it tells neighbors nothing. Save it for your profile photo. Here, show what you do.</div>
+        </div>
+      </div>
+
+      <div class="lg-card" data-lk-ai-card="bad">
+        <div class="lg-visual" style="background:#FFF4F9;">
+          <svg width="70" height="70" viewBox="0 0 70 70" fill="none"><rect x="13" y="13" width="44" height="44" rx="8" fill="#B0006A" opacity=".18"/><path d="M24 46l22-22M24 24l22 22" stroke="#B0006A" stroke-width="3.5" stroke-linecap="round" opacity=".6"/></svg>
+        </div>
+        <div class="lg-card-body">
+          <div class="lg-tag lg-bad">Skip this</div>
+          <div class="lg-caption">AI-made or AI-changed work</div>
+          <div class="lg-note">A cake you never baked, a brighter color than the real thing, a "before and after" that didn't happen. Neighbors should get exactly what they saw.</div>
         </div>
       </div>
 
