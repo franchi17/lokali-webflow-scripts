@@ -264,6 +264,12 @@
       '.lkst-steps b{position:absolute;top:0;left:0;width:32px;height:32px;border-radius:50%;background:#fff;color:#17634A;box-shadow:inset 0 0 0 2px #BFE3D0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;}',
       '.lkst-steps li.on b{background:#17634A;color:#fff;box-shadow:none;}',
       '.lkst-steps li.done b{background:#BFE3D0;color:#17634A;box-shadow:none;}',
+      '.lkst-topgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.95fr);gap:40px;align-items:center;}',
+      '.lkst-topgrid h1{font-size:40px;}',
+      '.lkst-first{border:0;box-shadow:0 18px 40px -28px rgba(23,99,74,.55);}',
+      '.lkst-wrap{max-width:820px;}',
+      '.lkst-qs:empty{display:none;}',
+      '@media(max-width:860px){.lkst-topgrid{grid-template-columns:minmax(0,1fr);gap:24px;}}',
       '.lkst-two{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:28px;align-items:start;}',
       '.lkst-qs{display:flex;flex-direction:column;gap:18px;min-width:0;}',
       '.lkst-card{background:#fff;border:1.5px solid #CDEBDB;border-radius:20px;padding:22px;}',
@@ -336,14 +342,17 @@
     var placed = !!(state.city && state.county);
     var stage = ready ? 3 : (placed ? 2 : 1);
     var stp = function (n, t) { return '<li class="' + (n === stage ? 'on' : (n < stage ? 'done' : '')) + '"' + (n === stage ? ' aria-current="step"' : '') + '><b>' + n + '</b>' + t + '</li>'; };
-    var html = '<div class="lkst"><div class="lkst-top"><div class="lkst-in">' +
+    // v4.1 (F 2026-11-23 'each page its own top'): the first question sits IN the green top,
+    // beside the headline, so the page opens as a tool. The other questions follow below.
+    var html = '<div class="lkst"><div class="lkst-top"><div class="lkst-in lkst-topgrid"><div>' +
       '<span class="lkst-eyebrow">Start here</span>' +
       '<h1>Starting a small business' + (city ? ' in ' + esc(city.t) : '') + '? <em>Let’s make the paperwork shorter.</em></h1>' +
-      '<p class="lkst-lede">Answer a few questions and get a checklist made for where you are and what you sell: the official steps, what each one costs, the licenses to check, and where Lokali fits. It is free, and you do not need an account.</p>' +
+      '<p class="lkst-lede">A checklist made for where you are and what you sell: the official steps, what each one costs, and where Lokali fits. It is free, and you do not need an account.</p>' +
       '<ol class="lkst-steps" aria-label="Three steps">' + stp(1, 'Where you are') + stp(2, 'What you sell') + stp(3, 'Your checklist') + '</ol>' +
+      '</div>' +
+      '<div class="lkst-card lkst-first"><p class="lkst-q">Where are you setting up?</p><p class="lkst-hint">These are the communities Lokali serves today. Pick the one your business will call home.</p>' + chips('city', 'Your city', CITY, state.city) + '</div>' +
       '</div></div><div class="lkst-wrap">' +
-      '<div class="' + (ready ? 'lkst-qs' : 'lkst-two') + '"><div class="lkst-qs">' +
-      '<div class="lkst-card"><p class="lkst-q">Where are you setting up?</p><p class="lkst-hint">These are the communities Lokali serves today. Pick the one your business will call home.</p>' + chips('city', 'Your city', CITY, state.city) + '</div>';
+      '<div class="lkst-qs"><div class="lkst-qs">';
     if (city && city.counties.length > 1) {
       html += '<div class="lkst-card"><p class="lkst-q">Which county is your address in?</p><p class="lkst-hint">' + (city.def === false ? esc(city.t) + ' sits in three counties, and your county decides where you file your business name.' : 'Most of ' + esc(city.t) + ' is in ' + COUNTY[city.counties[0]].t + ', so we picked it for you. Change it if your address is across the line.') + ' Your county is printed on your property tax bill and your voter registration card.</p>' + chips('county', 'Your county', countyChips(city), state.county) + '</div>';
     }
