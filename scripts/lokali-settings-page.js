@@ -1613,6 +1613,20 @@
     form.appendChild(bar);
     nameInputs().forEach(function (inp) { if (inp) inp.addEventListener('input', syncNameBar); });
     save.addEventListener('click', function () { saveProfile(); });
+    // Save-and-undo step 3 (F 2026-11-23 'Yes, start step 3'): the name saves when
+    // you leave the box; the 'You changed your name · Save' bar no longer shows.
+    bar.style.setProperty('display', 'none', 'important');
+    nameInputs().forEach(function (inp) {
+      if (!inp) return;
+      inp.addEventListener('change', function () {
+        var n = nameInputs();
+        var changed = (n[0] && String(n[0].value || '').trim() !== String((_user && _user.first_name) || '')) ||
+                      (n[1] && String(n[1].value || '').trim() !== String((_user && _user.last_name) || ''));
+        if (!changed) return;
+        _nameAutoEl = inp;
+        saveProfile();
+      });
+    });
     discard.addEventListener('click', function () {
       var n = nameInputs();
       if (n[0]) n[0].value = (_user && _user.first_name) || '';
@@ -1702,7 +1716,18 @@
     }
   }
 
+  var _nameAutoEl = null;
+  function nameNote(inp, ok, text) {
+    if (!inp || !inp.parentNode) return;
+    var n = inp.parentNode.querySelector(':scope > .lok-autosave-note');
+    if (!n) { n = mk('div', 'lok-autosave-note'); inp.parentNode.insertBefore(n, inp.nextSibling); }
+    n.style.cssText = 'font:600 12px/1.4 ' + FONT + ';margin:4px 0 2px;color:' + (ok ? '#17634A' : '#B0006A') + ';';
+    n.textContent = ok ? '\u2713 Saved' : text;
+    clearTimeout(n._t);
+    if (ok) n._t = setTimeout(function () { if (n.parentNode) n.parentNode.removeChild(n); }, 2600);
+  }
   function saveProfile() {
+    var autoEl = _nameAutoEl; _nameAutoEl = null;
     var fn = inputOf(firstEl(['settings-first-name', 'First-Name-Input']));
     var ln = inputOf(firstEl(['settings-last-name', 'Last-Name-Input']));
     // A missing or blank input stays out of the payload — sending '' would
@@ -1732,7 +1757,8 @@
         if (fn && !fnVal && _user.first_name) fn.value = _user.first_name;
         if (ln && !lnVal && _user.last_name) ln.value = _user.last_name;
       }
-      toast('success', kept ? 'Saved. Blank fields kept their previous value.' : 'Name saved.');
+      if (autoEl && !kept) nameNote(autoEl, true);
+      else toast('success', kept ? 'Saved. Blank fields kept their previous value.' : 'Name saved.');
       syncNameBar();
     }).catch(function () {
       toast('error', 'We couldn\u2019t reach Lokali, so nothing changed. Check your connection and try again.');

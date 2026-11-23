@@ -249,7 +249,7 @@
         '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">' +
           '<input type="url" class="ava-booking-url" maxlength="300" placeholder="https://calendly.com/your-business" value="' + esc(cur) + '" ' +
             'style="flex:1;min-width:220px;font-family:inherit;font-size:14px;color:#45415A;border:1px solid #E4DEF4;border-radius:9px;padding:11px 12px;background:#fff;">' +
-          '<button type="button" class="ava-btn ava-booking-save">Save</button>' +
+          '<button type="button" class="ava-btn ava-booking-save" style="display:none">Save</button>' + // save-and-undo step 3: saves when you leave the box
           (cur ? '<u class="ava-sub ava-booking-clear" style="cursor:pointer;">remove</u>' : '') +
         '</div>' +
         '<p class="ava-booking-msg" style="margin:8px 0 0;font-size:12px;color:#6C6880;"></p>' +
@@ -302,8 +302,21 @@
       }
       save(v);
     });
+    // Save-and-undo step 3 (F 2026-11-23): the link saves when you leave the box
+    // (or press Enter); clearing it removes the button, with Undo.
+    input.addEventListener('change', function () {
+      var v = (input.value || '').trim();
+      if (v === String(cur || '')) return;
+      if (!v) { removeWithUndo(); return; }
+      self.$booking.querySelector('.ava-booking-save').click();
+    });
+    function removeWithUndo() {
+      var was = cur;
+      save(null);
+      if (was && window.LokaliUndo) window.LokaliUndo.show({ text: 'Booking button removed', onUndo: function () { save(was); } });
+    }
     var clear = this.$booking.querySelector('.ava-booking-clear');
-    if (clear) clear.addEventListener('click', function () { input.value = ''; save(null); });
+    if (clear) clear.addEventListener('click', function () { input.value = ''; removeWithUndo(); });
   };
 
   // ---- Weekly hours (the storefront Hours card) --------------------------------
@@ -344,12 +357,12 @@
             '<input type="time" class="ava-hopen" data-wd="' + wd + '" step="300" />' +
             '<span style="color:#B0ACBC;font-size:12px;">to</span>' +
             '<input type="time" class="ava-hclose" data-wd="' + wd + '" step="300" />' +
-            '<button class="ava-btn2" data-addh="' + wd + '">Add</button></span>' +
+            '<button class="ava-btn2" data-addh="' + wd + '" style="display:none">Add</button></span>' + // step 3: adds itself once both times are picked
           copyLink + copyPanel +
         '</div>';
     }).join('');
 
-    var intro = 'Your open hours, shown on your storefront so customers know when you’re available. Split days (e.g. a lunch break) are just two windows.';
+    var intro = 'Your open hours, shown on your storefront so customers know when you’re available. Pick a start and an end time and it saves by itself. Split days (for example a lunch break) are just two windows.';
     this.$hours.innerHTML =
       '<div class="ava-card">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">' +
@@ -359,15 +372,38 @@
 
     if (this._hoursWired) return;
     this._hoursWired = true;
+    // Save-and-undo step 3 (F 2026-11-23): once a day has a start and an end
+    // time, the window adds itself (same path as the old Add button).
+    this.$hours.addEventListener('change', function (e) {
+      var t = e.target;
+      if (!t || !t.classList || !(t.classList.contains('ava-hopen') || t.classList.contains('ava-hclose'))) return;
+      var wd = t.getAttribute('data-wd');
+      var o = self.$hours.querySelector('.ava-hopen[data-wd="' + wd + '"]'), c = self.$hours.querySelector('.ava-hclose[data-wd="' + wd + '"]');
+      if (!o || !c || !o.value || !c.value) return;
+      var b = self.$hours.querySelector('button[data-addh="' + wd + '"]');
+      if (toMin(c.value) <= toMin(o.value)) {
+        c.style.borderColor = '#F6B8D8';
+        var hx = b && b.parentNode && b.parentNode.querySelector('.ava-herr');
+        if (b && !hx) { b.insertAdjacentHTML('afterend', '<span class="ava-sub ava-herr" style="color:#B0006A;margin-left:8px;"></span>'); hx = b.nextElementSibling; }
+        if (hx) hx.textContent = 'The end time needs to be after the start.';
+        return;
+      }
+      if (b) b.click();
+    });
     this.$hours.addEventListener('click', function (e) {
       // remove a window
       var del = e.target.closest('[data-delh]');
       if (del) {
         var did = Number(del.getAttribute('data-delh'));
+        var gone = self.hours.filter(function (h) { return h.id === did; })[0];
         API.removeHours(did).then(function (r) {
           if (r && r.error) return;
           self.hours = self.hours.filter(function (h) { return h.id !== did; });
           self.renderHours();
+          // Save-and-undo (F 2026-11-23): Undo puts the same window back.
+          if (gone && window.LokaliUndo) window.LokaliUndo.show({ text: 'Hours removed', onUndo: function () {
+            API.addHours(self.vendorId, gone.weekday, gone.open_time, gone.close_time).then(function () { self.reloadHours(); });
+          } });
         });
         return;
       }
@@ -637,19 +673,30 @@
         '<label class="aw-l" for="lok-away-note">Note shoppers see (optional)</label><textarea id="lok-away-note" maxlength="240" placeholder="Taking a short break. Orders placed now will be answered when I\u2019m back.">' + String(vendor.away_note || '').replace(/[<>&]/g, function (c) { return { '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]; }) + '</textarea>' +
         '<div class="aw-row" style="margin-top:12px"><div><div style="font-size:13px;font-weight:700">Keep taking messages while away</div><div class="aw-s">On: the form works and shows your note. Off: the form says "back on" and nothing is sent.</div></div>' +
         '<input type="checkbox" class="aw-sw" id="lok-away-inq"' + (vendor.away_accepts_inquiries !== false ? ' checked' : '') + ' aria-label="Keep taking messages while away"></div>' +
-        '<div class="aw-acts"><button type="button" class="aw-save" id="lok-away-save">Save</button><span class="aw-msg" id="lok-away-msg"></span></div>' +
+        '<div class="aw-acts"><button type="button" class="aw-save" id="lok-away-save" style="display:none">Save</button><span class="aw-msg" id="lok-away-msg"></span></div>' + // step 3: saves by itself
       '</div>';
     mount.parentNode.insertBefore(card, mount);
     var on = card.querySelector('#lok-away-on'), msg = card.querySelector('#lok-away-msg');
     on.addEventListener('change', function () {
       card.classList.toggle('on', on.checked);
       if (!on.checked && active) save({ away_until: null, away_note: null, away_accepts_inquiries: true }, 'Away is off.');
+      if (on.checked && !card.querySelector('#lok-away-until').value) msg.textContent = 'Pick the day you\u2019re back and it saves by itself.';
     });
+    // Save-and-undo step 3 (F 2026-11-23): the date, the note and the messages
+    // switch save by themselves once Away is on and a date is picked.
+    function autoAway() {
+      if (!on.checked) return;
+      if (!card.querySelector('#lok-away-until').value) { msg.textContent = 'Pick the day you\u2019re back and it saves by itself.'; return; }
+      card.querySelector('#lok-away-save').click();
+    }
+    card.querySelector('#lok-away-until').addEventListener('change', autoAway);
+    card.querySelector('#lok-away-note').addEventListener('change', autoAway);
+    card.querySelector('#lok-away-inq').addEventListener('change', autoAway);
     card.querySelector('#lok-away-save').addEventListener('click', function () {
       var d = card.querySelector('#lok-away-until').value;
       if (!d) { msg.textContent = 'Pick the day you\u2019re back.'; return; }
       if (d < today) { msg.textContent = 'That date is in the past.'; return; }
-      save({ away_until: d, away_note: card.querySelector('#lok-away-note').value.trim() || null, away_accepts_inquiries: card.querySelector('#lok-away-inq').checked }, 'Saved. Shoppers now see "Away until" on your storefront.');
+      save({ away_until: d, away_note: card.querySelector('#lok-away-note').value.trim() || null, away_accepts_inquiries: card.querySelector('#lok-away-inq').checked }, '\u2713 Saved. Shoppers now see "Away until" on your storefront.');
     });
     function save(fields, okText) {
       msg.textContent = 'Saving\u2026';
