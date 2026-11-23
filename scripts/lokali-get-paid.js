@@ -238,6 +238,18 @@
     var planEl = $('settings-current-plan');
     var anchor = $('lokali-spotlight') || $('lok-verify-section') || (planEl && planEl.closest ? planEl.closest('section') : null);
     if (!anchor) { if (tries < 80) setTimeout(function () { mount(tries + 1); }, 250); return; }
+    // F 2026-11-23: card payments open storefront by storefront. Ask the server
+    // first; a storefront that is not open (open !== true, also any older
+    // server or a failed call) sees no card at all.
+    if (mount.asked) return; mount.asked = true;
+    loadPlanAndFees().then(function () { return post({ action: 'status' }); }).then(function (r) {
+      if (!(r && r.ok && r.data && r.data.open === true)) return;
+      build(anchor, r);
+    }).catch(function () {});
+  }
+
+  function build(anchor, first) {
+    if ($('lokali-checkout')) return;
     var st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
     var sec = document.createElement('section');
     var look = document.querySelector('.section-12');
@@ -249,7 +261,7 @@
       '<div class="gp-intro">Let shoppers pay you by card right on your Lokali product pages. The sale goes straight to your own Stripe account; you handle pickup, delivery or shipping as usual and mark it done on your Orders page.</div>' +
       '<div id="lk-gp-body"><div class="gp-intro">Checking your setup</div></div>';
     anchor.insertAdjacentElement('afterend', sec);
-    loadPlanAndFees().then(function () { return post({ action: 'status' }); }).then(function (r) {
+    Promise.resolve(first).then(function (r) {
       state.st = r.ok ? r.data.state : { connected: false };
       state.fee = (r.ok && r.data.fee) || null;
       render(sec);
