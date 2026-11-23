@@ -713,7 +713,7 @@
     '.lok-set-btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 18px;border-radius:10px;border:1px solid #D4BFF9;background:#fff;' +
       'font-family:' + FONT + ';font-size:14px;font-weight:700;color:#6002EE;cursor:pointer;flex:0 0 auto;}' +
     '.lok-set-btn:hover{background:#EEE6FF;}' +
-    '.lok-set-btn.pri{background:#6002EE;border-color:#6002EE;color:#fff;}.lok-set-btn.pri:hover{background:#3D00E0;}' +
+    '.lok-set-btn.pri{background:#6002EE;border-color:#6002EE;color:#fff;}.lok-set-btn.pri:hover{background:#6002EE;opacity:.88;}' +
     '.lok-set-btn.quiet{border-color:#DEDAEE;color:#4A4761;}' +
     // #215 Your storefronts (link / switch / disconnect)
     '.lok-set-btn.danger{border-color:#F3C6C6;color:#B42318;}.lok-set-btn.danger:hover{background:#FDF1F1;}' +

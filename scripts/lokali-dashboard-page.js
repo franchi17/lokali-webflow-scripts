@@ -319,7 +319,7 @@
     '.lok-quiet .lok-qm{display:flex;gap:16px;font-size:11.5px;color:#4A4761;font-variant-numeric:tabular-nums;line-height:1.4;}',
     '.lok-quiet .lok-qm b{display:block;font-size:16px;font-weight:700;color:#1A1829;line-height:1.2;}',
     '.lok-next.calm{background:#F7F6FC;}',
-    '.lok-next.calm .n{background:#1A1829;}',
+    '.lok-next.calm .n{background:#6002EE;}',
     '.lok-gam-fold{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 16px;}',
     '.lok-gam-fold .lok-gam-title{font-size:14px;}',
     '.lok-gam-fold .lok-gam-sub{margin:0;flex:1 1 200px;min-width:0;}',
