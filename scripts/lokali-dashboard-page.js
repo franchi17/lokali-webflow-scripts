@@ -899,7 +899,15 @@
     return card;
   }
 
-  function gamMilestonesCard(rows) {
+  // All five reached (F 2026-11-21: "Can I get rid of the milestones section
+  // especially since it's all filled out"): the complete card carries an x, the
+  // same control as the all-in-place 'Your next step' card. Hidden per
+  // storefront in the browser; nothing new can land on a finished list, so it
+  // stays hidden. Below five the card always shows.
+  var GAM_HIDE_KEY = 'lok_gam_hide_v1:';
+  function gamHidden(vendorId) { try { return localStorage.getItem(GAM_HIDE_KEY + vendorId) === '1'; } catch (e) { return false; } }
+
+  function gamMilestonesCard(rows, vendorId) {
     var byKey = {};
     (rows || []).forEach(function (m) { byKey[m.milestone] = m; });
     var earnedCount = 0;
@@ -912,6 +920,9 @@
         ? 'Every business starts at zero. These unlock as customers find you. Only you can see them.'
         : COUNT_WORDS[earnedCount] + ' down. These are yours to see, a record of your business taking root on Lokali.';
 
+    var complete = earnedCount === GAM_MILESTONES.length;
+    if (complete && vendorId != null && gamHidden(vendorId)) return null;
+
     // Nothing reached yet (F 2026-10-24): one line, the next milestone named, the
     // five rows behind a tap. The full card returns with the first milestone.
     var folded = earnedCount === 0;
@@ -921,7 +932,8 @@
       ? '<div class="lok-gam-title">Milestones</div>' +
         '<div class="lok-gam-sub">0 of 5 reached. ' + GAM_MILESTONES[0].name + ' is the next one.</div>' +
         '<button type="button" data-gam-fold aria-expanded="false">See all five</button>'
-      : '<div class="lok-gam-eyebrow">Your journey</div>' +
+      : (complete && vendorId != null ? '<button type="button" class="lok-ns-x" data-gam-hide aria-label="Hide Milestones">✕</button>' : '') +
+        '<div class="lok-gam-eyebrow">Your journey</div>' +
         '<div class="lok-gam-title">Milestones</div>' +
         '<div class="lok-gam-sub">' + sub + '</div>';
     html += '<div class="lok-gam-list">';
@@ -937,6 +949,14 @@
     });
     html += '</div>';
     card.innerHTML = html;
+    var hide = card.querySelector('[data-gam-hide]');
+    if (hide) {
+      card.style.position = 'relative';
+      hide.addEventListener('click', function () {
+        try { localStorage.setItem(GAM_HIDE_KEY + vendorId, '1'); } catch (e) {}
+        if (card.parentNode) card.parentNode.removeChild(card);
+      });
+    }
     var fold = card.querySelector('[data-gam-fold]');
     if (fold) fold.addEventListener('click', function () {
       var open = card.classList.toggle('open');
@@ -949,7 +969,7 @@
   // The home's 'Bring your neighbors' referral card left on 2026-10-24 (F): the
   // Marketing page carries the same card, and no referral was ever claimed from
   // here. Claiming a stashed ?ref= code still happens below.
-  function renderGamification() {
+  function renderGamification(vendorId) {
     var SB = window.LokaliSupabaseAPI;
     if (!SB || !SB.vendorGamification) return;
     var anchor = homeBottomAnchor(), top = homeTopAnchor();
@@ -969,7 +989,8 @@
         // Celebration rides ABOVE the listing-strength card; the milestones
         // card mounts right after the quick actions.
         if (moment && top && top.parentNode) top.parentNode.insertBefore(moment, top);
-        wrap.appendChild(gamMilestonesCard(rows));
+        var msCard = gamMilestonesCard(rows, vendorId);
+        if (msCard) wrap.appendChild(msCard);
       }
       if (wrap.children.length) {
         anchor.parentNode.insertBefore(wrap, anchor.nextSibling);
@@ -1107,7 +1128,7 @@
     renderQuickActions(services, products, leadsData);
 
     // Milestones + referral cards + home-screen card (best-effort; mount after the quick actions now)
-    renderGamification();
+    renderGamification(v && v.id);
     renderHomeScreenCard();
   }
 
