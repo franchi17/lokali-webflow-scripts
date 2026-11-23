@@ -288,7 +288,17 @@
       '.mkt-diff svg{flex:0 0 auto;width:16px;height:16px;fill:' + REVIEW_BLUE + ';margin-top:2px;}' +
       '.mkt-diff b{color:#13227A;font-weight:600;}' +
       '@media (max-width:600px){.mkt-band{margin:-16px -16px 14px;padding:8px 16px;}.mkt-head{flex-wrap:wrap;}}' +
-      '@media (max-width:600px){.mkt-card{padding:16px;}.mkt-acts{gap:0;}}';
+      '.mkt-mini-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;}' +
+      '.mkt-mini{border:1px solid #ECE8F8;border-radius:12px;overflow:hidden;background:#fff;min-width:0;}' +
+      '.mkt-mini-hd{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:8px 12px;}' +
+      '.mkt-mini.store .mkt-mini-hd{background:' + BRAND + ';color:#fff;}' +
+      '.mkt-mini.review .mkt-mini-hd{background:#E8F0FF;color:#1B3FA8;}' +
+      '.mkt-mini-bd{padding:12px;display:grid;gap:8px;justify-items:start;}' +
+      '.mkt-mini-code svg{display:block;width:120px;height:120px;max-width:100%;}' +
+      '.mkt-mini-sub{margin:0;font-size:13px;color:#4A4761;}' +
+      '.mkt-mini-more{font-size:12.5px;font-weight:600;color:' + BRAND + ';}' +
+      '.mkt-mini.review .mkt-qr-dl{background:#E0E6FF;color:' + REVIEW_BLUE + ';}' +
+      '@media (max-width:600px){.mkt-card{padding:16px;}.mkt-acts{gap:0;}.mkt-mini-row{gap:8px;}.mkt-mini-bd{padding:10px;}.mkt-mini-code svg{width:96px;height:96px;}}';
     document.head.appendChild(st);
   }
 
@@ -423,12 +433,16 @@
   Page.prototype.render = function () {
     this.mount.className = 'lok-mkt';
     if (this.free) {
-      this.mount.innerHTML = this.qrCardHtml() + this.reviewCardHtml() + this.postCardHtml() + upsellHtml();
+      this.mount.innerHTML = this.quickCodesHtml() + this.qrCardHtml() + this.reviewCardHtml() + this.postCardHtml() + upsellHtml();
       this.bind();
       this.drawPost();
       return;
     }
+    // One-page changes 2026-11-23 (team review 'Bring your customers in', F 'Build
+    // all four'): the page opens with both QR codes side by side; Showcase of the
+    // week follows. The full code cards keep every option further down.
     this.mount.innerHTML =
+      this.quickCodesHtml() +
       (this.premium ? this.cardHtml('showcase') : this.lockedShowcaseHtml()) +
       this.qrCardHtml() +
       this.reviewCardHtml() +
@@ -436,6 +450,22 @@
       (SPOTLIGHT_CREATIVE_ENABLED && this.premium && this.spot ? this.spotlightCardHtml() : '');
     this.bind();
     this.drawPost();
+  };
+
+  Page.prototype.quickCodesHtml = function () {
+    if (!window.LokaliQR || !this.vendor.slug) return '';
+    var mini = function (cls, head, svg, sub, act, anchor) {
+      return '<div class="mkt-mini ' + cls + '"><div class="mkt-mini-hd">' + head + '</div><div class="mkt-mini-bd">' +
+        '<div class="mkt-mini-code">' + svg + '</div><p class="mkt-mini-sub">' + sub + '</p>' +
+        '<button type="button" class="mkt-qr-dl" data-act="' + act + '">Download</button>' +
+        '<a class="mkt-mini-more" href="#' + anchor + '">More options</a></div></div>';
+    };
+    return '<div class="mkt-card mkt-quick"><p class="mkt-h">Your two QR codes</p>' +
+      '<p class="mkt-sub">One helps new people find you, one asks a customer you served for a review. Print them, or show them on your phone.</p>' +
+      '<div class="mkt-mini-row">' +
+        mini('store', 'For everyone', window.LokaliQR.toSvg(this.qrUrl(), this.qrOpts(120, BRAND)), 'Opens your storefront', 'qr-png', 'mkt-qr-full') +
+        mini('review', 'For customers', window.LokaliQR.toSvg(this.reviewUrl(), this.qrOpts(120, REVIEW_BLUE)), 'Asks for a review', 'rv-png', 'mkt-rv-full') +
+      '</div></div>';
   };
 
   // ---- #163 Your QR code ------------------------------------------------------
@@ -487,7 +517,7 @@
       // #163b: Featured also puts the vendor's own logo in the center.
       statsHtml += '<p class="mkt-note">Featured vendors can also put their own logo in the center of the code.</p>';
     }
-    return '<div class="mkt-card store" data-kind="qr">' +
+    return '<div class="mkt-card store" data-kind="qr" id="mkt-qr-full">' +
       '<div class="mkt-band store">' + ICON_STORE + ' For everyone &middot; opens your storefront</div>' +
       '<div class="mkt-head"><p class="mkt-h">' + ICON_STORE + 'Your storefront QR code</p><span class="mkt-tag store">Opens your storefront</span></div>' +
       '<p class="mkt-sub">For people who have not met you yet. Put it on flyers, table tents, business cards and packaging, anywhere people can point a camera.</p>' +
@@ -849,7 +879,7 @@
       : '';
     // F 2026-11-10: no copy-ready text / email / packaging wording here any more.
     // Vendors get the link and the code and say it their own way.
-    return '<div class="mkt-card review" data-kind="review">' +
+    return '<div class="mkt-card review" data-kind="review" id="mkt-rv-full">' +
       '<div class="mkt-band review">' + ICON_STAR + ' For customers only &middot; asks for a review</div>' +
       '<div class="mkt-head"><p class="mkt-h">' + ICON_STAR + 'Your review QR code</p><span class="mkt-tag review">Opens your Reviews tab, ready to post</span></div>' +
       '<p class="mkt-sub">For customers you already served. Show it at pickup or print it on a thank-you note. The best moment to ask is right after a handoff, while the good feeling is fresh.</p>' +
@@ -898,6 +928,9 @@
     var box = document.createElement('div');
     box.innerHTML = this.reviewCardHtml();
     if (box.firstChild) old.parentNode.replaceChild(box.firstChild, old);
+    // The review code in the top strip carries the same link: redraw it too.
+    var oq = this.mount.querySelector('.mkt-quick');
+    if (oq) { var qb = document.createElement('div'); qb.innerHTML = this.quickCodesHtml(); if (qb.firstChild) oq.parentNode.replaceChild(qb.firstChild, oq); }
   };
   Page.prototype.rotateReviewLink = function (btn) {
     var self = this;
