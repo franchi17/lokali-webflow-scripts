@@ -1822,6 +1822,7 @@ const LokaliServicesPage = (() => {
 
   const galleryInput = () => document.getElementById('lok-service-gallery-input');
 
+  const _pendingPhotoDel = new Set(); // photos waiting out their 8-second Undo (save-and-undo step 1)
   const renderGallery = async (serviceId) => {
     const host = galleryHost();
     if (!host) return;
@@ -1862,7 +1863,7 @@ const LokaliServicesPage = (() => {
     }
     const raw = res.data;
     _galleryPhotos = (Array.isArray(raw) ? raw : (raw?.items || raw?.records || raw?.data || []))
-      .filter(p => p && p.is_active !== false)
+      .filter(p => p && p.is_active !== false && !_pendingPhotoDel.has(String(p.id)))
       .sort((a, b) => (a.sort_order ?? 9999) - (b.sort_order ?? 9999));
     // Legacy cover (2026-09-22): a listing made while its plan allowed ONE photo has
     // its photo as the standalone image_url and no gallery row. Register that photo
@@ -2109,8 +2110,34 @@ const LokaliServicesPage = (() => {
     }
   };
 
+  // Save-and-undo step 1 (F 2026-11-23): no browser pop-up. The photo leaves the
+  // strip at once and a 'Photo removed. Undo' message shows for 8 seconds; the
+  // real delete runs only after that. Without the shared helper, the old ask.
   const deleteGalleryPhoto = async (photoId) => {
     if (!photoId || _galleryBusy) return;
+    if (window.LokaliUndo && editingId != null) {
+      const listingId = editingId, pid = String(photoId);
+      _pendingPhotoDel.add(pid);
+      _skipLegacySeed = true;
+      try { await renderGallery(listingId); } finally { _skipLegacySeed = false; }
+      window.LokaliUndo.show({
+        text: 'Photo removed',
+        onUndo: async () => { _pendingPhotoDel.delete(pid); if (editingId === listingId) await renderGallery(listingId); },
+        onCommit: async () => {
+          try {
+            const res = await window.LokaliAPI.services.deletePhoto(photoId);
+            if (res && res.error) alert('Could not remove photo: ' + res.error);
+          } catch (e) { alert('Could not remove photo. Please try again.'); }
+          _pendingPhotoDel.delete(pid);
+          if (editingId === listingId) {
+            _skipLegacySeed = true; _mainImageUrl = null;
+            try { await renderGallery(listingId); } finally { _skipLegacySeed = false; }
+            await syncCoverFromGallery();
+          }
+        }
+      });
+      return;
+    }
     if (!confirm('Remove this photo from this listing?')) return;
     _galleryBusy = true;
     try {

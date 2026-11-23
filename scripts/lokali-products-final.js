@@ -1476,6 +1476,7 @@ const LokaliProductsPage = (() => {
   // approval then has nothing to tag. Held here until the save gives us an id.
   let _pendingSubcatLabels = [];
 
+  const _pendingPhotoDel = new Set(); // photos waiting out their 8-second Undo (save-and-undo step 1)
   const renderGallery = async (productId) => {
     const host = galleryHost();
     if (!host) return;
@@ -1516,7 +1517,7 @@ const LokaliProductsPage = (() => {
     }
     const raw = res.data;
     _galleryPhotos = (Array.isArray(raw) ? raw : (raw?.items || raw?.records || raw?.data || []))
-      .filter(p => p && p.is_active !== false)
+      .filter(p => p && p.is_active !== false && !_pendingPhotoDel.has(String(p.id)))
       .sort((a, b) => (a.sort_order ?? 9999) - (b.sort_order ?? 9999));
     // Legacy cover (2026-09-22): a listing made while its plan allowed ONE photo has
     // its photo as the standalone image_url and no gallery row. Register that photo
@@ -1763,8 +1764,34 @@ const LokaliProductsPage = (() => {
     }
   };
 
+  // Save-and-undo step 1 (F 2026-11-23): no browser pop-up. The photo leaves the
+  // strip at once and a 'Photo removed. Undo' message shows for 8 seconds; the
+  // real delete runs only after that. Without the shared helper, the old ask.
   const deleteGalleryPhoto = async (photoId) => {
     if (!photoId || _galleryBusy) return;
+    if (window.LokaliUndo && editingId != null) {
+      const listingId = editingId, pid = String(photoId);
+      _pendingPhotoDel.add(pid);
+      _skipLegacySeed = true;
+      try { await renderGallery(listingId); } finally { _skipLegacySeed = false; }
+      window.LokaliUndo.show({
+        text: 'Photo removed',
+        onUndo: async () => { _pendingPhotoDel.delete(pid); if (editingId === listingId) await renderGallery(listingId); },
+        onCommit: async () => {
+          try {
+            const res = await window.LokaliAPI.products.deletePhoto(photoId);
+            if (res && res.error) alert('Could not remove photo: ' + res.error);
+          } catch (e) { alert('Could not remove photo. Please try again.'); }
+          _pendingPhotoDel.delete(pid);
+          if (editingId === listingId) {
+            _skipLegacySeed = true; _mainImageUrl = null;
+            try { await renderGallery(listingId); } finally { _skipLegacySeed = false; }
+            await syncCoverFromGallery();
+          }
+        }
+      });
+      return;
+    }
     if (!confirm('Remove this photo from this listing?')) return;
     _galleryBusy = true;
     try {
@@ -3091,6 +3118,27 @@ const LokaliProductsPage = (() => {
         const q = galArtMode()
           ? 'Remove ' + a.name + '? Their pieces stay listed, without a name beside them.'
           : 'Remove the ' + (/collection$/i.test(String(a.name).trim()) ? a.name : a.name + ' collection') + '? Its items stay listed, just not grouped.';
+        // Save-and-undo step 1 (F 2026-11-23): the row leaves at once with an 8-second
+        // Undo; the real remove runs after that. Without the helper, the old ask.
+        if (window.LokaliUndo) {
+          const idx = _galArtists.indexOf(a);
+          _galArtists = _galArtists.filter((x) => x.id !== a.id);
+          _galPanelOpen = true; renderArtistsPanel();
+          window.LokaliUndo.show({
+            text: (galArtMode() ? a.name : (/collection$/i.test(String(a.name).trim()) ? a.name : a.name + ' collection')) + ' removed',
+            onUndo: () => { _galArtists.splice(Math.max(0, idx), 0, a); _galPanelOpen = true; renderArtistsPanel(); },
+            onCommit: async () => {
+              const r2 = await galSAPI().artists.remove(a.id);
+              if (r2 && r2.error) {
+                _galArtists.splice(Math.max(0, idx), 0, a); _galPanelOpen = true; renderArtistsPanel();
+                window.alert('That did not save. Please try again.'); return;
+              }
+              products.forEach((p) => { if (p.artist_id === a.id) p.artist_id = null; });
+              syncGalleryFields();
+            }
+          });
+          return;
+        }
         if (!window.confirm(q)) return;
         rm.disabled = true;
         const r = await galSAPI().artists.remove(a.id);

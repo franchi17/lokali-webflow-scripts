@@ -155,6 +155,25 @@
     if (act === 'post') this.post(t);
     else if (act === 'remove') {
       var id = Number(t.getAttribute('data-id'));
+      // Save-and-undo step 1 (F 2026-11-23): the post leaves the list at once with
+      // an 8-second Undo; it comes off the storefront when that runs out.
+      if (window.LokaliUndo) {
+        var idx = -1, gone = null;
+        self.posts.forEach(function (p, i) { if (p.id === id) { idx = i; gone = p; } });
+        if (!gone) return;
+        self.posts = self.posts.filter(function (p) { return p.id !== id; });
+        self.render();
+        window.LokaliUndo.show({
+          text: 'Post removed',
+          onUndo: function () { self.posts.splice(Math.max(0, idx), 0, gone); self.render(); },
+          onCommit: function () {
+            self.SB.posts.remove(id).then(function (res) {
+              if (res && res.error) { self.posts.splice(Math.max(0, idx), 0, gone); self.render(); toast('Could not remove that post. Please try again.'); }
+            });
+          }
+        });
+        return;
+      }
       t.disabled = true;
       this.SB.posts.remove(id).then(function (res) {
         if (res && res.error) { t.disabled = false; toast('Could not remove that post. Please try again.'); return; }

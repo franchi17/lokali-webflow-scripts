@@ -1246,3 +1246,57 @@
   else run();
 })();
 
+
+// ── LokaliUndo: one "Removed. Undo" message for every dashboard page ──────────
+// Save-and-undo plan step 1 (F 2026-11-23 'Yes, start step 1'). A remove happens
+// on screen at once; the real change (onCommit) runs after 8 seconds unless the
+// vendor taps Undo (onUndo). Only one message at a time: a new one commits the
+// one before. Leaving the page commits whatever is waiting (best effort; if the
+// browser drops it, the item simply stays, which is the safe way round).
+(function () {
+  'use strict';
+  if (window.LokaliUndo) return;
+  var cur = null, timer = null, bar = null;
+  function css() {
+    if (document.getElementById('lok-undo-css')) return;
+    var s = document.createElement('style'); s.id = 'lok-undo-css';
+    s.textContent =
+      '#lok-undo{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:2147483000;' +
+      'display:flex;align-items:center;gap:16px;max-width:calc(100vw - 32px);box-sizing:border-box;background:#6002EE;color:#fff;' +
+      'border-radius:14px;padding:12px 14px 12px 18px;box-shadow:0 10px 30px rgba(42,37,64,.22);font:500 14.5px/1.4 "Plus Jakarta Sans",-apple-system,sans-serif;}' +
+      '#lok-undo[hidden]{display:none;}' +
+      '#lok-undo span{min-width:0;}' +
+      '#lok-undo button{flex:none;font:700 14.5px/1 "Plus Jakarta Sans",-apple-system,sans-serif;color:#fff;background:rgba(255,255,255,.16);border:0;border-radius:10px;padding:10px 14px;min-height:40px;cursor:pointer;text-decoration:underline;text-underline-offset:2px;}' +
+      '#lok-undo button:focus-visible{outline:3px solid #E2D6FD;outline-offset:2px;}';
+    (document.head || document.documentElement).appendChild(s);
+  }
+  function ensureBar() {
+    if (bar && document.body.contains(bar)) return bar;
+    css();
+    bar = document.createElement('div'); bar.id = 'lok-undo'; bar.hidden = true;
+    bar.setAttribute('role', 'status'); bar.setAttribute('aria-live', 'polite');
+    bar.innerHTML = '<span></span><button type="button">Undo</button>';
+    bar.querySelector('button').addEventListener('click', function () { undo(); });
+    document.body.appendChild(bar);
+    return bar;
+  }
+  function hide() { if (bar) bar.hidden = true; }
+  function commit() {
+    var c = cur; cur = null; clearTimeout(timer); hide();
+    if (c && typeof c.onCommit === 'function') { try { c.onCommit(); } catch (e) {} }
+  }
+  function undo() {
+    var c = cur; cur = null; clearTimeout(timer); hide();
+    if (c && typeof c.onUndo === 'function') { try { c.onUndo(); } catch (e) {} }
+  }
+  function show(o) {
+    if (cur) commit();
+    cur = o || {};
+    var b = ensureBar();
+    b.querySelector('span').textContent = cur.text || 'Removed.';
+    b.hidden = false;
+    timer = setTimeout(commit, cur.ms || 8000);
+  }
+  window.addEventListener('pagehide', function () { if (cur) commit(); });
+  window.LokaliUndo = { show: show, commitNow: commit };
+})();
