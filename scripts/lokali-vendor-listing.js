@@ -141,6 +141,14 @@
   // endpoint (helper in lokali-supabase-client.js as window.LokaliImg; absent =
   // the full object, as before). Call it BEFORE registering an error handler on
   // the same <img>: a render miss falls back to the stored object silently.
+  // Focal point (patch_focus_all_photos.sql, F 2026-11-21): percent pair ->
+  // CSS object-position, '' when unset (keep centering). Numbers only, so a
+  // stored value can never inject anything into the style.
+  function focusPos(x, y) {
+    if (x == null || y == null || x === '' || y === '') return '';
+    x = Math.max(0, Math.min(100, Math.round(Number(x)))); y = Math.max(0, Math.min(100, Math.round(Number(y))));
+    return (isFinite(x) && isFinite(y)) ? x + '% ' + y + '%' : '';
+  }
   function imgSet(img, url, w) {
     var I = window.LokaliImg;
     if (I && typeof I.set === 'function') I.set(img, url, w); else img.src = url;
@@ -1500,6 +1508,8 @@
     if (avaUrl) {
       var ava = ce('img', 'vl-pair-ava');
       ava.alt = '';
+      var avaPos = String(d.owner_photo || '').trim() ? focusPos(d.owner_focus_x, d.owner_focus_y) : focusPos(d.profile_focus_x, d.profile_focus_y);
+      if (avaPos) ava.style.objectPosition = avaPos; // focal point (F 2026-11-21)
       imgSet(ava, avaUrl, 240); // CLEAN-P23 — before the error handler below
       ava.addEventListener('error', function () {
         var m = ce('div', 'vl-pair-ava-mark');
@@ -2386,7 +2396,7 @@
       b.setAttribute('aria-pressed', _galFilter === a.id ? 'true' : 'false');
       var av = ce('div', 'vl-gal-av');
       var photo = imgUrl(a.photo_url);
-      if (photo) { var im = document.createElement('img'); im.loading = 'lazy'; imgSet(im, photo, 160); im.alt = ''; av.appendChild(im); }
+      if (photo) { var im = document.createElement('img'); im.loading = 'lazy'; imgSet(im, photo, 160); im.alt = ''; if (focusPos(a.photo_focus_x, a.photo_focus_y)) im.style.objectPosition = focusPos(a.photo_focus_x, a.photo_focus_y); av.appendChild(im); }
       else av.textContent = galInitials(a.name);
       var nm = ce('div', 'vl-gal-name'); nm.textContent = a.name;
       var n = counts[a.id] || 0;
@@ -3369,6 +3379,8 @@
     if (av && photo) {
       av.style.display = '';
       imgSet(av, photo, 240); // CLEAN-P23 — before the error handler
+      var lgPos = focusPos(v.profile_focus_x, v.profile_focus_y); // logo focal point (F 2026-11-21)
+      if (lgPos) av.style.objectPosition = lgPos;
       av.addEventListener('error', showInitials);
       makeZoomable(av, photo, v.business_name); // 2026-10-02 (F punchlist 10): tap the logo to enlarge
     } else {
@@ -3491,6 +3503,7 @@
         // initials fallback below, which "reads" the same way).
         imgSet(el, photo, 240); el.alt = name || v.business_name || ''; // CLEAN-P23
         el.style.cssText = 'width:' + size + 'px;height:' + size + 'px;border-radius:50%;object-fit:cover;flex:none;box-shadow:0 3px 10px rgba(26,24,41,.12);';
+        if (focusPos(v.owner_focus_x, v.owner_focus_y)) el.style.objectPosition = focusPos(v.owner_focus_x, v.owner_focus_y); // owner focal point (F 2026-11-21)
         // 2026-10-01: blocked/failed photo -> initials circle, not alt text in a ring.
         el.addEventListener('error', function () { if (el.parentNode) el.parentNode.replaceChild(initialsEl(size), el); });
         makeZoomable(el, photo, name || v.business_name); // 2026-10-02 (F punchlist 10): tap the owner photo to enlarge

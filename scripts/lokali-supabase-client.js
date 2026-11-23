@@ -198,6 +198,7 @@
     'contact_email', 'address',
     'linkedin_url', // 2026-10-02: PUBLIC LinkedIn profile/company URL (patch_linkedin_url.sql; shape-checked, linkedin.com only)
     'card_photo_url', // market-card cover pin (patch_card_photo.sql) — picker on the profile page
+    'profile_focus_x', 'profile_focus_y', 'owner_focus_x', 'owner_focus_y', // focal points (patch_focus_all_photos.sql, F 2026-11-21)
     // #147/SEC-050: the six address geo columns were REMOVED 2026-08-24 —
     // written server-side by /address/resolve (service role) and REVOKED from
     // `authenticated`; a straggler key here would fail the whole PATCH (42501).
@@ -267,6 +268,7 @@
     'website_url,locations_id,categories_id,subcategories,profile_photo,' + // subcategories = #96
 
     'owner_name,owner_bio,owner_photo,owner_languages,' +
+    'profile_focus_x,profile_focus_y,owner_focus_x,owner_focus_y,' + // focal points (patch_focus_all_photos.sql 2026-11-21)
     'text_messages,whatsapp_messages,phone_calls,phone_visible,' +
     'created_at,is_active,slug,is_founding_member,' +
     'is_spotlight,spotlight_until,is_verified,is_featured,plan_rank,' +
@@ -802,7 +804,7 @@
       forVendor: function (vendorId) {
         return withClient(function (c) {
           return c.from('vendor_artists')
-            .select('id,vendors_id,name,origin,bio,photo_url,sort_order')
+            .select('id,vendors_id,name,origin,bio,photo_url,photo_focus_x,photo_focus_y,sort_order')
             .eq('vendors_id', vendorId).is('deleted_at', null)
             .order('sort_order').order('id').limit(60);
         });
@@ -814,18 +816,18 @@
             vendors_id: vendorId, name: String(f.name || '').trim(),
             origin: f.origin || null, bio: f.bio || null, photo_url: f.photo_url || null,
             sort_order: Number(f.sort_order) || 0
-          }).select('id,vendors_id,name,origin,bio,photo_url,sort_order').single();
+          }).select('id,vendors_id,name,origin,bio,photo_url,photo_focus_x,photo_focus_y,sort_order').single();
         });
       },
       update: function (artistId, f) {
         f = f || {};
         var row = {};
-        ['name', 'origin', 'bio', 'photo_url', 'sort_order'].forEach(function (k) {
+        ['name', 'origin', 'bio', 'photo_url', 'photo_focus_x', 'photo_focus_y', 'sort_order'].forEach(function (k) {
           if (Object.prototype.hasOwnProperty.call(f, k)) row[k] = f[k];
         });
         return withClient(function (c) {
           return c.from('vendor_artists').update(row).eq('id', artistId)
-            .select('id,vendors_id,name,origin,bio,photo_url,sort_order').single();
+            .select('id,vendors_id,name,origin,bio,photo_url,photo_focus_x,photo_focus_y,sort_order').single();
         });
       },
       remove: function (artistId) {
@@ -2175,4 +2177,174 @@
       }
     }
   };
+})();
+
+// ============================================================================
+// LokaliFocusPicker (F 2026-11-21, "Focal point: all of them"): one shared
+// "tap where the photo should center" window for every vendor photo that the
+// site crops (logo, owner photo, extra listing photos, Collections photos).
+// The value is a percent pair; renderers map it 1:1 to CSS object-position.
+//   LokaliFocusPicker.open({ url, x, y, shapes: ['circle','card','square'],
+//                            title, onSave: function (x, y) -> Promise<bool> })
+//   LokaliFocusPicker.pos(x, y) -> 'X% Y%' or '' when unset
+// The URL is set via the img property (never markup). Nothing is written
+// until Save; Reset clears back to centered (null, null).
+// ============================================================================
+(function () {
+  'use strict';
+  if (window.LokaliFocusPicker) return;
+  var FONT = "'Plus Jakarta Sans',-apple-system,system-ui,sans-serif";
+  function clamp(n) { n = Math.round(Number(n)); return isFinite(n) ? Math.max(0, Math.min(100, n)) : 50; }
+  function pos(x, y) {
+    return (x == null || y == null || x === '' || y === '') ? '' : (clamp(x) + '% ' + clamp(y) + '%');
+  }
+  function apply(img, x, y) { if (img) img.style.objectPosition = pos(x, y) || 'center'; }
+
+  function open(o) {
+    o = o || {};
+    if (!o.url) return;
+    var x = o.x == null ? null : clamp(o.x), y = o.y == null ? null : clamp(o.y);
+    var prevFocus = document.activeElement;
+    var shapes = (o.shapes && o.shapes.length) ? o.shapes : ['card'];
+
+    var ov = document.createElement('div');
+    ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true');
+    ov.setAttribute('aria-label', o.title || 'Choose the center of this photo');
+    ov.style.cssText = 'position:fixed;inset:0;z-index:2147483000;background:rgba(40,30,80,.45);display:flex;align-items:center;justify-content:center;padding:16px;font-family:' + FONT + ';';
+    var box = document.createElement('div');
+    box.style.cssText = 'background:#fff;border-radius:18px;max-width:560px;width:100%;max-height:92vh;overflow:auto;padding:22px 22px 18px;box-shadow:0 18px 50px rgba(60,40,140,.25);color:#2A2740;';
+    ov.appendChild(box);
+
+    var h = document.createElement('div');
+    h.style.cssText = 'font-size:18px;font-weight:700;margin-bottom:4px;';
+    h.textContent = o.title || 'Choose the center of this photo';
+    var sub = document.createElement('div');
+    sub.style.cssText = 'font-size:13.5px;color:#6B6880;line-height:1.5;margin-bottom:14px;';
+    sub.textContent = 'Tap the part of the photo that should always stay in view, like a face. The small previews show how it will look.';
+    box.appendChild(h); box.appendChild(sub);
+
+    var row = document.createElement('div');
+    row.style.cssText = 'display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start;';
+    box.appendChild(row);
+
+    // the whole photo, uncropped, with a dot on the chosen point
+    var stage = document.createElement('div');
+    stage.style.cssText = 'position:relative;flex:1 1 240px;min-width:200px;border-radius:12px;overflow:hidden;background:#F5F3FC;cursor:crosshair;touch-action:none;line-height:0;';
+    var full = document.createElement('img');
+    full.alt = ''; full.draggable = false;
+    full.style.cssText = 'width:100%;height:auto;max-height:52vh;object-fit:contain;display:block;user-select:none;-webkit-user-drag:none;';
+    full.src = o.url;
+    var dot = document.createElement('div');
+    dot.style.cssText = 'position:absolute;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;border:3px solid #fff;background:rgba(96,2,238,.85);box-shadow:0 1px 6px rgba(40,20,100,.45);pointer-events:none;';
+    stage.appendChild(full); stage.appendChild(dot);
+    row.appendChild(stage);
+
+    var side = document.createElement('div');
+    side.style.cssText = 'display:flex;flex-direction:column;gap:12px;flex:0 0 auto;';
+    row.appendChild(side);
+    var previews = [];
+    var LABEL = { circle: 'Round photo', card: 'Card', square: 'Square tile' };
+    shapes.forEach(function (sh) {
+      var w = document.createElement('div');
+      var f = document.createElement('div');
+      var d = sh === 'circle' ? 'width:84px;height:84px;border-radius:50%;'
+            : sh === 'square' ? 'width:96px;height:96px;border-radius:12px;'
+            : 'width:150px;height:100px;border-radius:12px;';
+      f.style.cssText = d + 'overflow:hidden;border:1px solid #E7E3F5;background:#F5F3FC;';
+      var im = document.createElement('img');
+      im.alt = ''; im.src = o.url;
+      im.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';
+      f.appendChild(im);
+      var l = document.createElement('div');
+      l.style.cssText = 'font-size:12px;color:#6B6880;margin-top:5px;';
+      l.textContent = LABEL[sh] || '';
+      w.appendChild(f); w.appendChild(l);
+      side.appendChild(w);
+      previews.push(im);
+    });
+
+    function paint() {
+      var px = x == null ? 50 : x, py = y == null ? 50 : y;
+      // the dot sits on the drawn image, which object-fit:contain may letterbox
+      var r = stage.getBoundingClientRect(), nw = full.naturalWidth, nh = full.naturalHeight;
+      var dw = r.width, dh = r.height, ox = 0, oy = 0;
+      if (nw && nh && r.width && r.height) {
+        var s = Math.min(r.width / nw, r.height / nh);
+        dw = nw * s; dh = nh * s; ox = (r.width - dw) / 2; oy = (r.height - dh) / 2;
+      }
+      dot.style.left = (ox + dw * px / 100) + 'px';
+      dot.style.top = (oy + dh * py / 100) + 'px';
+      previews.forEach(function (im) { apply(im, x, y); });
+    }
+    function setFrom(e) {
+      var r = stage.getBoundingClientRect(), nw = full.naturalWidth, nh = full.naturalHeight;
+      var dw = r.width, dh = r.height, ox = 0, oy = 0;
+      if (nw && nh) { var s = Math.min(r.width / nw, r.height / nh); dw = nw * s; dh = nh * s; ox = (r.width - dw) / 2; oy = (r.height - dh) / 2; }
+      if (!dw || !dh) return;
+      x = clamp(((e.clientX - r.left - ox) / dw) * 100);
+      y = clamp(((e.clientY - r.top - oy) / dh) * 100);
+      paint();
+    }
+    var dragging = false;
+    stage.addEventListener('pointerdown', function (e) { dragging = true; try { stage.setPointerCapture(e.pointerId); } catch (err) {} setFrom(e); e.preventDefault(); });
+    stage.addEventListener('pointermove', function (e) { if (dragging) setFrom(e); });
+    stage.addEventListener('pointerup', function () { dragging = false; });
+    stage.addEventListener('pointercancel', function () { dragging = false; });
+    full.addEventListener('load', paint);
+
+    var msg = document.createElement('div');
+    msg.setAttribute('role', 'status');
+    msg.style.cssText = 'font-size:13px;color:#B42318;min-height:18px;margin-top:10px;';
+    box.appendChild(msg);
+
+    var bar = document.createElement('div');
+    bar.style.cssText = 'display:flex;gap:10px;justify-content:flex-end;align-items:center;flex-wrap:wrap;margin-top:6px;';
+    function btn(t, primary) {
+      var b = document.createElement('button'); b.type = 'button'; b.textContent = t;
+      b.style.cssText = 'font-family:' + FONT + ';font-size:14px;font-weight:600;border-radius:10px;padding:10px 18px;cursor:pointer;min-height:44px;' +
+        (primary ? 'background:#6002EE;color:#fff;border:0;' : 'background:#fff;color:#4A1FB0;border:1px solid #DCD3FA;');
+      return b;
+    }
+    var reset = btn('Center it', false);
+    reset.style.marginRight = 'auto';
+    var cancel = btn('Cancel', false);
+    var save = btn('Save', true);
+    bar.appendChild(reset); bar.appendChild(cancel); bar.appendChild(save);
+    box.appendChild(bar);
+
+    function close() {
+      document.removeEventListener('keydown', onKey);
+      if (ov.parentNode) ov.parentNode.removeChild(ov);
+      try { if (prevFocus && prevFocus.focus) prevFocus.focus(); } catch (e) {}
+    }
+    function onKey(e) { if (e.key === 'Escape') close(); }
+    reset.addEventListener('click', function () { x = null; y = null; paint(); });
+    cancel.addEventListener('click', close);
+    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    save.addEventListener('click', function () {
+      save.disabled = true; save.textContent = 'Saving…'; msg.textContent = '';
+      Promise.resolve(o.onSave ? o.onSave(x, y) : true).then(function (ok) {
+        if (ok === false) throw new Error('save failed');
+        close();
+      }).catch(function () {
+        save.disabled = false; save.textContent = 'Save';
+        msg.textContent = 'That did not save. Check your connection and try again.';
+      });
+    });
+    document.addEventListener('keydown', onKey);
+    document.body.appendChild(ov);
+    paint();
+    setTimeout(function () { try { save.focus(); } catch (e) {} }, 0);
+  }
+
+  // A small "Center photo" button for editors to place beside a photo.
+  function button(label) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = label || 'Center photo';
+    b.style.cssText = 'font-family:' + FONT + ';font-size:12.5px;font-weight:600;color:#4A1FB0;background:#F3EEFF;border:1px solid #E2D8FD;border-radius:999px;padding:6px 12px;cursor:pointer;min-height:32px;';
+    return b;
+  }
+
+  window.LokaliFocusPicker = { open: open, pos: pos, apply: apply, button: button };
 })();

@@ -54,14 +54,16 @@
   var T = {
     en: {
       hello: '“Referral Desk. This is Francesca.”',
-      title: 'Can’t find who you need? Ring the Desk.',
-      lede: 'Tell us what you’re looking for. Francesca knows the neighborhood and writes back within one business day with one to three neighbors who can help.',
+      // F 2026-11-22 homepage words v2: the Desk speaks as Francesca (the only "I" on the page)
+      title: 'Can’t find who you need? Ask me.',
+      lede: 'Tell me what you’re looking for. I know the neighborhood, and I’ll write back within one business day with one to three neighbors who can help.',
       ring: 'Ring the Desk',
       openNow: 'Desk open today, 9 to 6',
       opensToday: 'The Desk opens at 9 today',
       opensTomorrow: 'The Desk opens at 9 tomorrow',
-      connected: 'neighbors connected', wait: 'longest wait for an answer', oneDay: '1 business day',
+      connected: 'neighbors connected', wait: 'the longest you’ll wait for an answer', oneDay: '1 business day',
       spanish: 'hablamos español', si: 'Sí',
+      realPerson: 'A real person', realSub: 'answers every message. Never AI, never a bot.',
       nudge: 'Rather ask a person?',
       thinTitle: 'Not quite it?',
       thinSub: 'Francesca knows people the search doesn’t.',
@@ -79,14 +81,15 @@
     },
     es: {
       hello: '“Referral Desk. Habla Francesca.”',
-      title: '¿No encuentras a quien necesitas? Llama al Desk.',
-      lede: 'Cuéntanos qué buscas. Francesca conoce el vecindario y te responde en un día hábil con uno a tres vecinos que pueden ayudarte.',
+      title: '¿No encuentras a quien necesitas? Pregúntame.',
+      lede: 'Cuéntame qué buscas. Conozco el vecindario y te respondo en un día hábil con uno a tres vecinos que pueden ayudarte.',
       ring: 'Llama al Desk',
       openNow: 'Desk abierto hoy, de 9 a 6',
       opensToday: 'El Desk abre hoy a las 9',
       opensTomorrow: 'El Desk abre mañana a las 9',
       connected: 'vecinos conectados', wait: 'espera máxima por respuesta', oneDay: '1 día hábil',
       spanish: 'hablamos español', si: 'Sí',
+      realPerson: 'Una persona real', realSub: 'responde cada mensaje. Nunca IA, nunca un bot.',
       nudge: '¿Prefieres preguntarle a una persona?',
       thinTitle: '¿No es lo que buscas?',
       thinSub: 'Francesca conoce gente que la búsqueda no encuentra.',
@@ -249,6 +252,22 @@
       '.lkd-count b{font-size:24px;font-weight:800;color:#6002EE;line-height:1.1;font-variant-numeric:tabular-nums;}',
       '.lkd-count span{font-size:13px;color:#4A4761;}',
       '@media (max-width:860px){.lkd-sec{padding:48px 20px;}.lkd-sec-in{grid-template-columns:minmax(0,1fr);gap:20px;}.lkd-art-svg{max-width:220px;}}',
+      // 2026-11-22 homepage v3: the Desk is the page's bold violet band, facts on the right (lokali-home.js #lok-desk-slot)
+      '.lkd-sec.lkd-v3{background:#6002EE;padding:88px 20px;}',
+      '.lkd-v3 .lkd-sec-in{max-width:1160px;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:48px;}',
+      '.lkd-v3 .lkd-hello{color:#E9DDFF;}',
+      '.lkd-v3 .lkd-copy h2{color:#fff;font-size:clamp(32px,4.4vw,48px);}',
+      '.lkd-v3 .lkd-copy p.lkd-lede{color:#E9DDFF;font-size:18px;}',
+      '.lkd-v3 .lkd-btn{background:#fff;color:#6002EE !important;}',
+      '.lkd-v3 .lkd-btn:hover{background:#F3EBFF;}',
+      '.lkd-v3 .lkd-btn:focus-visible{outline-color:#fff;}',
+      '.lkd-v3 .lkd-open{color:#fff;}',
+      '.lkd-v3 .lkd-open.lkd-closed i{background:#E9DDFF;}',
+      '.lkd-facts{display:grid;gap:14px;min-width:0;}',
+      '.lkd-fact{background:rgba(255,255,255,.12);border-radius:18px;padding:18px 22px;color:#fff;}',
+      '.lkd-fact b{display:block;font-size:22px;font-weight:800;line-height:1.2;}',
+      '.lkd-fact span{color:#E9DDFF;font-size:14px;}',
+      '@media (max-width:860px){.lkd-sec.lkd-v3{padding:56px 20px;}.lkd-v3 .lkd-sec-in{grid-template-columns:minmax(0,1fr);gap:28px;}}',
       // hero nudge
       '.lkd-nudge{margin:12px 0 0;font-size:14.5px;color:#4A4761;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}',
       '.lkd-link{display:inline-flex;align-items:center;gap:6px;color:#4B02BB;font-weight:700;background:none;border:0;padding:4px 0;cursor:pointer;font-size:14.5px;font-family:' + F + ';text-decoration:none;}',
@@ -500,7 +519,34 @@
   }
 
   // ---- homepage --------------------------------------------------------------
+  function buildSectionV3() {
+    var sec = el('section', 'lkd lkd-sec lkd-v3');
+    sec.id = 'lokali-desk';
+    sec.setAttribute('aria-labelledby', 'lkd-h');
+    var inner = el('div', 'lkd-sec-in');
+    var copy = el('div', 'lkd-copy');
+    copy.appendChild(el('p', 'lkd-hello', t('hello')));
+    var h = el('h2', null, t('title')); h.id = 'lkd-h';
+    copy.appendChild(h);
+    copy.appendChild(el('p', 'lkd-lede', t('lede')));
+    var row = el('div', 'lkd-row');
+    var b = ringButton('home');
+    row.appendChild(b);
+    row.appendChild(openLine());
+    copy.appendChild(row);
+    inner.appendChild(copy);
+    var facts = el('div', 'lkd-facts');
+    function fact(big, small) { var d = el('div', 'lkd-fact'); d.appendChild(el('b', null, big)); d.appendChild(el('span', null, small)); facts.appendChild(d); }
+    if (DESK_CONNECTED > COUNTER_MIN) fact(String(DESK_CONNECTED), t('connected'));
+    fact(t('oneDay'), t('wait'));
+    fact(t('realPerson'), t('realSub'));
+    fact(t('si'), t('spanish'));
+    inner.appendChild(facts);
+    sec.appendChild(inner);
+    return sec;
+  }
   function buildSection() {
+    if (document.getElementById('lok-desk-slot') || document.querySelector('.lkd-v3')) return buildSectionV3();
     var sec = el('section', 'lkd lkd-sec');
     sec.id = 'lokali-desk';
     sec.setAttribute('aria-labelledby', 'lkd-h');
@@ -557,13 +603,17 @@
     return p;
   }
   function mountHome() {
+    var slot = document.getElementById('lok-desk-slot'); // homepage v3 (2026-11-22)
     var cats = document.getElementById('lok-cats');
-    if (cats && !document.getElementById('lokali-desk')) cats.parentNode.insertBefore(buildSection(), cats.nextSibling);
+    if (slot && !document.getElementById('lokali-desk')) slot.parentNode.replaceChild(buildSection(), slot);
+    else if (cats && !slot && !document.getElementById('lokali-desk')) cats.parentNode.insertBefore(buildSection(), cats.nextSibling);
+    var links = document.getElementById('lok-hero-links');
     var hs = document.getElementById('lok-hs');
     var lede = heroLede();
     if (!document.getElementById('lkd-nudge')) {
       // the space sits outside the (nowrap) span so the line can break there
-      if (lede) { lede.appendChild(document.createTextNode(' ')); lede.appendChild(buildNudge()); }
+      if (links) { links.insertBefore(document.createTextNode(' \u00b7 '), links.firstChild); links.insertBefore(buildNudge(), links.firstChild); }
+      else if (lede) { lede.appendChild(document.createTextNode(' ')); lede.appendChild(buildNudge()); }
       else if (hs) hs.parentNode.insertBefore(buildNudge(), hs.nextSibling);
     }
     return !!(document.getElementById('lokali-desk') && document.getElementById('lkd-nudge'));

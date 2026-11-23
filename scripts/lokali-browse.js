@@ -872,6 +872,11 @@
     // image rather than a broken-host URL. Live rows store full URLs (handled above).
     return '';
   }
+  function focusPos(x, y) { // focal point (patch_focus_all_photos.sql, F 2026-11-21); '' = keep centering
+    if (x == null || y == null || x === '' || y === '') return '';
+    x = Math.max(0, Math.min(100, Math.round(Number(x)))); y = Math.max(0, Math.min(100, Math.round(Number(y))));
+    return (isFinite(x) && isFinite(y)) ? x + '% ' + y + '%' : '';
+  }
   function vPhotoUrl(v) { return safeImgUrl(v.profile_photo); }
   // CLEAN-P23: card-size variant through the Storage render endpoint. The helper
   // lives in lokali-supabase-client.js (window.LokaliImg); if it is absent the
@@ -2477,7 +2482,7 @@
       // #97: alt DELIBERATELY empty — the business name is the card's visible
       // title right next to this avatar, so a non-empty alt would make screen
       // readers announce every vendor twice. Decorative-adjacent-text rule.
-      var img = ce('img', 'vcard-avatar-img'); imgSet(img, photo, 240); img.alt = ''; img.loading = 'lazy'; img.decoding = 'async'; // below-the-fold avatars were the Market's only eager images (12 on 09-19)
+      var img = ce('img', 'vcard-avatar-img'); imgSet(img, photo, 240); img.alt = ''; if (focusPos(v.profile_focus_x, v.profile_focus_y)) img.style.objectPosition = focusPos(v.profile_focus_x, v.profile_focus_y); img.loading = 'lazy'; img.decoding = 'async'; // below-the-fold avatars were the Market's only eager images (12 on 09-19)
       img.addEventListener('error', function () { if (img.parentNode) avatar.removeChild(img); fillInitials(); });
       avatar.appendChild(img);
     } else {

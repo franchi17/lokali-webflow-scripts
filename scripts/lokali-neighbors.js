@@ -48,6 +48,11 @@
   // Chicago-date string, exclusive) the normal weekly shuffle resumes with
   // no re-ship; the block is dead code that the next neighbors edit can drop.
   var FEATURE = { slug: 'echoed-reflections-videography', excludeSlug: 'paperloom', until: '2026-09-09' };
+  function focusPos(x, y) { // focal point (patch_focus_all_photos.sql, F 2026-11-21); '' = keep centering
+    if (x == null || y == null || x === '' || y === '') return '';
+    x = Math.max(0, Math.min(100, Math.round(Number(x)))); y = Math.max(0, Math.min(100, Math.round(Number(y))));
+    return (isFinite(x) && isFinite(y)) ? x + '% ' + y + '%' : '';
+  }
   function featureActive() {
     try {
       // en-CA = YYYY-MM-DD, so plain string compare works; same zone as weekKey().
@@ -183,6 +188,7 @@
     var ownerName = String(v.owner_name || '').trim();
     var headline = ownerName || String(v.business_name || 'Local business');
     var faceUrl = String(v.owner_photo || '').trim() || String(v.profile_photo || '').trim();
+    var facePos = String(v.owner_photo || '').trim() ? focusPos(v.owner_focus_x, v.owner_focus_y) : focusPos(v.profile_focus_x, v.profile_focus_y);
 
     // Work photo on top: the Market card's cover (adapter vendors.covers, with
     // its focal point); a vendor with no cover shows their face/profile photo.
@@ -195,6 +201,7 @@
       cimg.alt = 'Work by ' + (String(v.business_name || '').trim() || headline);
       cimg.loading = 'lazy';
       if (cover && cover.url && cover.fx != null && cover.fy != null) cimg.style.objectPosition = cover.fx + '% ' + cover.fy + '%';
+      else if (!(cover && cover.url) && facePos) cimg.style.objectPosition = facePos;
       cimg.addEventListener('error', function () { if (cimg.parentNode) cimg.parentNode.removeChild(cimg); });
       cov.appendChild(cimg);
     }
@@ -213,6 +220,7 @@
       var img = document.createElement('img');
       img.className = 'lok-nb-face';
       imgSet(img, faceUrl, 96);
+      if (facePos) img.style.objectPosition = facePos;
       img.alt = headline + (ownerName && v.business_name && v.business_name !== ownerName ? ' of ' + v.business_name : '');
       img.loading = 'lazy';
       // A blocked/failed photo (corporate web filters refuse api.golokali.com
@@ -296,7 +304,8 @@
     h.textContent = 'Meet your neighbors';
     var sub = document.createElement('p');
     sub.className = 'lok-nb-sub';
-    sub.textContent = 'A few of the people behind the work near you. New faces every week.';
+    // F 2026-11-22 homepage words v2 (the attorney/plumber/woodworker trio, used once on the page)
+    sub.textContent = 'The attorney, the plumber, the woodworker down the road. New faces every week.';
     hwrap.appendChild(h); hwrap.appendChild(sub);
     var all = document.createElement('a');
     all.className = 'lok-nb-all';
@@ -332,7 +341,8 @@
     window.LokaliSupabaseReady.then(function (c) {
       return c.from('vendors')
         .select('id,slug,business_name,business_tagline,business_description,profile_photo,' +
-                'owner_name,owner_photo,owner_bio,categories_id,is_founding_member,is_active')
+                'owner_name,owner_photo,owner_bio,categories_id,is_founding_member,is_active,' +
+                'profile_focus_x,profile_focus_y,owner_focus_x,owner_focus_y')
         .eq('is_publish_ready', true)
         .limit(100);
     }).then(function (res) {
