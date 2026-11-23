@@ -584,12 +584,12 @@ var LokaliProfilePage = (function () {
   // Information / About Your Business) and drop it in right below the card that
   // holds the website/Instagram links. Idempotent.
   var _PAY_FIELDS = [
-    { id: 'input-venmo',         label: 'Venmo username',      ph: 'eg. your-venmo-name (no @)' },
-    { id: 'input-cashapp',       label: 'Cash App $Cashtag',   ph: 'eg. yourcashtag (no $)' },
-    { id: 'input-paypal',        label: 'PayPal.Me',           ph: 'eg. yourpaypalname' },
-    { id: 'input-zelle',         label: 'Zelle (email or U.S. mobile)', ph: 'eg. you@business.com' },
+    { id: 'input-venmo',         label: 'Venmo username',      ph: 'For example, your-venmo-name (no @)' },
+    { id: 'input-cashapp',       label: 'Cash App $Cashtag',   ph: 'For example, yourcashtag (no $)' },
+    { id: 'input-paypal',        label: 'PayPal.Me',           ph: 'For example, yourpaypalname' },
+    { id: 'input-zelle',         label: 'Zelle (email or U.S. mobile)', ph: 'For example, you@business.com' },
     { id: 'input-otherpay-url',  label: 'Other payment link',  ph: 'https://…' },
-    { id: 'input-otherpay-label', label: 'Label for the link (optional)', ph: 'eg. Buy Me a Coffee' }
+    { id: 'input-otherpay-label', label: 'Label for the link (optional)', ph: 'For example, Buy Me a Coffee' }
   ];
   // Font Awesome "dollar-sign" glyph as inline SVG — FA isn't loaded on the page,
   // and the other card icons are purple PNGs. Fill #6002EE (sampled from the
@@ -1167,9 +1167,9 @@ var LokaliProfilePage = (function () {
     pick.addEventListener('click', function (e) { e.preventDefault(); file.click(); });
     ph.appendChild(prev); ph.appendChild(pick); ph.appendChild(file);
     card.col.appendChild(ph);
-    _mkLabeledInput(card.col, 'input-owner-name', 'Your first name', 'eg. Francesca');
-    _mkLabeledInput(card.col, 'input-owner-bio', 'About you: a short personal intro', 'eg. Hi, I’m Francesca! I started this because…', true);
-    _mkLabeledInput(card.col, 'input-owner-languages', 'Languages you speak', 'eg. English, Spanish');
+    _mkLabeledInput(card.col, 'input-owner-name', 'Your first name', 'For example, Francesca');
+    _mkLabeledInput(card.col, 'input-owner-bio', 'About you: a short personal intro', 'For example, Hi, I’m Francesca! I started this because…', true);
+    _mkLabeledInput(card.col, 'input-owner-languages', 'Languages you speak', 'For example, English, Spanish');
     anchorSection.parentNode.insertBefore(card.section, anchorSection.nextSibling);
 
     file.addEventListener('change', function () {
@@ -1247,13 +1247,13 @@ var LokaliProfilePage = (function () {
       h.textContent = 'Instagram handle (private)';
       h.appendChild(_infoPopover('?', 'About your Instagram handle',
         '<div style="font-weight:700;font-size:13px;color:#1A1829;margin-bottom:6px;">Only Lokali sees this</div>' +
-        '<div style="font-size:12.5px;color:#565170;line-height:1.6;">Your handle is <b>never shown on your storefront</b>. We use it when we feature you on Instagram: you are tagged as a collaborator, so the post appears on your own profile and your followers see it too. Without it we can feature you but cannot tag you.</div>'));
+        '<div style="font-size:12.5px;color:#565170;line-height:1.6;">Your handle is <b>never shown on your storefront</b>. Now and then we share new neighbors together in one Lokali post. Your handle lets us tag you when you are in one.</div>'));
     }
     if (!document.getElementById('lok-ig-hint')) {
       var hint = document.createElement('div');
       hint.id = 'lok-ig-hint';
       hint.style.cssText = 'font-family:"Plus Jakarta Sans",sans-serif;font-size:12px;color:#6B6880;margin-top:6px;line-height:1.5;';
-      hint.textContent = 'Not shown on your storefront. When Lokali features you on Instagram we tag you as a collaborator, so the post appears on your profile too.';
+      hint.textContent = 'Not shown on your storefront. Now and then we share new neighbors together in one Lokali post, and your handle lets us tag you.';
       ig.parentNode.insertBefore(hint, ig.nextSibling);
     }
   }

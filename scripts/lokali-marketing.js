@@ -263,7 +263,7 @@
       '.mkt-band{display:flex;align-items:center;gap:8px;margin:-22px -24px 16px;padding:9px 24px;border-radius:14px 14px 0 0;color:#fff;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;}' +
       '.mkt-band svg{width:14px;height:14px;fill:#fff;flex:0 0 auto;}' +
       '.mkt-band.store{background:' + BRAND + ';}' +
-      '.mkt-band.review{background:' + REVIEW_BLUE + ';}' +
+      '.mkt-band.review{background:#E8F0FF;color:#1B3FA8;}.mkt-band.review svg{fill:#1B3FA8;}' + // quick fixes 2026-11-23: soft sky header, not a second loud band under the violet one
       '.mkt-card.store{background:#F9F6FF;border-color:#E4DEF4;}' +
       '.mkt-card.review{background:#F1F4FF;border-color:#C9D3FB;}' +
       '.mkt-card.store .mkt-h,.mkt-card.review .mkt-h{display:flex;align-items:center;gap:8px;}' +
@@ -466,8 +466,7 @@
           '<div class="mkt-qr-stat"><div class="mkt-qr-sv">' + (+q.d7 || 0) + '</div><div class="mkt-qr-sl">This week</div></div>' +
         '</div>' +
         (q.total > 0
-          ? '<p class="mkt-note">' + mobilePct + '% of scans came from a phone' +
-            (since ? ', counting since ' + esc(since) : '') + '.</p>'
+          ? (since ? '<p class="mkt-note">Counting since ' + esc(since) + '.</p>' : '') // quick fixes 2026-11-23: the '% from a phone' line is gone
           : '<p class="mkt-note">No scans yet. Counting starts the moment your code is out in the world.</p>');
     } else if (q && !q.allowed) {
       // Pro teaser: scans ARE being recorded, but the payload carries NO
@@ -500,7 +499,7 @@
             '<button type="button" class="mkt-qr-dl" data-act="qr-png">Download for phone and web</button>' +
             '<button type="button" class="mkt-qr-dl" data-act="qr-svg">Download for print</button>' +
           '</div>' +
-          '<p class="mkt-note">Print it at least 1 inch (2.5 cm) wide and keep the white border, cameras need it. The SVG stays sharp at any size.</p>' +
+          '<p class="mkt-note">Print it at least 1 inch (2.5 cm) wide and keep the white border, cameras need it.</p>' +
           '<div class="mkt-qr-badge-slot">' + this.qrBadgeHtml() + '</div>' +
           statsHtml +
         '</div>' +
@@ -627,7 +626,7 @@
     var name = this.vendor.business_name || 'We';
     return name + ' is now on Lokali, the marketplace for local businesses. ' +
       'See what we offer, send us a message, or leave a review at golokali.com/' + this.vendor.slug + '. ' +
-      'And if you are a neighbor with a business of your own, there is a free storefront waiting for you too.';
+      'Tap Follow on our Lokali page to hear when we have something new.'; // quick fixes 2026-11-23: asks customers to follow, no 'free storefront' pitch
   };
 
   // Fonts, wordmark, logo, photo candidates (pin first) and lookups, loaded once
@@ -856,8 +855,8 @@
       '<p class="mkt-sub">For customers you already served. Show it at pickup or print it on a thank-you note. The best moment to ask is right after a handoff, while the good feeling is fresh.</p>' +
       '<div class="mkt-qr-row">' + qr +
         '<div class="mkt-qr-side">' +
-          '<p class="mkt-qr-url">Opens <b style="overflow-wrap:anywhere">golokali.com/' + esc(self.reviewPath()) + '#reviews</b>: your storefront, straight to the Reviews tab' +
-            (self.reviewCode ? ', with posting unlocked for the person who scanned it.' : '.') + '</p>' +
+          '<p class="mkt-qr-url">Opens your storefront right at the Reviews tab' + // quick fixes 2026-11-23: no raw link with its code, Copy link carries it
+            (self.reviewCode ? ', ready for your customer to post.' : '.') + '</p>' +
           '<div class="mkt-qr-btns">' +
             '<button type="button" class="mkt-qr-dl" data-act="rv-copy-link">Copy link</button>' +
             (window.LokaliQR ? '<button type="button" class="mkt-qr-dl" data-act="rv-png">Download for phone and web</button><button type="button" class="mkt-qr-dl" data-act="rv-svg">Download for print</button>' : '') +

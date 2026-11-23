@@ -406,7 +406,7 @@
       '<div class="lok-hd-sub">' + status + plan + '<span class="lok-hd-url">' + esc(url) + '</span></div>' +
       '<div class="lok-btns">' +
         '<button type="button" class="lok-btn" data-hd-copy>' + ICO.copy + '<span>Copy link</span></button>' +
-        '<a class="lok-btn primary" href="' + esc(publicListingUrl(v)) + '" target="_blank" rel="noopener">View storefront' + ICO.ext + '</a>' +
+        '<a class="lok-btn" href="' + esc(publicListingUrl(v)) + '" target="_blank" rel="noopener">View storefront' + ICO.ext + '</a>' +
       '</div>';
     var copy = hd.querySelector('[data-hd-copy]');
     copy.addEventListener('click', function () {
@@ -503,7 +503,7 @@
     box.innerHTML = extra +
       tile('Views · last 7 days', 'stat-profile-views', v7, sparkline(views), deltaChip(v7, vPrev), 'Storefront and listing opens') +
       tile('Leads · last 7 days', 'stat-profile-complete', l7, '',
-        unread ? '<span class="lok-delta new">' + unread + ' unread</span>' : deltaChip(l7, lPrev), 'Inquiries and contact taps') +
+        unread ? '<span class="lok-delta new">' + unread + ' unread</span>' : deltaChip(l7, lPrev), 'Messages and taps to call or email') +
       tile('Payment taps · last 7 days', 'stat-active-products', p7, '', deltaChip(p7, pPrev), 'Venmo, Cash App, PayPal, Buy') +
       tile('Shared link · all time', null, landings, '',
         '<span class="lok-delta ' + (sharers ? 'up' : 'flat') + '">' + (sharers ? sharers + (sharers === 1 ? ' neighbor shared it' : ' neighbors shared it') : 'not shared yet') + '</span>',
@@ -631,7 +631,7 @@
   }
   function buildFeed(leadsData, reviews) {
     var L = leadsData || {}, items = [];
-    (L.inquiries || []).forEach(function (r) { var t = tsOf(r.created_at); if (t) items.push({ t: t, kind: 'lead', ico: ICO.mail, html: '<b>New inquiry</b> came in' }); });
+    (L.inquiries || []).forEach(function (r) { var t = tsOf(r.created_at); if (t) items.push({ t: t, kind: 'lead', ico: ICO.mail, html: '<b>New lead:</b> someone sent you a message' }); });
     (L.contacts || []).forEach(function (r) { var t = tsOf(r.created_at); if (t) items.push({ t: t, kind: 'lead', ico: ICO.phone, html: '<b>Someone ' + esc(CONTACT_VERB[r.event_type] || 'reached out') + '</b>' }); });
     (L.payment_clicks || []).forEach(function (r) { var t = tsOf(r.created_at); if (t) items.push({ t: t, kind: 'pay', ico: ICO.pay, html: '<b>Someone ' + esc(PAY_VERB[r.event_type] || 'tapped a pay link') + '</b>' }); });
     (reviews || []).forEach(function (r) {
@@ -741,8 +741,9 @@
       html += '<div class="lok-next"><div class="n">' + pick.ico + '</div><div>' +
         '<p class="t">' + esc(pick.t) + '</p><p class="w">' + esc(pick.w) + '</p>' +
         (pick.tip ? '<p class="w lok-week-tip">' + esc(pick.tip) + '</p>' : '') +
-        (pick.copy ? '<a class="lok-btn" href="#" data-week-copy>' + esc(pick.a) + ' →</a>'
-                   : '<a class="lok-btn" href="' + esc(pick.href) + '"' + (pick.ask ? ' data-week-ask' : '') + '>' + esc(pick.a) + ' →</a>') +
+        // quick fixes 2026-11-23: the week's action is the page's one filled button
+        (pick.copy ? '<a class="lok-btn primary" href="#" data-week-copy>' + esc(pick.a) + ' →</a>'
+                   : '<a class="lok-btn primary" href="' + esc(pick.href) + '"' + (pick.ask ? ' data-week-ask' : '') + '>' + esc(pick.a) + ' →</a>') +
         '<a href="#" class="lok-ns-skip" data-week-skip>Not this week</a></div></div>';
     }
     card.innerHTML = html;
@@ -860,7 +861,7 @@
     // slot is the one weekly action that reaches people, a post to followers.
     if (unread) qaCard('qa-settings', '/vendor-dashboard/leads', ICO.mail, 'Reply to leads', unread + ' unread');
     else qaCard('qa-settings', '/vendor-dashboard/followers', ICO.horn, 'Post an update', 'Reaches people who saved you');
-    qaCard('qa-preview', '/vendor-dashboard/marketing', ICO.qr, 'Share & QR kit', 'Link, caption, printable code');
+    qaCard('qa-preview', '/vendor-dashboard/marketing', ICO.qr, 'Marketing', 'Link, caption, printable code');
     var share = document.querySelector('.div-block-43'); if (share) share.style.display = 'none';
   }
   // Where the standing cards (milestones, referrals, home-screen) mount now:
@@ -925,10 +926,10 @@
   var GAM_MILESTONES = [
     { key: 'first_save', name: 'First follower', locked: 'Unlocks when a shopper follows you',
       done: 'A shopper followed your storefront',
-      moment: { title: 'You have your first follower', sub: 'Your first follower is in! They will hear about your posts in the weekly email. Followers often turn into inquiries.', cta: null } },
-    { key: 'first_inquiry', name: 'First inquiry', locked: 'Unlocks when a customer reaches out',
+      moment: { title: 'You have your first follower', sub: 'Your first follower is in! They will hear about your posts in the weekly email. Followers often turn into leads.', cta: null } },
+    { key: 'first_inquiry', name: 'First lead', locked: 'Unlocks when a customer reaches out',
       done: 'A customer reached out about your services',
-      moment: { title: 'Someone just found you', sub: 'Your first inquiry is in! A reply within a day makes a great first impression.', cta: { label: 'View inquiry', href: '/vendor-dashboard/leads' } } },
+      moment: { title: 'Someone just found you', sub: 'Your first lead is in! A reply within a day makes a great first impression.', cta: { label: 'View lead', href: '/vendor-dashboard/leads' } } },
     { key: 'first_100_views', name: 'First 100 views', locked: 'Unlocks when your listing reaches 100 views',
       done: 'Your listing reached 100 views',
       moment: { title: '100 views and counting', sub: 'Your listing just passed 100 views. Shoppers are finding you.', cta: null } },
