@@ -131,11 +131,20 @@
       '</div>' +
       '<div class="op-who"><b>' + esc(o.shopper_name || 'Shopper') + '</b>' + (contact.length ? ' · ' + contact.join(' · ') : '') +
         (o.fulfilment === 'shipping' && o.shipping_address ? '<br>' + addr(o.shipping_address) : '') + '</div>' +
+      labelBlock(o) +
       (o.shopper_note ? '<div class="op-note">Their note: ' + esc(o.shopper_note) + '</div>' : '') +
       (o.vendor_note ? '<div class="op-note">Your note: ' + esc(o.vendor_note) + '</div>' : '') +
       (o.status === 'disputed' ? '<div class="op-note" style="background:' + PINK_L + ';color:' + PINK + ';">The shopper\'s bank opened a dispute. Answer it with your evidence in your Stripe dashboard (Settings, Get paid on Lokali, Open Stripe dashboard). The amount is held until it is decided.</div>' : '') +
       '<div class="op-acts" id="op-acts-' + o.id + '"></div><div id="op-form-' + o.id + '"></div>' +
       '<div class="op-hist">' + (o.events || []).map(function (e) { return esc(String(e.kind || '').replace('_', ' ')) + ' ' + when(e.at); }).join(' · ') + '</div>';
+    var retry = c.querySelector('#op-lretry-' + o.id);
+    if (retry) retry.addEventListener('click', function () {
+      retry.disabled = true; retry.textContent = 'Trying';
+      post('/shipping/labels', { action: 'retry', orders_id: o.id }).then(function (r) {
+        if (r.ok && r.data.label) { o.label = r.data.label; replaceCard(o.id, o); return; }
+        retry.disabled = false; retry.textContent = 'Try again';
+      }).catch(function () { retry.disabled = false; retry.textContent = 'Try again'; });
+    });
     var acts = c.querySelector('#op-acts-' + o.id);
     var refundable = (o.total_cents || 0) - (o.refunded_cents || 0);
     if (o.status === 'paid' || o.status === 'partially_refunded') {
@@ -149,6 +158,23 @@
       acts.appendChild(r);
     }
     return c;
+  }
+
+  // #262 live shipping: the label Lokali bought for this order (Print label +
+  // tracking), "being made" right after payment, or "Try again" after a failure.
+  function labelBlock(o) {
+    var l = o.label;
+    if (!l || o.fulfilment !== 'shipping') return '';
+    var box = 'margin:10px 0 0;padding:10px 12px;border-radius:12px;background:#F3EBFF;font-size:13px;line-height:1.5;color:#45415A;';
+    if (l.status === 'bought' && l.label_url) {
+      return '<div style="' + box + '"><b>Shipping label paid</b>' + (l.service ? ' · ' + esc(l.service) : '') +
+        (l.tracking_number ? '<br>Tracking: ' + (l.tracking_url ? '<a href="' + esc(l.tracking_url) + '" target="_blank" rel="noopener" style="color:' + VIOLET + ';">' + esc(l.tracking_number) + '</a>' : esc(l.tracking_number)) : '') +
+        '<div style="margin-top:8px;"><a class="op-btn primary" href="' + esc(l.label_url) + '" target="_blank" rel="noopener">Print label</a></div></div>';
+    }
+    if (l.status === 'failed') return '<div style="' + box + 'background:' + PINK_L + ';">The shipping label could not be made yet. Lokali has been told. <button type="button" class="op-btn" id="op-lretry-' + o.id + '" style="margin-left:6px;">Try again</button></div>';
+    if (l.status === 'void_requested' || l.status === 'voided') return '<div style="' + box + '">The unused label was canceled and its postage refunded.</div>';
+    if (o.status === 'paid') return '<div style="' + box + '">Your shipping label is being made. It arrives by email in a minute or two.</div>';
+    return '';
   }
 
   function openFulfil(o, c) {
@@ -196,7 +222,7 @@
   var _orders = [];
   function replaceCard(id, fresh) {
     if (!fresh) { load($('lok-orders-page'), 0); return; }
-    for (var i = 0; i < _orders.length; i++) if (_orders[i].id === id) { fresh.events = fresh.events || _orders[i].events; _orders[i] = fresh; }
+    for (var i = 0; i < _orders.length; i++) if (_orders[i].id === id) { fresh.events = fresh.events || _orders[i].events; fresh.label = fresh.label || _orders[i].label; _orders[i] = fresh; }
     render($('lok-orders-page'), _orders);
   }
 
@@ -207,7 +233,7 @@
       var e = el('div', 'op-empty');
       e.innerHTML = '<h3>No orders yet</h3><p>Once shoppers can pay by card on your product pages, every paid order lands here with the shopper\'s details and a button to mark it done.</p>' +
         '<ol><li>Open <a href="/vendor-dashboard/settings#lokali-checkout" style="color:' + VIOLET + ';font-weight:600;">Settings, Get paid on Lokali</a> and set up payouts with Stripe.</li>' +
-        '<li>Give your products a price and, if you ship, a flat shipping price.</li><li>Turn on Show Buy on Lokali.</li></ol>' +
+        '<li>Give your products a price and, if you ship, a shipping price.</li><li>Turn on Show Buy on Lokali.</li></ol>' +
         '<a class="op-btn primary" href="/vendor-dashboard/settings#lokali-checkout">Set up payments</a>';
       mount.appendChild(e); return;
     }
@@ -246,7 +272,11 @@
     c.rpc('my_orders', { p_limit: 300 }).then(function (r) {
       if (r.error) { if (attempt < 8 && /JWT|401|403/i.test(String(r.error.message || ''))) { setTimeout(function () { load(mount, attempt + 1); }, 500); return; } showError(mount, "We couldn't load your orders."); return; }
       var rows = Array.isArray(r.data) ? r.data : [];
-      loadPromise(c, rows).then(function () { render(mount, rows); });
+      // #262 labels live in a server-only table: ask lokali-api, attach by order.
+      var labelsP = rows.some(function (o) { return o.fulfilment === 'shipping'; })
+        ? post('/shipping/labels', { action: 'list' }).then(function (lr) { var m = {}; ((lr.ok && lr.data.labels) || []).forEach(function (l) { m[l.orders_id] = l; }); rows.forEach(function (o) { if (m[o.id]) o.label = m[o.id]; }); }).catch(function () {})
+        : Promise.resolve();
+      Promise.all([loadPromise(c, rows), labelsP]).then(function () { render(mount, rows); });
     }).catch(function () { showError(mount, "We couldn't load your orders."); });
   }
 

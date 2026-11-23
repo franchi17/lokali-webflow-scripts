@@ -137,6 +137,99 @@ const LokaliProductsPage = (() => {
   };
   const setShipCents = (c) => { const inp = shipPriceInput(); if (!inp) return; inp.value = (c == null) ? '' : (c / 100).toFixed(2); const sh = document.getElementById('product-shipping'); const ev = sh && (sh.tagName === 'INPUT' ? sh : sh.querySelector && sh.querySelector('input[type="checkbox"]')); if (ev) ev.dispatchEvent(new Event('change')); };
 
+  // #262 live shipping prices (F 2026-11-23). A storefront Lokali has opened for
+  // it (server: SHIPPING_OPEN_TO) sees a "Shipping prices" panel under "Ships":
+  // the packed box, its weight, an optional packing fee, insure, and once per
+  // storefront the corrections tick. Saved through lokali-api (the table is
+  // server-only), with its own Save button so the listing form's save is untouched.
+  // New listings: save the listing first. Not open = nothing renders.
+  var LS_BASE = ((window.LOKALI_BILLING_BASE ? String(window.LOKALI_BILLING_BASE) : 'https://lokali-api.vercel.app/api/lokali')).replace(/\/$/, '');
+  function lsCall(body) {
+    var tp = (window.LokaliAuth && typeof window.LokaliAuth.token === 'function') ? Promise.resolve().then(function () { return window.LokaliAuth.token(); }).catch(function () { return null; }) : Promise.resolve(null);
+    return tp.then(function (jwt) {
+      if (!jwt) return { error: 'signed_out' };
+      return fetch(LS_BASE + '/shipping/settings', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + jwt }, body: JSON.stringify(body) })
+        .then(function (r) { return r.json().catch(function () { return {}; }); });
+    }).catch(function () { return { error: 'network' }; });
+  }
+  function lsMoney(c) { var d = (c || 0) / 100; return '$' + d.toFixed(d % 1 ? 2 : 0); }
+  var _lsFor = null;
+  function mountLiveShip(productId) {
+    _lsFor = productId;
+    var old = document.getElementById('lok-live-ship'); if (old) old.remove();
+    var node = document.getElementById('product-shipping'); if (!node) return;
+    var cb = (node.tagName === 'INPUT' && node.type === 'checkbox') ? node : (node.querySelector ? node.querySelector('input[type="checkbox"]') : null);
+    if (!cb) return;
+    var anchorEl = document.getElementById('lok-product-ship-row') || cb.closest('.w-checkbox') || cb.parentElement;
+    if (!anchorEl) return;
+    if (!productId) return; // a new listing has no id yet; the panel appears after the first save
+    lsCall({ action: 'get', products_id: productId }).then(function (st) {
+      if (_lsFor !== productId || !st || !st.open) return;
+      var set = st.settings || null, presets = st.presets || {};
+      var wrap = document.createElement('div'); wrap.id = 'lok-live-ship';
+      wrap.style.cssText = 'margin:6px 0 14px 26px;padding:14px;border:1px solid #E6E4F0;border-radius:14px;background:#fff;font-family:"Plus Jakarta Sans",system-ui,sans-serif;color:#45415A;max-width:460px;';
+      var chip = function (k, label, sub) { var on = (set ? set.box_preset : '') === k; return '<label class="lsk" style="display:flex;justify-content:space-between;align-items:center;gap:10px;border:' + (on ? '1.5px solid #6002EE;background:#F3EBFF' : '1px solid #E6E4F0;background:#fff') + ';border-radius:10px;padding:9px 11px;margin:0 0 6px;cursor:pointer;font-size:14px;"><span>' + label + (sub ? '<br><span style="font-size:12px;color:#6E6A85;">' + sub + '</span>' : '') + '</span><input type="radio" name="lok-ls-box" value="' + k + '"' + (on ? ' checked' : '') + ' style="accent-color:#6002EE;"></label>'; };
+      var inp = function (id, val, w, ph) { return '<input id="' + id + '" type="number" inputmode="decimal" min="0" step="0.1" value="' + (val == null ? '' : val) + '" placeholder="' + (ph || '') + '" style="width:' + w + 'px;box-sizing:border-box;padding:8px 10px;border:1px solid #E6E4F0;border-radius:10px;font-size:14px;font-family:inherit;color:#1A1829;background:#fff;">'; };
+      var lab = function (t) { return '<div style="font-size:12px;font-weight:600;color:#4A4761;margin:12px 0 6px;">' + t + '</div>'; };
+      var custom = set && set.box_preset === 'custom';
+      wrap.innerHTML =
+        '<div style="font-size:15px;font-weight:700;color:#1A1829;">Shipping prices</div>' +
+        '<div style="font-size:12px;color:#6E6A85;margin-top:2px;line-height:1.5;">Buyers type their zip code and see real post office and UPS prices. Lokali buys the label and emails it to you, already paid.</div>' +
+        lab('Packed box (measure it packed)') +
+        Object.keys(presets).map(function (k) { var b = presets[k]; return chip(k, b.label, b.l + ' x ' + b.w + ' x ' + b.h + ' in'); }).join('') +
+        chip('custom', 'My own size', '') +
+        '<div id="lok-ls-custom" style="display:' + (custom ? 'flex' : 'none') + ';gap:6px;align-items:center;font-size:13px;color:#6E6A85;margin-bottom:6px;">' +
+          inp('lok-ls-l', custom ? set.length_in : '', 70, 'L') + 'x' + inp('lok-ls-w', custom ? set.width_in : '', 70, 'W') + 'x' + inp('lok-ls-h', custom ? set.height_in : '', 70, 'H') + 'in</div>' +
+        '<div style="display:flex;gap:16px;flex-wrap:wrap;">' +
+          '<div>' + lab('Weight packed (pounds)') + inp('lok-ls-lb', set ? Math.round(set.weight_oz / 16 * 10) / 10 : '', 110, '9') + '</div>' +
+          '<div>' + lab('Packing fee (optional, $)') + inp('lok-ls-fee', set ? (set.packing_fee_cents / 100) : '', 110, '0') + '</div>' +
+        '</div>' +
+        '<label style="display:flex;gap:8px;align-items:center;font-size:14px;margin-top:12px;cursor:pointer;"><input id="lok-ls-ins" type="checkbox"' + ((set ? set.insure : st.insure_default) ? ' checked' : '') + ' style="accent-color:#6002EE;"> Insure it for its price</label>' +
+        (st.agreed_at ? '' : '<label style="display:flex;gap:8px;align-items:flex-start;font-size:13px;margin-top:12px;line-height:1.5;cursor:pointer;background:#F3EBFF;border-radius:10px;padding:10px;"><input id="lok-ls-agree" type="checkbox" style="accent-color:#6002EE;margin-top:3px;"> <span>I agree: if the carrier measures a bigger box or a heavier weight than I set here, the extra they charge comes out of my sales.</span></label>') +
+        '<div style="display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap;"><button type="button" id="lok-ls-save" style="font-family:inherit;font-size:14px;font-weight:700;border:0;border-radius:999px;background:#6002EE;color:#fff;min-height:40px;padding:0 18px;cursor:pointer;">Save shipping</button>' +
+          (set ? '<button type="button" id="lok-ls-off" style="font-family:inherit;font-size:13px;border:0;background:none;color:#6E6A85;cursor:pointer;">Stop live prices</button>' : '') +
+          '<span id="lok-ls-msg" style="font-size:12px;color:#6E6A85;"></span></div>' +
+        '<div id="lok-ls-ex" style="margin-top:10px;background:#E6EFFB;color:#1D4E9E;border-radius:10px;padding:10px;font-size:12px;line-height:1.5;display:' + ((st.examples || []).length ? '' : 'none') + ';">' +
+          (st.examples || []).map(function (e) { return 'A buyer in ' + e.city + ' would pay about <b>' + lsMoney(e.cents) + '</b>.'; }).join(' ') + '</div>';
+      anchorEl.insertAdjacentElement('afterend', wrap);
+      var sync = function () { wrap.style.display = cb.checked ? '' : 'none'; };
+      cb.addEventListener('change', sync); sync();
+      wrap.querySelectorAll('input[name="lok-ls-box"]').forEach(function (r) {
+        r.addEventListener('change', function () {
+          wrap.querySelectorAll('.lsk').forEach(function (l) { var on = l.querySelector('input').checked; l.style.border = on ? '1.5px solid #6002EE' : '1px solid #E6E4F0'; l.style.background = on ? '#F3EBFF' : '#fff'; });
+          wrap.querySelector('#lok-ls-custom').style.display = wrap.querySelector('input[name="lok-ls-box"]:checked').value === 'custom' ? 'flex' : 'none';
+        });
+      });
+      var msg = wrap.querySelector('#lok-ls-msg');
+      var save = wrap.querySelector('#lok-ls-save');
+      save.addEventListener('click', function () {
+        var box = wrap.querySelector('input[name="lok-ls-box"]:checked');
+        var ag = wrap.querySelector('#lok-ls-agree');
+        if (!box) { msg.style.color = '#B1006A'; msg.textContent = 'Pick a box size.'; return; }
+        if (ag && !ag.checked) { msg.style.color = '#B1006A'; msg.textContent = 'Tick the box above to agree first.'; return; }
+        var v = function (id) { var e = wrap.querySelector('#' + id); return e ? e.value : ''; };
+        save.disabled = true; msg.style.color = '#6E6A85'; msg.textContent = 'Saving and checking prices...';
+        lsCall({ action: 'save', products_id: productId, box_preset: box.value, length_in: v('lok-ls-l'), width_in: v('lok-ls-w'), height_in: v('lok-ls-h'),
+                 weight_lb: v('lok-ls-lb'), packing_fee: v('lok-ls-fee'), insure: wrap.querySelector('#lok-ls-ins').checked, agree: ag ? ag.checked : undefined })
+          .then(function (r) {
+            save.disabled = false;
+            if (!r || r.error) {
+              msg.style.color = '#B1006A';
+              msg.textContent = r && r.error === 'bad_weight' ? 'Type the packed weight in pounds.' : r && r.error === 'bad_size' ? 'Type all three box sizes in inches.' : r && r.error === 'bad_fee' ? 'The packing fee should be a dollar amount.' : 'That did not save. Try again.';
+              return;
+            }
+            mountLiveShip(productId);
+          });
+      });
+      var off = wrap.querySelector('#lok-ls-off');
+      if (off) off.addEventListener('click', function () {
+        off.disabled = true;
+        lsCall({ action: 'remove', products_id: productId }).then(function () { mountLiveShip(productId); });
+      });
+    });
+  }
+
+
   let products     = [];
   let editingId    = null;
   let imageRemoved = false;
@@ -1097,6 +1190,7 @@ const LokaliProductsPage = (() => {
     editingId    = productId;
     imageRemoved = false;
     clearError();
+    mountLiveShip(productId); // #262
 
     const isEditing = !!productId;
     const titleEl   = el.formTitle();
