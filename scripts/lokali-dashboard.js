@@ -8,44 +8,6 @@
   // narrower. Reserving the rail's width as body padding-left offsets all
   // in-flow content uniformly; the fixed sidebar ignores body padding and
   // stays pinned at left:0. Scoped to >=992px (tablet/mobile collapse the nav).
-  // 2026-11-22 words pass (F: "Yes, all seven"): a few lines are typed into the
-  // Webflow pages as plain div text, which the Webflow API cannot edit. Swap
-  // them here on dashboard pages only. Exact whole-text matches, nothing else.
-  (function rewordStaticText() {
-    if (String(location.pathname || '').indexOf('/vendor-dashboard') === -1) return;
-    var MAP = {
-      'Your profile has been successfully saved! Go forth and conquer.': 'Saved. Your storefront is up to date.',
-      'Danger Zone': 'Hide or close your storefront',
-      'Rotate a weekly promo button and showcase on your storefront. You feed the list, we keep it fresh': 'Pick a Showcase of the week for your storefront. You choose what goes in, we keep it rotating.',
-      'SAVE': 'Save',
-      'Logout': 'Log out',
-      'At least 600 × 600 px': 'At least 500 × 500 px',
-      'JPEG or PNG, under 2 MB': 'JPG, PNG or WEBP, under 5 MB'
-    };
-    function run() {
-      if (!document.body) return;
-      var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null), n, hits = [];
-      while ((n = w.nextNode())) {
-        var t = n.nodeValue && n.nodeValue.trim();
-        if (t && Object.prototype.hasOwnProperty.call(MAP, t)) hits.push(n);
-      }
-      hits.forEach(function (x) { x.nodeValue = MAP[x.nodeValue.trim()]; });
-      // The empty Products / Services line is split into an <em> plus plain text.
-      var EMPTY = 'Every local favorite had to start somewhere. Show your community what you offer. Add your first listing.';
-      var els = document.querySelectorAll('.empty-state div');
-      for (var i = 0; i < els.length; i++) {
-        var d = els[i];
-        if (d.textContent.replace(/\s+/g, ' ').trim() !== EMPTY) continue;
-        var em = d.querySelector('em');
-        d.textContent = '';
-        if (em) { em.textContent = 'Every local favorite started with one thing. '; d.appendChild(em); }
-        else d.appendChild(document.createTextNode('Every local favorite started with one thing. '));
-        d.appendChild(document.createTextNode('Show your neighbors yours.'));
-      }
-    }
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run); else run();
-  })();
-
   (function injectLayoutFix() {
     // Dashboard pages only — never pad the body on public pages (no sidebar).
     if (String(location.pathname || '').indexOf('/vendor-dashboard') === -1) return;
