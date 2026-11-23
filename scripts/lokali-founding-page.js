@@ -7,9 +7,9 @@
  * #B0006A; no orange, no violet inside the page) and gives the page its own top:
  *
  *   - the SEATS are the centerpiece: a huge live "N of 50 founding seats still open" on the
- *     left, all 50 seats on the right. Each taken seat shows that founding vendor's WORK (the
- *     adapter's cover photo: gallery -> service -> product, never a logo and never a face, so
- *     no one has to agree to be shown). Taken seats with no public storefront stay plain pink.
+ *     left, all 50 seats on the right. Each taken seat shows that founding vendor's own photo
+ *     (the public 'Run by' picture on their storefront; F 2026-11-23: vendor photos, not logos),
+ *     falling back to their Market cover (work photo). Taken seats with no public storefront stay plain pink.
  *   - the perks become a numbered list, the steps three small cards, and the ending says
  *     "Seat N could have your name on it" with a gentle free-plan line.
  *   - dropped, per the sales guides (no pressure): "Customers notice" and "on the terms only
@@ -124,11 +124,25 @@
       var ids = rows.filter(function (v) { return v && v.is_founding_member === true && v.is_active !== false && v.id != null && !HIDE_VENDORS[String(v.id)]; })
         .map(function (v) { return v.id; });
       if (!ids.length) return;
-      return api.covers(ids).then(function (res) {
-        var map = res && res.data && res.data.covers;
-        if (!map) return;
-        seatPhotos = ids.map(function (id) { var c = map[id] || map[String(id)]; var u = c && safeUrl(c.url); return u ? { url: u, fx: c.fx, fy: c.fy } : null; })
-          .filter(Boolean);
+      // F 2026-11-23: "I'd rather use vendor photos than logos". Each seat shows the vendor's
+      // OWN photo (the 'Run by' picture already public on their storefront), and only falls back
+      // to their Market cover (work photo) when they have no personal photo.
+      var sb = window.LokaliSupabase;
+      var owners = (sb && typeof sb.from === 'function')
+        ? sb.from('vendors').select('id,owner_photo,owner_focus_x,owner_focus_y').in('id', ids).then(function (r) { return (r && r.data) || []; }, function () { return []; })
+        : Promise.resolve([]);
+      return Promise.all([owners, api.covers(ids).then(function (r) { return (r && r.data && r.data.covers) || {}; }, function () { return {}; })]).then(function (got) {
+        var own = {}, map = got[1];
+        got[0].forEach(function (o) { if (o && o.id != null) own[String(o.id)] = o; });
+        seatPhotos = ids.map(function (id) {
+          var o = own[String(id)], u = o && safeUrl(o.owner_photo);
+          if (u) {
+            var fx = o.owner_focus_x, fy = o.owner_focus_y;
+            return { url: u, fx: (fx != null && fy != null) ? Number(fx) : undefined, fy: (fx != null && fy != null) ? Number(fy) : undefined };
+          }
+          var c = map[id] || map[String(id)], cu = c && safeUrl(c.url);
+          return cu ? { url: cu, fx: c.fx, fy: c.fy } : null;
+        }).filter(Boolean);
         render();
       });
     }).catch(function () { /* seats stay plain pink */ });
@@ -162,7 +176,7 @@
     }
     wall = ce('div', 'lkfd3-wall'); wall.setAttribute('role', 'img');
     var key = ce('div', 'lkfd3-key');
-    key.innerHTML = '<span><i style="background:#EE0290"></i>Taken, showing that vendor’s work</span><span><i style="background:#fff;box-shadow:inset 0 0 0 2px #F5A3CF"></i>Open, waiting for you</span>';
+    key.innerHTML = '<span><i style="background:#EE0290"></i>Taken by a founding vendor</span><span><i style="background:#fff;box-shadow:inset 0 0 0 2px #F5A3CF"></i>Open, waiting for you</span>';
     right.appendChild(wall); right.appendChild(key);
     grid.appendChild(left); grid.appendChild(right);
     if (wrap) { wrap.innerHTML = ''; wrap.appendChild(grid); if (counters) wrap.appendChild(counters); }
