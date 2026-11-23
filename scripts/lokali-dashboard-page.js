@@ -676,7 +676,8 @@
   function newest(rows) { return Math.max.apply(null, [0].concat((rows || []).map(function (r) { return tsOf(r && r.created_at) || 0; }))); }
   function weekCard(v, services, products, x) {
     var old = document.getElementById('lok-week'); if (old && old.parentNode) old.parentNode.removeChild(old);
-    var box = document.querySelector('.div-block-41');
+    // renderTiles() renames the Webflow .div-block-41 to .lok-kpis, so look for both.
+    var box = document.querySelector('.lok-kpis') || document.querySelector('.div-block-41');
     if (!v || !box || !box.parentNode) return;
     var wk = isoWeek(new Date()), skipKey = WK_SKIP + v.id + ':' + wk.key, doneKey = WK_DONE + v.id + ':' + wk.key;
     var skipped = false, doneLocal = false;
