@@ -523,7 +523,9 @@
     var deact = $('settings-deactivate');
     if (deact) deact.addEventListener('click', function (e) {
       e.preventDefault();
-      if (!confirm('Hide your storefront for now? Neighbors won’t find it until you turn it back on. Everything you’ve added stays put.')) return;
+      // Save-and-undo step 1 (F 2026-11-23): hiding happens at once with an Undo
+      // message instead of a browser pop-up. Without the helper, the old ask.
+      if (!window.LokaliUndo && !confirm('Hide your storefront for now? Neighbors won’t find it until you turn it back on. Everything you’ve added stays put.')) return;
       setListingVisible(false, visInput);
     });
 
@@ -1750,7 +1752,11 @@
       if (visInput) visInput.checked = visible;
       flashSaved(visInput);
       syncBreakRow();
-      toast('success', visible ? 'Your storefront is live.' : 'Your storefront is hidden. Nothing was deleted.');
+      if (!visible && window.LokaliUndo) {
+        window.LokaliUndo.show({ text: 'Storefront hidden. Nothing was deleted.', onUndo: function () { setListingVisible(true, visInput); } });
+      } else {
+        toast('success', visible ? 'Your storefront is live.' : 'Your storefront is hidden. Nothing was deleted.');
+      }
     }).catch(function () {
       toast('error', 'We couldn\u2019t reach Lokali, so nothing changed. Check your connection and try again.');
       if (visInput) visInput.checked = !visible;
