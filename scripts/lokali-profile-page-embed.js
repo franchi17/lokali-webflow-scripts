@@ -1199,7 +1199,7 @@ var LokaliProfilePage = (function () {
         // (bug found by F 2026-08-31: uploaded owner photo, SAVE inert).
         _rfDirtySection = 'Meet the Vendor';
         _refreshSaveBar();
-        _showToast('success', 'Photo added. Press Save to keep it.');
+        _editSeq++; _autoField = prev; _autoSoon(200); // save-and-undo step 2: saves by itself
       });
     });
   }
@@ -1369,7 +1369,7 @@ var LokaliProfilePage = (function () {
     // instantly, text needs SAVE) and nothing said so — spell it out up front.
     var saveHint = document.createElement('div');
     saveHint.style.cssText = 'font-size:13px;line-height:1.5;color:#6B6880;margin-bottom:6px;';
-    saveHint.textContent = 'Your logo and portfolio photos save the moment you add them. Your own photo and everything else save when you press Save.';
+    saveHint.textContent = 'Everything here saves as you go. Change something, move on, and a small \u201cSaved\u201d appears beside it.'; // save-and-undo step 2 (F 2026-11-23)
     head.appendChild(saveHint);
 
     var nav = document.createElement('div');
@@ -2301,6 +2301,19 @@ var LokaliProfilePage = (function () {
     if (oldRow0) oldRow0.style.display = 'none';
     var bottom0 = document.getElementById(SAVE_BTN_BOTTOM);
     if (bottom0 && bottom0.parentNode) bottom0.parentNode.style.display = 'none';
+    // Save-and-undo step 2 (F 2026-11-23 'Yes, start step 2'): Profile saves as
+    // you go, so the floating Save bar is gone. The real Save button stays in
+    // the DOM (hidden) so save() and its id lookups keep working.
+    if (window.__lokAutoSaveWired) return;
+    window.__lokAutoSaveWired = true;
+    var topBtn0 = document.getElementById(SAVE_BTN);
+    if (topBtn0) topBtn0.style.display = 'none';
+    document.addEventListener('input', _rfDirtyPing, true);
+    document.addEventListener('change', _rfDirtyPing, true);
+    document.addEventListener('change', _autoOnChange, true);
+    document.addEventListener('focusout', _autoOnLeave, true);
+    return;
+    // (old bar below, kept for reference; never reached)
     if (document.getElementById('lok-savebar')) return;
     var topBtn = document.getElementById(SAVE_BTN);
     if (!topBtn) return;
@@ -2338,7 +2351,70 @@ var LokaliProfilePage = (function () {
     var h = sec && sec.querySelector ? sec.querySelector('.section-heading') : null;
     _rfDirtySection = h ? (h.textContent || '').trim().replace(/\s*✓$/, '') : '';
     _dirty = true; // same semantics as the dirty-guard's mark() — belt and braces
+    _autoField = t; _editSeq++;
     setTimeout(_refreshSaveBar, 0);
+  }
+  // ── Save as you go (save-and-undo step 2, F 2026-11-23) ─────────────────────
+  // A field saves when the vendor leaves it (focusout) or, for pickers,
+  // checkboxes and selects, when it changes. It reuses save() exactly: the
+  // same full payload, the same checks and the same server-side address
+  // lookup. Success shows a small 'Saved' under the field instead of a popup;
+  // a problem shows under the field in plain words and the page keeps
+  // warning before leaving until it saves.
+  var _autoField = null, _editSeq = 0, _autoTimer = null, _autoAgain = false;
+  function _isTextish(t) {
+    if (!t || !t.tagName) return false;
+    if (t.tagName === 'TEXTAREA') return true;
+    if (t.tagName !== 'INPUT') return false;
+    var ty = String(t.type || 'text').toLowerCase();
+    return ty !== 'checkbox' && ty !== 'radio' && ty !== 'file';
+  }
+  function _autoSoon(ms) {
+    clearTimeout(_autoTimer);
+    _autoTimer = setTimeout(function () {
+      if (!_dirty) return;
+      // The address box shows Google suggestions; wait while they are open.
+      var pac = document.querySelector('.pac-container');
+      var addr = _getAddressEl && _getAddressEl();
+      if (addr && document.activeElement === addr && pac && pac.offsetParent !== null) return _autoSoon(800);
+      if (_saving) { _autoAgain = true; return; }
+      save({ auto: true });
+    }, ms == null ? 350 : ms);
+  }
+  // Only the profile form itself: the header search box, the menu and the
+  // notification bell never trigger a save.
+  function _inProfile(t) {
+    var h = document.getElementById('lok-profile-head');
+    var c = h && h.parentNode;
+    return !!(c && t && c.contains(t));
+  }
+  function _autoOnChange(e) {
+    if (_populating) return;
+    var t = e.target;
+    if (!_inProfile(t)) return;
+    if (!t || t.type === 'file' || t.id === 'lok-pf-vidurl') return;
+    if (_isTextish(t)) return; // text fields save when you leave them
+    if (t.tagName === 'INPUT' || t.tagName === 'SELECT') _autoSoon(300);
+  }
+  function _autoOnLeave(e) {
+    if (_populating || !_dirty) return;
+    var t = e.target;
+    if (!_inProfile(t) || !_isTextish(t) || t.id === 'lok-pf-vidurl') return;
+    _autoSoon(t === (_getAddressEl && _getAddressEl()) ? 900 : 300);
+  }
+  function _autoMark(el, ok, text) {
+    if (!el || !el.parentNode) return;
+    var host = el.closest && (el.closest('.iti') || el);
+    host = host || el;
+    var tick = host.parentNode.querySelector(':scope > .lok-autosave-note');
+    if (!tick) {
+      tick = document.createElement('div'); tick.className = 'lok-autosave-note';
+      host.parentNode.insertBefore(tick, host.nextSibling);
+    }
+    tick.style.cssText = 'font:600 12px/1.4 "Plus Jakarta Sans",sans-serif;margin:4px 0 2px;' + (ok ? 'color:#17634A;' : 'color:#B0006A;');
+    tick.textContent = ok ? '\u2713 Saved' : text;
+    clearTimeout(tick._t);
+    if (ok) tick._t = setTimeout(function () { if (tick.parentNode) tick.parentNode.removeChild(tick); }, 2600);
   }
   function _rfMoveAddress() {
     var bizSec = _rfSectionByHeading(/business information/i);
@@ -2742,7 +2818,7 @@ var LokaliProfilePage = (function () {
         // Programmatic select.value fires no change event — the guard AND the
         // save bar would miss category picks (same repaint bug as the owner
         // photo: bare _dirty leaves SAVE dimmed + pointer-events:none).
-        if (String(sel.value) !== String(id)) { _dirty = true; setTimeout(_refreshSaveBar, 0); }
+        if (String(sel.value) !== String(id)) { _dirty = true; _editSeq++; _autoField = pill; setTimeout(_refreshSaveBar, 0); _autoSoon(300); }
         sel.value = String(id);
         _renderCategoryPills();
       });
@@ -2797,7 +2873,7 @@ var LokaliProfilePage = (function () {
     // Pills are buttons, so the INPUT/SELECT dirty guards never see this change;
     // without the flag SAVE stays at pointer-events:none (same fix as the
     // category pills, 2026-10-19 bug review H3).
-    _dirty = true; setTimeout(_refreshSaveBar, 0);
+    _dirty = true; _editSeq++; _autoField = null; setTimeout(_refreshSaveBar, 0); _autoSoon(600);
     _renderLocationPills();
   }
 
@@ -3211,7 +3287,12 @@ var LokaliProfilePage = (function () {
     if (!on && typeof _refreshSaveBar === 'function') _refreshSaveBar();
   }
 
-  function save() {
+  function save(opts) {
+    // opts.auto = save-as-you-go (step 2): quiet 'Saved' under the field instead
+    // of the popup. A click on the (now hidden) Save button passes an event.
+    var auto = !!(opts && opts.auto === true);
+    var field = auto ? _autoField : null;
+    var seq = _editSeq;
     if (_saving) return;
     var successEl = _getSuccessEl();
     var errorEl = _getErrorEl();
@@ -3222,7 +3303,8 @@ var LokaliProfilePage = (function () {
     var validationError = _validate(payload);
     if (validationError) {
       console.warn('[ProfilePage] Validation failed:', validationError);
-      _showErrorPopup(validationError);
+      if (auto && field) _autoMark(field, false, 'Not saved yet. ' + validationError);
+      else _showErrorPopup(validationError);
       _setSaving(false);
       return;
     }
@@ -3230,7 +3312,7 @@ var LokaliProfilePage = (function () {
     // is written. The route writes the geo columns itself (service role) and
     // returns the trigger's verdict; the browser never touches a coordinate.
     _resolveAddress(payload.address).then(function (r) {
-      if (!r.ok) { _showErrorPopup(r.message); _setSaving(false); return null; }
+      if (!r.ok) { if (auto && field) _autoMark(field, false, 'Not saved yet. ' + r.message); else _showErrorPopup(r.message); _setSaving(false); return null; }
       if (r.formatted) {
         var addressEl = _getAddressEl();
         if (addressEl) addressEl.value = r.formatted;
@@ -3244,16 +3326,17 @@ var LokaliProfilePage = (function () {
         .then(function (res) {
           if (res.error) {
             console.error('[ProfilePage] save error from API:', res.error);
-            _showErrorPopup(res.error || 'Failed to save profile. Please try again.');
+            if (auto && field) _autoMark(field, false, 'That didn\u2019t save. Try again in a moment.');
+            else _showErrorPopup(res.error || 'Failed to save profile. Please try again.');
           } else {
             // updateMe reads back the PUBLIC columns only; keep the keys it lacks
             // (card_photo_url, address, linkedin_url) from the row we already had.
             _vendor = Object.assign({}, _vendor || {}, res.data || {});
             if (_vendor && _vendor.profile_photo) _uploadedProfilePhotoUrl = null;
-            _dirty = false; // saved — clear the leave-page warning
+            if (_editSeq === seq) _dirty = false; // saved — clear the leave-page warning (unless they kept typing)
             _rfHasSaved = true; // unlocks the "All changes saved" confirmation
             if (typeof _refreshSaveBar === 'function') _refreshSaveBar();
-            _showSuccessPopup();
+            if (auto) { if (field) _autoMark(field, true); } else _showSuccessPopup();
             // Out-of-area? The resolve route already returned the trigger's
             // verdict — no second query needed when the geo was written.
             if (r.geo_written) {
@@ -3265,9 +3348,13 @@ var LokaliProfilePage = (function () {
         })
         .catch(function (err) {
           console.error('[ProfilePage] save network error:', err);
-          _showErrorPopup('Network error. Please check your connection and try again.');
+          if (auto && field) _autoMark(field, false, 'We couldn\u2019t reach Lokali, so this didn\u2019t save. Check your connection.');
+          else _showErrorPopup('Network error. Please check your connection and try again.');
         })
-        .then(function () { _setSaving(false); });
+        .then(function () {
+          _setSaving(false);
+          if (_autoAgain) { _autoAgain = false; if (_dirty) _autoSoon(200); }
+        });
     });
   }
 
