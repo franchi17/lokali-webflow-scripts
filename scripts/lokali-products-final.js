@@ -1927,7 +1927,7 @@ const LokaliProductsPage = (() => {
     '<path d="M64 32C28.7 32 0 60.7 0 96V416c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V173.3c0-17-6.7-33.3-18.7-45.3L352 50.7C340 38.7 323.7 32 306.7 32H64zm0 96c0-17.7 14.3-32 32-32H288c17.7 0 32 14.3 32 32v64c0 17.7-14.3 32-32 32H96c-17.7 0-32-14.3-32-32V128zM224 288a64 64 0 1 1 0 128 64 64 0 1 1 0-128z"/></svg>';
   const paintSaveBtn = (btn) => {
     if (!btn) return;
-    btn.innerHTML = SAVE_ICON_SVG + '<span style="text-transform:uppercase;letter-spacing:.05em;">Save</span>';
+    btn.innerHTML = SAVE_ICON_SVG + '<span style="text-transform:uppercase;letter-spacing:.05em;">Save listing</span>'; // save-and-undo step 4: one clear 'Save listing'
     btn.style.fontFamily = "'Plus Jakarta Sans',system-ui,sans-serif";
     btn.style.display = 'flex';
     btn.style.alignItems = 'center';
@@ -2120,9 +2120,9 @@ const LokaliProductsPage = (() => {
       var btnBase = 'display:flex;align-items:center;justify-content:center;width:100%;min-height:44px;border-radius:10px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;';
       card.innerHTML =
         '<div id="lok-trash-title" style="font-size:16px;font-weight:700;color:#1A1829;margin-bottom:6px;"></div>' +
-        '<p style="font-size:13.5px;color:#5A5570;line-height:1.5;margin:0 0 16px;">Deactivating hides it from your public page. It moves to your Inactive list and you can bring it back anytime.</p>' +
-        '<button type="button" data-trash-deactivate style="' + btnBase + 'border:1px solid #6002EE;background:#6002EE;color:#fff;margin-bottom:10px;">Deactivate (hide it, keep it)</button>' +
-        '<button type="button" data-trash-delete style="' + btnBase + 'border:1px solid #F2C4CB;background:#fff;color:#C0152F;margin-bottom:10px;">Delete permanently (can’t be undone)</button>' +
+        '<p style="font-size:13.5px;color:#5A5570;line-height:1.5;margin:0 0 16px;">Hiding takes it off your public page. It moves to your Hidden list and you can bring it back anytime.</p>' +
+        '<button type="button" data-trash-deactivate style="' + btnBase + 'border:1px solid #6002EE;background:#6002EE;color:#fff;margin-bottom:10px;">Hide it (keep it for later)</button>' +
+        '<button type="button" data-trash-delete style="' + btnBase + 'border:1px solid #F2C4CB;background:#fff;color:#C0152F;margin-bottom:10px;">' + (window.LokaliUndo ? 'Delete it (you can undo for a few seconds)' : 'Delete permanently (can’t be undone)') + '</button>' +
         '<button type="button" data-trash-cancel style="' + btnBase + 'border:1px solid #E6E4F0;background:#fff;color:#5A5570;">Cancel</button>';
       overlay.appendChild(card);
       // The name goes in as text, never markup.
@@ -2150,6 +2150,48 @@ const LokaliProductsPage = (() => {
     const product = products.find(p => p.id === productId);
     const choice  = await openTrashDialog((product && product.product_name) || 'this product');
     if (!choice) return;
+
+    // Save-and-undo step 4 (F 2026-11-23 'Yes, start step 4'): hiding happens at
+    // once with Undo (shows it again); deleting takes it off the list at once and
+    // only really deletes after the 8-second Undo runs out.
+    if (window.LokaliUndo) {
+      const item = products.find(x => x.id === productId);
+      const label = (item && item.product_name) ? '\u201c' + item.product_name + '\u201d' : 'Your product';
+      try {
+        if (choice === 'delete') {
+          const idx = products.indexOf(item);
+          products = products.filter(x => x.id !== productId);
+          renderList(); showListView();
+          window.LokaliUndo.show({
+            text: label + ' deleted',
+            onUndo: () => { if (item) { products.splice(Math.max(0, idx), 0, item); renderList(); } },
+            onCommit: async () => {
+              try {
+                const r = await window.LokaliAPI.products.delete(productId);
+                if (r && r.error) showError('That didn\u2019t delete. Try again in a minute.');
+              } catch (e) { showError('That didn\u2019t delete. Try again in a minute.'); }
+              try { await loadData(); } catch (e) {}
+            }
+          });
+          return;
+        }
+        const r = await window.LokaliAPI.products.update(productId, { is_active: false });
+        if (r.error) throw new Error(r.error);
+        await loadData();
+        showListView();
+        window.LokaliUndo.show({
+          text: label + ' hidden. It\u2019s in your Hidden list.',
+          onUndo: async () => {
+            const r2 = await window.LokaliAPI.products.update(productId, { is_active: true });
+            if (r2 && r2.error) showError('That didn\u2019t show it again. Try from your Hidden list.');
+            try { await loadData(); } catch (e) {}
+          }
+        });
+      } catch (err) {
+        showError(err.message || 'Could not update product. Please try again.');
+      }
+      return;
+    }
 
     try {
       const result = choice === 'delete'
