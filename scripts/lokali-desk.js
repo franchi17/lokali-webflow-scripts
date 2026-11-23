@@ -263,8 +263,11 @@
       '.lkd-v3 .lkd-btn:focus-visible{outline-color:#fff;}',
       '.lkd-v3 .lkd-open{color:#fff;}',
       '.lkd-v3 .lkd-open.lkd-closed i{background:#E9DDFF;}',
-      '.lkd-facts{display:grid;gap:14px;min-width:0;}',
-      '.lkd-fact{background:rgba(255,255,255,.12);border-radius:18px;padding:18px 22px;color:#fff;}',
+      // one violet only (F 2026-11-22, option C): no see-through boxes, plain lines split by thin white rules
+      '.lkd-facts{display:grid;gap:0;min-width:0;}',
+      '.lkd-fact{padding:18px 0;color:#fff;border-bottom:1px solid rgba(255,255,255,.3);}',
+      '.lkd-fact:first-child{padding-top:0;}',
+      '.lkd-fact:last-child{border-bottom:0;padding-bottom:0;}',
       '.lkd-fact b{display:block;font-size:22px;font-weight:800;line-height:1.2;}',
       '.lkd-fact span{color:#E9DDFF;font-size:14px;}',
       '@media (max-width:860px){.lkd-sec.lkd-v3{padding:56px 20px;}.lkd-v3 .lkd-sec-in{grid-template-columns:minmax(0,1fr);gap:28px;}}',
