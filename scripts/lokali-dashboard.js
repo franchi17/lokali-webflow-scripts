@@ -1294,6 +1294,15 @@
     cur = o || {};
     var b = ensureBar();
     b.querySelector('span').textContent = cur.text || 'Removed.';
+    // Never cover a Save bar or Post button pinned to the bottom of the screen.
+    var lift = 0;
+    try {
+      document.querySelectorAll('.lok-form-bar,#lok-savebar,.lkf-foot').forEach(function (el) {
+        var r = el.getBoundingClientRect();
+        if (r.height && r.bottom > window.innerHeight - 140 && r.top < window.innerHeight) lift = Math.max(lift, window.innerHeight - r.top);
+      });
+    } catch (e) {}
+    b.style.bottom = lift ? 'calc(' + Math.round(lift + 12) + 'px + env(safe-area-inset-bottom,0px))' : '';
     b.hidden = false;
     timer = setTimeout(commit, cur.ms || 8000);
   }
