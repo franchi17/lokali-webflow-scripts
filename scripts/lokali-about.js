@@ -6,7 +6,8 @@
  * Every heading and paragraph that stays is the page's own element, MOVED into
  * the new layout (so the HTML crawlers read is the page's own); only the cover
  * photo, the quote, icons and buttons are new.
- *   - Cover: one neighbor's own storefront photo in a 4:5 frame on pink, the
+ *   - Cover: one neighbor's own storefront photo in a 4:5 frame on the bold
+ *     deep pink (F 2026-11-22 'A, cover only'), the
  *     headline on a white card overlapping it. The neighbor ROTATES per visit
  *     (COVERS below, F 2026-11-22: "rotate between a few neighbors but make
  *     sure the images are good and would be received well"). Owner photos
@@ -107,7 +108,8 @@
       '.lok-ab .lok-btn.lok-ghost:hover{background:' + C.pk + ';}' +
       '.lok-ab .lok-btn:focus-visible,.lok-ab .lok-ul:focus-visible,.lok-ab a:focus-visible{outline:2px solid ' + C.pd + ';outline-offset:3px;}' +
       // cover
-      '.lok-ab-cover{background:' + C.pk + ';padding:56px 0 0;}' +
+      '.lok-ab-cover{background:' + C.pd + ';padding:56px 0 0;}' +
+      '.lok-ab-cover .lok-cv-cap,.lok-ab-cover .lok-cv-cap b{color:#fff;}' +
       '#lok-ab-hero{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);align-items:center;}' +
       '.lok-cv-ph{grid-column:2;grid-row:1;margin:0;max-width:560px;justify-self:end;width:100%;}' +
       '.lok-cv-ph a{display:block;text-decoration:none!important;color:inherit;}' +
