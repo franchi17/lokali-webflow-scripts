@@ -416,7 +416,7 @@
         if (toMin(close) <= toMin(open)) { closeEl.style.borderColor = '#DFA284'; closeEl.focus(); return; }
         add.textContent = '…'; add.disabled = true;
         API.addHours(self.vendorId, wd, open, close).then(function (r) {
-          if (r && r.error) { add.textContent = 'Add'; add.disabled = false; var hx = add.parentNode && add.parentNode.querySelector('.ava-herr'); if (!hx) { add.insertAdjacentHTML('afterend', '<span class="ava-sub ava-herr" style="color:#9E5F44;margin-left:8px;"></span>'); hx = add.nextElementSibling; } hx.textContent = 'That didn\u2019t save. Try again in a minute.'; return; }
+          if (r && r.error) { add.textContent = 'Add'; add.disabled = false; var hx = add.parentNode && add.parentNode.querySelector('.ava-herr'); if (!hx) { add.insertAdjacentHTML('afterend', '<span class="ava-sub ava-herr" style="color:#B0006A;margin-left:8px;"></span>'); hx = add.nextElementSibling; } hx.textContent = 'That didn\u2019t save. Try again in a minute.'; return; }
           self.reloadHours();
         });
       }
