@@ -272,8 +272,8 @@
   // The hero is static Webflow DOM, so these swaps run once at init, before
   // any data arrives; initContact() later only sets hrefs / hides the anchors.
   var ICON_CROWN = ASSET + '69f4dbb3533f0ee2046ab0fb_crown-solid.png';      // = market card founding badge
-  var ICON_GLOBE = ASSET + '69f8b5e89bc57b40690cbc77_globe-solid.png';
-  var ICON_IG    = ASSET + '69f8b5e8a4030414bb433441_instagram-brands-solid.png';
+  var ICON_GLOBE = ASSET + '6b04bee2f317626e33df6f98_globe-solid-lavender.svg';   // CLEAN-P30: was a 36 KB PNG
+  var ICON_IG    = ASSET + '6b04bee240588f79b3b80ab4_instagram-brands-lavender.svg'; // CLEAN-P30: was a 36 KB PNG
   var HEART_PATH = 'M12 20.5l-1.4-1.27C5.6 14.86 2.5 12.07 2.5 8.6 2.5 6.1 4.5 4.1 7 4.1c1.5 0 2.95.7 3.9 1.81C11.85 4.8 13.3 4.1 14.8 4.1c2.5 0 4.5 2 4.5 4.5 0 3.47-3.1 6.26-8.1 10.63L12 20.5z'; // same heart as the market cards
 
   function styleHeroChrome() {
