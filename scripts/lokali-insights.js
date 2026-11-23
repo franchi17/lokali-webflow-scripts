@@ -25,7 +25,7 @@
 
   var DAY = 24 * 60 * 60 * 1000, DAY30 = 30 * DAY;
   var INK = '#1A1829', DUSK = '#4A4761', SLATE = '#8E8BA6',
-      VIOLET = '#6002EE', VIOLET_L = '#F3EBFF', ORANGE = '#FF8D00',
+      VIOLET = '#6002EE', VIOLET_L = '#F3EBFF', ORANGE = '#EE0290',
       GREEN = '#1D6A45', GREEN_L = '#EAFAF2', RED = '#A32D2D', RED_L = '#FDECEC',
       BORDER = '#EEEDF6', SNOW = '#F7F6FC', MIST = '#EEEDF6';
 

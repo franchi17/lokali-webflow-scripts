@@ -300,7 +300,7 @@
     '.lok-gc.is-off .lok-gc-cover,.lok-gc.is-off .lok-gc-body{opacity:.62;}',
     '.lok-gc .card-divider,.lok-gc .service-category,.lok-gc .product-category,.lok-gc .service-description,.lok-gc .product-description,.lok-gc .product-stock,.lok-gc .product-price-note,.lok-gc .remote-badge,.lok-gc .shipping-badge,.lok-gc [data-field="product-delivery-badge"],.lok-gc .status-pill{display:none!important;}',
     '.lok-gc-cover{position:relative;aspect-ratio:3/2;background:#EEEDF6 center/cover no-repeat;}',
-    '.lok-gc-cover.ph{background:linear-gradient(135deg,#F3EBFF,#FFF1E3);display:flex;align-items:center;justify-content:center;color:#8E8BA6;}',
+    '.lok-gc-cover.ph{background:linear-gradient(135deg,#F3EBFF,#FDE6F2);display:flex;align-items:center;justify-content:center;color:#8E8BA6;}',
     '.lok-gc-cover.ph svg{width:26px;height:26px;}',
     '.lok-gc-corner{position:absolute;top:8px;left:8px;display:flex;gap:6px;}',
     '.lok-gc-cr{position:absolute;top:8px;right:8px;}',
@@ -308,7 +308,7 @@
     '.lok-gc-chip.on{color:#1D6A45;}.lok-gc-chip.off{color:#6E6A85;}.lok-gc-chip.pick{color:#6002EE;}',
     // Plan-capped listing (services.deactivated_by_limit): the server parked it, the vendor did not.
     // Orange chip + dashed card so it reads as "waiting for the next plan", not as switched off (F 2026-11-09).
-    '.lok-gc-chip.lim{color:#8A4B00;background:#FFF1E3;}',
+    '.lok-gc-chip.lim{color:#B0006A;background:#FDE6F2;}',
     '.lok-gc.is-lim{border:1.5px dashed #E5D4FD;}.lok-gc.is-lim .lok-gc-cover.ph{background:#F7F4FD;}',
     '.lok-gc-chip svg{width:11px;height:11px;}',
     '.lok-gc .drag-handle{opacity:1!important;visibility:visible!important;width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,.92);display:flex;align-items:center;justify-content:center;color:#8E8BA6;cursor:grab;margin:0;}',
@@ -325,7 +325,7 @@
     '.lok-gc-stat b{color:#1A1829;font-weight:700;}',
     '.lok-gc-meta{display:flex;gap:6px;flex-wrap:wrap;}',
     '.lok-tagc{display:inline-flex;align-items:center;font-size:11px;font-weight:600;border-radius:100px;padding:2px 8px;background:#EEEDF6;color:#4A4761;white-space:nowrap;line-height:1.5;}',
-    '.lok-tagc.spec{background:#F3EBFF;color:#6002EE;}.lok-tagc.warn{background:#FFF1E3;color:#9a4d00;}.lok-tagc.way{background:#E7EEFF;color:#2643B0;}',
+    '.lok-tagc.spec{background:#F3EBFF;color:#6002EE;}.lok-tagc.warn{background:#FDE6F2;color:#B0006A;}.lok-tagc.way{background:#E7EEFF;color:#2643B0;}',
     '.lok-gc .card-actions{opacity:1!important;visibility:visible!important;display:flex;gap:6px;margin-top:auto;padding-top:8px;border-top:.5px solid #EEEDF6;position:static;}',
     '.lok-gc .card-actions .icon-btn{height:32px;min-width:32px;padding:0 10px;border-radius:8px;border:.5px solid #EEEDF6;background:#F7F6FC;color:#4A4761;display:inline-flex;align-items:center;justify-content:center;gap:6px;font:600 12px/1 ' + LUI_FONT + ';cursor:pointer;opacity:1!important;visibility:visible!important;}',
     '.lok-gc .card-actions [data-action="edit"]{order:0;color:#6002EE;border-color:#E5D4FD;background:#fff;}',

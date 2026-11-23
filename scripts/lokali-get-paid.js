@@ -52,7 +52,7 @@
     '#lokali-checkout .gp-intro{font-size:14px;line-height:1.55;color:#4A4761;margin:0 0 14px;}' +
     '#lokali-checkout .gp-fee{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px;}' +
     '#lokali-checkout .gp-chip{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;font-size:13px;font-weight:600;background:#F1EDFB;color:#4A4761;border:1px solid #E5D4FD;}' +
-    '#lokali-checkout .gp-chip.on{background:#EAFAF2;color:#1D6A45;border-color:#CDEFDC;}#lokali-checkout .gp-chip.warn{background:#FFF4E5;color:#8A4B00;border-color:#FFE0B2;}' +
+    '#lokali-checkout .gp-chip.on{background:#EAFAF2;color:#1D6A45;border-color:#CDEFDC;}#lokali-checkout .gp-chip.warn{background:#FDE6F2;color:#B0006A;border-color:#F6B8D8;}' +
     '#lokali-checkout .gp-chip.you{background:#6002EE;color:#fff;border-color:#6002EE;}' +
     '#lokali-checkout .gp-btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 18px;border-radius:999px;border:0;background:#6002EE;color:#fff;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;text-decoration:none;}' +
     '#lokali-checkout .gp-btn.ghost{background:#fff;color:#6002EE;border:1px solid #D9CFFB;}#lokali-checkout .gp-btn[disabled]{opacity:.6;cursor:default;}' +
@@ -68,7 +68,7 @@
     '#lokali-checkout .gp-ex{background:#F7F6FC;border-radius:14px;padding:12px 14px;margin:0 0 14px;}' +
     '#lokali-checkout .gp-ex strong{display:block;font-size:14px;color:#3A3550;margin-bottom:4px;}' +
     '#lokali-checkout .gp-ex div{display:flex;justify-content:space-between;gap:12px;font-size:13px;color:#4A4761;padding:5px 0;border-top:1px solid #E9E6F5;}' +
-    '#lokali-checkout .gp-card{background:#FFF7E8;border:1px solid #FFE0B2;border-radius:12px;padding:10px 12px;font-size:13px;line-height:1.5;color:#7A4A00;margin:0 0 14px;}' +
+    '#lokali-checkout .gp-card{background:#FFF7E8;border:1px solid #F6B8D8;border-radius:12px;padding:10px 12px;font-size:13px;line-height:1.5;color:#7A4A00;margin:0 0 14px;}' +
     '#lokali-checkout .gp-set{border:1px solid #DEDAEE;border-radius:14px;padding:14px;margin-top:14px;}' +
     '#lokali-checkout .gp-set label{display:block;font-size:13px;font-weight:700;color:#3A3550;margin:0 0 2px;}' +
     '#lokali-checkout .gp-set .gp-help{font-size:12px;color:#6E6A85;margin:0 0 6px;line-height:1.5;}' +
