@@ -290,6 +290,11 @@
     'html.vd3 .vd2-thumb[aria-current="true"]{opacity:1;outline:1px solid #45415A;outline-offset:2px;}',
     // sections: small-caps labels, roomier text
     'html.vd3 .vd2-sec{margin-top:44px;}',
+    '.vd3-lower{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:56px;margin-top:56px;padding-top:44px;border-top:1px solid #EDE8F2;align-items:start;font-family:' + V2_FONT + ';}',
+    '.vd3-lower .vd2-sec{margin-top:0 !important;}',
+    '.vd3-lower .vd-vendor-mini{flex-wrap:wrap;}',
+    '.vd3-lower .vd-mini-link{margin-left:0 !important;flex-basis:100%;padding:4px 0 0 !important;}',
+    '@media (max-width:991px){.vd3-lower{grid-template-columns:minmax(0,1fr);gap:34px;margin-top:34px;padding-top:0;border-top:0;}}',
     'html.vd3 .vd2-h{font:700 11px/1.4 ' + V2_FONT + ';letter-spacing:.28em;text-transform:uppercase;color:var(--f3);margin:0 0 14px;}',
     'html.vd3 #vd-desc{font:500 16px/1.75 ' + V2_FONT + ';color:#4A4761;}',
     'html.vd3 .vd2-more{color:var(--f3);}',
@@ -389,6 +394,15 @@
     var note = v2el('p', 'vd2-note'); note.id = 'vd2-note'; box.appendChild(note);
     rail.appendChild(box);
     grid.appendChild(main); grid.appendChild(rail);
+    // v3 (F 2026-11-23): description and maker side by side in a full-width
+    // row under the photo + buy column (phones: stacked, same order as before).
+    var ds3 = $('vd2-sec-desc'), vs3 = $('vd2-sec-vendor');
+    if (ds3 || vs3) {
+      var lower = v2el('div', 'vd3-lower'); lower.id = 'vd3-lower';
+      if (ds3) lower.appendChild(ds3);
+      if (vs3) lower.appendChild(vs3);
+      grid.parentNode.insertBefore(lower, grid.nextSibling);
+    }
     // our own template line carried an em dash; the box says it better anyway
     var sub = $('vd-cta-sub'); if (sub) sub.textContent = 'Send a message and they will reply to you directly.';
 
