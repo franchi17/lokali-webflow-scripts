@@ -97,25 +97,34 @@
   // (cached) and upgrade the buttons' URL in place, so a click always reads the
   // best URL available synchronously (no lost user-gesture for clipboard/share)
   // and falls back to the plain public URL if the Shares API is unavailable.
+  // Done-check 2026-11-23: o=1 tells the storefront this link came from the owner,
+  // so a customer who opens it sees 'Did <first> send you this? Follow ...'.
+  function ownerTag(url) {
+    url = String(url || '');
+    if (/[?&]o=1(&|$|#)/.test(url)) return url;
+    var h = url.indexOf('#'), hash = h >= 0 ? url.slice(h) : '';
+    if (h >= 0) url = url.slice(0, h);
+    return url + (url.indexOf('?') >= 0 ? '&' : '?') + 'o=1' + hash;
+  }
   function tokenizeShareUrl(v, ref) {
     if (!v || v.id == null) return;
     if (!(window.LokaliAPI && window.LokaliAPI.share && window.LokaliAPI.share.create)) return;
     var key = 'lokali_vshare_' + v.id;
     try {
       var cached = sessionStorage.getItem(key);
-      if (cached) { ref.url = cached; return; }
+      if (cached) { ref.url = ownerTag(cached); return; }
     } catch (e) {}
     window.LokaliAPI.share.create(v.id, 'copy_link').then(function (res) {
       var url = res && res.data && res.data.share_url;
       if (!url) return;
-      ref.url = url;
+      ref.url = ownerTag(url);
       try { sessionStorage.setItem(key, url); } catch (e) {}
     }).catch(function () {});
   }
 
   var SHARE_REF = null; // the weekly card's 'Copy a message' reads the same (tokenized) URL
   function wireShareButtons(v) {
-    var ref = { url: publicListingUrl(v) };
+    var ref = { url: ownerTag(publicListingUrl(v)) };
     SHARE_REF = ref;
     tokenizeShareUrl(v, ref);
 
@@ -220,7 +229,7 @@
     el.style.cssText = 'display:flex;align-items:flex-start;gap:10px;border-radius:12px;padding:12px 14px;margin:0 0 14px;' +
       "font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;line-height:1.5;" +
       (soft ? 'background:#F4F1FC;border:1px solid #DDD5F5;color:#4A3C7A;'
-            : 'background:#FDF1E7;border:1px solid #F6D9BE;color:#8A4B14;');
+            : 'background:#F1ECFE;border:1px solid #E2D6FD;color:#3B2A6B;');
     var m = el.querySelector('[data-ls-gate-msg]');
     if (m) m.innerHTML = msg; // every dynamic piece above went through esc()
     // The gate outranks a saved dismiss — a hidden card can't warn anyone.
@@ -235,7 +244,7 @@
     '.lok-chip{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;border-radius:100px;padding:3px 10px;line-height:1.5;white-space:nowrap;}',
     '.lok-chip.live{background:#EAFAF2;color:#1D6A45;}',
     '.lok-chip.live i{width:7px;height:7px;border-radius:50%;background:#1D6A45;display:inline-block;}',
-    '.lok-chip.off{background:#FDECEC;color:#A32D2D;}',
+    '.lok-chip.off{background:#F1ECFE;color:#5B21D6;}',
     '.lok-chip.paused{background:#EEEDF6;color:#4A4761;}',
     '.lok-chip.plan{background:#FDE6F2;color:#B0006A;}',
     '.lok-chip.plan.free{background:#EEEDF6;color:#4A4761;}',
@@ -254,7 +263,7 @@
     '.lok-spark{width:84px;height:28px;flex-shrink:0;}',
     '.lok-delta{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;border-radius:100px;padding:2px 8px;width:fit-content;line-height:1.5;}',
     '.lok-delta.up{color:#1D6A45;background:#EAFAF2;}',
-    '.lok-delta.down{color:#A32D2D;background:#FDECEC;}',
+    '.lok-delta.down{color:#5F5B73;background:#F1F0F5;}',
     '.lok-delta.flat{color:#8E8BA6;background:#EEEDF6;}',
     '.lok-delta.new{color:#6002EE;background:#F3EBFF;}',
     '.lok-kdetail{font-size:11.5px;color:#6E6A85;line-height:1.5;}',
@@ -398,23 +407,25 @@
     var url = v.slug ? ('golokali.com/' + v.slug) : ('golokali.com/vendor?id=' + v.id);
     var status = v.is_active === false
       ? '<span class="lok-chip paused">Paused</span>'
-      : (gateReady ? '<span class="lok-chip live"><i></i>Live</span>' : '<span class="lok-chip off">Not public yet</span>');
+      : (gateReady ? '<span class="lok-chip live"><i></i>Live</span>' : '<span class="lok-chip off">Getting ready</span>');
     var planName = (billing && billing.subscription && billing.subscription.plan_name) || 'Free';
     var isFree = !billing || !billing.plan || billing.plan === 'free';
     var plan = '<span class="lok-chip plan' + (isFree ? ' free' : '') + '">' + esc(isFree ? 'Free plan' : planName) + '</span>';
     hd.innerHTML =
       '<div class="lok-hd-sub">' + status + plan + '<span class="lok-hd-url">' + esc(url) + '</span></div>' +
       '<div class="lok-btns">' +
-        '<button type="button" class="lok-btn" data-hd-copy>' + ICO.copy + '<span>Copy link</span></button>' +
+        // Done-check 2026-11-23 (F 'Yes, build all'): no Copy link until the storefront is
+        // live; the link would open a 'not public yet' page.
+        (gateReady || v.is_active === false ? '<button type="button" class="lok-btn" data-hd-copy>' + ICO.copy + '<span>Copy link</span></button>' : '') +
         '<a class="lok-btn" href="' + esc(publicListingUrl(v)) + '" target="_blank" rel="noopener">View storefront' + ICO.ext + '</a>' +
       '</div>';
     var copy = hd.querySelector('[data-hd-copy]');
-    copy.addEventListener('click', function () {
+    if (copy) copy.addEventListener('click', function () {
       // The hidden Webflow 'Copy link' anchor carries the tokenized ?via= URL
       // (wireShareButtons), so clicking it keeps share attribution intact.
       var hidden = document.getElementById('share-copy-link');
       if (hidden && hidden.__wired) hidden.click();
-      else copyToClipboard('https://www.' + url);
+      else copyToClipboard(ownerTag('https://www.' + url));
       flashCopied(copy.querySelector('span'));
     });
   }
@@ -469,9 +480,13 @@
       : 'What you told us your wins were worth';
     return tile('Business from Lokali · all time', null, sum ? moneyOf(sum) : String(won.length), '', chip, detail);
   }
-  function renderTiles(leadsData, shares, wonRows) {
+  function renderTiles(leadsData, shares, wonRows, gateReady) {
     var box = document.querySelector('.div-block-41');
     if (!box) return;
+    // Done-check 2026-11-23: a storefront that is not public yet sees no numbers and
+    // no 'quiet week' share prompt; the Go live card is the only thing to do.
+    if (gateReady === false) { box.style.display = 'none'; return false; }
+    box.style.display = '';
     var L = leadsData || {};
     var views = L.views || [], inq = L.inquiries || [], con = L.contacts || [], pay = L.payment_clicks || [];
     var W7 = 7 * DAY;
@@ -489,8 +504,8 @@
     if (quiet) {
       box.className = 'lok-kpis quiet';
       var opened = v7 === 0 ? 'Sharing your link is the quickest way to bring neighbors by.'
-        : v7 === 1 ? 'One person opened your storefront this week. Nobody has reached out yet.'
-        : v7 + ' people opened your storefront this week. Nobody has reached out yet.';
+        : v7 === 1 ? 'Your storefront was opened once this week. Nobody has reached out yet.'
+        : 'Your storefront was opened ' + v7 + ' times this week. Nobody has reached out yet.';
       // The three figures keep the tile ids so the skeleton loader clears on them.
       box.innerHTML = '<div class="lok-quiet"><div class="lok-qt"><b>A quiet week. ' + opened + '</b>' +
         '<span>The full numbers come back here once there is more to show. Until then, the step below is what moves them.</span></div>' +
@@ -536,6 +551,8 @@
     root.style.cssText = '';
     var open = ck.open || [], done = ck.done || [], total = ck.total || 0;
     waiting = waiting || [];
+    var gl = goLiveCard(root, v, hasListing, waiting);
+    if (gl != null) return gl;
     var html = '<div class="lok-ct"><h3>Your next step</h3>' +
       (waiting.length ? '<span class="lok-pill" style="background:#FDE7F3;color:#B1006A">' + waiting.length + ' waiting' + (open.length ? ' · ' + open.length + ' to do' : '') + '</span>'
         : (open.length ? '<span class="lok-pill">' + open.length + ' to do</span>' : '<span class="lok-pill ok">All in place</span>')) + '</div>';
@@ -610,6 +627,71 @@
                     : (!!v.business_name && gCats && gLocs && !!hasListing && gAddr && gDesc);
     renderGateBanner(root, gateReady, { name: !!v.business_name, cats: gCats, locs: gLocs, listing: !!hasListing, address: gAddr, desc: gDesc });
     return gateReady;
+  }
+
+  // ── Go live in 3 steps (done-check, F 2026-11-23 'Yes, build all') ──────
+  // A storefront the gate still holds back sees ONLY what stands between it and
+  // the Market, as three steps with one button for the next one (UX + Vendor
+  // Success: the old note was six links in one sentence above a checklist step
+  // the vendor often could not do yet). Same gate bits as renderGateBanner.
+  // Returns null when this card does not apply (live, a lead waiting, or every
+  // step already done while the gate is still closed: the old note covers that).
+  var GL_CSS = [
+    '.lok-gl h3{margin:0;font-size:18px;font-weight:800;color:#1A1829;}',
+    '.lok-gl .lok-gl-sub{margin:4px 0 12px;font-size:13.5px;color:#4A4761;line-height:1.5;}',
+    '.lok-gl-meter{height:6px;background:#E2D6FD;border-radius:99px;overflow:hidden;margin:0 0 14px;}',
+    '.lok-gl-meter i{display:block;height:100%;background:#6002EE;border-radius:99px;}',
+    '.lok-gl ol{list-style:none;margin:0 0 14px;padding:0;display:grid;gap:12px;}',
+    '.lok-gl li{display:grid;grid-template-columns:28px minmax(0,1fr);gap:10px;align-items:start;}',
+    '.lok-gl .d{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;background:#fff;color:#6002EE;border:1.5px solid #E2D6FD;box-sizing:border-box;}',
+    '.lok-gl li.ok .d{background:#6002EE;color:#fff;border-color:#6002EE;}',
+    '.lok-gl li b{display:block;font-size:14.5px;color:#1A1829;line-height:1.35;}',
+    '.lok-gl li.ok b{color:#6E6987;text-decoration:line-through;font-weight:600;}',
+    '.lok-gl li small{display:block;font-size:12.5px;color:#6E6987;line-height:1.45;margin-top:2px;}',
+    '.lok-gl .lok-btn{display:flex;justify-content:center;width:100%;box-sizing:border-box;min-height:44px;font-size:14px;}'
+  ].join('');
+  function goLiveCard(root, v, hasListing, waiting) {
+    if ((waiting || []).length) return null;
+    var gCats = !!(v.categories_id && v.categories_id.length);
+    var gLocs = !!(v.locations_id && v.locations_id.length);
+    var gAddr = !!(v.address && String(v.address).trim());
+    var gDesc = !!(v.business_description && String(v.business_description).trim());
+    var ready = (v.is_publish_ready != null) ? !!v.is_publish_ready
+                : (!!v.business_name && gCats && gLocs && !!hasListing && gAddr && gDesc);
+    if (ready) return null;
+    var PROF = '/vendor-dashboard/profile';
+    var need1 = [];
+    if (!v.business_name) need1.push('your business name');
+    if (!gCats) need1.push('your category');
+    if (!gLocs) need1.push('where you work');
+    var steps = [
+      { ok: !need1.length, t: 'Tell us about your business',
+        s: need1.length ? 'Still needed: ' + need1.join(', ') : 'Name, category and where you work',
+        href: PROF + '#lok-sec-business', act: 'Finish your business details' },
+      { ok: !!hasListing, t: 'Add your first service or product',
+        s: 'A photo, a name and a price is enough', href: '/vendor-dashboard/services', act: 'Add your first listing' },
+      { ok: gDesc && gAddr, t: 'Write a few lines about you',
+        s: (!gDesc ? 'Plus your business address, which customers never see' : 'Last thing: your business address. Customers never see it.'),
+        href: PROF + (gDesc ? '#lok-sec-business' : '#lok-sec-about'), act: gDesc ? 'Add your business address' : 'Write about your business' }
+    ];
+    var doneN = steps.filter(function (x) { return x.ok; }).length;
+    if (doneN === steps.length) return null;
+    var next = steps.filter(function (x) { return !x.ok; })[0];
+    if (!document.getElementById('lok-gl-css')) {
+      var st = document.createElement('style'); st.id = 'lok-gl-css'; st.textContent = GL_CSS; document.head.appendChild(st);
+    }
+    root.className = 'lok-card accent lok-gl';
+    root.style.cssText = '';
+    root.style.display = '';
+    root.innerHTML = '<h3>Go live in 3 steps</h3>' +
+      '<p class="lok-gl-sub">Neighbors can find you on the Market once these are done.</p>' +
+      '<div class="lok-gl-meter" role="img" aria-label="' + doneN + ' of 3 done"><i style="width:' + Math.max(6, Math.round(doneN / 3 * 100)) + '%"></i></div>' +
+      '<ol>' + steps.map(function (x, i) {
+        return '<li class="' + (x.ok ? 'ok' : '') + '"><span class="d" aria-hidden="true">' + (x.ok ? '\u2713' : (i + 1)) + '</span>' +
+          '<div><b>' + esc(x.t) + (x.ok ? '<span class="lok-sr" style="position:absolute;left:-9999px"> (done)</span>' : '') + '</b><small>' + esc(x.s) + '</small></div></li>';
+      }).join('') + '</ol>' +
+      '<a class="lok-btn primary" href="' + esc(next.href) + '">' + esc(next.act) + ' \u2192</a>';
+    return false;
   }
 
   // ── What happened: the last 8 human events + the month's busiest day ────
@@ -834,8 +916,12 @@
         ? '<div class="lok-ct"><h3>What happened</h3><a href="/vendor-dashboard/leads">All leads \u2192</a></div><div class="lok-feed-empty">Views, messages, taps and reviews show up here as they happen.</div>'
         : oneThingCard();
     } else {
-      html += '<div class="lok-feed-empty">This is where neighbors show up: messages, taps and reviews, as they happen. Finish setting up and they\u2019ll start arriving.</div>';
+      // Done-check 2026-11-23: nothing can have happened before the storefront is
+      // public, so the empty card stays out of the way of the Go live steps.
+      card.style.display = 'none';
+      return;
     }
+    card.style.display = '';
     card.innerHTML = html;
     placeQuiet();
     placeFeedPhone();
@@ -1254,7 +1340,7 @@
     var gateReady = nextStepCard(v, hasListing, ck, x.waiting);
     if (gateReady == null) gateReady = !!v.is_publish_ready;
     renderHeader(v, x.billing, gateReady);
-    var quiet = renderTiles(leadsData, x.shares, x.wonRows); // true on a quiet week (F 2026-10-24)
+    var quiet = renderTiles(leadsData, x.shares, x.wonRows, gateReady); // true on a quiet week (F 2026-10-24)
     if (gateReady && v.is_publish_ready === true && !(x.waiting || []).length && !(ck.open || []).length) weekCard(v, services, products, x);
     renderFeed(leadsData, x.reviews, gateReady, !!(x.billing && x.billing.plan && x.billing.plan !== 'free'), quiet);
     renderQuickActions(services, products, leadsData);
@@ -1357,7 +1443,7 @@
         '<div data-wz-err aria-live="polite" style="display:none;color:#C05621;font-size:13px;margin-top:10px;"></div>' +
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:18px;gap:12px;">' +
           '<div style="font-size:12.5px;line-height:1.45;color:#9A9AB0;max-width:55%;">' +
-            'You can skip, but your storefront <strong style="color:#8A4B14;">won’t go live</strong> until this is set.</div>' +
+            'You can skip, but your storefront <strong style="color:#3B2A6B;">won’t go live</strong> until this is set.</div>' +
           '<div style="display:flex;align-items:center;gap:14px;white-space:nowrap;">' +
             '<button type="button" data-wz-skip style="background:none;border:none;padding:0;cursor:pointer;' +
               'font-family:inherit;font-size:14px;color:#9A9AB0;text-decoration:underline;">Skip for now</button>' +
@@ -1413,8 +1499,8 @@
     function stepLoadFail(body, what, retryFn) {
       body.innerHTML = '';
       var m = document.createElement('div');
-      m.style.cssText = 'font-size:14px;line-height:1.5;color:#8A4B14;background:#FDF1E7;' +
-        'border:1px solid #F6D9BE;border-radius:12px;padding:12px 14px;';
+      m.style.cssText = 'font-size:14px;line-height:1.5;color:#3B2A6B;background:#F1ECFE;' +
+        'border:1px solid #E2D6FD;border-radius:12px;padding:12px 14px;';
       m.textContent = 'Couldn’t load ' + what + '. Try again, or use Skip for now and set this later on your profile page.';
       var b = document.createElement('button');
       b.type = 'button';
@@ -1433,7 +1519,7 @@
     if (!v.business_name) steps.push(function () {
       var body = shell("What's your business called?",
         'This is the name customers see on The Market.',
-        '<input data-wz-name type="text" maxlength="120" placeholder="e.g. Hazel &amp; Fern Handmade" ' +
+        '<input data-wz-name type="text" maxlength="120" placeholder="For example, Hazel &amp; Fern Handmade" ' +
           'style="font-family:inherit;font-size:15px;color:#3b3654;background:#FAF7FF;border:1.5px solid #E4DCF7;' +
           'border-radius:12px;padding:11px 14px;width:100%;box-sizing:border-box;">');
       var input = body.querySelector('[data-wz-name]');
@@ -1591,8 +1677,8 @@
         '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
           '<a href="/vendor-dashboard/services" style="flex:1;min-width:150px;text-align:center;background:#6002EE;color:#fff;' +
             'font-weight:700;font-size:14px;padding:12px 18px;border-radius:12px;text-decoration:none;font-family:inherit;">Add a service</a>' +
-          '<a href="/vendor-dashboard/products" style="flex:1;min-width:150px;text-align:center;background:#FDF1E7;color:#8A4B14;' +
-            'border:1.5px solid #F6D9BE;font-weight:700;font-size:14px;padding:12px 18px;border-radius:12px;text-decoration:none;font-family:inherit;">Add a product</a>' +
+          '<a href="/vendor-dashboard/products" style="flex:1;min-width:150px;text-align:center;background:#F1ECFE;color:#3B2A6B;' +
+            'border:1.5px solid #E2D6FD;font-weight:700;font-size:14px;padding:12px 18px;border-radius:12px;text-decoration:none;font-family:inherit;">Add a product</a>' +
         '</div>', { noContinue: true });
     });
 
@@ -1612,8 +1698,8 @@
       box.setAttribute('data-dash-load-err', '');
       box.setAttribute('role', 'alert');
       box.style.cssText = "font-family:'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;" +
-        'flex-wrap:wrap;gap:12px;background:#FDF1E7;border:1px solid #F6D9BE;border-radius:12px;' +
-        'padding:14px 16px;margin:0 0 16px;font-size:14px;line-height:1.5;color:#8A4B14;';
+        'flex-wrap:wrap;gap:12px;background:#F1ECFE;border:1px solid #E2D6FD;border-radius:12px;' +
+        'padding:14px 16px;margin:0 0 16px;font-size:14px;line-height:1.5;color:#3B2A6B;';
       box.innerHTML = '<span style="flex:1;min-width:200px;">We couldn’t load your dashboard. ' +
         'Check your connection and try again.</span>' +
         '<button type="button" data-dash-load-retry style="font-family:inherit;font-weight:700;font-size:14px;' +

@@ -1484,7 +1484,7 @@ var LokaliProfilePage = (function () {
     im.style.objectPosition = (ph.image_focus_x != null && ph.image_focus_y != null)
       ? (ph.image_focus_x + '% ' + ph.image_focus_y + '%') : 'center';
     if (lab) lab.textContent = 'How photo ' + (_pfActive + 1) + ' of ' + _pfPhotos.length +
-      ' will appear on your storefront \u2014 drag it to adjust';
+      ' will appear on your storefront. Drag it to adjust.';
     // the active thumb mirrors the same position
     var thumbs = document.querySelectorAll('img[data-pf-idx]');
     thumbs.forEach(function (t) {
@@ -1524,8 +1524,8 @@ var LokaliProfilePage = (function () {
       var ph = row();
       if (!moved || !ph) { _pfPaintPreview(); return; }
       window.LokaliSupabaseAPI.photos.setFocus('vendor', ph.id, ph.image_focus_x, ph.image_focus_y).then(function (res2) {
-        if (res2 && res2.error) { _showToast('error', 'Couldn\u2019t save the crop \u2014 try again.'); return; }
-        _showToast('success', 'Crop saved \u2014 your storefront uses it right away.');
+        if (res2 && res2.error) { _showToast('error', 'Couldn\u2019t save the crop. Try again.'); return; }
+        _showToast('success', 'Crop saved. Your storefront uses it right away.');
       });
     }
     imEl.addEventListener('pointerup', done);
@@ -1687,14 +1687,14 @@ var LokaliProfilePage = (function () {
       if (!ev.target || ev.target.id !== 'lok-pf-vidsave') return;
       var inp = document.getElementById('lok-pf-vidurl');
       var url = inp ? String(inp.value || '').trim() : '';
-      if (!_pfParseVideo(url)) { vidSay('That link doesn\u2019t look like YouTube or Vimeo \u2014 copy the full video address from your browser.', true); return; }
+      if (!_pfParseVideo(url)) { vidSay('That link doesn\u2019t look like YouTube or Vimeo. Copy the full video address from your browser.', true); return; }
       if (_pfPhotos.length >= _PF_MAX) { vidSay('Your portfolio is full. A video uses one of your ' + _PF_MAX + ' spots.', true); return; }
       var S = window.LokaliSupabaseAPI;
       if (!S || !S.photos || !S.photos.addVideo || !_vendor) return;
       var nextSort = _pfPhotos.length ? (Number(_pfPhotos[_pfPhotos.length - 1].sort_order) || _pfPhotos.length) + 1 : 1;
       vidSay('Adding\u2026', false);
       S.photos.addVideo('vendor', _vendor.id, url, nextSort).then(function (res) {
-        if (res && res.error) { vidSay('Couldn\u2019t add that video \u2014 try again.', true); return; }
+        if (res && res.error) { vidSay('Couldn\u2019t add that video. Try again.', true); return; }
         if (inp) inp.value = '';
         vidRow.style.display = 'none';
         vidSay('', false);
@@ -1799,7 +1799,7 @@ var LokaliProfilePage = (function () {
           bar0.appendChild(mkB('\u2715', 'Remove video', function () {
             window.LokaliSupabaseAPI.photos.remove('vendor', p.id).then(function () {
               _renderPortfolio();
-              _showToast('success', 'Video removed \u2014 saved automatically.');
+              _showToast('success', 'Video removed.');
             });
           }, false));
           bar0.appendChild(mkB('\u203A', 'Move right', function () { _pfSwap(i, i + 1); }, i === _pfPhotos.length - 1));
@@ -3213,7 +3213,7 @@ var LokaliProfilePage = (function () {
         if (!res.ok) return { ok: true };          // route down -> text-only save
         return res.json().then(function (d) {
           if (!d || typeof d.ok !== 'boolean') return { ok: true };
-          if (!d.ok) return { ok: false, message: d.message || 'We couldn\u2019t verify that address \u2014 please check it and try again.' };
+          if (!d.ok) return { ok: false, message: d.message || 'We couldn\u2019t verify that address. Check it and try again.' };
           var out = { ok: true, formatted: d.formatted || null, address_verified: ('address_verified' in d) ? d.address_verified : undefined, geo_written: !!d.geo_written };
           _addrGeo = out; _addrGeoFor = addr;
           return out;

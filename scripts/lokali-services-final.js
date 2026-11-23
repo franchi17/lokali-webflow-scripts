@@ -2866,7 +2866,7 @@ const LokaliServicesPage = (() => {
       '<div style="font-size:13px;font-weight:600;color:#1A1829;margin-bottom:2px;">Lead time <span style="font-weight:400;color:#8E8BA6;">(optional)</span></div>' +
       '<p style="font-size:12.5px;color:#8E8BA6;margin:0 0 8px;">How long until this is ready for the customer? Shown on your listing so people know what to expect.</p>' +
       '<div data-lead-presets style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:9px;"></div>' +
-      '<input data-lead-input class="w-input" maxlength="' + LEAD_MAXLEN + '" placeholder="e.g. Ready in ~2 weeks" style="width:100%;box-sizing:border-box;font-family:inherit;">' +
+      '<input data-lead-input class="w-input" maxlength="' + LEAD_MAXLEN + '" placeholder="For example, ready in about 2 weeks" style="width:100%;box-sizing:border-box;font-family:inherit;">' +
       '<p style="font-size:12px;color:#8E8BA6;margin:8px 0 0;line-height:1.45;">Tap a suggestion or write your own. This is a heads-up for customers. It doesn’t block anyone from booking or ordering.</p>';
     host.appendChild(wrap);
     const inp = wrap.querySelector('[data-lead-input]');
@@ -3001,7 +3001,7 @@ const LokaliServicesPage = (() => {
       '<button type="button" data-subcat-fold style="display:inline-block;margin-top:10px;padding:0;border:0;background:none;font-family:inherit;font-size:12.5px;font-weight:600;color:#6002EE;cursor:pointer;text-decoration:underline;">None of these fit? Suggest a new one</button>' +
       '<div data-subcat-suggest-wrap style="display:none;border-top:1px dashed #DCD2F2;margin-top:12px;padding-top:10px;">' +
         '<div style="display:flex;gap:6px;">' +
-          '<input data-subcat-suggest maxlength="40" placeholder="e.g. Power washing" style="flex:1;min-width:0;font-family:inherit;font-size:16px;padding:8px 12px;border:1px solid #C9BDE8;border-radius:8px;background:#fff;color:#1A1829;">' +
+          '<input data-subcat-suggest maxlength="40" placeholder="For example, power washing" style="flex:1;min-width:0;font-family:inherit;font-size:16px;padding:8px 12px;border:1px solid #C9BDE8;border-radius:8px;background:#fff;color:#1A1829;">' +
           '<button type="button" data-subcat-suggest-btn style="font-family:inherit;font-size:13px;font-weight:600;padding:8px 16px;border-radius:8px;border:1px solid #6002EE;background:#6002EE;color:#fff;cursor:pointer;">Suggest</button>' +
         '</div>' +
         '<p style="font-size:12px;color:#8E8BA6;margin:8px 0 0;line-height:1.45;">We review new ones first so the filters stay tidy. Once approved, yours shows up here for everyone.</p>' +

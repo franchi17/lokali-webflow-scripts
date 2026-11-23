@@ -2439,7 +2439,7 @@ const LokaliProductsPage = (() => {
           ? '<div style="margin:0 0 12px;">' +
               '<label for="lok-import-store" style="display:block;font-size:12.5px;font-weight:600;color:#4A4761;margin-bottom:5px;">' +
                 (platform === 'etsy' ? 'Your Etsy shop name <span style="font-weight:500;color:#6E6A85;">(the part after etsy.com/shop/) · adds a "Buy on Etsy" link to every item</span>'
-                                     : 'Your store address <span style="font-weight:500;color:#6E6A85;">(e.g. mystore.com) · adds the exact product link to every item</span>') +
+                                     : 'Your store address <span style="font-weight:500;color:#6E6A85;">(for example, mystore.com) · adds the exact product link to every item</span>') +
               '</label>' +
               '<input id="lok-import-store" type="text" autocomplete="off" spellcheck="false" placeholder="' + (platform === 'etsy' ? 'MyShopName' : 'mystore.com') + '" style="width:100%;max-width:360px;box-sizing:border-box;padding:9px 12px;border:1px solid #E6E4F0;border-radius:10px;font-size:14px;font-family:inherit;color:#1A1829;background:#fff;" />' +
             '</div>'
@@ -2950,7 +2950,7 @@ const LokaliProductsPage = (() => {
       '<div style="font-size:13px;font-weight:600;color:#1A1829;margin-bottom:2px;">Lead time <span style="font-weight:400;color:#8E8BA6;">(optional)</span></div>' +
       '<p style="font-size:12.5px;color:#8E8BA6;margin:0 0 8px;">How long until this is ready for the customer? Shown on your listing so people know what to expect.</p>' +
       '<div data-lead-presets style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:9px;"></div>' +
-      '<input data-lead-input class="w-input" maxlength="' + LEAD_MAXLEN + '" placeholder="e.g. Ready in ~2 weeks" style="width:100%;box-sizing:border-box;font-family:inherit;">' +
+      '<input data-lead-input class="w-input" maxlength="' + LEAD_MAXLEN + '" placeholder="For example, ready in about 2 weeks" style="width:100%;box-sizing:border-box;font-family:inherit;">' +
       '<p style="font-size:12px;color:#8E8BA6;margin:8px 0 0;line-height:1.45;">Tap a suggestion or write your own. This is a heads-up for customers. It doesn’t block anyone from ordering.</p>';
     host.appendChild(wrap);
     const inp = wrap.querySelector('[data-lead-input]');
@@ -2992,7 +2992,7 @@ const LokaliProductsPage = (() => {
     // re-type in their own words) what the listing is currently showing.
     inp.placeholder = (!_leadTime && legacyDays != null && legacyDays !== '')
       ? 'Currently showing: ' + legacyDays + ' days'
-      : 'e.g. Ready in ~2 weeks';
+      : 'For example, ready in about 2 weeks';
   };
 
   // ── COLLECTIONS (F 2026-11-19; patch_gallery_storefront.sql + patch_collections_label.sql)
@@ -3593,6 +3593,29 @@ const LokaliProductsPage = (() => {
         const q = galArtMode()
           ? 'Remove ' + a.name + '? Their pieces stay listed, without a name beside them.'
           : 'Remove the ' + (/collection$/i.test(String(a.name).trim()) ? a.name : a.name + ' collection') + '? Its listings stay on your storefront, just not grouped.';
+        // Done-check 2026-11-23 (UX): the new Gallery panel gets the same 8-second
+        // Undo as the older panel instead of a browser pop-up.
+        if (window.LokaliUndo) {
+          const idx = _galArtists.indexOf(a);
+          const links = JSON.parse(JSON.stringify(_galLinks));
+          _galArtists = _galArtists.filter((x) => x.id !== a.id);
+          Object.keys(_galLinks).forEach((pid) => { _galLinks[pid] = _galLinks[pid].filter((x) => x !== a.id); });
+          if (_galPicking === a.id) _galPicking = null;
+          renderGalleryPanel();
+          window.LokaliUndo.show({
+            text: (galArtMode() ? a.name : (/collection$/i.test(String(a.name).trim()) ? a.name : a.name + ' collection')) + ' removed',
+            onUndo: () => { _galArtists.splice(Math.max(0, idx), 0, a); _galLinks = links; renderGalleryPanel(); },
+            onCommit: async () => {
+              const r2 = await galSAPI().artists.remove(a.id);
+              if (r2 && r2.error) {
+                _galArtists.splice(Math.max(0, idx), 0, a); _galLinks = links;
+                _galNotice = 'That did not save. Please try again.'; renderGalleryPanel(); return;
+              }
+              syncGalleryFields();
+            }
+          });
+          return;
+        }
         if (!window.confirm(q)) return;
         const r = await galSAPI().artists.remove(a.id);
         if (r && r.error) { _galNotice = 'That did not save. Please try again.'; renderGalleryPanel(); return; }
@@ -3743,8 +3766,8 @@ const LokaliProductsPage = (() => {
       '<p data-gal-sub style="font-size:12.5px;color:#8E8BA6;margin:0 0 8px;"></p>' +
       '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;">' +
       '<select data-gal-artist class="w-select" style="width:100%;box-sizing:border-box;font-family:inherit;margin:0;background-color:#fff;color:#1A1829;border:1px solid #CCCCCC;border-radius:8px;min-height:42px;padding:8px 12px;"></select>' +
-      '<input data-gal-medium class="w-input" maxlength="80" placeholder="Medium, e.g. Oil on canvas" style="width:100%;box-sizing:border-box;font-family:inherit;margin:0;">' +
-      '<input data-gal-dims class="w-input" maxlength="60" placeholder="Size, e.g. 24 x 36 in" style="width:100%;box-sizing:border-box;font-family:inherit;margin:0;">' +
+      '<input data-gal-medium class="w-input" maxlength="80" placeholder="Medium, for example oil on canvas" style="width:100%;box-sizing:border-box;font-family:inherit;margin:0;">' +
+      '<input data-gal-dims class="w-input" maxlength="60" placeholder="Size, for example 24 x 36 in" style="width:100%;box-sizing:border-box;font-family:inherit;margin:0;">' +
       '</div>' +
       '<div data-gal-multi style="display:none;flex-wrap:wrap;gap:8px;margin-top:2px;"></div>' +
       '<p data-gal-hint style="font-size:12px;color:#8E8BA6;margin:8px 0 0;line-height:1.45;">For a one-of-a-kind piece set the stock to 1. When it sells, set it to 0 and the page shows it as Sold.</p>';
@@ -3904,7 +3927,7 @@ const LokaliProductsPage = (() => {
       '<button type="button" data-subcat-fold style="display:inline-block;margin-top:10px;padding:0;border:0;background:none;font-family:inherit;font-size:12.5px;font-weight:600;color:#6002EE;cursor:pointer;text-decoration:underline;">None of these fit? Suggest a new one</button>' +
       '<div data-subcat-suggest-wrap style="display:none;border-top:1px dashed #DCD2F2;margin-top:12px;padding-top:10px;">' +
         '<div style="display:flex;gap:6px;">' +
-          '<input data-subcat-suggest maxlength="40" placeholder="e.g. Power washing" style="flex:1;min-width:0;font-family:inherit;font-size:16px;padding:8px 12px;border:1px solid #C9BDE8;border-radius:8px;background:#fff;color:#1A1829;">' +
+          '<input data-subcat-suggest maxlength="40" placeholder="For example, power washing" style="flex:1;min-width:0;font-family:inherit;font-size:16px;padding:8px 12px;border:1px solid #C9BDE8;border-radius:8px;background:#fff;color:#1A1829;">' +
           '<button type="button" data-subcat-suggest-btn style="font-family:inherit;font-size:13px;font-weight:600;padding:8px 16px;border-radius:8px;border:1px solid #6002EE;background:#6002EE;color:#fff;cursor:pointer;">Suggest</button>' +
         '</div>' +
         '<p style="font-size:12px;color:#8E8BA6;margin:8px 0 0;line-height:1.45;">We review new ones first so the filters stay tidy. Once approved, yours shows up here for everyone.</p>' +
