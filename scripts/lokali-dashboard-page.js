@@ -332,7 +332,9 @@
       '}',
     '#lok-cols>.lok-kpis.quiet{grid-column:1/-1;margin:0;}',
     '.lok-kpis.quiet.lok-inline{margin:16px 0;}#lok-feed-card.lok-inline{margin:0 0 16px;}',
-    '@media(max-width:480px){.lok-kpis,.lok-kpis.five{grid-template-columns:1fr;}.lok-btn{min-height:44px;}.lok-also li a{min-height:44px;}}'
+    '@media(max-width:480px){.lok-kpis,.lok-kpis.five{grid-template-columns:1fr 1fr;gap:8px;}.lok-kpi{padding:10px 12px;}.lok-kvalue{font-size:22px;}.lok-kpis .lok-spark{display:none;}.lok-btn{min-height:44px;}.lok-also li a{min-height:44px;}}',
+    // This week, one thing (F 2026-11-22, UX review finding 1).
+    '#lok-week{margin:0 0 12px;}#lok-week .lok-next{background:#F3EBFF;}#lok-week .lok-next.done .n{background:#17634A;}'
   ].join('');
   function injectHomeStyles() {
     if (document.getElementById('lok-home-css')) return;
@@ -562,6 +564,9 @@
       // can be hidden; it comes back by itself the moment something is open again or a
       // lead is waiting, since the flag only applies to this complete state.
       var hasAddr = !!(v.address && String(v.address).trim());
+      // F 2026-11-22 (UX review finding 1): a live, complete storefront gets the
+      // weekly 'This week, one thing' card above the numbers instead of this one.
+      if (v.is_publish_ready === true) { root.style.display = 'none'; return true; }
       if (total && hasAddr && nsHidden(v.id)) { root.style.display = 'none'; return (v.is_publish_ready != null) ? !!v.is_publish_ready : true; }
       html += '<button type="button" class="lok-ns-x" data-ns-hide aria-label="Hide this card">✕</button>' +
         '<div class="lok-ns-done">Your storefront has everything shoppers look for. Fresh photos and a new listing now and then keep it that way.</div>';
@@ -657,6 +662,81 @@
         '<a class="lok-btn" href="/vendor-dashboard/followers">Post an update →</a></div></div>' +
       '<ul class="lok-also"><li>' + ICO.circle + '<span>Send your link to three past customers</span><a href="#" data-quiet-copy>Copy link →</a></li></ul>';
   }
+  // ── This week, one thing (F 2026-11-22, UX review finding 1; Fogg: a small
+  // reason, a tiny action, the right moment, then celebrate). One action per
+  // calendar week, picked from what this storefront has not done lately; once it
+  // is done the card says so. 'Not this week' hides it until Monday.
+  var WK_SKIP = 'lok_week_skip_v1:', WK_DONE = 'lok_week_done_v1:';
+  function isoWeek(d) {
+    var t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    var day = t.getUTCDay() || 7; t.setUTCDate(t.getUTCDate() + 4 - day);
+    var y0 = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
+    return { key: t.getUTCFullYear() + '-' + Math.ceil(((t - y0) / DAY + 1) / 7), n: Math.ceil(((t - y0) / DAY + 1) / 7) };
+  }
+  function newest(rows) { return Math.max.apply(null, [0].concat((rows || []).map(function (r) { return tsOf(r && r.created_at) || 0; }))); }
+  function weekCard(v, services, products, x) {
+    var old = document.getElementById('lok-week'); if (old && old.parentNode) old.parentNode.removeChild(old);
+    // renderTiles() renames the Webflow .div-block-41 to .lok-kpis, so look for both.
+    var box = document.querySelector('.lok-kpis') || document.querySelector('.div-block-41');
+    if (!v || !box || !box.parentNode) return;
+    var wk = isoWeek(new Date()), skipKey = WK_SKIP + v.id + ':' + wk.key, doneKey = WK_DONE + v.id + ':' + wk.key;
+    var skipped = false, doneLocal = false;
+    try { skipped = localStorage.getItem(skipKey) === '1'; doneLocal = localStorage.getItem(doneKey) === '1'; } catch (e) {}
+    if (skipped) return;
+    var now = Date.now(), WEEK = 7 * DAY;
+    var listings = [].concat(services || [], products || []).filter(function (l) { return l && l.is_active !== false; });
+    var lastListing = newest(listings), lastPost = newest(x.posts), lastReview = newest(x.reviews);
+    var all = [
+      { key: 'post', ok: true, done: lastPost > now - WEEK, ico: ICO.horn,
+        t: 'Post where you\u2019ll be this week',
+        w: 'A short post shows on your storefront and goes out in the weekly email to everyone who follows you.',
+        a: 'Write a quick post', href: '/vendor-dashboard/followers', mins: 'About 2 minutes', did: 'You posted this week' },
+      { key: 'share', ok: true, done: doneLocal, ico: ICO.copy,
+        t: 'Send your link to three past customers',
+        w: 'People who already know your work are the ones most likely to follow you and tell a neighbor.',
+        a: 'Copy your link', copy: true, mins: 'About 1 minute', did: 'You shared your link this week' },
+      { key: 'listing', ok: listings.length < 3 || lastListing < now - 30 * DAY, done: lastListing > now - WEEK, ico: ICO.plus,
+        t: 'Add something new',
+        w: 'A new service or product gives neighbors a reason to look again.',
+        a: 'Add a listing', href: '/vendor-dashboard/services', mins: 'About 5 minutes', did: 'You added a listing this week' },
+      { key: 'review', ok: (x.reviews || []).length < 5 || lastReview < now - 60 * DAY, done: lastReview > now - WEEK, ico: ICO.star,
+        t: 'Ask one happy customer for a review',
+        w: 'Neighbors read reviews before they reach out. Asking someone you just helped is the easiest yes.',
+        a: 'See how to ask', href: '/vendor-resources/review-link-guide', mins: 'About 2 minutes', did: 'A new review came in this week' }
+    ];
+    var eligible = all.filter(function (it) { return it.ok; });
+    if (!eligible.length) return;
+    var pick = eligible[wk.n % eligible.length];
+    var card = el('div', 'lok-card'); card.id = 'lok-week';
+    var html = '<div class="lok-ct"><h3>This week, one thing</h3>' + (pick.done ? '' : '<span class="lok-pill">' + esc(pick.mins) + '</span>') + '</div>';
+    if (pick.done) {
+      html += '<div class="lok-next done"><div class="n">\u2713</div><div><p class="t">Done for this week. Nice work.</p>' +
+        '<p class="w">' + esc(pick.did) + '. Next week\u2019s one thing shows up here on Monday.</p></div></div>';
+    } else {
+      html += '<div class="lok-next"><div class="n">' + pick.ico + '</div><div>' +
+        '<p class="t">' + esc(pick.t) + '</p><p class="w">' + esc(pick.w) + '</p>' +
+        (pick.copy ? '<a class="lok-btn" href="#" data-week-copy>' + esc(pick.a) + ' \u2192</a>'
+                   : '<a class="lok-btn" href="' + esc(pick.href) + '">' + esc(pick.a) + ' \u2192</a>') +
+        '<a href="#" class="lok-ns-skip" data-week-skip>Not this week</a></div></div>';
+    }
+    card.innerHTML = html;
+    box.parentNode.insertBefore(card, box);
+    var sk = card.querySelector('[data-week-skip]');
+    if (sk) sk.addEventListener('click', function (e) {
+      e.preventDefault();
+      try { localStorage.setItem(skipKey, '1'); } catch (er) {}
+      if (card.parentNode) card.parentNode.removeChild(card);
+    });
+    var cp = card.querySelector('[data-week-copy]');
+    if (cp) cp.addEventListener('click', function (e) {
+      e.preventDefault();
+      // Same path as the header's Copy link (tokenized ?via= URL keeps attribution).
+      var hidden = document.getElementById('share-copy-link');
+      if (hidden) hidden.click();
+      flashCopied(cp);
+      try { localStorage.setItem(doneKey, '1'); } catch (er) {}
+    });
+  }
   function renderFeed(leadsData, reviews, gateReady, paidPlan, quiet) {
     var strength = document.querySelector('[data-listing-strength]');
     var host = strength && strength.parentNode; // Webflow's .div-block-182 embed wrapper
@@ -702,7 +782,9 @@
         return '<li><span class="lok-fi ' + it.kind + '">' + it.ico + '</span><p class="lok-ft">' + it.html + '</p><span class="lok-fw">' + whenLabel(it.t) + '</span></li>';
       }).join('') + '</ul>';
     } else if (gateReady) {
-      html = oneThingCard();
+      html = document.getElementById('lok-week')
+        ? '<div class="lok-ct"><h3>What happened</h3><a href="/vendor-dashboard/leads">All leads \u2192</a></div><div class="lok-feed-empty">Views, messages, taps and reviews show up here as they happen.</div>'
+        : oneThingCard();
     } else {
       html += '<div class="lok-feed-empty">This is where neighbors show up: messages, taps and reviews, as they happen. Finish setting up and they\u2019ll start arriving.</div>';
     }
@@ -1124,6 +1206,7 @@
     if (gateReady == null) gateReady = !!v.is_publish_ready;
     renderHeader(v, x.billing, gateReady);
     var quiet = renderTiles(leadsData, x.shares, x.wonRows); // true on a quiet week (F 2026-10-24)
+    if (gateReady && v.is_publish_ready === true && !(x.waiting || []).length && !(ck.open || []).length) weekCard(v, services, products, x);
     renderFeed(leadsData, x.reviews, gateReady, !!(x.billing && x.billing.plan && x.billing.plan !== 'free'), quiet);
     renderQuickActions(services, products, leadsData);
 
@@ -1554,7 +1637,9 @@
         soft(A.share && A.share.count ? A.share.count(v.id) : null),
         soft(A.reviews && A.reviews.forVendor ? A.reviews.forVendor(v.id) : null),
         // Waiting inquiries for 'Your next step' (2026-09-17): a person beats a checkup item.
-        soft(A.leads && A.leads.getMine ? A.leads.getMine() : null)
+        soft(A.leads && A.leads.getMine ? A.leads.getMine() : null),
+        // This week, one thing (F 2026-11-22): the latest posts tell whether one went out this week.
+        soft(S && S.posts && S.posts.forVendor ? S.posts.forVendor(v.id, 3) : null)
       ]).then(function (x) {
         render(v, services, products, leadsData, {
           billing: data(x[0]),
@@ -1563,7 +1648,8 @@
           shares: data(x[3]),
           reviews: toArr(data(x[4])),
           waiting: waitingLeads(data(x[5])),
-          wonRows: ((data(x[5]) || {}).inquiries) || []   // #194: full rows carry won_value_cents
+          wonRows: ((data(x[5]) || {}).inquiries) || [],   // #194: full rows carry won_value_cents
+          posts: toArr(data(x[6]))
         });
         maybeRunWizard(v); // #90 first-run setup wizard (one-shot, flag-gated)
       });
