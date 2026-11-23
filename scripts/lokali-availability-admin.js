@@ -168,7 +168,7 @@
       if (act.getAttribute('data-armed') !== '1') {
         act.setAttribute('data-armed', '1');
         act.textContent = act.hasAttribute('data-wremove') ? 'Yes, remove' : 'Yes, withdraw';
-        act.style.color = '#9E5F44';
+        act.style.color = '#B0006A';
         return;
       }
       act.textContent = 'Saving…';
@@ -261,7 +261,7 @@
       var v = (input.value || '').trim();
       if (!v) { msg.textContent = ''; return; }
       if (!/^https:\/\/.+/i.test(v)) {
-        msg.style.color = '#9E5F44';
+        msg.style.color = '#B0006A';
         msg.textContent = 'The link must start with https://. Copy it from your scheduler’s share button.';
         return;
       }
@@ -279,7 +279,7 @@
         updated_at: new Date().toISOString()
       }).then(function (r) {
         if (r && r.error) {
-          msg.style.color = '#9E5F44';
+          msg.style.color = '#B0006A';
           msg.textContent = 'Couldn’t save. Use a full https:// link.';
           console.warn('[availability] booking_url save failed', r.error);
         } else {
@@ -295,7 +295,7 @@
       var v = (input.value || '').trim();
       if (!v) { save(null); return; }
       if (!/^https:\/\/.+\..+/i.test(v)) {
-        msg.style.color = '#9E5F44';
+        msg.style.color = '#B0006A';
         msg.textContent = 'That doesn’t look like a link. It must start with https://';
         input.focus();
         return;
@@ -413,7 +413,7 @@
         var closeEl = self.$hours.querySelector('.ava-hclose[data-wd="' + wd + '"]');
         var open = openEl && openEl.value, close = closeEl && closeEl.value;
         if (!open || !close) { (openEl || closeEl).focus(); return; }
-        if (toMin(close) <= toMin(open)) { closeEl.style.borderColor = '#DFA284'; closeEl.focus(); return; }
+        if (toMin(close) <= toMin(open)) { closeEl.style.borderColor = '#F6B8D8'; closeEl.focus(); return; }
         add.textContent = '…'; add.disabled = true;
         API.addHours(self.vendorId, wd, open, close).then(function (r) {
           if (r && r.error) { add.textContent = 'Add'; add.disabled = false; var hx = add.parentNode && add.parentNode.querySelector('.ava-herr'); if (!hx) { add.insertAdjacentHTML('afterend', '<span class="ava-sub ava-herr" style="color:#B0006A;margin-left:8px;"></span>'); hx = add.nextElementSibling; } hx.textContent = 'That didn\u2019t save. Try again in a minute.'; return; }
@@ -546,7 +546,7 @@
         '<span style="display:inline-flex;gap:10px;margin-left:10px;">' + links + '</span>';
       out += '<div class="ava-row">' +
         '<span style="font-size:12px;font-weight:600;color:#B0ACBC;width:14px;">' + (idx + 1) + '</span>' +
-        '<div class="ava-avatar" style="background:#F5EFE4;color:#B5793B;">' + esc(initials(w.customer_name || w.customer_email)) + '</div>' +
+        '<div class="ava-avatar" style="background:#F5EFE4;color:#B0006A;">' + esc(initials(w.customer_name || w.customer_email)) + '</div>' +
         '<div style="flex:1;min-width:0;"><p style="margin:0;font-size:14px;font-weight:500;color:#3E3A55;">' +
           esc(w.customer_name || w.customer_email) +
           (w.requested_qty ? ' · <span style="color:#5D4F9E;">wants ' + w.requested_qty + '</span>' : '') + '</p>' +
@@ -566,7 +566,7 @@
       var res = (r && r.data) || {};
       cellEl.innerHTML = res.ok
         ? '<span class="ava-chip" style="background:#E7F3EC;color:#3E7C5E;">Offer sent · 6h to claim</span>'
-        : '<span class="ava-chip" style="background:#FAE9E2;color:#9E5F44;">Couldn’t offer</span>';
+        : '<span class="ava-chip" style="background:#FDE6F2;color:#B0006A;">Couldn’t offer</span>';
       // Email the waitlisted customer the spot's theirs (best-effort).
       if (res.ok && API.notifyOffered) {
         try { API.notifyOffered(id); } catch (e) {}
@@ -621,7 +621,7 @@
         '#lok-away-card .aw-acts{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px;}' +
         '#lok-away-card .aw-save{font:700 13px/1.2 inherit;background:#6002EE;color:#fff;border:none;border-radius:9px;padding:10px 16px;cursor:pointer;min-height:38px;}' +
         '#lok-away-card .aw-msg{font-size:12.5px;color:#6E6A85;}' +
-        '#lok-away-card .aw-chip{display:inline-block;font-size:11px;font-weight:700;border-radius:100px;padding:3px 9px;background:#FFF2DF;color:#B8471B;margin-left:8px;vertical-align:middle;}';
+        '#lok-away-card .aw-chip{display:inline-block;font-size:11px;font-weight:700;border-radius:100px;padding:3px 9px;background:#FDE6F2;color:#B0006A;margin-left:8px;vertical-align:middle;}';
       document.head.appendChild(st);
     }
     var today = (function () { var t = new Date(); return t.getFullYear() + '-' + ('0' + (t.getMonth() + 1)).slice(-2) + '-' + ('0' + t.getDate()).slice(-2); })();

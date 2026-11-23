@@ -57,7 +57,7 @@
         'mask:url("' + BELL_URL + '") center/contain no-repeat;}',
       // The badge is the whole point of a bell — peach/orange so it reads as
       // "new" against the violet chrome without shouting.
-      '.lok-notif-dot{position:absolute;top:5px;right:5px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:#FF8D00;color:#fff;font-size:10.5px;font-weight:700;line-height:17px;text-align:center;box-shadow:0 0 0 2px #fff;}',
+      '.lok-notif-dot{position:absolute;top:5px;right:5px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:#EE0290;color:#fff;font-size:10.5px;font-weight:700;line-height:17px;text-align:center;box-shadow:0 0 0 2px #fff;}',
       '.lok-notif-panel{position:absolute;top:calc(100% + 8px);right:0;width:340px;max-width:calc(100vw - 32px);background:#fff;border:.5px solid #EEEDF6;border-radius:14px;box-shadow:0 12px 32px rgba(26,24,41,.14);display:none;z-index:1100;overflow:hidden;white-space:normal;text-align:left;}', // white-space: the dashboard sidebar sets nowrap on its links; inherited, it kept every line on one row and cut the text off (F 2026-11-19)
       '.lok-notif.open .lok-notif-panel{display:block;}',
       '.lok-notif-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px 8px;}',

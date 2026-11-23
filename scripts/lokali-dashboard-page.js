@@ -190,7 +190,7 @@
     // address). Section anchors are the ones the profile embed expands on
     // load (#lok-sec-business, #lok-sec-about); listings go to /services.
     var PROF = '/vendor-dashboard/profile';
-    var A_STYLE = 'color:#6E3CFF;text-decoration:underline;font-weight:600;';
+    var A_STYLE = 'color:#6002EE;text-decoration:underline;font-weight:600;';
     function esc(s) {
       return String(s).replace(/[&<>"']/g, function (c) {
         return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
@@ -235,7 +235,7 @@
     '.lok-chip.live i{width:7px;height:7px;border-radius:50%;background:#1D6A45;display:inline-block;}',
     '.lok-chip.off{background:#FDECEC;color:#A32D2D;}',
     '.lok-chip.paused{background:#EEEDF6;color:#4A4761;}',
-    '.lok-chip.plan{background:#FFF1E3;color:#9a4d00;}',
+    '.lok-chip.plan{background:#FDE6F2;color:#B0006A;}',
     '.lok-chip.plan.free{background:#EEEDF6;color:#4A4761;}',
     '#lok-hd .lok-btns{display:flex;gap:8px;flex-wrap:wrap;}',
     '.lok-btn{display:inline-flex;align-items:center;gap:8px;min-height:38px;padding:8px 14px;border-radius:9px;font-size:13px;font-weight:700;text-decoration:none;border:1px solid #E5D4FD;background:#fff;color:#6002EE;font-family:inherit;cursor:pointer;line-height:1.2;}',
@@ -293,7 +293,7 @@
     '.lok-fi svg{width:13px;height:13px;}',
     '.lok-fi.lead{background:#F3EBFF;color:#6002EE;}',
     '.lok-fi.view{background:#EEEDF6;color:#4A4761;}',
-    '.lok-fi.pay{background:#FFF1E3;color:#9a4d00;}',
+    '.lok-fi.pay{background:#FDE6F2;color:#B0006A;}',
     '.lok-fi.review{background:#EAFAF2;color:#1D6A45;}',
     '.lok-ft{margin:0;color:#1A1829;}',
     '.lok-ft b{font-weight:700;}',
@@ -1217,7 +1217,7 @@
       card.innerHTML =
         '<button data-wz-x aria-label="Close" style="position:absolute;top:14px;right:14px;background:none;' +
           'border:none;cursor:pointer;font-size:18px;color:#9A9AB0;line-height:1;">✕</button>' +
-        '<div style="font-size:12px;font-weight:700;letter-spacing:.06em;color:#6E3CFF;margin-bottom:6px;">' +
+        '<div style="font-size:12px;font-weight:700;letter-spacing:.06em;color:#6002EE;margin-bottom:6px;">' +
           'Step ' + (stepIdx + 1) + ' of ' + steps.length + '</div>' +
         '<h3 id="lok-wz-title" style="font-size:21px;font-weight:700;color:#231d3f;margin:0 0 6px;font-family:inherit;">' + title + '</h3>' +
         '<p style="font-size:14px;line-height:1.55;margin:0 0 16px;">' + sub + '</p>' +
@@ -1230,7 +1230,7 @@
             '<button type="button" data-wz-skip style="background:none;border:none;padding:0;cursor:pointer;' +
               'font-family:inherit;font-size:14px;color:#9A9AB0;text-decoration:underline;">Skip for now</button>' +
             (opts.noContinue ? '' :
-              '<button data-wz-next style="background:#6E3CFF;color:#fff;border:none;cursor:pointer;font-family:inherit;' +
+              '<button data-wz-next style="background:#6002EE;color:#fff;border:none;cursor:pointer;font-family:inherit;' +
               'font-weight:700;font-size:14px;padding:10px 22px;border-radius:999px;">' + (opts.nextLabel || 'Continue') + '</button>') +
           '</div>' +
         '</div>';
@@ -1266,8 +1266,8 @@
           sel[id] = on;
           if (!on) delete sel[id];
           b.setAttribute('aria-pressed', on ? 'true' : 'false');
-          b.style.background = on ? '#6E3CFF' : '#FAF7FF';
-          b.style.borderColor = on ? '#6E3CFF' : '#E4DCF7';
+          b.style.background = on ? '#6002EE' : '#FAF7FF';
+          b.style.borderColor = on ? '#6002EE' : '#E4DCF7';
           b.style.color = on ? '#fff' : '#3b3654';
         });
         box.appendChild(b);
@@ -1287,7 +1287,7 @@
       var b = document.createElement('button');
       b.type = 'button';
       b.textContent = 'Try again';
-      b.style.cssText = 'font-family:inherit;font-weight:700;font-size:14px;color:#fff;background:#6E3CFF;' +
+      b.style.cssText = 'font-family:inherit;font-weight:700;font-size:14px;color:#fff;background:#6002EE;' +
         'border:none;border-radius:999px;padding:10px 20px;cursor:pointer;margin-top:10px;';
       b.addEventListener('click', retryFn);
       body.appendChild(m);
@@ -1452,12 +1452,12 @@
       if (needAddr) left.push('your address');
       if (needDesc) left.push('a description');
       var profHref = '/vendor-dashboard/profile#' + (needAddr ? 'lok-sec-business' : 'lok-sec-about');
-      var profLink = '<a href="' + profHref + '" style="color:#6E3CFF;text-decoration:underline;font-weight:600;">profile</a>';
+      var profLink = '<a href="' + profHref + '" style="color:#6002EE;text-decoration:underline;font-weight:600;">profile</a>';
       shell('Add your first service or product',
         'This is what customers can actually book or buy. Your storefront goes live once a listing is up' +
           (left.length ? ' and your ' + profLink + ' has ' + left.join(' and ') : '') + '.',
         '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
-          '<a href="/vendor-dashboard/services" style="flex:1;min-width:150px;text-align:center;background:#6E3CFF;color:#fff;' +
+          '<a href="/vendor-dashboard/services" style="flex:1;min-width:150px;text-align:center;background:#6002EE;color:#fff;' +
             'font-weight:700;font-size:14px;padding:12px 18px;border-radius:12px;text-decoration:none;font-family:inherit;">Add a service</a>' +
           '<a href="/vendor-dashboard/products" style="flex:1;min-width:150px;text-align:center;background:#FDF1E7;color:#8A4B14;' +
             'border:1.5px solid #F6D9BE;font-weight:700;font-size:14px;padding:12px 18px;border-radius:12px;text-decoration:none;font-family:inherit;">Add a product</a>' +

@@ -636,7 +636,7 @@
       '.lk-spot-form input[type=date]{border:1.5px solid #E4E1EF;border-radius:10px;padding:8px 10px;font-family:inherit;font-size:14px;color:#231D3F;background:#fff;}' +
       '.lk-spot-btn{display:inline-block;border:0;border-radius:999px;padding:9px 20px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;background:var(--system--primary-700,#3d00e0);color:#fff;text-decoration:none;line-height:1.2;}' +
       '.lk-spot-btn:hover{background:var(--system--primary-900,#0000d6);}' +
-      '.lk-spot-btn.orange{background:var(--system--orange-500,#ff8d00);}' +
+      '.lk-spot-btn.orange{background:#EE0290;}' +
       '.lk-spot-btn.orange:hover{background:#e07c00;}' +
       '.lk-spot-btn.ghost{background:#fff;color:var(--system--primary-700,#3d00e0);border:1.5px solid var(--system--primary-700,#3d00e0);}' +
       '.lk-spot-btn.ghost:hover{background:var(--system--purple-50,#eee6ff);}' +
@@ -672,7 +672,7 @@
       '.lk-spotcard li{position:relative;padding:5px 0 5px 26px;color:#3C3550;font-size:14px;line-height:1.45;}' +
       '.lk-spotcard li:before{content:"✓";position:absolute;left:0;top:4px;width:18px;height:18px;border-radius:50%;background:var(--system--purple-50,#eee6ff);color:var(--system--primary-700,#3d00e0);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;}' +
       '.lk-spot-closed{display:block;margin-top:6px;font-size:13px;color:#6E6A85;}' +
-      '.lk-spot-prelaunch{background:var(--system--orange-50,#fff2df);color:#8a5200;border-radius:10px;padding:10px 14px;font-size:13px;line-height:1.5;margin:0 0 12px;}' +
+      '.lk-spot-prelaunch{background:#FDE6F2;color:#B0006A;border-radius:10px;padding:10px 14px;font-size:13px;line-height:1.5;margin:0 0 12px;}' +
       '.lk-cal{max-width:420px;margin:2px 0 10px;}' +
       '.lk-cal-tier{font-size:12px;font-weight:700;letter-spacing:.03em;color:var(--lokali-primary,#6002ee);margin:0 0 6px;text-transform:uppercase;}' +
       '.lk-cal-head{display:flex;align-items:center;justify-content:space-between;margin:0 0 8px;}' +

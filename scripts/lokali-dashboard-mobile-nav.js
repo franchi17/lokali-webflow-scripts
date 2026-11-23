@@ -54,7 +54,7 @@
       '}',
       // 44px = mobile tap-target floor (#98); the icon stays 22px.
       '#lok-ham{width:44px;height:44px;border:none;border-radius:9px;padding:0;',
-      'background:#6E3CFF;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;}',
+      'background:#6002EE;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;}',
       '#lok-ham svg{width:22px;height:22px;}',
       '#lok-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);',
       'z-index:1500;opacity:0;transition:opacity .3s ease;display:none;}',
