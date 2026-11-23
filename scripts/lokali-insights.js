@@ -463,7 +463,7 @@
     }
     card.appendChild(featuredNote(ck.vendor));
     if (!ck.paidPlan) {
-      card.appendChild(el('div', 'an-ck-plan', 'Gallery, booking link and Verified checks appear once those features are on your plan.'));
+      card.appendChild(el('div', 'an-ck-plan', 'Portfolio, booking link and Verified checks appear once those features are on your plan.'));
     }
     return card;
   }
@@ -481,8 +481,8 @@
     box.setAttribute('role', 'region'); box.setAttribute('aria-label', 'Get featured on Instagram');
     box.appendChild(el('div', 'an-ck-feat-t', 'Get featured on Lokali\u2019s Instagram'));
     box.appendChild(el('div', 'an-ck-feat-w', (hasFace && hasIg)
-      ? 'Every Tuesday we post the week\u2019s new storefronts. You\u2019re set: we can show your face and tag you so the post appears on your profile too.'
-      : 'Every Tuesday we post the week\u2019s new storefronts. Two things make yours land better:'));
+      ? 'We share new storefronts on Lokali\u2019s Instagram. You\u2019re set: we can show your face and tag you so the post appears on your profile too.'
+      : 'We share new storefronts on Lokali\u2019s Instagram. Two things make yours land better:'));
     var ul = el('ul', 'an-ck-list');
     ul.appendChild(ckRow({ done: hasFace, title: 'A photo of you', why: 'Posts with a face get far more attention than a logo, and shoppers trust a person.', action: 'Add your photo', href: '/vendor-dashboard/profile#lok-about-you' }));
     ul.appendChild(ckRow({ done: hasIg, title: 'Your Instagram handle', why: 'Private, never shown on your storefront. It lets us tag you as a collaborator so the post lands on your profile too.', action: 'Add your handle', href: '/vendor-dashboard/profile#lok-field-input-instagram' }));
@@ -630,7 +630,7 @@
         ut.appendChild(el('div', 'an-up-s', 'Featured vendors rank at the top of their category, show more photos, and get everything Lokali offers.'));
       } else {
         ut.appendChild(el('div', 'an-up-t', 'Show customers more of your work'));
-        ut.appendChild(el('div', 'an-up-s', 'Pro adds a photo gallery across the top of your storefront, 5 photos per listing, bookings straight from your page, and the Verified badge.'));
+        ut.appendChild(el('div', 'an-up-s', 'Pro adds a portfolio across the top of your storefront, 5 photos per listing, bookings straight from your page, and the Verified badge.'));
       }
       up.appendChild(ut);
       var btn = el('a', 'an-up-btn', paidHist ? 'Upgrade' : 'See what Pro includes'); btn.href = '/pricing';

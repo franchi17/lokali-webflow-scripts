@@ -456,9 +456,9 @@
               '<button type="button" class="ava-info-x" aria-label="Close">✕</button>' +
               '<span class="ava-ip-h">Accepting new clients</span>' +
               '<span class="ava-ip-p"><b>On</b>: customers book you normally from your storefront.</span>' +
-              '<span class="ava-ip-p"><b>Off</b>: your page says your books are full. Instead of the booking button, new customers join the queue on THIS card, and when you have room you tap <b>Offer spot</b> to invite one. Your hours stay visible either way.</span>' +
+              (self.waitlistPlan ? '<span class="ava-ip-p"><b>Off</b>: your page says your books are full. Instead of the booking button, new customers join the waiting list on this card, and when you have room you tap <b>Offer spot</b> to invite one. Your hours stay visible either way.<' : '<span class="ava-ip-p"><b>Off</b>: your page says your books are full and hides the booking button. A waiting list for new customers comes with the Featured plan. Your hours stay visible either way.<') + '/span>' +
             '</span></span></div>' +
-          '<p class="ava-note" style="margin:2px 0 0;">Off = new clients see a books-full note and can join the queue below.</p></div>' +
+          '<p class="ava-note" style="margin:2px 0 0;">' + (self.waitlistPlan ? 'Off: new clients see a books-full note and can join the waiting list below.' : 'Off: new clients see a books-full note.') + '</p></div>' +
         '<span style="display:flex;align-items:center;gap:8px;flex-shrink:0;"><span class="ava-accepting-msg" style="font-size:12px;color:#6C6880;"></span>' +
           '<label class="ava-switch"><input type="checkbox" class="ava-accepting"' + (accepting ? ' checked' : '') + ' /><span class="ava-track"></span></label></span>' +
       '</div>';

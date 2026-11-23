@@ -18,7 +18,9 @@
       'Danger Zone': 'Hide or close your storefront',
       'Rotate a weekly promo button and showcase on your storefront. You feed the list, we keep it fresh': 'Pick a Showcase of the week for your storefront. You choose what goes in, we keep it rotating.',
       'SAVE': 'Save',
-      'Logout': 'Log out'
+      'Logout': 'Log out',
+      'At least 600 × 600 px': 'At least 500 × 500 px',
+      'JPEG or PNG, under 2 MB': 'JPG, PNG or WEBP, under 5 MB'
     };
     function run() {
       if (!document.body) return;
@@ -246,9 +248,9 @@
       'If you sell on Etsy, Shopify or your own site, a Buy button turns a view into a sale.',
       'Add a Buy link', PRD, prd.length > 0, 'Skipped: online store link');
     add('gallery', gallery > 0,
-      'Add photos to your storefront gallery', 'Gallery has photos',
+      'Add photos to your storefront portfolio', 'Portfolio has photos',
       'A photo strip across the top of your storefront. It is the first thing a visitor sees.',
-      'Add gallery photos', CK_PROFILE + '#lok-portfolio-card', (Number(f.max_vendor_photos) || 0) > 0, 'Skipped: gallery photos');
+      'Add portfolio photos', CK_PROFILE + '#lok-portfolio-card', (Number(f.max_vendor_photos) || 0) > 0, 'Skipped: portfolio photos');
     add('booking', !!cfg.booking_url,
       'Add your booking link', 'Booking link added',
       'Calendly, Acuity, Square or any scheduling page. Puts a Book button on your storefront.',
