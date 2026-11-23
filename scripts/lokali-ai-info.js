@@ -32,6 +32,8 @@
   var MIN_DASH = 56;
   var FONT = '"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",sans-serif';
   var EXPLAIN = 'AI was used on this picture, for example to create the background. Photos on Lokali must show the real product or work.';
+  var RULE_URL = '/for-customers#ai-photos';
+  var PATH = location.pathname.replace(/\/+$/, '') || '/';
 
   var known = {};     // path -> true (tagged) | false (not tagged)
   var pending = {};   // path -> true while a lookup is in flight
@@ -61,6 +63,17 @@
       '.lk-ai-pop{position:absolute;left:8px;right:8px;bottom:40px;z-index:4;background:#FFFFFF;border:1px solid #E7E1F3;' +
         'border-radius:12px;padding:10px 12px;font:400 13px/1.5 ' + FONT + ';color:#4A4761;box-shadow:0 4px 14px rgba(69,65,90,.16);text-align:left}' +
       '.lk-ai-pop b{display:block;color:#45415A;font-weight:700;margin-bottom:2px}' +
+      '.lk-ai-links{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:6px}' +
+      '.lk-ai-links a{font:700 12.5px/1.4 ' + FONT + ';color:#6002EE;text-decoration:none;cursor:pointer}' +
+      '.lk-ai-links a:hover{text-decoration:underline}' +
+      '#ai-photos.lk-ai-sec{max-width:1040px;margin:0 auto;padding:56px 20px;font-family:' + FONT + ';color:#4A4761;box-sizing:border-box}' +
+      '#ai-photos .lk-ai-eye{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#6002EE;margin:0 0 8px}' +
+      '#ai-photos h2{font:800 clamp(24px,4vw,32px)/1.2 ' + FONT + ';color:#45415A;margin:0 0 20px;letter-spacing:-.01em}' +
+      '#ai-photos .lk-ai-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:14px}' +
+      '#ai-photos .lk-ai-card{background:#F3EBFF;border-radius:16px;padding:20px;box-sizing:border-box}' +
+      '#ai-photos .lk-ai-card h3{font:700 16px/1.3 ' + FONT + ';color:#45415A;margin:0 0 6px}' +
+      '#ai-photos .lk-ai-card p{font:400 15px/1.6 ' + FONT + ';color:#4A4761;margin:0}' +
+      '.lk-ai-tipline{display:block;margin-top:2px;color:#6002EE;font-weight:600}' +
       '.lk-ai-sw{position:absolute;left:6px;top:6px;z-index:5;display:inline-flex;align-items:center;gap:6px;' +
         'font:600 11.5px/1 ' + FONT + ';color:#6E6A85;background:#FFFFFF;border:1px solid #E7E1F3;border-radius:999px;' +
         'padding:4px 8px 4px 4px;cursor:pointer;box-shadow:0 1px 3px rgba(69,65,90,.12)}' +
@@ -103,7 +116,18 @@
       var t = document.createElement('b'); t.textContent = 'AI info';
       pop.appendChild(t);
       pop.appendChild(document.createTextNode(EXPLAIN));
-      pop.addEventListener('click', swallow);
+      var links = document.createElement('div');
+      links.className = 'lk-ai-links';
+      var rule = document.createElement('a');
+      rule.href = RULE_URL; rule.textContent = 'Our photo rule';
+      rule.addEventListener('click', function (e) { e.stopPropagation(); }); // real navigation, but never the card's
+      links.appendChild(rule);
+      var rep = document.createElement('a');
+      rep.href = '#'; rep.textContent = 'Something look off? Report it';
+      rep.addEventListener('click', function (e) { swallow(e); openReport(); });
+      links.appendChild(rep);
+      pop.appendChild(links);
+      pop.addEventListener('click', function (e) { if (!(e.target.closest && e.target.closest('.lk-ai-links'))) swallow(e); });
       p.appendChild(pop);
       b.setAttribute('aria-expanded', 'true');
     });
@@ -157,8 +181,109 @@
     p.appendChild(sw);
   }
 
+  // ---------------------------------------------------------------- report path
+  // "Something look off? Report it": open the storefront's own "Report this vendor" box
+  // (lokali-vendor-listing.js; signed-in only) with "Misleading listing or photos" chosen.
+  // Signed out, that box is not rendered, so send them to log in instead.
+  function openReport() {
+    var link = document.querySelector('.vl-vreport-link');
+    if (!link) { location.href = '/login'; return; }
+    var pops = document.querySelectorAll('.lk-ai-pop');
+    for (var i = 0; i < pops.length; i++) pops[i].remove();
+    link.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    link.click();
+    setTimeout(function () {
+      var sel = document.querySelector('.vl-vreport-box select');
+      if (sel) { sel.value = 'misleading'; try { sel.focus(); } catch (e) {} }
+    }, 60);
+  }
+
+  // ---------------------------------------------------------------- wording on other pages
+  // These pages are built in the Webflow Designer (HTML embeds), which the data API cannot
+  // edit, so the new wording is added here. Each insert is marked and runs once; the embed
+  // sources in this repo carry the same markup, so a re-paste does not double it.
+  var GOOD_CARD =
+    '<div class="lg-visual" style="background:linear-gradient(160deg,#F3EBFF,#ffffff);">' +
+      '<svg width="58" height="72" viewBox="0 0 58 72" fill="none"><rect x="9" y="8" width="40" height="56" rx="8" fill="#6002EE" opacity=".5"/></svg>' +
+      '<span style="position:absolute;left:10px;bottom:10px;font:600 11px/1 Plus Jakarta Sans,sans-serif;color:#6E6A85;background:#fff;border:1px solid #E7E1F3;border-radius:999px;padding:4px 9px;">AI info</span>' +
+    '</div><div class="lg-card-body"><div class="lg-tag lg-good">Fine, with the label</div>' +
+    '<div class="lg-caption">A real product, AI background</div>' +
+    '<div class="lg-note">Your real product, untouched, with a studio-style scene added behind it. Turn on "AI info" so neighbors know the setting was made with AI.</div></div>';
+  var BAD_CARD =
+    '<div class="lg-visual" style="background:#FFF4F9;">' +
+      '<svg width="70" height="70" viewBox="0 0 70 70" fill="none"><rect x="13" y="13" width="44" height="44" rx="8" fill="#B0006A" opacity=".18"/><path d="M24 46l22-22M24 24l22 22" stroke="#B0006A" stroke-width="3.5" stroke-linecap="round" opacity=".6"/></svg>' +
+    '</div><div class="lg-card-body"><div class="lg-tag lg-bad">Skip this</div>' +
+    '<div class="lg-caption">AI-made or AI-changed work</div>' +
+    '<div class="lg-note">A cake you never baked, a brighter color than the real thing, a "before and after" that didn\'t happen. Neighbors should get exactly what they saw.</div></div>';
+
+  function guideCards() {
+    if (!/^\/vendor-resources\/(service|product)-photo-guide$/.test(PATH)) return;
+    if (document.querySelector('[data-lk-ai-card]')) return;
+    var bads = document.querySelectorAll('.lg-card .lg-tag.lg-bad');
+    if (!bads.length) return;
+    var firstBad = bads[0].closest('.lg-card'), lastBad = bads[bads.length - 1].closest('.lg-card');
+    var good = document.createElement('div');
+    good.className = 'lg-card'; good.setAttribute('data-lk-ai-card', 'good'); good.innerHTML = GOOD_CARD;
+    var bad = document.createElement('div');
+    bad.className = 'lg-card'; bad.setAttribute('data-lk-ai-card', 'bad'); bad.innerHTML = BAD_CARD;
+    firstBad.parentNode.insertBefore(good, firstBad);
+    lastBad.parentNode.insertBefore(bad, lastBad.nextSibling);
+  }
+
+  function customerSection() {
+    if (PATH !== '/for-customers' || document.getElementById('ai-photos')) return;
+    var host = null, cands = document.querySelectorAll('[class*="lkft"]');
+    for (var i = 0; i < cands.length; i++) {
+      var par = cands[i].parentElement;
+      if (!(par && par.closest && par.closest('[class*="lkft"]'))) { host = cands[i]; }
+    }
+    var sec = document.createElement('section');
+    sec.id = 'ai-photos'; sec.className = 'lk-ai-sec';
+    sec.innerHTML =
+      '<p class="lk-ai-eye">Photos you can trust</p><h2>Real photos, clearly labeled</h2>' +
+      '<div class="lk-ai-grid">' +
+        '<div class="lk-ai-card"><h3>Real photos</h3><p>Every photo of a product or service on Lokali is a real photo of what you will get.</p></div>' +
+        '<div class="lk-ai-card"><h3>What "AI info" means</h3><p>The vendor used AI for part of the picture, like the background or a logo. The product itself is real.</p></div>' +
+        '<div class="lk-ai-card"><h3>Something look off?</h3><p>Use "Report this vendor" on their page. Francesca reads every report.</p></div>' +
+      '</div>';
+    if (host) host.appendChild(sec);
+    else {
+      var foot = document.querySelector('footer');
+      if (foot) foot.parentNode.insertBefore(sec, foot); else document.body.appendChild(sec);
+    }
+    if (location.hash === '#ai-photos') setTimeout(function () { sec.scrollIntoView({ block: 'start' }); }, 50);
+  }
+
+  // The "Photo guidelines" tip beside photo uploads (lokali-profile-page-embed.js).
+  function uploadTip() {
+    if (!DASH) return;
+    var pops = document.querySelectorAll('.lok-info-wrap div');
+    for (var i = 0; i < pops.length; i++) {
+      var d = pops[i];
+      if (d.children.length > 4 || d.querySelector('.lk-ai-tipline')) continue;
+      if (!/no text overlays/i.test(d.textContent || '') || /Photo guidelines/.test(d.textContent || '')) continue;
+      var line = document.createElement('span');
+      line.className = 'lk-ai-tipline';
+      line.textContent = 'Real photos of your own work. Used AI to add a background? Turn on "AI info" on the photo.';
+      d.appendChild(line);
+    }
+  }
+
+  // Storefront report reason: say plainly that AI-misleading photos belong here.
+  function reportLabel() {
+    var opts = document.querySelectorAll('.vl-vreport-box option[value="misleading"]');
+    for (var i = 0; i < opts.length; i++) {
+      if (!/AI\)/.test(opts[i].textContent)) opts[i].textContent = 'Misleading listing or photos (including AI)';
+    }
+  }
+
+  function pageExtras() {
+    try { guideCards(); customerSection(); uploadTip(); reportLabel(); } catch (e) {}
+  }
+
   // ---------------------------------------------------------------- scan
   function decorate() {
+    pageExtras();
     var imgs = document.images;
     for (var i = 0; i < imgs.length; i++) {
       var img = imgs[i], path = pathOf(img);
