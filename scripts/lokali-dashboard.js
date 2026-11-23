@@ -330,6 +330,10 @@
     // inherits the form card's own background instead of painting white over it.
     '[id$="-form-view"] .form-header{position:static;background:transparent;}',
     '.lok-form-bar{position:sticky;bottom:0;z-index:6;background:inherit;border-top:.5px solid #EEEDF6;padding:10px 0!important;display:flex!important;align-items:center;gap:10px;flex-wrap:wrap;}',
+    // Save-and-undo step 4 (F 2026-11-23): one short row (Save listing, Cancel, Delete)
+    // so the pinned bar never stacks three buttons over the form on a phone.
+    '.lok-form-bar{flex-wrap:nowrap!important;}.lok-form-bar > *{flex:0 0 auto!important;width:auto!important;margin:0!important;min-width:0;}',
+    '.lok-form-bar > *:first-child{flex:1 1 auto!important;justify-content:center;}',
     '.lok-form-msg{font-size:12.5px;color:#6E6A85;margin-right:auto;font-family:' + LUI_FONT + ';display:none;}',
     '.lok-form-bar.dirty .lok-form-msg{display:block;}',
     '#lok-lc-preview{background:#F7F6FC;border:.5px solid #EEEDF6;border-radius:12px;padding:12px 14px;margin:12px 20px 18px;font-size:14px;line-height:1.5;display:grid;grid-template-columns:220px 1fr;gap:16px;align-items:center;font-family:' + LUI_FONT + ';}',
