@@ -1146,8 +1146,8 @@
         var opt = r && r.data;
         if (!opt || !opt.available || r.error) return;
         var ways = [];
-        if (opt.pickup) ways.push({ k: 'pickup', label: 'Pickup', sub: 'arrange with the vendor', cents: 0 });
-        if (opt.delivery) ways.push({ k: 'delivery', label: 'Local delivery', sub: 'arrange with the vendor', cents: 0 });
+        if (opt.pickup) ways.push({ k: 'pickup', label: 'Pickup', sub: 'no charge', cents: 0 });
+        if (opt.delivery) ways.push({ k: 'delivery', label: 'Local delivery', sub: 'no charge', cents: 0 });
         if (opt.shipping) ways.push({ k: 'shipping', label: 'Shipping', sub: money(opt.shipping_cents) + ' flat', cents: opt.shipping_cents || 0 });
         if (!ways.length) return;
         if (!document.getElementById('vd-lok-buy-css')) {
@@ -1157,6 +1157,15 @@
             '#vd-lok-sheet select{font-family:inherit;font-size:14px;padding:8px 10px;border:1px solid #DEDAEE;border-radius:10px;background:#fff;color:#1A1829;min-height:44px;}' +
             '#vd-lok-sheet .lb-way{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid #DEDAEE;border-radius:12px;cursor:pointer;margin:6px 0;min-height:44px;}#vd-lok-sheet .lb-way.on{border-color:#6002EE;background:#F3EBFF;}' +
             '#vd-lok-sheet .lb-way input{margin:0;accent-color:#6002EE;}#vd-lok-sheet .lb-way small{color:#6E6A85;font-size:12px;margin-left:auto;}' +
+            '#vd-lok-sheet .lb-way{flex-wrap:wrap;}#vd-lok-sheet .lb-way em{flex:1 0 100%;font-style:normal;font-size:12px;color:#6E6A85;padding-left:23px;margin-top:-4px;}' +
+            '#vd-lok-sheet .lb-tax{font-size:12px;color:#6E6A85;margin-top:4px;}#vd-lok-sheet .lb-ret{font-size:12px;color:#4A4761;margin-top:10px;line-height:1.5;}#vd-lok-sheet .lb-ret b{font-weight:700;}' +
+            '#vd-lok-pay{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:center;margin:0 0 10px;font-family:"Plus Jakarta Sans",system-ui,sans-serif;}' +
+            '#vd-lok-pay span{font-size:11px;font-weight:700;color:#4A4761;background:#fff;border:1px solid #DEDAEE;border-radius:6px;padding:3px 8px;}' +
+            '#vd-lok-pay em{font-style:normal;font-size:11px;color:#6E6A85;flex:1 0 100%;text-align:center;}' +
+            // The button is a clone of the page's orange CTA: Buy on Lokali is violet (no orange beside the violet sheet, F's palette rule; rehearsal 2026-11-21).
+            'html #vd-lok-buy,html #vd-lok-buy:hover{background:#6002EE !important;background-image:none !important;border-color:#6002EE !important;color:#fff !important;}' +
+            'html #vd-lok-buy *{color:#fff !important;}html #vd-lok-buy:hover{background:#4F02C4 !important;}' +
+            '#vd2-bar #vd2-bar-lok.vd2-bar-buy{background:#6002EE;color:#fff;}' +
             '#vd-lok-sheet .lb-total{display:flex;justify-content:space-between;font-weight:700;font-size:15px;border-top:1px solid #EEEDF6;padding-top:10px;margin-top:10px;}' +
             '#vd-lok-sheet .lb-go{display:block;width:100%;margin-top:12px;min-height:46px;border:0;border-radius:999px;background:#6002EE;color:#fff;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;}#vd-lok-sheet .lb-go[disabled]{opacity:.6;cursor:default;}' +
             '#vd-lok-sheet .lb-note{font-size:12px;color:#6E6A85;margin-top:8px;line-height:1.5;}#vd-lok-sheet .lb-err{font-size:13px;color:#B1006A;margin-top:8px;display:none;}' +
@@ -1171,8 +1180,16 @@
         th.textContent = 'Buy on Lokali';
         btn.removeAttribute('href'); btn.removeAttribute('target'); btn.removeAttribute('rel');
         btn.setAttribute('role', 'button'); btn.setAttribute('aria-label', 'Buy on Lokali, pay securely with a card');
-        btn.style.marginBottom = '10px';
+        btn.style.marginBottom = '8px';
         cta.parentNode.insertBefore(btn, cta);
+        // Ways to pay, right under the button (Baymard: recognised payment marks
+        // near the pay action; 1 in 10 leave for "not enough ways to pay").
+        // Only what EVERY shopper is offered: the four card brands. The rehearsal
+        // (2026-11-21) showed Card / Cash App Pay / Klarna and no Apple Pay, so
+        // wallets are not promised here; Stripe's page shows what the device has.
+        var pay = document.createElement('div'); pay.id = 'vd-lok-pay'; pay.setAttribute('aria-label', 'Cards accepted');
+        pay.innerHTML = '<span>Visa</span><span>Mastercard</span><span>Amex</span><span>Discover</span><em>More ways to pay may show at checkout.</em>';
+        cta.parentNode.insertBefore(pay, cta);
         // Phones: .vd-cta is hidden and the pinned bar proxies the controls, so
         // mirror this button there too (otherwise there is no checkout entry on phones).
         var bar = document.getElementById('vd2-bar');
@@ -1191,10 +1208,12 @@
           sheet.innerHTML = '<div class="lb-h">Buy ' + escapeText(p.product_name || p.name || 'this item') + '</div>' +
             '<div class="lb-row"><span>Quantity</span><select id="vd-lok-qty" aria-label="Quantity">' + qtyOpts + '</select></div>' +
             '<div style="font-size:13px;font-weight:600;color:#4A4761;margin-top:6px;">How you get it</div>' +
-            ways.map(function (w, i) { return '<label class="lb-way' + (i === 0 ? ' on' : '') + '"><input type="radio" name="vd-lok-way" value="' + w.k + '"' + (i === 0 ? ' checked' : '') + '> <span>' + w.label + '</span><small>' + w.sub + '</small></label>'; }).join('') +
-            '<div class="lb-total"><span>Total before tax</span><span id="vd-lok-total"></span></div>' +
+            ways.map(function (w, i) { return '<label class="lb-way' + (i === 0 ? ' on' : '') + '"><input type="radio" name="vd-lok-way" value="' + w.k + '"' + (i === 0 ? ' checked' : '') + '> <span>' + w.label + '</span><small>' + w.sub + '</small><em data-when="' + w.k + '">The vendor will be in touch to arrange it.</em></label>'; }).join('') +
+            '<div class="lb-total"><span>Total</span><span id="vd-lok-total"></span></div>' +
+            '<div class="lb-tax" id="vd-lok-tax"></div>' +
             '<button type="button" class="lb-go" id="vd-lok-go">Continue to payment</button>' +
             '<div class="lb-err" id="vd-lok-err"></div>' +
+            '<div class="lb-ret" id="vd-lok-ret" style="display:none;"></div>' +
             '<div class="lb-note">Secure card payment by Stripe. You pay ' + escapeText(vendorNameForSheet()) + ' directly; Lokali never sees your card.</div>' +
             '<button type="button" class="lb-x" id="vd-lok-x">Not now</button>';
           btn.insertAdjacentElement('afterend', sheet);
@@ -1207,6 +1226,25 @@
           qty.addEventListener('change', paint);
           sheet.querySelectorAll('input[name="vd-lok-way"]').forEach(function (r) { r.addEventListener('change', paint); });
           paint();
+          // What the vendor promises, said BEFORE payment (F 2026-11-19): how
+          // soon, the return rule, and an honest word on sales tax. The sheet
+          // works without it (older database = generic lines stay).
+          (function () {
+            var shipEm = sheet.querySelector('em[data-when="shipping"]');
+            if (shipEm) shipEm.textContent = 'Sent to the address you give at payment.';
+            var within = function (n) { return 'within ' + n + ' day' + (n === 1 ? '' : 's'); };
+            c.rpc('product_checkout_promises', { p_products_id: p.id }).then(function (pr) {
+              var d = pr && !pr.error && pr.data;
+              if (!d || typeof d !== 'object') return;
+              var pd = Number(d.pickup_days), sd = Number(d.ship_days), who = vendorNameForSheet();
+              if (pd >= 1) sheet.querySelectorAll('em[data-when="pickup"],em[data-when="delivery"]').forEach(function (em) { em.textContent = 'Ready ' + within(pd) + '. ' + who + ' will be in touch to arrange it.'; });
+              if (sd >= 1 && shipEm) shipEm.textContent = 'Ships ' + within(sd) + ' to the address you give at payment.';
+              var tax = sheet.querySelector('#vd-lok-tax');
+              if (tax) tax.textContent = d.tax_added === true ? 'Plus sales tax, shown on the next step before you pay.' : (d.tax_added === false ? 'No sales tax is added to this order.' : '');
+              var ret = sheet.querySelector('#vd-lok-ret');
+              if (ret && d.return_policy) { ret.innerHTML = '<b>Returns:</b> ' + escapeText(d.return_policy); ret.style.display = ''; }
+            }).catch(function () {});
+          })();
           sheet.querySelector('#vd-lok-x').addEventListener('click', function () { sheet.style.display = 'none'; });
           go.addEventListener('click', function () {
             go.disabled = true; go.textContent = 'One moment'; err.style.display = 'none';

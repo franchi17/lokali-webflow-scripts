@@ -28,6 +28,11 @@
       '#lok-order-confirmed .oc-btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 18px;border-radius:999px;background:#6002EE;color:#fff;font-weight:700;font-size:14px;text-decoration:none;margin-top:14px;}' +
       '#lok-order-confirmed .oc-btn.ghost{background:#fff;color:#6002EE;border:1px solid #D9CFFB;margin-left:8px;}' +
       '#lok-order-confirmed .oc-spin{width:26px;height:26px;border:3px solid #E5D4FD;border-top-color:#6002EE;border-radius:50%;margin:0 auto 12px;animation:ocspin .8s linear infinite;}@keyframes ocspin{to{transform:rotate(360deg)}}' +
+      '#lok-order-confirmed .oc-follow{background:#F6F3FF;border-radius:14px;padding:14px;margin-top:16px;}#lok-order-confirmed .oc-follow b{display:block;font-size:14px;margin-bottom:2px;}' +
+      '#lok-order-confirmed .oc-follow span{display:block;font-size:13px;color:#6E6A85;line-height:1.5;}#lok-order-confirmed .oc-follow .oc-btn{margin-top:10px;border:0;font-family:inherit;cursor:pointer;}' +
+      '#lok-order-confirmed .oc-follow ul{list-style:none;margin:6px 0 0;padding:0;}#lok-order-confirmed .oc-follow li{font-size:13px;color:#4A4761;padding:3px 0 3px 22px;position:relative;line-height:1.45;}' +
+      '#lok-order-confirmed .oc-follow li:before{content:"";position:absolute;left:3px;top:8px;width:9px;height:5px;border-left:2px solid #1D6A45;border-bottom:2px solid #1D6A45;transform:rotate(-45deg);}' +
+      '#lok-order-confirmed .oc-follow .oc-done{color:#1D6A45;font-weight:700;font-size:14px;}' +
       '#lok-order-confirmed small{color:#8E8BA6;font-size:12px;display:block;margin-top:12px;}';
     document.head.appendChild(s);
   }
@@ -36,6 +41,15 @@
     var vendorHref = o.vendor && o.vendor.slug ? '/' + o.vendor.slug : '/the-market';
     var how = o.fulfilment === 'pickup' ? 'will be in touch about when and where to pick it up'
       : o.fulfilment === 'delivery' ? 'will be in touch to arrange local delivery' : 'will ship it to the address you gave';
+    // "Ready within N days" when the vendor promised it (F 2026-11-19).
+    var rd = Number(o.ready_days), within = rd >= 1 ? 'within ' + rd + ' day' + (rd === 1 ? '' : 's') : '';
+    if (within) how = o.fulfilment === 'pickup' ? 'will have it ready for pickup ' + within + ', and will be in touch about when and where'
+      : o.fulfilment === 'delivery' ? 'will have it ready ' + within + ', and will be in touch to arrange local delivery'
+      : 'will ship it ' + within + ' to the address you gave';
+    var vname = esc(o.vendor && o.vendor.name || 'this vendor');
+    // Ask for the relationship AFTER the order, never before it (Baymard 2026 #1).
+    // The box is filled by fillFollow() once we know whether they are signed in.
+    var follow = (o.vendor && o.vendor.id != null) ? '<div class="oc-follow" id="oc-follow"></div>' : '';
     mount.innerHTML = '<div class="oc-card"><div class="oc-ok">Paid</div><h1>Thanks' + (o.shopper_first_name ? ', ' + esc(o.shopper_first_name) : '') + '. Your order is in.</h1>' +
       '<p><strong>' + esc(o.vendor && o.vendor.name || 'The vendor') + '</strong> has your order and ' + how + '. A receipt is on its way to ' + esc(o.shopper_email_masked || 'your email') + '.</p>' +
       '<div class="oc-item">' + (o.product_image_url ? '<img src="' + esc(o.product_image_url) + '" alt="">' : '') + '<div><div style="font-weight:700;">' + esc(o.product_name) + '</div><div style="font-size:13px;color:#6E6A85;">Quantity ' + esc(o.quantity) + ' · ' + money(o.unit_amount_cents) + ' each</div></div></div>' +
@@ -43,8 +57,69 @@
       (o.shipping_cents > 0 ? '<div class="oc-row"><span>Shipping</span><span>' + money(o.shipping_cents) + '</span></div>' : '') +
       (o.tax_cents > 0 ? '<div class="oc-row"><span>Tax</span><span>' + money(o.tax_cents) + '</span></div>' : '') +
       '<div class="oc-row t"><span>Total</span><span>' + money(o.total_cents) + '</span></div>' +
-      '<a class="oc-btn" href="' + esc(vendorHref) + '">Back to ' + esc(o.vendor && o.vendor.name || 'the storefront') + '</a><a class="oc-btn ghost" href="/the-market">Keep browsing</a>' +
+      follow +
+      '<a class="oc-btn ghost" href="' + esc(vendorHref) + '" style="margin-left:0;">Back to ' + esc(o.vendor && o.vendor.name || 'the storefront') + '</a><a class="oc-btn ghost" href="/the-market">Keep browsing</a>' +
       '<small>Order ' + esc(o.id) + '. Questions or a refund: reply to your receipt and it reaches the vendor directly.</small></div>';
+    fillFollow(o);
+  }
+
+  // One button, two shoppers (F 2026-11-20):
+  //   signed in  -> "Follow <vendor>" works right here, one tap; the order is
+  //                 already theirs (claim_my_orders covers a sign-in made after
+  //                 the Buy tap).
+  //   signed out -> "Save my order and follow <vendor>": a short sign-up. The
+  //                 order attaches once their email is confirmed and matches the
+  //                 one they paid with (claim_my_orders, on /account#orders);
+  //                 the follow intent rides in localStorage so it survives the
+  //                 confirmation link opening in another tab.
+  var ORDER_FOLLOW_KEY = 'lokali_order_follow';
+  function fillFollow(o) {
+    var box = document.getElementById('oc-follow');
+    if (!box || !o.vendor || o.vendor.id == null) return;
+    var vid = Number(o.vendor.id), rawName = String(o.vendor.name || 'this vendor'), name = esc(rawName);
+    var A = window.LokaliAuth;
+    var tokenP = (A && typeof A.token === 'function') ? Promise.resolve().then(function () { return A.token(); }).catch(function () { return null; }) : Promise.resolve(null);
+    tokenP.then(function (jwt) { if (jwt) signedIn(); else signedOut(); });
+
+    function signedIn() {
+      var c = window.LokaliSupabase;
+      try { if (c && typeof c.rpc === 'function') c.rpc('claim_my_orders').then(function () {}, function () {}); } catch (e) {}
+      box.innerHTML = '<b>Want to hear when ' + name + ' has something new?</b><span>One tap, right here. One email a week at most.</span>' +
+        '<button type="button" class="oc-btn" id="oc-follow-go">Follow ' + name + '</button>' +
+        '<a class="oc-btn ghost" href="/account#orders">See my orders</a>';
+      var go = document.getElementById('oc-follow-go');
+      go.addEventListener('click', function () {
+        go.disabled = true; go.textContent = 'One moment';
+        var S = window.LokaliSupabaseAPI && window.LokaliSupabaseAPI.favorites;
+        var p = (S && typeof S.add === 'function') ? S.add(vid) : Promise.reject(new Error('no client'));
+        Promise.resolve(p).then(function (r) {
+          // a duplicate (already following) is a success for the shopper
+          var dup = r && r.error && /duplicate|unique|23505/i.test(String(r.error.message || r.error.code || ''));
+          if (r && r.error && !dup) throw new Error('follow failed');
+          box.innerHTML = '<span class="oc-done">You are following ' + name + '.</span><span>Their news lands in one email each Thursday, and in your account.</span>' +
+            '<a class="oc-btn ghost" href="/account#orders" style="margin-left:0;">See my orders</a>';
+        }).catch(function () { window.location.href = '/' + encodeURIComponent(o.vendor.slug || '') + '?follow=1'; });
+      });
+    }
+
+    function signedOut() {
+      box.innerHTML = '<b>Keep this order in one place</b>' +
+        '<ul><li>See your order and where it stands, any time</li><li>Hear when ' + name + ' has something new</li></ul>' +
+        '<button type="button" class="oc-btn" id="oc-save-go">Save my order and follow ' + name + '</button>' +
+        '<span style="margin-top:8px;">Takes about 20 seconds. Use the email you paid with' + (o.shopper_email_masked ? ' (' + esc(o.shopper_email_masked) + ')' : '') + ' so the order shows up. Your order is safe either way.</span>';
+      document.getElementById('oc-save-go').addEventListener('click', function () {
+        try { localStorage.setItem(ORDER_FOLLOW_KEY, JSON.stringify({ vendor_id: vid, name: rawName, at: Date.now() })); } catch (e) {}
+        try {
+          sessionStorage.setItem('lokali_pending_fav', String(vid));
+          sessionStorage.setItem('lokali_signup_intent', 'customer:' + Date.now());
+          sessionStorage.setItem('lokali_prompt_source', 'order_confirmed');
+        } catch (e) {}
+        try { if (typeof window.gtag === 'function') window.gtag('event', 'account_prompt', { source: 'order_confirmed' }); } catch (e) {}
+        var L = window.LokaliAuth;
+        if (L && typeof L.openSignUp === 'function') L.openSignUp({ intent: 'customer', follow: { name: rawName, first: '' }, source: 'order_confirmed' });
+        else window.location.href = '/sign-up';
+      });
+    }
   }
   function waiting(mount, final) {
     mount.innerHTML = '<div class="oc-card" style="text-align:center;">' + (final ? '' : '<div class="oc-spin"></div>') +
