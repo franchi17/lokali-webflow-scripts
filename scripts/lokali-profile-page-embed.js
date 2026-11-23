@@ -708,7 +708,7 @@ var LokaliProfilePage = (function () {
       b.addEventListener('click', function () {
         var i = picked.indexOf(c.url);
         if (i !== -1) picked.splice(i, 1);
-        else if (o.multi) { if (picked.length >= max) { _showToast('error', 'You can add ' + max + ' more to your gallery.'); return; } picked.push(c.url); }
+        else if (o.multi) { if (picked.length >= max) { _showToast('error', 'You can add ' + max + ' more to your portfolio.'); return; } picked.push(c.url); }
         else picked = [c.url];
         paint();
       });
@@ -853,7 +853,7 @@ var LokaliProfilePage = (function () {
       more.addEventListener('click', function () {
         _openPhotoPicker({
           title: 'Choose your Market card photo',
-          sub: 'Every photo on your gallery, services and products. Shoppers see a wide crop of it on your card.',
+          sub: 'Every photo in your portfolio, services and products. Shoppers see a wide crop of it on your card.',
           cands: cands, multi: false, selectedUrl: pinValid ? pinned : null,
           confirmLabel: 'Use this photo',
           onConfirm: function (urls) { if (urls[0] && urls[0] !== _cardPhotoPinned()) choose(urls[0]); }
@@ -1126,7 +1126,7 @@ var LokaliProfilePage = (function () {
         // (bug found by F 2026-08-31: uploaded owner photo, SAVE inert).
         _rfDirtySection = 'Meet the Vendor';
         _refreshSaveBar();
-        _showToast('success', 'Photo added. Press SAVE to keep it.');
+        _showToast('success', 'Photo added. Press Save to keep it.');
       });
     });
   }
@@ -1296,7 +1296,7 @@ var LokaliProfilePage = (function () {
     // instantly, text needs SAVE) and nothing said so — spell it out up front.
     var saveHint = document.createElement('div');
     saveHint.style.cssText = 'font-size:13px;line-height:1.5;color:#6B6880;margin-bottom:6px;';
-    saveHint.textContent = 'Photos save automatically the moment you add them. Everything else saves when you press SAVE.';
+    saveHint.textContent = 'Your logo and portfolio photos save the moment you add them. Your own photo and everything else save when you press Save.';
     head.appendChild(saveHint);
 
     var nav = document.createElement('div');
@@ -1306,7 +1306,7 @@ var LokaliProfilePage = (function () {
     // quiet neutral pill button that doesn't compete with the cards.
     nav.style.cssText = 'position:sticky;top:0;z-index:40;background:#F7F6FC;display:flex;gap:8px;overflow-x:auto;padding:10px 2px;margin-bottom:8px;font-family:"Plus Jakarta Sans",sans-serif;-webkit-overflow-scrolling:touch;';
     [
-      ['lok-portfolio-card', 'Gallery', portfolio],
+      ['lok-portfolio-card', 'Portfolio', portfolio],
       ['lok-card-photo', 'Market card', cardPhoto],
       ['lok-sec-logo', 'Logo', logo],
       ['lok-sec-business', 'Business info', biz],
@@ -1466,8 +1466,8 @@ var LokaliProfilePage = (function () {
     // UI whose every insert the SQL trigger would reject. Same shape as the
     // services/products gallery lockout.
     if (!(_PF_MAX > 0)) {
-      var locked = _mkCard('lok-portfolio-card', _PF_ICON, 'Portfolio Gallery',
-        'The gallery at the top of your public page is a Pro & Featured feature: 5 items on Pro, 15 on Featured. It is the first thing a customer sees.');
+      var locked = _mkCard('lok-portfolio-card', _PF_ICON, 'Portfolio',
+        'The portfolio at the top of your public page is a Pro & Featured feature: 5 items on Pro, 15 on Featured. It is the first thing a customer sees.');
       // Icon: Font Awesome Free 6.7.2 lock (CC BY 4.0); was an emoji (F rule 2026-09-02).
       var lockSub = locked.section.querySelector('.input-heading');   // _mkCard returns { section, col }
       if (lockSub) lockSub.insertAdjacentHTML('afterbegin', '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" fill="currentColor" aria-hidden="true" focusable="false" style="width:1em;height:1em;vertical-align:-.125em;flex-shrink:0;"><path d="M144 144l0 48 160 0 0-48c0-44.2-35.8-80-80-80s-80 35.8-80 80zM80 192l0-48C80 64.5 144.5 0 224 0s144 64.5 144 144l0 48 16 0c35.3 0 64 28.7 64 64l0 192c0 35.3-28.7 64-64 64L64 512c-35.3 0-64-28.7-64-64L0 256c0-35.3 28.7-64 64-64l16 0z"/></svg> ');
@@ -1480,8 +1480,8 @@ var LokaliProfilePage = (function () {
       return;
     }
 
-    var card = _mkCard('lok-portfolio-card', _PF_ICON, 'Portfolio Gallery',
-      'Up to ' + _PF_MAX + ' photos and videos. They become the big gallery at the top of your public page. First item = the lead.');
+    var card = _mkCard('lok-portfolio-card', _PF_ICON, 'Portfolio',
+      'Up to ' + _PF_MAX + ' photos and videos. They show big at the top of your public page. First item = the lead.');
     var strip = document.createElement('div');
     strip.id = 'lok-pf-strip';
     strip.style.cssText = 'display:flex;flex-wrap:wrap;gap:10px;margin:10px 0;';
@@ -1540,7 +1540,7 @@ var LokaliProfilePage = (function () {
       var api = window.LokaliAPI && window.LokaliAPI.vendors;
       if (!api || typeof api.coverCandidates !== 'function') { _showToast('error', 'Photo picking is not available right now. Please reload the page.'); return; }
       var room = _PF_MAX - _pfPhotos.length;
-      if (room <= 0) { _showToast('error', 'Your gallery is full: ' + _PF_MAX + ' items on your plan.'); return; }
+      if (room <= 0) { _showToast('error', 'Your portfolio is full: ' + _PF_MAX + ' items on your plan.'); return; }
       var have = {};
       _pfPhotos.forEach(function (r) { if (r && r.image_url) have[r.image_url] = true; });
       var loaded = _cardPhotoCands ? Promise.resolve(_cardPhotoCands) : api.coverCandidates(_vendor.id).then(function (out) {
@@ -1554,10 +1554,10 @@ var LokaliProfilePage = (function () {
         var cands = (list || []).filter(function (c) { return c && c.url && !have[c.url] && c.url.indexOf('/portfolio/') === -1; });
         if (!cands.length) { _showToast('error', 'No listing photos to pick from yet. Add photos to a service or product first.'); return; }
         _openPhotoPicker({
-          title: 'Add listing photos to your gallery',
+          title: 'Add listing photos to your portfolio',
           sub: 'Tick the photos from your services and products you want at the top of your public page. Up to ' + room + ' more.',
           cands: cands, multi: true, max: room,
-          confirmLabel: function (n) { return n ? 'Add ' + n + ' to gallery' : 'Add to gallery'; },
+          confirmLabel: function (n) { return n ? 'Add ' + n + ' to portfolio' : 'Add to portfolio'; },
           onConfirm: function (urls) { _pfCopyIntoGallery(urls); }
         });
       }).catch(function () { pickBtn.textContent = 'Pick from listings'; _showToast('error', 'Could not load your photos. Please try again.'); });
@@ -1593,7 +1593,7 @@ var LokaliProfilePage = (function () {
         _pfPicking = false;
         pickBtn.textContent = 'Pick from listings';
         _renderPortfolio();
-        if (done && !failed) _showToast('success', done + (done === 1 ? ' photo' : ' photos') + ' added to your gallery and saved automatically.');
+        if (done && !failed) _showToast('success', done + (done === 1 ? ' photo' : ' photos') + ' added to your portfolio and saved automatically.');
         else if (done) _showToast('error', done + ' added, ' + failed + ' could not be copied. Try those again.');
         else _showToast('error', 'Those photos could not be added. Please try again.');
       }
@@ -1614,7 +1614,7 @@ var LokaliProfilePage = (function () {
       var inp = document.getElementById('lok-pf-vidurl');
       var url = inp ? String(inp.value || '').trim() : '';
       if (!_pfParseVideo(url)) { vidSay('That link doesn\u2019t look like YouTube or Vimeo \u2014 copy the full video address from your browser.', true); return; }
-      if (_pfPhotos.length >= _PF_MAX) { vidSay('Your gallery is full \u2014 a video uses one of your ' + _PF_MAX + ' slots.', true); return; }
+      if (_pfPhotos.length >= _PF_MAX) { vidSay('Your portfolio is full. A video uses one of your ' + _PF_MAX + ' spots.', true); return; }
       var S = window.LokaliSupabaseAPI;
       if (!S || !S.photos || !S.photos.addVideo || !_vendor) return;
       var nextSort = _pfPhotos.length ? (Number(_pfPhotos[_pfPhotos.length - 1].sort_order) || _pfPhotos.length) + 1 : 1;
@@ -1625,7 +1625,7 @@ var LokaliProfilePage = (function () {
         vidRow.style.display = 'none';
         vidSay('', false);
         _renderPortfolio();
-        _showToast('success', 'Video added \u2014 it plays silently in your gallery.');
+        _showToast('success', 'Video added. It plays silently in your portfolio.');
       });
     });
     card.col.appendChild(file);
@@ -1645,7 +1645,7 @@ var LokaliProfilePage = (function () {
         return;
       }
       if (_pfPhotos.length >= _PF_MAX) {
-        _showToast('error', 'Your gallery is full: ' + _PF_MAX + ' items on your plan.');
+        _showToast('error', 'Your portfolio is full: ' + _PF_MAX + ' items on your plan.');
         return;
       }
       var S = window.LokaliSupabaseAPI;
@@ -1666,7 +1666,7 @@ var LokaliProfilePage = (function () {
             var m = String(addRes.error.message || '');
             _showToast('error', m.indexOf('LOKALI_LIMIT_REACHED') !== -1
               ? m.replace(/^.*LOKALI_LIMIT_REACHED:\s*/, '')
-              : 'That photo uploaded but could not be added to your gallery. Please try again.');
+              : 'That photo uploaded but could not be added to your portfolio. Please try again.');
             return;
           }
           _renderPortfolio();

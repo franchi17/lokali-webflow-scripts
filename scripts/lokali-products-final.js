@@ -1494,7 +1494,7 @@ const LokaliProductsPage = (() => {
     if (!_hasGallery) {
       body.innerHTML = title +
         '<div style="color:#4A4761;font-size:14px;line-height:1.5;">' +
-        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" fill="currentColor" aria-hidden="true" focusable="false" style="width:1em;height:1em;vertical-align:-.125em;flex-shrink:0;"><path d="M144 144l0 48 160 0 0-48c0-44.2-35.8-80-80-80s-80 35.8-80 80zM80 192l0-48C80 64.5 144.5 0 224 0s144 64.5 144 144l0 48 16 0c35.3 0 64 28.7 64 64l0 192c0 35.3-28.7 64-64 64L64 512c-35.3 0-64-28.7-64-64L0 256c0-35.3 28.7-64 64-64l16 0z"/></svg> Add a <strong>photo gallery</strong> with Pro &amp; Featured: 5 photos per' +
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" fill="currentColor" aria-hidden="true" focusable="false" style="width:1em;height:1em;vertical-align:-.125em;flex-shrink:0;"><path d="M144 144l0 48 160 0 0-48c0-44.2-35.8-80-80-80s-80 35.8-80 80zM80 192l0-48C80 64.5 144.5 0 224 0s144 64.5 144 144l0 48 16 0c35.3 0 64 28.7 64 64l0 192c0 35.3-28.7 64-64 64L64 512c-35.3 0-64-28.7-64-64L0 256c0-35.3 28.7-64 64-64l16 0z"/></svg> Add <strong>more photos</strong> with Pro &amp; Featured: 5 photos per' +
         ' listing on Pro, 10 on Featured, so customers see more before they buy.</div>';
       // #149: Free vendors still have a card crop to control (their standalone
       // image). Same WYSIWYG preview; drag persists on release in edit mode.
@@ -1512,7 +1512,7 @@ const LokaliProductsPage = (() => {
     body.innerHTML = title + '<div style="font-size:13px;color:#8E8BA6;">Loading photos…</div>';
     const res = await window.LokaliAPI.products.listPhotos(productId);
     if (res.error) {
-      body.innerHTML = title + '<div style="font-size:13px;color:#B1006A;">Couldn’t load gallery photos.</div>';
+      body.innerHTML = title + '<div style="font-size:13px;color:#B1006A;">Couldn’t load your photos. Refresh to try again.</div>';
       return;
     }
     const raw = res.data;
@@ -1729,7 +1729,7 @@ const LokaliProductsPage = (() => {
 
   const deleteGalleryPhoto = async (photoId) => {
     if (!photoId || _galleryBusy) return;
-    if (!confirm('Remove this photo from the gallery?')) return;
+    if (!confirm('Remove this photo from this listing?')) return;
     _galleryBusy = true;
     try {
       const res = await window.LokaliAPI.products.deletePhoto(photoId);

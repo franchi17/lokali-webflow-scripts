@@ -248,7 +248,7 @@
       rate_limited:  'You can change your URL once every 30 days, and this one was changed recently, so it’s not available yet.',
       slug_taken:    'That URL is already taken. Try another.',
       slug_reserved: 'That URL is reserved by Lokali. Try another.',
-      invalid_slug:  'Use 2–30 characters: lowercase letters, numbers and hyphens only.',
+      invalid_slug:  'Use 3 to 30 characters: lowercase letters, numbers and hyphens only.',
       plan_required: 'A custom URL is a Pro and Featured feature. Upgrade to claim yours.',
       not_found:     'We couldn’t find your storefront. Try reloading the page.',
       unauthorized:  'You were signed out to keep your account safe. Sign in again, then save once more.'
@@ -263,7 +263,7 @@
       clearTimeout(checkTimer);
       if (!v || v === currentSlug) { setStatus(''); return; }
       if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(v) || v.length < 3) {
-        setStatus('3–30 characters: lowercase letters, numbers, single hyphens.', '#B1006A');
+        setStatus('Use 3 to 30 characters: lowercase letters, numbers and single hyphens.', '#B1006A');
         return;
       }
       setStatus('Checking availability…');
@@ -543,7 +543,7 @@
         var foundWarn = document.createElement('div');
         foundWarn.style.cssText = 'margin:0 0 10px;padding:8px 10px;border-radius:8px;' +
           "background:#FBEFD6;color:#9A6B00;font-size:13px;font-weight:600;font-family:'Plus Jakarta Sans',sans-serif;";
-        foundWarn.textContent = 'Heads up: you’re a founding vendor. Deleting permanently retires your founding spot and its lifetime pricing. It can’t be undone or reclaimed.';
+        foundWarn.textContent = 'Heads up: you’re a founding vendor. Deleting permanently retires your founding spot and today’s rate, which you keep for as long as you stay. It can’t be undone or reclaimed.';
         delCard.appendChild(foundWarn);
       }
       // #100 exit survey — vendor list (this page is vendor-only). One optional,
