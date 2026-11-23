@@ -28,6 +28,7 @@
   var LAST_CHECKED = 'September 20, 2026';
   var KEY = 'lokali_start_v3';
   var FONT = '"Plus Jakarta Sans",sans-serif';
+  var FOUNDER_PHOTO = 'https://cdn.prod.website-files.com/6989095758ae17edfc424d30/6ace7bd4e6c66ad637d7db88_francesca-p-500.webp'; // F 2026-11-23: her note is true
 
   // Every entry was opened and read on LAST_CHECKED. `t` is the link label.
   var SRC = {
@@ -242,50 +243,83 @@
   function css() {
     if (document.getElementById('lkst-css')) return;
     var s = document.createElement('style'); s.id = 'lkst-css';
+    // v4 (F 2026-11-23 'Start here: yes', site consistency mockup): GREEN does every job
+    // here (brand guide family: ground #E0F5EB, words + buttons #17634A), never violet and
+    // never mint beside prices. A green top with a 3-step tracker, the first question beside
+    // a peek at the checklist, F's own note with her photo, a deep green ending band.
     s.textContent = [
-      '.lkst{font-family:' + FONT + ';color:#1A1829;background:#F7F6FC;padding:56px 0 72px;}',
+      '.lkst{font-family:' + FONT + ';color:#45415A;background:#fff;padding:0 0 0;}',
       '.lkst *{box-sizing:border-box;font-family:' + FONT + ';}',
-      '.lkst-wrap{max-width:760px;margin:0 auto;padding:0 20px;display:flex;flex-direction:column;gap:22px;}',
-      '.lkst-eyebrow{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#6002EE;}',
-      '.lkst h1{font-size:34px;line-height:1.15;font-weight:700;color:#1A1829;margin:6px 0 10px;}',
-      '.lkst-lede{font-size:17px;line-height:1.6;color:#4A4761;margin:0;max-width:62ch;}',
-      '.lkst-card{background:#fff;border:1px solid #DEDAEE;border-radius:16px;padding:20px;}',
-      '.lkst-q{font-size:16px;font-weight:700;margin:0 0 12px;}',
+      '.lkst-top{background:#E0F5EB;padding:56px 0 40px;}',
+      '.lkst-in{max-width:1040px;margin:0 auto;padding:0 24px;}',
+      '.lkst-wrap{max-width:1040px;margin:0 auto;padding:36px 24px 56px;display:flex;flex-direction:column;gap:22px;}',
+      '.lkst-eyebrow{font-size:12px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#17634A;}',
+      '.lkst h1{font-size:46px;line-height:1.08;font-weight:800;letter-spacing:-.03em;color:#45415A;margin:10px 0 14px;max-width:21ch;text-wrap:balance;}',
+      '.lkst h1 em{font-style:normal;color:#17634A;}',
+      '.lkst-lede{font-size:17px;line-height:1.65;color:#4A4761;margin:0;max-width:64ch;}',
+      '.lkst-steps{display:flex;gap:0;margin:28px 0 0;padding:0;list-style:none;max-width:620px;}',
+      '.lkst-steps li{flex:1;position:relative;font-size:13.5px;font-weight:700;color:#4A4761;padding-top:40px;}',
+      '.lkst-steps li::after{content:"";position:absolute;top:15px;left:32px;right:0;height:2px;background:#BFE3D0;}',
+      '.lkst-steps li:last-child::after{display:none;}',
+      '.lkst-steps b{position:absolute;top:0;left:0;width:32px;height:32px;border-radius:50%;background:#fff;color:#17634A;box-shadow:inset 0 0 0 2px #BFE3D0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;}',
+      '.lkst-steps li.on b{background:#17634A;color:#fff;box-shadow:none;}',
+      '.lkst-steps li.done b{background:#BFE3D0;color:#17634A;box-shadow:none;}',
+      '.lkst-two{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:28px;align-items:start;}',
+      '.lkst-qs{display:flex;flex-direction:column;gap:18px;min-width:0;}',
+      '.lkst-card{background:#fff;border:1.5px solid #CDEBDB;border-radius:20px;padding:22px;}',
+      '.lkst-q{font-size:18px;font-weight:800;letter-spacing:-.01em;color:#45415A;margin:0 0 8px;}',
       '.lkst-chips{display:flex;flex-wrap:wrap;gap:8px;}',
-      '.lkst-chip{font-size:14px;font-weight:700;min-height:44px;padding:10px 16px;border-radius:999px;border:1px solid #DEDAEE;background:#fff;color:#4A4761;cursor:pointer;}',
-      '.lkst-chip[aria-pressed="true"]{background:#6002EE;border-color:#6002EE;color:#fff;}',
-      '.lkst-chip:focus-visible,.lkst-btn:focus-visible,.lkst-step input:focus-visible,.lkst a:focus-visible{outline:3px solid #C9B3FA;outline-offset:2px;}',
+      '.lkst-chip{font-size:14px;font-weight:700;min-height:44px;padding:10px 16px;border-radius:999px;border:0;background:#EAF7F0;color:#17634A;cursor:pointer;}',
+      '.lkst-chip:hover{background:#DDF1E7;}',
+      '.lkst-chip[aria-pressed="true"]{background:#17634A;color:#fff;}',
+      '.lkst-chip:focus-visible,.lkst-btn:focus-visible,.lkst-step input:focus-visible,.lkst a:focus-visible{outline:3px solid #8FD0B0;outline-offset:2px;}',
+      '.lkst-peek{background:#F4FBF7;border-radius:20px;padding:22px;}',
+      '.lkst-peek h3{margin:0 0 10px;font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#17634A;}',
+      '.lkst-pk{display:grid;grid-template-columns:20px minmax(0,1fr) auto;gap:10px;align-items:start;padding:11px 0;border-bottom:1px solid #DDEFE5;font-size:14.5px;color:#45415A;}',
+      '.lkst-pk:last-child{border-bottom:0;}',
+      '.lkst-pk i{width:18px;height:18px;border-radius:5px;border:2px solid #9ACFB4;display:block;margin-top:2px;}',
+      '.lkst-pk small{display:block;color:#6E6A85;font-size:12.5px;margin-top:1px;}',
+      '.lkst-pk em{font-style:normal;font-size:12px;font-weight:800;color:#17634A;background:#fff;border:1px solid #CFEBDC;border-radius:999px;padding:3px 9px;white-space:nowrap;}',
       '.lkst-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}',
-      '.lkst-head h2{font-size:22px;font-weight:700;margin:0;}',
-      '.lkst-count{font-size:13px;font-weight:700;color:#6002EE;background:#F3EBFF;border-radius:999px;padding:5px 12px;font-variant-numeric:tabular-nums;}',
-      '.lkst-bar{height:8px;border-radius:999px;background:#E4DCF7;overflow:hidden;margin:12px 0 4px;}',
-      '.lkst-bar i{display:block;height:100%;background:#6002EE;border-radius:999px;transition:width .25s;}',
-      '.lkst-step{display:flex;gap:14px;align-items:flex-start;padding:16px 0;border-top:1px solid #EEEDF6;}',
+      '.lkst-head h2{font-size:22px;font-weight:800;letter-spacing:-.01em;margin:0;color:#45415A;}',
+      '.lkst-count{font-size:13px;font-weight:700;color:#17634A;background:#E0F5EB;border-radius:999px;padding:5px 12px;font-variant-numeric:tabular-nums;}',
+      '.lkst-bar{height:8px;border-radius:999px;background:#DDEFE5;overflow:hidden;margin:12px 0 4px;}',
+      '.lkst-bar i{display:block;height:100%;background:#17634A;border-radius:999px;transition:width .25s;}',
+      '.lkst-step{display:flex;gap:14px;align-items:flex-start;padding:16px 0;border-top:1px solid #E6F2EC;}',
       '.lkst-step:first-of-type{border-top:0;}',
-      '.lkst-step.lk{background:#F3EBFF;border-radius:12px;padding:16px;border-top:0;margin:8px 0;}',
-      '.lkst-step input{width:22px;height:22px;margin:2px 0 0;accent-color:#6002EE;flex:none;cursor:pointer;}',
-      '.lkst-step label{font-size:16px;font-weight:700;line-height:1.35;cursor:pointer;display:block;}',
-      '.lkst-step.done label{color:#6B6880;text-decoration:line-through;}',
+      '.lkst-step.lk{background:#F4FBF7;border-radius:14px;padding:16px;border-top:0;margin:8px 0;}',
+      '.lkst-step input{width:22px;height:22px;margin:2px 0 0;accent-color:#17634A;flex:none;cursor:pointer;}',
+      '.lkst-step label{font-size:16px;font-weight:700;line-height:1.35;cursor:pointer;display:block;color:#45415A;}',
+      '.lkst-step.done label{color:#6E6A85;text-decoration:line-through;}',
       '.lkst-step p{font-size:14.5px;line-height:1.6;color:#4A4761;margin:6px 0 0;}',
-      '.lkst-hint{font-size:14px;line-height:1.55;color:#6B6880;margin:-4px 0 12px;}',
-      '.lkst-help{padding:14px 0;border-top:1px solid #EEEDF6;}',
+      '.lkst-hint{font-size:14px;line-height:1.55;color:#6E6A85;margin:0 0 14px;}',
+      '.lkst-help{padding:14px 0;border-top:1px solid #E6F2EC;}',
       '.lkst-help:first-of-type{border-top:0;}',
-      '.lkst-help a{font-size:15.5px;font-weight:700;color:#6002EE;text-decoration:none;}',
+      '.lkst-help a{font-size:15.5px;font-weight:700;color:#17634A;text-decoration:none;}',
       '.lkst-help a:hover{text-decoration:underline;}',
       '.lkst-help p{font-size:14.5px;line-height:1.6;color:#4A4761;margin:4px 0 0;}',
-      '.lkst-join{background:#F3EBFF;border-color:#E4DCF7;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}',
-      '.lkst-join h2{font-size:20px;font-weight:700;margin:0 0 4px;}',
-      '.lkst-join p{font-size:15px;line-height:1.55;color:#4A4761;margin:0;max-width:46ch;}',
-      '.lkst-join .lkst-btn{margin-top:0;}',
-      '.lkst-src{display:block;width:fit-content;margin-top:8px;font-size:13px;font-weight:600;color:#6002EE;text-decoration:none;}',
+      '.lkst-src{display:block;width:fit-content;margin-top:8px;font-size:13px;font-weight:600;color:#17634A;text-decoration:none;}',
       '.lkst-src:hover{text-decoration:underline;}',
-      '.lkst-btn{display:inline-block;margin-top:12px;font-size:14px;font-weight:700;min-height:44px;line-height:22px;padding:11px 20px;border-radius:999px;border:0;background:#6002EE;color:#fff;text-decoration:none;cursor:pointer;}',
-      '.lkst-btn.ghost{background:#fff;color:#6002EE;border:1px solid #E4DCF7;margin-top:0;}',
-      '.lkst-fine{font-size:13px;line-height:1.65;color:#6B6880;margin:0;}',
-      '.lkst-fine a{color:#6002EE;font-weight:600;text-decoration:none;}',
-      '@media(max-width:600px){.lkst{padding:36px 0 56px;}.lkst h1{font-size:27px;}.lkst-lede{font-size:16px;}.lkst-card{padding:16px;}}',
+      '.lkst-btn{display:inline-block;margin-top:12px;font-size:14px;font-weight:700;min-height:44px;line-height:22px;padding:11px 20px;border-radius:999px;border:0;background:#17634A;color:#fff;text-decoration:none;cursor:pointer;}',
+      '.lkst-btn:hover{background:#114F3B;color:#fff;}',
+      '.lkst-btn.ghost{background:#fff;color:#17634A;border:1.5px solid #17634A;margin-top:0;}',
+      '.lkst-btn.ghost:hover{background:#E0F5EB;}',
+      '.lkst-fine{font-size:13px;line-height:1.65;color:#6E6A85;margin:0;}',
+      '.lkst-fine a{color:#17634A;font-weight:600;text-decoration:none;}',
+      '.lkst-note{display:grid;grid-template-columns:96px minmax(0,1fr);gap:22px;align-items:center;border:1.5px solid #CDEBDB;border-radius:22px;padding:24px 28px;background:#fff;}',
+      '.lkst-note img{width:96px;height:96px;border-radius:50%;object-fit:cover;box-shadow:0 0 0 4px #E0F5EB;}',
+      '.lkst-note p{margin:0;font-size:17px;line-height:1.6;color:#45415A;}',
+      '.lkst-note b{display:block;margin-top:8px;font-size:14px;font-weight:700;color:#17634A;}',
+      '.lkst-end{background:#17634A;color:#fff;text-align:center;padding:60px 24px;}',
+      '.lkst-end h2{margin:0;font-size:36px;line-height:1.12;font-weight:800;letter-spacing:-.025em;color:#fff;text-wrap:balance;}',
+      '.lkst-end p{margin:12px auto 22px;font-size:17px;line-height:1.6;color:#E0F5EB;max-width:52ch;}',
+      '.lkst-end a{display:inline-block;background:#fff;color:#17634A;font-size:15.5px;font-weight:700;padding:15px 28px;border-radius:999px;text-decoration:none;}',
+      '.lkst-end a:hover{background:#E0F5EB;color:#17634A;}',
+      '.lkst-end a:focus-visible{outline:3px solid #fff;outline-offset:3px;}',
+      '@media(max-width:860px){.lkst-two{grid-template-columns:minmax(0,1fr);}}',
+      '@media(max-width:600px){.lkst-top{padding:36px 0 30px;}.lkst-in,.lkst-wrap{padding-left:16px;padding-right:16px;}.lkst h1{font-size:30px;}.lkst-lede{font-size:16px;}.lkst-card,.lkst-peek{padding:18px;}.lkst-steps li{font-size:12px;}.lkst-note{grid-template-columns:64px minmax(0,1fr);gap:16px;padding:20px;}.lkst-note img{width:64px;height:64px;}.lkst-note p{font-size:15.5px;}.lkst-end{padding:44px 20px;}.lkst-end h2{font-size:27px;}}',
       '@media (prefers-reduced-motion:reduce){.lkst-bar i{transition:none;}}',
-      '@media print{.lkst{background:#fff;padding:0;}.lkst-chips,.lkst-btn,.lkst-noprint{display:none !important;}.lkst-card{border:0;padding:0;}.lkst-step.lk{background:#fff;border:1px solid #DEDAEE;}}'
+      '@media print{.lkst-top{background:#fff;padding:0;}.lkst-steps,.lkst-peek,.lkst-note,.lkst-end{display:none !important;}.lkst{background:#fff;padding:0;}.lkst-chips,.lkst-btn,.lkst-noprint{display:none !important;}.lkst-card{border:0;padding:0;}.lkst-step.lk{background:#fff;border:1px solid #DEDAEE;}}'
     ].join('\n');
     document.head.appendChild(s);
   }
@@ -300,10 +334,15 @@
     var ready = isReady();
     var city = cityOf(state.city);
     var placed = !!(state.city && state.county);
-    var html = '<div class="lkst"><div class="lkst-wrap">' +
-      '<div><span class="lkst-eyebrow">Start here</span>' +
-      '<h1>Starting a small business' + (city ? ' in ' + esc(city.t) : '') + '?</h1>' +
-      '<p class="lkst-lede">Answer a few questions and get a checklist made for where you are and what you sell: the official steps, what each one costs, the licenses to check, and where Lokali fits. It is free, and you do not need an account.</p></div>' +
+    var stage = ready ? 3 : (placed ? 2 : 1);
+    var stp = function (n, t) { return '<li class="' + (n === stage ? 'on' : (n < stage ? 'done' : '')) + '"' + (n === stage ? ' aria-current="step"' : '') + '><b>' + n + '</b>' + t + '</li>'; };
+    var html = '<div class="lkst"><div class="lkst-top"><div class="lkst-in">' +
+      '<span class="lkst-eyebrow">Start here</span>' +
+      '<h1>Starting a small business' + (city ? ' in ' + esc(city.t) : '') + '? <em>Let’s make the paperwork shorter.</em></h1>' +
+      '<p class="lkst-lede">Answer a few questions and get a checklist made for where you are and what you sell: the official steps, what each one costs, the licenses to check, and where Lokali fits. It is free, and you do not need an account.</p>' +
+      '<ol class="lkst-steps" aria-label="Three steps">' + stp(1, 'Where you are') + stp(2, 'What you sell') + stp(3, 'Your checklist') + '</ol>' +
+      '</div></div><div class="lkst-wrap">' +
+      '<div class="' + (ready ? 'lkst-qs' : 'lkst-two') + '"><div class="lkst-qs">' +
       '<div class="lkst-card"><p class="lkst-q">Where are you setting up?</p><p class="lkst-hint">These are the communities Lokali serves today. Pick the one your business will call home.</p>' + chips('city', 'Your city', CITY, state.city) + '</div>';
     if (city && city.counties.length > 1) {
       html += '<div class="lkst-card"><p class="lkst-q">Which county is your address in?</p><p class="lkst-hint">' + (city.def === false ? esc(city.t) + ' sits in three counties, and your county decides where you file your business name.' : 'Most of ' + esc(city.t) + ' is in ' + COUNTY[city.counties[0]].t + ', so we picked it for you. Change it if your address is across the line.') + ' Your county is printed on your property tax bill and your voter registration card.</p>' + chips('county', 'Your county', countyChips(city), state.county) + '</div>';
@@ -321,6 +360,17 @@
       html += '<div class="lkst-card"><p class="lkst-q">How are you setting up?</p>' + chips('setup', 'Business setup', SETUP, state.setup) + '</div>';
     }
 
+    html += '</div>';
+    if (!ready) {
+      // A peek at the checklist (every item and cost is a real step in steps() below).
+      html += '<aside class="lkst-peek lkst-noprint" aria-label="A peek at your checklist"><h3>A peek at your checklist</h3>' +
+        '<div class="lkst-pk"><i></i><span>Register your business name<small>With your county clerk</small></span><em>Fee varies</em></div>' +
+        '<div class="lkst-pk"><i></i><span>Get a tax ID if you need one<small>From the IRS</small></span><em>Free</em></div>' +
+        '<div class="lkst-pk"><i></i><span>Sales tax permit<small>If you sell taxable items</small></span><em>Free to apply</em></div>' +
+        '<div class="lkst-pk"><i></i><span>Open your Lokali storefront<small>So neighbors can find you</small></span><em>Start free</em></div>' +
+        '</aside>';
+    }
+    html += '</div>';
     if (ready) {
       var list = steps(state);
       var n = list.filter(function (s) { return state.done[s.id]; }).length;
@@ -344,12 +394,14 @@
         help(state).map(function (h) {
           return '<div class="lkst-help"><a href="' + h.u + '" target="_blank" rel="noopener">' + esc(h.t) + '</a><p>' + esc(h.d) + '</p></div>';
         }).join('') + '</div>' +
-        '<div class="lkst-card lkst-join lkst-noprint"><div><h2>Ready for customers?</h2><p>Create your free Lokali account and put your business in front of neighbors in about ten minutes.</p></div>' +
-        '<a class="lkst-btn" href="/sign-up">Open your storefront</a></div>';
+        '';
     }
 
     html += '<p class="lkst-fine">This is general information, not legal advice. Fees and rules change, so follow the official source on each step. Every fact here was checked against its official page on ' + LAST_CHECKED + '. County and city steps follow the place you picked, and the state and federal steps are the same everywhere in Texas. Your progress is saved in this browser only. Spotted something out of date? <a href="/contact-us">Tell us</a>.</p>' +
-      '</div></div>';
+      '<div class="lkst-note"><img src="' + FOUNDER_PHOTO + '" alt="Francesca, founder of Lokali" width="96" height="96" loading="lazy"><div><p>\u201cI run a little business on the side too, so I\u2019ve stood in these lines. This is the list I wish someone had handed me, minus the afternoon at the county office.\u201d</p><b>Francesca, founder of Lokali</b></div></div>' +
+      '</div>' +
+      '<div class="lkst-end lkst-noprint"><h2>Paperwork done? Your neighbors are next.</h2><p>Open a storefront in minutes, so the people nearby can find you.</p><a href="/sign-up">Open my storefront</a></div>' +
+      '</div>';
     mount.innerHTML = html;
     // Usage (lokali-guide-usage.js, patch_guide_events.sql): announce a built checklist.
     // The answers come from the closed lists above, never from anything typed. The
