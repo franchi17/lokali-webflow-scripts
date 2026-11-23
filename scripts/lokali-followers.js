@@ -145,7 +145,7 @@
     }
     var act = t.getAttribute('data-act');
     if (act === 'grow-copy') {
-      var url = 'https://www.golokali.com/' + (this.vendor.slug || '');
+      var url = 'https://www.golokali.com/' + (this.vendor.slug || '') + '?o=1'; // o=1: the storefront greets them with a Follow banner (done-check 2026-11-23)
       var msg = 'Hi! I\u2019m on Lokali now, where neighbors find local businesses. If you liked working with me, tap Follow on my page so you hear when I have something new: ' + url;
       var ok = function () { t.textContent = 'Copied. Paste it in a text or email'; setTimeout(function () { t.textContent = 'Copy a message with your link'; }, 3000); };
       if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(msg).then(ok, function () { window.prompt('Copy this message:', msg); });
@@ -220,13 +220,13 @@
     var html = '<div class="lkf-card"><div class="lkf-stats">' +
         '<div class="lkf-stat"><b>' + (st ? st.followers : 0) + '</b><span>' + (n === 1 ? 'follower' : 'followers') + '</span></div>' +
         '<div class="lkf-stat"><b>' + (st ? st.new_7d : 0) + '</b><span>new this week</span></div>' +
-        '<div class="lkf-stat"><b>' + (st ? st.emailable : 0) + '</b><span>get the weekly email</span></div>' +
+        '<div class="lkf-stat"><b>' + (st ? st.emailable : 0) + '</b><span>hear from you on Thursday</span></div>' +
       '</div>' +
       '</div>';
     // One-page changes 2026-11-23 (team review 'Bring your customers in'): until
     // 10 followers, a card on how to get them sits above the post form.
     if (n < 10) html += '<div class="lkf-card lkf-grow"><h2 class="lkf-h2">Get more followers</h2>' +
-      '<p class="lkf-sub">The people who already buy from you are the easiest followers to get. Send them your page, or put your QR code at the counter. Followers hear about your posts in a weekly email.</p>' +
+      '<p class="lkf-sub">The people who already buy from you are the easiest followers to get. Send them your page, or put your QR code at the counter. Every Thursday, your followers get one email with your posts and anything new you add.</p>' +
       '<div class="lkf-acts"><button type="button" class="lkf-btn" data-act="grow-copy">Copy a message with your link</button>' +
       '<a class="lkf-ghost" href="/vendor-dashboard/marketing">Your QR codes</a></div>' +
       '<p class="lkf-fine">This card steps aside once you have 10 followers.</p></div>';
