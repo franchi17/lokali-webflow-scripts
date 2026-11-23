@@ -1,30 +1,31 @@
 /**
- * Lokali — About page v2 (2026-10 redesign, approved mockup v6:
- * claude.ai/artifact/NWaVHKWWE9EVJetxcHDFEw).
+ * Lokali — About page v3 (2026-11 site-consistency pass, F said "About: yes"
+ * on mockup v14/v15, claude.ai/artifact/Why9i9icbjoqL6crm9baJL, 2026-11-22).
  *
  * Rebuilds /about on top of the Webflow page without touching the Designer.
- * Every heading and paragraph is the page's own element, MOVED into the new
- * layout (so the HTML Google and AI crawlers read is unchanged); only the
- * faces, the three storefront cards, icons and buttons are new.
- *   - Hero: light orange, two-tone "Community / over platforms.", the line
- *     under it, three facts, a Market button, a link to Francesca's letter,
- *     and seven owners' faces in a circle (one in the middle, six around).
- *   - "The people your neighbors actually recommend" (the #162 embed): same
- *     two paragraphs; the three storefronts become photo cards.
- *   - Principles: four white cards with icons on lavender ("What we believe"),
- *     with F's reworded "People over algorithms" (REWORD below).
- *   - Built for two kinds of people: vendor card lavender, customer card
- *     light orange, one founding strip.
- *   - Built for everywhere: light orange, area chips, and the waitlist button
- *     (#wl-trigger, which lokali-waitlist.js opens) in one white card.
- *   - Francesca's letter last, in a reading column.
- * Orange sections carry orange buttons and links; violet stays on the vendor
- * side (F 2026-09-20: no orange beside violet in one element).
+ * Every heading and paragraph that stays is the page's own element, MOVED into
+ * the new layout (so the HTML crawlers read is the page's own); only the cover
+ * photo, the quote, icons and buttons are new.
+ *   - Cover: one neighbor's own storefront photo in a 4:5 frame on pink, the
+ *     headline on a white card overlapping it. The neighbor ROTATES per visit
+ *     (COVERS below, F 2026-11-22: "rotate between a few neighbors but make
+ *     sure the images are good and would be received well"). Owner photos
+ *     only: posed, well lit, no customers or children. Every vendor photo is
+ *     capped near 800px, which is why the frame is not full-bleed.
+ *   - Under the cover: the opening line, three tags, a link to the letter.
+ *   - "The people your neighbors actually recommend": one big quote (the
+ *     three storefront cards are gone, so no single business is singled out).
+ *   - What we believe: the four principles with their icons, two columns.
+ *   - Built for two kinds of people, and Built for everywhere: kept, in pink.
+ *   - Francesca's letter last, word for word, with her photo in a circle.
+ * Colors follow docs/design/brand-guide.html (F 2026-11-22 "Yes, change the
+ * rule"): About is a PINK page, so pink does every job: #FDE6F2 ground,
+ * #EE0290 big words, #B0006A buttons and small words. No violet inside the
+ * page (violet stays in the header), no orange anywhere.
  *
- * Photo picks live in FACES / RESERVE / CARDS below (F's picker doc
- * picks/current v23, 2026-10-14 18:56Z): changing one is an edit here + a
- * script release (no SQL). Vendor rows are only consulted to drop a pick
- * whose storefront is no longer published.
+ * Cover picks live in COVERS below: changing one is an edit here + a script
+ * release (no SQL). Vendor rows are only consulted to drop a pick whose
+ * storefront is no longer published.
  *
  * Deploy: Webflow REGISTERED script (`lokaliabout`, page-level on /about),
  * same as lokali-home.js: a version bump is a re-register with the new
@@ -37,48 +38,19 @@
   var STYLE_ID = 'lok-about-style';
   var MEDIA = 'https://api.golokali.com/storage/v1/object/public/vendor-media/';
 
-  // ---- F's picks (2026-10-14) ----------------------------------------------
-  // The circle: the first face sits in the middle, the rest go around it
-  // clockwise from the top left. Owners' own storefront profile photos.
-  var FACES = [
-    { vid: 688, slug: 'aniko-lifestyle-wellness', name: 'Catherine', biz: 'ANIKO Lifestyle & Wellness', img: MEDIA + '688/owner/mv03xtkmr659cc.jpg' },
-    { vid: 248, slug: 'nolasko-insurance-advisors', name: 'Carlos', biz: 'Nolasko Insurance Advisors', img: MEDIA + '248/owner/msqyvst9yb305xv2.jpg' },
-    { vid: 447, slug: 'cherry-dot-store', name: 'Aleks', biz: 'Cherry Dot Store', img: MEDIA + '447/owner/mu015u9p0hdh30.webp' },
-    { vid: 626, slug: 'yeehatx', name: 'Jessica', biz: 'YeeHaTx', img: MEDIA + '626/owner/muorhpcwha06kt.jpg' },
-    { vid: 260, slug: 'laso-business-consulting', name: 'Ernesto', biz: 'Laso Business Consulting', img: MEDIA + '260/owner%20photo/ernestophotov2.jpg' },
-    { vid: 431, slug: 'madrone-painting-llc', name: 'Chris', biz: 'Madrone Painting', img: MEDIA + '431/owner/mu74r5vvuvxyn0.webp' },
-    { vid: 446, slug: 'maria-mendizabalfenix-flame-enterprises-llc', name: 'Maria', biz: 'Fenix Flame Enterprises', img: MEDIA + '446/owner/mtwh7llin2314tv2.jpg' }
+  // ---- the cover rotation (F 2026-11-22) -------------------------------------
+  // Each owner gets a heads-up first (docs/marketing/site-consistency-2026-11/
+  // about-cover-notes.md); anyone who says no comes off this list.
+  var COVERS = [
+    { vid: 626, slug: 'yeehatx', name: 'Jessica', biz: 'YeeHaTx', what: 'Hat maker', cap: "Jessica, YeeHaTx. Hat maker.", img: MEDIA + '626/owner/muorhpcwha06kt.jpg', pos: '50% 30%', alt: 'Jessica of YeeHaTx with her hats' },
+    { vid: 539, slug: 'mias-table', name: 'Arelys', biz: "Mia's Table", what: 'Restaurant, Shenandoah', cap: "Arelys, Mia's Table. Restaurant, Shenandoah.", img: MEDIA + '539/owner/muylfkmqvv1iar.webp', pos: '60% 40%', alt: "Arelys at Mia's Table" },
+    { vid: 787, slug: 'yaneliz-rosado-law-firm-pllc', name: 'Yaneliz', biz: 'Yaneliz Rosado Law Firm', what: 'Attorney', cap: "Yaneliz, attorney. Yaneliz Rosado Law Firm.", img: MEDIA + '787/owner/mv8qq0ptghh23i.jpg', pos: '50% 25%', alt: 'Yaneliz, attorney' },
+    { vid: 685, slug: 'baxter-blue-woodworks', name: 'Russ', biz: 'Baxter Blue Woodworks', what: 'Woodworker', cap: "Russ, Baxter Blue Woodworks. Woodworker.", img: MEDIA + '685/profile/bbw_owner.jpg', pos: '50% 40%', alt: 'Russ of Baxter Blue Woodworks with his dog and a turned bowl' },
+    { vid: 688, slug: 'aniko-lifestyle-wellness', name: 'Catherine', biz: 'ANIKO Lifestyle & Wellness', what: 'Wellness', cap: "Catherine, ANIKO Lifestyle & Wellness.", img: MEDIA + '688/owner/mv03xtkmr659cc.jpg', pos: '62% 30%', alt: 'Catherine of ANIKO Lifestyle & Wellness' },
+    { vid: 722, slug: 'the-og-pour-mobile-bar', name: 'The OG Pour', biz: 'The OG Pour Mobile Bar', what: 'Mobile bar', cap: "The OG Pour. Mobile bar.", img: MEDIA + '722/owner/mvpqpszsnvpebr.jpg', pos: '50% 30%', alt: 'The OG Pour mixing drinks at an event' }
   ];
-  // Stand-ins, used in this order only if a pick's storefront is unpublished.
-  var RESERVE = [
-    { vid: 610, slug: 'engaged-minds-academy', name: 'Dominique', biz: 'Engaged Minds Academy', img: MEDIA + '610/owner/muif1hxqrmma6j.webp' },
-    { vid: 286, slug: 'quori-and-lace', name: 'Gabriela', biz: 'Quori and Lace', img: MEDIA + '286/owner/mszb2p2wwd6vhb.jpeg' },
-    { vid: 430, slug: 'delightful-designs', name: 'Cristina', biz: 'Delightful Designs', img: MEDIA + '430/owner/mu1rc658f6sjzo.webp' },
-    { vid: 629, slug: 'prairie-view-am-extension', name: 'Alfredo', biz: 'Prairie View A&M Extension', img: MEDIA + '629/owner/muq000gkca92d5.webp' }
-  ];
-  // "Do you know someone who…" (the three storefronts of the #162 block).
-  // Rowdy's photos are all website screenshots, so theirs sits in a drawn
-  // browser window instead of being cropped (cropped lettering reads as a bug).
-  var CARDS = [
-    { vid: 238, slug: 'rowdy-digital', q: 'builds websites?', who: 'Matt', biz: 'Rowdy Digital', town: 'Spring', founding: true, web: true,
-      face: MEDIA + '238/owner/mubphracr1are7.webp', img: MEDIA + '238/portfolio/rowdywork03.jpg', alt: 'A website Rowdy Digital built' },
-    { vid: 250, slug: 'echoed-reflections-videography', q: 'films weddings and events?', who: 'Umoh', biz: 'Echoed Reflections Videography', town: 'Humble', founding: false,
-      face: MEDIA + '250/owner/mstklj2a9qvkxxv2.jpg', img: MEDIA + '250/service/mstkcjvb1khaku.jpg', pos: '50% 30%', alt: 'Umoh filming guests at an event' },
-    { vid: 146, slug: 'paperloom', q: 'makes party favors?', who: 'Monica', biz: 'Paperloom', town: 'Spring', founding: true,
-      face: MEDIA + '146/owner/mtkez2rr257slu.webp', img: MEDIA + '146/product/mtk8d90qso2ith.webp', pos: '50% 50%', alt: 'Personalized party favor boxes by Paperloom' }
-  ];
-  // The nine open areas (Conroe, Shenandoah, Sugar Land added 2026-10): `slug` = the alias the
-  // Market's ?area= accepts (as in lokali-home.js).
+  // The nine open areas: `slug` = the alias the Market's ?area= accepts (as in lokali-home.js).
   var AREAS = { 'the woodlands': 'the-woodlands', 'woodforest': 'woodforest', 'shenandoah': 'shenandoah', 'conroe': 'conroe', 'spring': 'spring', 'tomball': 'tomball', 'katy': 'katy', 'sugar land': 'sugar-land', 'houston': 'houston' };
-
-  // Circle geometry: center first, then clockwise from the top left (60-degree steps).
-  // W/H = wall box, cy = center height, R = ring radius, D = face size, LW = label width.
-  var RING = [[0, 0], [-0.5, -0.866], [0.5, -0.866], [1, 0], [0.5, 0.866], [-0.5, 0.866], [-1, 0]];
-  var GEOS = [
-    { min: 518, W: 518, H: 482, cy: 220, R: 184, D: 112, LW: 150, biz: true },
-    { min: 336, W: 336, H: 320, cy: 148, R: 122, D: 78, LW: 92, biz: false },
-    { min: 0, W: 288, H: 282, cy: 129, R: 106, D: 66, LW: 76, biz: false }
-  ];
 
   // ---- icons (Font Awesome Free 6, inline, no emoji) ----------------------
   var I_ARROW = '<svg viewBox="0 0 448 512" aria-hidden="true"><path fill="currentColor" d="M438.6 278.6c12.5-12.5 12.5-32.8 0-45.3l-160-160c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L338.8 224 32 224c-17.7 0-32 14.3-32 32s14.3 32 32 32l306.7 0L233.4 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0l160-160z"/></svg>';
@@ -92,15 +64,23 @@
   var I_HANDHEART = '<svg viewBox="0 0 576 512" aria-hidden="true"><path fill="currentColor" d="M163.9 136.9c-29.4-29.8-29.4-78.2 0-108s77-29.8 106.4 0l17.7 18 17.7-18c29.4-29.8 77-29.8 106.4 0s29.4 78.2 0 108L310.5 240.1c-6.2 6.3-14.3 9.4-22.5 9.4s-16.3-3.1-22.5-9.4L163.9 136.9zM568.2 336.3c13.1 17.8 9.3 42.8-8.5 55.9L433.1 485.5c-23.4 17.2-51.6 26.5-80.7 26.5L192 512 32 512c-17.7 0-32-14.3-32-32l0-64c0-17.7 14.3-32 32-32l36.8 0 44.9-36c22.7-18.2 50.9-28 80-28l78.3 0 16 0 64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32l-64 0-16 0c-8.8 0-16 7.2-16 16s7.2 16 16 16l120.6 0 119.7-88.2c17.8-13.1 42.8-9.3 55.9 8.5zM193.6 384c0 0 0 0 0 0l-.9 0c.3 0 .6 0 .9 0z"/></svg>';
   var I_FEATHER = '<svg viewBox="0 0 512 512" aria-hidden="true"><path fill="currentColor" d="M278.5 215.6L23 471c-9.4 9.4-9.4 24.6 0 33.9s24.6 9.4 33.9 0l57-57 68 0c49.7 0 97.9-14.4 139-41c11.1-7.2 5.5-23-7.8-23c-5.1 0-9.2-4.1-9.2-9.2c0-4.1 2.7-7.6 6.5-8.8l81-24.3c2.5-.8 4.8-2.1 6.7-4l22.4-22.4c10.1-10.1 2.9-27.3-11.3-27.3l-32.2 0c-5.1 0-9.2-4.1-9.2-9.2c0-4.1 2.7-7.6 6.5-8.8l112-33.6c4-1.2 7.4-3.9 9.3-7.7C506.4 207.6 512 184.1 512 160c0-41-16.3-80.3-45.3-109.3l-5.5-5.5C432.3 16.3 393 0 352 0s-80.3 16.3-109.3 45.3L139 149C91 197 64 262.1 64 330l0 55.3L253.6 195.8c6.2-6.2 16.4-6.2 22.6 0c5.4 5.4 6.1 13.6 2.2 19.8z"/></svg>';
   var PR_ICONS = [I_SHIELD, I_USERS, I_HANDHEART, I_FEATHER];
-  // Copy F approved in the mockup (2026-10-14). Swapped only while the Designer
-  // still carries the old wording, so a later Designer edit always wins.
+
+  // Copy F approved in the mockup. Swapped only while the Designer still
+  // carries the old wording, so a later Designer edit always wins.
+  var NEW_H1 = 'Community over platforms';
+  var OLD_LEDE = 'Lokali was built for the attorney without a downtown office, the plumber who works from a truck, and the woodworker whose shop is the garage.';
+  var NEW_LEDE = 'Lokali is the marketplace for local businesses and professionals near you. It was built for the attorney without a downtown office, the plumber who works from a truck, and the woodworker whose shop is the garage.';
+  var PEOPLE = 'No outside advertisers. Vendors can pick a plan that helps them stand out, but no investor, sponsor or advertiser ever decides who you see.';
+  // F 2026-11-22 picked version C (tea, not coffee: she doesn't drink coffee).
+  var LETTER_OLD = "Lokali is woman-owned and independent, and it will stay that way. There are no outside investors setting the roadmap and no advertisers to keep happy, which is exactly why a vendor here never has to outspend anyone to be found. If a neighbor is looking for what you do, you should be easy to find. That is the whole idea, and I get to build it one storefront at a time.";
+  var LETTER_NEW = "Lokali is woman-owned and runs mostly on stubbornness and tea. Whoever helps it grow, the rule stays the same: nobody buys their way to the top, so a vendor here never has to outspend anyone to be found. If a neighbor is looking for what you do, you should be easy to find. That is the whole idea, and I get to build it one storefront at a time.";
   var REWORD = {
-    'No outside advertisers. No third-party algorithms deciding who gets seen. Lokali may offer ways for vendors to stand out, but those tools are built by us, for you, and they never let outside money dictate your visibility.':
-      'No outside advertisers. No third-party algorithms deciding who gets seen. Lokali may offer vendors ways to stand out, but we build those tools ourselves, and outside money never decides who you see.'
+    'No outside advertisers. No third-party algorithms deciding who gets seen. Lokali may offer ways for vendors to stand out, but those tools are built by us, for you, and they never let outside money dictate your visibility.': PEOPLE,
+    'No outside advertisers. No third-party algorithms deciding who gets seen. Lokali may offer vendors ways to stand out, but we build those tools ourselves, and outside money never decides who you see.': PEOPLE
   };
 
-  var C = { ink: '#1A1829', dusk: '#4A4761', v: '#6002EE', vdk: '#4B02BB', lav: '#F3EBFF', lavLine: '#D9CCF5',
-    or: '#FF8D00', or50: '#FFF2DF', orWash: '#FFF7EC', orLine: '#F4DCC0', edge: '#DEDAEE' };
+  // Brand guide: pink page. pk = ground, pb = big words/shapes, pd = buttons + small words.
+  var C = { ink: '#45415A', body: '#4A4761', pk: '#FDE6F2', pb: '#EE0290', pd: '#B0006A', pdk: '#8E0056', line: '#F3C6DE', edge: '#EEE7F0' };
   var F = '"Plus Jakarta Sans",sans-serif';
 
   function injectStyle() {
@@ -112,177 +92,126 @@
       // shared
       '.lok-ab{font-family:' + F + ';color:' + C.ink + ';text-align:left;}' +
       '.lok-ab *{box-sizing:border-box;}' +
-      '.lok-ab .lok-wrap{max-width:1240px;margin:0 auto;padding:0 40px;}' +
-      '.lok-ab.lok-sec{padding:84px 0;}' +
+      '.lok-ab .lok-wrap{max-width:1200px;margin:0 auto;padding:0 40px;}' +
+      '.lok-ab.lok-sec{padding:88px 0;}' +
+      '.lok-ab .lok-eye{font:800 12px/1.3 ' + F + '!important;letter-spacing:.16em!important;text-transform:uppercase!important;color:' + C.pd + '!important;margin:0 0 14px!important;}' +
       '.lok-ab .lok-h2{font-family:' + F + '!important;font-size:42px!important;line-height:1.08!important;font-weight:800!important;letter-spacing:-.03em!important;color:' + C.ink + '!important;margin:0!important;text-wrap:balance;text-transform:none!important;}' +
-      '.lok-ab .lok-copy{font-family:' + F + '!important;font-size:17px!important;line-height:1.7!important;color:' + C.dusk + '!important;margin:0!important;font-weight:400!important;}' +
-      '.lok-ab .lok-ul{color:' + C.v + '!important;font-weight:700;text-decoration:underline!important;text-underline-offset:3px;text-decoration-thickness:1.5px;}' +
-      '.lok-ab .lok-ul:hover{color:' + C.vdk + '!important;}' +
-      '.lok-ab .lok-ul.lok-or{color:' + C.or + '!important;}' +
-      '.lok-ab .lok-btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;background:' + C.v + ';color:#fff!important;font-family:' + F + ';font-weight:800;border-radius:999px;padding:16px 28px;font-size:15.5px;line-height:1.2;text-decoration:none!important;border:0;cursor:pointer;}' +
-      '.lok-ab .lok-btn:hover{background:' + C.vdk + ';}' +
-      '.lok-ab .lok-btn.lok-or{background:' + C.or + ';}' +
-      '.lok-ab .lok-btn.lok-or:hover{background:#F07F00;}' +
-      '.lok-ab .lok-btn:focus-visible,.lok-ab .lok-ul:focus-visible,.lok-ab a:focus-visible{outline:2px solid ' + C.v + ';outline-offset:3px;}' +
-      '.lok-ab .lok-cap{font-size:13px;color:' + C.dusk + ';margin:0;}' +
-      // hero
-      '.lok-ab-hero{background:' + C.orWash + ';padding:72px 0 76px;}' +
-      '#lok-ab-hero{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(530px,.95fr);column-gap:64px;align-items:center;}' +
-      '#lok-ab-hero>*{min-width:0;}' +
-      '#lok-ab-hero h1{font-family:' + F + '!important;font-size:68px!important;line-height:1.02!important;font-weight:800!important;letter-spacing:-.035em!important;color:' + C.ink + '!important;margin:0!important;text-wrap:balance;text-transform:none!important;}' +
-      '#lok-ab-hero h1 .lok-o{color:' + C.or + ';}' +
-      '#lok-ab-hero .lok-lede{font-family:' + F + '!important;font-size:19px!important;line-height:1.6!important;color:' + C.dusk + '!important;margin:22px 0 0!important;max-width:28em;font-weight:400!important;}' +
-      '.lok-trust{display:flex;flex-wrap:wrap;gap:6px 14px;list-style:none;margin:22px 0 0;padding:0;font:600 13.5px/1.5 ' + F + ';color:' + C.dusk + ';}' +
-      '.lok-trust li{display:inline-flex;align-items:center;gap:7px;margin:0;}' +
-      '.lok-trust li::before{content:"";width:6px;height:6px;border-radius:50%;background:' + C.or + ';flex:none;}' +
-      '.lok-acts{display:flex;align-items:center;gap:24px;margin-top:32px;flex-wrap:wrap;}' +
-      '.lok-acts .lok-ul{font-size:15px;}' +
-      // the circle of faces
-      '.lok-wallfig{width:100%;margin:0;display:flex;flex-direction:column;align-items:center;}' +
-      '.lok-wall{position:relative;width:518px;height:482px;--d:112px;--lw:150px;}' +
-      '.lok-face{position:absolute;width:var(--lw);display:flex;flex-direction:column;align-items:center;gap:8px;text-decoration:none!important;color:inherit;outline:none;border-radius:16px;}' +
-      '.lok-face .lok-ph{position:relative;display:block;border-radius:50%;transition:transform .28s cubic-bezier(.2,.8,.2,1);}' +
-      '.lok-face img,.lok-face .lok-init{display:block;width:var(--d);height:var(--d);border-radius:50%;object-fit:cover;border:4px solid #fff;box-shadow:0 2px 6px rgba(120,60,10,.10),0 10px 24px rgba(120,60,10,.10);background:' + C.or50 + ';transition:border-color .2s ease,box-shadow .28s ease;}' +
-      '.lok-face .lok-init{display:flex;align-items:center;justify-content:center;font:800 28px/1 ' + F + ';color:' + C.or + ';}' +
-      '.lok-face .lok-go{position:absolute;right:-4px;bottom:2px;width:34px;height:34px;border-radius:50%;background:' + C.or + ';color:#fff;display:flex;align-items:center;justify-content:center;border:3px solid #fff;transform:scale(0);transition:transform .28s cubic-bezier(.2,.8,.2,1);}' +
-      '.lok-face .lok-go svg{width:13px;height:13px;}' +
-      '.lok-face .lok-nm{font:800 14px/1.25 ' + F + ';color:' + C.ink + ';text-align:center;max-width:var(--lw);}' +
-      '.lok-face .lok-nm b{font-weight:800;text-decoration:underline;text-decoration-color:transparent;text-underline-offset:3px;text-decoration-thickness:2px;transition:text-decoration-color .2s ease;}' +
-      '.lok-face .lok-nm span{display:block;font-weight:500;font-size:12px;color:' + C.dusk + ';margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:var(--lw);}' +
-      '.lok-wall.lok-nobiz .lok-nm span{display:none;}.lok-wall.lok-nobiz .lok-go{display:none;}.lok-wall.lok-nobiz .lok-nm{font-size:13px;}' +
-      '.lok-wall.lok-nobiz .lok-face img,.lok-wall.lok-nobiz .lok-face .lok-init{border-width:3px;}' +
-      '.lok-face:hover .lok-ph,.lok-face:focus-visible .lok-ph{transform:translateY(-6px) scale(1.06);}' +
-      '.lok-face:hover img,.lok-face:focus-visible img,.lok-face:hover .lok-init,.lok-face:focus-visible .lok-init{border-color:' + C.or + ';box-shadow:0 4px 10px rgba(120,60,10,.16),0 18px 34px rgba(120,60,10,.20);}' +
-      '.lok-face:hover .lok-go,.lok-face:focus-visible .lok-go{transform:scale(1);}' +
-      '.lok-face:hover .lok-nm b,.lok-face:focus-visible .lok-nm b{text-decoration-color:' + C.or + ';}' +
-      '.lok-wallfig .lok-cap{margin-top:14px;text-align:center;}' +
-      // the people your neighbors recommend
-      '.lok-kn-top{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:64px;align-items:start;}' +
-      '.lok-kn-top .lok-copy+.lok-copy{margin-top:14px!important;}' +
-      '.lok-kn-ask{font:800 20px/1.3 ' + F + ';color:' + C.v + ';margin:56px 0 20px;letter-spacing:-.01em;}' +
-      // questions above their cards, sharing one bottom line, so the cards stay identical
-      '.lok-kn-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));column-gap:24px;row-gap:14px;align-items:end;}' +
-      '.lok-kn-q{font:800 22px/1.2 ' + F + ';letter-spacing:-.02em;color:' + C.ink + ';margin:0;}' +
-      '.lok-kn{display:flex;flex-direction:column;align-self:stretch;min-width:0;background:#fff;border:1px solid ' + C.edge + ';border-radius:18px;box-shadow:0 1px 2px rgba(40,32,90,.08),0 4px 14px rgba(40,32,90,.06);overflow:hidden;text-decoration:none!important;color:inherit;transition:transform .25s cubic-bezier(.2,.8,.2,1),box-shadow .25s ease;}' +
-      '.lok-kn:hover{transform:translateY(-4px);box-shadow:0 4px 8px rgba(40,32,90,.08),0 18px 36px rgba(96,2,238,.14);}' +
-      '.lok-kn-cov{position:relative;aspect-ratio:4/3;overflow:hidden;background:#E9E0FB;}' +
-      '.lok-kn-cov>img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .5s ease;}' +
-      '.lok-kn:hover .lok-kn-cov img{transform:scale(1.05);}' +
-      '.lok-bf{position:absolute;inset:0;background:' + C.lav + ';padding:16px 16px 0;display:flex;}' +
-      '.lok-bf-win{flex:1;min-width:0;background:#fff;border-radius:10px 10px 0 0;box-shadow:0 6px 20px rgba(40,32,90,.14);overflow:hidden;display:flex;flex-direction:column;}' +
-      '.lok-bf-bar{height:22px;flex:none;display:flex;align-items:center;gap:5px;padding:0 10px;background:#F7F6FC;border-bottom:1px solid #EEEDF6;}' +
-      '.lok-bf-bar i{width:7px;height:7px;border-radius:50%;background:' + C.lavLine + ';display:block;}' +
-      '.lok-bf-win img{flex:1;min-height:0;width:100%;object-fit:cover;object-position:50% 0;display:block;transition:transform .5s ease;}' +
-      '.lok-kn-body{padding:16px 20px 18px;display:flex;flex-direction:column;flex:1;}' +
-      '.lok-kn-who{display:flex;align-items:center;gap:10px;}' +
-      '.lok-kn-face{width:40px;height:40px;border-radius:50%;object-fit:cover;flex:none;background:' + C.lav + ';}' +
-      '.lok-kn-name{font:800 18px/1.15 ' + F + ';letter-spacing:-.015em;color:' + C.ink + ';}' +
-      '.lok-kn-biz{font:600 13px/1.3 ' + F + ';color:' + C.dusk + ';margin-top:1px;}' +
-      '.lok-kn-foot{display:flex;align-items:center;gap:10px;margin-top:auto;padding-top:14px;min-height:39px;flex-wrap:wrap;}' +
-      '.lok-kn-foot .lok-ul{margin-left:auto;font-size:14px;display:inline-flex;align-items:center;gap:5px;}' +
-      '.lok-kn-foot .lok-ul svg{width:11px;height:11px;transition:transform .25s ease;}' +
-      '.lok-kn:hover .lok-kn-foot .lok-ul svg{transform:translateX(4px);}' +
-      '.lok-fv{display:inline-flex;align-items:center;gap:5px;background:#fff;border:1px solid #E3CD8A;color:#8A6A12;border-radius:999px;padding:4px 9px;font:800 10px/1.4 ' + F + ';letter-spacing:.07em;text-transform:uppercase;}' +
-      '.lok-fv svg{width:10px;height:10px;color:#C9A227;}' +
-      '.lok-ab .lok-kn-note{margin-top:30px;display:flex;gap:6px 18px;flex-wrap:wrap;align-items:baseline;font-size:14px!important;}' +
-      '.lok-kn-note .lok-ul{font-size:14px;}' +
-      '.lok-kn-rows{display:none;gap:12px;}' +
-      '.lok-kn-row{display:grid;grid-template-columns:96px minmax(0,1fr);gap:14px;align-items:center;background:#fff;border:1px solid ' + C.edge + ';border-radius:16px;box-shadow:0 1px 2px rgba(40,32,90,.08),0 4px 14px rgba(40,32,90,.06);padding:10px 12px 10px 10px;text-decoration:none!important;color:inherit;transition:transform .15s ease;}' +
-      '.lok-kn-row:active{transform:scale(.98);}' +
-      '.lok-kn-row .lok-th{width:96px;height:96px;border-radius:10px;overflow:hidden;background:#E9E0FB;display:block;}' +
-      '.lok-kn-row .lok-th img{width:100%;height:100%;object-fit:cover;display:block;}' +
-      '.lok-kn-row .lok-q{display:block;font:800 17px/1.2 ' + F + ';letter-spacing:-.015em;color:' + C.ink + ';}' +
-      '.lok-kn-row .lok-w{display:flex;align-items:center;gap:8px;margin-top:8px;font:600 13px/1.3 ' + F + ';color:' + C.dusk + ';}' +
-      '.lok-kn-row .lok-w img{width:26px;height:26px;border-radius:50%;object-fit:cover;flex:none;}' +
-      '.lok-kn-row .lok-ul{font-size:13px;display:inline-block;margin-top:6px;}' +
+      '.lok-ab .lok-copy{font-family:' + F + '!important;font-size:17px!important;line-height:1.7!important;color:' + C.body + '!important;margin:0!important;font-weight:400!important;}' +
+      '.lok-ab .lok-ul{color:' + C.pd + '!important;font-weight:700;text-decoration:underline!important;text-underline-offset:3px;text-decoration-thickness:1.5px;cursor:pointer;}' +
+      '.lok-ab .lok-ul:hover{color:' + C.pdk + '!important;}' +
+      '.lok-ab .lok-btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;background:' + C.pd + ';color:#fff!important;font-family:' + F + ';font-weight:800;border-radius:999px;padding:16px 28px;font-size:15.5px;line-height:1.2;text-decoration:none!important;border:2px solid ' + C.pd + ';cursor:pointer;}' +
+      '.lok-ab .lok-btn:hover{background:' + C.pdk + ';border-color:' + C.pdk + ';}' +
+      '.lok-ab .lok-btn.lok-ghost{background:transparent;color:' + C.pd + '!important;}' +
+      '.lok-ab .lok-btn.lok-ghost:hover{background:' + C.pk + ';}' +
+      '.lok-ab .lok-btn:focus-visible,.lok-ab .lok-ul:focus-visible,.lok-ab a:focus-visible{outline:2px solid ' + C.pd + ';outline-offset:3px;}' +
+      // cover
+      '.lok-ab-cover{background:' + C.pk + ';padding:56px 0 0;}' +
+      '#lok-ab-hero{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);align-items:center;}' +
+      '.lok-cv-ph{grid-column:2;grid-row:1;margin:0;max-width:560px;justify-self:end;width:100%;}' +
+      '.lok-cv-ph a{display:block;text-decoration:none!important;color:inherit;}' +
+      '.lok-cv-img{display:block;width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:4px;background:#F9D3E8;}' +
+      '.lok-cv-cap{margin-top:12px;font:500 13.5px/1.45 ' + F + ';color:' + C.body + ';}' +
+      '.lok-cv-cap b{font:800 11px/1 ' + F + ';letter-spacing:.14em;text-transform:uppercase;color:' + C.pd + ';margin-right:8px;}' +
+      '.lok-cv-cap a:hover span{text-decoration:underline;text-underline-offset:3px;}' +
+      '.lok-cv-card{grid-column:1;grid-row:1;position:relative;z-index:1;margin-right:-110px;background:#fff;border-radius:6px;padding:44px 44px 46px;box-shadow:0 20px 48px rgba(176,0,106,.10);}' +
+      '#lok-ab-hero h1{font-family:' + F + '!important;font-size:60px!important;line-height:1.02!important;font-weight:800!important;letter-spacing:-.035em!important;color:' + C.ink + '!important;margin:0 0 30px!important;text-wrap:balance;text-transform:none!important;}' +
+      '#lok-ab-hero h1 .lok-hl{color:' + C.pb + ';}' +
+      '.lok-ab-under{background:' + C.pk + ';padding:44px 0 64px;}' +
+      '.lok-un{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:56px;align-items:center;}' +
+      '.lok-ab .lok-lede{font-family:' + F + '!important;font-size:19px!important;line-height:1.65!important;color:' + C.body + '!important;margin:0!important;font-weight:400!important;}' +
+      '.lok-tags{display:flex;flex-wrap:wrap;gap:8px;list-style:none;margin:0 0 18px;padding:0;}' +
+      '.lok-tags li{margin:0;border:1.5px solid ' + C.line + ';border-radius:999px;padding:6px 14px;font:700 13.5px/1.3 ' + F + ';color:' + C.pd + ';background:#fff;}' +
+      // the quote
+      '.lok-ab-q{background:#fff;padding:96px 0 40px;text-align:center;}' +
+      '.lok-ab-q .lok-eye{text-align:center;}' +
+      '.lok-ab .lok-quote{margin:0 auto!important;max-width:880px;font:800 40px/1.2 ' + F + '!important;letter-spacing:-.03em!important;color:' + C.ink + '!important;text-wrap:balance;}' +
+      '.lok-ab .lok-quote span{color:' + C.pb + ';}' +
+      '.lok-ab .lok-q-sub{margin:18px auto 0!important;max-width:40em;font:400 17px/1.6 ' + F + '!important;color:' + C.body + '!important;}' +
       // principles
-      '.lok-ab-pr{background:' + C.lav + ';}' +
-      '.lok-ab-pr .lok-h2{margin-bottom:30px!important;}' +
-      // F 2026-10-14: the four principles as white cards on the lavender band
-      '.lok-pr-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;}' +
-      '.lok-pr{display:grid;grid-template-columns:52px minmax(0,1fr);gap:20px;background:#fff;border-radius:20px;padding:28px 30px 30px;box-shadow:0 1px 2px rgba(40,32,90,.06),0 8px 24px rgba(40,32,90,.06);}' +
-      '.lok-pr-ic{width:52px;height:52px;border-radius:50%;background:' + C.lav + ';color:' + C.v + ';display:flex;align-items:center;justify-content:center;}' +
+      '.lok-ab-pr{background:#fff;}' +
+      '.lok-pr-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border-top:2px solid ' + C.ink + ';}' +
+      '.lok-pr{padding:30px 36px 32px 0;border-bottom:1px solid ' + C.edge + ';}' +
+      '.lok-pr:nth-child(odd){border-right:1px solid ' + C.edge + ';}' +
+      '.lok-pr:nth-child(even){padding-left:36px;padding-right:0;}' +
+      '.lok-pr-ic{width:52px;height:52px;border-radius:50%;background:' + C.pk + ';color:' + C.pd + ';display:flex;align-items:center;justify-content:center;margin-bottom:16px;}' +
       '.lok-pr-ic svg{width:21px;height:21px;}' +
-      '.lok-ab .lok-pr-t{font:800 21px/1.25 ' + F + '!important;letter-spacing:-.01em!important;color:' + C.ink + '!important;margin:0!important;text-transform:none!important;}' +
-      '.lok-ab .lok-pr-b{font:400 15.5px/1.65 ' + F + '!important;color:' + C.dusk + '!important;margin:8px 0 0!important;}' +
+      '.lok-ab .lok-pr-t{font:800 22px/1.25 ' + F + '!important;letter-spacing:-.01em!important;color:' + C.ink + '!important;margin:0!important;text-transform:none!important;}' +
+      '.lok-ab .lok-pr-b{font:400 16px/1.65 ' + F + '!important;color:' + C.body + '!important;margin:8px 0 0!important;max-width:30em;}' +
       // two kinds of people
+      '.lok-ab-two{background:#fff;padding-top:24px!important;}' +
       '.lok-ab-two .lok-h2{margin-bottom:30px!important;}' +
       '.lok-two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;}' +
-      '.lok-who{background:' + C.lav + ';border-radius:22px;padding:34px 36px 32px;display:flex;flex-direction:column;min-width:0;}' +
-      '.lok-who.lok-cust{background:' + C.or50 + ';}' +
+      '.lok-who{background:' + C.pk + ';border-radius:22px;padding:34px 36px 32px;display:flex;flex-direction:column;min-width:0;}' +
       '.lok-who-top{display:flex;align-items:center;gap:12px;}' +
-      '.lok-who-ic{width:44px;height:44px;border-radius:50%;background:#fff;color:' + C.v + ';display:flex;align-items:center;justify-content:center;flex:none;}' +
+      '.lok-who-ic{width:44px;height:44px;border-radius:50%;background:#fff;color:' + C.pd + ';display:flex;align-items:center;justify-content:center;flex:none;}' +
       '.lok-who-ic svg{width:18px;height:18px;}' +
-      '.lok-who-k{font:700 14px/1.2 ' + F + ';color:' + C.v + ';}' +
-      '.lok-cust .lok-who-ic,.lok-cust .lok-who-k,.lok-cust .lok-chk svg{color:' + C.or + ';}' +
+      '.lok-who-k{font:800 12px/1.2 ' + F + ';letter-spacing:.14em;text-transform:uppercase;color:' + C.pd + ';}' +
       '.lok-ab .lok-who-h{font:800 28px/1.15 ' + F + '!important;letter-spacing:-.025em!important;color:' + C.ink + '!important;margin:20px 0 0!important;text-transform:none!important;}' +
-      '.lok-ab .lok-who-p{font:400 16px/1.7 ' + F + '!important;color:' + C.dusk + '!important;margin:12px 0 0!important;}' +
+      '.lok-ab .lok-who-p{font:400 16px/1.7 ' + F + '!important;color:' + C.body + '!important;margin:12px 0 0!important;}' +
       '.lok-chk{list-style:none!important;padding:0!important;margin:22px 0 0!important;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 18px;}' +
       '.lok-chk li{display:flex;gap:9px;align-items:baseline;min-width:0;margin:0!important;padding:0!important;font:600 14.5px/1.4 ' + F + ';color:' + C.ink + ';}' +
       '.lok-chk li::before{display:none!important;}' +
-      '.lok-chk svg{width:12px;height:12px;color:' + C.v + ';flex:none;position:relative;top:1px;}' +
+      '.lok-chk svg{width:12px;height:12px;color:' + C.pd + ';flex:none;position:relative;top:1px;}' +
       '.lok-ab .lok-chk li>*:not(svg){font:inherit!important;color:inherit!important;margin:0!important;}' +
       '.lok-who-foot{margin-top:auto;padding-top:26px;display:flex;align-items:center;gap:12px 18px;flex-wrap:wrap;}' +
       '.lok-who-foot .lok-btn{padding:13px 22px;font-size:14.5px;}' +
       '.lok-who-foot .lok-ul{font-size:15px;}' +
-      '.lok-fnd{display:flex;align-items:center;gap:20px;margin-top:24px;border:1px solid #E3CD8A;border-radius:18px;padding:22px 26px;background:#fff;}' +
-      '.lok-fnd-ic{width:46px;height:46px;border-radius:50%;background:#FBF5E2;color:#C9A227;display:flex;align-items:center;justify-content:center;flex:none;}' +
+      '.lok-fnd{display:flex;align-items:center;gap:20px;margin-top:24px;border:1.5px solid ' + C.line + ';border-radius:18px;padding:22px 26px;background:#fff;}' +
+      '.lok-fnd-ic{width:46px;height:46px;border-radius:50%;background:' + C.pk + ';color:' + C.pd + ';display:flex;align-items:center;justify-content:center;flex:none;}' +
       '.lok-fnd-ic svg{width:18px;height:18px;}' +
       '.lok-fnd>div{flex:1;min-width:0;}' +
       '.lok-ab .lok-fnd-t{font:800 17px/1.35 ' + F + '!important;color:' + C.ink + '!important;margin:0!important;letter-spacing:0!important;text-transform:none!important;}' +
       '.lok-ab .lok-fnd-t strong{font-weight:800!important;}' +
-      '.lok-ab .lok-fnd-p{font:400 14.5px/1.6 ' + F + '!important;color:' + C.dusk + '!important;margin:4px 0 0!important;max-width:62em;}' +
+      '.lok-ab .lok-fnd-p{font:400 14.5px/1.6 ' + F + '!important;color:' + C.body + '!important;margin:4px 0 0!important;max-width:62em;}' +
       '.lok-fnd .lok-ul{white-space:nowrap;font-size:15px;}' +
       // built for everywhere + waitlist
-      '.lok-ab-where{background:' + C.orWash + ';}' +
+      '.lok-ab-where{background:' + C.pk + ';}' +
       '.lok-wh-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:64px;align-items:start;}' +
       '.lok-wh-grid .lok-copy{margin-top:16px!important;}' +
       '.lok-ab .lok-h2 strong{font-weight:800!important;}' +
-      '.lok-open{background:#fff;border-radius:22px;padding:28px 30px 30px;box-shadow:0 1px 2px rgba(120,60,10,.06),0 8px 24px rgba(120,60,10,.06);}' +
-      '.lok-ab .lok-open-h{font:800 18px/1.3 ' + F + '!important;letter-spacing:-.01em!important;color:' + C.ink + '!important;margin:0!important;text-transform:none!important;}' +
+      '.lok-open{background:#fff;border-radius:22px;padding:28px 30px 30px;box-shadow:0 1px 2px rgba(176,0,106,.06),0 8px 24px rgba(176,0,106,.06);}' +
+      '.lok-ab .lok-open-h{font:800 12px/1.3 ' + F + '!important;letter-spacing:.16em!important;text-transform:uppercase!important;color:' + C.pd + '!important;margin:0!important;}' +
       '.lok-areas{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;}' +
-      '.lok-area{display:inline-flex;align-items:center;gap:6px;background:' + C.or50 + ';border-radius:999px;padding:8px 14px;font:600 14px/1.2 ' + F + ';color:' + C.ink + '!important;text-decoration:none!important;}' +
-      '.lok-area svg{width:11px;height:11px;color:' + C.or + ';}' +
-      '.lok-area:hover{background:#FFE6C2;}' +
-      '.lok-ab .lok-more{font:400 14px/1.5 ' + F + '!important;color:' + C.dusk + '!important;margin:14px 0 0!important;}' +
-      '.lok-wl{border-top:1px solid ' + C.orLine + ';margin-top:24px;padding-top:22px;}' +
+      '.lok-area{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid ' + C.line + ';border-radius:999px;padding:8px 14px;font:600 14px/1.2 ' + F + ';color:' + C.ink + '!important;text-decoration:none!important;}' +
+      '.lok-area svg{width:11px;height:11px;color:' + C.pd + ';}' +
+      '.lok-area:hover{background:' + C.pk + ';}' +
+      '.lok-ab .lok-more{font:400 14px/1.5 ' + F + '!important;color:' + C.body + '!important;margin:14px 0 0!important;}' +
+      '.lok-wl{border-top:1px solid ' + C.line + ';margin-top:24px;padding-top:22px;}' +
       '.lok-ab .lok-wl-h{font:800 22px/1.25 ' + F + '!important;letter-spacing:-.02em!important;color:' + C.ink + '!important;margin:0!important;text-transform:none!important;}' +
-      '.lok-ab .lok-wl-p{font:400 15px/1.65 ' + F + '!important;color:' + C.dusk + '!important;margin:8px 0 0!important;}' +
+      '.lok-ab .lok-wl-p{font:400 15px/1.65 ' + F + '!important;color:' + C.body + '!important;margin:8px 0 0!important;}' +
       '.lok-ab #wl-trigger{margin-top:18px;padding:14px 24px;font-size:15px;}' +
       // the letter
-      '.lok-ab-letter{background:#fff;padding:88px 0 96px;scroll-margin-top:90px;}' +
-      '.lok-letter{max-width:680px;margin:0 auto;}' +
-      '.lok-lt-head{display:flex;align-items:center;gap:18px;}' +
-      '.lok-ab .lok-lt-face{width:72px!important;height:72px!important;border-radius:50%!important;object-fit:cover;flex:none;margin:0!important;max-width:none!important;}' +
-      '.lok-ab .lok-lt-h{font:800 42px/1.1 ' + F + '!important;letter-spacing:-.03em!important;color:' + C.ink + '!important;margin:0!important;text-transform:none!important;}' +
-      '.lok-lt-body{margin-top:30px;display:grid;gap:18px;}' +
-      '.lok-ab .lok-lt-p{font:400 17px/1.8 ' + F + '!important;color:' + C.dusk + '!important;margin:0!important;}' +
+      '.lok-ab-letter{background:#fff;padding:96px 0 104px;scroll-margin-top:90px;}' +
+      '.lok-letter{display:grid;grid-template-columns:260px minmax(0,1fr);gap:56px;align-items:start;max-width:1000px;margin:0 auto;}' +
+      '.lok-ab .lok-lt-face{display:block;width:260px!important;height:260px!important;border-radius:50%!important;object-fit:cover;margin:0!important;max-width:none!important;box-shadow:0 0 0 8px ' + C.pk + ';}' +
+      '.lok-ab .lok-lt-h{font:800 40px/1.1 ' + F + '!important;letter-spacing:-.03em!important;color:' + C.ink + '!important;margin:0!important;text-transform:none!important;}' +
+      '.lok-lt-body{margin-top:24px;display:grid;gap:18px;}' +
+      '.lok-ab .lok-lt-p{font:400 17px/1.8 ' + F + '!important;color:' + C.body + '!important;margin:0!important;}' +
       '.lok-ab .lok-sig{margin-top:30px;}' +
       '.lok-ab .lok-sig img{display:block;width:170px!important;height:auto!important;max-width:100%;}' +
-      '.lok-ab .lok-role{font:600 14px/1.4 ' + F + '!important;color:' + C.dusk + '!important;margin:2px 0 0!important;letter-spacing:0!important;text-transform:none!important;}' +
+      '.lok-ab .lok-role{font:600 14px/1.4 ' + F + '!important;color:' + C.body + '!important;margin:2px 0 0!important;letter-spacing:0!important;text-transform:none!important;}' +
+      '.lok-lt-acts{display:flex;flex-wrap:wrap;gap:12px;margin-top:30px;}' +
       // responsive
-      '@media(max-width:1279px){#lok-ab-hero h1{font-size:58px!important;}}' + // keeps the full-size circle on narrow laptops
-      '@media(max-width:1149px){#lok-ab-hero{grid-template-columns:1fr;text-align:center;}#lok-ab-hero h1{font-size:54px!important;}' +
-        '#lok-ab-hero .lok-lede{margin:18px auto 0!important;}.lok-trust,.lok-acts{justify-content:center;}.lok-wallfig{margin-top:36px;}' +
-        '.lok-kn-q{font-size:19px;}}' +
-      '@media(max-width:991px){.lok-ab .lok-wrap{padding:0 24px;}.lok-ab.lok-sec,.lok-ab-hero,.lok-ab-letter{padding-top:48px;padding-bottom:48px;}' +
-        '.lok-ab .lok-h2{font-size:30px!important;}.lok-kn-top,.lok-wh-grid{grid-template-columns:1fr;gap:16px;}.lok-two{grid-template-columns:1fr;gap:14px;}' +
-        '.lok-open{margin-top:8px;}}' +
+      '@media(max-width:1149px){#lok-ab-hero h1{font-size:50px!important;}.lok-cv-card{margin-right:-80px;padding:36px;}}' +
+      '@media(max-width:991px){.lok-ab .lok-wrap{padding:0 24px;}.lok-ab.lok-sec,.lok-ab-letter{padding-top:56px;padding-bottom:56px;}' +
+        '.lok-ab .lok-h2{font-size:30px!important;}.lok-wh-grid{grid-template-columns:1fr;gap:16px;}.lok-two{grid-template-columns:1fr;gap:14px;}' +
+        '.lok-un{grid-template-columns:1fr;gap:22px;}.lok-ab .lok-quote{font-size:30px!important;}.lok-ab-q{padding:64px 0 24px;}' +
+        '.lok-letter{grid-template-columns:1fr;gap:28px;}.lok-ab .lok-lt-face{width:180px!important;height:180px!important;}.lok-open{margin-top:8px;}}' +
       '@media(max-width:767px){.lok-ab .lok-wrap{padding:0 16px;}' +
-        '#lok-ab-hero h1{font-size:40px!important;}#lok-ab-hero .lok-lede{font-size:16px!important;margin:14px auto 0!important;}' +
-        '.lok-wallfig{margin-top:28px;}.lok-trust{font-size:12.5px;gap:6px 12px;}.lok-acts{flex-direction:column;gap:14px;margin-top:24px;}.lok-acts .lok-btn{width:100%;}' +
-        '.lok-ab .lok-copy{font-size:15.5px!important;line-height:1.65!important;}.lok-kn-ask{font-size:18px;margin:32px 0 12px;}' +
-        '.lok-kn-grid{display:none;}.lok-kn-rows{display:grid;}.lok-ab .lok-kn-note{font-size:13px!important;margin-top:16px;}' +
-        '.lok-pr-grid{grid-template-columns:1fr;gap:12px;}.lok-pr{grid-template-columns:44px minmax(0,1fr);gap:14px;padding:22px 20px 24px;border-radius:18px;}.lok-pr-ic{width:44px;height:44px;}.lok-pr-ic svg{width:17px;height:17px;}' +
-        '.lok-ab .lok-pr-t{font-size:18px!important;}.lok-ab .lok-pr-b{font-size:15px!important;}' +
+        '.lok-ab-cover{padding-top:16px;}#lok-ab-hero{grid-template-columns:1fr;}.lok-cv-ph{grid-column:1;grid-row:1;max-width:none;}' +
+        '.lok-cv-card{grid-column:1;grid-row:2;margin:-64px 12px 0;padding:26px 22px 28px;}#lok-ab-hero h1{font-size:36px!important;margin-bottom:22px!important;}' +
+        '.lok-cv-card .lok-btn{width:100%;}.lok-ab-under{padding:28px 0 44px;}.lok-ab .lok-lede{font-size:16.5px!important;}' +
+        '.lok-ab .lok-quote{font-size:25px!important;}.lok-ab .lok-q-sub{font-size:15.5px!important;}' +
+        '.lok-pr-grid{grid-template-columns:1fr;}.lok-pr,.lok-pr:nth-child(even){padding:24px 0;border-right:0;}.lok-pr-ic{width:44px;height:44px;margin-bottom:12px;}.lok-pr-ic svg{width:17px;height:17px;}' +
+        '.lok-ab .lok-pr-t{font-size:19px!important;}.lok-ab .lok-pr-b{font-size:15px!important;}' +
+        '.lok-ab .lok-copy{font-size:15.5px!important;line-height:1.65!important;}' +
         '.lok-who{padding:24px 22px;}.lok-ab .lok-who-h{font-size:23px!important;margin-top:16px!important;}.lok-ab .lok-who-p{font-size:15px!important;line-height:1.65!important;}' +
         '.lok-chk{grid-template-columns:1fr;gap:8px;}.lok-chk li{font-size:14px;}.lok-who-foot{padding-top:20px;}' +
         '.lok-fnd{flex-direction:column;align-items:flex-start;gap:12px;padding:20px;margin-top:14px;}' +
         '.lok-open{padding:20px;}.lok-ab #wl-trigger{width:100%;}' +
-        '.lok-ab .lok-lt-h{font-size:30px!important;}.lok-ab .lok-lt-face{width:56px!important;height:56px!important;}.lok-lt-head{gap:14px;}' +
-        '.lok-lt-body{margin-top:22px;gap:14px;}.lok-ab .lok-lt-p{font-size:15.5px!important;line-height:1.75!important;}.lok-ab .lok-sig img{width:150px!important;}}' +
-      '@media(prefers-reduced-motion:reduce){.lok-face .lok-ph,.lok-face .lok-go,.lok-face img,.lok-kn,.lok-kn-cov img,.lok-bf-win img,.lok-kn-foot .lok-ul svg,.lok-kn-row{transition:none;}' +
-        '.lok-face:hover .lok-ph,.lok-face:focus-visible .lok-ph,.lok-kn:hover,.lok-kn:hover .lok-kn-cov img,.lok-kn:hover .lok-kn-foot .lok-ul svg{transform:none;}}';
+        '.lok-ab .lok-lt-h{font-size:30px!important;}.lok-ab .lok-lt-face{width:150px!important;height:150px!important;box-shadow:0 0 0 6px ' + C.pk + ';}' +
+        '.lok-lt-body{margin-top:18px;gap:14px;}.lok-ab .lok-lt-p{font-size:15.5px!important;line-height:1.75!important;}.lok-ab .lok-sig img{width:150px!important;}' +
+        '.lok-lt-acts .lok-btn{width:100%;}}';
     var s = document.createElement('style');
     s.id = STYLE_ID;
     s.textContent = css;
@@ -308,219 +237,94 @@
   // text (what crawlers read) stays the page's own and its old styles drop off.
   function take(node, cls) { if (!node) return null; node.className = cls; node.removeAttribute('style'); return node; }
   function oneLine(s) { return String(s || '').replace(/\s+/g, ' ').trim(); }
+  function hideChildren(sec) {
+    var kids = sec.children;
+    for (var i = 0; i < kids.length; i++) kids[i].classList.add('lok-ab-old');
+  }
 
-  // ---- hero + the circle of faces ------------------------------------------
-  function faceNode(f) {
-    var a = el('a', 'lok-face');
-    a.href = vendorHref(f.slug);
-    a.setAttribute('aria-label', 'Visit ' + f.name + "'s storefront, " + f.biz);
-    a.setAttribute('data-vid', String(f.vid));
-    var ph = el('span', 'lok-ph');
-    var img = el('img');
-    img.alt = '';
+  // ---- the cover -------------------------------------------------------------
+  function pickCover(list) {
+    if (!list.length) return null;
+    return list[Math.floor(Math.random() * list.length)];
+  }
+
+  function fillCover(fig, c) {
+    fig.textContent = '';
+    if (!c) { fig.style.display = 'none'; return; }
+    fig.style.display = '';
+    fig.setAttribute('data-vid', String(c.vid));
+    var a = el('a');
+    a.href = vendorHref(c.slug);
+    a.setAttribute('aria-label', 'Visit ' + c.biz + "'s storefront");
+    var img = el('img', 'lok-cv-img');
+    img.alt = c.alt || '';
     img.decoding = 'async';
-    imgSet(img, f.img, 240);
-    // A blocked or missing photo becomes an initial, so the circle never has a hole.
-    img.addEventListener('error', function () {
-      if (!img.parentNode) return;
-      img.parentNode.replaceChild(el('span', 'lok-init', f.name.charAt(0)), img);
-    });
-    ph.appendChild(img);
-    ph.appendChild(svgSpan('lok-go', I_ARROW));
-    a.appendChild(ph);
-    var nm = el('span', 'lok-nm');
-    nm.appendChild(el('b', null, f.name));
-    nm.appendChild(el('span', null, f.biz));
-    a.appendChild(nm);
-    return a;
-  }
-
-  function fillWall(wall, list) {
-    wall.textContent = '';
-    list.slice(0, RING.length).forEach(function (f) { wall.appendChild(faceNode(f)); });
-    layoutWall(wall);
-  }
-
-  function layoutWall(wall) {
-    var fig = wall.closest('.lok-wallfig');
-    if (!fig) return;
-    var w = fig.clientWidth; // the space the circle has (the hero's right column, or the whole row)
-    var g = GEOS[GEOS.length - 1];
-    for (var k = 0; k < GEOS.length; k++) { if (w >= GEOS[k].min) { g = GEOS[k]; break; } }
-    wall.style.width = g.W + 'px';
-    wall.style.height = g.H + 'px';
-    wall.style.setProperty('--d', g.D + 'px');
-    wall.style.setProperty('--lw', g.LW + 'px');
-    wall.classList.toggle('lok-nobiz', !g.biz);
-    var faces = wall.children;
-    for (var i = 0; i < faces.length; i++) {
-      var r = RING[i] || RING[0];
-      faces[i].style.left = (g.W / 2 + r[0] * g.R - g.LW / 2).toFixed(1) + 'px';
-      faces[i].style.top = (g.cy + r[1] * g.R - g.D / 2).toFixed(1) + 'px';
-    }
+    img.setAttribute('fetchpriority', 'high');
+    if (c.pos) img.style.objectPosition = c.pos;
+    imgSet(img, c.img, 800);
+    a.appendChild(img);
+    var cap = el('figcaption', 'lok-cv-cap');
+    cap.appendChild(el('b', null, 'On the cover'));
+    cap.appendChild(el('span', null, c.cap));
+    a.appendChild(cap);
+    fig.appendChild(a);
   }
 
   function mountHero(sec) {
     var h1 = sec.querySelector('h1');
     if (!h1) return false;
     var lede = sec.querySelector('p.paragraph') || sec.querySelector('p');
-    var wrap = el('div', 'lok-ab lok-ab-hero');
+
+    var cover = el('div', 'lok-ab lok-ab-cover');
     var grid = el('div', 'lok-wrap');
     grid.id = 'lok-ab-hero';
-    var txt = el('div', 'lok-hero-txt');
-    // Two-tone headline, only while the Designer copy is the one we styled for.
-    if (oneLine(h1.textContent) === 'Community over platforms') {
-      h1.textContent = '';
-      h1.appendChild(document.createTextNode('Community'));
-      h1.appendChild(el('br'));
-      h1.appendChild(el('span', 'lok-o', 'over platforms.'));
-    }
-    txt.appendChild(h1);
-    if (lede) txt.appendChild(take(lede, 'lok-lede'));
-    var trust = el('ul', 'lok-trust');
-    ['Woman-owned', 'Independent, no outside investors'].forEach(function (t) { trust.appendChild(el('li', null, t)); });
-    txt.appendChild(trust);
-    var acts = el('div', 'lok-acts');
-    acts.appendChild(link('lok-btn lok-or', 'Browse the Market', '/the-market'));
-    acts.appendChild(link('lok-ul lok-or', "Read Francesca's story", '#lok-ab-letter'));
-    txt.appendChild(acts);
-    grid.appendChild(txt);
-
-    var fig = el('div', 'lok-wallfig');
-    var box = el('div');
-    var wall = el('div', 'lok-wall');
-    wall.id = 'lok-ab-wall';
-    box.appendChild(wall);
-    fig.appendChild(box);
-    fig.appendChild(el('p', 'lok-cap', 'A few of the neighbors with a storefront on Lokali.'));
+    var fig = el('figure', 'lok-cv-ph');
+    fig.id = 'lok-ab-cover';
     grid.appendChild(fig);
-    wrap.appendChild(grid);
-    sec.appendChild(wrap);
-    fillWall(wall, FACES);
-    var queued = false;
-    window.addEventListener('resize', function () {
-      if (queued) return;
-      queued = true;
-      var run = function () { queued = false; layoutWall(wall); };
-      if (window.requestAnimationFrame) window.requestAnimationFrame(run); else setTimeout(run, 16);
-    });
+    var card = el('div', 'lok-cv-card');
+    card.appendChild(el('p', 'lok-eye', 'Our story'));
+    // New headline, only while the Designer copy is the one we replaced.
+    if (oneLine(h1.textContent) === NEW_H1) {
+      h1.textContent = '';
+      h1.appendChild(document.createTextNode('Good work deserves '));
+      h1.appendChild(el('span', 'lok-hl', 'to be found.'));
+    }
+    card.appendChild(h1);
+    card.appendChild(link('lok-btn', 'Meet your neighbors', '/the-market'));
+    grid.appendChild(card);
+    cover.appendChild(grid);
+    sec.appendChild(cover);
+    fillCover(fig, pickCover(COVERS));
+
+    var under = el('div', 'lok-ab lok-ab-under');
+    var un = el('div', 'lok-wrap lok-un');
+    if (lede) {
+      if (oneLine(lede.textContent) === OLD_LEDE) lede.textContent = NEW_LEDE;
+      un.appendChild(take(lede, 'lok-lede'));
+    }
+    var side = el('div');
+    var tags = el('ul', 'lok-tags');
+    ['Woman-owned', 'Founder-led'].forEach(function (t) { tags.appendChild(el('li', null, t)); });
+    side.appendChild(tags);
+    side.appendChild(link('lok-ul', "Read Francesca's letter", '#lok-ab-letter'));
+    un.appendChild(side);
+    under.appendChild(un);
+    sec.appendChild(under);
     return true;
   }
 
-  // ---- the people your neighbors recommend ---------------------------------
-  function cardCover(c) {
-    var img = el('img');
-    img.alt = c.alt || '';
-    img.loading = 'lazy';
-    img.decoding = 'async';
-    imgSet(img, c.img, 760);
-    if (!c.web) {
-      if (c.pos) img.style.objectPosition = c.pos;
-      return img;
-    }
-    var bf = el('span', 'lok-bf'), win = el('span', 'lok-bf-win'), bar = el('span', 'lok-bf-bar');
-    bar.appendChild(el('i')); bar.appendChild(el('i')); bar.appendChild(el('i'));
-    win.appendChild(bar);
-    win.appendChild(img);
-    bf.appendChild(win);
-    return bf;
-  }
-
-  function cardNode(c) {
-    var a = el('a', 'lok-kn');
-    a.href = vendorHref(c.slug);
-    a.setAttribute('data-vid', String(c.vid));
-    var cov = el('span', 'lok-kn-cov');
-    cov.style.display = 'block';
-    cov.appendChild(cardCover(c));
-    a.appendChild(cov);
-    var body = el('span', 'lok-kn-body');
-    var who = el('span', 'lok-kn-who');
-    var face = el('img', 'lok-kn-face');
-    face.alt = '';
-    face.loading = 'lazy';
-    imgSet(face, c.face, 96);
-    face.addEventListener('error', function () { face.style.visibility = 'hidden'; });
-    who.appendChild(face);
-    var names = el('span');
-    names.appendChild(el('span', 'lok-kn-name', c.who));
-    names.lastChild.style.display = 'block';
-    names.appendChild(el('span', 'lok-kn-biz', c.biz + ', ' + c.town));
-    names.lastChild.style.display = 'block';
-    who.appendChild(names);
-    body.appendChild(who);
-    var foot = el('span', 'lok-kn-foot');
-    if (c.founding) {
-      var fv = svgSpan('lok-fv', I_CROWN);
-      fv.appendChild(document.createTextNode('Founding vendor'));
-      foot.appendChild(fv);
-    }
-    var go = el('span', 'lok-ul', 'Visit storefront');
-    go.insertAdjacentHTML('beforeend', I_ARROW); // static SVG
-    foot.appendChild(go);
-    body.appendChild(foot);
-    a.appendChild(body);
-    return a;
-  }
-
-  function rowNode(c) {
-    var a = el('a', 'lok-kn-row');
-    a.href = vendorHref(c.slug);
-    a.setAttribute('data-vid', String(c.vid));
-    var th = el('span', 'lok-th');
-    var img = el('img');
-    img.alt = c.alt || '';
-    img.loading = 'lazy';
-    imgSet(img, c.img, 240);
-    img.style.objectPosition = c.web ? '50% 0' : (c.pos || '50% 50%');
-    th.appendChild(img);
-    a.appendChild(th);
-    var txt = el('span');
-    txt.appendChild(el('span', 'lok-q', c.q));
-    var w = el('span', 'lok-w');
-    var face = el('img');
-    face.alt = '';
-    face.loading = 'lazy';
-    imgSet(face, c.face, 64);
-    w.appendChild(face);
-    w.appendChild(el('span', null, c.who + ', ' + c.biz));
-    txt.appendChild(w);
-    txt.appendChild(el('span', 'lok-ul', 'Visit storefront'));
-    a.appendChild(txt);
-    return a;
-  }
-
-  function buildKnow(lkab) {
+  // ---- the people your neighbors recommend: one big quote --------------------
+  function buildQuote(lkab) {
     var top = lkab.querySelector('.lkab-h');
-    var paras = lkab.querySelectorAll('p');
-    var sec = el('section', 'lok-ab lok-sec lok-ab-know');
+    var sec = el('section', 'lok-ab lok-ab-q');
     sec.id = 'lok-ab-know';
     var wrap = el('div', 'lok-wrap');
-    var head = el('div', 'lok-kn-top');
-    if (top) head.appendChild(take(top, 'lok-h2'));
-    var copy = el('div');
-    for (var i = 0; i < paras.length; i++) {
-      if (paras[i].closest('.lkab-panel')) continue;
-      copy.appendChild(take(paras[i], 'lok-copy'));
-    }
-    head.appendChild(copy);
-    wrap.appendChild(head);
-    wrap.appendChild(el('p', 'lok-kn-ask', 'Do you know someone who…'));
-    var grid = el('div', 'lok-kn-grid');
-    CARDS.forEach(function (c) {
-      var q = el('p', 'lok-kn-q', c.q);
-      q.setAttribute('data-vid', String(c.vid));
-      grid.appendChild(q);
-    });
-    CARDS.forEach(function (c) { grid.appendChild(cardNode(c)); });
-    wrap.appendChild(grid);
-    var rows = el('div', 'lok-kn-rows');
-    CARDS.forEach(function (c) { rows.appendChild(rowNode(c)); });
-    wrap.appendChild(rows);
-    var note = el('p', 'lok-cap lok-kn-note');
-    note.appendChild(el('span', null, 'Three real storefronts on The Market right now.'));
-    note.appendChild(link('lok-ul', 'See everyone in the Market', '/the-market'));
-    wrap.appendChild(note);
+    if (top) wrap.appendChild(take(top, 'lok-eye'));
+    var q = el('p', 'lok-quote');
+    q.appendChild(document.createTextNode('Ask around any neighborhood and the same names come up. '));
+    q.appendChild(el('span', null, 'Lokali is where those names live.'));
+    wrap.appendChild(q);
+    wrap.appendChild(el('p', 'lok-q-sub', "They rarely have a storefront, and they're almost never the first result online. Every storefront here belongs to a real person you can reach directly."));
     sec.appendChild(wrap);
     var host = lkab.closest('.w-embed') || lkab;
     host.parentNode.insertBefore(sec, host);
@@ -536,7 +340,7 @@
     var inner = el('div', 'lok-wrap');
     if (heading) {
       if (oneLine(heading.textContent) === 'Our Principles') heading.textContent = 'What we believe';
-      inner.appendChild(take(heading, 'lok-h2'));
+      inner.appendChild(take(heading, 'lok-eye'));
     }
     var grid = el('div', 'lok-pr-grid');
     for (var i = 0; i < cards.length; i++) {
@@ -559,15 +363,10 @@
     sec.appendChild(wrap);
   }
 
-  function hideChildren(sec) {
-    var kids = sec.children;
-    for (var i = 0; i < kids.length; i++) kids[i].classList.add('lok-ab-old');
-  }
-
   // ---- built for two kinds of people ---------------------------------------
   function whoCard(src, kind) {
     var cust = kind === 'cust';
-    var card = el('div', 'lok-who' + (cust ? ' lok-cust' : ''));
+    var card = el('div', 'lok-who');
     var top = el('div', 'lok-who-top');
     top.appendChild(svgSpan('lok-who-ic', cust ? I_HEART : I_STORE));
     top.appendChild(el('span', 'lok-who-k', cust ? 'Customers' : 'Vendors'));
@@ -589,7 +388,7 @@
     card.appendChild(ul);
     var foot = el('div', 'lok-who-foot');
     if (cust) {
-      foot.appendChild(link('lok-btn lok-or', 'Browse the Market', '/the-market'));
+      foot.appendChild(link('lok-btn', 'Browse the Market', '/the-market'));
     } else {
       foot.appendChild(link('lok-btn', 'Open your storefront', '/sign-up'));
       var cmp = src.querySelector('a.about-compare-link');
@@ -663,7 +462,7 @@
       if (wh) wl.appendChild(take(wh, 'lok-wl-h'));
       if (wp) wl.appendChild(take(wp, 'lok-wl-p'));
       // Keep the real #wl-trigger node (lokali-waitlist.js opens the form from it).
-      trigger.className = 'lok-btn lok-or';
+      trigger.className = 'lok-btn';
       trigger.textContent = oneLine(trigger.textContent) || 'Request your neighborhood';
       trigger.setAttribute('role', 'button');
       trigger.setAttribute('tabindex', '0');
@@ -690,19 +489,28 @@
     wrap.id = 'lok-ab-letter';
     var inner = el('div', 'lok-wrap');
     var letter = el('div', 'lok-letter');
-    var head = el('div', 'lok-lt-head');
+    var left = el('div');
     if (face) {
-      face.removeAttribute('srcset');
       face.removeAttribute('sizes');
-      head.appendChild(take(face, 'lok-lt-face'));
+      left.appendChild(take(face, 'lok-lt-face'));
     }
-    if (h) head.appendChild(take(h, 'lok-lt-h'));
-    letter.appendChild(head);
+    letter.appendChild(left);
+    var right = el('div');
+    right.appendChild(el('p', 'lok-eye', 'A letter from the founder'));
+    if (h) right.appendChild(take(h, 'lok-lt-h'));
     var body = el('div', 'lok-lt-body');
-    for (var i = 0; i < ps.length; i++) body.appendChild(take(ps[i], 'lok-lt-p'));
-    letter.appendChild(body);
-    if (sig) letter.appendChild(take(sig, 'lok-sig'));
-    if (role) letter.appendChild(take(role, 'lok-role'));
+    for (var i = 0; i < ps.length; i++) {
+      if (oneLine(ps[i].textContent) === LETTER_OLD) ps[i].textContent = LETTER_NEW;
+      body.appendChild(take(ps[i], 'lok-lt-p'));
+    }
+    right.appendChild(body);
+    if (sig) right.appendChild(take(sig, 'lok-sig'));
+    if (role) right.appendChild(take(role, 'lok-role'));
+    var acts = el('div', 'lok-lt-acts');
+    acts.appendChild(link('lok-btn', 'Meet your neighbors', '/the-market'));
+    acts.appendChild(link('lok-btn lok-ghost', 'Open my storefront', '/sign-up'));
+    right.appendChild(acts);
+    letter.appendChild(right);
     inner.appendChild(letter);
     wrap.appendChild(inner);
     hideChildren(sec);
@@ -710,8 +518,8 @@
   }
 
   // ---- live vendor check (non-blocking) -----------------------------------
-  // Swaps a face whose storefront is no longer published for the next
-  // stand-in, and drops such a storefront card. Any failure = page as built.
+  // If the cover's storefront is no longer published, pick again from the
+  // ones that are. Any failure = page as built.
   function reconcile() {
     if (!window.LokaliSupabaseReady || !window.LokaliSupabaseReady.then) return;
     window.LokaliSupabaseReady.then(function (c) {
@@ -720,22 +528,9 @@
       if (!res || res.error || !Array.isArray(res.data) || !res.data.length) return;
       var live = {};
       res.data.forEach(function (v) { if (v && v.id != null) live[String(v.id)] = true; });
-      if (FACES.some(function (f) { return !live[String(f.vid)]; })) {
-        var keep = FACES.concat(RESERVE).filter(function (f) { return live[String(f.vid)]; });
-        var wall = document.getElementById('lok-ab-wall');
-        if (wall && keep.length) fillWall(wall, keep);
-      }
-      var nodes = document.querySelectorAll('#lok-ab-know [data-vid]');
-      var hidden = {};
-      for (var i = 0; i < nodes.length; i++) {
-        var vid = nodes[i].getAttribute('data-vid');
-        if (!live[vid]) { nodes[i].style.display = 'none'; hidden[vid] = true; }
-      }
-      // The desktop grid is questions-row then cards-row: shrink its column
-      // count to the survivors so each question stays above its own card.
-      var kg = document.querySelector('#lok-ab-know .lok-kn-grid');
-      var left = CARDS.filter(function (c) { return !hidden[String(c.vid)]; }).length;
-      if (kg && left && left < CARDS.length) kg.style.gridTemplateColumns = 'repeat(' + left + ',minmax(0,1fr))';
+      var fig = document.getElementById('lok-ab-cover');
+      if (!fig || live[fig.getAttribute('data-vid')]) return;
+      fillCover(fig, pickCover(COVERS.filter(function (c) { return live[String(c.vid)]; })));
     }).catch(function (e) {
       try { console.warn('[lokali-about] vendor check skipped:', e && e.message); } catch (x) {}
     });
@@ -748,11 +543,10 @@
     if (!hero || !founder) return; // About page only
     if (document.getElementById('lok-ab-hero') || !hero.querySelector('h1')) return;
     injectStyle();
-    // The class hides the old wrappers first, so the circle measures the space it really gets.
     document.documentElement.classList.add('lok-about2');
     mountHero(hero);
     var lkab = document.querySelector('section.lkab');
-    if (lkab) buildKnow(lkab);
+    if (lkab) buildQuote(lkab);
     var secs = document.querySelectorAll('section.section-13');
     for (var i = 0; i < secs.length; i++) {
       var s = secs[i];
@@ -761,13 +555,6 @@
       else if (s.querySelector('.vendors-grid')) buildTwo(s);
     }
     buildLetter(founder);
-    var wall = document.getElementById('lok-ab-wall');
-    if (wall) {
-      layoutWall(wall);
-      // Web fonts can change the column widths once they land.
-      if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { layoutWall(wall); });
-      window.addEventListener('load', function () { layoutWall(wall); });
-    }
     reconcile();
   }
 
