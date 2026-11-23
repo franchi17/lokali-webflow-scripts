@@ -1457,6 +1457,97 @@
     handleIncoming();
   }
 
+  // ── Storefront look (F 2026-11-21; patch_gallery_page_setup.sql) ────────────
+  // A copy of the switch that lives on the Products page ("Your Gallery page").
+  // Featured: Classic or Gallery, saved through set_storefront_look() (the
+  // database checks ownership and the plan). Other plans: a locked card with a
+  // preview of their own page and the way to Featured. Before the patch the
+  // look read errors and nothing is shown.
+  function mountLookCard(section) {
+    if (!section || $('lok-look-card') || !_vendor || _vendor.id == null) return;
+    var ready = window.LokaliSupabaseReady;
+    if (!ready || !ready.then) return;
+    ready.then(function (c) {
+      return c.from('vendors').select('slug,storefront_look,plan_rank').eq('id', _vendor.id).maybeSingle()
+        .then(function (r) { return { c: c, r: r }; });
+    }).then(function (x) {
+      if (!x.r || x.r.error || !x.r.data || $('lok-look-card')) return;
+      drawLookCard(section, x.c, x.r.data);
+    }).catch(function () {});
+  }
+
+  function drawLookCard(section, c, d) {
+    var F = "'Plus Jakarta Sans',system-ui,sans-serif";
+    var featured = Number(d.plan_rank) === 2;
+    var look = d.storefront_look === 'gallery' ? 'gallery' : 'classic';
+    var slug = d.slug || '';
+    var card = mk('div'); card.id = 'lok-look-card';
+    card.style.cssText = 'margin:16px 0 6px;padding:16px;border:2px solid #E9DDFF;border-radius:16px;background:linear-gradient(#fff,#FBF8FF);font-family:' + F + ';box-sizing:border-box;';
+    function draw(pending) {
+      card.innerHTML = '';
+      var h = mk('div'); h.style.cssText = 'font-size:15.5px;font-weight:700;color:#1A1829;';
+      h.textContent = 'How your storefront looks';
+      card.appendChild(h);
+      var p = mk('p'); p.style.cssText = 'margin:4px 0 12px;font-size:13.5px;color:#6B6880;line-height:1.5;';
+      card.appendChild(p);
+      var preview = function (lk, label) {
+        if (!slug) return null;
+        var a = mk('a', null, label);
+        a.href = '/' + encodeURIComponent(slug) + '?look=' + (lk === 'gallery' ? 'portfolio' : 'classic');
+        a.target = '_blank'; a.rel = 'noopener';
+        a.style.cssText = 'display:inline-block;font-size:13.5px;font-weight:600;line-height:1.2;padding:9px 15px;border-radius:999px;border:1.5px solid #6002EE;background:#fff;color:#6002EE;text-decoration:none;';
+        return a;
+      };
+      var row = mk('div'); row.style.cssText = 'display:flex;flex-wrap:wrap;gap:10px;align-items:center;';
+      if (!featured) {
+        p.textContent = 'The Gallery look, a big cover photo and a wall of your work, comes with the Featured plan. See how your page would look first.';
+        var pv0 = preview('gallery', 'Preview my page as a gallery'); if (pv0) row.appendChild(pv0);
+        var plans = mk('a', null, 'See Featured'); plans.href = window.LOKALI_PRICING_URL || '/pricing';
+        plans.style.cssText = 'display:inline-block;font-size:13.5px;font-weight:600;line-height:1.2;padding:10px 16px;border-radius:999px;background:#6002EE;color:#fff;text-decoration:none;';
+        row.appendChild(plans);
+        card.appendChild(row);
+        return;
+      }
+      p.textContent = 'Showing now: ' + (look === 'gallery' ? 'Gallery' : 'Classic') + '. Your listings, prices and reviews stay the same in both.';
+      var pick = pending || look;
+      var seg = mk('div'); seg.style.cssText = 'display:inline-flex;border:1px solid #E7E2F3;border-radius:999px;padding:3px;background:#F7F6FC;margin:0 0 12px;';
+      [['classic', 'Classic'], ['gallery', 'Gallery']].forEach(function (o) {
+        var b = mk('button', null, o[1]); b.type = 'button';
+        b.setAttribute('aria-pressed', pick === o[0] ? 'true' : 'false');
+        b.style.cssText = 'font-family:' + F + ';font-size:13.5px;font-weight:600;border:0;border-radius:999px;padding:8px 16px;cursor:pointer;' +
+          (pick === o[0] ? 'background:#fff;color:#6002EE;box-shadow:0 1px 4px rgba(74,31,184,.15);' : 'background:transparent;color:#6B6880;');
+        b.addEventListener('click', function () { draw(o[0] === look ? null : o[0]); });
+        seg.appendChild(b);
+      });
+      card.appendChild(seg);
+      var pv = preview(pick, 'Preview ' + (pick === 'gallery' ? 'Gallery' : 'Classic')); if (pv) row.appendChild(pv);
+      var use = mk('button', null, 'Use ' + (pick === 'gallery' ? 'Gallery' : 'Classic')); use.type = 'button';
+      use.disabled = !pending;
+      use.style.cssText = 'font-family:' + F + ';font-size:13.5px;font-weight:600;line-height:1.2;padding:10px 16px;border-radius:999px;border:1.5px solid #6002EE;background:#6002EE;color:#fff;cursor:pointer;' + (pending ? '' : 'opacity:.5;cursor:default;');
+      use.addEventListener('click', function () {
+        if (!pending) return;
+        use.disabled = true; use.textContent = 'Saving…';
+        c.rpc('set_storefront_look', { p_vendors_id: _vendor.id, p_look: pending }).then(function (r) {
+          if (r && r.error) throw new Error(r.error.message || 'save');
+          look = pending; draw(null); toast('success', 'Your storefront now shows the ' + (look === 'gallery' ? 'Gallery' : 'Classic') + ' look.');
+        }).catch(function (e) {
+          var m = String((e && e.message) || '');
+          toast('error', /LOKALI_LIMIT_REACHED:/.test(m) ? m.split('LOKALI_LIMIT_REACHED:')[1].trim() : 'That did not save. Please try again.');
+          draw(pending);
+        });
+      });
+      row.appendChild(use);
+      card.appendChild(row);
+      var more = mk('p'); more.style.cssText = 'margin:12px 0 0;font-size:12.5px;color:#6B6880;line-height:1.45;';
+      more.appendChild(document.createTextNode('Collections, their order and which ones shoppers see live on '));
+      var lk = mk('a', null, 'your Products page'); lk.href = '/vendor-dashboard/products#gallery'; lk.style.cssText = 'color:#6002EE;font-weight:600;';
+      more.appendChild(lk); more.appendChild(document.createTextNode('.'));
+      card.appendChild(more);
+    }
+    draw(null);
+    section.appendChild(card);
+  }
+
   function regroup() {
     if ($('lok-set-css')) return;
     var sYou = sectionOf('settings-email'), sPlan = sectionOf('settings-current-plan'),
@@ -1559,6 +1650,7 @@
     retitle('toggle-visibility-public', 'Show my storefront on Lokali', 'Off hides you from The Market and search, and your link shows a not available message. Nothing is deleted.');
     retitle('toggle-visibility-reviews', 'Show reviews on my storefront', 'Off keeps collecting reviews privately.');
     var slug = $('lok-slug-section'); if (slug) sStore.appendChild(slug);
+    mountLookCard(sStore); // Gallery look (F 2026-11-21)
 
     // Emails: by who they are from, one pause switch at the end.
     retitle('toggle-notify-inquiry', 'A customer sends you a message', 'Includes the reminder when a message is still waiting for a reply.');
