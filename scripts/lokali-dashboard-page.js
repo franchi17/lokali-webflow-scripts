@@ -113,8 +113,10 @@
     }).catch(function () {});
   }
 
+  var SHARE_REF = null; // the weekly card's 'Copy a message' reads the same (tokenized) URL
   function wireShareButtons(v) {
     var ref = { url: publicListingUrl(v) };
+    SHARE_REF = ref;
     tokenizeShareUrl(v, ref);
 
     var copyBtn = document.getElementById('share-copy-link');
@@ -334,7 +336,7 @@
     '.lok-kpis.quiet.lok-inline{margin:16px 0;}#lok-feed-card.lok-inline{margin:0 0 16px;}',
     '@media(max-width:480px){.lok-kpis,.lok-kpis.five{grid-template-columns:1fr 1fr;gap:8px;}.lok-kpi{padding:10px 12px;}.lok-kvalue{font-size:22px;}.lok-kpis .lok-spark{display:none;}.lok-btn{min-height:44px;}.lok-also li a{min-height:44px;}}',
     // This week, one thing (F 2026-11-22, UX review finding 1).
-    '#lok-week{margin:0 0 12px;}#lok-week .lok-next{background:#F3EBFF;}#lok-week .lok-next.done .n{background:#17634A;}'
+    '#lok-week{margin:0 0 12px;}#lok-week .lok-next{background:#F3EBFF;}#lok-week .lok-next.done .n{background:#17634A;}#lok-week .lok-week-tip{font-style:italic;color:#45415A;}'
   ].join('');
   function injectHomeStyles() {
     if (document.getElementById('lok-home-css')) return;
@@ -664,9 +666,17 @@
   }
   // ── This week, one thing (F 2026-11-22, UX review finding 1; Fogg: a small
   // reason, a tiny action, the right moment, then celebrate). One action per
-  // calendar week, picked from what this storefront has not done lately; once it
-  // is done the card says so. 'Not this week' hides it until Monday.
-  var WK_SKIP = 'lok_week_skip_v1:', WK_DONE = 'lok_week_done_v1:';
+  // calendar week. Team review the same day (Clo, Vendor Success, Shopper Growth,
+  // Head of Marketing; F 'No dates, build it'):
+  //  - the week's task is picked on the first view of the week and REMEMBERED, so
+  //    doing it shows 'Done' instead of swapping in a new chore;
+  //  - any of the four done in the last 7 days shows 'Done' naming what they did;
+  //  - fewer than 5 reviews: the review ask every other week; fewer than 3
+  //    followers: sharing comes first on the other weeks;
+  //  - 'Not this week' hides it and the feed shows its plain line, not the older
+  //    October 'one thing' card. No dates in the words, ever.
+  var WK_SKIP = 'lok_week_skip_v1:', WK_DONE = 'lok_week_done_v1:', WK_ASK = 'lok_week_ask_v1:', WK_PICK = 'lok_week_pick_v1:';
+  var WEEK_STATE = null; // 'shown' | 'skipped' | null (renderFeed reads it)
   function isoWeek(d) {
     var t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
     var day = t.getUTCDay() || 7; t.setUTCDate(t.getUTCDate() + 4 - day);
@@ -674,67 +684,85 @@
     return { key: t.getUTCFullYear() + '-' + Math.ceil(((t - y0) / DAY + 1) / 7), n: Math.ceil(((t - y0) / DAY + 1) / 7) };
   }
   function newest(rows) { return Math.max.apply(null, [0].concat((rows || []).map(function (r) { return tsOf(r && r.created_at) || 0; }))); }
+  function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function lsSet(k, val) { try { localStorage.setItem(k, val); } catch (e) {} }
+  var WEEK_MSG = 'Hi! I’m on Lokali now, where neighbors find local businesses. If you liked working with me, tap Follow on my page so you hear when I have something new: ';
   function weekCard(v, services, products, x) {
     var old = document.getElementById('lok-week'); if (old && old.parentNode) old.parentNode.removeChild(old);
     // renderTiles() renames the Webflow .div-block-41 to .lok-kpis, so look for both.
     var box = document.querySelector('.lok-kpis') || document.querySelector('.div-block-41');
     if (!v || !box || !box.parentNode) return;
-    var wk = isoWeek(new Date()), skipKey = WK_SKIP + v.id + ':' + wk.key, doneKey = WK_DONE + v.id + ':' + wk.key;
-    var skipped = false, doneLocal = false;
-    try { skipped = localStorage.getItem(skipKey) === '1'; doneLocal = localStorage.getItem(doneKey) === '1'; } catch (e) {}
-    if (skipped) return;
+    var wk = isoWeek(new Date()), sfx = v.id + ':' + wk.key;
+    if (lsGet(WK_SKIP + sfx) === '1') { WEEK_STATE = 'skipped'; return; }
     var now = Date.now(), WEEK = 7 * DAY;
     var listings = [].concat(services || [], products || []).filter(function (l) { return l && l.is_active !== false; });
     var lastListing = newest(listings), lastPost = newest(x.posts), lastReview = newest(x.reviews);
-    var all = [
-      { key: 'post', ok: true, done: lastPost > now - WEEK, ico: ICO.horn,
-        t: 'Post where you\u2019ll be this week',
-        w: 'A short post shows on your storefront and goes out in the weekly email to everyone who follows you.',
-        a: 'Write a quick post', href: '/vendor-dashboard/followers', mins: 'About 2 minutes', did: 'You posted this week' },
-      { key: 'share', ok: true, done: doneLocal, ico: ICO.copy,
-        t: 'Send your link to three past customers',
-        w: 'People who already know your work are the ones most likely to follow you and tell a neighbor.',
-        a: 'Copy your link', copy: true, mins: 'About 1 minute', did: 'You shared your link this week' },
-      { key: 'listing', ok: listings.length < 3 || lastListing < now - 30 * DAY, done: lastListing > now - WEEK, ico: ICO.plus,
+    var nReviews = (x.reviews || []).length;
+    var followers = x.followers && x.followers.ok && typeof x.followers.followers === 'number' ? x.followers.followers : null;
+    var asked = lsGet(WK_ASK + sfx) === '1';
+    var all = {
+      post: { key: 'post', ok: true, done: lastPost > now - WEEK, ico: ICO.horn,
+        t: 'Tell your followers what’s happening this week',
+        w: 'Where you’ll be, what’s new, or when you have openings. It shows on your storefront and goes out in the weekly email to everyone who follows you.',
+        a: 'Write a post', href: '/vendor-dashboard/followers', mins: 'About 2 minutes', did: 'You wrote a post' },
+      share: { key: 'share', ok: true, done: lsGet(WK_DONE + sfx) === '1', ico: ICO.copy,
+        t: 'Share your page with one customer',
+        w: 'People who already know your work are the best ones to pass it to a neighbor.',
+        a: 'Copy a message with your link', copy: true, mins: 'About 1 minute', did: 'You shared your page' },
+      listing: { key: 'listing', ok: listings.length < 3 || lastListing < now - 30 * DAY, done: lastListing > now - WEEK, ico: ICO.plus,
         t: 'Add something new',
         w: 'A new service or product gives neighbors a reason to look again.',
-        a: 'Add a listing', href: '/vendor-dashboard/services', mins: 'About 5 minutes', did: 'You added a listing this week' },
-      { key: 'review', ok: (x.reviews || []).length < 5 || lastReview < now - 60 * DAY, done: lastReview > now - WEEK, ico: ICO.star,
+        a: 'Add a listing', href: '/vendor-dashboard/services', mins: 'About 5 minutes', did: 'You added a listing' },
+      review: { key: 'review', ok: nReviews < 5 || lastReview < now - 60 * DAY, done: asked || lastReview > now - WEEK, ico: ICO.star,
         t: 'Ask one happy customer for a review',
-        w: 'Neighbors read reviews before they reach out. Asking someone you just helped is the easiest yes.',
-        a: 'See how to ask', href: '/vendor-resources/review-link-guide', mins: 'About 2 minutes', did: 'A new review came in this week' }
-    ];
-    var eligible = all.filter(function (it) { return it.ok; });
-    if (!eligible.length) return;
-    var pick = eligible[wk.n % eligible.length];
+        w: 'A kind word from a real customer helps a neighbor decide to reach out. Ask someone you just helped. It’s the easiest yes.',
+        tip: 'Try: “Thank you! If you have a minute, a short review on my Lokali page helps the next neighbor find me.”',
+        a: 'See how to ask', href: '/vendor-resources/review-link-guide', ask: true, mins: 'About 2 minutes',
+        did: asked ? 'You asked for a review' : 'A new review came in' }
+    };
+    // The week's pick, remembered so the card never trades a finished task for a new one.
+    var pick = all[lsGet(WK_PICK + sfx)] || null;
+    if (!pick) {
+      var others = ['post', 'share', 'listing'].map(function (k) { return all[k]; }).filter(function (it) { return it.ok; });
+      if (nReviews >= 5 && all.review.ok) others.push(all.review);
+      if (all.review.ok && nReviews < 5 && wk.n % 2 === 0) pick = all.review;
+      else if (followers !== null && followers < 3) pick = all.share;
+      else pick = others[Math.floor(wk.n / 2) % others.length] || all.review;
+      lsSet(WK_PICK + sfx, pick.key);
+    }
+    // Anything from the list done in the last 7 days counts: say what they did.
+    var doneIt = pick.done ? pick : ['post', 'share', 'listing', 'review'].map(function (k) { return all[k]; }).filter(function (it) { return it.done; })[0];
     var card = el('div', 'lok-card'); card.id = 'lok-week';
-    var html = '<div class="lok-ct"><h3>This week, one thing</h3>' + (pick.done ? '' : '<span class="lok-pill">' + esc(pick.mins) + '</span>') + '</div>';
-    if (pick.done) {
-      html += '<div class="lok-next done"><div class="n">\u2713</div><div><p class="t">Done for this week. Nice work.</p>' +
-        '<p class="w">' + esc(pick.did) + '. Next week\u2019s one thing shows up here on Monday.</p></div></div>';
+    var html = '<div class="lok-ct"><h3>This week, one thing</h3>' + (doneIt ? '' : '<span class="lok-pill">' + esc(pick.mins) + '</span>') + '</div>';
+    if (doneIt) {
+      html += '<div class="lok-next done"><div class="n">✓</div><div><p class="t">Done for this week. Nice work, neighbor.</p>' +
+        '<p class="w">' + esc(doneIt.did) + '. That’s the whole list. Next week’s one thing shows up here on Monday.</p></div></div>';
     } else {
       html += '<div class="lok-next"><div class="n">' + pick.ico + '</div><div>' +
         '<p class="t">' + esc(pick.t) + '</p><p class="w">' + esc(pick.w) + '</p>' +
-        (pick.copy ? '<a class="lok-btn" href="#" data-week-copy>' + esc(pick.a) + ' \u2192</a>'
-                   : '<a class="lok-btn" href="' + esc(pick.href) + '">' + esc(pick.a) + ' \u2192</a>') +
+        (pick.tip ? '<p class="w lok-week-tip">' + esc(pick.tip) + '</p>' : '') +
+        (pick.copy ? '<a class="lok-btn" href="#" data-week-copy>' + esc(pick.a) + ' →</a>'
+                   : '<a class="lok-btn" href="' + esc(pick.href) + '"' + (pick.ask ? ' data-week-ask' : '') + '>' + esc(pick.a) + ' →</a>') +
         '<a href="#" class="lok-ns-skip" data-week-skip>Not this week</a></div></div>';
     }
     card.innerHTML = html;
     box.parentNode.insertBefore(card, box);
+    WEEK_STATE = 'shown';
     var sk = card.querySelector('[data-week-skip]');
     if (sk) sk.addEventListener('click', function (e) {
       e.preventDefault();
-      try { localStorage.setItem(skipKey, '1'); } catch (er) {}
+      lsSet(WK_SKIP + sfx, '1'); WEEK_STATE = 'skipped';
       if (card.parentNode) card.parentNode.removeChild(card);
     });
+    var ak = card.querySelector('[data-week-ask]');
+    if (ak) ak.addEventListener('click', function () { lsSet(WK_ASK + sfx, '1'); }); // follows the link as normal
     var cp = card.querySelector('[data-week-copy]');
     if (cp) cp.addEventListener('click', function (e) {
       e.preventDefault();
-      // Same path as the header's Copy link (tokenized ?via= URL keeps attribution).
-      var hidden = document.getElementById('share-copy-link');
-      if (hidden) hidden.click();
-      flashCopied(cp);
-      try { localStorage.setItem(doneKey, '1'); } catch (er) {}
+      // Same tokenized ?via= URL as the header's Copy link, so landings still count.
+      var url = (SHARE_REF && SHARE_REF.url) || publicListingUrl(v);
+      copyToClipboard(WEEK_MSG + url).then(function (ok) { if (ok) flashCopied(cp); });
+      lsSet(WK_DONE + sfx, '1');
     });
   }
   function renderFeed(leadsData, reviews, gateReady, paidPlan, quiet) {
@@ -782,7 +810,7 @@
         return '<li><span class="lok-fi ' + it.kind + '">' + it.ico + '</span><p class="lok-ft">' + it.html + '</p><span class="lok-fw">' + whenLabel(it.t) + '</span></li>';
       }).join('') + '</ul>';
     } else if (gateReady) {
-      html = document.getElementById('lok-week')
+      html = (document.getElementById('lok-week') || WEEK_STATE === 'skipped')
         ? '<div class="lok-ct"><h3>What happened</h3><a href="/vendor-dashboard/leads">All leads \u2192</a></div><div class="lok-feed-empty">Views, messages, taps and reviews show up here as they happen.</div>'
         : oneThingCard();
     } else {
@@ -1639,7 +1667,9 @@
         // Waiting inquiries for 'Your next step' (2026-09-17): a person beats a checkup item.
         soft(A.leads && A.leads.getMine ? A.leads.getMine() : null),
         // This week, one thing (F 2026-11-22): the latest posts tell whether one went out this week.
-        soft(S && S.posts && S.posts.forVendor ? S.posts.forVendor(v.id, 3) : null)
+        soft(S && S.posts && S.posts.forVendor ? S.posts.forVendor(v.id, 3) : null),
+        // Follower count (a number, never who) so small storefronts get 'share' first.
+        soft(S && S.posts && S.posts.followerStats ? S.posts.followerStats() : null)
       ]).then(function (x) {
         render(v, services, products, leadsData, {
           billing: data(x[0]),
@@ -1649,7 +1679,8 @@
           reviews: toArr(data(x[4])),
           waiting: waitingLeads(data(x[5])),
           wonRows: ((data(x[5]) || {}).inquiries) || [],   // #194: full rows carry won_value_cents
-          posts: toArr(data(x[6]))
+          posts: toArr(data(x[6])),
+          followers: data(x[7])
         });
         maybeRunWizard(v); // #90 first-run setup wizard (one-shot, flag-gated)
       });
