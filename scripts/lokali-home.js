@@ -11,13 +11,21 @@
  *   stays the same node; search pill; small Desk + business links; the
  *   rotating arch) → "Meet your neighbors" (lokali-neighbors.js, mounts right
  *   after the hero) → Shop by category → the worries (four tiles in shoppers'
- *   own words, lavender band with a scalloped top) → How it works (3 steps +
- *   the nine areas) → the Desk (lokali-desk.js fills #lok-desk-slot) → Follow
- *   → For businesses (light orange, no violet inside) → Why people trust it →
- *   Why I built Lokali (founder note) → the bold violet ending.
+ *   own words, lavender band with a scalloped top) → How it works (3 steps,
+ *   big numbers beside the words; the nine areas in one row under the cards)
+ *   → the Desk (lokali-desk.js fills #lok-desk-slot) → Follow → For
+ *   businesses (sky, no violet inside) → founder note headed "Built by a
+ *   neighbor, for neighbors." with the trust facts as one sentence under it
+ *   → the bold violet ending.
+ * 2026-11-24 (F: "make the changes on the live homepage", mockup
+ * https://claude.ai/artifact/VkJWAaHgQdhwUxj7QF3bLf): arch only on the hero
+ * photo (Follow photo rounded, founder photo a circle); small labels kept
+ * only on "Sound familiar?" and the Desk quote; the separate "Why people
+ * trust it" band is gone (its words live in the founder note); step 3 reads
+ * "Message, text or call them yourself."
  * The old "What is Lokali" section (.wi-section) and the retired sections
  * (.section-3..6, .lcs-section) are hidden; the woman-owned line moves into
- * "Why people trust it".
+ * founder note.
  *
  * Photo picks live in HERO / CATS / FOLLOW_IMG / FACES below: changing one is
  * an edit here + a script release (no SQL). Vendor rows are only consulted to
@@ -98,7 +106,7 @@
 
   // Founder note photo: the same picture as the About page (F 2026-11-22).
   var FOUNDER_IMG = 'https://cdn.prod.website-files.com/6989095758ae17edfc424d30/6ace7bd4e6c66ad637d7db88_francesca.webp';
-  var AREA_COUNT = 9; // shown in "Why people trust it"; keep in step with AREAS
+  var AREA_COUNT = 9; // shown in the founder note's trust line; keep in step with AREAS
 
   // The four worries, in shoppers' own words (docs/marketing/
   // voice-of-customer-reddit-facebook-2026-10.md, sections 2.3 to 2.6).
@@ -204,9 +212,15 @@
       '.lok-answer span{color:#6002EE;}' +
       // how it works
       '.lok-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px;margin:44px 0 0;padding:0;list-style:none;text-align:left;}' +
-      '.lok-steps li{border:2px solid #D9CCF5;border-radius:22px;padding:28px;margin:0;min-width:0;}' +
-      '.lok-num{width:44px;height:44px;border-radius:50%;background:#F3EBFF;color:#6002EE;font-weight:800;display:grid;place-items:center;margin-bottom:18px;}' +
-      '.lok-steps h3{font-size:22px;font-weight:800;margin:0 0 8px;letter-spacing:-.01em;line-height:1.25;color:#1A1829;}' +
+      '.lok-steps li{border:2px solid #D9CCF5;border-radius:22px;padding:28px 28px 28px 24px;margin:0;min-width:0;display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:18px;align-items:start;align-content:start;}' +
+      // F 2026-11-24: big bold numbers beside the heading and words, not a small dot on top
+      '.lok-num{grid-row:1 / span 2;font-size:88px;line-height:.8;height:.8em;font-weight:800;letter-spacing:-.06em;color:#6002EE;min-width:56px;text-align:center;font-variant-numeric:tabular-nums;}' +
+      '.lok-steps h3,.lok-steps p{grid-column:2;}' +
+      '.lok-where{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:8px;margin:28px 0 0;}' +
+      '.lok-where-l{font-size:15px;font-weight:700;color:#1A1829;margin-right:4px;}' +
+      '.lok-where .lok-ask{margin:0 0 0 8px;font-size:14.5px;}' +
+      '@media(max-width:1180px){.lok-steps li{grid-template-columns:minmax(0,1fr);}.lok-num{grid-row:auto;font-size:72px;text-align:left;min-width:0;margin-bottom:16px;}.lok-steps h3,.lok-steps p{grid-column:auto;}}' +
+      '.lok-steps h3{font-size:22px;font-weight:800;margin:4px 0 8px;letter-spacing:-.01em;line-height:1.25;color:#1A1829;}' +
       '.lok-steps p{font-size:15.5px;color:#4A4761;margin:0;line-height:1.6;}' +
       '.lok-areas{display:flex;flex-wrap:wrap;gap:7px;margin-top:14px;}' +
       '.lok-area{display:inline-flex;align-items:center;gap:6px;background:#F3EBFF;border-radius:999px;padding:7px 12px;font-size:13px;font-weight:600;color:#1A1829;text-decoration:none;}' +
@@ -216,12 +230,11 @@
       // follow (white, arched photo)
       '.lok-fol-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:64px;align-items:center;}' +
       '.lok-fol-pic{display:flex;flex-direction:column;}' +
-      '.lok-fol-pic img{display:block;width:100%;max-width:440px;aspect-ratio:4/5;object-fit:cover;border-radius:999px 999px 28px 28px;background:#F3EBFF;}' +
+      '.lok-fol-pic img{display:block;width:100%;max-width:440px;aspect-ratio:4/5;object-fit:cover;border-radius:28px;background:#F3EBFF;}' +
       '.lok-fol-pic .lok-cap{margin:12px 0 0;}' +
       '.lok-fol .lok-btn{margin-top:28px;}' +
-      // for businesses (light orange, no violet inside)
+      // for businesses (sky, no violet inside)
       '.lok-door{background:#E6EFFB;}' + // sky family (F 2026-11-22): orange off the site; this band previews the For vendors page color
-      '.lok-door .lok-eye{color:#1D4E9E;}' +
       '.lok-door .lok-h2 span{color:#1D4E9E;}' +
       '.lok-faces{display:flex;align-items:center;justify-content:center;gap:12px;margin:26px 0;flex-wrap:wrap;}' +
       '.lok-stack{display:flex;flex:none;}' +
@@ -231,18 +244,14 @@
       '.lok-obtn{display:inline-flex;align-items:center;justify-content:center;background:#1D4E9E;color:#fff!important;font-weight:800;border-radius:999px;padding:16px 28px;font-size:15.5px;text-decoration:none!important;}' +
       '.lok-obtn:hover{background:#163E7E;}' +
       '.lok-door small{display:block;margin-top:14px;font-size:14px;color:#1D4E9E;line-height:1.5;}' +
-      // why people trust it
-      '.lok-proof{background:#F3EBFF;}' +
-      '.lok-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin:44px 0 0;padding:0;list-style:none;text-align:left;}' +
-      '.lok-stats li{background:#fff;border-radius:22px;padding:26px 22px;margin:0;}' +
-      '.lok-stats b{display:block;font-size:30px;font-weight:800;color:#6002EE;letter-spacing:-.02em;line-height:1.15;margin-bottom:8px;}' +
-      '.lok-stats span{color:#4A4761;font-size:15px;}' +
-      '.lok-owned{margin:28px 0 0;color:#4A4761;font-size:15px;}' +
       // founder note
       '.lok-note-in{max-width:820px;margin:0 auto;}' +
       '.lok-note-card{display:grid;grid-template-columns:120px minmax(0,1fr);gap:32px;align-items:start;}' +
-      '.lok-note-arch{width:120px;height:150px;border-radius:999px 999px 18px 18px;background:#F3EBFF;display:flex;align-items:flex-end;justify-content:center;overflow:hidden;}' +
+      '.lok-note-arch{width:120px;height:120px;border-radius:50%;background:#F3EBFF;overflow:hidden;}' + // a plain circle; the arch is kept for the hero photo only (F 2026-11-24)
       '.lok-note-arch img{width:120px;height:120px;display:block;object-fit:cover;}' +
+      '.lok-note-card .lok-h2{font-size:40px;margin:0 0 20px;}' +
+      '.lok-note-card .lok-trust{font-size:16px;color:#4A4761;border-top:2px solid #F3EBFF;padding-top:18px;margin:22px 0 0;}' +
+      '.lok-note-card .lok-trust b{color:#1A1829;}' +
       '.lok-note-card p{font-size:20px;line-height:1.65;margin:0 0 18px;color:#1A1829;}' +
       '.lok-note-card .lok-joke{font-weight:700;color:#6002EE;}' +
       '.lok-note-card .lok-sig{font-size:16px;color:#4A4761;font-weight:600;margin:0;}' +
@@ -265,7 +274,7 @@
         '.lok-band,.lok-cats{padding-top:56px!important;padding-bottom:56px!important;}html.lok-home3 .section.hero.v18{padding-top:40px!important;padding-bottom:76px!important;}.lok-worries{padding-top:40px!important;}.lok-end{padding:80px 0!important;}' +
         '.lok-h2{font-size:34px;}.lok-end .lok-h2{font-size:40px;}.lok-sec-head h2{font-size:30px;}.lok-answer{font-size:24px;}' +
         '.lok-steps{grid-template-columns:1fr;}.lok-fol-grid{grid-template-columns:1fr;gap:32px;}.lok-fol-pic img{max-width:360px;}' +
-        '.lok-stats{grid-template-columns:1fr;}}' +
+        '.lok-note-card .lok-h2{font-size:30px;}}' +
       '@media(max-width:767px){' +
         '#lok-hero h1{font-size:42px!important;}#lok-hero .lok-lede{font-size:16px!important;margin:14px auto 0!important;}' +
         '.lok-hs{display:none;}' + // the two-row phone header already carries the search box (#179)
@@ -538,7 +547,6 @@
     var sec = el('section', 'lok-band lok-center');
     sec.id = 'lok-how';
     var wrap = el('div', 'lok-wrap');
-    wrap.appendChild(el('p', 'lok-eye', 'How it works'));
     wrap.appendChild(el('h2', 'lok-h2', 'Meeting a neighbor takes three steps.'));
     var ol = el('ol', 'lok-steps');
     function step(num, title, text) {
@@ -548,8 +556,14 @@
       li.appendChild(el('p', null, text));
       return li;
     }
-    var s1 = step('1', 'Pick your area', 'Nine communities across Greater Houston so far, and growing.');
-    var areas = el('div', 'lok-areas');
+    ol.appendChild(step('1', 'Pick your area', 'Nine communities across Greater Houston so far, and growing.'));
+    ol.appendChild(step('2', 'Meet the person', 'Every storefront shows who runs it, in their own words and photos.'));
+    ol.appendChild(step('3', 'Say hello', 'Message, text or call them yourself.'));
+    wrap.appendChild(ol);
+    // The nine areas sit in one row under the three cards, so card 1 stays the
+    // same size as the others (F 2026-11-24).
+    var areas = el('div', 'lok-where');
+    areas.appendChild(el('span', 'lok-where-l', 'Lokali so far:'));
     AREAS.forEach(function (a) {
       var chip = el('a', 'lok-area');
       chip.href = '/the-market?area=' + encodeURIComponent(a.slug);
@@ -557,14 +571,10 @@
       chip.appendChild(document.createTextNode(a.name));
       areas.appendChild(chip);
     });
-    s1.appendChild(areas);
-    var ask = el('a', 'lok-ul lok-ask', "Not where you live? Tell us where you are and we'll work on bringing Lokali to you");
+    var ask = el('a', 'lok-ul lok-ask', 'Not where you live? Tell us');
     ask.href = '/contact-us';
-    s1.appendChild(ask);
-    ol.appendChild(s1);
-    ol.appendChild(step('2', 'Meet the person', 'Every storefront shows who runs it, in their own words and photos.'));
-    ol.appendChild(step('3', 'Say hello', 'Message, text or call them directly. No algorithms, just humans.'));
-    wrap.appendChild(ol);
+    areas.appendChild(ask);
+    wrap.appendChild(areas);
     sec.appendChild(wrap);
     return sec;
   }
@@ -592,7 +602,6 @@
     pic.appendChild(cap);
     wrap.appendChild(pic);
     var txt = el('div');
-    txt.appendChild(el('p', 'lok-eye', 'Follow'));
     txt.appendChild(el('h2', 'lok-h2', 'Never miss your favorite neighbors.'));
     txt.appendChild(el('p', 'lok-sub', 'Tap Follow on any storefront. When they’ll be at a market, a pop-up or a tasting, you’ll hear about it in one email on Thursday morning. That’s it.'));
     var btn = el('a', 'lok-btn', 'Find storefronts to follow');
@@ -608,7 +617,6 @@
     var sec = el('section', 'lok-band lok-door lok-center');
     sec.id = 'lok-door';
     var wrap = el('div', 'lok-wrap');
-    wrap.appendChild(el('p', 'lok-eye', 'For businesses'));
     var h = el('h2', 'lok-h2', 'Have a business? ');
     h.appendChild(el('span', null, 'Your neighbors are already asking about you.'));
     wrap.appendChild(h);
@@ -636,39 +644,12 @@
     return sec;
   }
 
-  // ---- why people trust it -------------------------------------------------
-  function buildProof() {
-    var sec = el('section', 'lok-band lok-proof lok-center');
-    sec.id = 'lok-proof';
-    var wrap = el('div', 'lok-wrap');
-    wrap.appendChild(el('p', 'lok-eye', 'Why people trust it'));
-    wrap.appendChild(el('h2', 'lok-h2', 'Built by a neighbor, for neighbors.'));
-    var ul = el('ul', 'lok-stats');
-    function stat(big, small, id) {
-      var li = el('li');
-      var b = el('b', null, big); if (id) b.id = id;
-      li.appendChild(b);
-      li.appendChild(el('span', null, small));
-      return li;
-    }
-    ul.appendChild(stat('Real names', 'and a real face on every storefront'));
-    ul.appendChild(stat('Real reviews', 'from real customers, under real names'));
-    ul.appendChild(stat(AREA_COUNT + ' communities', 'and counting', 'lok-proof-count'));
-    wrap.appendChild(ul);
-    // The heading already says "built by a neighbor, for neighbors", so the line under it stays short.
-    var own = el('p', 'lok-owned', 'Lokali is woman-owned and minority-owned.');
-    wrap.appendChild(own);
-    sec.appendChild(wrap);
-    return sec;
-  }
-
   // ---- why I built Lokali --------------------------------------------------
   function buildNote() {
     var sec = el('section', 'lok-band lok-note');
     sec.id = 'lok-note';
     var wrap = el('div', 'lok-wrap');
     var inner = el('div', 'lok-note-in');
-    inner.appendChild(el('p', 'lok-eye', 'Why I built Lokali'));
     var card = el('div', 'lok-note-card');
     var arch = el('div', 'lok-note-arch');
     var img = el('img');
@@ -679,9 +660,24 @@
     arch.appendChild(img);
     card.appendChild(arch);
     var body = el('div');
+    body.appendChild(el('h2', 'lok-h2', 'Built by a neighbor, for neighbors.'));
     body.appendChild(el('p', null, 'I always dreamed of running a business of my own, with heart. I also know how hard it is to get noticed when you’re up against billion-dollar companies. So I built Lokali: a place where anyone can make a living with a business of their own, and where their neighbors can actually find them.'));
     body.appendChild(el('p', 'lok-joke', 'I can’t promise the billionaires are nervous. But I like our odds.'));
     body.appendChild(el('p', 'lok-sig', 'Francesca, founder'));
+    // What used to be the three "Why people trust it" boxes, as one sentence.
+    // #lok-proof-count starts as the area count and reconcile() fills in the
+    // live storefront count.
+    var trust = el('p', 'lok-trust');
+    trust.appendChild(document.createTextNode('Every storefront has '));
+    trust.appendChild(el('b', null, 'a real name and a real face'));
+    trust.appendChild(document.createTextNode(', and every review comes from '));
+    trust.appendChild(el('b', null, 'a real customer'));
+    trust.appendChild(document.createTextNode(' under their own name. Lokali has '));
+    var cnt = el('b', null, AREA_COUNT + ' communities');
+    cnt.id = 'lok-proof-count';
+    trust.appendChild(cnt);
+    trust.appendChild(document.createTextNode(' so far, and counting. Lokali is woman-owned and minority-owned.'));
+    body.appendChild(trust);
     card.appendChild(body);
     inner.appendChild(card);
     wrap.appendChild(inner);
@@ -720,10 +716,7 @@
       var line = document.getElementById('lok-sell-line');
       if (line && n > 3) line.textContent = 'Russ, Arelys, Kamela and ' + (n - 3) + ' more already have one.';
       var cnt = document.getElementById('lok-proof-count');
-      if (cnt && n > 3) {
-        cnt.textContent = n + ' in ' + AREA_COUNT;
-        if (cnt.nextSibling) cnt.nextSibling.textContent = 'neighbors in ' + AREA_COUNT + ' communities, and counting';
-      }
+      if (cnt && n > 3) cnt.textContent = n + ' neighbors in ' + AREA_COUNT + ' communities';
       var tiles = document.querySelectorAll('.lok-cat[data-vid]');
       for (var i = 0; i < tiles.length; i++) {
         if (!live[tiles[i].getAttribute('data-vid')]) {
@@ -759,7 +752,7 @@
     // lokali-neighbors.js always mounts right after the hero, so it lands first.
     var slot = el('div');
     slot.id = 'lok-desk-slot'; // lokali-desk.js replaces this with the Desk band
-    [buildCats(), buildWorries(), buildHow(), slot, buildFollow(), buildDoor(), buildProof(), buildNote(), buildEnd()]
+    [buildCats(), buildWorries(), buildHow(), slot, buildFollow(), buildDoor(), buildNote(), buildEnd()]
       .forEach(function (n) { wi.parentNode.insertBefore(n, wi); });
     if (owned && owned.parentNode) owned.parentNode.removeChild(owned);
     reconcile();
