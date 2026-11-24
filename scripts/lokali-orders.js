@@ -88,7 +88,7 @@
     if (d.length === 11 && d.charAt(0) === '1') d = d.slice(1);
     return d.length === 10 ? '(' + d.slice(0, 3) + ') ' + d.slice(3, 6) + '-' + d.slice(6) : String(p || '');
   }
-  function fulfilLabel(o) { return o.fulfilment === 'pickup' ? 'Pickup' : o.fulfilment === 'delivery' ? 'Local delivery' : 'Shipping'; }
+  function fulfilLabel(o) { return o.fulfilment === 'event' ? 'Tickets' : o.fulfilment === 'pickup' ? 'Pickup' : o.fulfilment === 'delivery' ? 'Local delivery' : 'Shipping'; }
   function statusLabel(o) {
     return { paid: 'Paid, waiting on you', fulfilled: 'Done', refunded: 'Refunded', partially_refunded: 'Partly refunded', disputed: 'Disputed', canceled: 'Canceled' }[o.status] || o.status;
   }
@@ -96,7 +96,7 @@
   // within N days" (Settings, Get paid on Lokali). Uses today's setting.
   var _promise = { pickup: null, ship: null };
   function duePill(o) {
-    if (o.status !== 'paid' && o.status !== 'partially_refunded') return '';
+    if (o.fulfilment === 'event' || (o.status !== 'paid' && o.status !== 'partially_refunded')) return '';
     var n = Number(o.fulfilment === 'shipping' ? _promise.ship : _promise.pickup);
     var start = new Date(o.paid_at || o.created_at);
     if (!(n >= 1) || isNaN(start)) return '';
@@ -129,7 +129,7 @@
         '<span class="op-pill ' + esc(o.status) + '">' + statusLabel(o) + '</span>' + duePill(o) + '</div>' +
         '<div class="op-amt">' + money(o.total_cents) + refunded + '</div>' +
       '</div>' +
-      '<div class="op-who"><b>' + esc(o.shopper_name || 'Shopper') + '</b>' + (contact.length ? ' · ' + contact.join(' · ') : '') +
+      '<div class="op-who"><b>' + esc(o.shopper_name || 'Shopper') + '</b>' + (o.fulfilment === 'event' && o.guest_name ? ' · on the guest list as ' + esc(o.guest_name) : '') + (contact.length ? ' · ' + contact.join(' · ') : '') +
         (o.fulfilment === 'shipping' && o.shipping_address ? '<br>' + addr(o.shipping_address) : '') + '</div>' +
       (o.shopper_note ? '<div class="op-note">Their note: ' + esc(o.shopper_note) + '</div>' : '') +
       (o.vendor_note ? '<div class="op-note">Your note: ' + esc(o.vendor_note) + '</div>' : '') +
@@ -138,7 +138,11 @@
       '<div class="op-hist">' + (o.events || []).map(function (e) { return esc(String(e.kind || '').replace('_', ' ')) + ' ' + when(e.at); }).join(' · ') + '</div>';
     var acts = c.querySelector('#op-acts-' + o.id);
     var refundable = (o.total_cents || 0) - (o.refunded_cents || 0);
-    if (o.status === 'paid' || o.status === 'partially_refunded') {
+    if (o.fulfilment === 'event' && ['paid', 'fulfilled', 'partially_refunded'].indexOf(o.status) >= 0) {
+      // #261 tickets have nothing to hand over: the door list is on the Events page.
+      var g = el('a', 'op-btn primary', 'Open the guest list'); g.href = '/vendor-dashboard/events';
+      acts.appendChild(g);
+    } else if (o.status === 'paid' || o.status === 'partially_refunded') {
       var f = el('button', 'op-btn primary', o.fulfilment === 'shipping' ? 'Mark shipped' : o.fulfilment === 'delivery' ? 'Mark delivered' : 'Mark picked up');
       f.addEventListener('click', function () { openFulfil(o, c); });
       acts.appendChild(f);
@@ -212,9 +216,11 @@
       mount.appendChild(e); return;
     }
     var now = new Date(), mk = now.getFullYear() + '-' + (now.getMonth() + 1);
-    var paid = orders.filter(function (o) { return o.status === 'paid' || o.status === 'partially_refunded'; });
-    var done = orders.filter(function (o) { return o.status === 'fulfilled'; });
-    var rest = orders.filter(function (o) { return paid.indexOf(o) < 0 && done.indexOf(o) < 0; });
+    // #261 paid tickets are their own group: nothing to hand over, so never "waiting on you".
+    var tickets = orders.filter(function (o) { return o.fulfilment === 'event' && ['paid', 'fulfilled', 'partially_refunded'].indexOf(o.status) >= 0; });
+    var paid = orders.filter(function (o) { return o.fulfilment !== 'event' && (o.status === 'paid' || o.status === 'partially_refunded'); });
+    var done = orders.filter(function (o) { return o.fulfilment !== 'event' && o.status === 'fulfilled'; });
+    var rest = orders.filter(function (o) { return paid.indexOf(o) < 0 && done.indexOf(o) < 0 && tickets.indexOf(o) < 0; });
     var month = orders.filter(function (o) { var d = new Date(o.paid_at || o.created_at); return (d.getFullYear() + '-' + (d.getMonth() + 1)) === mk && ['paid', 'fulfilled', 'partially_refunded'].indexOf(o.status) >= 0; });
     var net = month.reduce(function (s, o) { return s + (o.total_cents - o.refunded_cents); }, 0);
     var fees = month.reduce(function (s, o) { return s + (o.platform_fee_cents || 0); }, 0);
@@ -222,6 +228,7 @@
     strip.innerHTML = tile(paid.length, 'waiting on you') + tile(month.length, 'orders this month') + tile(money(net), 'sales this month') + tile(money(fees), 'Lokali fees this month');
     mount.appendChild(strip);
     section(mount, 'Waiting on you', paid, 'Nothing waiting on you.');
+    if (tickets.length) section(mount, 'Tickets', tickets.slice(0, 30), '');
     section(mount, 'Done', done.slice(0, 20), 'Nothing fulfilled yet.');
     if (rest.length) {
       var h = el('div', 'op-h'); h.innerHTML = 'Everything else <small>' + rest.length + '</small>'; mount.appendChild(h);

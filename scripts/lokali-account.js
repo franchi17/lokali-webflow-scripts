@@ -34,7 +34,7 @@
   };
 
   var MOUNT_ID = 'lokali-account';
-  var PANES = ['home', 'badges', 'saved', 'reviews', 'settings'];
+  var PANES = ['home', 'orders', 'badges', 'saved', 'reviews', 'settings'];
 
   function api() { return window.LokaliAPI; }
   function hasToken() { var a = api(); return !!(a && a.getToken && a.getToken()); }
@@ -882,6 +882,8 @@
   function currentPane() {
     var h = (location.hash || '').replace('#', '').toLowerCase();
     if (h === 'following') h = 'saved'; // 2026-10-11: the header heart links to #following; the pane key stays 'saved'
+    // Arriving after "Save my order" (order-confirmed page) with no hash: land on My orders.
+    if (!h) { try { if (localStorage.getItem('lokali_order_follow')) return 'orders'; } catch (e) {} }
     return PANES.indexOf(h) >= 0 ? h : 'home';
   }
 
@@ -978,6 +980,7 @@
 
     // panes
     main.appendChild(renderHome(acc, name, areaBits));
+    main.appendChild(renderOrders());
     main.appendChild(renderBadges());
     main.appendChild(renderSaved());
     main.appendChild(renderReviews());
@@ -5542,6 +5545,122 @@
   }
 
   // ── pane: Saved ────────────────────────────────────────────
+  // ── pane: My orders (#205, F 2026-11-20) ───────────────────
+  // Orders paid on Lokali. On open it first attaches any order paid while
+  // signed out under this account's CONFIRMED email (claim_my_orders), then
+  // lists them (my_purchases). Also finishes a "Save my order and follow"
+  // started on the order-confirmed page (localStorage lokali_order_follow).
+  function renderOrders() {
+    var pane = el('div', 'lk-pane'); pane.setAttribute('data-pane', 'orders');
+    pane.appendChild(el('p', 'lk-intro', 'Things you have bought on Lokali, and where each one stands.'));
+    var body = el('div'); body.appendChild(el('p', 'lk-intro', 'Loading your orders'));
+    pane.appendChild(body);
+    var pending = null;
+    try { pending = JSON.parse(localStorage.getItem('lokali_order_follow') || 'null'); } catch (e) {}
+    if (pending && !(Date.now() - Number(pending.at || 0) < 14 * 864e5)) pending = null; // two weeks, then forget it
+    var c = window.LokaliSupabase;
+    if (!c || typeof c.rpc !== 'function') { body.innerHTML = ''; body.appendChild(emptyState('No orders yet', 'When you buy from a vendor on Lokali, your order lands here.', 'Browse The Market', '/the-market')); return pane; }
+    function oMoney(cents) { var d = (Number(cents) || 0) / 100; return '$' + d.toLocaleString('en-US', { minimumFractionDigits: (d % 1) ? 2 : 0, maximumFractionDigits: 2 }); }
+    function oDay(iso) { var d = new Date(iso); return isNaN(d) ? '' : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); }
+    function statusOf(o) {
+      var got = o.fulfilment === 'shipping' ? 'Shipped' : o.fulfilment === 'delivery' ? 'Delivered' : 'Picked up';
+      return { paid: ['Getting ready', '#F3EBFF', '#6002EE'], partially_refunded: ['Getting ready', '#F3EBFF', '#6002EE'], fulfilled: [got, '#EAFAF2', '#1D6A45'],
+        refunded: ['Refunded', '#F7F6FC', '#6E6A85'], disputed: ['Under review', '#F7F6FC', '#6E6A85'], canceled: ['Canceled', '#F7F6FC', '#6E6A85'] }[o.status] || [String(o.status || ''), '#F7F6FC', '#6E6A85'];
+    }
+    function pill(text, bg, fg) { return '<span style="display:inline-block;font-size:11px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;padding:4px 9px;border-radius:999px;margin:6px 4px 0 0;background:' + bg + ';color:' + fg + ';">' + esc(text) + '</span>'; }
+    function card(o) {
+      var st = statusOf(o), due = '';
+      var n = Number(o.ready_days), start = new Date(o.paid_at);
+      if (o.fulfilment !== 'event' && (o.status === 'paid' || o.status === 'partially_refunded') && n >= 1 && !isNaN(start)) {
+        due = pill((o.fulfilment === 'shipping' ? 'Ships by ' : o.fulfilment === 'delivery' ? 'Ready by ' : 'Pickup by ') + oDay(new Date(start.getTime() + n * 864e5).toISOString()), '#FFF7E8', '#7A4A00');
+      }
+      var next = o.status === 'paid' || o.status === 'partially_refunded'
+        ? (o.fulfilment === 'event' ? 'Tickets. Your name is on the guest list at the door.' : o.fulfilment === 'shipping' ? 'It ships to the address you gave at payment.' : esc(o.vendor_name || 'The vendor') + ' will be in touch about ' + (o.fulfilment === 'delivery' ? 'delivery.' : 'when and where to pick it up.'))
+        : '';
+      var w = el('div');
+      w.style.cssText = 'background:#fff;border:1px solid #DEDAEE;border-radius:16px;padding:16px;margin:0 0 10px;max-width:640px;';
+      w.innerHTML = '<div style="display:flex;gap:12px;align-items:flex-start;">' +
+        (o.product_image_url ? '<img src="' + esc(o.product_image_url) + '" alt="" style="width:56px;height:56px;border-radius:12px;object-fit:cover;flex:none;">' : '<div style="width:56px;height:56px;border-radius:12px;background:#EFE5FD;flex:none;"></div>') +
+        '<div style="flex:1;min-width:0;"><div style="font-size:15px;font-weight:700;color:#1A1829;">' + esc(o.product_name) + (o.quantity > 1 ? ' <span style="color:#6E6A85;font-weight:600;">x ' + esc(o.quantity) + '</span>' : '') + '</div>' +
+        '<div style="font-size:13px;color:#4A4761;margin-top:2px;">' + esc(o.vendor_name || '') + (o.paid_at ? ' · ' + oDay(o.paid_at) : '') + '</div>' + pill(st[0], st[1], st[2]) + due + '</div>' +
+        '<div style="font-size:16px;font-weight:700;white-space:nowrap;text-align:right;color:#1A1829;">' + oMoney(o.total_cents) + (o.refunded_cents > 0 ? '<div style="font-size:12px;font-weight:600;color:#6E6A85;">' + oMoney(o.refunded_cents) + ' refunded</div>' : '') + '</div></div>' +
+        (next ? '<div style="font-size:13px;color:#6E6A85;margin-top:10px;line-height:1.5;">' + next + '</div>' : '') +
+        (o.vendor_note ? '<div style="font-size:13px;background:#F7F6FC;border-radius:10px;padding:8px 10px;margin-top:8px;color:#4A4761;">From ' + esc(o.vendor_name || 'the vendor') + ': ' + esc(o.vendor_note) + '</div>' : '') +
+        '<div style="font-size:12px;color:#8E8BA6;margin-top:10px;line-height:1.5;">Order ' + esc(o.id) + '. Your receipt is in your email. Questions or a refund: reply to it and it reaches ' + esc(o.vendor_name || 'the vendor') + ' directly.</div>' +
+        (o.vendor_slug ? '<div style="margin-top:10px;"><a href="/' + esc(o.vendor_slug) + '" style="display:inline-flex;align-items:center;min-height:40px;padding:0 14px;border-radius:999px;border:1px solid #E5D4FD;color:#6002EE;font-weight:700;font-size:13px;text-decoration:none;">Visit ' + esc(o.vendor_name || 'the storefront') + '</a></div>' : '');
+      return w;
+    }
+    function finishFollow() {
+      if (!pending || pending.vendor_id == null) return;
+      try { localStorage.removeItem('lokali_order_follow'); } catch (e) {}
+      var S = window.LokaliSupabaseAPI && window.LokaliSupabaseAPI.favorites;
+      try { if (S && typeof S.add === 'function') Promise.resolve(S.add(Number(pending.vendor_id))).then(function () {}, function () {}); } catch (e) {}
+    }
+    // #261 "Coming up": upcoming tickets + waitlists above the orders (F 2026-11-23,
+    // mockup v3 screen 7). Best-effort: no tickets or an error draws nothing.
+    var TZ = 'America/Chicago';
+    function tTime(d) { return d.toLocaleTimeString('en-US', { timeZone: TZ, hour: 'numeric', minute: '2-digit' }).toLowerCase().replace(/[\u202f\u00a0]/g, ' ').replace(':00', ''); }
+    function comingUp(t) {
+      var tickets = (t && t.tickets) || [], waits = (t && t.waitlists) || [];
+      if (!tickets.length && !waits.length) return null;
+      var box = el('div'); box.style.cssText = 'max-width:640px;margin:0 0 18px;';
+      box.innerHTML = '<div style="font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#6E6A85;margin:0 0 8px;">Coming up</div>';
+      tickets.forEach(function (k) {
+        var d = new Date(k.starts_at);
+        var mon = d.toLocaleDateString('en-US', { timeZone: TZ, month: 'short' }).toUpperCase(), day = d.toLocaleDateString('en-US', { timeZone: TZ, day: 'numeric' });
+        var w = el('div');
+        w.style.cssText = 'background:#fff;border:1px solid #DEDAEE;border-radius:16px;padding:14px;margin:0 0 8px;display:flex;gap:12px;';
+        var cal = 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + encodeURIComponent(k.title) + '&dates=' +
+          [d, k.ends_at ? new Date(k.ends_at) : new Date(d.getTime() + 3 * 36e5)].map(function (x) { return x.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, ''); }).join('/') +
+          '&location=' + encodeURIComponent(k.place || '');
+        w.innerHTML = '<div style="background:#F3EBFF;border-radius:10px;padding:6px 10px;text-align:center;color:#6002EE;flex:none;align-self:flex-start;"><div style="font-size:11px;font-weight:700;">' + esc(mon) + '</div><div style="font-size:22px;font-weight:700;line-height:1.1;">' + esc(day) + '</div></div>' +
+          '<div style="flex:1;min-width:0;font-size:14px;color:#1A1829;"><div style="font-weight:700;">' + esc(k.title) + '</div>' +
+          '<div style="color:#6E6A85;font-size:13px;margin-top:2px;">' + esc(k.vendor_name || '') + ' · ' + esc(tTime(d)) + ' · ' + esc(k.quantity) + ' ' + (k.kind === 'spot' ? 'spot' : 'ticket') + (k.quantity === 1 ? '' : 's') + (k.kind === 'spot' ? ' · free' : '') + '</div>' +
+          (k.canceled ? '<div style="font-size:13px;color:#45415A;margin-top:4px;">This event was canceled.' + (k.kind === 'spot' ? '' : ' Your refund is on its way.') + '</div>'
+            : '<div style="font-size:13px;color:#17634A;font-weight:600;margin-top:4px;">On the guest list as ' + esc(k.guest_name || 'you') + '</div>' +
+              '<div style="display:flex;gap:14px;margin-top:8px;font-size:13px;"><a href="https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(k.place || '') + '" target="_blank" rel="noopener" style="color:#6002EE;font-weight:700;text-decoration:none;">Directions</a>' +
+              '<a href="' + esc(cal) + '" target="_blank" rel="noopener" style="color:#6002EE;font-weight:700;text-decoration:none;">Add to calendar</a></div>') + '</div>';
+        box.appendChild(w);
+      });
+      waits.forEach(function (x) {
+        var w = el('div');
+        w.style.cssText = 'border:1px dashed #DEDAEE;border-radius:14px;padding:10px 12px;margin:0 0 8px;font-size:13px;color:#1A1829;display:flex;justify-content:space-between;gap:10px;align-items:center;';
+        w.innerHTML = '<span><b>' + esc(x.title) + '</b> · <span style="color:#6E6A85;">we\'ll email you if tickets open up</span></span><button type="button" style="border:0;background:none;color:#6002EE;font-weight:700;font-size:13px;cursor:pointer;min-height:40px;">Leave waitlist</button>';
+        w.querySelector('button').addEventListener('click', function () {
+          Promise.resolve(c.rpc('my_leave_event_waitlist', { p_id: x.id })).then(function () { w.remove(); }, function () {});
+        });
+        box.appendChild(w);
+      });
+      return box;
+    }
+    var ticketsP = Promise.resolve();
+    Promise.resolve(c.rpc('claim_my_orders')).then(function () {}, function () {}).then(function () {
+      ticketsP = Promise.resolve(c.rpc('my_tickets')).then(function (t) { return (t && !t.error) ? t.data : null; }, function () { return null; });
+      return c.rpc('my_purchases', { p_limit: 50 });
+    }).then(function (r) {
+      var rows = (r && !r.error && Array.isArray(r.data)) ? r.data : [];
+      body.innerHTML = '';
+      finishFollow();
+      ticketsP.then(function (t) { var cu = comingUp(t); if (cu) body.insertBefore(cu, body.firstChild); });
+      if (!rows.length) {
+        if (pending) {
+          var mail = String((state.account && state.account.email) || 'this account\'s email');
+          var note = el('div');
+          note.style.cssText = 'background:#FFF7E8;border:1px solid #FFE0B2;border-radius:14px;padding:14px;font-size:14px;line-height:1.55;color:#7A4A00;max-width:640px;margin:0 0 14px;';
+          note.innerHTML = '<b>We could not find your order under ' + esc(mail) + '.</b><br>An order shows up here when your account email matches the email you paid with, and once you have confirmed it from the link we sent. If you paid with a different address, your receipt email still has everything, and you can write to hello@golokali.com and we will connect it for you.';
+          body.appendChild(note);
+        }
+        body.appendChild(emptyState('No orders yet', 'When you buy from a vendor on Lokali, your order lands here.', 'Browse The Market', '/the-market'));
+        return;
+      }
+      rows.forEach(function (o) { body.appendChild(card(o)); });
+    }).catch(function () {
+      body.innerHTML = '';
+      body.appendChild(emptyState('We could not load your orders', 'Try again in a moment. Your receipt emails have every order in the meantime.', 'Browse The Market', '/the-market'));
+    });
+    return pane;
+  }
+
   function renderSaved() {
     var pane = el('div', 'lk-pane'); pane.setAttribute('data-pane', 'saved');
     pane.appendChild(el('p', 'lk-intro', "Vendors you follow. Tap the heart on any storefront to follow it, and their market dates and news land here and in one email each Thursday."));
@@ -5668,7 +5787,7 @@
   var GI_STORE = '<path d="M3 9l1.5-5h15L21 9"/><path d="M4 9v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9"/><path d="M9 20v-6h6v6"/>';
   var GI_MSG = '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>';
   // Hub navigation, in order. Settings is rail-only (gear button elsewhere).
-  var HUB_NAV = [['home', 'Home', GI_HOME], ['saved', 'Following', GI_HEART], ['reviews', 'Reviews', GI_STAR], ['badges', 'Badges', GI_COMPASS], ['settings', 'Settings', GI_GEAR]];
+  var HUB_NAV = [['home', 'Home', GI_HOME], ['orders', 'My orders', GI_BAG], ['saved', 'Following', GI_HEART], ['reviews', 'Reviews', GI_STAR], ['badges', 'Badges', GI_COMPASS], ['settings', 'Settings', GI_GEAR]];
   // Category icons by seeded id (1 handcrafted … 8 home, 9 professional); unknown → tag.
   var CAT_ICOS = {
     1: 'M12 19l7-7 3 3-7 7-3-3zM18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5zM2 2l7.586 7.586M11 11a2 2 0 1 0 4 0 2 2 0 0 0-4 0z',

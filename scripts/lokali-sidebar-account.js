@@ -569,6 +569,7 @@
       else if (href.indexOf('/vendor-dashboard/availability') === 0) out.availability = a;
       else if (href.indexOf('/vendor-dashboard/marketing') === 0) out.marketing = a;
       else if (href.indexOf('/vendor-dashboard/followers') === 0) out.followers = a;
+      else if (href.indexOf('/vendor-dashboard/events') === 0) out.events = a;
       else if (href.indexOf('/vendor-dashboard/settings') === 0) out.settings = a;
       else if (a.getAttribute('data-lok-contact')) out.contact = a;
       else if (href.indexOf('/vendor-dashboard/analytics') === 0 || t === 'Analytics') out.analytics = a;
@@ -590,6 +591,22 @@
         '<div class="text-block-17"><strong class="dashboard-menu">Followers</strong></div>';
       parent.insertBefore(f, out.leads.nextSibling);
       out.followers = f;
+    }
+    // Events (#261, 2026-11-23): built like Followers, but only once the
+    // /vendor-dashboard/events page is live: the site footer sets
+    // window.LOKALI_EVENTS_MENU = true at release, so the row can never point
+    // at a page that does not exist yet. Icon: a plain calendar.
+    if (!out.events && out.products && window.LOKALI_EVENTS_MENU === true) {
+      var ev = document.createElement('a');
+      ev.href = '/vendor-dashboard/events';
+      ev.className = 'dashboard-btn w-inline-block';
+      var evOn = /^\/vendor-dashboard\/events(\/|$)/.test(String(window.location.pathname || ''));
+      if (evOn) { ev.className += ' w--current'; ev.setAttribute('aria-current', 'page'); }
+      ev.innerHTML = '<div class="icon-div"><svg class="dashboard-icon" viewBox="0 0 24 24" fill="none" stroke="' + (evOn ? '#6002EE' : '#1A1829') + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="width:18px;height:18px;display:block;">' +
+        '<rect x="3" y="5" width="18" height="16" rx="2"/><line x1="16" y1="3" x2="16" y2="7"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>' +
+        '<div class="text-block-17"><strong class="dashboard-menu">Events</strong></div>';
+      parent.insertBefore(ev, out.products.nextSibling);
+      out.events = ev;
     }
     // Help and guides (2026-09-20): one row that opens the guides landing page in
     // a NEW tab, so a vendor mid-edit never loses unsaved work. Same build-it-here
@@ -658,7 +675,7 @@
     // Order is the append order; every node is moved, never cloned.
     move(r.dashboard);
     label('store', 'Your storefront');
-    move(r.profile); move(r.services); move(r.products); move(r.availability); move(r.storefront);
+    move(r.profile); move(r.services); move(r.products); move(r.events); move(r.availability); move(r.storefront);
     label('grow', 'Grow');
     move(r.leads); move(r.followers); move(r.analytics); move(r.marketing);
     if (r.settings) { label('account', 'Your account'); move(r.settings); }
