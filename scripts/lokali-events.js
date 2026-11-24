@@ -107,8 +107,20 @@
       '.lke,.lke *,.lke-sheet,.lke-sheet *{box-sizing:border-box;font-family:"Plus Jakarta Sans",-apple-system,sans-serif;}',
       '.lke{margin:0 0 28px;}',
       '.lke-h{font-size:22px;font-weight:700;color:#1A1829;margin:0 0 12px;}',
-      '.lke-card{background:#fff;border:1px solid #E7E1F3;border-radius:18px;overflow:hidden;margin:0 0 14px;scroll-margin-top:90px;}',
-      '.lke-photo{display:block;width:100%;height:190px;object-fit:cover;background:#E5D4FD;}',
+      '.lke-card{background:#fff;border:1px solid #E7E1F3;border-radius:16px;margin:0 0 10px;padding:10px;scroll-margin-top:90px;}',
+      '.lke-row1{display:flex;gap:12px;align-items:flex-start;}',
+      '.lke-thumb{flex:none;width:72px;height:96px;border-radius:10px;background:#F3EBFF;overflow:hidden;display:flex;align-items:center;justify-content:center;cursor:pointer;border:0;padding:0;}',
+      '.lke-thumb img{width:100%;height:100%;object-fit:contain;display:block;}',
+      '.lke-cal{flex:none;width:56px;border-radius:12px;background:#F3EBFF;color:#6002EE;text-align:center;padding:8px 4px;cursor:pointer;border:0;}',
+      '.lke-cal b{display:block;font-size:11px;letter-spacing:.04em;}',
+      '.lke-cal span{display:block;font-size:22px;font-weight:700;line-height:1.1;}',
+      '.lke-meta{flex:1;min-width:0;}',
+      '.lke-card .lke-title{font-size:16px;margin:0 0 2px;cursor:pointer;}',
+      '.lke-card .lke-when{font-size:13px;margin:0 0 8px;}',
+      '.lke-card .lke-price{font-size:16px;}',
+      '.lke-card .lke-btn{min-height:42px;padding:0 18px;font-size:14px;}',
+      '.lke-more{display:inline-block;border:0;background:none;padding:8px 2px 0;font-size:13px;font-weight:700;color:#6002EE;cursor:pointer;}',
+      '.lke-photo{display:block;max-width:100%;max-height:42vh;margin:0 auto 14px;border-radius:14px;background:#F3EBFF;object-fit:contain;}',
       '.lke-body{padding:16px 18px 18px;}',
       '.lke-title{font-size:19px;font-weight:700;color:#1A1829;margin:0 0 4px;line-height:1.3;}',
       '.lke-when{font-size:14px;color:#45415A;margin:0 0 12px;}',
@@ -188,9 +200,14 @@
     if (m || window.location.hash === '#events') {
       var target = m ? document.getElementById('lke-ev-' + m[1]) : sec;
       if (target && target.scrollIntoView) setTimeout(function () { target.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 300);
+      if (m) { var hit = list.filter(function (x) { return String(x.id) === m[1]; })[0]; if (hit) setTimeout(function () { openDetails(hit); }, 500); }
     }
   }
 
+  // 2026-11-24 (F 'A, compact row'): one short row per event so the vendor's
+  // products stay near the top. The whole poster shows small (contain, never
+  // cropped); everything else (poster at full size, about, lineup, map,
+  // Directions, refund rule) lives in the details sheet one tap away.
   function card(ev) {
     var c = document.createElement('article');
     c.className = 'lke-card';
@@ -200,15 +217,57 @@
     var soldOut = left <= 0;
     var free = !!ev.is_free || Number(ev.price_cents) === 0;   // #261 free events: "Reserve a spot"
     var unit = free ? 'spot' : 'ticket';
-    var html = '';
-    if (ev.photo_url) html += '<img class="lke-photo" src="' + esc(ev.photo_url) + '" alt="" loading="lazy">';
-    html += '<div class="lke-body">';
-    if (soldOut) html += '<span class="lke-chip" style="margin-bottom:8px;">' + (free ? 'Full' : 'Sold out') + '</span>';
-    html += '<h3 class="lke-title">' + esc(ev.title) + '</h3>';
-    html += '<p class="lke-when">' + esc(when(ev.starts_at, ev.ends_at)) + '</p>';
+    var d = new Date(ev.starts_at);
+    var html = '<div class="lke-row1">';
+    if (ev.photo_url) html += '<button type="button" class="lke-thumb" data-lke-more aria-label="See details for ' + esc(ev.title) + '"><img src="' + esc(ev.photo_url) + '" alt="" loading="lazy"></button>';
+    else html += '<button type="button" class="lke-cal" data-lke-more aria-label="See details for ' + esc(ev.title) + '"><b>' + esc(d.toLocaleDateString('en-US', { timeZone: TZ, month: 'short' }).toUpperCase()) + '</b><span>' + esc(d.toLocaleDateString('en-US', { timeZone: TZ, day: 'numeric' })) + '</span></button>';
+    html += '<div class="lke-meta">';
+    if (soldOut) html += '<span class="lke-chip" style="margin-bottom:6px;">' + (free ? 'Full' : 'Sold out') + '</span>';
+    html += '<h3 class="lke-title" data-lke-more>' + esc(ev.title) + '</h3>';
+    html += '<p class="lke-when">' + esc(shortWhen(ev.starts_at)) + '</p>';
     html += '<div class="lke-buy"><span class="lke-price">' + (free ? 'Free' : money(ev.price_cents)) + '<span class="lke-left">' +
       (!soldOut && left <= 10 ? esc(left + ' of ' + ev.capacity + ' ' + unit + 's left') : (free ? 'reserve your spot' : 'per ticket')) + '</span></span>';
-    if (open && !soldOut) html += '<button type="button" class="lke-btn" data-lke-buy="' + esc(ev.id) + '">' + (free ? 'Reserve a spot' : 'Get tickets') + '</button>';
+    var canWait = soldOut && ev.waitlist_enabled && new Date(ev.starts_at) > new Date();
+    if (open && !soldOut) html += '<button type="button" class="lke-btn" data-lke-buy>' + (free ? 'Reserve a spot' : 'Get tickets') + '</button>';
+    else if (canWait) html += '<button type="button" class="lke-btn2" data-lke-more>Join the waitlist</button>';
+    html += '</div>';
+    if (!open && !soldOut) html += '<p class="lke-note" style="margin-top:6px;">Ticket sales open soon.</p>';
+    html += '<button type="button" class="lke-more" data-lke-more>' + esc(moreLabel(ev)) + '</button>';
+    html += '</div></div>';
+    c.innerHTML = html;
+    var b = c.querySelector('[data-lke-buy]');
+    if (b) b.addEventListener('click', function () { if (free) openReserve(ev); else openSheet(ev); });
+    c.querySelectorAll('[data-lke-more]').forEach(function (el) { el.addEventListener('click', function () { openDetails(ev); }); });
+    return c;
+  }
+
+  function moreLabel(ev) {
+    var bits = ['Details'];
+    if (ev.lineup && ev.lineup.length) bits.push('lineup');
+    bits.push('map');
+    return bits.length === 2 ? bits.join(' and ') : bits.slice(0, -1).join(', ') + ' and ' + bits[bits.length - 1];
+  }
+
+  // The details sheet: the full poster (never cropped), when and where, price
+  // and the button, about, lineup, map + Directions, the refund rule.
+  function openDetails(ev) {
+    styles();
+    var left = Number(ev.tickets_left) || 0;
+    var open = !!ev.sales_open;
+    var soldOut = left <= 0;
+    var free = !!ev.is_free || Number(ev.price_cents) === 0;
+    var unit = free ? 'spot' : 'ticket';
+    var host = (VENDOR && VENDOR.name) || '';
+    var ovl = document.createElement('div'); ovl.className = 'lke-ovl';
+    ovl.setAttribute('role', 'dialog'); ovl.setAttribute('aria-modal', 'true'); ovl.setAttribute('aria-label', ev.title);
+    var html = '<div class="lke-sheet"><button type="button" class="lke-x" aria-label="Close">Close</button><div style="clear:both;"></div>';
+    if (ev.photo_url) html += '<img class="lke-photo" src="' + esc(ev.photo_url) + '" alt="">';
+    if (soldOut) html += '<span class="lke-chip" style="margin-bottom:8px;">' + (free ? 'Full' : 'Sold out') + '</span>';
+    html += '<h3>' + esc(ev.title) + '</h3>';
+    html += '<p class="lke-when">' + esc(when(ev.starts_at, ev.ends_at)) + (host ? ' · ' + esc(host) : '') + '</p>';
+    html += '<div class="lke-buy"><span class="lke-price">' + (free ? 'Free' : money(ev.price_cents)) + '<span class="lke-left">' +
+      (!soldOut && left <= 10 ? esc(left + ' of ' + ev.capacity + ' ' + unit + 's left') : (free ? 'reserve your spot' : 'per ticket')) + '</span></span>';
+    if (open && !soldOut) html += '<button type="button" class="lke-btn" data-lke-buy>' + (free ? 'Reserve a spot' : 'Get tickets') + '</button>';
     html += '</div>';
     if (!open && !soldOut) html += '<p class="lke-note">Ticket sales open soon.</p>';
     html += '<div data-lke-wait></div>';
@@ -233,11 +292,18 @@
     html += '<div class="lke-where"><span>' + esc(ev.place) + '</span><a href="' + esc(directions(ev.place)) + '" target="_blank" rel="noopener">Directions</a></div>';
     if (open) html += '<p class="lke-note">' + (free ? 'Free. Spots close when the event starts.' : esc(refundLine(ev.guest_refund)) + ' Ticket sales close when the event starts.') + '</p>';
     html += '</div>';
-    c.innerHTML = html;
-    var b = c.querySelector('[data-lke-buy]');
-    if (b) b.addEventListener('click', function () { if (free) openReserve(ev); else openSheet(ev); });
-    if (soldOut && ev.waitlist_enabled && new Date(ev.starts_at) > new Date()) waitBox(c.querySelector('[data-lke-wait]'), ev);
-    return c;
+    ovl.innerHTML = html;
+    document.body.appendChild(ovl);
+    var prevOverflow = document.body.style.overflow; document.body.style.overflow = 'hidden';
+    function close() { ovl.remove(); document.body.style.overflow = prevOverflow; document.removeEventListener('keydown', onKey); }
+    function onKey(e) { if (e.key === 'Escape') close(); }
+    document.addEventListener('keydown', onKey);
+    ovl.querySelector('.lke-x').addEventListener('click', close);
+    ovl.addEventListener('click', function (e) { if (e.target === ovl) close(); });
+    var b = ovl.querySelector('[data-lke-buy]');
+    if (b) b.addEventListener('click', function () { close(); if (free) openReserve(ev); else openSheet(ev); });
+    if (soldOut && ev.waitlist_enabled && new Date(ev.starts_at) > new Date()) waitBox(ovl.querySelector('[data-lke-wait]'), ev);
+    setTimeout(function () { try { ovl.querySelector('.lke-x').focus(); } catch (e) {} }, 50);
   }
 
   // ── sold out: the simple waitlist ───────────────────────────────────────────
