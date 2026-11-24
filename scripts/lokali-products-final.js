@@ -184,6 +184,9 @@ const LokaliProductsPage = (() => {
           '<div>' + lab('Weight packed (pounds)') + inp('lok-ls-lb', set ? Math.round(set.weight_oz / 16 * 10) / 10 : '', 110, '9') + '</div>' +
           '<div>' + lab('Packing fee (optional, $)') + inp('lok-ls-fee', set ? (set.packing_fee_cents / 100) : '', 110, '0') + '</div>' +
         '</div>' +
+        lab('A phone the carrier can call') +
+        '<input id="lok-ls-phone" type="tel" inputmode="tel" autocomplete="tel" value="' + (st.phone ? ('(' + st.phone.slice(0, 3) + ') ' + st.phone.slice(3, 6) + '-' + st.phone.slice(6)) : '') + '" placeholder="(281) 555-0100" style="width:200px;box-sizing:border-box;padding:8px 10px;border:1px solid #E6E4F0;border-radius:10px;font-size:14px;font-family:inherit;color:#1A1829;background:#fff;">' +
+        '<div style="font-size:12px;color:#6E6A85;margin-top:4px;">The post office prints it on every label. Shoppers never see it.</div>' +
         '<label style="display:flex;gap:8px;align-items:center;font-size:14px;margin-top:12px;cursor:pointer;"><input id="lok-ls-ins" type="checkbox"' + ((set ? set.insure : st.insure_default) ? ' checked' : '') + ' style="accent-color:#6002EE;"> Insure it for its price</label>' +
         (st.agreed_at ? '' : '<label style="display:flex;gap:8px;align-items:flex-start;font-size:13px;margin-top:12px;line-height:1.5;cursor:pointer;background:#F3EBFF;border-radius:10px;padding:10px;"><input id="lok-ls-agree" type="checkbox" style="accent-color:#6002EE;margin-top:3px;"> <span>I agree: if the carrier measures a bigger box or a heavier weight than I set here, the extra they charge comes out of my sales.</span></label>') +
         '<div style="display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap;"><button type="button" id="lok-ls-save" style="font-family:inherit;font-size:14px;font-weight:700;border:0;border-radius:999px;background:#6002EE;color:#fff;min-height:40px;padding:0 18px;cursor:pointer;">Save shipping</button>' +
@@ -210,12 +213,12 @@ const LokaliProductsPage = (() => {
         var v = function (id) { var e = wrap.querySelector('#' + id); return e ? e.value : ''; };
         save.disabled = true; msg.style.color = '#6E6A85'; msg.textContent = 'Saving and checking prices...';
         lsCall({ action: 'save', products_id: productId, box_preset: box.value, length_in: v('lok-ls-l'), width_in: v('lok-ls-w'), height_in: v('lok-ls-h'),
-                 weight_lb: v('lok-ls-lb'), packing_fee: v('lok-ls-fee'), insure: wrap.querySelector('#lok-ls-ins').checked, agree: ag ? ag.checked : undefined })
+                 weight_lb: v('lok-ls-lb'), packing_fee: v('lok-ls-fee'), phone: v('lok-ls-phone'), insure: wrap.querySelector('#lok-ls-ins').checked, agree: ag ? ag.checked : undefined })
           .then(function (r) {
             save.disabled = false;
             if (!r || r.error) {
               msg.style.color = '#B1006A';
-              msg.textContent = r && r.error === 'bad_weight' ? 'Type the packed weight in pounds.' : r && r.error === 'bad_size' ? 'Type all three box sizes in inches.' : r && r.error === 'bad_fee' ? 'The packing fee should be a dollar amount.' : 'That did not save. Try again.';
+              msg.textContent = r && r.error === 'phone_required' ? 'Add a phone the carrier can call.' : r && r.error === 'bad_phone' ? 'Type a 10-digit phone number.' : r && r.error === 'bad_weight' ? 'Type the packed weight in pounds.' : r && r.error === 'bad_size' ? 'Type all three box sizes in inches.' : r && r.error === 'bad_fee' ? 'The packing fee should be a dollar amount.' : 'That did not save. Try again.';
               return;
             }
             mountLiveShip(productId);
