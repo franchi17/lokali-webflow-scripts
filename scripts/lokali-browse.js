@@ -1888,10 +1888,12 @@
     var any = _allVendors.some(vIsNonprofit);
     var row = el('browse-toggle-nonprofit-row');
     if (row) row.style.display = any ? '' : 'none';
+    var nb = el('lk-bar-np'); if (nb) nb.style.display = any ? '' : 'none';
     if (!any && showNonprofitOnly) { showNonprofitOnly = false; var sw = el('browse-toggle-nonprofit'); if (sw) { sw.classList.remove('on'); syncSwitchAria(sw, false); } }
   }
   function applyFilters() {
     try { mktV3SyncCats(); } catch (e) {} // v3 round category buttons follow every route in (deep link, shortcut, restore)
+    try { lkBar(); lkBarSync(); } catch (e) {}
     // A shortcut lives only while its own filter is still applied: editing the
     // search or picking another category turns it into an ordinary filter state.
     if (_occ && !occMatches(_occ)) {
@@ -3140,6 +3142,101 @@
     var l = ce('a', 'lk-door-link'); l.href = '/contact-us'; l.textContent = 'Not where you live? Tell us.'; act.appendChild(l);
     light.appendChild(act);
     ctas.classList.add('lk-door');
+  }
+
+
+  // ── v3.3 (F 2026-11-24, four-reviewer pick 'A'): desktop has no side panel. One quiet line
+  // above the cards: neighborhood, a Filters menu (the three switches), Clear all, the count,
+  // and 'Sort: <current>'. Cards three across, full width. Phones/tablets keep their bar + sheet.
+  var BAR_CSS = [
+    '@media (min-width:992px){',
+    '#browse-sidebar{display:none !important;}',
+    '.browse-body .w-layout-grid.grid-template-columns{grid-template-columns:minmax(0,1fr) !important;}',
+    '#browse-vendor-grid{grid-template-columns:repeat(3,minmax(0,1fr)) !important;}',
+    '.lk-bar{display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;margin:0 0 14px;padding:0 0 14px;border-bottom:1px solid #EDE8F2;font-family:"Plus Jakarta Sans",sans-serif;}',
+    '.lk-bar .grid-header{margin:0 0 0 auto !important;padding:0 !important;}',
+    '}',
+    // below 992px the phone/tablet bar does the job; only the 'Showing N vendors' line stays visible
+    '@media (max-width:991px){.lk-bar{display:block !important;border:0 !important;margin:0 !important;padding:0 !important;}.lk-bar > :not(.grid-header){display:none !important;}}',
+    '.lk-bar-sel{position:relative;display:inline-flex;align-items:center;}',
+    '.lk-bar select{-webkit-appearance:none;appearance:none;font:700 13.5px/1 "Plus Jakarta Sans",sans-serif;color:#45415A;background:#fff;border:1.5px solid #E2DAF5;border-radius:999px;padding:10px 32px 10px 14px;cursor:pointer;}',
+    '.lk-bar-sel::after{content:"";position:absolute;right:14px;top:50%;width:6px;height:6px;border-right:2px solid #6002EE;border-bottom:2px solid #6002EE;transform:translateY(-70%) rotate(45deg);pointer-events:none;}',
+    '.lk-bar select:hover,.lk-bar-fbtn:hover{border-color:#6002EE;}',
+    '.lk-bar-fwrap{position:relative;}',
+    '.lk-bar-fbtn{font:700 13.5px/1 "Plus Jakarta Sans",sans-serif;color:#45415A;background:#fff;border:1.5px solid #E2DAF5;border-radius:999px;padding:10px 14px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;}',
+    '.lk-bar-fbtn.on{border-color:#6002EE;color:#6002EE;}',
+    '.lk-bar-fbtn b{background:#6002EE;color:#fff;border-radius:999px;font-size:11px;padding:3px 7px;}',
+    '.lk-bar-pop{position:absolute;left:0;top:calc(100% + 8px);z-index:30;background:#fff;border-radius:16px;padding:8px;min-width:240px;box-shadow:0 18px 40px -18px rgba(40,32,90,.35),0 0 0 1px #EDE8F2;display:none;}',
+    '.lk-bar-pop.open{display:block;}',
+    '.lk-bar-pop button{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;background:none;border:0;border-radius:10px;padding:11px 12px;font:600 14px/1.2 "Plus Jakarta Sans",sans-serif;color:#45415A;cursor:pointer;text-align:left;}',
+    '.lk-bar-pop button:hover{background:#F6F2FF;}',
+    '.lk-bar-pop i{width:18px;height:18px;border-radius:5px;box-shadow:inset 0 0 0 1.5px #CFC3EC;flex:none;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:12px;color:#fff;}',
+    '.lk-bar-pop button[aria-checked="true"] i{background:#6002EE;box-shadow:none;}',
+    '.lk-bar-clear{font:700 13px/1 "Plus Jakarta Sans",sans-serif;color:#6002EE;background:none;border:0;cursor:pointer;text-decoration:underline;text-underline-offset:3px;padding:6px 2px;}',
+    '.lk-bar-sortl{font:600 13px/1 "Plus Jakarta Sans",sans-serif;color:#6E6A85;}',
+    '.lk-bar :focus-visible{outline:2px solid #6002EE;outline-offset:2px;}',
+    // Shortcuts = lavender chips (F 2026-11-24): white = a control, lavender = an idea to browse, violet = on.
+    '.lk-occ-chip{background:#E9DEFF !important;border:1.5px solid transparent !important;color:#6002EE !important;font-weight:700 !important;min-height:40px !important;padding:0 15px !important;}',
+    '.lk-occ-chip i,.lk-occ-chip i svg{width:15px !important;height:15px !important;}',
+    '.lk-occ-chip:hover{border-color:#6002EE !important;color:#6002EE !important;}',
+    // small phones: 'Professional' touched 'Wellness' in the two-row icon grid
+    '@media (max-width:430px){.lk-mkt-cat{font-size:10px !important;letter-spacing:-.015em;padding:0 2px !important;box-sizing:border-box;}}'
+  ].join('');
+  var _bar = null;
+  function lkBar() {
+    if (_bar || !_grid || !_grid.parentNode) return;
+    var main = _grid.parentNode, hdr = main.querySelector(':scope > .grid-header');
+    var st = ce('style'); st.id = 'lk-bar-css'; st.textContent = BAR_CSS; document.head.appendChild(st);
+    _bar = ce('div', 'lk-bar'); _bar.setAttribute('role', 'region'); _bar.setAttribute('aria-label', 'Filter and sort');
+    // neighborhood
+    var hw = ce('span', 'lk-bar-sel'), hs = ce('select'); hs.setAttribute('aria-label', 'Neighborhood'); hs.id = 'lk-bar-hood';
+    var src = locSelectEl();
+    if (src) for (var i = 0; i < src.options.length; i++) { var o = ce('option'); o.value = src.options[i].value; o.textContent = src.options[i].textContent; hs.appendChild(o); }
+    hs.addEventListener('change', function () { setLocation(hs.value); });
+    hw.appendChild(hs); _bar.appendChild(hw);
+    // Filters menu
+    var fw = ce('span', 'lk-bar-fwrap'), fb = ce('button', 'lk-bar-fbtn'); fb.type = 'button'; fb.setAttribute('aria-expanded', 'false'); fb.id = 'lk-bar-fbtn';
+    var pop = ce('div', 'lk-bar-pop'); pop.setAttribute('role', 'menu');
+    TOGGLE_LIST.forEach(function (t) {
+      var b = ce('button'); b.type = 'button'; b.setAttribute('role', 'menuitemcheckbox'); b.setAttribute('data-k', t.key);
+      b.appendChild(document.createTextNode(t.label)); var ic = ce('i'); ic.textContent = '✓'; b.appendChild(ic);
+      b.addEventListener('click', function () { setToggle(t.key, !toggleOn(t.key)); });
+      if (t.key === 'nonprofit') { b.id = 'lk-bar-np'; b.style.display = (_allVendors && _allVendors.some(vIsNonprofit)) ? '' : 'none'; } // #263: hidden until a live nonprofit exists
+      pop.appendChild(b);
+    });
+    fb.addEventListener('click', function (e) { e.stopPropagation(); var open = !pop.classList.contains('open'); pop.classList.toggle('open', open); fb.setAttribute('aria-expanded', open ? 'true' : 'false'); });
+    document.addEventListener('click', function (e) { if (!fw.contains(e.target)) { pop.classList.remove('open'); fb.setAttribute('aria-expanded', 'false'); } });
+    fw.appendChild(fb); fw.appendChild(pop); _bar.appendChild(fw);
+    // Clear all
+    var cl = ce('button', 'lk-bar-clear'); cl.type = 'button'; cl.textContent = 'Clear all'; cl.id = 'lk-bar-clear';
+    cl.addEventListener('click', function () { ['new', 'founding', 'verified', 'nonprofit'].forEach(function (k) { setToggle(k, false); }); setLocation('all'); });
+    _bar.appendChild(cl);
+    // count (the existing header moves in) + sort
+    if (hdr) _bar.appendChild(hdr);
+    var sl = ce('span', 'lk-bar-sortl'); sl.textContent = 'Sort:'; _bar.appendChild(sl);
+    var sw = ce('span', 'lk-bar-sel'), ss = ce('select'); ss.setAttribute('aria-label', 'Sort'); ss.id = 'lk-bar-sort';
+    SORT_LIST.forEach(function (x) { var o = ce('option'); o.value = x.sort; o.textContent = x.label; ss.appendChild(o); });
+    ss.addEventListener('change', function () { setSort(ss.value); });
+    sw.appendChild(ss); _bar.appendChild(sw);
+    main.insertBefore(_bar, main.firstChild);
+    lkBarSync();
+  }
+  function lkBarSync() {
+    if (!_bar) return;
+    var hs = el('lk-bar-hood'), src = locSelectEl();
+    if (hs && src && hs.options.length !== src.options.length) { // neighborhoods arrive after the bar
+      hs.innerHTML = '';
+      for (var i = 0; i < src.options.length; i++) { var o = ce('option'); o.value = src.options[i].value; o.textContent = src.options[i].textContent; hs.appendChild(o); }
+    }
+    if (hs) hs.value = String(activeLocationId);
+    var ss = el('lk-bar-sort'); if (ss) ss.value = activeSort;
+    var n = (showNewOnly ? 1 : 0) + (showFoundingOnly ? 1 : 0) + (showVerifiedOnly ? 1 : 0) + (showNonprofitOnly ? 1 : 0);
+    var fb = el('lk-bar-fbtn'); if (fb) { fb.innerHTML = ''; fb.appendChild(document.createTextNode('Filters')); if (n) { var b = ce('b'); b.textContent = String(n); fb.appendChild(b); } fb.classList.toggle('on', n > 0); }
+    Array.prototype.forEach.call(_bar.querySelectorAll('.lk-bar-pop button'), function (b) {
+      var k = b.getAttribute('data-k'); var on = toggleOn(k);
+      b.setAttribute('aria-checked', on ? 'true' : 'false');
+    });
+    var cl = el('lk-bar-clear'); if (cl) cl.style.display = (n > 0 || String(activeLocationId) !== 'all') ? '' : 'none';
   }
 
   function frameTail() {
