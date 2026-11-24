@@ -532,6 +532,7 @@
         '<div class="mkt-qr-side">' +
           '<p class="mkt-qr-url">Opens <b>golokali.com/' + esc(this.vendor.slug) + '</b>. Scans are counted automatically.</p>' +
           '<div class="mkt-qr-btns">' +
+            '<button type="button" class="mkt-qr-dl" data-act="qr-copy-link">Copy link</button>' +
             '<button type="button" class="mkt-qr-dl" data-act="qr-png">Download for phone and web</button>' +
             '<button type="button" class="mkt-qr-dl" data-act="qr-svg">Download for print</button>' +
           '</div>' +
@@ -956,6 +957,15 @@
       finish('We could not make a new link just now. Your current link still works.');
     });
   };
+  // Storefront code card: Copy link too (experts 2026-11-24; the review card had one, this one did not).
+  // The plain storefront address, no tracking tags, so it reads well when pasted into a post.
+  Page.prototype.copyStoreLink = function () {
+    var text = 'https://www.golokali.com/' + this.vendor.slug;
+    var done = function () { toast('Copied. Paste it anywhere you post.'); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, function () { fallbackCopy(text); done(); });
+    } else { fallbackCopy(text); done(); }
+  };
   Page.prototype.copyReviewLink = function () {
     var text = 'https://www.golokali.com/' + this.reviewPath() + '#reviews';
     var done = function () { toast('Copied. Send it right after the handoff.'); };
@@ -1321,6 +1331,7 @@
       else if (act === 'post-story') self.downloadPost('story');
       else if (act === 'post-photo') self.nextPostPhoto();
       else if (act === 'post-copy') { var capEl = document.getElementById('mkt-post-cap'); if (capEl) { var capTxt = capEl.textContent, capDone = function () { toast('Caption copied'); }; if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(capTxt).then(capDone, function () { fallbackCopy(capTxt); capDone(); }); else { fallbackCopy(capTxt); capDone(); } } }
+      else if (act === 'qr-copy-link') self.copyStoreLink();
       else if (act === 'qr-png') self.downloadQr('png');
       else if (act === 'qr-svg') self.downloadQr('svg');
       else if (act === 'qr-badge-l') self.setQrBadge('l');

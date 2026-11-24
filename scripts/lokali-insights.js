@@ -581,7 +581,9 @@
 
     // light real-data insight — points at the top open checkup item instead of
     // the old one-size sentence ("add photos") that every vendor used to get.
-    if (views30 > 0) {
+    // 2026-11-24 (experts): with nothing open the band only repeated the Views number above it,
+    // so it shows only when it can point at the quickest next step.
+    if (views30 > 0 && ck.open.length) {
       var ins = el('div', 'an-insight');
       var tail = ck.open.length
         ? 'The quickest lift below: <strong>' + ck.open[0].title.charAt(0).toLowerCase() + ck.open[0].title.slice(1) + '</strong>.'
