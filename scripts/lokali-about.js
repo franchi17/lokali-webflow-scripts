@@ -48,7 +48,7 @@
     { vid: 626, slug: 'yeehatx', name: 'Jessica', biz: 'YeeHaTx', what: 'Hat maker', cap: "Jessica, YeeHaTx. Hat maker.", img: MEDIA + '626/owner/muorhpcwha06kt.jpg', pos: '50% 30%', alt: 'Jessica of YeeHaTx with her hats' },
     { vid: 539, slug: 'mias-table', name: 'Arelys', biz: "Mia's Table", what: 'Restaurant, Shenandoah', cap: "Arelys, Mia's Table. Restaurant, Shenandoah.", img: MEDIA + '539/owner/muylfkmqvv1iar.webp', pos: '60% 40%', alt: "Arelys at Mia's Table" },
     { vid: 787, slug: 'yaneliz-rosado-law-firm-pllc', name: 'Yaneliz', biz: 'Yaneliz Rosado Law Firm', what: 'Attorney', cap: "Yaneliz, attorney. Yaneliz Rosado Law Firm.", img: MEDIA + '787/owner/mv8qq0ptghh23i.jpg', pos: '50% 25%', alt: 'Yaneliz, attorney' },
-    { vid: 685, slug: 'baxter-blue-woodworks', name: 'Russ', biz: 'Baxter Blue Woodworks', what: 'Woodworker', cap: "Russ, Baxter Blue Woodworks. Woodworker.", img: MEDIA + '685/profile/bbw_owner.jpg', pos: '50% 40%', alt: 'Russ of Baxter Blue Woodworks with his dog and a turned bowl' },
+    // 2026-11-24: Baxter Blue Woodworks removed from the rotation at F's request (five covers now).
     { vid: 688, slug: 'aniko-lifestyle-wellness', name: 'Catherine', biz: 'ANIKO Lifestyle & Wellness', what: 'Wellness', cap: "Catherine, ANIKO Lifestyle & Wellness.", img: MEDIA + '688/owner/mv03xtkmr659cc.jpg', pos: '62% 30%', alt: 'Catherine of ANIKO Lifestyle & Wellness' },
     { vid: 722, slug: 'the-og-pour-mobile-bar', name: 'The OG Pour', biz: 'The OG Pour Mobile Bar', what: 'Mobile bar', cap: "The OG Pour. Mobile bar.", img: MEDIA + '722/owner/mvpqpszsnvpebr.jpg', pos: '50% 30%', alt: 'The OG Pour mixing drinks at an event' }
   ];
