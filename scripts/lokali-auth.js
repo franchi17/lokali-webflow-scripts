@@ -596,6 +596,8 @@
       '.lok-auth-btn[disabled]{opacity:.6;cursor:default;}',
       '.lok-auth-btn-primary{background:#6002EE;color:#fff;border-color:#6002EE;}',
       '.lok-auth-btn-primary:hover:not([disabled]){background:#4E02C2;border-color:#4E02C2;}',
+      // robot-check wait state (2026-11-24): soft lavender until Turnstile hands over a token
+      '.lok-auth-btn-primary.lok-auth-btn-wait{background:#F3EBFF;color:#6002EE;border-color:#E3D5FB;opacity:1;cursor:default;}',
       '.lok-auth-btn-google{background:#fff;color:#231D3F;border-color:#ECE8F8;font-weight:600;}',
       '.lok-auth-btn-google:hover:not([disabled]){border-color:#D4AAFD;background:#F9F5FF;}',
       '.lok-auth-btn-google svg{width:18px;height:18px;flex-shrink:0;}',
@@ -841,28 +843,58 @@
   // Tokens are SINGLE-USE: a failed submit consumes one server-side, so every
   // submit error path must reset() or the retry re-sends the spent token.
   function attachTurnstile(container) {
-    if (!TURNSTILE_KEY) return { token: function () { return null; }, reset: function () {} };
+    if (!TURNSTILE_KEY) return { token: function () { return null; }, reset: function () {}, gate: function () {} };
     var holder = el('div', 'lok-auth-turnstile');
     container.appendChild(holder);
     var tok = null;
     var wid = null;
+    // 2026-11-24: buttons wait for the robot check. Before this, "Log in" looked
+    // ready while Turnstile was still verifying, and an early click came back
+    // "Please complete the verification challenge" (seen live 11-22). `released`
+    // = the widget could not run at all (script blocked, render threw, widget
+    // error): stop gating so the click reaches Supabase and shows the friendly
+    // error, instead of a button stuck on "checking" forever.
+    var gated = [];
+    var released = false;
+    var WAIT_LABEL = 'One moment, checking\u2026';
+    function paint() {
+      gated.forEach(function (b) {
+        if (b.querySelector('.lok-auth-spin')) return; // mid-submit: setBusy owns it
+        if (!tok && !released) {
+          b.disabled = true;
+          b.classList.add('lok-auth-btn-wait');
+          b.textContent = WAIT_LABEL;
+        } else if (b.classList.contains('lok-auth-btn-wait')) {
+          b.disabled = false;
+          b.classList.remove('lok-auth-btn-wait');
+          b.textContent = b._label;
+        }
+      });
+    }
+    function release() { released = true; paint(); }
+    var giveUp = setTimeout(function () { if (wid == null) release(); }, 10000);
     loadTurnstile().then(function () {
-      if (!window.turnstile) return;
+      if (!window.turnstile) { release(); return; }
       try {
         wid = window.turnstile.render(holder, {
           sitekey: TURNSTILE_KEY,
           theme: 'light', // default 'auto' rendered an ink-dark widget on the light card for dark-mode visitors
-          callback: function (t) { tok = t; },
-          'expired-callback': function () { tok = null; }
+          callback: function (t) { tok = t; paint(); },
+          'expired-callback': function () { tok = null; paint(); },
+          'timeout-callback': function () { tok = null; paint(); },
+          'error-callback': function () { tok = null; release(); }
         });
-      } catch (e) {}
+        clearTimeout(giveUp);
+      } catch (e) { release(); }
     });
     return {
       token: function () { return tok; },
       reset: function () {
         tok = null;
         try { if (wid != null && window.turnstile) window.turnstile.reset(wid); } catch (e) {}
-      }
+        paint();
+      },
+      gate: function (btn) { if (btn) { gated.push(btn); paint(); } }
     };
   }
 
@@ -918,6 +950,7 @@
     var captcha = attachTurnstile(form);
     var submit = primaryBtn('Log in');
     form.appendChild(submit);
+    captcha.gate(submit);
 
     form.addEventListener('submit', function (e) {
       e.preventDefault();
@@ -1010,6 +1043,7 @@
     var captcha = attachTurnstile(form);
     var submit = primaryBtn('Send reset link');
     form.appendChild(submit);
+    captcha.gate(submit);
     form.addEventListener('submit', function (e) {
       e.preventDefault();
       hideMsg(err); hideMsg(info);
@@ -1277,6 +1311,7 @@
     var captcha = attachTurnstile(form);
     var submit = primaryBtn(fc && fc.name ? 'Create account and follow' : 'Create account');
     form.appendChild(submit);
+    captcha.gate(submit);
 
     form.addEventListener('submit', function (e) {
       e.preventDefault();
