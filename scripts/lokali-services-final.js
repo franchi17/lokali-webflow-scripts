@@ -347,7 +347,7 @@ const LokaliServicesPage = (() => {
       const hint = document.createElement('div');
       hint.id = 'lok-service-focus-hint';
       // white-space:normal — .container-11 sets nowrap page-wide (see gallery hosts)
-      hint.style.cssText = 'font-size:12px;color:#8E8BA6;margin-top:6px;line-height:1.5;white-space:normal;max-width:220px;font-family:"Plus Jakarta Sans",system-ui,sans-serif;';
+      hint.style.cssText = 'font-size:12px;color:#6E6A85;margin-top:6px;line-height:1.5;white-space:normal;max-width:220px;font-family:"Plus Jakarta Sans",system-ui,sans-serif;';
       hint.textContent = 'Drag the photo to choose which part stays in view on your cards.';
       (thumb.closest('div') || thumb).insertAdjacentElement('afterend', hint);
     }
@@ -436,7 +436,7 @@ const LokaliServicesPage = (() => {
     const wrap = document.createElement('div');
     wrap.style.cssText = 'margin-top:14px;white-space:normal;';
     const lab = document.createElement('div');
-    lab.style.cssText = 'font-size:12px;font-weight:600;color:#4A4761;margin-bottom:6px;';
+    lab.style.cssText = 'font-size:12px;line-height:1.45;font-weight:600;color:#4A4761;margin-bottom:6px;';
     lab.textContent = 'How your cover photo will appear on your card. Drag it to adjust';
     const frame = document.createElement('div');
     frame.style.cssText = 'width:230px;max-width:100%;height:150px;border-radius:12px;overflow:hidden;border:1px solid #EEEDF6;background:#F7F6FC;box-shadow:0 2px 8px rgba(26,24,41,.08);';
@@ -775,7 +775,7 @@ const LokaliServicesPage = (() => {
         orderHint = document.createElement('div');
         orderHint.id = 'services-order-hint';
         orderHint.style.cssText =
-          'font-family:"Plus Jakarta Sans",sans-serif;font-size:13px;color:#6B6580;' +
+          'font-family:"Plus Jakarta Sans",sans-serif;font-size:13px;line-height:1.45;color:#6B6580;' +
           'margin:2px 0 10px;line-height:1.5;';
         orderHint.textContent =
           'New services start at the top. Drag a card to move it.';
@@ -1333,7 +1333,7 @@ const LokaliServicesPage = (() => {
     const v = inp.value.trim();
     const bad = v && !isValidVideoUrl(v);
     inp.style.borderColor = bad ? '#E4739A' : '#E6E4F0';
-    if (hint) { hint.style.color = bad ? '#B1006A' : '#8E8BA6'; hint.textContent = bad ? 'Enter a valid YouTube or Vimeo link (or leave blank).' : VIDEO_HINT; }
+    if (hint) { hint.style.color = bad ? '#B1006A' : '#6E6A85'; hint.textContent = bad ? 'Enter a valid YouTube or Vimeo link (or leave blank).' : VIDEO_HINT; }
   };
 
   const videoHost = () => {
@@ -1347,9 +1347,9 @@ const LokaliServicesPage = (() => {
     host.id = 'lok-service-video';
     host.style.cssText = 'margin-top:16px;font-family:"Plus Jakarta Sans",system-ui,sans-serif;white-space:normal;';
     host.innerHTML =
-      '<div style="font-size:13px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;color:#4A4761;margin-bottom:8px;">Showcase video <span style="font-weight:500;text-transform:none;color:#8E8BA6;">· optional</span></div>' +
+      '<div style="font-size:13px;line-height:1.45;font-weight:600;letter-spacing:.02em;text-transform:uppercase;color:#4A4761;margin-bottom:8px;">Showcase video <span style="font-weight:500;text-transform:none;color:#6E6A85;">· optional</span></div>' +
       '<input id="lok-service-video-input" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="Paste a YouTube or Vimeo link" style="width:100%;box-sizing:border-box;padding:11px 13px;border:1px solid #E6E4F0;border-radius:10px;font-size:14px;font-family:inherit;color:#1A1829;background:#fff;" />' +
-      '<div id="lok-service-video-hint" style="font-size:12px;color:#8E8BA6;margin-top:6px;line-height:1.5;">' + VIDEO_HINT + '</div>';
+      '<div id="lok-service-video-hint" style="font-size:12px;color:#6E6A85;margin-top:6px;line-height:1.5;">' + VIDEO_HINT + '</div>';
     const parent = anchorEl.parentElement || document.body;
     if (anchorEl.nextSibling) parent.insertBefore(host, anchorEl.nextSibling);
     else parent.appendChild(host);
@@ -1383,7 +1383,7 @@ const LokaliServicesPage = (() => {
     const v = inp.value.trim();
     const bad = v && !isValidLinkUrl(v);
     inp.style.borderColor = bad ? '#E4739A' : '#E6E4F0';
-    if (hint) { hint.style.color = bad ? '#B1006A' : '#8E8BA6'; hint.textContent = bad ? 'Enter a full https:// link with no spaces (or leave blank).' : LINK_HINT; }
+    if (hint) { hint.style.color = bad ? '#B1006A' : '#6E6A85'; hint.textContent = bad ? 'Enter a full https:// link with no spaces (or leave blank).' : LINK_HINT; }
   };
 
   const linkHost = () => {
@@ -1396,9 +1396,9 @@ const LokaliServicesPage = (() => {
     host.id = 'lok-service-link';
     host.style.cssText = 'margin-top:16px;font-family:"Plus Jakarta Sans",system-ui,sans-serif;white-space:normal;';
     host.innerHTML =
-      '<div style="font-size:13px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;color:#4A4761;margin-bottom:8px;">Website link <span style="font-weight:500;text-transform:none;color:#8E8BA6;">· optional</span></div>' +
+      '<div style="font-size:13px;line-height:1.45;font-weight:600;letter-spacing:.02em;text-transform:uppercase;color:#4A4761;margin-bottom:8px;">Website link <span style="font-weight:500;text-transform:none;color:#6E6A85;">· optional</span></div>' +
       '<input id="lok-service-link-input" type="url" inputmode="url" autocomplete="off" spellcheck="false" maxlength="' + LINK_MAXLEN + '" placeholder="https://www.yoursite.com/this-service" style="width:100%;box-sizing:border-box;padding:11px 13px;border:1px solid #E6E4F0;border-radius:10px;font-size:14px;font-family:inherit;color:#1A1829;background:#fff;" />' +
-      '<div id="lok-service-link-hint" style="font-size:12px;color:#8E8BA6;margin-top:6px;line-height:1.5;">' + LINK_HINT + '</div>';
+      '<div id="lok-service-link-hint" style="font-size:12px;color:#6E6A85;margin-top:6px;line-height:1.5;">' + LINK_HINT + '</div>';
     anchorEl.insertAdjacentElement('afterend', host);
     const inp = host.querySelector('#lok-service-link-input');
     if (inp) inp.addEventListener('input', markLinkValidity);
@@ -1447,11 +1447,11 @@ const LokaliServicesPage = (() => {
     '.lok-rc-opt[aria-pressed="true"] .lok-rc-dot{border:5px solid #6002EE;}',
     '.lok-rc-note{font-size:13px;color:#6B6880;line-height:1.5;margin:0;}',
     '.lok-rc-note b{color:#1A1829;}',
-    '.lok-rc-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:13px;font-weight:600;color:#1A1829;}',
+    '.lok-rc-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:13px;line-height:1.45;font-weight:600;color:#1A1829;}',
     '.lok-rc-seg{font:600 13px/1.2 "Plus Jakarta Sans",system-ui,sans-serif;padding:8px 13px;border-radius:999px;border:1px solid #E6E4F0;background:#fff;color:#4A4761;cursor:pointer;}',
     '.lok-rc-seg[aria-pressed="true"]{background:#F3EBFF;border-color:#6002EE;color:#4A1FB8;}',
-    '.lok-rc-sub{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#4A4761;display:flex;gap:8px;align-items:center;flex-wrap:wrap;}',
-    '.lok-rc-sub span{font-weight:600;text-transform:none;letter-spacing:0;color:#8E8BA6;}',
+    '.lok-rc-sub{font-size:12px;line-height:1.45;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#4A4761;display:flex;gap:8px;align-items:center;flex-wrap:wrap;}',
+    '.lok-rc-sub span{font-weight:600;text-transform:none;letter-spacing:0;color:#6E6A85;}',
     '.lok-rc-list{display:flex;flex-direction:column;gap:8px;}',
     '.lok-rc-q{border:1px solid #E6E4F0;border-radius:12px;background:#fff;overflow:hidden;}',
     '.lok-rc-line{display:flex;align-items:center;gap:10px;padding:10px 12px;min-width:0;}',
@@ -1459,11 +1459,11 @@ const LokaliServicesPage = (() => {
     '.lok-rc-ic svg{width:15px;height:15px;}',
     '.lok-rc-tx{min-width:0;flex:1;}',
     '.lok-rc-tx b{display:block;color:#1A1829;font-size:14.5px;font-weight:700;overflow-wrap:anywhere;}',
-    '.lok-rc-tx span{font-size:12.5px;color:#8E8BA6;}',
+    '.lok-rc-tx span{font-size:12.5px;line-height:1.45;color:#6E6A85;}',
     '.lok-rc-link{font:700 13px/1.2 "Plus Jakarta Sans",system-ui,sans-serif;color:#6002EE;background:none;border:none;padding:6px;cursor:pointer;border-radius:8px;}',
-    '.lok-rc-link.quiet{color:#8E8BA6;font-weight:600;}',
+    '.lok-rc-link.quiet{color:#6E6A85;font-weight:600;}',
     '.lok-rc-edit{border-top:1px solid #E6E4F0;background:#FBFAFE;padding:12px;display:flex;flex-direction:column;gap:10px;}',
-    '.lok-rc-f{display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:600;color:#1A1829;min-width:0;}',
+    '.lok-rc-f{display:flex;flex-direction:column;gap:5px;font-size:13px;line-height:1.45;font-weight:600;color:#1A1829;min-width:0;}',
     '.lok-rc-f small{font-weight:500;color:#6B6880;}',
     '#lok-service-reach input[type="text"]{width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #E6E4F0;border-radius:10px;font:500 14px/1.4 "Plus Jakarta Sans",system-ui,sans-serif;color:#1A1829;background:#fff;margin:0;}',
     '#lok-service-reach input[type="text"].lok-rc-choice{width:120px;padding:6px 10px;font-size:13px;border-radius:999px;}',
@@ -1474,9 +1474,9 @@ const LokaliServicesPage = (() => {
     '.lok-rc-lock a{font:700 13px/1.2 "Plus Jakarta Sans",system-ui,sans-serif;color:#fff;background:#6002EE;border-radius:10px;padding:8px 14px;text-decoration:none;}',
     '.lok-rc-prev{background:#FBFAFE;border:1px dashed #DCCBFB;border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px;}',
     '.lok-rc-box{background:#fff;border:1px solid #E6E4F0;border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;}',
-    '.lok-rc-pl{display:flex;justify-content:space-between;gap:10px;font-size:13px;color:#1A1829;font-weight:600;}',
-    '.lok-rc-pl span{font-weight:500;color:#8E8BA6;white-space:nowrap;}',
-    '.lok-rc-pl em{font-style:normal;font-weight:500;color:#8E8BA6;}',
+    '.lok-rc-pl{display:flex;justify-content:space-between;gap:10px;font-size:13px;line-height:1.45;color:#1A1829;font-weight:600;}',
+    '.lok-rc-pl span{font-weight:500;color:#6E6A85;white-space:nowrap;}',
+    '.lok-rc-pl em{font-style:normal;font-weight:500;color:#6E6A85;}',
     '.lok-rc-more{border-top:1px solid #E6E4F0;padding-top:10px;display:flex;flex-direction:column;gap:12px;}',
     '.lok-rc-chk{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#1A1829;cursor:pointer;}',
     '.lok-rc-chk input{width:17px;height:17px;accent-color:#6002EE;margin:0;}',
@@ -1822,6 +1822,7 @@ const LokaliServicesPage = (() => {
 
   const galleryInput = () => document.getElementById('lok-service-gallery-input');
 
+  const _pendingPhotoDel = new Set(); // photos waiting out their 8-second Undo (save-and-undo step 1)
   const renderGallery = async (serviceId) => {
     const host = galleryHost();
     if (!host) return;
@@ -1829,7 +1830,7 @@ const LokaliServicesPage = (() => {
     if (!body) return;
 
     // the organised form already titles this section; the inline heading is for the un-organised layout
-    const title = (window.LokaliListingUI && window.LokaliListingUI.organize ? '' : '<div style="font-size:13px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;color:#4A4761;margin-bottom:8px;">Photos</div>') +
+    const title = (window.LokaliListingUI && window.LokaliListingUI.organize ? '' : '<div style="font-size:13px;line-height:1.45;font-weight:600;letter-spacing:.02em;text-transform:uppercase;color:#4A4761;margin-bottom:8px;">Photos</div>') +
       '<a href="/vendor-resources/service-photo-guide" target="_blank" rel="noopener" ' +
       'style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#6002ee;text-decoration:none;margin:-2px 0 12px;">' +
       '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" style="flex-shrink:0;"><circle cx="12" cy="12" r="9" stroke="#6002ee" stroke-width="2"/><path d="M12 11v5M12 8h.01" stroke="#6002ee" stroke-width="2" stroke-linecap="round"/></svg>' +
@@ -1854,15 +1855,15 @@ const LokaliServicesPage = (() => {
       return;
     }
 
-    body.innerHTML = title + '<div style="font-size:13px;color:#8E8BA6;">Loading photos…</div>';
+    body.innerHTML = title + '<div style="font-size:13px;line-height:1.45;color:#6E6A85;">Loading photos…</div>';
     const res = await window.LokaliAPI.services.listPhotos(serviceId);
     if (res.error) {
-      body.innerHTML = title + '<div style="font-size:13px;color:#B1006A;">Couldn’t load your photos. Refresh to try again.</div>';
+      body.innerHTML = title + '<div style="font-size:13px;line-height:1.45;color:#B1006A;">Couldn’t load your photos. Refresh to try again.</div>';
       return;
     }
     const raw = res.data;
     _galleryPhotos = (Array.isArray(raw) ? raw : (raw?.items || raw?.records || raw?.data || []))
-      .filter(p => p && p.is_active !== false)
+      .filter(p => p && p.is_active !== false && !_pendingPhotoDel.has(String(p.id)))
       .sort((a, b) => (a.sort_order ?? 9999) - (b.sort_order ?? 9999));
     // Legacy cover (2026-09-22): a listing made while its plan allowed ONE photo has
     // its photo as the standalone image_url and no gallery row. Register that photo
@@ -1881,7 +1882,7 @@ const LokaliServicesPage = (() => {
     const count = _galleryPhotos.length;
 
     let html = title +
-      '<div style="font-size:12px;color:#8E8BA6;margin-bottom:8px;">' + count + ' of ' + cap + ' photos · the first photo is your cover. Drag it to choose what stays in view' +
+      '<div style="font-size:12px;line-height:1.45;color:#6E6A85;margin-bottom:8px;">' + count + ' of ' + cap + ' photos · the first photo is your cover. Drag it to choose what stays in view' +
       (count > 1 ? ' · use ‹ › to reorder' : '') + '</div>' +
       '<div style="display:flex;flex-wrap:wrap;gap:10px;">';
 
@@ -1902,7 +1903,7 @@ const LokaliServicesPage = (() => {
     }
     html += '</div>';
     if (count >= cap) {
-      html += '<div style="font-size:12px;color:#8E8BA6;margin-top:8px;">You’ve reached your ' + cap + '-photo limit for this service.</div>';
+      html += '<div style="font-size:12px;line-height:1.45;color:#6E6A85;margin-top:8px;">You’ve reached your ' + cap + '-photo limit for this service.</div>';
     }
     body.innerHTML = html;
     // Set image src via property (never interpolate the uploaded URL into an
@@ -1976,7 +1977,7 @@ const LokaliServicesPage = (() => {
     const count = _pendingGalleryPhotos.length;
     const arrowStyle = 'position:absolute;bottom:4px;width:22px;height:22px;border:none;border-radius:50%;background:rgba(26,24,41,.72);color:#fff;font-size:13px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;';
     let html = title +
-      '<div style="font-size:12px;color:#8E8BA6;margin-bottom:8px;">' + count + ' of ' + cap + ' photos · the first photo is your cover. Drag it to choose what stays in view' +
+      '<div style="font-size:12px;line-height:1.45;color:#6E6A85;margin-bottom:8px;">' + count + ' of ' + cap + ' photos · the first photo is your cover. Drag it to choose what stays in view' +
       (count > 1 ? ' · use ‹ › to reorder' : '') + '</div>' +
       '<div style="display:flex;flex-wrap:wrap;gap:10px;">';
     _pendingGalleryPhotos.forEach((p, i) => {
@@ -1993,7 +1994,7 @@ const LokaliServicesPage = (() => {
         'style="width:84px;height:84px;border-radius:10px;border:1.5px dashed #6002ee;background:#fff;color:#6002ee;font-size:28px;font-weight:300;cursor:pointer;display:flex;align-items:center;justify-content:center;">+</button>';
     }
     html += '</div>';
-    html += '<div style="font-size:12px;color:#8E8BA6;margin-top:8px;">' +
+    html += '<div style="font-size:12px;line-height:1.45;color:#6E6A85;margin-top:8px;">' +
       (count ? 'These photos are added to your service when you hit Save.' : 'Add up to ' + cap + ' photos. They’re saved with your service.') + '</div>';
     body.innerHTML = html;
     _coverViews = [];
@@ -2109,8 +2110,34 @@ const LokaliServicesPage = (() => {
     }
   };
 
+  // Save-and-undo step 1 (F 2026-11-23): no browser pop-up. The photo leaves the
+  // strip at once and a 'Photo removed. Undo' message shows for 8 seconds; the
+  // real delete runs only after that. Without the shared helper, the old ask.
   const deleteGalleryPhoto = async (photoId) => {
     if (!photoId || _galleryBusy) return;
+    if (window.LokaliUndo && editingId != null) {
+      const listingId = editingId, pid = String(photoId);
+      _pendingPhotoDel.add(pid);
+      _skipLegacySeed = true;
+      try { await renderGallery(listingId); } finally { _skipLegacySeed = false; }
+      window.LokaliUndo.show({
+        text: 'Photo removed',
+        onUndo: async () => { _pendingPhotoDel.delete(pid); if (editingId === listingId) await renderGallery(listingId); },
+        onCommit: async () => {
+          try {
+            const res = await window.LokaliAPI.services.deletePhoto(photoId);
+            if (res && res.error) alert('Could not remove photo: ' + res.error);
+          } catch (e) { alert('Could not remove photo. Please try again.'); }
+          _pendingPhotoDel.delete(pid);
+          if (editingId === listingId) {
+            _skipLegacySeed = true; _mainImageUrl = null;
+            try { await renderGallery(listingId); } finally { _skipLegacySeed = false; }
+            await syncCoverFromGallery();
+          }
+        }
+      });
+      return;
+    }
     if (!confirm('Remove this photo from this listing?')) return;
     _galleryBusy = true;
     try {
@@ -2263,7 +2290,7 @@ const LokaliServicesPage = (() => {
     '<path d="M64 32C28.7 32 0 60.7 0 96V416c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V173.3c0-17-6.7-33.3-18.7-45.3L352 50.7C340 38.7 323.7 32 306.7 32H64zm0 96c0-17.7 14.3-32 32-32H288c17.7 0 32 14.3 32 32v64c0 17.7-14.3 32-32 32H96c-17.7 0-32-14.3-32-32V128zM224 288a64 64 0 1 1 0 128 64 64 0 1 1 0-128z"/></svg>';
   const paintSaveBtn = (btn) => {
     if (!btn) return;
-    btn.innerHTML = SAVE_ICON_SVG + '<span style="text-transform:uppercase;letter-spacing:.05em;">Save</span>';
+    btn.innerHTML = SAVE_ICON_SVG + '<span style="text-transform:uppercase;letter-spacing:.05em;">Save listing</span>'; // save-and-undo step 4: one clear 'Save listing'
     btn.style.fontFamily = "'Plus Jakarta Sans',system-ui,sans-serif";
     btn.style.display = 'flex';
     btn.style.alignItems = 'center';
@@ -2445,9 +2472,9 @@ const LokaliServicesPage = (() => {
       var btnBase = 'display:flex;align-items:center;justify-content:center;width:100%;min-height:44px;border-radius:10px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;';
       card.innerHTML =
         '<div id="lok-trash-title" style="font-size:16px;font-weight:700;color:#1A1829;margin-bottom:6px;"></div>' +
-        '<p style="font-size:13.5px;color:#5A5570;line-height:1.5;margin:0 0 16px;">Deactivating hides it from your public page. It moves to your Inactive list and you can bring it back anytime.</p>' +
-        '<button type="button" data-trash-deactivate style="' + btnBase + 'border:1px solid #6002EE;background:#6002EE;color:#fff;margin-bottom:10px;">Deactivate (hide it, keep it)</button>' +
-        '<button type="button" data-trash-delete style="' + btnBase + 'border:1px solid #F2C4CB;background:#fff;color:#C0152F;margin-bottom:10px;">Delete permanently (can’t be undone)</button>' +
+        '<p style="font-size:13.5px;color:#5A5570;line-height:1.5;margin:0 0 16px;">Hiding takes it off your public page. It moves to your Hidden list and you can bring it back anytime.</p>' +
+        '<button type="button" data-trash-deactivate style="' + btnBase + 'border:1px solid #6002EE;background:#6002EE;color:#fff;margin-bottom:10px;">Hide it (keep it for later)</button>' +
+        '<button type="button" data-trash-delete style="' + btnBase + 'border:1px solid #F2C4CB;background:#fff;color:#C0152F;margin-bottom:10px;">' + (window.LokaliUndo ? 'Delete it (you can undo for a few seconds)' : 'Delete permanently (can’t be undone)') + '</button>' +
         '<button type="button" data-trash-cancel style="' + btnBase + 'border:1px solid #E6E4F0;background:#fff;color:#5A5570;">Cancel</button>';
       overlay.appendChild(card);
       // The name goes in as text, never markup.
@@ -2475,6 +2502,48 @@ const LokaliServicesPage = (() => {
     const service = services.find(s => s.id === serviceId);
     const choice  = await openTrashDialog((service && service.service_name) || 'this service');
     if (!choice) return;
+
+    // Save-and-undo step 4 (F 2026-11-23 'Yes, start step 4'): hiding happens at
+    // once with Undo (shows it again); deleting takes it off the list at once and
+    // only really deletes after the 8-second Undo runs out.
+    if (window.LokaliUndo) {
+      const item = services.find(x => x.id === serviceId);
+      const label = (item && item.service_name) ? '\u201c' + item.service_name + '\u201d' : 'Your service';
+      try {
+        if (choice === 'delete') {
+          const idx = services.indexOf(item);
+          services = services.filter(x => x.id !== serviceId);
+          renderList(); showListView();
+          window.LokaliUndo.show({
+            text: label + ' deleted',
+            onUndo: () => { if (item) { services.splice(Math.max(0, idx), 0, item); renderList(); } },
+            onCommit: async () => {
+              try {
+                const r = await window.LokaliAPI.services.delete(serviceId);
+                if (r && r.error) showError('That didn\u2019t delete. Try again in a minute.');
+              } catch (e) { showError('That didn\u2019t delete. Try again in a minute.'); }
+              try { await loadData(); } catch (e) {}
+            }
+          });
+          return;
+        }
+        const r = await window.LokaliAPI.services.update(serviceId, { is_active: false });
+        if (r.error) throw new Error(r.error);
+        await loadData();
+        showListView();
+        window.LokaliUndo.show({
+          text: label + ' hidden. It\u2019s in your Hidden list.',
+          onUndo: async () => {
+            const r2 = await window.LokaliAPI.services.update(serviceId, { is_active: true });
+            if (r2 && r2.error) showError('That didn\u2019t show it again. Try from your Hidden list.');
+            try { await loadData(); } catch (e) {}
+          }
+        });
+      } catch (err) {
+        showError(err.message || 'Could not update service. Please try again.');
+      }
+      return;
+    }
 
     try {
       const result = choice === 'delete'
@@ -2667,7 +2736,7 @@ const LokaliServicesPage = (() => {
     }
     box.innerHTML =
       '<div style="font-size:15px;font-weight:600;color:#1A1829;margin-bottom:4px;">Couldn’t load your services</div>' +
-      '<div style="font-size:13px;color:#6B6580;margin-bottom:14px;">Check your connection and try again.</div>' +
+      '<div style="font-size:13px;line-height:1.45;color:#6B6580;margin-bottom:14px;">Check your connection and try again.</div>' +
       '<button type="button" data-load-retry style="font-family:inherit;font-size:14px;font-weight:600;min-height:44px;padding:10px 24px;border-radius:10px;border:1px solid #6002EE;background:#6002EE;color:#fff;cursor:pointer;">Try again</button>';
     var btn = box.querySelector('[data-load-retry]');
     btn.addEventListener('click', function () {
@@ -2794,11 +2863,11 @@ const LokaliServicesPage = (() => {
     wrap.id = 'lok-service-leadtime';
     wrap.style.cssText = "margin:14px 0 0;width:100%;box-sizing:border-box;font-family:'Plus Jakarta Sans',system-ui,sans-serif;";
     wrap.innerHTML =
-      '<div style="font-size:13px;font-weight:600;color:#1A1829;margin-bottom:2px;">Lead time <span style="font-weight:400;color:#8E8BA6;">(optional)</span></div>' +
-      '<p style="font-size:12.5px;color:#8E8BA6;margin:0 0 8px;">How long until this is ready for the customer? Shown on your listing so people know what to expect.</p>' +
+      '<div style="font-size:13px;line-height:1.45;font-weight:600;color:#1A1829;margin-bottom:2px;">Lead time <span style="font-weight:400;color:#6E6A85;">(optional)</span></div>' +
+      '<p style="font-size:12.5px;line-height:1.45;color:#6E6A85;margin:0 0 8px;">How long until this is ready for the customer? Shown on your listing so people know what to expect.</p>' +
       '<div data-lead-presets style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:9px;"></div>' +
-      '<input data-lead-input class="w-input" maxlength="' + LEAD_MAXLEN + '" placeholder="e.g. Ready in ~2 weeks" style="width:100%;box-sizing:border-box;font-family:inherit;">' +
-      '<p style="font-size:12px;color:#8E8BA6;margin:8px 0 0;line-height:1.45;">Tap a suggestion or write your own. This is a heads-up for customers. It doesn’t block anyone from booking or ordering.</p>';
+      '<input data-lead-input class="w-input" maxlength="' + LEAD_MAXLEN + '" placeholder="For example, ready in about 2 weeks" style="width:100%;box-sizing:border-box;font-family:inherit;">' +
+      '<p style="font-size:12px;color:#6E6A85;margin:8px 0 0;line-height:1.45;">Tap a suggestion or write your own. This is a heads-up for customers. It doesn’t block anyone from booking or ordering.</p>';
     host.appendChild(wrap);
     const inp = wrap.querySelector('[data-lead-input]');
     inp.addEventListener('input', () => {
@@ -2923,8 +2992,8 @@ const LokaliServicesPage = (() => {
     // first ship). Inside the cell = normal flow in SERVICE DETAILS.
     wrap.style.cssText = "margin:14px 0 0;width:100%;box-sizing:border-box;background:#eee6ff;border-radius:8px;padding:12px 14px;font-family:'Plus Jakarta Sans',system-ui,sans-serif;";
     wrap.innerHTML =
-      '<div style="font-size:13px;font-weight:600;color:#33254E;margin-bottom:2px;">What kind of service is this?</div>' +
-      '<p style="font-size:12.5px;color:#5A5570;margin:0 0 10px;">Shoppers use this to narrow The Market. Pick the closest match, or leave it on None.</p>' +
+      '<div style="font-size:13px;line-height:1.45;font-weight:600;color:#33254E;margin-bottom:2px;">What kind of service is this?</div>' +
+      '<p style="font-size:12.5px;line-height:1.45;color:#5A5570;margin:0 0 10px;">Shoppers use this to narrow The Market. Pick the closest match, or leave it on None.</p>' +
       '<select data-subcat-select aria-label="What kind of service is this?" style="display:block;width:100%;max-width:420px;font-family:inherit;font-size:16px;padding:9px 12px;border:1px solid #C9BDE8;border-radius:8px;background:#fff;color:#1A1829;cursor:pointer;box-sizing:border-box;"></select>' +
       '<p data-subcat-note style="display:none;font-size:12px;color:#6B6787;margin:8px 0 0;line-height:1.45;"></p>' +
       // The suggest box is folded behind one link: most vendors only ever pick
@@ -2932,10 +3001,10 @@ const LokaliServicesPage = (() => {
       '<button type="button" data-subcat-fold style="display:inline-block;margin-top:10px;padding:0;border:0;background:none;font-family:inherit;font-size:12.5px;font-weight:600;color:#6002EE;cursor:pointer;text-decoration:underline;">None of these fit? Suggest a new one</button>' +
       '<div data-subcat-suggest-wrap style="display:none;border-top:1px dashed #DCD2F2;margin-top:12px;padding-top:10px;">' +
         '<div style="display:flex;gap:6px;">' +
-          '<input data-subcat-suggest maxlength="40" placeholder="e.g. Power washing" style="flex:1;min-width:0;font-family:inherit;font-size:16px;padding:8px 12px;border:1px solid #C9BDE8;border-radius:8px;background:#fff;color:#1A1829;">' +
+          '<input data-subcat-suggest maxlength="40" placeholder="For example, power washing" style="flex:1;min-width:0;font-family:inherit;font-size:16px;padding:8px 12px;border:1px solid #C9BDE8;border-radius:8px;background:#fff;color:#1A1829;">' +
           '<button type="button" data-subcat-suggest-btn style="font-family:inherit;font-size:13px;font-weight:600;padding:8px 16px;border-radius:8px;border:1px solid #6002EE;background:#6002EE;color:#fff;cursor:pointer;">Suggest</button>' +
         '</div>' +
-        '<p style="font-size:12px;color:#8E8BA6;margin:8px 0 0;line-height:1.45;">We review new ones first so the filters stay tidy. Once approved, yours shows up here for everyone.</p>' +
+        '<p style="font-size:12px;color:#6E6A85;margin:8px 0 0;line-height:1.45;">We review new ones first so the filters stay tidy. Once approved, yours shows up here for everyone.</p>' +
         '<p data-subcat-hint style="font-size:12px;color:#6B6787;margin:8px 0 0;line-height:1.45;"></p>' +
         '<div data-subcat-pending style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>' +
       '</div>';

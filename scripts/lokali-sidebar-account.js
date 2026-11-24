@@ -62,7 +62,7 @@
     '.lok-acct .lok-acct-chip{display:flex;align-items:center;gap:10px;cursor:pointer;}' +
     '.lok-acct .lok-acct-chip .lok-acct-meta{flex:1 1 auto;min-width:0;}' +
     '.lok-acct .lok-acct-chip .lok-acct-name{font-family:\'Plus Jakarta Sans\',sans-serif;font-size:13.5px;font-weight:700;color:#2E2E3F;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}' +
-    '.lok-acct .lok-acct-chip .lok-acct-plan{font-family:\'Plus Jakarta Sans\',sans-serif;font-size:12px;font-weight:500;color:#6E6A85;}' + // 2026-09-21: was 11.5px #8A8AA0 = 3.37:1
+    '.lok-acct .lok-acct-chip .lok-acct-plan{font-family:\'Plus Jakarta Sans\',sans-serif;font-size:12px;line-height:1.45;font-weight:500;color:#6E6A85;}' + // 2026-09-21: was 11.5px #8A8AA0 = 3.37:1
     '.lok-acct .lok-acct-caret{margin-left:auto;flex:0 0 auto;width:26px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:8px;color:#6B6B80;transition:transform .18s ease,background .12s ease,color .12s ease;}' +
     '.lok-acct .lok-acct-caret svg{width:14px;height:14px;display:block;}' +
     '.lok-acct .lok-acct-chip:hover .lok-acct-caret{background:#F3EBFF;color:#6002EE;}' +
@@ -272,7 +272,7 @@
     if (!menu) return;
     if (!document.getElementById('lok-sw-css')) {
       var st = document.createElement('style'); st.id = 'lok-sw-css';
-      st.textContent = '.lok-acct .lok-acct-menu .lok-sw-cap{font-family:\'Plus Jakarta Sans\',sans-serif;font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:#B3B1C6;padding:8px 10px 2px;}' +
+      st.textContent = '.lok-acct .lok-acct-menu .lok-sw-cap{font-family:\'Plus Jakarta Sans\',sans-serif;font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:#6E6A85;padding:8px 10px 2px;}' +
         '.lok-acct .lok-acct-menu button.lok-acct-row{all:unset;box-sizing:border-box;width:100%;cursor:pointer;display:flex;flex-direction:row;align-items:center;gap:8px;padding:9px 10px;font-family:\'Plus Jakarta Sans\',sans-serif;font-size:13px;font-weight:600;color:#44445A;line-height:1.2;border-radius:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}' +
         '.lok-acct .lok-acct-menu button.lok-acct-row:hover{background:#F3EBFF;color:#6002EE;}' +
         '.lok-acct .lok-acct-menu button.lok-acct-row[disabled]{opacity:.6;cursor:default;}' +
@@ -540,7 +540,7 @@
     '.div-block-28 .dashboard-btn strong.dashboard-menu{margin-right:6px;}' +
     '.div-block-28 .dashboard-btn .icon-div{flex:0 0 auto;}' +
     '.div-block-28 .dashboard-btn .text-block-17 strong{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}' +
-    '.lok-nav-ext{display:inline-block;width:11px;height:11px;margin-left:6px;vertical-align:-1px;color:#8E8BA6;}' +
+    '.lok-nav-ext{display:inline-block;width:11px;height:11px;margin-left:6px;vertical-align:-1px;color:#6E6A85;}' +
     '.lok-nav-ext svg{width:11px;height:11px;fill:currentColor;display:block;}' +
     // Mobile: the hamburger (built by lokali-dashboard-mobile-nav.js) gets a dot
     // while Leads has unread — the drawer is closed, so the badge alone is unseen.

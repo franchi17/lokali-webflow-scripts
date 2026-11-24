@@ -47,7 +47,7 @@
     "  /* breathing room under the phone input and between the contact checkboxes */\n" +
     "  #wf-form-Business-Profile .lokali-phone { margin-bottom: 12px; }\n" +
     "  #wf-form-Business-Profile .checkbox-form { margin-bottom: 9px; }");
-  injectStyle("lokali-locations-ui-style", "  .location-multi {\n    font-family: \"Plus Jakarta Sans\", system-ui, -apple-system, sans-serif;\n    background: #eee6ff;\n    padding: 12px 14px;\n    border-radius: 8px;\n    box-sizing: border-box;\n  }\n  .location-hint {\n    font-size: 13px;\n    color: #5A5570;\n    margin: 0 0 10px;\n    line-height: 1.4;\n  }\n  .location-pills {\n    display: flex;\n    flex-wrap: wrap;\n    gap: 8px;\n  }\n  .location-pill {\n    font-family: inherit;\n    -webkit-appearance: none;\n    appearance: none;\n    display: inline-flex;\n    align-items: center;\n    gap: 7px;\n    background: #fff;\n    color: #5A5570;\n    border: 1px solid #C9BDE8;\n    border-radius: 999px;\n    padding: 8px 14px;\n    font-size: 14px;\n    line-height: 1.3;\n    cursor: pointer;\n    user-select: none;\n    transition: background .12s, border-color .12s, color .12s;\n  }\n  .location-pill:hover {\n    border-color: #6002ee;\n    color: #6002ee;\n  }\n  .location-pill.is-on {\n    background: #6002EE;\n    border-color: #6002EE;\n    color: #fff;\n    font-weight: 600;\n  }\n  .location-pill.is-on:hover {\n    background: #4a01c7;\n    border-color: #4a01c7;\n    color: #fff;\n  }\n  .location-pill .lp-g {\n    font-weight: 700;\n    font-size: 13px;\n    line-height: 1;\n  }\n  .location-count {\n    font-size: 12.5px;\n    color: #6B6787;\n    margin: 10px 0 0;\n  }\n  .category-pills {\n    font-family: \"Plus Jakarta Sans\", system-ui, -apple-system, sans-serif;\n    background: #eee6ff;\n    padding: 12px 14px;\n    border-radius: 8px;\n    box-sizing: border-box;\n  }\n  .category-hint {\n    font-size: 13px;\n    color: #5A5570;\n    margin: 0 0 10px;\n    line-height: 1.4;\n  }\n  .category-pill-row {\n    display: flex;\n    flex-wrap: wrap;\n    gap: 8px;\n  }\n  .category-pill {\n    font-family: inherit;\n    -webkit-appearance: none;\n    appearance: none;\n    display: inline-flex;\n    align-items: center;\n    gap: 8px;\n    background: #fff;\n    color: #5A5570;\n    border: 1px solid #C9BDE8;\n    border-radius: 999px;\n    padding: 8px 14px;\n    font-size: 14px;\n    line-height: 1.3;\n    cursor: pointer;\n    user-select: none;\n    transition: background .12s, border-color .12s, color .12s;\n  }\n  .category-pill:hover {\n    border-color: #6002ee;\n    color: #6002ee;\n  }\n  .category-pill.is-on {\n    background: #6002EE;\n    border-color: #6002EE;\n    color: #fff;\n    font-weight: 600;\n  }\n  .category-pill .cp-ic {\n    width: 16px;\n    height: 16px;\n    flex-shrink: 0;\n    background-color: currentColor;\n    -webkit-mask-position: center;\n    -webkit-mask-repeat: no-repeat;\n    -webkit-mask-size: contain;\n    mask-position: center;\n    mask-repeat: no-repeat;\n    mask-size: contain;\n  }");
+  injectStyle("lokali-locations-ui-style", "  .location-multi {\n    font-family: \"Plus Jakarta Sans\", system-ui, -apple-system, sans-serif;\n    background: #eee6ff;\n    padding: 12px 14px;\n    border-radius: 8px;\n    box-sizing: border-box;\n  }\n  .location-hint {\n    font-size: 13px;\n    color: #5A5570;\n    margin: 0 0 10px;\n    line-height: 1.4;\n  }\n  .location-pills {\n    display: flex;\n    flex-wrap: wrap;\n    gap: 8px;\n  }\n  .location-pill {\n    font-family: inherit;\n    -webkit-appearance: none;\n    appearance: none;\n    display: inline-flex;\n    align-items: center;\n    gap: 7px;\n    background: #fff;\n    color: #5A5570;\n    border: 1px solid #C9BDE8;\n    border-radius: 999px;\n    padding: 8px 14px;\n    font-size: 14px;\n    line-height: 1.3;\n    cursor: pointer;\n    user-select: none;\n    transition: background .12s, border-color .12s, color .12s;\n  }\n  .location-pill:hover {\n    border-color: #6002ee;\n    color: #6002ee;\n  }\n  .location-pill.is-on {\n    background: #6002EE;\n    border-color: #6002EE;\n    color: #fff;\n    font-weight: 600;\n  }\n  .location-pill.is-on:hover {\n    background: #4a01c7;\n    border-color: #4a01c7;\n    color: #fff;\n  }\n  .location-pill .lp-g {\n    font-weight: 700;\n    font-size: 13px;\n    line-height: 1;\n  }\n  .location-count {\n    font-size: 12.5px;line-height:1.45;\n    color: #6B6787;\n    margin: 10px 0 0;\n  }\n  .category-pills {\n    font-family: \"Plus Jakarta Sans\", system-ui, -apple-system, sans-serif;\n    background: #eee6ff;\n    padding: 12px 14px;\n    border-radius: 8px;\n    box-sizing: border-box;\n  }\n  .category-hint {\n    font-size: 13px;\n    color: #5A5570;\n    margin: 0 0 10px;\n    line-height: 1.4;\n  }\n  .category-pill-row {\n    display: flex;\n    flex-wrap: wrap;\n    gap: 8px;\n  }\n  .category-pill {\n    font-family: inherit;\n    -webkit-appearance: none;\n    appearance: none;\n    display: inline-flex;\n    align-items: center;\n    gap: 8px;\n    background: #fff;\n    color: #5A5570;\n    border: 1px solid #C9BDE8;\n    border-radius: 999px;\n    padding: 8px 14px;\n    font-size: 14px;\n    line-height: 1.3;\n    cursor: pointer;\n    user-select: none;\n    transition: background .12s, border-color .12s, color .12s;\n  }\n  .category-pill:hover {\n    border-color: #6002ee;\n    color: #6002ee;\n  }\n  .category-pill.is-on {\n    background: #6002EE;\n    border-color: #6002EE;\n    color: #fff;\n    font-weight: 600;\n  }\n  .category-pill .cp-ic {\n    width: 16px;\n    height: 16px;\n    flex-shrink: 0;\n    background-color: currentColor;\n    -webkit-mask-position: center;\n    -webkit-mask-repeat: no-repeat;\n    -webkit-mask-size: contain;\n    mask-position: center;\n    mask-repeat: no-repeat;\n    mask-size: contain;\n  }");
 })();
 
 
@@ -430,6 +430,7 @@ var LokaliProfilePage = (function () {
         _dbg('[ProfilePage] populateUI done, #business-name value:', (document.getElementById('business-name') || {}).value);
         bindEvents();
         try { _injectAddressInfo(); } catch (e0) {}
+        try { _fixHintWords(); } catch (e0b) {}
         setTimeout(function () {
           populateUI();
           _dbg('[ProfilePage] 2nd populateUI done, #business-name value:', (document.getElementById('business-name') || {}).value);
@@ -584,12 +585,12 @@ var LokaliProfilePage = (function () {
   // Information / About Your Business) and drop it in right below the card that
   // holds the website/Instagram links. Idempotent.
   var _PAY_FIELDS = [
-    { id: 'input-venmo',         label: 'Venmo username',      ph: 'eg. your-venmo-name (no @)' },
-    { id: 'input-cashapp',       label: 'Cash App $Cashtag',   ph: 'eg. yourcashtag (no $)' },
-    { id: 'input-paypal',        label: 'PayPal.Me',           ph: 'eg. yourpaypalname' },
-    { id: 'input-zelle',         label: 'Zelle (email or U.S. mobile)', ph: 'eg. you@business.com' },
+    { id: 'input-venmo',         label: 'Venmo username',      ph: 'For example, your-venmo-name (no @)' },
+    { id: 'input-cashapp',       label: 'Cash App $Cashtag',   ph: 'For example, yourcashtag (no $)' },
+    { id: 'input-paypal',        label: 'PayPal.Me',           ph: 'For example, yourpaypalname' },
+    { id: 'input-zelle',         label: 'Zelle (email or U.S. mobile)', ph: 'For example, you@business.com' },
     { id: 'input-otherpay-url',  label: 'Other payment link',  ph: 'https://…' },
-    { id: 'input-otherpay-label', label: 'Label for the link (optional)', ph: 'eg. Buy Me a Coffee' }
+    { id: 'input-otherpay-label', label: 'Label for the link (optional)', ph: 'For example, Buy Me a Coffee' }
   ];
   // Font Awesome "dollar-sign" glyph as inline SVG — FA isn't loaded on the page,
   // and the other card icons are purple PNGs. Fill #6002EE (sampled from the
@@ -666,7 +667,7 @@ var LokaliProfilePage = (function () {
     var h = document.createElement('div'); h.id = 'lok-pp-title'; h.style.cssText = 'font-size:17px;font-weight:700;color:#1A1829;'; h.textContent = o.title || 'Choose a photo';
     var sub = document.createElement('div'); sub.style.cssText = 'font-size:13px;color:#6E6A85;line-height:1.5;margin-top:3px;'; sub.textContent = o.sub || '';
     ht.appendChild(h); ht.appendChild(sub);
-    var count = document.createElement('div'); count.style.cssText = 'font-size:13px;font-weight:600;color:#4A4761;white-space:nowrap;padding-top:3px;';
+    var count = document.createElement('div'); count.style.cssText = 'font-size:13px;line-height:1.45;font-weight:600;color:#4A4761;white-space:nowrap;padding-top:3px;';
     head.appendChild(ht); head.appendChild(count);
     var body = document.createElement('div');
     body.style.cssText = 'flex:1 1 auto;min-height:0;overflow:auto;border:1px solid #E6E4F0;border-radius:10px;padding:10px;display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:8px;align-content:start;';
@@ -958,7 +959,7 @@ var LokaliProfilePage = (function () {
     b.type = 'button';
     b.setAttribute('aria-label', 'Close');
     b.textContent = '✕';
-    b.style.cssText = 'position:absolute;top:8px;right:8px;width:22px;height:22px;border:none;background:transparent;color:#8E8BA6;font-size:12px;cursor:pointer;padding:0;line-height:1;font-family:inherit;';
+    b.style.cssText = 'position:absolute;top:8px;right:8px;width:22px;height:22px;border:none;background:transparent;color:#6E6A85;font-size:12px;cursor:pointer;padding:0;line-height:1;font-family:inherit;';
     b.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); pop.style.display = 'none'; });
     pop.appendChild(b);
   }
@@ -1004,9 +1005,9 @@ var LokaliProfilePage = (function () {
   }
   function _photoInfoIcon() {
     return _infoPopover('i', 'Photo guidelines',
-      '<div style="font-weight:700;font-size:13px;color:#1A1829;margin-bottom:6px;">Photo guidelines</div>' +
+      '<div style="font-weight:700;font-size:13px;line-height:1.45;color:#1A1829;margin-bottom:6px;">Photo guidelines</div>' +
       '<div style="font-size:12.5px;color:#565170;line-height:1.6;">JPG, PNG or WEBP &middot; under 5&nbsp;MB<br>Square, at least 500&nbsp;px (1000&times;1000 ideal)<br>Bright and clear, no text overlays</div>' +
-      '<a href="/vendor-resources/profile-photo-guide" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;font-weight:700;font-size:12.5px;color:#6002EE;text-decoration:none;">Read the full guide &rarr;</a>');
+      '<a href="/vendor-resources/profile-photo-guide" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;font-weight:700;font-size:12.5px;line-height:1.45;color:#6002EE;text-decoration:none;">Read the full guide &rarr;</a>');
   }
 
   // "Public Email" -> "Business Email" + circled-? explaining where messages
@@ -1022,7 +1023,7 @@ var LokaliProfilePage = (function () {
       h.style.display = 'flex';
       h.style.alignItems = 'center';
       h.appendChild(_infoPopover('?', 'About Business Email',
-        '<div style="font-weight:700;font-size:13px;color:#1A1829;margin-bottom:6px;">Business Email</div>' +
+        '<div style="font-weight:700;font-size:13px;line-height:1.45;color:#1A1829;margin-bottom:6px;">Business Email</div>' +
         '<div style="font-size:12.5px;color:#565170;line-height:1.6;">Every message a customer sends from the <b>&ldquo;Send a message&rdquo;</b> button on your page is emailed here (and it’s also saved in your Leads). Leave it empty and messages go to your login email instead.</div>'));
     }
   }
@@ -1130,7 +1131,7 @@ var LokaliProfilePage = (function () {
             full.target = '_blank';
             full.rel = 'noopener';
             full.textContent = 'Read the full guide →';
-            full.style.cssText = 'display:inline-block;margin-top:10px;font-weight:700;font-size:12.5px;color:#6002EE;text-decoration:none;font-family:"Plus Jakarta Sans",sans-serif;';
+            full.style.cssText = 'display:inline-block;margin-top:10px;font-weight:700;font-size:12.5px;line-height:1.45;color:#6002EE;text-decoration:none;font-family:"Plus Jakarta Sans",sans-serif;';
             pop.appendChild(full);
             _popCloseX(pop);
           }
@@ -1167,9 +1168,9 @@ var LokaliProfilePage = (function () {
     pick.addEventListener('click', function (e) { e.preventDefault(); file.click(); });
     ph.appendChild(prev); ph.appendChild(pick); ph.appendChild(file);
     card.col.appendChild(ph);
-    _mkLabeledInput(card.col, 'input-owner-name', 'Your first name', 'eg. Francesca');
-    _mkLabeledInput(card.col, 'input-owner-bio', 'About you: a short personal intro', 'eg. Hi, I’m Francesca! I started this because…', true);
-    _mkLabeledInput(card.col, 'input-owner-languages', 'Languages you speak', 'eg. English, Spanish');
+    _mkLabeledInput(card.col, 'input-owner-name', 'Your first name', 'For example, Francesca');
+    _mkLabeledInput(card.col, 'input-owner-bio', 'About you: a short personal intro', 'For example, Hi, I’m Francesca! I started this because…', true);
+    _mkLabeledInput(card.col, 'input-owner-languages', 'Languages you speak', 'For example, English, Spanish');
     anchorSection.parentNode.insertBefore(card.section, anchorSection.nextSibling);
 
     file.addEventListener('change', function () {
@@ -1199,7 +1200,7 @@ var LokaliProfilePage = (function () {
         // (bug found by F 2026-08-31: uploaded owner photo, SAVE inert).
         _rfDirtySection = 'Meet the Vendor';
         _refreshSaveBar();
-        _showToast('success', 'Photo added. Press Save to keep it.');
+        _editSeq++; _autoField = prev; _autoSoon(200); // save-and-undo step 2: saves by itself
       });
     });
   }
@@ -1246,14 +1247,14 @@ var LokaliProfilePage = (function () {
       h.style.alignItems = 'center';
       h.textContent = 'Instagram handle (private)';
       h.appendChild(_infoPopover('?', 'About your Instagram handle',
-        '<div style="font-weight:700;font-size:13px;color:#1A1829;margin-bottom:6px;">Only Lokali sees this</div>' +
-        '<div style="font-size:12.5px;color:#565170;line-height:1.6;">Your handle is <b>never shown on your storefront</b>. We use it when we feature you on Instagram: you are tagged as a collaborator, so the post appears on your own profile and your followers see it too. Without it we can feature you but cannot tag you.</div>'));
+        '<div style="font-weight:700;font-size:13px;line-height:1.45;color:#1A1829;margin-bottom:6px;">Only Lokali sees this</div>' +
+        '<div style="font-size:12.5px;color:#565170;line-height:1.6;">Your handle is <b>never shown on your storefront</b>. Now and then we share new neighbors together in one Lokali post. Your handle lets us tag you when you are in one.</div>'));
     }
     if (!document.getElementById('lok-ig-hint')) {
       var hint = document.createElement('div');
       hint.id = 'lok-ig-hint';
       hint.style.cssText = 'font-family:"Plus Jakarta Sans",sans-serif;font-size:12px;color:#6B6880;margin-top:6px;line-height:1.5;';
-      hint.textContent = 'Not shown on your storefront. When Lokali features you on Instagram we tag you as a collaborator, so the post appears on your profile too.';
+      hint.textContent = 'Not shown on your storefront. Now and then we share new neighbors together in one Lokali post, and your handle lets us tag you.';
       ig.parentNode.insertBefore(hint, ig.nextSibling);
     }
   }
@@ -1369,7 +1370,7 @@ var LokaliProfilePage = (function () {
     // instantly, text needs SAVE) and nothing said so — spell it out up front.
     var saveHint = document.createElement('div');
     saveHint.style.cssText = 'font-size:13px;line-height:1.5;color:#6B6880;margin-bottom:6px;';
-    saveHint.textContent = 'Your logo and portfolio photos save the moment you add them. Your own photo and everything else save when you press Save.';
+    saveHint.textContent = 'Everything here saves as you go. Change something, move on, and a small \u201cSaved\u201d appears beside it.'; // save-and-undo step 2 (F 2026-11-23)
     head.appendChild(saveHint);
 
     var nav = document.createElement('div');
@@ -1483,7 +1484,7 @@ var LokaliProfilePage = (function () {
     im.style.objectPosition = (ph.image_focus_x != null && ph.image_focus_y != null)
       ? (ph.image_focus_x + '% ' + ph.image_focus_y + '%') : 'center';
     if (lab) lab.textContent = 'How photo ' + (_pfActive + 1) + ' of ' + _pfPhotos.length +
-      ' will appear on your storefront \u2014 drag it to adjust';
+      ' will appear on your storefront. Drag it to adjust.';
     // the active thumb mirrors the same position
     var thumbs = document.querySelectorAll('img[data-pf-idx]');
     thumbs.forEach(function (t) {
@@ -1523,8 +1524,8 @@ var LokaliProfilePage = (function () {
       var ph = row();
       if (!moved || !ph) { _pfPaintPreview(); return; }
       window.LokaliSupabaseAPI.photos.setFocus('vendor', ph.id, ph.image_focus_x, ph.image_focus_y).then(function (res2) {
-        if (res2 && res2.error) { _showToast('error', 'Couldn\u2019t save the crop \u2014 try again.'); return; }
-        _showToast('success', 'Crop saved \u2014 your storefront uses it right away.');
+        if (res2 && res2.error) { _showToast('error', 'Couldn\u2019t save the crop. Try again.'); return; }
+        _showToast('success', 'Crop saved. Your storefront uses it right away.');
       });
     }
     imEl.addEventListener('pointerup', done);
@@ -1676,24 +1677,24 @@ var LokaliProfilePage = (function () {
     card.col.appendChild(vidRow);
     var vidHint = document.createElement('p');
     vidHint.id = 'lok-pf-vidhint';
-    vidHint.style.cssText = 'font:400 12px/1.5 "Plus Jakarta Sans",sans-serif;color:#8E8BA6;margin:6px 0 0;white-space:normal;display:none;';
+    vidHint.style.cssText = 'font:400 12px/1.5 "Plus Jakarta Sans",sans-serif;color:#6E6A85;margin:6px 0 0;white-space:normal;display:none;';
     card.col.appendChild(vidHint);
     function vidSay(msg, bad) {
       vidHint.textContent = msg; vidHint.style.display = msg ? 'block' : 'none';
-      vidHint.style.color = bad ? '#B1006A' : '#8E8BA6';
+      vidHint.style.color = bad ? '#B1006A' : '#6E6A85';
     }
     vidRow.addEventListener('click', function (ev) {
       if (!ev.target || ev.target.id !== 'lok-pf-vidsave') return;
       var inp = document.getElementById('lok-pf-vidurl');
       var url = inp ? String(inp.value || '').trim() : '';
-      if (!_pfParseVideo(url)) { vidSay('That link doesn\u2019t look like YouTube or Vimeo \u2014 copy the full video address from your browser.', true); return; }
+      if (!_pfParseVideo(url)) { vidSay('That link doesn\u2019t look like YouTube or Vimeo. Copy the full video address from your browser.', true); return; }
       if (_pfPhotos.length >= _PF_MAX) { vidSay('Your portfolio is full. A video uses one of your ' + _PF_MAX + ' spots.', true); return; }
       var S = window.LokaliSupabaseAPI;
       if (!S || !S.photos || !S.photos.addVideo || !_vendor) return;
       var nextSort = _pfPhotos.length ? (Number(_pfPhotos[_pfPhotos.length - 1].sort_order) || _pfPhotos.length) + 1 : 1;
       vidSay('Adding\u2026', false);
       S.photos.addVideo('vendor', _vendor.id, url, nextSort).then(function (res) {
-        if (res && res.error) { vidSay('Couldn\u2019t add that video \u2014 try again.', true); return; }
+        if (res && res.error) { vidSay('Couldn\u2019t add that video. Try again.', true); return; }
         if (inp) inp.value = '';
         vidRow.style.display = 'none';
         vidSay('', false);
@@ -1798,7 +1799,7 @@ var LokaliProfilePage = (function () {
           bar0.appendChild(mkB('\u2715', 'Remove video', function () {
             window.LokaliSupabaseAPI.photos.remove('vendor', p.id).then(function () {
               _renderPortfolio();
-              _showToast('success', 'Video removed \u2014 saved automatically.');
+              _showToast('success', 'Video removed.');
             });
           }, false));
           bar0.appendChild(mkB('\u203A', 'Move right', function () { _pfSwap(i, i + 1); }, i === _pfPhotos.length - 1));
@@ -1860,7 +1861,7 @@ var LokaliProfilePage = (function () {
         plabRow.style.cssText = 'display:flex;align-items:flex-start;gap:8px;';
         var plab = document.createElement('div');
         plab.id = 'lok-pf-preview-label';
-        plab.style.cssText = 'font-size:12px;font-weight:600;color:#4A4761;margin-bottom:6px;flex:1;';
+        plab.style.cssText = 'font-size:12px;line-height:1.45;font-weight:600;color:#4A4761;margin-bottom:6px;flex:1;';
         var pclose = document.createElement('button');
         pclose.type = 'button';
         pclose.textContent = '✕';
@@ -2301,6 +2302,19 @@ var LokaliProfilePage = (function () {
     if (oldRow0) oldRow0.style.display = 'none';
     var bottom0 = document.getElementById(SAVE_BTN_BOTTOM);
     if (bottom0 && bottom0.parentNode) bottom0.parentNode.style.display = 'none';
+    // Save-and-undo step 2 (F 2026-11-23 'Yes, start step 2'): Profile saves as
+    // you go, so the floating Save bar is gone. The real Save button stays in
+    // the DOM (hidden) so save() and its id lookups keep working.
+    if (window.__lokAutoSaveWired) return;
+    window.__lokAutoSaveWired = true;
+    var topBtn0 = document.getElementById(SAVE_BTN);
+    if (topBtn0) topBtn0.style.display = 'none';
+    document.addEventListener('input', _rfDirtyPing, true);
+    document.addEventListener('change', _rfDirtyPing, true);
+    document.addEventListener('change', _autoOnChange, true);
+    document.addEventListener('focusout', _autoOnLeave, true);
+    return;
+    // (old bar below, kept for reference; never reached)
     if (document.getElementById('lok-savebar')) return;
     var topBtn = document.getElementById(SAVE_BTN);
     if (!topBtn) return;
@@ -2338,7 +2352,70 @@ var LokaliProfilePage = (function () {
     var h = sec && sec.querySelector ? sec.querySelector('.section-heading') : null;
     _rfDirtySection = h ? (h.textContent || '').trim().replace(/\s*✓$/, '') : '';
     _dirty = true; // same semantics as the dirty-guard's mark() — belt and braces
+    _autoField = t; _editSeq++;
     setTimeout(_refreshSaveBar, 0);
+  }
+  // ── Save as you go (save-and-undo step 2, F 2026-11-23) ─────────────────────
+  // A field saves when the vendor leaves it (focusout) or, for pickers,
+  // checkboxes and selects, when it changes. It reuses save() exactly: the
+  // same full payload, the same checks and the same server-side address
+  // lookup. Success shows a small 'Saved' under the field instead of a popup;
+  // a problem shows under the field in plain words and the page keeps
+  // warning before leaving until it saves.
+  var _autoField = null, _editSeq = 0, _autoTimer = null, _autoAgain = false;
+  function _isTextish(t) {
+    if (!t || !t.tagName) return false;
+    if (t.tagName === 'TEXTAREA') return true;
+    if (t.tagName !== 'INPUT') return false;
+    var ty = String(t.type || 'text').toLowerCase();
+    return ty !== 'checkbox' && ty !== 'radio' && ty !== 'file';
+  }
+  function _autoSoon(ms) {
+    clearTimeout(_autoTimer);
+    _autoTimer = setTimeout(function () {
+      if (!_dirty) return;
+      // The address box shows Google suggestions; wait while they are open.
+      var pac = document.querySelector('.pac-container');
+      var addr = _getAddressEl && _getAddressEl();
+      if (addr && document.activeElement === addr && pac && pac.offsetParent !== null) return _autoSoon(800);
+      if (_saving) { _autoAgain = true; return; }
+      save({ auto: true });
+    }, ms == null ? 350 : ms);
+  }
+  // Only the profile form itself: the header search box, the menu and the
+  // notification bell never trigger a save.
+  function _inProfile(t) {
+    var h = document.getElementById('lok-profile-head');
+    var c = h && h.parentNode;
+    return !!(c && t && c.contains(t));
+  }
+  function _autoOnChange(e) {
+    if (_populating) return;
+    var t = e.target;
+    if (!_inProfile(t)) return;
+    if (!t || t.type === 'file' || t.id === 'lok-pf-vidurl') return;
+    if (_isTextish(t)) return; // text fields save when you leave them
+    if (t.tagName === 'INPUT' || t.tagName === 'SELECT') _autoSoon(300);
+  }
+  function _autoOnLeave(e) {
+    if (_populating || !_dirty) return;
+    var t = e.target;
+    if (!_inProfile(t) || !_isTextish(t) || t.id === 'lok-pf-vidurl') return;
+    _autoSoon(t === (_getAddressEl && _getAddressEl()) ? 900 : 300);
+  }
+  function _autoMark(el, ok, text) {
+    if (!el || !el.parentNode) return;
+    var host = el.closest && (el.closest('.iti') || el);
+    host = host || el;
+    var tick = host.parentNode.querySelector(':scope > .lok-autosave-note');
+    if (!tick) {
+      tick = document.createElement('div'); tick.className = 'lok-autosave-note';
+      host.parentNode.insertBefore(tick, host.nextSibling);
+    }
+    tick.style.cssText = 'font:600 12px/1.4 "Plus Jakarta Sans",sans-serif;margin:4px 0 2px;' + (ok ? 'color:#17634A;' : 'color:#B0006A;');
+    tick.textContent = ok ? '\u2713 Saved' : text;
+    clearTimeout(tick._t);
+    if (ok) tick._t = setTimeout(function () { if (tick.parentNode) tick.parentNode.removeChild(tick); }, 2600);
   }
   function _rfMoveAddress() {
     var bizSec = _rfSectionByHeading(/business information/i);
@@ -2742,7 +2819,7 @@ var LokaliProfilePage = (function () {
         // Programmatic select.value fires no change event — the guard AND the
         // save bar would miss category picks (same repaint bug as the owner
         // photo: bare _dirty leaves SAVE dimmed + pointer-events:none).
-        if (String(sel.value) !== String(id)) { _dirty = true; setTimeout(_refreshSaveBar, 0); }
+        if (String(sel.value) !== String(id)) { _dirty = true; _editSeq++; _autoField = pill; setTimeout(_refreshSaveBar, 0); _autoSoon(300); }
         sel.value = String(id);
         _renderCategoryPills();
       });
@@ -2797,7 +2874,7 @@ var LokaliProfilePage = (function () {
     // Pills are buttons, so the INPUT/SELECT dirty guards never see this change;
     // without the flag SAVE stays at pointer-events:none (same fix as the
     // category pills, 2026-10-19 bug review H3).
-    _dirty = true; setTimeout(_refreshSaveBar, 0);
+    _dirty = true; _editSeq++; _autoField = null; setTimeout(_refreshSaveBar, 0); _autoSoon(600);
     _renderLocationPills();
   }
 
@@ -3136,7 +3213,7 @@ var LokaliProfilePage = (function () {
         if (!res.ok) return { ok: true };          // route down -> text-only save
         return res.json().then(function (d) {
           if (!d || typeof d.ok !== 'boolean') return { ok: true };
-          if (!d.ok) return { ok: false, message: d.message || 'We couldn\u2019t verify that address \u2014 please check it and try again.' };
+          if (!d.ok) return { ok: false, message: d.message || 'We couldn\u2019t verify that address. Check it and try again.' };
           var out = { ok: true, formatted: d.formatted || null, address_verified: ('address_verified' in d) ? d.address_verified : undefined, geo_written: !!d.geo_written };
           _addrGeo = out; _addrGeoFor = addr;
           return out;
@@ -3146,6 +3223,16 @@ var LokaliProfilePage = (function () {
     return Promise.race([lookup, timeout]);
   }
 
+  // Word list (F 2026-11-23 'fix the rest'): three Webflow boxes still carry an
+  // 'eg.' hint the Webflow API can't change. Swap only a hint that still starts
+  // with 'eg.', so a later Designer edit always wins.
+  function _fixHintWords() {
+    var map = { 'website': 'For example, www.yourbusiness.com', 'input-instagram': 'For example, @yourbusiness', 'phone': 'For example, 415 555 0123' };
+    Object.keys(map).forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el && /^\s*eg\./i.test(el.getAttribute('placeholder') || '')) el.setAttribute('placeholder', map[id]);
+    });
+  }
   function _injectAddressInfo() {
     var input = _getAddressEl();
     if (!input || input.getAttribute('data-lok-addr-info') === '1') return;
@@ -3155,7 +3242,7 @@ var LokaliProfilePage = (function () {
     if (!document.getElementById('lok-addr-info-css')) {
       var st = document.createElement('style'); st.id = 'lok-addr-info-css';
       st.textContent =
-        '.lok-addr-info{font-family:"Plus Jakarta Sans",sans-serif;font-size:12px;color:#6C6880;margin:6px 0 0;display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;position:relative;}' +
+        '.lok-addr-info{font-family:"Plus Jakarta Sans",sans-serif;font-size:12px;line-height:1.45;color:#6C6880;margin:6px 0 0;display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;position:relative;}' +
         '.lok-addr-info-btn{display:inline-flex;align-items:center;gap:5px;background:none;border:none;padding:0;font:inherit;color:#6002EE;cursor:pointer;}' +
         '.lok-addr-info-btn svg{flex:none;}' +
         '.lok-addr-pob{flex:1 1 100%;color:#6C6880;}' +
@@ -3211,7 +3298,12 @@ var LokaliProfilePage = (function () {
     if (!on && typeof _refreshSaveBar === 'function') _refreshSaveBar();
   }
 
-  function save() {
+  function save(opts) {
+    // opts.auto = save-as-you-go (step 2): quiet 'Saved' under the field instead
+    // of the popup. A click on the (now hidden) Save button passes an event.
+    var auto = !!(opts && opts.auto === true);
+    var field = auto ? _autoField : null;
+    var seq = _editSeq;
     if (_saving) return;
     var successEl = _getSuccessEl();
     var errorEl = _getErrorEl();
@@ -3222,7 +3314,8 @@ var LokaliProfilePage = (function () {
     var validationError = _validate(payload);
     if (validationError) {
       console.warn('[ProfilePage] Validation failed:', validationError);
-      _showErrorPopup(validationError);
+      if (auto && field) _autoMark(field, false, 'Not saved yet. ' + validationError);
+      else _showErrorPopup(validationError);
       _setSaving(false);
       return;
     }
@@ -3230,7 +3323,7 @@ var LokaliProfilePage = (function () {
     // is written. The route writes the geo columns itself (service role) and
     // returns the trigger's verdict; the browser never touches a coordinate.
     _resolveAddress(payload.address).then(function (r) {
-      if (!r.ok) { _showErrorPopup(r.message); _setSaving(false); return null; }
+      if (!r.ok) { if (auto && field) _autoMark(field, false, 'Not saved yet. ' + r.message); else _showErrorPopup(r.message); _setSaving(false); return null; }
       if (r.formatted) {
         var addressEl = _getAddressEl();
         if (addressEl) addressEl.value = r.formatted;
@@ -3244,16 +3337,17 @@ var LokaliProfilePage = (function () {
         .then(function (res) {
           if (res.error) {
             console.error('[ProfilePage] save error from API:', res.error);
-            _showErrorPopup(res.error || 'Failed to save profile. Please try again.');
+            if (auto && field) _autoMark(field, false, 'That didn\u2019t save. Try again in a moment.');
+            else _showErrorPopup(res.error || 'Failed to save profile. Please try again.');
           } else {
             // updateMe reads back the PUBLIC columns only; keep the keys it lacks
             // (card_photo_url, address, linkedin_url) from the row we already had.
             _vendor = Object.assign({}, _vendor || {}, res.data || {});
             if (_vendor && _vendor.profile_photo) _uploadedProfilePhotoUrl = null;
-            _dirty = false; // saved — clear the leave-page warning
+            if (_editSeq === seq) _dirty = false; // saved — clear the leave-page warning (unless they kept typing)
             _rfHasSaved = true; // unlocks the "All changes saved" confirmation
             if (typeof _refreshSaveBar === 'function') _refreshSaveBar();
-            _showSuccessPopup();
+            if (auto) { if (field) _autoMark(field, true); } else _showSuccessPopup();
             // Out-of-area? The resolve route already returned the trigger's
             // verdict — no second query needed when the geo was written.
             if (r.geo_written) {
@@ -3265,9 +3359,13 @@ var LokaliProfilePage = (function () {
         })
         .catch(function (err) {
           console.error('[ProfilePage] save network error:', err);
-          _showErrorPopup('Network error. Please check your connection and try again.');
+          if (auto && field) _autoMark(field, false, 'We couldn\u2019t reach Lokali, so this didn\u2019t save. Check your connection.');
+          else _showErrorPopup('Network error. Please check your connection and try again.');
         })
-        .then(function () { _setSaving(false); });
+        .then(function () {
+          _setSaving(false);
+          if (_autoAgain) { _autoAgain = false; if (_dirty) _autoSoon(200); }
+        });
     });
   }
 

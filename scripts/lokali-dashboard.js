@@ -32,8 +32,103 @@
       // nav items use <strong class="dashboard-menu"> (16px). On services/products
       // pages an ancestor font-size (24px) cascades into the unstyled label and
       // blows it up. Pin it to match .dashboard-menu so it can't inherit the leak.
-      '.dashboard-btn .text-block-17{font-size:16px !important;font-weight:500;line-height:26px;}';
+      '.dashboard-btn .text-block-17{font-size:16px !important;font-weight:500;line-height:26px;}' +
+      // Wide screens (F 2026-11-24, mockup https://claude.ai/artifact/M5yXt8DZ1SHKSvRbjgQJB3):
+      // the content column was pinned left at 900px, leaving a third of a
+      // laptop screen empty. One shared width on every dashboard page:
+      // up to 1160px of content, centered beside the menu. Wrappers differ per
+      // page (div-block-39 on most, .main-content-area on Services/Products)
+      // and some pages cap their own block (Marketing 860, Followers 760,
+      // Events 720), so those caps lift here too. Long text stays readable
+      // (max ~75 characters a line). Phones and tablets are untouched.
+      '@media (min-width:1200px){' +
+        '.div-block-39{max-width:1240px !important;width:100% !important;margin-left:auto !important;margin-right:auto !important;box-sizing:border-box;}' +
+        '.main-content-area{max-width:1240px;width:100%;margin-left:auto !important;margin-right:auto !important;box-sizing:border-box;}' +
+        '#lok-marketing-page,#lok-followers-page,#lok-events-page{max-width:none !important;}' +
+        '#lok-marketing-page p,#lok-followers-page p,#lok-events-page p,#lok-week p{max-width:75ch;}' +
+        // Home: "What happened" becomes a lavender side column, quick actions one row.
+        '#lok-cols{grid-template-columns:minmax(0,1fr) 360px !important;}' +
+        '#lok-feed-card{background:#F3EBFF;border-color:#E5D4FD;}' +
+        '.div-block-169{grid-template-columns:repeat(4,minmax(0,1fr)) !important;}' +
+        // Analytics: the number boxes share the row evenly, however many there are.
+        '.an-grid{grid-template-columns:none !important;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);}' +
+        // Services/Products: four cards across, plus an "Add another" tile.
+        '.lok-grid{grid-template-columns:repeat(4,minmax(0,1fr)) !important;}' +
+        '.lok-add-tile{display:flex !important;}' +
+        // Expert review fixes (2026-11-24):
+        // a scrollbar on long pages shifted the centered content ~7px between pages; reserve its space everywhere.
+        'html{scrollbar-gutter:stable;}' +
+        // Events: an empty title block kept a 20px gap, so its title sat lower than every other page's.
+        '.div-block-45:has(+ #lok-events-page){margin-bottom:0 !important;}' +
+        // long single lines stay at reading width (Followers intro, Analytics summary band)
+        '.subheader{max-width:80ch;}' +
+        '.an-insight{padding-right:max(16px,calc(100% - 80ch)) !important;}' +
+        // Marketing: the two code cards share the row evenly, each code centered in its card
+        '.mkt-mini-row{display:grid !important;grid-template-columns:repeat(2,minmax(0,1fr)) !important;gap:16px;}' +
+        '.mkt-mini-bd{display:flex !important;flex-direction:column;align-items:center;text-align:center;}' +
+        // Home: the side column shows the latest five, so it ends near the left column ("All leads" has the rest)
+        '#lok-feed-card .lok-feed li:nth-child(n+6){display:none;}' +
+      '}' +
+      // margin-bottom matches the cards' 16px so the bottoms line up
+      '.lok-add-tile{display:none;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:200px;margin-bottom:16px;' +
+        'border:2px dashed #E5D4FD;border-radius:14px;background:#fff;color:#6002EE;cursor:pointer;' +
+        'font-family:"Plus Jakarta Sans",-apple-system,sans-serif;padding:16px;text-align:center;}' +
+      // The grid stretches any non-card child across the row (order 99); the tile is one card wide, right after the cards.
+      '.lok-grid > .lok-add-tile{grid-column:auto !important;order:1 !important;}' +
+      '.lok-add-tile:hover{background:#F3EBFF;}' +
+      '.lok-add-tile .p{font-size:32px;font-weight:300;line-height:1;}' +
+      '.lok-add-tile .t{font-size:15px;font-weight:700;}';
     (document.head || document.documentElement).appendChild(s);
+  })();
+
+  // "Add another" tile at the end of the Services / Products card grid. Shown
+  // only on wide screens (CSS above); it just clicks the page's own Add button.
+  // Kept last in the grid whenever the cards re-draw or are dragged.
+  (function addAnotherTile() {
+    var path = String(location.pathname || '');
+    var kind = path.indexOf('/vendor-dashboard/services') !== -1 ? 'service'
+      : path.indexOf('/vendor-dashboard/products') !== -1 ? 'product' : '';
+    if (!kind) return;
+    var stackId = kind + 's-stack', btnId = kind + 's-add-btn', cardSel = '.' + kind + '-card[data-' + kind + '-id]'; // real cards only, never the hidden template
+    // The page's own button says "Add Service" / "Add product"; one wording everywhere: "Add a service".
+    function fixButtonWords() {
+      var b = document.getElementById(btnId);
+      if (!b) return;
+      var w = document.createTreeWalker(b, NodeFilter.SHOW_TEXT), n;
+      while ((n = w.nextNode())) {
+        if (/^\s*Add (service|product)\s*$/i.test(n.nodeValue)) n.nodeValue = 'Add a ' + kind;
+      }
+    }
+    function sync(stack) {
+      var tile = stack.querySelector(':scope > .lok-add-tile');
+      var count = stack.querySelectorAll(cardSel).length;
+      if (!count) { if (tile) tile.remove(); return; }
+      if (!tile) {
+        tile = document.createElement('button');
+        tile.type = 'button';
+        tile.className = 'lok-add-tile';
+        tile.innerHTML = '<span class="p" aria-hidden="true">+</span><span class="t"></span>';
+        tile.addEventListener('click', function () {
+          var b = document.getElementById(btnId);
+          if (b) b.click();
+        });
+      }
+      // Three listings is the floor we coach toward (Vendor Success), so say it plainly until then.
+      var words = count === 1 ? 'Add your 2nd ' + kind : count === 2 ? 'Add your 3rd ' + kind : 'Add another ' + kind;
+      var t = tile.querySelector('.t');
+      if (t.textContent !== words) t.textContent = words;
+      if (stack.lastElementChild !== tile) stack.appendChild(tile);
+    }
+    function start() {
+      var stack = document.getElementById(stackId);
+      if (!stack) return false;
+      fixButtonWords();
+      sync(stack);
+      new MutationObserver(function () { sync(stack); }).observe(stack, { childList: true });
+      return true;
+    }
+    if (start()) return;
+    var tries = 0, t = setInterval(function () { if (start() || ++tries > 40) clearInterval(t); }, 250);
   })();
 
   // Role guard: the vendor dashboard is vendors-only. A signed-in CUSTOMER who
@@ -168,9 +263,11 @@
       'Pin a cover photo for your Market card', 'Cover photo pinned',
       'Your card is the first thing shoppers see in the Market. Right now we pick a photo for you.',
       'Pick a cover', CK_PROFILE + '#lok-card-photo');
-    add('depth', listings >= 2,
-      listings === 0 ? 'Add your first service or product' : 'Add a second service or product', 'More than one listing',
-      'One listing reads as a side project. Two or more reads as a business.',
+    // Done-check 2026-11-23 (Vendor Success): a storefront counts as complete at 3
+    // listings everywhere else, so the checklist asks for the third one too.
+    add('depth', listings >= 3,
+      listings === 0 ? 'Add your first service or product' : listings === 1 ? 'Add a second service or product' : 'Add a third service or product', 'Three or more listings',
+      'One listing reads as a side project. Three give neighbors something to look through.',
       'Add a listing', SVC);
     add('desc', desc.length >= 80,
       desc ? 'Say more in your description' : 'Write a description', 'Description written',
@@ -186,7 +283,7 @@
       'Write an intro', CK_PROFILE + '#lok-about-you');
     add('contact', !!(v.contact_email || v.phone_number),
       'Add a way to reach you', 'Shoppers can reach you',
-      'A phone number or email so an inquiry has somewhere to land.',
+      'A phone number or email so a lead has somewhere to land.',
       'Add contact', CK_PROFILE + '#lok-sec-business');
     // 2026-10-09 (F): a bridge comp, a paid plan on us until billing starts
     // (comp_kind 'until_billing'), is asked for a card early so billing day
@@ -249,11 +346,11 @@
     '.lok-grid>.lok-gsec{grid-column:1/-1;}',
     '.lok-grid>#service-card-template,.lok-grid>#product-card-template{display:none!important;}',
     '.lok-gsec{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0 -4px;font-family:' + LUI_FONT + ';}',
-    '.lok-gsec h3{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#8E8BA6;margin:0;}',
-    '.lok-gsec span{font-size:11.5px;color:#8E8BA6;}',
+    '.lok-gsec h3{font-size:12px;line-height:1.45;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#6E6A85;margin:0;}',
+    '.lok-gsec span{font-size:12px;line-height:1.45;color:#6E6A85;}',
     '.lok-gsec.lead{order:-3;}.lok-gsec.rest{order:-1;}',
     '.lok-gspot{order:-2;border:1.5px dashed #E5D4FD;border-radius:14px;min-height:180px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;font-family:' + LUI_FONT + ';}',
-    '.lok-gspot b{font-size:13px;font-weight:700;color:#6002EE;}',
+    '.lok-gspot b{font-size:13px;line-height:1.45;font-weight:700;color:#6002EE;}',
     '.lok-gspot span{font-size:12px;color:#6E6A85;max-width:22ch;margin-top:4px;line-height:1.5;}',
     // card
     '.lok-gc{display:flex!important;flex-direction:column;align-items:stretch!important;background:#fff;border:.5px solid #EEEDF6;border-radius:14px;overflow:hidden;margin:0!important;padding:0!important;position:relative;transform:none!important;box-shadow:none!important;min-width:0;cursor:pointer;font-family:' + LUI_FONT + ';}',
@@ -262,7 +359,7 @@
     '.lok-gc.is-off .lok-gc-cover,.lok-gc.is-off .lok-gc-body{opacity:.62;}',
     '.lok-gc .card-divider,.lok-gc .service-category,.lok-gc .product-category,.lok-gc .service-description,.lok-gc .product-description,.lok-gc .product-stock,.lok-gc .product-price-note,.lok-gc .remote-badge,.lok-gc .shipping-badge,.lok-gc [data-field="product-delivery-badge"],.lok-gc .status-pill{display:none!important;}',
     '.lok-gc-cover{position:relative;aspect-ratio:3/2;background:#EEEDF6 center/cover no-repeat;}',
-    '.lok-gc-cover.ph{background:linear-gradient(135deg,#F3EBFF,#FDE6F2);display:flex;align-items:center;justify-content:center;color:#8E8BA6;}',
+    '.lok-gc-cover.ph{background:linear-gradient(135deg,#F3EBFF,#FDE6F2);display:flex;align-items:center;justify-content:center;color:#6E6A85;}',
     '.lok-gc-cover.ph svg{width:26px;height:26px;}',
     '.lok-gc-corner{position:absolute;top:8px;left:8px;display:flex;gap:6px;}',
     '.lok-gc-cr{position:absolute;top:8px;right:8px;}',
@@ -273,7 +370,7 @@
     '.lok-gc-chip.lim{color:#B0006A;background:#FDE6F2;}',
     '.lok-gc.is-lim{border:1.5px dashed #E5D4FD;}.lok-gc.is-lim .lok-gc-cover.ph{background:#F7F4FD;}',
     '.lok-gc-chip svg{width:11px;height:11px;}',
-    '.lok-gc .drag-handle{opacity:1!important;visibility:visible!important;width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,.92);display:flex;align-items:center;justify-content:center;color:#8E8BA6;cursor:grab;margin:0;}',
+    '.lok-gc .drag-handle{opacity:1!important;visibility:visible!important;width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,.92);display:flex;align-items:center;justify-content:center;color:#6E6A85;cursor:grab;margin:0;}',
     '.lok-gc .drag-handle svg{width:12px;height:12px;}',
     '.lok-gc-body{padding:12px 12px 10px;display:flex;flex-direction:column;gap:6px;flex:1;min-width:0;}',
     '.lok-gc .service-info,.lok-gc .product-info{display:block;min-width:0;}',
@@ -282,8 +379,8 @@
     '.lok-gc-top{align-items:flex-start;}',
     '.lok-gc-top .lok-gc-stat{flex-shrink:0;padding-top:1px;}',
     '.lok-gc .service-price,.lok-gc .product-price,.lok-gc .product-price-row{font-size:13px;font-weight:500;font-variant-numeric:tabular-nums;white-space:nowrap;color:#4A4761;margin:0;display:block;line-height:1.4;text-align:left;min-width:0;width:auto;justify-self:start;}', // text-align/min-width: the pages' legacy row-layout <style> gives .service-price a 64px right-aligned box, which left the number floating in the card (F 2026-09-23)
-    '.lok-gc .lok-gc-noprice{color:#8E8BA6!important;font-weight:500!important;}',
-    '.lok-gc-stat{font-size:11.5px;color:#6E6A85;white-space:nowrap;}',
+    '.lok-gc .lok-gc-noprice{color:#6E6A85!important;font-weight:500!important;}',
+    '.lok-gc-stat{font-size:11.5px;line-height:1.45;color:#6E6A85;white-space:nowrap;}',
     '.lok-gc-stat b{color:#1A1829;font-weight:700;}',
     '.lok-gc-meta{display:flex;gap:6px;flex-wrap:wrap;}',
     '.lok-tagc{display:inline-flex;align-items:center;font-size:11px;font-weight:600;border-radius:100px;padding:2px 8px;background:#EEEDF6;color:#4A4761;white-space:nowrap;line-height:1.5;}',
@@ -303,7 +400,7 @@
     '.lok-seg-n{font-size:11px;font-weight:700;background:rgba(26,24,41,.08);border-radius:100px;padding:1px 6px;min-width:18px;text-align:center;line-height:1.4;}',
     '.lok-seg-on .lok-seg-n{background:rgba(255,255,255,.22);}',
     '.filter-bar select,.filter-bar .select-field{font:600 12.5px/1.2 ' + LUI_FONT + '!important;border-radius:10px!important;height:38px!important;padding:0 30px 0 12px!important;background-color:#fff!important;border:1px solid #EEEDF6!important;color:#1A1829!important;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 512 512%27><path fill=%27%234A4761%27 d=%27M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z%27/></svg>")!important;background-repeat:no-repeat!important;background-position:right 10px center!important;background-size:11px!important;margin:0!important;}',
-    '.lok-order-hint{font-size:11.5px;color:#8E8BA6;font-family:' + LUI_FONT + ';}',
+    '.lok-order-hint{font-size:12px;line-height:1.45;color:#6E6A85;font-family:' + LUI_FONT + ';}',
     // header
     '.lok-hdl{display:flex;flex-direction:column;gap:2px;}',
     '.lok-hdl .text-block-33{font-size:22px!important;font-weight:700!important;color:#1A1829!important;letter-spacing:-.01em;line-height:1.2!important;margin:0!important;font-family:' + LUI_FONT + '!important;}',
@@ -330,37 +427,41 @@
     // inherits the form card's own background instead of painting white over it.
     '[id$="-form-view"] .form-header{position:static;background:transparent;}',
     '.lok-form-bar{position:sticky;bottom:0;z-index:6;background:inherit;border-top:.5px solid #EEEDF6;padding:10px 0!important;display:flex!important;align-items:center;gap:10px;flex-wrap:wrap;}',
-    '.lok-form-msg{font-size:12.5px;color:#6E6A85;margin-right:auto;font-family:' + LUI_FONT + ';display:none;}',
+    // Save-and-undo step 4 (F 2026-11-23): Save listing on top, Cancel + Delete side by
+    // side below, so the pinned bar is two short rows instead of three on a phone.
+    '.lok-form-bar{flex-direction:row!important;flex-wrap:wrap!important;}.lok-form-bar > .icon-button{width:auto!important;margin:0!important;min-width:0;justify-content:center;}',
+    '.lok-form-bar > .save-btn{flex:1 1 100%!important;}.lok-form-bar > .form-action{flex:1 1 0!important;}',
+    '.lok-form-msg{font-size:12.5px;line-height:1.45;color:#6E6A85;margin-right:auto;font-family:' + LUI_FONT + ';display:none;}',
     '.lok-form-bar.dirty .lok-form-msg{display:block;}',
     '#lok-lc-preview{background:#F7F6FC;border:.5px solid #EEEDF6;border-radius:12px;padding:12px 14px;margin:12px 20px 18px;font-size:14px;line-height:1.5;display:grid;grid-template-columns:220px 1fr;gap:16px;align-items:center;font-family:' + LUI_FONT + ';}',
-    '#lok-lc-preview .lab{grid-column:1/-1;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#8E8BA6;}',
+    '#lok-lc-preview .lab{grid-column:1/-1;font-size:11px;line-height:1.45;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#6E6A85;}',
     '#lok-lc-preview .lok-gc{cursor:default;}',
     '#lok-lc-preview .service-name{font-size:14px!important;font-weight:700!important;color:#1A1829!important;line-height:1.3!important;}',
     '#lok-lc-preview .lok-pv-price{font-size:13px!important;font-weight:500!important;color:#4A4761!important;line-height:1.4!important;}',
     '#lok-lc-preview ul{list-style:none;margin:0;padding:0;font-size:12px;color:#4A4761;}',
     '#lok-lc-preview li{display:flex;gap:8px;align-items:center;padding:3px 0;line-height:1.5;}',
     '#lok-lc-preview li svg{width:13px;height:13px;flex-shrink:0;}',
-    '#lok-lc-preview li.ok svg{color:#1D6A45;}#lok-lc-preview li.todo svg{color:#8E8BA6;}',
-    // Products PAGE (list, pills, empty state) in orange too, so the colour is the
-    // service/product cue everywhere, not only inside the form (F 2026-09-17).
-    // body.lok-pg-product is set at load from the pathname. White text on the orange
-    // 500 throughout (F 2026-09-17: prefers white over dark text on the orange).
-    'body.lok-pg-product #products-add-btn{background:#FF8D00!important;border-color:#FF8D00!important;}',
-    'body.lok-pg-product .lok-seg>.lok-seg-on .lok-seg-b,body.lok-pg-product .lok-seg>.lok-seg-on.lok-seg-b{background:#FF8D00!important;color:#fff!important;}',
+    '#lok-lc-preview li.ok svg{color:#1D6A45;}#lok-lc-preview li.todo svg{color:#6E6A85;}',
+    // Products PAGE (list, pills, empty state). Was orange as the product cue (F 2026-09-17);
+    // VIOLET since 2026-11-24 (F 'Yes, make it violet'): the brand guide keeps orange to the
+    // logo and business cards only. These rules stay so Webflow's own orange classes on this
+    // page (orange-button, pills) are overridden. body.lok-pg-product is set from the pathname.
+    'body.lok-pg-product #products-add-btn{background:#6002EE!important;border-color:#6002EE!important;}',
+    'body.lok-pg-product .lok-seg>.lok-seg-on .lok-seg-b,body.lok-pg-product .lok-seg>.lok-seg-on.lok-seg-b{background:#6002EE!important;color:#fff!important;}',
     'body.lok-pg-product .lok-seg>.lok-seg-on .lok-seg-b>*,body.lok-pg-product .lok-seg>.lok-seg-on.lok-seg-b>*{color:#fff!important;background:rgba(255,255,255,.22)!important;}',
-    'body.lok-pg-product .lok-empty{border-color:#FFDDB0;}',
-    'body.lok-pg-product .lok-steps li i{background:#FFF2DF;color:#B8471B;}',
-    'body.lok-pg-product .lok-btn{border-color:#FFDDB0;color:#B8471B;}',
-    'body.lok-pg-product .lok-btn.primary{background:#FF8D00;color:#fff;border-color:#FF8D00;}',
-    'body.lok-pg-product .lok-btn:focus-visible,body.lok-pg-product .lok-gc .icon-btn:focus-visible,body.lok-pg-product .lok-seg>[id^="filter-pill"]:focus-visible{outline-color:#FF8D00;}',
-    'body.lok-pg-product .lok-gspot{border-color:#FFDDB0;}body.lok-pg-product .lok-gspot b{color:#B8471B;}',
-    'body.lok-pg-product .lok-gc-cover.ph{background:linear-gradient(135deg,#FFF2DF,#FFE4C4);}',
-    'body.lok-pg-product .lok-tagc.spec{background:#FFF2DF;color:#B8471B;}',
-    'body.lok-pg-product .lok-gc-chip.pick{color:#B8471B;}',
-    'body.lok-pg-product .lok-gc .card-actions [data-action="edit"]{color:#B8471B;border-color:#FFDDB0;}',
-    'body.lok-pg-product #lok-import-btn:hover{border-color:#FF8D00;color:#B8471B;background:#FFF7EC;}',
-    'body.lok-pg-product #lok-import-btn:focus-visible{outline-color:#FF8D00;}',
-    'body.lok-pg-product #lok-import-help{color:#B8471B;}',
+    'body.lok-pg-product .lok-empty{border-color:#E5D4FD;}',
+    'body.lok-pg-product .lok-steps li i{background:#F3EBFF;color:#6002EE;}',
+    'body.lok-pg-product .lok-btn{border-color:#E5D4FD;color:#6002EE;}',
+    'body.lok-pg-product .lok-btn.primary{background:#6002EE;color:#fff;border-color:#6002EE;}',
+    'body.lok-pg-product .lok-btn:focus-visible,body.lok-pg-product .lok-gc .icon-btn:focus-visible,body.lok-pg-product .lok-seg>[id^="filter-pill"]:focus-visible{outline-color:#6002EE;}',
+    'body.lok-pg-product .lok-gspot{border-color:#E5D4FD;}body.lok-pg-product .lok-gspot b{color:#6002EE;}',
+    'body.lok-pg-product .lok-gc-cover.ph{background:linear-gradient(135deg,#F3EBFF,#E5D4FD);}',
+    'body.lok-pg-product .lok-tagc.spec{background:#F3EBFF;color:#6002EE;}',
+    'body.lok-pg-product .lok-gc-chip.pick{color:#6002EE;}',
+    'body.lok-pg-product .lok-gc .card-actions [data-action="edit"]{color:#6002EE;border-color:#E5D4FD;}',
+    'body.lok-pg-product #lok-import-btn:hover{border-color:#6002EE;color:#6002EE;background:#FAF7FF;}',
+    'body.lok-pg-product #lok-import-btn:focus-visible{outline-color:#6002EE;}',
+    'body.lok-pg-product #lok-import-help{color:#6002EE;}',
     '@media(max-width:991px){.lok-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.lok-gc .card-actions .icon-btn{height:44px;min-width:44px;}.lok-gc .drag-handle{width:44px;height:44px;}}',
     '@media(max-width:560px){.lok-grid{grid-template-columns:1fr;}.lok-empty,.lok-ghosts,#lok-lc-preview{grid-template-columns:1fr;}}'
   ].join('');
@@ -507,7 +608,7 @@
         var c = cards[i], stat = c.querySelector('.lok-gc-stat');
         if (!stat || c.classList.contains('is-off')) continue;
         var n = byItem[String(c.getAttribute(attr))] || 0;
-        stat.innerHTML = '<b>' + n + '</b> ' + (n === 1 ? 'view' : 'views');
+        stat.innerHTML = '<b>' + n + '</b> ' + (n === 1 ? 'view' : 'views') + ' \u00b7 30 days'; // quick fixes 2026-11-23: say the time span, same count as Analytics
         stat.setAttribute('title', 'Last 30 days');
       }
     },
@@ -575,8 +676,8 @@
           '<div class="lok-btns"><button type="button" class="lok-btn primary" data-lui-add>Add a ' + noun + '</button>' +
           (isP && o.onImport ? '<button type="button" class="lok-btn" data-lui-import>Import from Etsy or Shopify</button>' : '') + '</div>' +
         '</div><div class="lok-ghosts">' +
-          '<div class="lok-gc"><div class="lok-gc-cover" style="background-image:linear-gradient(135deg,#d9c7f5,#f7d2b8)"><div class="lok-gc-corner"><span class="lok-gc-chip on">Live</span></div></div><div class="lok-gc-body"><div class="service-name">Your first ' + noun + '</div><div class="lok-gc-line"><span style="font-weight:700">' + (isP ? '$24' : 'from $60') + '</span></div><div class="lok-gc-meta"><span class="lok-tagc way">' + (isP ? 'Pickup' : 'About a week') + '</span></div></div></div>' +
-          '<div class="lok-gc"><div class="lok-gc-cover ph">' + LUI_ICO.photo + '</div><div class="lok-gc-body"><div class="service-name" style="color:#8E8BA6">The next one</div><div class="lok-gc-line"><span class="lok-gc-noprice">Price</span></div></div></div>' +
+          '<div class="lok-gc"><div class="lok-gc-cover" style="background-image:linear-gradient(135deg,#d9c7f5,#fde6f2)"><div class="lok-gc-corner"><span class="lok-gc-chip" style="background:#F1ECFE;color:#6002EE">Example</span></div></div><div class="lok-gc-body"><div class="service-name">Your first ' + noun + '</div><div class="lok-gc-line"><span style="font-weight:700">' + (isP ? '$24' : 'from $60') + '</span></div><div class="lok-gc-meta"><span class="lok-tagc way">' + (isP ? 'Pickup' : 'About a week') + '</span></div></div></div>' +
+          '<div class="lok-gc"><div class="lok-gc-cover ph">' + LUI_ICO.photo + '</div><div class="lok-gc-body"><div class="service-name" style="color:#6E6A85">The next one</div><div class="lok-gc-line"><span class="lok-gc-noprice">Price</span></div></div></div>' +
         '</div></div>';
       host.style.background = 'transparent'; host.style.border = 'none'; host.style.padding = '0';
       var a = host.querySelector('[data-lui-add]'); if (a && o.onAdd) a.addEventListener('click', o.onAdd);
@@ -617,7 +718,7 @@
           s = s || {};
           n.textContent = s.name || 'Untitled listing';
           p.textContent = s.hasPrice ? (s.price || '') : 'Add a price';
-          p.style.color = s.hasPrice ? '' : '#8E8BA6';
+          p.style.color = s.hasPrice ? '' : '#6E6A85';
           chip.className = 'lok-gc-chip ' + (s.live === false ? 'off' : 'on'); chip.textContent = s.live === false ? 'Hidden' : 'Live';
           luiCoverBg(cover, s.imgUrl || '', s.focus || '');
           meta.innerHTML = '';
@@ -659,7 +760,7 @@
     '.lok-fs-pill{font-size:10.5px;font-weight:700;border-radius:100px;padding:2px 8px;text-transform:uppercase;letter-spacing:.06em;line-height:1.5;}',
     '.lok-fs-pill.need{color:#1D6A45;background:#EAFAF2;}',
     '.lok-fs-pill.opt{color:#4A4761;background:#EEEDF6;}',
-    '.lok-fs-cnt{font-size:11.5px;font-weight:600;color:#6E6A85;white-space:nowrap;}',
+    '.lok-fs-cnt{font-size:11.5px;line-height:1.45;font-weight:600;color:#6E6A85;white-space:nowrap;}',
     '.lok-fs-chg{font:600 12px/1.5 ' + LUI_FONT + ';color:#6002EE;background:none;border:none;padding:6px 0 6px 10px;cursor:pointer;white-space:nowrap;}',
     '.lok-fs-sum{display:none;font-size:13px;color:#4A4761;margin:6px 0 0 34px;line-height:1.5;}',
     '.lok-fs.is-collapsed .lok-fs-body{display:none;}',
@@ -670,39 +771,41 @@
     // fold (Details on a new listing)
     '.lok-fs.details.is-folded>.lok-fs-h,.lok-fs.details.is-folded>.lok-fs-body{display:none;}',
     '.lok-fs-fold{display:none;width:100%;align-items:center;justify-content:space-between;gap:10px;background:#F3EBFF;border:1px dashed #CBB8F5;border-radius:14px;padding:14px 18px;font:700 14px/1.4 ' + LUI_FONT + ';color:#6002EE;cursor:pointer;text-align:left;}',
-    '.lok-fs-fold small{font-weight:500;color:#6E6A85;font-size:12px;margin-left:8px;}',
+    '.lok-fs-fold small{font-weight:500;color:#6E6A85;font-size:12px;line-height:1.45;margin-left:8px;}',
     '.lok-fs-fold svg{width:12px;height:12px;flex-shrink:0;}',
     '.lok-fs.details.is-folded{background:transparent;border:none;box-shadow:none;padding:0;}',
     '.lok-fs.details.is-folded>.lok-fs-fold{display:flex;}',
-    // Products: the WHOLE form reads orange so the colour alone says "product, not service"
-    // (F 2026-09-17). Brand scale only: 500 #FF8D00 fill, 50 #FFF2DF tint, #B8471B text;
-    // #FFF7EC / #FFDDB0 / #F3E6D6 are washes of the 50 for the card tint, borders and hairlines.
+    // Products form: was orange (F 2026-09-17), VIOLET since 2026-11-24 (brand guide: orange =
+    // logo and business cards only). Violet fill #6002EE, lavender tint #F3EBFF;
+    // #FAF7FF / #E5D4FD / #ECE8F8 are the card tint, borders and hairlines.
     // Needed (green) and done (green) stay semantic. Page-script inline styles need !important.
-    '[id$="-form-view"].lok-org.lok-org-product{background:#FFF7EC!important;border-color:#FFDDB0!important;}',
-    '.lok-org-product .lok-fs{border-color:#F3E6D6;box-shadow:0 2px 10px rgba(255,141,0,.06);}',
-    '.lok-org-product .lok-fs.need{border-color:#FFDDB0;}',
-    '.lok-org-product .lok-fs.is-collapsed{background:#FFFCF7;}',
-    '.lok-org-product .lok-fs:not(.is-done) .lok-fs-num{background:#FF8D00;color:#fff;}',
-    '.lok-org-product .lok-fs-chg{color:#B8471B;}',
-    '.lok-org-product .lok-fs-fold{background:#FFF2DF;border-color:#FFDDB0;color:#B8471B;}',
-    '.lok-org-product .lok-pseg{border-color:#F3E6D6;}',
-    '.lok-org-product .lok-pseg button.on{background:#FF8D00;color:#fff;}',
-    '.lok-org-product .lok-pseg button:focus-visible{outline-color:#FF8D00;}',
-    '.lok-org-product .lok-sw-row{border-color:#F3E6D6;}',
-    '.lok-org-product .lok-sw-row input[type="checkbox"]:checked{background:#FF8D00;}',
-    '.lok-org-product .lok-sw-row input[type="checkbox"]:focus-visible{box-shadow:0 0 0 2px #fff,0 0 0 4px #FF8D00;}',
-    '.lok-org-product [id$="-gallery-body"] [data-photo-idx="0"]{outline-color:#FF8D00;}',
-    '.lok-org-product .lok-form-bar{border-top-color:#F3E6D6;}',
-    '.lok-org-product #lok-gallery-add{border-color:#FF8D00!important;color:#FF8D00!important;}',
-    '.lok-org-product .lokali-product-upload__trigger{border-color:#FF8D00!important;color:#B8471B!important;}',
-    '.lok-org-product #lok-product-subcat{background:#FFF2DF!important;}',
-    '.lok-org-product #lok-product-subcat select,.lok-org-product #lok-product-subcat input{border-color:#FFDDB0!important;}',
-    '.lok-org-product #lok-product-subcat [data-subcat-suggest-btn]{background:#FF8D00!important;border-color:#FF8D00!important;}',
-    '.lok-org-product #lok-product-subcat div[style*="border-top"]{border-top-color:#FFDDB0!important;}',
-    '.lok-org-product #lok-product-subcat span[style*="#6002EE"]{color:#B8471B!important;}',
-    '.lok-org-product #lok-product-buy-fill{border-color:#FFDDB0!important;color:#B8471B!important;}',
-    '.lok-org-product #lok-lc-preview .lok-tagc.spec{background:#FFF2DF;color:#B8471B;}',
-    '.lok-org-product #lok-lc-preview .lok-gc-cover.ph{background:linear-gradient(135deg,#FFF2DF,#FFE4C4);}',
+    // Webflow gives the product Save button its own orange class (.save-btn.orange).
+    '#products-save-btn.orange{background:#6002EE!important;border-color:#6002EE!important;color:#fff!important;}',
+    '[id$="-form-view"].lok-org.lok-org-product{background:#FAF7FF!important;border-color:#E5D4FD!important;}',
+    '.lok-org-product .lok-fs{border-color:#ECE8F8;box-shadow:0 2px 10px rgba(96,2,238,.06);}',
+    '.lok-org-product .lok-fs.need{border-color:#E5D4FD;}',
+    '.lok-org-product .lok-fs.is-collapsed{background:#FBFAFE;}',
+    '.lok-org-product .lok-fs:not(.is-done) .lok-fs-num{background:#6002EE;color:#fff;}',
+    '.lok-org-product .lok-fs-chg{color:#6002EE;}',
+    '.lok-org-product .lok-fs-fold{background:#F3EBFF;border-color:#E5D4FD;color:#6002EE;}',
+    '.lok-org-product .lok-pseg{border-color:#ECE8F8;}',
+    '.lok-org-product .lok-pseg button.on{background:#6002EE;color:#fff;}',
+    '.lok-org-product .lok-pseg button:focus-visible{outline-color:#6002EE;}',
+    '.lok-org-product .lok-sw-row{border-color:#ECE8F8;}',
+    '.lok-org-product .lok-sw-row input[type="checkbox"]:checked{background:#6002EE;}',
+    '.lok-org-product .lok-sw-row input[type="checkbox"]:focus-visible{box-shadow:0 0 0 2px #fff,0 0 0 4px #6002EE;}',
+    '.lok-org-product [id$="-gallery-body"] [data-photo-idx="0"]{outline-color:#6002EE;}',
+    '.lok-org-product .lok-form-bar{border-top-color:#ECE8F8;}',
+    '.lok-org-product #lok-gallery-add{border-color:#6002EE!important;color:#6002EE!important;}',
+    '.lok-org-product .lokali-product-upload__trigger{border-color:#6002EE!important;color:#6002EE!important;}',
+    '.lok-org-product #lok-product-subcat{background:#F3EBFF!important;}',
+    '.lok-org-product #lok-product-subcat select,.lok-org-product #lok-product-subcat input{border-color:#E5D4FD!important;}',
+    '.lok-org-product #lok-product-subcat [data-subcat-suggest-btn]{background:#6002EE!important;border-color:#6002EE!important;}',
+    '.lok-org-product #lok-product-subcat div[style*="border-top"]{border-top-color:#E5D4FD!important;}',
+    '.lok-org-product #lok-product-subcat span[style*="#6002EE"]{color:#6002EE!important;}',
+    '.lok-org-product #lok-product-buy-fill{border-color:#E5D4FD!important;color:#6002EE!important;}',
+    '.lok-org-product #lok-lc-preview .lok-tagc.spec{background:#F3EBFF;color:#6002EE;}',
+    '.lok-org-product #lok-lc-preview .lok-gc-cover.ph{background:linear-gradient(135deg,#F3EBFF,#E5D4FD);}',
     // segmented price control
     '.lok-pseg{display:inline-flex;flex-wrap:wrap;background:#fff;border:1px solid #EEEDF6;border-radius:10px;padding:3px;gap:2px;margin:4px 0 10px;}',
     '.lok-pseg button{font:600 12.5px/1.2 ' + LUI_FONT + ';color:#4A4761;background:transparent;border:none;border-radius:8px;padding:0 12px;height:32px;cursor:pointer;white-space:nowrap;}',
@@ -1246,3 +1349,150 @@
   else run();
 })();
 
+
+// ── LokaliUndo: one "Removed. Undo" message for every dashboard page ──────────
+// Save-and-undo plan step 1 (F 2026-11-23 'Yes, start step 1'). A remove happens
+// on screen at once; the real change (onCommit) runs after 8 seconds unless the
+// vendor taps Undo (onUndo). Only one message at a time: a new one commits the
+// one before. Leaving the page commits whatever is waiting (best effort; if the
+// browser drops it, the item simply stays, which is the safe way round).
+(function () {
+  'use strict';
+  if (window.LokaliUndo) return;
+  var cur = null, timer = null, bar = null;
+  function css() {
+    if (document.getElementById('lok-undo-css')) return;
+    var s = document.createElement('style'); s.id = 'lok-undo-css';
+    s.textContent =
+      '#lok-undo{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:2147483000;' +
+      'display:flex;align-items:center;gap:16px;width:max-content;max-width:calc(100vw - 32px);box-sizing:border-box;background:#6002EE;color:#fff;' +
+      'border-radius:14px;padding:12px 14px 12px 18px;box-shadow:0 10px 30px rgba(42,37,64,.22);font:500 14.5px/1.4 "Plus Jakarta Sans",-apple-system,sans-serif;}' +
+      '#lok-undo[hidden]{display:none;}' +
+      '#lok-undo span{min-width:0;}' +
+      '#lok-undo button{flex:none;font:700 14.5px/1 "Plus Jakarta Sans",-apple-system,sans-serif;color:#fff;background:rgba(255,255,255,.16);border:0;border-radius:10px;padding:10px 14px;min-height:40px;cursor:pointer;text-decoration:underline;text-underline-offset:2px;}' +
+      '#lok-undo button:focus-visible{outline:3px solid #E2D6FD;outline-offset:2px;}';
+    (document.head || document.documentElement).appendChild(s);
+  }
+  function ensureBar() {
+    if (bar && document.body.contains(bar)) return bar;
+    css();
+    bar = document.createElement('div'); bar.id = 'lok-undo'; bar.hidden = true;
+    bar.setAttribute('role', 'status'); bar.setAttribute('aria-live', 'polite');
+    bar.innerHTML = '<span></span><button type="button">Undo</button>';
+    bar.querySelector('button').addEventListener('click', function () { undo(); });
+    document.body.appendChild(bar);
+    return bar;
+  }
+  function hide() { if (bar) bar.hidden = true; }
+  function commit() {
+    var c = cur; cur = null; clearTimeout(timer); hide();
+    if (c && typeof c.onCommit === 'function') { try { c.onCommit(); } catch (e) {} }
+  }
+  function undo() {
+    var c = cur; cur = null; clearTimeout(timer); hide();
+    if (c && typeof c.onUndo === 'function') { try { c.onUndo(); } catch (e) {} }
+  }
+  function show(o) {
+    if (cur) commit();
+    cur = o || {};
+    var b = ensureBar();
+    b.querySelector('span').textContent = cur.text || 'Removed.';
+    // Never cover a Save bar or Post button pinned to the bottom of the screen.
+    var lift = 0;
+    try {
+      document.querySelectorAll('.lok-form-bar,#lok-savebar,.lkf-foot').forEach(function (el) {
+        var r = el.getBoundingClientRect();
+        if (r.height && r.bottom > window.innerHeight - 140 && r.top < window.innerHeight) lift = Math.max(lift, window.innerHeight - r.top);
+      });
+    } catch (e) {}
+    b.style.bottom = lift ? 'calc(' + Math.round(lift + 12) + 'px + env(safe-area-inset-bottom,0px))' : '';
+    b.hidden = false;
+    timer = setTimeout(commit, cur.ms || 8000);
+  }
+  window.addEventListener('pagehide', function () { if (cur) commit(); });
+  window.LokaliUndo = { show: show, commitNow: commit };
+})();
+
+// GALLERY LOOK NOTICE (F 2026-11-21; patch_gallery_page_setup.sql). Owners
+// rarely open Settings: they live on Profile and on Products / Services. So a
+// Featured storefront still on the Classic look gets one short notice on
+// Profile and Services pointing at the Gallery panel on Products. Gone for
+// good once they tap either button or close it (this browser), and never shown
+// once they are on Gallery. Before the patch the look read errors: no notice.
+(function () {
+  'use strict';
+  var path = String(window.location.pathname || '');
+  // Done-check 2026-11-23 (UX): Profile only. Services dropped; the Gallery is
+  // already on Products and in Settings, four places was too many.
+  if (!/^\/vendor-dashboard\/profile\/?$/.test(path)) return;
+  var KEY = 'lok_gallery_notice_off';
+  function off() { try { return !!window.localStorage.getItem(KEY); } catch (e) { return false; } }
+  function setOff() { try { window.localStorage.setItem(KEY, '1'); } catch (e) {} }
+  if (off()) return;
+  var F = "'Plus Jakarta Sans',system-ui,sans-serif";
+  var tries = 0;
+
+  function anchor() {
+    if (/profile/.test(path)) return document.querySelector('.div-block-45');
+    var add = document.getElementById('services-add-btn');
+    return add ? add.parentNode : null;
+  }
+
+  function show(v) {
+    var a = anchor();
+    if (!a || !a.parentNode || document.getElementById('lok-gallery-notice')) return;
+    var box = document.createElement('div');
+    box.id = 'lok-gallery-notice';
+    box.setAttribute('role', 'note');
+    box.style.cssText = 'display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin:12px 0 18px;padding:12px 14px;border:1px solid #E9DDFF;border-radius:14px;background:linear-gradient(90deg,#F3EBFF,#FBF8FF);font-family:' + F + ';box-sizing:border-box;width:100%;';
+    var thumb = document.createElement('div');
+    thumb.style.cssText = 'flex:none;width:56px;height:42px;border-radius:8px;background:linear-gradient(160deg,#8D5CF0,#4A1FB8);';
+    var txt = document.createElement('div');
+    txt.style.cssText = 'flex:1;min-width:190px;font-size:13.5px;line-height:1.45;color:#4A4761;';
+    var b = document.createElement('b');
+    b.style.cssText = 'display:block;font-size:14.5px;color:#1A1829;';
+    b.textContent = 'Your plan includes the Gallery look';
+    txt.appendChild(b);
+    txt.appendChild(document.createTextNode('A big cover photo and a wall of your work. See your own page that way first, then choose.'));
+    var go = document.createElement('a');
+    go.href = '/vendor-dashboard/products#gallery';
+    go.textContent = 'Set it up';
+    go.style.cssText = 'flex:none;font-size:13.5px;font-weight:600;line-height:1.2;padding:10px 16px;border-radius:999px;background:#6002EE;color:#fff;text-decoration:none;';
+    go.addEventListener('click', setOff);
+    var pv = null;
+    if (v.slug) {
+      pv = document.createElement('a');
+      pv.href = '/' + encodeURIComponent(v.slug) + '?look=portfolio';
+      pv.target = '_blank'; pv.rel = 'noopener';
+      pv.textContent = 'Preview my page';
+      pv.style.cssText = 'flex:none;font-size:13.5px;font-weight:600;line-height:1.2;padding:9px 15px;border-radius:999px;border:1.5px solid #6002EE;background:#fff;color:#6002EE;text-decoration:none;';
+    }
+    var x = document.createElement('button');
+    x.type = 'button'; x.setAttribute('aria-label', 'Close this notice'); x.textContent = '×';
+    x.style.cssText = 'flex:none;background:none;border:0;font-size:20px;line-height:1;color:#6B6880;cursor:pointer;padding:4px 6px;font-family:' + F + ';';
+    x.addEventListener('click', function () { setOff(); box.parentNode && box.parentNode.removeChild(box); });
+    box.appendChild(thumb); box.appendChild(txt); box.appendChild(go); if (pv) box.appendChild(pv); box.appendChild(x);
+    a.parentNode.insertBefore(box, a.nextSibling);
+  }
+
+  function run() {
+    var api = window.LokaliAPI;
+    if (!(api && api.vendors && api.vendors.me) || !window.LokaliSupabaseReady) {
+      if (++tries < 40) setTimeout(run, 300);
+      return;
+    }
+    api.vendors.me().then(function (res) {
+      var v = res && !res.error && res.data ? (res.data.vendor || res.data) : null;
+      if (!v || v.id == null) return null;
+      return Promise.resolve(window.LokaliSupabaseReady).then(function (c) {
+        return c.from('vendors').select('id,slug,plan_rank,storefront_look').eq('id', v.id).maybeSingle();
+      });
+    }).then(function (r) {
+      var d = r && !r.error ? r.data : null;
+      if (d && Number(d.plan_rank) === 2 && d.storefront_look === 'classic') show(d);
+    }).catch(function () {});
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run);
+  else run();
+})();

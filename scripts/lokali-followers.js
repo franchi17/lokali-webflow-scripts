@@ -60,20 +60,25 @@
       '.lkf-stats{display:flex;gap:10px;flex-wrap:wrap;}',
       '.lkf-stat{flex:1 1 130px;background:#F3EBFF;border-radius:12px;padding:12px 14px;}',
       '.lkf-stat b{display:block;font-size:24px;font-weight:700;color:#6002EE;line-height:1.15;font-variant-numeric:tabular-nums;}',
-      '.lkf-stat span{font-size:12.5px;font-weight:600;color:#4A4761;}',
+      '.lkf-stat span{font-size:12.5px;line-height:1.45;font-weight:600;color:#4A4761;}',
       '.lkf-chips{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px;}',
       '.lkf-chip{font-size:13.5px;font-weight:700;min-height:44px;padding:10px 15px;border-radius:999px;border:1px solid #DEDAEE;background:#fff;color:#4A4761;cursor:pointer;}',
       '.lkf-chip[aria-pressed="true"]{background:#6002EE;border-color:#6002EE;color:#fff;}',
       '.lkf-row{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 12px;}',
       '.lkf-f{flex:1 1 150px;display:flex;flex-direction:column;gap:5px;}',
       '.lkf-f.wide{flex:1 1 100%;}',
-      '.lkf-f label{font-size:12.5px;font-weight:700;color:#4A4761;}',
+      '.lkf-f label{font-size:12.5px;line-height:1.45;font-weight:700;color:#4A4761;}',
       '.lkf-in{width:100%;min-height:44px;font-size:15px;font-weight:500;color:#1A1829;background:#FAF7FF;border:1px solid #DEDAEE;border-radius:12px;padding:10px 12px;}',
       'textarea.lkf-in{min-height:84px;resize:vertical;line-height:1.5;}',
       '.lkf-check{display:flex;align-items:center;gap:10px;min-height:44px;font-size:14px;font-weight:600;color:#4A4761;cursor:pointer;margin:0 0 12px;}',
       '.lkf-check input{width:20px;height:20px;accent-color:#6002EE;}',
       '.lkf-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}',
       '.lkf-hint{font-size:12.5px;line-height:1.45;color:#6B6880;flex:1 1 220px;}',
+      // One-page changes 2026-11-23 (F 'Build all four'): 'Get more followers' card.
+      '.lkf-grow{background:#F1ECFE;border:0;}',
+      '.lkf-grow .lkf-acts{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 0;}',
+      '.lkf-ghost{display:inline-flex;align-items:center;font-size:14.5px;font-weight:700;min-height:44px;padding:11px 18px;border-radius:999px;border:1px solid #6002EE;background:#fff;color:#6002EE;text-decoration:none;cursor:pointer;}',
+      '.lkf-grow .lkf-fine{font-size:12.5px;line-height:1.45;color:#6B6880;margin:10px 0 0;}',
       '.lkf-btn{font-size:14.5px;font-weight:700;min-height:44px;padding:11px 22px;border-radius:999px;border:0;background:#6002EE;color:#fff;cursor:pointer;}',
       '.lkf-btn[disabled]{opacity:.6;cursor:default;}',
       '.lkf-link{font-size:13px;font-weight:700;color:#6002EE;background:none;border:0;min-height:44px;padding:0 6px;cursor:pointer;}',
@@ -83,7 +88,7 @@
       '.lkf-post:first-of-type{border-top:0;}',
       '.lkf-pill{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#6002EE;background:#F3EBFF;border-radius:999px;padding:3px 9px;}',
       '.lkf-post-t{font-size:14.5px;font-weight:700;margin:5px 0 0;overflow-wrap:anywhere;}',
-      '.lkf-post-s{font-size:13px;color:#6B6880;margin:2px 0 0;overflow-wrap:anywhere;}',
+      '.lkf-post-s{font-size:13px;line-height:1.45;color:#6B6880;margin:2px 0 0;overflow-wrap:anywhere;}',
       '.lkf-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#EAFAF2;color:#1D6A45;border:1px solid #BFE6D1;font:700 14px ' + F + ';border-radius:999px;padding:12px 20px;z-index:9999;display:none;}',
       '@media(max-width:600px){.lkf-card{padding:16px;}.lkf-h1{font-size:22px;}}'
     ].join('\n');
@@ -101,6 +106,9 @@
   function Page(mount, vendor, SB) {
     this.mount = mount; this.vendor = vendor; this.SB = SB;
     this.kind = 'where'; this.stats = null; this.posts = []; this.err = '';
+    // Under 10 followers the post form starts folded to its four choices; a
+    // choice (or arriving with #post, as the dashboard's 'Write a post' links do) opens it.
+    this.open = /(^|#)post\b/.test(String(location.hash || ''));
     this.draft = { place: '', date: nextSaturday(), from: '09:00', to: '13:00', weekly: false, body: '' };
     var self = this;
     mount.addEventListener('click', function (e) { self.onClick(e); });
@@ -131,14 +139,41 @@
     if (!t) return;
     var self = this;
     if (t.hasAttribute('data-kind')) {
-      this.kind = t.getAttribute('data-kind'); this.err = ''; this.render();
+      this.kind = t.getAttribute('data-kind'); this.err = ''; this.open = true; this.render();
       var again = this.mount.querySelector('[data-kind="' + this.kind + '"]'); if (again) again.focus();
       return;
     }
     var act = t.getAttribute('data-act');
+    if (act === 'grow-copy') {
+      var url = 'https://www.golokali.com/' + (this.vendor.slug || '') + '?o=1'; // o=1: the storefront greets them with a Follow banner (done-check 2026-11-23)
+      var msg = 'Hi! I\u2019m on Lokali now, where neighbors find local businesses. If you liked working with me, tap Follow on my page so you hear when I have something new: ' + url;
+      var ok = function () { t.textContent = 'Copied. Paste it in a text or email'; setTimeout(function () { t.textContent = 'Copy a message with your link'; }, 3000); };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(msg).then(ok, function () { window.prompt('Copy this message:', msg); });
+      else window.prompt('Copy this message:', msg);
+      return;
+    }
     if (act === 'post') this.post(t);
     else if (act === 'remove') {
       var id = Number(t.getAttribute('data-id'));
+      // Save-and-undo step 1 (F 2026-11-23): the post leaves the list at once with
+      // an 8-second Undo; it comes off the storefront when that runs out.
+      if (window.LokaliUndo) {
+        var idx = -1, gone = null;
+        self.posts.forEach(function (p, i) { if (p.id === id) { idx = i; gone = p; } });
+        if (!gone) return;
+        self.posts = self.posts.filter(function (p) { return p.id !== id; });
+        self.render();
+        window.LokaliUndo.show({
+          text: 'Post removed',
+          onUndo: function () { self.posts.splice(Math.max(0, idx), 0, gone); self.render(); },
+          onCommit: function () {
+            self.SB.posts.remove(id).then(function (res) {
+              if (res && res.error) { self.posts.splice(Math.max(0, idx), 0, gone); self.render(); toast('Could not remove that post. Please try again.'); }
+            });
+          }
+        });
+        return;
+      }
       t.disabled = true;
       this.SB.posts.remove(id).then(function (res) {
         if (res && res.error) { t.disabled = false; toast('Could not remove that post. Please try again.'); return; }
@@ -185,14 +220,24 @@
     var html = '<div class="lkf-card"><div class="lkf-stats">' +
         '<div class="lkf-stat"><b>' + (st ? st.followers : 0) + '</b><span>' + (n === 1 ? 'follower' : 'followers') + '</span></div>' +
         '<div class="lkf-stat"><b>' + (st ? st.new_7d : 0) + '</b><span>new this week</span></div>' +
-        '<div class="lkf-stat"><b>' + (st ? st.emailable : 0) + '</b><span>get the weekly email</span></div>' +
+        '<div class="lkf-stat"><b>' + (st ? st.emailable : 0) + '</b><span>hear from you on Thursday</span></div>' +
       '</div>' +
-      (n === 0 ? '<p class="lkf-sub" style="margin:14px 0 0;">No followers yet. Your QR code and storefront link both lead to the Follow button, so every customer you meet can follow you. Posts still show on your storefront today.</p>' : '') +
-      '</div>' +
-      '<div class="lkf-card"><h2 class="lkf-h2">Tell your followers</h2><p class="lkf-sub">Pick what it is about. It takes about thirty seconds.</p>' +
+      '</div>';
+    // One-page changes 2026-11-23 (team review 'Bring your customers in'): until
+    // 10 followers, a card on how to get them sits above the post form.
+    if (n < 10) html += '<div class="lkf-card lkf-grow"><h2 class="lkf-h2">Get more followers</h2>' +
+      '<p class="lkf-sub">The people who already buy from you are the easiest followers to get. Send them your page, or put your QR code at the counter. Every Thursday, your followers get one email with your posts and anything new you add.</p>' +
+      '<div class="lkf-acts"><button type="button" class="lkf-btn" data-act="grow-copy">Copy a message with your link</button>' +
+      '<a class="lkf-ghost" href="/vendor-dashboard/marketing">Your QR codes</a></div>' +
+      '<p class="lkf-fine">This card steps aside once you have 10 followers.</p></div>';
+    var folded = n < 10 && !this.open && !this.err;
+    html += '<div class="lkf-card"><h2 class="lkf-h2">Tell your followers</h2><p class="lkf-sub">' + (folded ? 'Pick what it is about and the form opens. It takes about thirty seconds.' : 'Pick what it is about. It takes about thirty seconds.') + '</p>' +
       '<div class="lkf-chips" role="group" aria-label="Kind of update">' + KINDS.map(function (x) {
-        return '<button type="button" class="lkf-chip" data-kind="' + x.k + '" aria-pressed="' + (x.k === k ? 'true' : 'false') + '">' + esc(x.t) + '</button>';
+        return '<button type="button" class="lkf-chip" data-kind="' + x.k + '" aria-pressed="' + (!folded && x.k === k ? 'true' : 'false') + '">' + esc(x.t) + '</button>';
       }).join('') + '</div>';
+    if (folded) {
+      html += '</div>';
+    } else {
     if (k === 'where') {
       html += '<div class="lkf-row"><div class="lkf-f wide"><label for="lkf-place">Place</label><input class="lkf-in" id="lkf-place" data-d="place" maxlength="120" placeholder="e.g. Saturday farmers market" value="' + esc(d.place) + '"></div></div>' +
         '<div class="lkf-row">' +
@@ -208,6 +253,7 @@
       '<button type="button" class="lkf-btn" data-act="post">Post</button></div>' +
       (this.err ? '<p class="lkf-msg" id="lkf-err" role="alert" tabindex="-1">' + esc(this.err) + '</p>' : '') +
       '</div>';
+    }
 
     html += '<div class="lkf-card"><h2 class="lkf-h2">Your recent posts</h2>';
     if (!this.posts.length) html += '<p class="lkf-sub" style="margin:6px 0 0;">Nothing posted yet. A good first one: where you will be this week.</p>';

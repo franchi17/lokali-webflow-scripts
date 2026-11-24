@@ -20,6 +20,16 @@
 (function () {
   'use strict';
 
+  // Quick fixes 2026-11-23 (team review, F 'Yes, all eight'): the Webflow switch
+  // embeds on this page carry their own orange (#FF8C35); Availability's switches
+  // are violet. One rule makes them match the brand guide's one violet.
+  (function () {
+    if (document.getElementById('lok-settings-switch-violet')) return;
+    var st = document.createElement('style'); st.id = 'lok-settings-switch-violet';
+    st.textContent = '.lk-toggle input:checked + .lk-toggle-track{background:#6002EE !important;}';
+    (document.head || document.documentElement).appendChild(st);
+  })();
+
   var PRO_PLANS = ['pro', 'featured'];
   // Toggles that are a paid-plan perk (disabled + dimmed on Free).
   var PRO_ONLY_TOGGLES = ['toggle-visibility-reviews', 'toggle-notify-promotional', 'toggle-notify-review'];
@@ -213,7 +223,7 @@
     }
 
     var currentSlug = (_vendor && _vendor.slug) || '';
-    var label = '<div style="font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#8E8BA6;margin-bottom:6px;">Your own web address</div>';
+    var label = '<div style="font-size:12px;line-height:1.45;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#6E6A85;margin-bottom:6px;">Your own web address</div>';
 
     if (!slugAllowed()) {
       host.innerHTML = label +
@@ -224,13 +234,13 @@
 
     host.innerHTML = label +
       '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
-      '<span style="color:#8E8BA6;font-size:14px;">golokali.com/</span>' +
+      '<span style="color:#6E6A85;font-size:14px;">golokali.com/</span>' +
       '<input id="lok-slug-input" type="text" value="' + escapeHtml(currentSlug) + '" maxlength="30" autocomplete="off" spellcheck="false" ' +
       'style="flex:1;min-width:140px;border:1px solid #c8c6d8;border-radius:8px;padding:9px 12px;font-size:14px;color:#1A1829;background:#fff;font-family:inherit;">' +
       '<button type="button" id="lok-slug-save" style="border:none;border-radius:8px;background:#6002ee;color:#fff;padding:10px 16px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">Save address</button>' +
       '</div>' +
-      '<div id="lok-slug-status" style="font-size:13px;margin-top:6px;min-height:18px;color:#8E8BA6;"></div>' +
-      '<div style="font-size:12px;color:#8E8BA6;margin-top:2px;">Lowercase letters, numbers, hyphens. One change every 30 days; your old link keeps working.</div>';
+      '<div id="lok-slug-status" style="font-size:13px;margin-top:6px;min-height:18px;color:#6E6A85;"></div>' +
+      '<div style="font-size:12px;line-height:1.45;color:#6E6A85;margin-top:2px;">Lowercase letters, numbers, hyphens. One change every 30 days; your old link keeps working.</div>';
 
     var input = $('lok-slug-input');
     var saveBtn = $('lok-slug-save');
@@ -255,7 +265,7 @@
     };
     function slugErrorMessage(code) { return SLUG_ERRORS[code] || SLUG_OUR_FAULT; }
 
-    function setStatus(msg, color) { if (status) { status.textContent = msg || ''; status.style.color = color || '#8E8BA6'; } }
+    function setStatus(msg, color) { if (status) { status.textContent = msg || ''; status.style.color = color || '#6E6A85'; } }
 
     input.addEventListener('input', function () {
       var v = input.value.trim().toLowerCase();
@@ -513,7 +523,9 @@
     var deact = $('settings-deactivate');
     if (deact) deact.addEventListener('click', function (e) {
       e.preventDefault();
-      if (!confirm('Hide your storefront for now? Neighbors won’t find it until you turn it back on. Everything you’ve added stays put.')) return;
+      // Save-and-undo step 1 (F 2026-11-23): hiding happens at once with an Undo
+      // message instead of a browser pop-up. Without the helper, the old ask.
+      if (!window.LokaliUndo && !confirm('Hide your storefront for now? Neighbors won’t find it until you turn it back on. Everything you’ve added stays put.')) return;
       setListingVisible(false, visInput);
     });
 
@@ -532,7 +544,7 @@
       delCard.style.cssText = 'display:none;width:100%;box-sizing:border-box;margin-top:14px;padding:14px 16px;' +
         "border:1px solid #F3D6D6;border-radius:12px;background:#FDF7F7;font-family:'Plus Jakarta Sans',sans-serif;";
       var delHelp = document.createElement('div');
-      delHelp.style.cssText = 'font-size:13px;color:#6B6580;margin-bottom:10px;';
+      delHelp.style.cssText = 'font-size:13px;line-height:1.45;color:#6B6580;margin-bottom:10px;';
       delHelp.appendChild(document.createTextNode('Type '));
       var bTag = document.createElement('b'); bTag.textContent = 'DELETE';
       delHelp.appendChild(bTag);
@@ -563,7 +575,7 @@
       var surveyWrap = document.createElement('div');
       surveyWrap.style.cssText = 'margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #F3D6D6;';
       var sTitle = document.createElement('div');
-      sTitle.style.cssText = 'font-size:13px;font-weight:600;color:#4A4761;margin-bottom:8px;';
+      sTitle.style.cssText = 'font-size:13px;line-height:1.45;font-weight:600;color:#4A4761;margin-bottom:8px;';
       sTitle.textContent = 'Before you go: why are you leaving? (optional)';
       surveyWrap.appendChild(sTitle);
       var pillRow = document.createElement('div');
@@ -688,13 +700,13 @@
     '.lok-set-jump a:hover,.lok-set-jump a:focus-visible{border-color:#D4BFF9;color:#6002EE;}' +
     '.lok-set-sec{scroll-margin-top:84px;}' +
     '.lok-set-sub{font-family:' + FONT + ';font-size:13.5px;color:#6E6A85;margin:-4px 0 12px;}' +
-    '.lok-set-grp{font-family:' + FONT + ';font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#6E6A85;margin:18px 0 6px;}' +
+    '.lok-set-grp{font-family:' + FONT + ';font-size:12px;line-height:1.45;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#6E6A85;margin:18px 0 6px;}' +
     '.lok-set-grp:first-of-type{margin-top:4px;}' +
     '.lok-set-link{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:52px;padding:10px 14px;margin:0 0 10px;border:1px solid #DEDAEE;border-radius:12px;' +
       'background:#F7F6FC;text-decoration:none;font-family:' + FONT + ';}' +
     '.lok-set-link:hover,.lok-set-link:focus-visible{border-color:#D4BFF9;background:#EEE6FF;}' +
     '.lok-set-link b{display:block;font-size:15px;font-weight:600;color:#1A1829;}' +
-    '.lok-set-link span{display:block;font-size:13px;color:#6E6A85;}' +
+    '.lok-set-link span{display:block;font-size:13px;line-height:1.45;color:#6E6A85;}' +
     '.lok-set-link i{font-style:normal;font-size:14px;font-weight:700;color:#6002EE;flex:0 0 auto;}' +
     '.lok-set-tog{display:flex !important;align-items:center;justify-content:flex-end;gap:8px;flex:0 0 auto;margin:0 !important;padding:0 !important;}' +
     // .w-embed carries clearfix ::before/::after; as flex items they put a gap to the
@@ -708,18 +720,18 @@
     '.lok-set-sec .div-block-158.stripe a:hover{border-color:#D4BFF9;background:#EEE6FF;}' +
     '.lok-set-sec .div-block-158.stripe a img{display:none;}' +
     '.lok-set-sec .div-block-158.stripe a .text-link{font-family:' + FONT + ';font-size:14px;font-weight:700;color:#4A4761;margin:0;}' +
-    '.lok-set-saved{font-family:' + FONT + ';font-size:12.5px;font-weight:700;color:#1B7A4B;opacity:0;transition:opacity .2s;min-width:42px;text-align:right;}' +
+    '.lok-set-saved{font-family:' + FONT + ';font-size:12.5px;line-height:1.45;font-weight:700;color:#1B7A4B;opacity:0;transition:opacity .2s;min-width:42px;text-align:right;}' +
     '.lok-set-saved.on{opacity:1;}' +
     '.lok-set-btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 18px;border-radius:10px;border:1px solid #D4BFF9;background:#fff;' +
       'font-family:' + FONT + ';font-size:14px;font-weight:700;color:#6002EE;cursor:pointer;flex:0 0 auto;}' +
     '.lok-set-btn:hover{background:#EEE6FF;}' +
-    '.lok-set-btn.pri{background:#6002EE;border-color:#6002EE;color:#fff;}.lok-set-btn.pri:hover{background:#3D00E0;}' +
+    '.lok-set-btn.pri{background:#6002EE;border-color:#6002EE;color:#fff;}.lok-set-btn.pri:hover{background:#6002EE;opacity:.88;}' +
     '.lok-set-btn.quiet{border-color:#DEDAEE;color:#4A4761;}' +
     // #215 Your storefronts (link / switch / disconnect)
     '.lok-set-btn.danger{border-color:#F3C6C6;color:#B42318;}.lok-set-btn.danger:hover{background:#FDF1F1;}' +
     '.lok-set-btn[disabled]{opacity:.55;cursor:default;}' +
     '.lok-sf{font-family:' + FONT + ';margin:0 0 8px;scroll-margin-top:84px;}' +
-    '.lok-sf-head{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#6E6A85;margin:22px 0 6px;}' +
+    '.lok-sf-head{font-size:12px;line-height:1.45;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#6E6A85;margin:22px 0 6px;}' +
     '.lok-sf-sub{font-size:13.5px;line-height:1.5;color:#6E6A85;margin:0 0 12px;}' +
     '.lok-sf-list{display:flex;flex-direction:column;gap:8px;margin:0 0 12px;}' +
     '.lok-sf-row{display:flex;align-items:center;gap:12px;min-height:60px;padding:10px 12px 10px 10px;border:1px solid #DEDAEE;border-radius:12px;background:#fff;}' +
@@ -732,7 +744,7 @@
     '.lok-sf-txt span.new{color:#B1006A;font-weight:700;}' +
     '.lok-sf-txt{flex:1 1 auto;min-width:0;}' +
     '.lok-sf-txt b{display:block;font-size:15px;font-weight:600;color:#1A1829;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}' +
-    '.lok-sf-txt span{display:block;font-size:13px;color:#6E6A85;}' +
+    '.lok-sf-txt span{display:block;font-size:13px;line-height:1.45;color:#6E6A85;}' +
     '.lok-sf-txt span.on{color:#1B7A4B;font-weight:600;}' +
     '.lok-sf-acts{display:flex;gap:8px;flex:0 0 auto;flex-wrap:wrap;justify-content:flex-end;}' +
     '.lok-sf-form{display:flex;gap:10px;flex-wrap:wrap;align-items:stretch;}' +
@@ -749,7 +761,7 @@
     '.lok-sf-panel{border:1px solid #DEDAEE;background:#FDFCFF;border-radius:14px;padding:16px;margin:12px 0 0;}' +
     '.lok-sf-panel>b{display:block;font-size:16px;font-weight:700;color:#1A1829;margin:0 0 12px;}' +
     '.lok-sf-field{display:block;margin:0 0 14px;}' +
-    '.lok-sf-field>span{display:block;font-size:13px;font-weight:600;color:#4A4761;margin:0 0 6px;}' +
+    '.lok-sf-field>span{display:block;font-size:13px;line-height:1.45;font-weight:600;color:#4A4761;margin:0 0 6px;}' +
     '.lok-sf-field input{display:block;width:100%;box-sizing:border-box;min-height:44px;padding:0 14px;border:1.5px solid #DEDAEE;border-radius:10px;background:#fff;font-family:' + FONT + ';font-size:15px;color:#1A1829;outline:none;}' +
     '.lok-sf-field input:focus{border-color:#6002EE;box-shadow:0 0 0 3px rgba(96,2,238,.12);}' +
     '.lok-sf-hint{font-size:13px;line-height:1.5;color:#6E6A85;margin:6px 0 12px;overflow-wrap:anywhere;}' +
@@ -771,7 +783,7 @@
     '.lok-set-sec .div-block-160>div:first-child,.lok-set-sec .div-block-162>div:first-child,.lok-set-sec .div-block-163>div:first-child{flex:1 1 auto;min-width:0;}' +
     // 2026-09-21, measured on the live signed-in page (F's Chrome): bring this page to the
     // same floor as the shopper hub: AA text, 44px tap areas, 16px fields.
-    // Slate #8E8BA6 was 3.28:1 on white; #6E6A85 is 5.17:1.
+    // Slate #6E6A85 was 3.28:1 on white; #6E6A85 is 5.17:1.
     '.lok-set-sec .settings-header,.lok-set-sec .settings-lokali-text,.lok-set-sec .settings-lokali-text a{color:#6E6A85 !important;}' +
     // #EE0290 was 4.16:1 at 14px; #D1007E is 5.23:1.
     '.lok-set-sec #settings-delete .text-block-94{color:#D1007E !important;}' +
@@ -1445,6 +1457,97 @@
     handleIncoming();
   }
 
+  // ── Storefront look (F 2026-11-21; patch_gallery_page_setup.sql) ────────────
+  // A copy of the switch that lives on the Products page ("Your Gallery page").
+  // Featured: Classic or Gallery, saved through set_storefront_look() (the
+  // database checks ownership and the plan). Other plans: a locked card with a
+  // preview of their own page and the way to Featured. Before the patch the
+  // look read errors and nothing is shown.
+  function mountLookCard(section) {
+    if (!section || $('lok-look-card') || !_vendor || _vendor.id == null) return;
+    var ready = window.LokaliSupabaseReady;
+    if (!ready || !ready.then) return;
+    ready.then(function (c) {
+      return c.from('vendors').select('slug,storefront_look,plan_rank').eq('id', _vendor.id).maybeSingle()
+        .then(function (r) { return { c: c, r: r }; });
+    }).then(function (x) {
+      if (!x.r || x.r.error || !x.r.data || $('lok-look-card')) return;
+      drawLookCard(section, x.c, x.r.data);
+    }).catch(function () {});
+  }
+
+  function drawLookCard(section, c, d) {
+    var F = "'Plus Jakarta Sans',system-ui,sans-serif";
+    var featured = Number(d.plan_rank) === 2;
+    var look = d.storefront_look === 'gallery' ? 'gallery' : 'classic';
+    var slug = d.slug || '';
+    var card = mk('div'); card.id = 'lok-look-card';
+    card.style.cssText = 'margin:16px 0 6px;padding:16px;border:2px solid #E9DDFF;border-radius:16px;background:linear-gradient(#fff,#FBF8FF);font-family:' + F + ';box-sizing:border-box;';
+    function draw(pending) {
+      card.innerHTML = '';
+      var h = mk('div'); h.style.cssText = 'font-size:15.5px;font-weight:700;color:#1A1829;';
+      h.textContent = 'How your storefront looks';
+      card.appendChild(h);
+      var p = mk('p'); p.style.cssText = 'margin:4px 0 12px;font-size:13.5px;color:#6B6880;line-height:1.5;';
+      card.appendChild(p);
+      var preview = function (lk, label) {
+        if (!slug) return null;
+        var a = mk('a', null, label);
+        a.href = '/' + encodeURIComponent(slug) + '?look=' + (lk === 'gallery' ? 'portfolio' : 'classic');
+        a.target = '_blank'; a.rel = 'noopener';
+        a.style.cssText = 'display:inline-block;font-size:13.5px;font-weight:600;line-height:1.2;padding:9px 15px;border-radius:999px;border:1.5px solid #6002EE;background:#fff;color:#6002EE;text-decoration:none;';
+        return a;
+      };
+      var row = mk('div'); row.style.cssText = 'display:flex;flex-wrap:wrap;gap:10px;align-items:center;';
+      if (!featured) {
+        p.textContent = 'The Gallery look, a big cover photo and a wall of your work, comes with the Featured plan. See how your page would look first.';
+        var pv0 = preview('gallery', 'Preview my page as a gallery'); if (pv0) row.appendChild(pv0);
+        var plans = mk('a', null, 'See Featured'); plans.href = window.LOKALI_PRICING_URL || '/pricing';
+        plans.style.cssText = 'display:inline-block;font-size:13.5px;font-weight:600;line-height:1.2;padding:10px 16px;border-radius:999px;background:#6002EE;color:#fff;text-decoration:none;';
+        row.appendChild(plans);
+        card.appendChild(row);
+        return;
+      }
+      p.textContent = 'Showing now: ' + (look === 'gallery' ? 'Gallery' : 'Classic') + '. Your listings, prices and reviews stay the same in both.';
+      var pick = pending || look;
+      var seg = mk('div'); seg.style.cssText = 'display:inline-flex;border:1px solid #E7E2F3;border-radius:999px;padding:3px;background:#F7F6FC;margin:0 0 12px;';
+      [['classic', 'Classic'], ['gallery', 'Gallery']].forEach(function (o) {
+        var b = mk('button', null, o[1]); b.type = 'button';
+        b.setAttribute('aria-pressed', pick === o[0] ? 'true' : 'false');
+        b.style.cssText = 'font-family:' + F + ';font-size:13.5px;font-weight:600;border:0;border-radius:999px;padding:8px 16px;cursor:pointer;' +
+          (pick === o[0] ? 'background:#fff;color:#6002EE;box-shadow:0 1px 4px rgba(74,31,184,.15);' : 'background:transparent;color:#6B6880;');
+        b.addEventListener('click', function () { draw(o[0] === look ? null : o[0]); });
+        seg.appendChild(b);
+      });
+      card.appendChild(seg);
+      var pv = preview(pick, 'Preview ' + (pick === 'gallery' ? 'Gallery' : 'Classic')); if (pv) row.appendChild(pv);
+      var use = mk('button', null, 'Use ' + (pick === 'gallery' ? 'Gallery' : 'Classic')); use.type = 'button';
+      use.disabled = !pending;
+      use.style.cssText = 'font-family:' + F + ';font-size:13.5px;font-weight:600;line-height:1.2;padding:10px 16px;border-radius:999px;border:1.5px solid #6002EE;background:#6002EE;color:#fff;cursor:pointer;' + (pending ? '' : 'opacity:.5;cursor:default;');
+      use.addEventListener('click', function () {
+        if (!pending) return;
+        use.disabled = true; use.textContent = 'Saving…';
+        c.rpc('set_storefront_look', { p_vendors_id: _vendor.id, p_look: pending }).then(function (r) {
+          if (r && r.error) throw new Error(r.error.message || 'save');
+          look = pending; draw(null); toast('success', 'Your storefront now shows the ' + (look === 'gallery' ? 'Gallery' : 'Classic') + ' look.');
+        }).catch(function (e) {
+          var m = String((e && e.message) || '');
+          toast('error', /LOKALI_LIMIT_REACHED:/.test(m) ? m.split('LOKALI_LIMIT_REACHED:')[1].trim() : 'That did not save. Please try again.');
+          draw(pending);
+        });
+      });
+      row.appendChild(use);
+      card.appendChild(row);
+      var more = mk('p'); more.style.cssText = 'margin:12px 0 0;font-size:12.5px;color:#6B6880;line-height:1.45;';
+      more.appendChild(document.createTextNode('Collections, their order and which ones shoppers see live on '));
+      var lk = mk('a', null, 'your Products page'); lk.href = '/vendor-dashboard/products#gallery'; lk.style.cssText = 'color:#6002EE;font-weight:600;';
+      more.appendChild(lk); more.appendChild(document.createTextNode('.'));
+      card.appendChild(more);
+    }
+    draw(null);
+    section.appendChild(card);
+  }
+
   function regroup() {
     if ($('lok-set-css')) return;
     var sYou = sectionOf('settings-email'), sPlan = sectionOf('settings-current-plan'),
@@ -1510,6 +1613,20 @@
     form.appendChild(bar);
     nameInputs().forEach(function (inp) { if (inp) inp.addEventListener('input', syncNameBar); });
     save.addEventListener('click', function () { saveProfile(); });
+    // Save-and-undo step 3 (F 2026-11-23 'Yes, start step 3'): the name saves when
+    // you leave the box; the 'You changed your name · Save' bar no longer shows.
+    bar.style.setProperty('display', 'none', 'important');
+    nameInputs().forEach(function (inp) {
+      if (!inp) return;
+      inp.addEventListener('change', function () {
+        var n = nameInputs();
+        var changed = (n[0] && String(n[0].value || '').trim() !== String((_user && _user.first_name) || '')) ||
+                      (n[1] && String(n[1].value || '').trim() !== String((_user && _user.last_name) || ''));
+        if (!changed) return;
+        _nameAutoEl = inp;
+        saveProfile();
+      });
+    });
     discard.addEventListener('click', function () {
       var n = nameInputs();
       if (n[0]) n[0].value = (_user && _user.first_name) || '';
@@ -1523,7 +1640,7 @@
     if (firstRow && firstRow.parentNode === sStore) {
       sStore.insertBefore(mk('div', 'lok-set-sub', 'Three ways to step back, from lightest to heaviest.'), firstRow);
       [['Not taking new clients', 'Your storefront stays up and shoppers see you are full. On Availability.'],
-       ['Away until a date', 'Shows shoppers the day you are back, then switches itself off. On Availability.']].forEach(function (l) {
+       ['Away', 'Shows shoppers the day you are back, then switches itself off. On Availability.']].forEach(function (l) {
         var a = mk('a', 'lok-set-link'); a.href = '/vendor-dashboard/availability';
         var d = mk('div'); d.appendChild(mk('b', '', l[0])); d.appendChild(mk('span', '', l[1]));
         a.appendChild(d); a.appendChild(mk('i', '', 'Open'));
@@ -1533,6 +1650,7 @@
     retitle('toggle-visibility-public', 'Show my storefront on Lokali', 'Off hides you from The Market and search, and your link shows a not available message. Nothing is deleted.');
     retitle('toggle-visibility-reviews', 'Show reviews on my storefront', 'Off keeps collecting reviews privately.');
     var slug = $('lok-slug-section'); if (slug) sStore.appendChild(slug);
+    mountLookCard(sStore); // Gallery look (F 2026-11-21)
 
     // Emails: by who they are from, one pause switch at the end.
     retitle('toggle-notify-inquiry', 'A customer sends you a message', 'Includes the reminder when a message is still waiting for a reply.');
@@ -1598,7 +1716,18 @@
     }
   }
 
+  var _nameAutoEl = null;
+  function nameNote(inp, ok, text) {
+    if (!inp || !inp.parentNode) return;
+    var n = inp.parentNode.querySelector(':scope > .lok-autosave-note');
+    if (!n) { n = mk('div', 'lok-autosave-note'); inp.parentNode.insertBefore(n, inp.nextSibling); }
+    n.style.cssText = 'font:600 12px/1.4 ' + FONT + ';margin:4px 0 2px;color:' + (ok ? '#17634A' : '#B0006A') + ';';
+    n.textContent = ok ? '\u2713 Saved' : text;
+    clearTimeout(n._t);
+    if (ok) n._t = setTimeout(function () { if (n.parentNode) n.parentNode.removeChild(n); }, 2600);
+  }
   function saveProfile() {
+    var autoEl = _nameAutoEl; _nameAutoEl = null;
     var fn = inputOf(firstEl(['settings-first-name', 'First-Name-Input']));
     var ln = inputOf(firstEl(['settings-last-name', 'Last-Name-Input']));
     // A missing or blank input stays out of the payload — sending '' would
@@ -1628,7 +1757,8 @@
         if (fn && !fnVal && _user.first_name) fn.value = _user.first_name;
         if (ln && !lnVal && _user.last_name) ln.value = _user.last_name;
       }
-      toast('success', kept ? 'Saved. Blank fields kept their previous value.' : 'Name saved.');
+      if (autoEl && !kept) nameNote(autoEl, true);
+      else toast('success', kept ? 'Saved. Blank fields kept their previous value.' : 'Name saved.');
       syncNameBar();
     }).catch(function () {
       toast('error', 'We couldn\u2019t reach Lokali, so nothing changed. Check your connection and try again.');
@@ -1648,7 +1778,11 @@
       if (visInput) visInput.checked = visible;
       flashSaved(visInput);
       syncBreakRow();
-      toast('success', visible ? 'Your storefront is live.' : 'Your storefront is hidden. Nothing was deleted.');
+      if (!visible && window.LokaliUndo) {
+        window.LokaliUndo.show({ text: 'Storefront hidden. Nothing was deleted.', onUndo: function () { setListingVisible(true, visInput); } });
+      } else {
+        toast('success', visible ? 'Your storefront is live.' : 'Your storefront is hidden. Nothing was deleted.');
+      }
     }).catch(function () {
       toast('error', 'We couldn\u2019t reach Lokali, so nothing changed. Check your connection and try again.');
       if (visInput) visInput.checked = !visible;

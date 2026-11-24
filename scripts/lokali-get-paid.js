@@ -58,28 +58,28 @@
     '#lokali-checkout .gp-btn.ghost{background:#fff;color:#6002EE;border:1px solid #D9CFFB;}#lokali-checkout .gp-btn[disabled]{opacity:.6;cursor:default;}' +
     '#lokali-checkout .gp-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:12px;}' +
     '#lokali-checkout .gp-switch{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border:1px solid #DEDAEE;border-radius:14px;margin-top:14px;}' +
-    '#lokali-checkout .gp-switch strong{font-size:14px;display:block;}#lokali-checkout .gp-switch span{font-size:12px;color:#6E6A85;}' +
+    '#lokali-checkout .gp-switch strong{font-size:14px;display:block;}#lokali-checkout .gp-switch span{font-size:12px;line-height:1.45;color:#6E6A85;}' +
     '#lokali-checkout .gp-tog{position:relative;width:46px;height:26px;flex:none;border-radius:999px;background:#CFCBE3;border:0;cursor:pointer;transition:background .15s;}' +
     '#lokali-checkout .gp-tog::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:left .15s;box-shadow:0 1px 3px rgba(0,0,0,.2);}' +
     '#lokali-checkout .gp-tog[aria-checked="true"]{background:#6002EE;}#lokali-checkout .gp-tog[aria-checked="true"]::after{left:23px;}' +
-    '#lokali-checkout .gp-msg{font-size:13px;margin-top:10px;color:#B1006A;display:none;}' +
-    '#lokali-checkout .gp-fine{font-size:12px;color:#8E8BA6;line-height:1.5;margin-top:12px;}' +
+    '#lokali-checkout .gp-msg{font-size:13px;line-height:1.45;margin-top:10px;color:#B1006A;display:none;}' +
+    '#lokali-checkout .gp-fine{font-size:12px;color:#6E6A85;line-height:1.5;margin-top:12px;}' +
     '#lokali-checkout .gp-fine a,#lokali-checkout .gp-intro a,#lokali-checkout .gp-card a{color:#6002EE;font-weight:600;}' +
     '#lokali-checkout .gp-ex{background:#F7F6FC;border-radius:14px;padding:12px 14px;margin:0 0 14px;}' +
     '#lokali-checkout .gp-ex strong{display:block;font-size:14px;color:#3A3550;margin-bottom:4px;}' +
     '#lokali-checkout .gp-ex div{display:flex;justify-content:space-between;gap:12px;font-size:13px;color:#4A4761;padding:5px 0;border-top:1px solid #E9E6F5;}' +
     '#lokali-checkout .gp-card{background:#FFF7E8;border:1px solid #F6B8D8;border-radius:12px;padding:10px 12px;font-size:13px;line-height:1.5;color:#7A4A00;margin:0 0 14px;}' +
     '#lokali-checkout .gp-set{border:1px solid #DEDAEE;border-radius:14px;padding:14px;margin-top:14px;}' +
-    '#lokali-checkout .gp-set label{display:block;font-size:13px;font-weight:700;color:#3A3550;margin:0 0 2px;}' +
+    '#lokali-checkout .gp-set label{display:block;font-size:13px;line-height:1.45;font-weight:700;color:#3A3550;margin:0 0 2px;}' +
     '#lokali-checkout .gp-set .gp-help{font-size:12px;color:#6E6A85;margin:0 0 6px;line-height:1.5;}' +
     '#lokali-checkout .gp-set textarea,#lokali-checkout .gp-set input{width:100%;box-sizing:border-box;font-family:inherit;font-size:14px;padding:9px 11px;border:1px solid #DEDAEE;border-radius:10px;color:#1A1829;background:#fff;}' +
     '#lokali-checkout .gp-set textarea{min-height:64px;resize:vertical;}' +
     '#lokali-checkout .gp-days{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;}' +
-    '#lokali-checkout .gp-saved{font-size:13px;color:#1D6A45;font-weight:600;margin-left:4px;display:none;}' +
+    '#lokali-checkout .gp-saved{font-size:13px;line-height:1.45;color:#1D6A45;font-weight:600;margin-left:4px;display:none;}' +
     '#lokali-checkout .gp-terms{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border:1px solid #DEDAEE;border-radius:14px;margin-top:14px;font-size:13px;line-height:1.5;color:#3A3550;cursor:pointer;}' +
     '#lokali-checkout .gp-terms input{flex:none;width:18px;height:18px;margin:1px 0 0;accent-color:#6002EE;cursor:pointer;}' +
     '#lokali-checkout .gp-terms a{color:#6002EE;font-weight:600;}' +
-    '#lokali-checkout .gp-agreed{font-size:12px;color:#1D6A45;margin-top:10px;}' +
+    '#lokali-checkout .gp-agreed{font-size:12px;line-height:1.45;color:#1D6A45;margin-top:10px;}' +
     '@media(max-width:480px){#lokali-checkout .gp-days{grid-template-columns:1fr;}}';
 
   var state = { plan: 'free', fees: FEES_DEFAULT, st: null, fee: null };

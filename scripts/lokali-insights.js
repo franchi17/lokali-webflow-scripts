@@ -24,7 +24,7 @@
   'use strict';
 
   var DAY = 24 * 60 * 60 * 1000, DAY30 = 30 * DAY;
-  var INK = '#1A1829', DUSK = '#4A4761', SLATE = '#8E8BA6',
+  var INK = '#1A1829', DUSK = '#4A4761', SLATE = '#6E6A85',
       VIOLET = '#6002EE', VIOLET_L = '#F3EBFF', ORANGE = '#EE0290',
       GREEN = '#1D6A45', GREEN_L = '#EAFAF2', RED = '#A32D2D', RED_L = '#FDECEC',
       BORDER = '#EEEDF6', SNOW = '#F7F6FC', MIST = '#EEEDF6';
@@ -40,17 +40,17 @@
     '@media(max-width:1100px) and (min-width:721px){#lok-analytics-section .an-grid{grid-template-columns:1fr 1fr 1fr;}}',
     '#lok-analytics-section .an-card{background:#fff;border:.5px solid ' + BORDER + ';border-radius:10px;padding:1.25rem;}',
     '#lok-analytics-section .an-kpi{display:flex;flex-direction:column;gap:6px;}',
-    '#lok-analytics-section .an-klabel{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:' + SLATE + ';white-space:nowrap;}',
+    '#lok-analytics-section .an-klabel{font-size:11px;line-height:1.45;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:' + SLATE + ';white-space:nowrap;}',
     '#lok-analytics-section .an-kvalue{font-size:28px;font-weight:600;line-height:1;}',
     '#lok-analytics-section .an-kvalue small{font-size:14px;font-weight:400;}',
     '#lok-analytics-section .an-delta{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;border-radius:100px;padding:2px 8px;width:fit-content;}',
     '#lok-analytics-section .an-delta.up{color:' + GREEN + ';background:' + GREEN_L + ';}',
     '#lok-analytics-section .an-delta.down{color:' + SLATE + ';background:' + MIST + ';}', // quick fixes 2026-11-23: never red, a drop is not a grade
     '#lok-analytics-section .an-delta.flat{color:' + SLATE + ';background:' + MIST + ';}',
-    '#lok-analytics-section .an-kdetail{font-size:11px;line-height:1.45;color:' + SLATE + ';}', // F 2026-11-24 'make the lines tighter'
-    '#lok-analytics-section .an-klink{font-size:11px;font-weight:600;color:' + VIOLET + ';text-decoration:none;}',
+    '#lok-analytics-section .an-kdetail{font-size:12px;line-height:1.45;color:' + DUSK + ';}', // F 2026-11-24 'make the lines tighter'
+    '#lok-analytics-section .an-klink{font-size:12px;line-height:1.45;font-weight:600;color:' + VIOLET + ';text-decoration:none;}',
     '#lok-analytics-section .an-klink:hover{text-decoration:underline;}',
-    '#lok-analytics-section .an-ctitle{font-size:13px;font-weight:600;margin-bottom:1.1rem;}',
+    '#lok-analytics-section .an-ctitle{font-size:13px;line-height:1.45;font-weight:600;margin-bottom:1.1rem;}',
     // chart header row: title left, range tabs right (wraps on phones)
     '#lok-analytics-section .an-chead{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:1.1rem;}',
     '#lok-analytics-section .an-chead .an-ctitle{margin-bottom:0;}',
@@ -68,7 +68,7 @@
     '#lok-analytics-section .an-bar .tip{display:none;position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:' + VIOLET + ';color:#fff;font-size:11px;font-weight:500;padding:3px 8px;border-radius:4px;white-space:nowrap;z-index:5;}',
     '#lok-analytics-section .an-bcol:hover .tip{display:block;}',
     '#lok-analytics-section .an-axis{display:flex;justify-content:space-between;margin-top:8px;}',
-    '#lok-analytics-section .an-axis span{font-size:10px;color:' + SLATE + ';}',
+    '#lok-analytics-section .an-axis span{font-size:10px;line-height:1.45;color:' + SLATE + ';}',
     // margin-top separates the Top-services/products row from the storefront
     // views chart above it (they sat flush — "squished", Francesca 2026-07-09).
     '#lok-analytics-section .an-two{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:20px;margin-bottom:1rem;}',
@@ -77,14 +77,14 @@
     '#lok-analytics-section .an-row:first-child{padding-top:0;}',
     '#lok-analytics-section .an-rnum{width:20px;height:20px;border-radius:5px;background:' + SNOW + ';color:' + SLATE + ';font-size:10px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;}',
     '#lok-analytics-section .an-rnum.gold{background:#FEF3D6;color:#8B5E0A;}',
-    '#lok-analytics-section .an-rname{font-size:13px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
+    '#lok-analytics-section .an-rname{font-size:13px;line-height:1.45;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
     '#lok-analytics-section .an-rbarw{width:70px;height:5px;background:' + MIST + ';border-radius:100px;overflow:hidden;flex-shrink:0;}',
     '#lok-analytics-section .an-rbar{height:100%;border-radius:100px;}',
-    '#lok-analytics-section .an-rval{font-size:12px;font-weight:500;color:' + DUSK + ';width:58px;text-align:right;flex-shrink:0;}',
+    '#lok-analytics-section .an-rval{font-size:12px;line-height:1.45;font-weight:500;color:' + DUSK + ';width:58px;text-align:right;flex-shrink:0;}',
     '#lok-analytics-section .an-empty{font-size:12.5px;color:' + SLATE + ';padding:6px 0;}',
     '#lok-analytics-section .an-up{border-radius:10px;padding:1rem 1.25rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;background:' + VIOLET_L + ';border:.5px solid #E5D4FD;flex-wrap:wrap;}',
-    '#lok-analytics-section .an-up-t{font-size:13px;font-weight:600;}',
-    '#lok-analytics-section .an-up-s{font-size:12px;color:' + DUSK + ';margin-top:2px;}',
+    '#lok-analytics-section .an-up-t{font-size:13px;line-height:1.45;font-weight:600;}',
+    '#lok-analytics-section .an-up-s{font-size:12px;line-height:1.45;color:' + DUSK + ';margin-top:2px;}',
     '#lok-analytics-section .an-up-btn{font:inherit;font-size:12px;font-weight:600;color:#fff;background:' + VIOLET + ';border:none;border-radius:8px;padding:8px 16px;cursor:pointer;text-decoration:none;}',
     // Insight line: was a yellow note (#FFFCF0/#8a6d1a); F 2026-09-17 'not a fan of the yellow' -> the soft violet tint the dashboard uses.
     '#lok-analytics-section .an-insight{background:' + VIOLET_L + ';border:.5px solid #E5D4FD;border-radius:10px;padding:.85rem 1.1rem;font-size:12px;color:' + DUSK + ';line-height:1.55;margin-bottom:1rem;}',
@@ -96,7 +96,7 @@
     '#lok-analytics-section .an-ck{background:#fff;border:.5px solid #E5D4FD;border-radius:10px;padding:1.25rem;margin-bottom:1rem;font-family:"Plus Jakarta Sans",sans-serif;}',
     '#lok-analytics-section .an-ck-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px;}',
     '#lok-analytics-section .an-ck-head .an-ctitle{margin-bottom:0;}',
-    '#lok-analytics-section .an-ck-sub{font-size:12px;color:' + DUSK + ';margin-top:2px;max-width:62ch;}',
+    '#lok-analytics-section .an-ck-sub{font-size:12px;line-height:1.45;color:' + DUSK + ';margin-top:2px;max-width:62ch;}',
     '#lok-analytics-section .an-ck-pill{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;border-radius:100px;padding:4px 10px;background:' + VIOLET_L + ';color:' + VIOLET + ';white-space:nowrap;}',
     '#lok-analytics-section .an-ck-pill.ok{background:' + GREEN_L + ';color:' + GREEN + ';}',
     '#lok-analytics-section .an-ck-pill svg{width:11px;height:11px;}',
@@ -109,7 +109,7 @@
     '#lok-analytics-section .an-ck-row:last-child{border-bottom:none;padding-bottom:0;}',
     '#lok-analytics-section .an-ck-ico{width:20px;height:20px;margin-top:1px;color:' + SLATE + ';}',
     '#lok-analytics-section .an-ck-row.done .an-ck-ico{color:' + GREEN + ';}',
-    '#lok-analytics-section .an-ck-t{font-size:13px;font-weight:600;color:' + INK + ';}',
+    '#lok-analytics-section .an-ck-t{font-size:13px;line-height:1.45;font-weight:600;color:' + INK + ';}',
     '#lok-analytics-section .an-ck-row.done .an-ck-t{font-weight:500;color:' + DUSK + ';}',
     '#lok-analytics-section .an-ck-w{font-size:12px;color:#6E6A85;margin-top:1px;max-width:62ch;line-height:1.5;}',
     '#lok-analytics-section .an-ck-acts{display:flex;flex-direction:column;align-items:flex-end;gap:2px;}',
@@ -122,11 +122,11 @@
     '#lok-analytics-section .an-ck-more svg{width:12px;height:12px;transition:transform .12s;}',
     '#lok-analytics-section .an-ck-more[aria-expanded="false"] svg{transform:rotate(-90deg);}',
     '#lok-analytics-section .an-ck-done{margin-top:6px;border-top:.5px dashed ' + BORDER + ';padding-top:10px;}',
-    '#lok-analytics-section .an-ck-plan{font-size:11px;color:' + SLATE + ';margin-top:12px;}',
+    '#lok-analytics-section .an-ck-plan{font-size:12px;line-height:1.45;color:' + SLATE + ';margin-top:12px;}',
     // Get featured (2026-09-27): the two things Lokali's weekly "New this week"
     // Instagram post needs from a vendor. Soft violet tint, never a lock/tease.
     '#lok-analytics-section .an-ck-feat{margin-top:14px;background:' + VIOLET_L + ';border:.5px solid #E5D4FD;border-radius:10px;padding:12px 14px;}',
-    '#lok-analytics-section .an-ck-feat-t{font-size:12px;font-weight:700;color:' + INK + ';margin-bottom:2px;}',
+    '#lok-analytics-section .an-ck-feat-t{font-size:12px;line-height:1.45;font-weight:700;color:' + INK + ';margin-bottom:2px;}',
     '#lok-analytics-section .an-ck-feat-w{font-size:12px;color:' + DUSK + ';line-height:1.5;margin-bottom:8px;max-width:62ch;}',
     '#lok-analytics-section .an-ck-feat .an-ck-row{border-bottom:none;padding:6px 0;}',
     '#lok-analytics-section .an-ck-feat .an-ck-fix{background:#fff;}',
@@ -137,7 +137,7 @@
     // loading card — same spinner language as the auth "Signing you in…" card
     '#lok-analytics-section .an-load{background:#fff;border:.5px solid ' + BORDER + ';border-radius:10px;padding:36px 20px;text-align:center;}',
     '#lok-analytics-section .an-spin{display:inline-block;width:26px;height:26px;border:3px solid rgba(96,2,238,.22);border-top-color:' + VIOLET + ';border-radius:50%;animation:lokAnSpin .7s linear infinite;}',
-    '#lok-analytics-section .an-load-t{margin-top:12px;font-size:13px;font-weight:500;color:' + SLATE + ';}',
+    '#lok-analytics-section .an-load-t{margin-top:12px;font-size:13px;line-height:1.45;font-weight:500;color:' + SLATE + ';}',
     '@keyframes lokAnSpin{to{transform:rotate(360deg);}}'
   ].join('');
 
@@ -320,16 +320,16 @@
       if (!document.getElementById('an-dm-css')) {
         var st = document.createElement('style'); st.id = 'an-dm-css';
         st.textContent = '.an-dm{background:#fff;border:.5px solid #EEEDF6;border-radius:14px;padding:16px 18px 18px;margin-top:14px;font-family:"Plus Jakarta Sans",-apple-system,sans-serif;}' +
-          '.an-dm h3{font-size:15px;font-weight:700;margin:0 0 2px;color:#1A1829;}.an-dm .s{font-size:12px;color:#6E6A85;margin:0 0 10px;}' +
-          '.an-dm h4{font-size:12.5px;font-weight:700;margin:12px 0 6px;color:#1A1829;}' +
-          '.an-dm .bar{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;font-size:12.5px;color:#1A1829;margin:0 0 7px;}' +
+          '.an-dm h3{font-size:15px;font-weight:700;margin:0 0 2px;color:#1A1829;}.an-dm .s{font-size:12px;line-height:1.45;color:#6E6A85;margin:0 0 10px;}' +
+          '.an-dm h4{font-size:12.5px;line-height:1.45;font-weight:700;margin:12px 0 6px;color:#1A1829;}' +
+          '.an-dm .bar{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;font-size:12.5px;line-height:1.45;color:#1A1829;margin:0 0 7px;}' +
           '.an-dm .bar i{display:block;height:8px;border-radius:100px;background:#F3EBFF;position:relative;margin-top:4px;}' +
           '.an-dm .bar i::after{content:"";position:absolute;left:0;top:0;bottom:0;border-radius:100px;background:#6002EE;width:var(--w);}' +
           '.an-dm .bar.miss i{background:#FDE7F3;}.an-dm .bar.miss i::after{background:#B1006A;}' +
-          '.an-dm .bar .n{font-weight:700;color:#4A4761;font-size:12px;}' +
+          '.an-dm .bar .n{font-weight:700;color:#4A4761;font-size:12px;line-height:1.45;}' +
           '.an-dm .tip{background:#F1EDFB;border:1px solid #E5D4FD;border-radius:10px;padding:10px 12px;margin-top:12px;font-size:12.5px;line-height:1.5;color:#1A1829;}' +
           '.an-dm .tip a{display:inline-block;margin-top:8px;font:700 12.5px/1.2 inherit;background:#6002EE;color:#fff;text-decoration:none;border-radius:9px;padding:8px 13px;}' +
-          '.an-dm .foot{font-size:11px;color:#6E6A85;margin-top:12px;line-height:1.5;}';
+          '.an-dm .foot{font-size:12px;color:#6E6A85;margin-top:12px;line-height:1.5;}';
         document.head.appendChild(st);
       }
       function bars(list, cls) {
@@ -680,7 +680,7 @@
     if (withRetry) {
       var b = document.createElement('button');
       b.textContent = 'Try again';
-      b.style.cssText = 'display:block;margin:14px auto 0;font-family:inherit;font-size:13px;font-weight:600;' +
+      b.style.cssText = 'display:block;margin:14px auto 0;font-family:inherit;font-size:13px;line-height:1.45;font-weight:600;' +
         'color:#fff;background:#6002ee;border:none;border-radius:9px;padding:9px 18px;cursor:pointer;';
       // Restart the FULL boot — the old handler called load() directly, which
       // threw (and blanked the page) when the retry was needed because the

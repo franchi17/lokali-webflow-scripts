@@ -54,7 +54,7 @@
   };
   // Stroke icons for the channel row (same drawings as before).
   var CH = {
-    inquiry:   { label: 'Inquiries',      icon: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z', brand: true },
+    inquiry:   { label: 'Messages',      icon: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z', brand: true },
     email:     { label: 'Email taps',     icon: 'M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z|M22 6 12 13 2 6' },
     phone:     { label: 'Phone taps',     icon: 'M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z' },
     whatsapp:  { label: 'WhatsApp taps',  icon: 'M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8z' },
@@ -76,7 +76,7 @@
     '#lok-leads-page .lq-hist b{color:' + GREEN + ';}',
     '#lok-leads-page .lq-stat{border:1px solid ' + BORDER + ';border-radius:12px;padding:14px 16px;background:#fff;}',
     '#lok-leads-page .lq-stat.hot{background:' + VIOLET_T + ';border-color:' + VIOLET_B + ';}',
-    '#lok-leads-page .lq-stat .l{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:' + GRAY + ';}',
+    '#lok-leads-page .lq-stat .l{font-size:11px;line-height:1.45;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:' + GRAY + ';}',
     '#lok-leads-page .lq-stat .v{font-size:24px;font-weight:700;line-height:1.1;margin-top:6px;letter-spacing:-.02em;color:' + INK + ';}',
     '#lok-leads-page .lq-stat.hot .v{color:' + VIOLET + ';}',
     '#lok-leads-page .lq-stat .s{font-size:12px;color:' + DUSK + ';margin-top:4px;line-height:1.4;}',
@@ -90,7 +90,7 @@
     '#lok-leads-page .lq-sh h3{font-size:14px;font-weight:700;margin:0;color:' + INK + ';line-height:1.3;}',
     '#lok-leads-page .lq-cnt{font-size:11px;font-weight:700;border-radius:100px;padding:2px 8px;background:' + VIOLET + ';color:#fff;}',
     '#lok-leads-page .lq-cnt.soft{background:' + SNOW + ';color:' + DUSK + ';}',
-    '#lok-leads-page .lq-hint{font-size:12px;color:' + GRAY + ';margin-left:auto;}',
+    '#lok-leads-page .lq-hint{font-size:12px;line-height:1.45;color:' + GRAY + ';margin-left:auto;}',
     // needs-a-reply cards
     '#lok-leads-page .lq-lead{border:1px solid ' + VIOLET_B + ';background:#fff;border-radius:14px;padding:14px 16px;display:grid;grid-template-columns:36px minmax(0,1fr) auto;gap:12px;align-items:start;margin-bottom:10px;box-shadow:0 2px 10px rgba(96,2,238,.05);}',
     '#lok-leads-page .lq-av{width:36px;height:36px;border-radius:50%;background:' + VIOLET_L + ';color:' + VIOLET + ';font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;}',
@@ -99,7 +99,7 @@
     '#lok-leads-page .lq-about{font-size:12px;color:' + GRAY + ';margin-top:2px;line-height:1.5;word-break:break-word;}',
     '#lok-leads-page .lq-ans{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 0;}',
     '#lok-leads-page .lq-an{background:#F3EBFF;border-radius:10px;padding:7px 11px;min-width:0;}',
-    '#lok-leads-page .lq-an small{display:block;font-size:11.5px;font-weight:700;color:#4A1FB8;}',
+    '#lok-leads-page .lq-an small{display:block;font-size:12px;line-height:1.45;font-weight:700;color:#4A1FB8;}',
     '#lok-leads-page .lq-an b{font-size:13.5px;font-weight:600;color:' + INK + ';word-break:break-word;}',
     '#lok-leads-page .lq-msg{font-size:13px;color:' + INK + ';line-height:1.5;margin:8px 0 10px;padding:10px 12px;background:' + SNOW + ';border-radius:10px;border-left:3px solid ' + VIOLET_B + ';white-space:pre-wrap;word-break:break-word;}',
     '#lok-leads-page .lq-wait{font-size:12px;font-weight:700;color:' + PINK + ';background:' + PINK_L + ';border-radius:100px;padding:3px 9px;white-space:nowrap;justify-self:end;}',
@@ -122,8 +122,8 @@
     '#lok-leads-page .lq-ic svg{width:14px;height:14px;}',
     '#lok-leads-page .lq-t1{font-size:13.5px;font-weight:700;color:' + INK + ';line-height:1.4;}',
     '#lok-leads-page .lq-t1 span{font-weight:500;color:' + DUSK + ';}',
-    '#lok-leads-page .lq-t2{font-size:12px;color:' + GRAY + ';margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
-    '#lok-leads-page .lq-when{font-size:12px;color:' + GRAY + ';white-space:nowrap;}',
+    '#lok-leads-page .lq-t2{font-size:12px;line-height:1.45;color:' + GRAY + ';margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
+    '#lok-leads-page .lq-when{font-size:12px;line-height:1.45;color:' + GRAY + ';white-space:nowrap;}',
     '#lok-leads-page .lq-step{display:inline-flex;background:' + SNOW + ';border:1px solid ' + BORDER + ';border-radius:9px;padding:2px;gap:2px;}',
     '#lok-leads-page .lq-step button{font:700 11px/1.2 ' + FONT + ';padding:5px 9px;border-radius:7px;color:' + DUSK + ';cursor:pointer;background:transparent;border:none;}',
     // Active step is FILLED so the state reads at a glance (F 2026-09-17: the white-on-
@@ -134,6 +134,14 @@
     '#lok-leads-page .lq-step button.closed.on{background:' + DUSK + ';color:#fff;}',
     // #194 worth line under a Won row: full width, one question, tap-sized
     '#lok-leads-page .lq-stats.five{grid-template-columns:repeat(5,minmax(0,1fr));}',
+    // One-page changes 2026-11-23 (F 'Build all four'): a Won lead asks for a review.
+    '#lok-leads-page .lq-ask{grid-column:1/-1;margin:2px 0 4px 40px;background:#F1ECFE;border-radius:10px;padding:12px 14px;display:grid;gap:8px;font:500 13px/1.5 ' + FONT + ';color:#45415A;}',
+    '#lok-leads-page .lq-ask b{color:#231D3F;font-weight:700;}',
+    '#lok-leads-page .lq-ask .acts{display:flex;flex-wrap:wrap;gap:8px;}',
+    '#lok-leads-page .lq-ask .acts a,#lok-leads-page .lq-ask .acts button{font:600 13px/1 ' + FONT + ';border-radius:10px;padding:9px 13px;border:1px solid #6002EE;background:#fff;color:#6002EE;cursor:pointer;text-decoration:none;}',
+    '#lok-leads-page .lq-ask .acts .p{background:#6002EE;color:#fff;}',
+    '#lok-leads-page .lq-ask .lnk{font:600 12px/1.2 ' + FONT + ';color:#6002EE;background:none;border:none;padding:6px 2px;cursor:pointer;text-decoration:underline;text-underline-offset:2px;}',
+    '#lok-leads-page .lq-ask.done{background:none;padding:0 0 0 0;font-size:12.5px;color:#6E6A85;}',
     '#lok-leads-page .lq-worth{grid-column:1/-1;display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:-4px 0 2px 40px;font:500 12.5px/1.4 ' + FONT + ';color:' + DUSK + ';}',
     '#lok-leads-page .lq-worth b{color:' + GREEN + ';font-weight:700;}',
     '#lok-leads-page .lq-worth .in{display:inline-flex;align-items:center;border:1px solid ' + VIOLET_B + ';border-radius:9px;background:#fff;padding:0 0 0 10px;min-height:36px;}',
@@ -149,7 +157,7 @@
     // Closed group: folded by default, one line with a Show/Hide toggle
     '#lok-leads-page .lq-fold{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid ' + BORDER + ';border-radius:12px;padding:12px 14px;margin-top:6px;}',
     '#lok-leads-page .lq-fold b{font-size:13.5px;color:' + INK + ';}',
-    '#lok-leads-page .lq-fold span{font-size:12px;color:' + GRAY + ';}',
+    '#lok-leads-page .lq-fold span{font-size:12px;line-height:1.45;color:' + GRAY + ';}',
     '#lok-leads-page .lq-fold button{margin-left:auto;font:700 12.5px/1.2 ' + FONT + ';color:' + VIOLET + ';background:' + VIOLET_L + ';border:none;border-radius:8px;padding:8px 12px;cursor:pointer;}',
     '#lok-leads-page .lq-closed .lq-row{opacity:.85;}',
     '#lok-leads-page .lq-row.lq-flash{background:' + VIOLET_L + ';box-shadow:0 0 0 6px ' + VIOLET_L + ';border-radius:10px;transition:background .9s ease,box-shadow .9s ease;}',
@@ -166,7 +174,7 @@
     '#lok-leads-page .lq-ch .i{width:28px;height:28px;border-radius:8px;background:' + SNOW + ';color:' + DUSK + ';display:flex;align-items:center;justify-content:center;flex-shrink:0;}',
     '#lok-leads-page .lq-ch .i.brand{background:' + VIOLET_L + ';color:' + VIOLET + ';}',
     '#lok-leads-page .lq-ch .n{font-size:15px;font-weight:700;line-height:1;color:' + INK + ';}',
-    '#lok-leads-page .lq-ch .k{font-size:11px;color:' + GRAY + ';margin-top:2px;}',
+    '#lok-leads-page .lq-ch .k{font-size:12px;line-height:1.45;color:' + GRAY + ';margin-top:2px;}',
     // empty / all-clear
     '#lok-leads-page .lq-clear{font-size:13px;color:' + DUSK + ';padding:14px 16px;background:#fff;border:1px dashed ' + VIOLET_B + ';border-radius:12px;}',
     '#lok-leads-page .lq-empty{display:grid;grid-template-columns:1.1fr 1fr;gap:20px;align-items:center;border:1px dashed ' + VIOLET_B + ';border-radius:14px;padding:22px;background:#fff;}',
@@ -178,13 +186,13 @@
     '#lok-leads-page .lq-empty li i.ok svg{width:11px;height:11px;}',
     '#lok-leads-page .lq-empty li b{color:' + INK + ';}',
     '#lok-leads-page .lq-ghostcard{border:1px solid ' + BORDER + ';border-radius:12px;padding:14px;opacity:.75;}',
-    '#lok-leads-page .lq-ghostcard .lq-who{font-size:13px;}',
-    '#lok-leads-page .lq-ghostcard .lq-msg{font-size:12px;margin:8px 0;}',
-    '#lok-leads-page .lq-ghostcard .lq-btn{min-height:30px;padding:5px 10px;font-size:11.5px;}',
+    '#lok-leads-page .lq-ghostcard .lq-who{font-size:13px;line-height:1.45;}',
+    '#lok-leads-page .lq-ghostcard .lq-msg{font-size:12px;line-height:1.45;margin:8px 0;}',
+    '#lok-leads-page .lq-ghostcard .lq-btn{min-height:30px;padding:5px 10px;font-size:12px;}',
     // loading card — same spinner language as the auth "Signing you in…" card
     '#lok-leads-page .lp-load{background:#fff;border:.5px solid ' + BORDER + ';border-radius:12px;padding:36px 20px;text-align:center;}',
     '#lok-leads-page .lp-spin{display:inline-block;width:26px;height:26px;border:3px solid rgba(96,2,238,.22);border-top-color:' + VIOLET + ';border-radius:50%;animation:lokLpSpin .7s linear infinite;}',
-    '#lok-leads-page .lp-load-t{margin-top:12px;font-size:13px;font-weight:500;color:' + GRAY + ';}',
+    '#lok-leads-page .lp-load-t{margin-top:12px;font-size:13px;line-height:1.45;font-weight:500;color:' + GRAY + ';}',
     '@keyframes lokLpSpin{to{transform:rotate(360deg);}}',
     // phone
     '@media(max-width:700px){',
@@ -197,6 +205,7 @@
     '#lok-leads-page .lq-row{grid-template-columns:24px minmax(0,1fr);row-gap:6px;}',
     '#lok-leads-page .lq-row .lq-when,#lok-leads-page .lq-row .lq-step,#lok-leads-page .lq-row .lq-notspam{grid-column:2;justify-self:start;}',
     '#lok-leads-page .lq-worth{margin-left:36px;}',
+    '#lok-leads-page .lq-ask{margin-left:36px;}',
     '#lok-leads-page .lq-worth .go,#lok-leads-page .lq-worth .lnk,#lok-leads-page .lq-worth .in{min-height:44px;}',
     '#lok-leads-page .lq-empty{grid-template-columns:1fr;}',
     '#lok-leads-page .lq-hint{margin-left:0;flex-basis:100%;}',
@@ -266,7 +275,7 @@
   function historyLine(l) {
     var n = l.prior.length;
     var parts = l.prior.slice(0, 2).map(function (o) {
-      var what = o.context ? escapeHtml(o.context) : 'a general inquiry';
+      var what = o.context ? escapeHtml(o.context) : 'a general question';
       var when = new Date(o.t).toLocaleDateString(undefined, { month: 'long' });
       var out = o.status === 'won' ? 'won' : o.status === 'closed' ? 'closed' : o.status === 'replied' ? 'replied' : 'new';
       return what + ' in ' + when + ' (' + out + ')';
@@ -394,7 +403,7 @@
       // F 2026-09-27: '3 since you joined' beside 'Your first lead usually follows...' read as a
       // contradiction. Those 3 were contact taps (call / email / website), not inquiries: say so.
       var ct = totals.contacts || 0;
-      s2s.appendChild(el('span', 'lq-chip quiet', ct + (ct === 1 ? ' contact tap' : ' contact taps') + ', no inquiries yet'));
+      s2s.appendChild(el('span', 'lq-chip quiet', ct + (ct === 1 ? ' tap to call or email' : ' taps to call or email') + ', no messages yet'));
     } else {
       s2s.appendChild(el('span', 'lq-chip quiet', sinceJoin + ' since you joined'));
     }
@@ -409,7 +418,7 @@
       var s4 = el('div', 'lq-stat');
       s4.appendChild(el('div', 'l', 'Came back'));
       s4.appendChild(el('div', 'v', repeatN + ' of ' + inquiries.length));
-      s4.appendChild(el('div', 's', 'Inquiries from someone who had contacted you before'));
+      s4.appendChild(el('div', 's', 'Messages from someone who had contacted you before'));
       stats.appendChild(s4); stats.classList.add('four');
     }
     // #194 Business from Lokali: confirmed sum of what Won leads were worth, and the
@@ -468,7 +477,7 @@
       sh.appendChild(el('span', 'lq-cnt' + (needs.length ? '' : ' soft'), String(needs.length)));
       if (needs.length) sh.appendChild(el('span', 'lq-hint', 'Tapping Reply marks it replied for you'));
       needsHost.appendChild(sh);
-      if (!needs.length) { needsHost.appendChild(el('div', 'lq-clear', 'Nothing waiting on you. New inquiries land here.')); return; }
+      if (!needs.length) { needsHost.appendChild(el('div', 'lq-clear', 'Nothing waiting on you. New leads land here.')); return; }
       needs.forEach(function (l) { needsHost.appendChild(leadCard(l)); });
       s1.className = 'lq-stat hot';
     }
@@ -552,7 +561,7 @@
       var card = el('div', 'lq-lead');
       card.appendChild(el('div', 'lq-av', initials(l.name)));
       var body = el('div');
-      var who = html('div', 'lq-who', escapeHtml(l.name) + (l.context ? ' <span>asked about</span> ' + escapeHtml(l.context) : ' <span>sent a general inquiry</span>'));
+      var who = html('div', 'lq-who', escapeHtml(l.name) + (l.context ? ' <span>asked about</span> ' + escapeHtml(l.context) : ' <span>sent a general question</span>'));
       body.appendChild(who);
       var bits = [];
       if (l.email) bits.push(escapeHtml(l.email));
@@ -576,7 +585,7 @@
       var acts = el('div', 'lq-acts');
       var primaryDone = false;
       if (l.email) {
-        var subject = 'Re: your ' + (l.context ? 'question about ' + l.context : 'inquiry') + ' on Lokali';
+        var subject = 'Re: your ' + (l.context ? 'question about ' + l.context : 'message') + ' on Lokali';
         var bodyTxt = 'Hi ' + (firstName(l.name) || 'there') + ',\n\n';
         var a = html('a', 'lq-btn p', FA.envelope + '<span>Reply by email</span>');
         a.href = 'mailto:' + encodeURIComponent(l.email).replace(/%40/g, '@') + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(bodyTxt);
@@ -607,6 +616,82 @@
       var w = waitLabel(l.t);
       card.appendChild(el('span', 'lq-wait' + (w.fresh ? ' fresh' : ''), w.text));
       return card;
+    }
+
+    // One-page changes 2026-11-23 (team review 'Bring your customers in', F 'Build
+    // all four'): under a Won lead, ask that happy customer for a review. The link
+    // is the vendor's review link (same as the Marketing page's review QR:
+    // ?review=CODE when the vendor has one, else ?src=review-ask). The email opens
+    // in the vendor's own mail app, so they can change the words. Once they've
+    // asked (email or copy), the box shrinks to one line; remembered per lead in
+    // this browser.
+    var RV_ASKED = 'lok_rv_asked_v1:';
+    var _rvLinkP = null;
+    function reviewLink() {
+      if (_rvLinkP) return _rvLinkP;
+      var A = window.LokaliAPI, RV = window.LokaliSupabaseAPI && window.LokaliSupabaseAPI.reviews;
+      _rvLinkP = Promise.all([
+        (A && A.vendors && A.vendors.me) ? A.vendors.me().catch(function () { return null; }) : Promise.resolve(null),
+        (RV && RV.myLink) ? RV.myLink().catch(function () { return null; }) : Promise.resolve(null)
+      ]).then(function (rs) {
+        var v = (rs[0] && rs[0].data) || {}; if (v && v.vendor) v = v.vendor;
+        var rl = rs[1] && rs[1].data;
+        var code = (rl && rl.ok && /^[a-f0-9]{10}$/.test(rl.code || '')) ? rl.code : null;
+        if (!v || !v.slug) return null;
+        return 'https://www.golokali.com/' + v.slug + (code ? '?review=' + code : '?src=review-ask') + '#reviews';
+      }).catch(function () { return null; });
+      return _rvLinkP;
+    }
+    function rvAsked(l) { try { return !!localStorage.getItem(RV_ASKED + l.id); } catch (e) { return false; } }
+    function rvMark(l) { try { localStorage.setItem(RV_ASKED + l.id, '1'); } catch (e) {} }
+    function askLine(l) {
+      var first = String(l.name || '').split(/\s+/)[0];
+      if (!first || first === 'Someone' || first.indexOf('@') > -1) first = '';
+      var who = first || 'them';
+      var box = el('div', 'lq-ask');
+      if (rvAsked(l)) {
+        box.className = 'lq-ask done';
+        box.textContent = 'You asked ' + who + ' for a review. ';
+        var again = el('button', 'lnk', 'Ask again'); again.type = 'button';
+        again.addEventListener('click', function () { try { localStorage.removeItem(RV_ASKED + l.id); } catch (e) {} repaintAll(); });
+        box.appendChild(again);
+        return box;
+      }
+      reviewLink(); // warm it up so the tap is instant
+      box.appendChild(html('div', null, '<b>Ask ' + escapeHtml(who) + ' for a review</b>'));
+      box.appendChild(el('div', null, l.email
+        ? 'A happy customer\u2019s few words help the next neighbor decide. One tap opens an email to ' + who + ' with your review link already in it.'
+        : 'A happy customer\u2019s few words help the next neighbor decide. Copy your review link and send it to ' + who + ' by text.'));
+      var acts = el('div', 'acts');
+      var note = el('div', null, ''); note.style.display = 'none';
+      function fail() { note.textContent = 'We couldn\u2019t get your review link just now. It\u2019s also on your Marketing page.'; note.style.display = ''; }
+      if (l.email) {
+        var em = el('a', 'p', 'Email ' + (first || 'them') + ' the link'); em.href = '#';
+        em.addEventListener('click', function (e) {
+          e.preventDefault();
+          reviewLink().then(function (url) {
+            if (!url) return fail();
+            var body = 'Hi' + (first ? ' ' + first : '') + ',\n\nThank you again for choosing me. If you have a minute, a few words on my Lokali page would mean a lot and help the next neighbor decide:\n\n' + url + '\n\nThank you!';
+            rvMark(l);
+            window.location.href = 'mailto:' + encodeURIComponent(l.email).replace(/%40/g, '@') + '?subject=' + encodeURIComponent('A quick favor') + '&body=' + encodeURIComponent(body);
+            setTimeout(repaintAll, 600);
+          });
+        });
+        acts.appendChild(em);
+      }
+      var cp = el('button', l.email ? '' : 'p', 'Copy link'); cp.type = 'button';
+      cp.addEventListener('click', function () {
+        reviewLink().then(function (url) {
+          if (!url) return fail();
+          var done = function () { cp.textContent = 'Copied'; rvMark(l); setTimeout(repaintAll, 1500); };
+          if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done, function () { window.prompt('Copy your review link:', url); rvMark(l); });
+          else { window.prompt('Copy your review link:', url); rvMark(l); }
+        });
+      });
+      acts.appendChild(cp);
+      box.appendChild(acts);
+      box.appendChild(note);
+      return box;
     }
 
     // #194: one question under a Won row. Value known -> "Worth $125 · Edit".
@@ -666,7 +751,7 @@
       row.id = 'inq-' + l.id;   // nudge emails deep-link here (#inq-<id>)
       row.appendChild(html('div', 'lq-ic', strokeIcon(CH.inquiry.icon)));
       var body = el('div');
-      body.appendChild(html('div', 'lq-t1', escapeHtml(l.name) + (l.context ? ' <span>asked about</span> ' + escapeHtml(l.context) : ' <span>sent a general inquiry</span>')));
+      body.appendChild(html('div', 'lq-t1', escapeHtml(l.name) + (l.context ? ' <span>asked about</span> ' + escapeHtml(l.context) : ' <span>sent a general question</span>')));
       var t2 = [];
       if (l.first_reply_at) t2.push('Replied ' + shortDate(ts(l.first_reply_at)));
       else t2.push(l.status === 'closed' ? 'Closed' : l.status === 'spam' ? 'Marked as spam' : l.status.charAt(0).toUpperCase() + l.status.slice(1));
@@ -697,6 +782,7 @@
       });
       row.appendChild(step);
       if (l.status === 'won' && worthEnabled()) row.appendChild(worthLine(l));
+      if (l.status === 'won') row.appendChild(askLine(l)); // one-page changes 2026-11-23
       if ((inClosed || inSpam) && window.LokaliAPI && window.LokaliAPI.leads && typeof window.LokaliAPI.leads.deleteInquiry === 'function') {
         row.style.gridTemplateColumns = '28px minmax(0,1fr) auto auto auto';
         var d = el('button', 'lq-del', 'Delete'); d.type = 'button'; d.setAttribute('aria-label', 'Delete this lead for good');
@@ -826,9 +912,10 @@
     var ol = el('ol'); left.appendChild(ol);
     var btns = el('div', 'lq-acts'); left.appendChild(btns);
     var ghost = el('div', 'lq-ghostcard');
+    ghost.appendChild(html('div', '', '<span style="display:inline-block;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:#F1ECFE;color:#6002EE;border-radius:6px;padding:2px 8px;margin-bottom:6px">Example</span>')); // quick fixes 2026-11-23
     ghost.appendChild(html('div', 'lq-who', 'A shopper <span>asked about</span> your listing'));
     ghost.appendChild(el('div', 'lq-msg', '“Hi, is this available next week?”'));
-    ghost.appendChild(html('div', 'lq-acts', '<span class="lq-btn p">' + FA.envelope + '<span>Reply by email</span></span><span class="lq-btn">' + FA.phone + '<span>Call</span></span>'));
+    ghost.appendChild(html('div', 'lq-acts', '<span class="lq-btn p" aria-hidden="true" style="pointer-events:none">' + FA.envelope + '<span>Reply by email</span></span><span class="lq-btn" aria-hidden="true" style="pointer-events:none">' + FA.phone + '<span>Call</span></span>'));
     box.appendChild(left); box.appendChild(ghost);
     host.appendChild(box);
 
@@ -845,7 +932,7 @@
       var see = el('a', 'lq-btn q', 'See your storefront checkup'); see.href = '/vendor-dashboard/analytics'; btns.appendChild(see);
     }
     var fallback = [
-      { done: false, title: 'A way to reach you', why: 'A phone number or email so an inquiry has somewhere to land.', action: 'Add contact', href: '/vendor-dashboard/profile#lok-sec-business' },
+      { done: false, title: 'A way to reach you', why: 'A phone number or email so a lead has somewhere to land.', action: 'Add contact', href: '/vendor-dashboard/profile#lok-sec-business' },
       { done: false, title: 'A photo on every listing', why: 'A listing with no photo is the one nobody opens.', action: 'Add photos', href: '/vendor-dashboard/services' },
       { done: false, title: 'A price or "ask for a quote"', why: 'Shoppers skip listings with no price.', action: 'Add prices', href: '/vendor-dashboard/services' }
     ];
@@ -886,7 +973,7 @@
     c.appendChild(el('div', 'lp-load-t', text));
     var b = document.createElement('button');
     b.textContent = 'Try again';
-    b.style.cssText = 'display:block;margin:14px auto 0;font-family:inherit;font-size:13px;font-weight:600;' +
+    b.style.cssText = 'display:block;margin:14px auto 0;font-family:inherit;font-size:13px;line-height:1.45;font-weight:600;' +
       'color:#fff;background:' + VIOLET + ';border:none;border-radius:9px;padding:9px 18px;cursor:pointer;';
     b.addEventListener('click', function () { init(0); });
     c.appendChild(b);

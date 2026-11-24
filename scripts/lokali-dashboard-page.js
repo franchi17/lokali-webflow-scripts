@@ -97,24 +97,35 @@
   // (cached) and upgrade the buttons' URL in place, so a click always reads the
   // best URL available synchronously (no lost user-gesture for clipboard/share)
   // and falls back to the plain public URL if the Shares API is unavailable.
+  // Done-check 2026-11-23: o=1 tells the storefront this link came from the owner,
+  // so a customer who opens it sees 'Did <first> send you this? Follow ...'.
+  function ownerTag(url) {
+    url = String(url || '');
+    if (/[?&]o=1(&|$|#)/.test(url)) return url;
+    var h = url.indexOf('#'), hash = h >= 0 ? url.slice(h) : '';
+    if (h >= 0) url = url.slice(0, h);
+    return url + (url.indexOf('?') >= 0 ? '&' : '?') + 'o=1' + hash;
+  }
   function tokenizeShareUrl(v, ref) {
     if (!v || v.id == null) return;
     if (!(window.LokaliAPI && window.LokaliAPI.share && window.LokaliAPI.share.create)) return;
     var key = 'lokali_vshare_' + v.id;
     try {
       var cached = sessionStorage.getItem(key);
-      if (cached) { ref.url = cached; return; }
+      if (cached) { ref.url = ownerTag(cached); return; }
     } catch (e) {}
     window.LokaliAPI.share.create(v.id, 'copy_link').then(function (res) {
       var url = res && res.data && res.data.share_url;
       if (!url) return;
-      ref.url = url;
+      ref.url = ownerTag(url);
       try { sessionStorage.setItem(key, url); } catch (e) {}
     }).catch(function () {});
   }
 
+  var SHARE_REF = null; // the weekly card's 'Copy a message' reads the same (tokenized) URL
   function wireShareButtons(v) {
-    var ref = { url: publicListingUrl(v) };
+    var ref = { url: ownerTag(publicListingUrl(v)) };
+    SHARE_REF = ref;
     tokenizeShareUrl(v, ref);
 
     var copyBtn = document.getElementById('share-copy-link');
@@ -218,7 +229,7 @@
     el.style.cssText = 'display:flex;align-items:flex-start;gap:10px;border-radius:12px;padding:12px 14px;margin:0 0 14px;' +
       "font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;line-height:1.5;" +
       (soft ? 'background:#F4F1FC;border:1px solid #DDD5F5;color:#4A3C7A;'
-            : 'background:#FDF1E7;border:1px solid #F6D9BE;color:#8A4B14;');
+            : 'background:#F1ECFE;border:1px solid #E2D6FD;color:#3B2A6B;');
     var m = el.querySelector('[data-ls-gate-msg]');
     if (m) m.innerHTML = msg; // every dynamic piece above went through esc()
     // The gate outranks a saved dismiss — a hidden card can't warn anyone.
@@ -233,7 +244,7 @@
     '.lok-chip{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;border-radius:100px;padding:3px 10px;line-height:1.5;white-space:nowrap;}',
     '.lok-chip.live{background:#EAFAF2;color:#1D6A45;}',
     '.lok-chip.live i{width:7px;height:7px;border-radius:50%;background:#1D6A45;display:inline-block;}',
-    '.lok-chip.off{background:#FDECEC;color:#A32D2D;}',
+    '.lok-chip.off{background:#F1ECFE;color:#5B21D6;}',
     '.lok-chip.paused{background:#EEEDF6;color:#4A4761;}',
     '.lok-chip.plan{background:#FDE6F2;color:#B0006A;}',
     '.lok-chip.plan.free{background:#EEEDF6;color:#4A4761;}',
@@ -246,22 +257,22 @@
     '.lok-btn:focus-visible,.quick-actions-card:focus-visible{outline:2px solid #6002EE;outline-offset:2px;}',
     '.lok-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:0 0 16px;font-family:"Plus Jakarta Sans",-apple-system,sans-serif;}',
     '.lok-kpi{background:#fff;border:.5px solid #EEEDF6;border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;min-width:0;}',
-    '.lok-klabel{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#8E8BA6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.5;}',
+    '.lok-klabel{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#6E6A85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.5;}',
     '.lok-krow{display:flex;align-items:flex-end;justify-content:space-between;gap:8px;}',
     '.lok-kvalue{font-size:28px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums;color:#1A1829;margin:0;}',
     '.lok-spark{width:84px;height:28px;flex-shrink:0;}',
     '.lok-delta{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;border-radius:100px;padding:2px 8px;width:fit-content;line-height:1.5;}',
     '.lok-delta.up{color:#1D6A45;background:#EAFAF2;}',
-    '.lok-delta.down{color:#A32D2D;background:#FDECEC;}',
-    '.lok-delta.flat{color:#8E8BA6;background:#EEEDF6;}',
+    '.lok-delta.down{color:#5F5B73;background:#F1F0F5;}',
+    '.lok-delta.flat{color:#6E6A85;background:#EEEDF6;}',
     '.lok-delta.new{color:#6002EE;background:#F3EBFF;}',
-    '.lok-kdetail{font-size:11.5px;color:#6E6A85;line-height:1.5;}',
+    '.lok-kdetail{font-size:12px;color:#6E6A85;line-height:1.5;}',
     '#lok-cols{display:grid;grid-template-columns:1.1fr .9fr;gap:12px;margin:0 0 16px;align-items:start;}',
     '.lok-card{background:#fff;border:.5px solid #EEEDF6;border-radius:12px;padding:16px 18px;min-width:0;font-family:"Plus Jakarta Sans",-apple-system,sans-serif;}',
     '.lok-card.accent{border-color:#E5D4FD;}',
     '.lok-ct{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;}',
     '.lok-ct h3{font-size:13.5px;font-weight:700;margin:0;color:#1A1829;line-height:1.4;}',
-    '.lok-ct a{font-size:12px;font-weight:600;text-decoration:none;color:#6002EE;}',
+    '.lok-ct a{font-size:12px;line-height:1.45;font-weight:600;text-decoration:none;color:#6002EE;}',
     '.lok-pill{font-size:11px;font-weight:700;border-radius:100px;padding:3px 10px;background:#F3EBFF;color:#6002EE;white-space:nowrap;line-height:1.5;}',
     '.lok-pill.ok{background:#EAFAF2;color:#1D6A45;}',
     '.lok-next{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start;padding:12px;border-radius:10px;background:#F3EBFF;}',
@@ -272,18 +283,18 @@
     '.lok-meter{height:5px;background:#EEEDF6;border-radius:100px;overflow:hidden;margin:12px 0 6px;}',
     '.lok-meter>div{height:100%;background:#6002EE;border-radius:100px;}',
     '.lok-meter.ok>div{background:#1D6A45;}',
-    '.lok-mline{display:flex;justify-content:space-between;gap:10px;font-size:11.5px;color:#6E6A85;line-height:1.5;}',
+    '.lok-mline{display:flex;justify-content:space-between;gap:10px;font-size:12px;color:#6E6A85;line-height:1.5;}',
     '.lok-mline a{text-decoration:none;font-weight:600;color:#6002EE;white-space:nowrap;}',
     '.lok-also{list-style:none;margin:10px 0 0;padding:0;font-size:12.5px;color:#4A4761;}',
     '.lok-also li{display:flex;align-items:center;gap:8px;padding:6px 0;border-top:.5px solid #EEEDF6;line-height:1.5;}',
-    '.lok-also li svg{width:14px;height:14px;color:#8E8BA6;flex-shrink:0;}',
+    '.lok-also li svg{width:14px;height:14px;color:#6E6A85;flex-shrink:0;}',
     '.lok-also li a{margin-left:auto;text-decoration:none;font-weight:600;font-size:12px;white-space:nowrap;color:#6002EE;min-height:32px;display:inline-flex;align-items:center;}',
     '.lok-ns-done{font-size:12.5px;color:#4A4761;line-height:1.55;}',
     '.lok-card.accent{position:relative;}',
-    '.lok-ns-x{position:absolute;top:8px;right:8px;width:32px;height:32px;border:none;background:none;color:#8E8BA6;font-size:15px;line-height:1;cursor:pointer;font-family:inherit;border-radius:8px;}',
+    '.lok-ns-x{position:absolute;top:8px;right:8px;width:32px;height:32px;border:none;background:none;color:#6E6A85;font-size:15px;line-height:1;cursor:pointer;font-family:inherit;border-radius:8px;}',
     '.lok-ns-x:hover{background:#F3EBFF;color:#6002EE;}',
     '.lok-ns-x~.lok-ns-done{padding-right:28px;}',
-    '.lok-ns-skip{display:inline-flex;align-items:center;min-height:34px;margin-left:12px;font-size:12px;font-weight:600;color:#8E8BA6;text-decoration:underline;text-underline-offset:2px;}',
+    '.lok-ns-skip{display:inline-flex;align-items:center;min-height:34px;margin-left:12px;font-size:12px;font-weight:600;color:#6E6A85;text-decoration:underline;text-underline-offset:2px;}',
     '.lok-also li .lok-ns-skip{margin-left:auto;min-height:32px;}.lok-also li .lok-ns-skip+a{margin-left:12px;}',
     '.lok-feed{list-style:none;margin:0;padding:0;}',
     '.lok-feed li{display:grid;grid-template-columns:26px 1fr auto;gap:10px;align-items:start;padding:9px 0;border-bottom:.5px solid #EEEDF6;font-size:12.5px;line-height:1.5;}',
@@ -298,7 +309,7 @@
     '.lok-ft{margin:0;color:#1A1829;}',
     '.lok-ft b{font-weight:700;}',
     '.lok-ft .m{color:#6E6A85;}',
-    '.lok-fw{font-size:11px;color:#8E8BA6;white-space:nowrap;font-variant-numeric:tabular-nums;padding-top:2px;}',
+    '.lok-fw{font-size:11px;line-height:1.45;color:#6E6A85;white-space:nowrap;font-variant-numeric:tabular-nums;padding-top:2px;}',
     '.lok-feed-empty{font-size:12.5px;color:#4A4761;background:#F7F6FC;border-radius:10px;padding:12px 14px;line-height:1.55;}',
     '#lokali-share-teaser{margin-top:12px;}',
     // Webflow's .quick-actions-card is a 2-col grid with a 45px .large-icon carrying a 20px
@@ -316,10 +327,10 @@
     '.lok-quiet .lok-qt{flex:1 1 260px;min-width:0;}',
     '.lok-quiet .lok-qt b{display:block;font-size:14px;font-weight:700;color:#1A1829;line-height:1.4;}',
     '.lok-quiet .lok-qt span{font-size:12.5px;color:#6E6A85;line-height:1.5;}',
-    '.lok-quiet .lok-qm{display:flex;gap:16px;font-size:11.5px;color:#4A4761;font-variant-numeric:tabular-nums;line-height:1.4;}',
+    '.lok-quiet .lok-qm{display:flex;gap:16px;font-size:12px;color:#4A4761;font-variant-numeric:tabular-nums;line-height:1.4;}',
     '.lok-quiet .lok-qm b{display:block;font-size:16px;font-weight:700;color:#1A1829;line-height:1.2;}',
     '.lok-next.calm{background:#F7F6FC;}',
-    '.lok-next.calm .n{background:#1A1829;}',
+    '.lok-next.calm .n{background:#6002EE;}',
     '.lok-gam-fold{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 16px;}',
     '.lok-gam-fold .lok-gam-title{font-size:14px;}',
     '.lok-gam-fold .lok-gam-sub{margin:0;flex:1 1 200px;min-width:0;}',
@@ -332,7 +343,9 @@
       '}',
     '#lok-cols>.lok-kpis.quiet{grid-column:1/-1;margin:0;}',
     '.lok-kpis.quiet.lok-inline{margin:16px 0;}#lok-feed-card.lok-inline{margin:0 0 16px;}',
-    '@media(max-width:480px){.lok-kpis,.lok-kpis.five{grid-template-columns:1fr;}.lok-btn{min-height:44px;}.lok-also li a{min-height:44px;}}'
+    '@media(max-width:480px){.lok-kpis,.lok-kpis.five{grid-template-columns:1fr 1fr;gap:8px;}.lok-kpi{padding:10px 12px;}.lok-kvalue{font-size:22px;}.lok-kpis .lok-spark{display:none;}.lok-btn{min-height:44px;}.lok-also li a{min-height:44px;}}',
+    // This week, one thing (F 2026-11-22, UX review finding 1).
+    '#lok-week{margin:0 0 12px;}#lok-week .lok-next{background:#F3EBFF;}#lok-week .lok-next.done .n{background:#17634A;}#lok-week .lok-week-tip{font-style:italic;color:#45415A;}'
   ].join('');
   function injectHomeStyles() {
     if (document.getElementById('lok-home-css')) return;
@@ -394,23 +407,25 @@
     var url = v.slug ? ('golokali.com/' + v.slug) : ('golokali.com/vendor?id=' + v.id);
     var status = v.is_active === false
       ? '<span class="lok-chip paused">Paused</span>'
-      : (gateReady ? '<span class="lok-chip live"><i></i>Live</span>' : '<span class="lok-chip off">Not public yet</span>');
+      : (gateReady ? '<span class="lok-chip live"><i></i>Live</span>' : '<span class="lok-chip off">Getting ready</span>');
     var planName = (billing && billing.subscription && billing.subscription.plan_name) || 'Free';
     var isFree = !billing || !billing.plan || billing.plan === 'free';
     var plan = '<span class="lok-chip plan' + (isFree ? ' free' : '') + '">' + esc(isFree ? 'Free plan' : planName) + '</span>';
     hd.innerHTML =
       '<div class="lok-hd-sub">' + status + plan + '<span class="lok-hd-url">' + esc(url) + '</span></div>' +
       '<div class="lok-btns">' +
-        '<button type="button" class="lok-btn" data-hd-copy>' + ICO.copy + '<span>Copy link</span></button>' +
-        '<a class="lok-btn primary" href="' + esc(publicListingUrl(v)) + '" target="_blank" rel="noopener">View storefront' + ICO.ext + '</a>' +
+        // Done-check 2026-11-23 (F 'Yes, build all'): no Copy link until the storefront is
+        // live; the link would open a 'not public yet' page.
+        (gateReady || v.is_active === false ? '<button type="button" class="lok-btn" data-hd-copy>' + ICO.copy + '<span>Copy link</span></button>' : '') +
+        '<a class="lok-btn" href="' + esc(publicListingUrl(v)) + '" target="_blank" rel="noopener">View storefront' + ICO.ext + '</a>' +
       '</div>';
     var copy = hd.querySelector('[data-hd-copy]');
-    copy.addEventListener('click', function () {
+    if (copy) copy.addEventListener('click', function () {
       // The hidden Webflow 'Copy link' anchor carries the tokenized ?via= URL
       // (wireShareButtons), so clicking it keeps share attribution intact.
       var hidden = document.getElementById('share-copy-link');
       if (hidden && hidden.__wired) hidden.click();
-      else copyToClipboard('https://www.' + url);
+      else copyToClipboard(ownerTag('https://www.' + url));
       flashCopied(copy.querySelector('span'));
     });
   }
@@ -465,9 +480,13 @@
       : 'What you told us your wins were worth';
     return tile('Business from Lokali · all time', null, sum ? moneyOf(sum) : String(won.length), '', chip, detail);
   }
-  function renderTiles(leadsData, shares, wonRows) {
+  function renderTiles(leadsData, shares, wonRows, gateReady) {
     var box = document.querySelector('.div-block-41');
     if (!box) return;
+    // Done-check 2026-11-23: a storefront that is not public yet sees no numbers and
+    // no 'quiet week' share prompt; the Go live card is the only thing to do.
+    if (gateReady === false) { box.style.display = 'none'; return false; }
+    box.style.display = '';
     var L = leadsData || {};
     var views = L.views || [], inq = L.inquiries || [], con = L.contacts || [], pay = L.payment_clicks || [];
     var W7 = 7 * DAY;
@@ -485,8 +504,8 @@
     if (quiet) {
       box.className = 'lok-kpis quiet';
       var opened = v7 === 0 ? 'Sharing your link is the quickest way to bring neighbors by.'
-        : v7 === 1 ? 'One person opened your storefront this week. Nobody has reached out yet.'
-        : v7 + ' people opened your storefront this week. Nobody has reached out yet.';
+        : v7 === 1 ? 'Your storefront was opened once this week. Nobody has reached out yet.'
+        : 'Your storefront was opened ' + v7 + ' times this week. Nobody has reached out yet.';
       // The three figures keep the tile ids so the skeleton loader clears on them.
       box.innerHTML = '<div class="lok-quiet"><div class="lok-qt"><b>A quiet week. ' + opened + '</b>' +
         '<span>The full numbers come back here once there is more to show. Until then, the step below is what moves them.</span></div>' +
@@ -499,7 +518,7 @@
     box.innerHTML = extra +
       tile('Views · last 7 days', 'stat-profile-views', v7, sparkline(views), deltaChip(v7, vPrev), 'Storefront and listing opens') +
       tile('Leads · last 7 days', 'stat-profile-complete', l7, '',
-        unread ? '<span class="lok-delta new">' + unread + ' unread</span>' : deltaChip(l7, lPrev), 'Inquiries and contact taps') +
+        unread ? '<span class="lok-delta new">' + unread + ' unread</span>' : deltaChip(l7, lPrev), 'Messages and taps to call or email') +
       tile('Payment taps · last 7 days', 'stat-active-products', p7, '', deltaChip(p7, pPrev), 'Venmo, Cash App, PayPal, Buy') +
       tile('Shared link · all time', null, landings, '',
         '<span class="lok-delta ' + (sharers ? 'up' : 'flat') + '">' + (sharers ? sharers + (sharers === 1 ? ' neighbor shared it' : ' neighbors shared it') : 'not shared yet') + '</span>',
@@ -532,6 +551,8 @@
     root.style.cssText = '';
     var open = ck.open || [], done = ck.done || [], total = ck.total || 0;
     waiting = waiting || [];
+    var gl = goLiveCard(root, v, hasListing, waiting);
+    if (gl != null) return gl;
     var html = '<div class="lok-ct"><h3>Your next step</h3>' +
       (waiting.length ? '<span class="lok-pill" style="background:#FDE7F3;color:#B1006A">' + waiting.length + ' waiting' + (open.length ? ' · ' + open.length + ' to do' : '') + '</span>'
         : (open.length ? '<span class="lok-pill">' + open.length + ' to do</span>' : '<span class="lok-pill ok">All in place</span>')) + '</div>';
@@ -562,6 +583,9 @@
       // can be hidden; it comes back by itself the moment something is open again or a
       // lead is waiting, since the flag only applies to this complete state.
       var hasAddr = !!(v.address && String(v.address).trim());
+      // F 2026-11-22 (UX review finding 1): a live, complete storefront gets the
+      // weekly 'This week, one thing' card above the numbers instead of this one.
+      if (v.is_publish_ready === true) { root.style.display = 'none'; return true; }
       if (total && hasAddr && nsHidden(v.id)) { root.style.display = 'none'; return (v.is_publish_ready != null) ? !!v.is_publish_ready : true; }
       html += '<button type="button" class="lok-ns-x" data-ns-hide aria-label="Hide this card">✕</button>' +
         '<div class="lok-ns-done">Your storefront has everything shoppers look for. Fresh photos and a new listing now and then keep it that way.</div>';
@@ -605,6 +629,71 @@
     return gateReady;
   }
 
+  // ── Go live in 3 steps (done-check, F 2026-11-23 'Yes, build all') ──────
+  // A storefront the gate still holds back sees ONLY what stands between it and
+  // the Market, as three steps with one button for the next one (UX + Vendor
+  // Success: the old note was six links in one sentence above a checklist step
+  // the vendor often could not do yet). Same gate bits as renderGateBanner.
+  // Returns null when this card does not apply (live, a lead waiting, or every
+  // step already done while the gate is still closed: the old note covers that).
+  var GL_CSS = [
+    '.lok-gl h3{margin:0;font-size:18px;font-weight:800;color:#1A1829;}',
+    '.lok-gl .lok-gl-sub{margin:4px 0 12px;font-size:13.5px;color:#4A4761;line-height:1.5;}',
+    '.lok-gl-meter{height:6px;background:#E2D6FD;border-radius:99px;overflow:hidden;margin:0 0 14px;}',
+    '.lok-gl-meter i{display:block;height:100%;background:#6002EE;border-radius:99px;}',
+    '.lok-gl ol{list-style:none;margin:0 0 14px;padding:0;display:grid;gap:12px;}',
+    '.lok-gl li{display:grid;grid-template-columns:28px minmax(0,1fr);gap:10px;align-items:start;}',
+    '.lok-gl .d{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;background:#fff;color:#6002EE;border:1.5px solid #E2D6FD;box-sizing:border-box;}',
+    '.lok-gl li.ok .d{background:#6002EE;color:#fff;border-color:#6002EE;}',
+    '.lok-gl li b{display:block;font-size:14.5px;color:#1A1829;line-height:1.35;}',
+    '.lok-gl li.ok b{color:#6E6987;text-decoration:line-through;font-weight:600;}',
+    '.lok-gl li small{display:block;font-size:12.5px;color:#6E6987;line-height:1.45;margin-top:2px;}',
+    '.lok-gl .lok-btn{display:flex;justify-content:center;width:100%;box-sizing:border-box;min-height:44px;font-size:14px;}'
+  ].join('');
+  function goLiveCard(root, v, hasListing, waiting) {
+    if ((waiting || []).length) return null;
+    var gCats = !!(v.categories_id && v.categories_id.length);
+    var gLocs = !!(v.locations_id && v.locations_id.length);
+    var gAddr = !!(v.address && String(v.address).trim());
+    var gDesc = !!(v.business_description && String(v.business_description).trim());
+    var ready = (v.is_publish_ready != null) ? !!v.is_publish_ready
+                : (!!v.business_name && gCats && gLocs && !!hasListing && gAddr && gDesc);
+    if (ready) return null;
+    var PROF = '/vendor-dashboard/profile';
+    var need1 = [];
+    if (!v.business_name) need1.push('your business name');
+    if (!gCats) need1.push('your category');
+    if (!gLocs) need1.push('where you work');
+    var steps = [
+      { ok: !need1.length, t: 'Tell us about your business',
+        s: need1.length ? 'Still needed: ' + need1.join(', ') : 'Name, category and where you work',
+        href: PROF + '#lok-sec-business', act: 'Finish your business details' },
+      { ok: !!hasListing, t: 'Add your first service or product',
+        s: 'A photo, a name and a price is enough', href: '/vendor-dashboard/services', act: 'Add your first listing' },
+      { ok: gDesc && gAddr, t: 'Write a few lines about you',
+        s: (!gDesc ? 'Plus your business address, which customers never see' : 'Last thing: your business address. Customers never see it.'),
+        href: PROF + (gDesc ? '#lok-sec-business' : '#lok-sec-about'), act: gDesc ? 'Add your business address' : 'Write about your business' }
+    ];
+    var doneN = steps.filter(function (x) { return x.ok; }).length;
+    if (doneN === steps.length) return null;
+    var next = steps.filter(function (x) { return !x.ok; })[0];
+    if (!document.getElementById('lok-gl-css')) {
+      var st = document.createElement('style'); st.id = 'lok-gl-css'; st.textContent = GL_CSS; document.head.appendChild(st);
+    }
+    root.className = 'lok-card accent lok-gl';
+    root.style.cssText = '';
+    root.style.display = '';
+    root.innerHTML = '<h3>Go live in 3 steps</h3>' +
+      '<p class="lok-gl-sub">Neighbors can find you on the Market once these are done.</p>' +
+      '<div class="lok-gl-meter" role="img" aria-label="' + doneN + ' of 3 done"><i style="width:' + Math.max(6, Math.round(doneN / 3 * 100)) + '%"></i></div>' +
+      '<ol>' + steps.map(function (x, i) {
+        return '<li class="' + (x.ok ? 'ok' : '') + '"><span class="d" aria-hidden="true">' + (x.ok ? '\u2713' : (i + 1)) + '</span>' +
+          '<div><b>' + esc(x.t) + (x.ok ? '<span class="lok-sr" style="position:absolute;left:-9999px"> (done)</span>' : '') + '</b><small>' + esc(x.s) + '</small></div></li>';
+      }).join('') + '</ol>' +
+      '<a class="lok-btn primary" href="' + esc(next.href) + '">' + esc(next.act) + ' \u2192</a>';
+    return false;
+  }
+
   // ── What happened: the last 8 human events + the month's busiest day ────
   var CONTACT_VERB = { call: 'tapped Call', sms: 'tapped Text', whatsapp: 'tapped WhatsApp', email: 'tapped Email', instagram: 'opened your Instagram', website: 'opened your website', linkedin: 'opened your LinkedIn' };
   var PAY_VERB = { venmo: 'tapped your Venmo', cashapp: 'tapped your Cash App', paypal: 'tapped your PayPal', zelle: 'copied your Zelle', buy_link: 'clicked Buy on a product', buy_lokali: 'started a Lokali checkout', booking_link: 'clicked Book now on a service', service_link: 'clicked Visit website on a service', other_pay: 'tapped your pay link' };
@@ -624,7 +713,7 @@
   }
   function buildFeed(leadsData, reviews) {
     var L = leadsData || {}, items = [];
-    (L.inquiries || []).forEach(function (r) { var t = tsOf(r.created_at); if (t) items.push({ t: t, kind: 'lead', ico: ICO.mail, html: '<b>New inquiry</b> came in' }); });
+    (L.inquiries || []).forEach(function (r) { var t = tsOf(r.created_at); if (t) items.push({ t: t, kind: 'lead', ico: ICO.mail, html: '<b>New lead:</b> someone sent you a message' }); });
     (L.contacts || []).forEach(function (r) { var t = tsOf(r.created_at); if (t) items.push({ t: t, kind: 'lead', ico: ICO.phone, html: '<b>Someone ' + esc(CONTACT_VERB[r.event_type] || 'reached out') + '</b>' }); });
     (L.payment_clicks || []).forEach(function (r) { var t = tsOf(r.created_at); if (t) items.push({ t: t, kind: 'pay', ico: ICO.pay, html: '<b>Someone ' + esc(PAY_VERB[r.event_type] || 'tapped a pay link') + '</b>' }); });
     (reviews || []).forEach(function (r) {
@@ -654,8 +743,110 @@
       '<div class="lok-next calm"><div class="n">' + ICO.horn + '</div><div>' +
         '<p class="t">Tell your followers where you will be</p>' +
         '<p class="w">A post shows on your storefront at once and goes out in the weekly email to everyone who saved you. It takes about thirty seconds.</p>' +
-        '<a class="lok-btn" href="/vendor-dashboard/followers">Post an update →</a></div></div>' +
+        '<a class="lok-btn" href="/vendor-dashboard/followers#post">Post an update →</a></div></div>' +
       '<ul class="lok-also"><li>' + ICO.circle + '<span>Send your link to three past customers</span><a href="#" data-quiet-copy>Copy link →</a></li></ul>';
+  }
+  // ── This week, one thing (F 2026-11-22, UX review finding 1; Fogg: a small
+  // reason, a tiny action, the right moment, then celebrate). One action per
+  // calendar week. Team review the same day (Clo, Vendor Success, Shopper Growth,
+  // Head of Marketing; F 'No dates, build it'):
+  //  - the week's task is picked on the first view of the week and REMEMBERED, so
+  //    doing it shows 'Done' instead of swapping in a new chore;
+  //  - any of the four done in the last 7 days shows 'Done' naming what they did;
+  //  - fewer than 5 reviews: the review ask every other week; fewer than 3
+  //    followers: sharing comes first on the other weeks;
+  //  - 'Not this week' hides it and the feed shows its plain line, not the older
+  //    October 'one thing' card. No dates in the words, ever.
+  var WK_SKIP = 'lok_week_skip_v1:', WK_DONE = 'lok_week_done_v1:', WK_ASK = 'lok_week_ask_v1:', WK_PICK = 'lok_week_pick_v1:';
+  var WEEK_STATE = null; // 'shown' | 'skipped' | null (renderFeed reads it)
+  function isoWeek(d) {
+    var t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    var day = t.getUTCDay() || 7; t.setUTCDate(t.getUTCDate() + 4 - day);
+    var y0 = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
+    return { key: t.getUTCFullYear() + '-' + Math.ceil(((t - y0) / DAY + 1) / 7), n: Math.ceil(((t - y0) / DAY + 1) / 7) };
+  }
+  function newest(rows) { return Math.max.apply(null, [0].concat((rows || []).map(function (r) { return tsOf(r && r.created_at) || 0; }))); }
+  function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function lsSet(k, val) { try { localStorage.setItem(k, val); } catch (e) {} }
+  var WEEK_MSG = 'Hi! I’m on Lokali now, where neighbors find local businesses. If you liked working with me, tap Follow on my page so you hear when I have something new: ';
+  function weekCard(v, services, products, x) {
+    var old = document.getElementById('lok-week'); if (old && old.parentNode) old.parentNode.removeChild(old);
+    // renderTiles() renames the Webflow .div-block-41 to .lok-kpis, so look for both.
+    var box = document.querySelector('.lok-kpis') || document.querySelector('.div-block-41');
+    if (!v || !box || !box.parentNode) return;
+    var wk = isoWeek(new Date()), sfx = v.id + ':' + wk.key;
+    if (lsGet(WK_SKIP + sfx) === '1') { WEEK_STATE = 'skipped'; return; }
+    var now = Date.now(), WEEK = 7 * DAY;
+    var listings = [].concat(services || [], products || []).filter(function (l) { return l && l.is_active !== false; });
+    var lastListing = newest(listings), lastPost = newest(x.posts), lastReview = newest(x.reviews);
+    var nReviews = (x.reviews || []).length;
+    var followers = x.followers && x.followers.ok && typeof x.followers.followers === 'number' ? x.followers.followers : null;
+    var asked = lsGet(WK_ASK + sfx) === '1';
+    var all = {
+      post: { key: 'post', ok: true, done: lastPost > now - WEEK, ico: ICO.horn,
+        t: 'Tell your followers what’s happening this week',
+        w: 'Where you’ll be, what’s new, or when you have openings. It shows on your storefront and goes out in the weekly email to everyone who follows you.',
+        a: 'Write a post', href: '/vendor-dashboard/followers#post', mins: 'About 2 minutes', did: 'You wrote a post' },
+      share: { key: 'share', ok: true, done: lsGet(WK_DONE + sfx) === '1', ico: ICO.copy,
+        t: 'Share your page with one customer',
+        w: 'People who already know your work are the best ones to pass it to a neighbor.',
+        a: 'Copy a message with your link', copy: true, mins: 'About 1 minute', did: 'You shared your page' },
+      listing: { key: 'listing', ok: listings.length < 3 || lastListing < now - 30 * DAY, done: lastListing > now - WEEK, ico: ICO.plus,
+        t: 'Add something new',
+        w: 'A new service or product gives neighbors a reason to look again.',
+        a: 'Add a listing', href: '/vendor-dashboard/services', mins: 'About 5 minutes', did: 'You added a listing' },
+      review: { key: 'review', ok: nReviews < 5 || lastReview < now - 60 * DAY, done: asked || lastReview > now - WEEK, ico: ICO.star,
+        t: 'Ask one happy customer for a review',
+        w: 'A kind word from a real customer helps a neighbor decide to reach out. Ask someone you just helped. It’s the easiest yes.',
+        tip: 'Try: “Thank you! If you have a minute, a short review on my Lokali page helps the next neighbor find me.”',
+        a: 'See how to ask', href: '/vendor-resources/review-link-guide', ask: true, mins: 'About 2 minutes',
+        did: asked ? 'You asked for a review' : 'A new review came in' }
+    };
+    // The week's pick, remembered so the card never trades a finished task for a new one.
+    var pick = all[lsGet(WK_PICK + sfx)] || null;
+    if (!pick) {
+      var others = ['post', 'share', 'listing'].map(function (k) { return all[k]; }).filter(function (it) { return it.ok; });
+      if (nReviews >= 5 && all.review.ok) others.push(all.review);
+      if (all.review.ok && nReviews < 5 && wk.n % 2 === 0) pick = all.review;
+      else if (followers !== null && followers < 3) pick = all.share;
+      else pick = others[Math.floor(wk.n / 2) % others.length] || all.review;
+      lsSet(WK_PICK + sfx, pick.key);
+    }
+    // Anything from the list done in the last 7 days counts: say what they did.
+    var doneIt = pick.done ? pick : ['post', 'share', 'listing', 'review'].map(function (k) { return all[k]; }).filter(function (it) { return it.done; })[0];
+    var card = el('div', 'lok-card'); card.id = 'lok-week';
+    var html = '<div class="lok-ct"><h3>This week, one thing</h3>' + (doneIt ? '' : '<span class="lok-pill">' + esc(pick.mins) + '</span>') + '</div>';
+    if (doneIt) {
+      html += '<div class="lok-next done"><div class="n">✓</div><div><p class="t">Done for this week. Nice work, neighbor.</p>' +
+        '<p class="w">' + esc(doneIt.did) + '. That’s the whole list. Next week’s one thing shows up here on Monday.</p></div></div>';
+    } else {
+      html += '<div class="lok-next"><div class="n">' + pick.ico + '</div><div>' +
+        '<p class="t">' + esc(pick.t) + '</p><p class="w">' + esc(pick.w) + '</p>' +
+        (pick.tip ? '<p class="w lok-week-tip">' + esc(pick.tip) + '</p>' : '') +
+        // quick fixes 2026-11-23: the week's action is the page's one filled button
+        (pick.copy ? '<a class="lok-btn primary" href="#" data-week-copy>' + esc(pick.a) + ' →</a>'
+                   : '<a class="lok-btn primary" href="' + esc(pick.href) + '"' + (pick.ask ? ' data-week-ask' : '') + '>' + esc(pick.a) + ' →</a>') +
+        '<a href="#" class="lok-ns-skip" data-week-skip>Not this week</a></div></div>';
+    }
+    card.innerHTML = html;
+    box.parentNode.insertBefore(card, box);
+    WEEK_STATE = 'shown';
+    var sk = card.querySelector('[data-week-skip]');
+    if (sk) sk.addEventListener('click', function (e) {
+      e.preventDefault();
+      lsSet(WK_SKIP + sfx, '1'); WEEK_STATE = 'skipped';
+      if (card.parentNode) card.parentNode.removeChild(card);
+    });
+    var ak = card.querySelector('[data-week-ask]');
+    if (ak) ak.addEventListener('click', function () { lsSet(WK_ASK + sfx, '1'); }); // follows the link as normal
+    var cp = card.querySelector('[data-week-copy]');
+    if (cp) cp.addEventListener('click', function (e) {
+      e.preventDefault();
+      // Same tokenized ?via= URL as the header's Copy link, so landings still count.
+      var url = (SHARE_REF && SHARE_REF.url) || publicListingUrl(v);
+      copyToClipboard(WEEK_MSG + url).then(function (ok) { if (ok) flashCopied(cp); });
+      lsSet(WK_DONE + sfx, '1');
+    });
   }
   function renderFeed(leadsData, reviews, gateReady, paidPlan, quiet) {
     var strength = document.querySelector('[data-listing-strength]');
@@ -688,6 +879,25 @@
         qrow.classList.remove('lok-inline'); fc.classList.remove('lok-inline');
       }
     }
+    // One-page changes 2026-11-23 (team review, F 'Build all four'): on phones the
+    // grid is one column, so 'What happened' sat under next step, quick actions and
+    // the grants. It now goes right above that block (under the weekly card and the
+    // numbers); desktop keeps the two columns. The quiet week keeps its own placement.
+    function placeFeedPhone() {
+      var fc = document.getElementById('lok-feed-card');
+      if (quiet || !fc) return;
+      if (mqPhone && mqPhone.matches) {
+        if (fc.nextSibling !== cols) cols.parentNode.insertBefore(fc, cols);
+        fc.classList.add('lok-inline');
+      } else if (fc.parentNode !== cols) {
+        cols.appendChild(fc); fc.classList.remove('lok-inline');
+      }
+    }
+    if (!quiet && mqPhone && !mqPhone.__lokFeed) {
+      mqPhone.__lokFeed = true;
+      if (mqPhone.addEventListener) mqPhone.addEventListener('change', placeFeedPhone);
+      else if (mqPhone.addListener) mqPhone.addListener(placeFeedPhone);
+    }
     if (quiet && mqPhone && !mqPhone.__lokQuiet) {
       mqPhone.__lokQuiet = true;
       if (mqPhone.addEventListener) mqPhone.addEventListener('change', placeQuiet);
@@ -702,12 +912,19 @@
         return '<li><span class="lok-fi ' + it.kind + '">' + it.ico + '</span><p class="lok-ft">' + it.html + '</p><span class="lok-fw">' + whenLabel(it.t) + '</span></li>';
       }).join('') + '</ul>';
     } else if (gateReady) {
-      html = oneThingCard();
+      html = (document.getElementById('lok-week') || WEEK_STATE === 'skipped')
+        ? '<div class="lok-ct"><h3>What happened</h3><a href="/vendor-dashboard/leads">All leads \u2192</a></div><div class="lok-feed-empty">Views, messages, taps and reviews show up here as they happen.</div>'
+        : oneThingCard();
     } else {
-      html += '<div class="lok-feed-empty">This is where neighbors show up: messages, taps and reviews, as they happen. Finish setting up and they\u2019ll start arriving.</div>';
+      // Done-check 2026-11-23: nothing can have happened before the storefront is
+      // public, so the empty card stays out of the way of the Go live steps.
+      card.style.display = 'none';
+      return;
     }
+    card.style.display = '';
     card.innerHTML = html;
     placeQuiet();
+    placeFeedPhone();
     var qc = card.querySelector('[data-quiet-copy]');
     if (qc) qc.addEventListener('click', function (e) {
       e.preventDefault();
@@ -749,8 +966,8 @@
     // sidebar badge and the Leads tile already carry the count); otherwise the
     // slot is the one weekly action that reaches people, a post to followers.
     if (unread) qaCard('qa-settings', '/vendor-dashboard/leads', ICO.mail, 'Reply to leads', unread + ' unread');
-    else qaCard('qa-settings', '/vendor-dashboard/followers', ICO.horn, 'Post an update', 'Reaches people who saved you');
-    qaCard('qa-preview', '/vendor-dashboard/marketing', ICO.qr, 'Share & QR kit', 'Link, caption, printable code');
+    else qaCard('qa-settings', '/vendor-dashboard/followers#post', ICO.horn, 'Post an update', 'Reaches people who saved you');
+    qaCard('qa-preview', '/vendor-dashboard/marketing', ICO.qr, 'Marketing', 'Link, caption, printable code');
     var share = document.querySelector('.div-block-43'); if (share) share.style.display = 'none';
   }
   // Where the standing cards (milestones, referrals, home-screen) mount now:
@@ -770,7 +987,7 @@
   // exactly as before — these cards simply don't mount.
   var GAM_CSS = [
     '.lok-gam-card{font-family:"Plus Jakarta Sans",-apple-system,sans-serif;background:#fff;border:.5px solid #EEEDF6;border-radius:12px;padding:1.5rem;margin:0 0 16px;color:#1A1829;}',
-    '.lok-gam-eyebrow{font-size:11px;font-weight:700;color:#6002EE;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;}',
+    '.lok-gam-eyebrow{font-size:11px;line-height:1.45;font-weight:700;color:#6002EE;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;}',
     '.lok-gam-title{font-size:17px;font-weight:700;letter-spacing:-.2px;}',
     '.lok-gam-sub{font-size:13px;color:#4A4761;margin-top:4px;line-height:1.5;}',
     '.lok-gam-list{margin-top:1.25rem;padding-top:.25rem;border-top:.5px solid #EEEDF6;}',
@@ -782,12 +999,12 @@
     // line-height 1.5 throughout — these inherit the page's 26px line-height,
     // which reads far too airy on 11.5-13px text (Francesca 2026-08-13).
     '.lok-gam-name{font-size:13px;font-weight:500;line-height:1.5;}',
-    '.lok-gam-row.upcoming .lok-gam-name{color:#8E8BA6;font-weight:400;}',
-    '.lok-gam-detail{font-size:11.5px;color:#8E8BA6;margin-top:1px;line-height:1.5;}',
-    '.lok-gam-date{font-size:11.5px;color:#8E8BA6;flex-shrink:0;text-align:right;min-width:52px;line-height:1.5;}',
+    '.lok-gam-row.upcoming .lok-gam-name{color:#6E6A85;font-weight:400;}',
+    '.lok-gam-detail{font-size:12px;color:#6E6A85;margin-top:1px;line-height:1.5;}',
+    '.lok-gam-date{font-size:12px;color:#6E6A85;flex-shrink:0;text-align:right;min-width:52px;line-height:1.5;}',
     '.lok-gam-pill{font-size:10.5px;font-weight:700;border-radius:100px;padding:2px 8px;flex-shrink:0;white-space:nowrap;}',
     '.lok-gam-pill.green{background:#EAFAF2;color:#1D6A45;}',
-    '.lok-gam-pill.grey{background:#EEEDF6;color:#8E8BA6;}',
+    '.lok-gam-pill.grey{background:#EEEDF6;color:#6E6A85;}',
     '.lok-gam-moment{font-family:"Plus Jakarta Sans",-apple-system,sans-serif;background:linear-gradient(135deg,#F3EBFF 0%,#fff 65%);border:.5px solid #E5D4FD;border-radius:12px;padding:1.5rem;margin:0 0 16px;display:flex;gap:14px;align-items:flex-start;color:#1A1829;}',
     '.lok-gam-moment-ico{width:44px;height:44px;border-radius:50%;flex-shrink:0;background:#6002EE;color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(96,2,238,.25);}',
     '.lok-gam-moment-title{font-size:16px;font-weight:700;}',
@@ -795,7 +1012,7 @@
     '.lok-gam-actions{display:flex;gap:8px;margin-top:12px;}',
     '.lok-gam-btn{font-family:inherit;font-size:12.5px;font-weight:600;color:#fff;background:#6002EE;border:none;border-radius:8px;padding:8px 16px;cursor:pointer;text-decoration:none;display:inline-block;}',
     '.lok-gam-btn:hover{opacity:.9;}',
-    '.lok-gam-ghost{font-family:inherit;font-size:12.5px;font-weight:500;color:#8E8BA6;background:none;border:none;padding:8px 10px;cursor:pointer;}',
+    '.lok-gam-ghost{font-family:inherit;font-size:12.5px;font-weight:500;color:#6E6A85;background:none;border:none;padding:8px 10px;cursor:pointer;}',
     '.lok-gam-ghost:hover{color:#4A4761;}',
     // Share-your-profile card polish (Francesca 2026-08-13): the Webflow
     // "Copy link" pill carried a stray 20px left margin (misaligned with the
@@ -815,10 +1032,10 @@
   var GAM_MILESTONES = [
     { key: 'first_save', name: 'First follower', locked: 'Unlocks when a shopper follows you',
       done: 'A shopper followed your storefront',
-      moment: { title: 'You have your first follower', sub: 'Your first follower is in! They will hear about your posts in the weekly email. Followers often turn into inquiries.', cta: null } },
-    { key: 'first_inquiry', name: 'First inquiry', locked: 'Unlocks when a customer reaches out',
+      moment: { title: 'You have your first follower', sub: 'Your first follower is in! They will hear about your posts in the weekly email. Followers often turn into leads.', cta: null } },
+    { key: 'first_inquiry', name: 'First lead', locked: 'Unlocks when a customer reaches out',
       done: 'A customer reached out about your services',
-      moment: { title: 'Someone just found you', sub: 'Your first inquiry is in! A reply within a day makes a great first impression.', cta: { label: 'View inquiry', href: '/vendor-dashboard/leads' } } },
+      moment: { title: 'Someone just found you', sub: 'Your first lead is in! A reply within a day makes a great first impression.', cta: { label: 'View lead', href: '/vendor-dashboard/leads' } } },
     { key: 'first_100_views', name: 'First 100 views', locked: 'Unlocks when your listing reaches 100 views',
       done: 'Your listing reached 100 views',
       moment: { title: '100 views and counting', sub: 'Your listing just passed 100 views. Shoppers are finding you.', cta: null } },
@@ -1075,7 +1292,7 @@
         '<button type="button" class="lok-gam-ghost" data-a2hs-later style="white-space:nowrap;">Not now</button></div>';
     }
     card.innerHTML =
-      '<button type="button" data-a2hs-close aria-label="Dismiss" style="position:absolute;top:10px;right:10px;width:32px;height:32px;border:none;background:none;color:#8E8BA6;font-size:18px;line-height:1;cursor:pointer;font-family:inherit;">✕</button>' +
+      '<button type="button" data-a2hs-close aria-label="Dismiss" style="position:absolute;top:10px;right:10px;width:32px;height:32px;border:none;background:none;color:#6E6A85;font-size:18px;line-height:1;cursor:pointer;font-family:inherit;">✕</button>' +
       '<div class="lok-gam-moment-ico">' + A2HS_ICO_PHONE + '</div>' +
       '<div style="min-width:0;padding-right:28px;">' +
         '<div class="lok-gam-moment-title">Add Lokali to your home screen</div>' +
@@ -1123,7 +1340,8 @@
     var gateReady = nextStepCard(v, hasListing, ck, x.waiting);
     if (gateReady == null) gateReady = !!v.is_publish_ready;
     renderHeader(v, x.billing, gateReady);
-    var quiet = renderTiles(leadsData, x.shares, x.wonRows); // true on a quiet week (F 2026-10-24)
+    var quiet = renderTiles(leadsData, x.shares, x.wonRows, gateReady); // true on a quiet week (F 2026-10-24)
+    if (gateReady && v.is_publish_ready === true && !(x.waiting || []).length && !(ck.open || []).length) weekCard(v, services, products, x);
     renderFeed(leadsData, x.reviews, gateReady, !!(x.billing && x.billing.plan && x.billing.plan !== 'free'), quiet);
     renderQuickActions(services, products, leadsData);
 
@@ -1216,19 +1434,19 @@
       opts = opts || {};
       card.innerHTML =
         '<button data-wz-x aria-label="Close" style="position:absolute;top:14px;right:14px;background:none;' +
-          'border:none;cursor:pointer;font-size:18px;color:#9A9AB0;line-height:1;">✕</button>' +
-        '<div style="font-size:12px;font-weight:700;letter-spacing:.06em;color:#6002EE;margin-bottom:6px;">' +
+          'border:none;cursor:pointer;font-size:18px;color:#6E6A85;line-height:1;">✕</button>' +
+        '<div style="font-size:12px;line-height:1.45;font-weight:700;letter-spacing:.06em;color:#6002EE;margin-bottom:6px;">' +
           'Step ' + (stepIdx + 1) + ' of ' + steps.length + '</div>' +
         '<h3 id="lok-wz-title" style="font-size:21px;font-weight:700;color:#231d3f;margin:0 0 6px;font-family:inherit;">' + title + '</h3>' +
         '<p style="font-size:14px;line-height:1.55;margin:0 0 16px;">' + sub + '</p>' +
         '<div data-wz-body>' + bodyHtml + '</div>' +
-        '<div data-wz-err aria-live="polite" style="display:none;color:#C05621;font-size:13px;margin-top:10px;"></div>' +
+        '<div data-wz-err aria-live="polite" style="display:none;color:#C05621;font-size:13px;line-height:1.45;margin-top:10px;"></div>' +
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:18px;gap:12px;">' +
-          '<div style="font-size:12.5px;line-height:1.45;color:#9A9AB0;max-width:55%;">' +
-            'You can skip, but your storefront <strong style="color:#8A4B14;">won’t go live</strong> until this is set.</div>' +
+          '<div style="font-size:12.5px;line-height:1.45;color:#6E6A85;max-width:55%;">' +
+            'You can skip, but your storefront <strong style="color:#3B2A6B;">won’t go live</strong> until this is set.</div>' +
           '<div style="display:flex;align-items:center;gap:14px;white-space:nowrap;">' +
             '<button type="button" data-wz-skip style="background:none;border:none;padding:0;cursor:pointer;' +
-              'font-family:inherit;font-size:14px;color:#9A9AB0;text-decoration:underline;">Skip for now</button>' +
+              'font-family:inherit;font-size:14px;color:#6E6A85;text-decoration:underline;">Skip for now</button>' +
             (opts.noContinue ? '' :
               '<button data-wz-next style="background:#6002EE;color:#fff;border:none;cursor:pointer;font-family:inherit;' +
               'font-weight:700;font-size:14px;padding:10px 22px;border-radius:999px;">' + (opts.nextLabel || 'Continue') + '</button>') +
@@ -1281,8 +1499,8 @@
     function stepLoadFail(body, what, retryFn) {
       body.innerHTML = '';
       var m = document.createElement('div');
-      m.style.cssText = 'font-size:14px;line-height:1.5;color:#8A4B14;background:#FDF1E7;' +
-        'border:1px solid #F6D9BE;border-radius:12px;padding:12px 14px;';
+      m.style.cssText = 'font-size:14px;line-height:1.5;color:#3B2A6B;background:#F1ECFE;' +
+        'border:1px solid #E2D6FD;border-radius:12px;padding:12px 14px;';
       m.textContent = 'Couldn’t load ' + what + '. Try again, or use Skip for now and set this later on your profile page.';
       var b = document.createElement('button');
       b.type = 'button';
@@ -1301,7 +1519,7 @@
     if (!v.business_name) steps.push(function () {
       var body = shell("What's your business called?",
         'This is the name customers see on The Market.',
-        '<input data-wz-name type="text" maxlength="120" placeholder="e.g. Hazel &amp; Fern Handmade" ' +
+        '<input data-wz-name type="text" maxlength="120" placeholder="For example, Hazel &amp; Fern Handmade" ' +
           'style="font-family:inherit;font-size:15px;color:#3b3654;background:#FAF7FF;border:1.5px solid #E4DCF7;' +
           'border-radius:12px;padding:11px 14px;width:100%;box-sizing:border-box;">');
       var input = body.querySelector('[data-wz-name]');
@@ -1459,8 +1677,8 @@
         '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
           '<a href="/vendor-dashboard/services" style="flex:1;min-width:150px;text-align:center;background:#6002EE;color:#fff;' +
             'font-weight:700;font-size:14px;padding:12px 18px;border-radius:12px;text-decoration:none;font-family:inherit;">Add a service</a>' +
-          '<a href="/vendor-dashboard/products" style="flex:1;min-width:150px;text-align:center;background:#FDF1E7;color:#8A4B14;' +
-            'border:1.5px solid #F6D9BE;font-weight:700;font-size:14px;padding:12px 18px;border-radius:12px;text-decoration:none;font-family:inherit;">Add a product</a>' +
+          '<a href="/vendor-dashboard/products" style="flex:1;min-width:150px;text-align:center;background:#F1ECFE;color:#3B2A6B;' +
+            'border:1.5px solid #E2D6FD;font-weight:700;font-size:14px;padding:12px 18px;border-radius:12px;text-decoration:none;font-family:inherit;">Add a product</a>' +
         '</div>', { noContinue: true });
     });
 
@@ -1480,8 +1698,8 @@
       box.setAttribute('data-dash-load-err', '');
       box.setAttribute('role', 'alert');
       box.style.cssText = "font-family:'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;" +
-        'flex-wrap:wrap;gap:12px;background:#FDF1E7;border:1px solid #F6D9BE;border-radius:12px;' +
-        'padding:14px 16px;margin:0 0 16px;font-size:14px;line-height:1.5;color:#8A4B14;';
+        'flex-wrap:wrap;gap:12px;background:#F1ECFE;border:1px solid #E2D6FD;border-radius:12px;' +
+        'padding:14px 16px;margin:0 0 16px;font-size:14px;line-height:1.5;color:#3B2A6B;';
       box.innerHTML = '<span style="flex:1;min-width:200px;">We couldn’t load your dashboard. ' +
         'Check your connection and try again.</span>' +
         '<button type="button" data-dash-load-retry style="font-family:inherit;font-weight:700;font-size:14px;' +
@@ -1554,7 +1772,11 @@
         soft(A.share && A.share.count ? A.share.count(v.id) : null),
         soft(A.reviews && A.reviews.forVendor ? A.reviews.forVendor(v.id) : null),
         // Waiting inquiries for 'Your next step' (2026-09-17): a person beats a checkup item.
-        soft(A.leads && A.leads.getMine ? A.leads.getMine() : null)
+        soft(A.leads && A.leads.getMine ? A.leads.getMine() : null),
+        // This week, one thing (F 2026-11-22): the latest posts tell whether one went out this week.
+        soft(S && S.posts && S.posts.forVendor ? S.posts.forVendor(v.id, 3) : null),
+        // Follower count (a number, never who) so small storefronts get 'share' first.
+        soft(S && S.posts && S.posts.followerStats ? S.posts.followerStats() : null)
       ]).then(function (x) {
         render(v, services, products, leadsData, {
           billing: data(x[0]),
@@ -1563,7 +1785,9 @@
           shares: data(x[3]),
           reviews: toArr(data(x[4])),
           waiting: waitingLeads(data(x[5])),
-          wonRows: ((data(x[5]) || {}).inquiries) || []   // #194: full rows carry won_value_cents
+          wonRows: ((data(x[5]) || {}).inquiries) || [],   // #194: full rows carry won_value_cents
+          posts: toArr(data(x[6])),
+          followers: data(x[7])
         });
         maybeRunWizard(v); // #90 first-run setup wizard (one-shot, flag-gated)
       });
