@@ -1707,7 +1707,8 @@
     window.LokaliAPI.marketing.current(vid).then(function (res) {
       var d = (res && res.data) || {};
       if (d.cta && d.cta.title) renderMarketingCta(d.cta);
-      if (d.showcase && d.showcase.title) renderShowcase(d.showcase);
+      // 2026-11-24 (F 'Yes, hide it'): Showcase of the week RETIRED; Events does
+      // that job now. renderShowcase stays unused; the data stays in the database.
     }).catch(function () {});
   }
 

@@ -433,17 +433,19 @@
   Page.prototype.render = function () {
     this.mount.className = 'lok-mkt';
     if (this.free) {
-      this.mount.innerHTML = this.quickCodesHtml() + this.qrCardHtml() + this.reviewCardHtml() + this.postCardHtml() + upsellHtml();
+      this.mount.innerHTML = this.quickCodesHtml() + this.qrCardHtml() + this.reviewCardHtml() + this.postCardHtml();
       this.bind();
       this.drawPost();
       return;
     }
     // One-page changes 2026-11-23 (team review 'Bring your customers in', F 'Build
-    // all four'): the page opens with both QR codes side by side; Showcase of the
-    // week follows. The full code cards keep every option further down.
+    // all four'): the page opens with both QR codes side by side. The full code
+    // cards keep every option further down.
+    // 2026-11-24 (F 'Yes, hide it'): Showcase of the week RETIRED from every screen;
+    // Events does that job now. cardHtml('showcase') / lockedShowcaseHtml stay in
+    // the file unused and the marketing_entries rows stay in the database.
     this.mount.innerHTML =
       this.quickCodesHtml() +
-      (this.premium ? this.cardHtml('showcase') : this.lockedShowcaseHtml()) +
       this.qrCardHtml() +
       this.reviewCardHtml() +
       this.postCardHtml() +
@@ -1534,11 +1536,12 @@
   };
 
   // ---- upsell (free plan, direct URL) -----------------------------------------
+  // 2026-11-24: the Showcase teaser is gone with the feature. A free storefront
+  // with no web address yet gets a plain note instead of an empty page.
   function upsellHtml() {
     return '<div class="mkt-card mkt-lock">' +
-        '<p class="mkt-lockh">Showcase of the week</p>' +
-        '<p>' + SHOWCASE_WHAT + ' It changes every Monday. Comes with the Featured plan.</p>' +
-        '<a class="mkt-up" href="/pricing">See plans</a>' +
+        '<p class="mkt-lockh">Your QR codes</p>' +
+        '<p>Your QR codes show up here once your storefront has its web address.</p>' +
       '</div>';
   }
   function renderUpsell(mount) {

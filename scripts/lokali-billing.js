@@ -1203,7 +1203,7 @@
       'Top of your category',
       '10 photos per listing and a 15-photo portfolio',
       'Calendar on your page, plus a waitlist',
-      'Import your catalog from a spreadsheet, Showcase of the week, and your logo on your QR code'
+      'Import your catalog from a spreadsheet, and your logo on your QR code'
     ]
   };
   var UP_CHECK_SVG = '<svg viewBox="0 0 512 512" aria-hidden="true" focusable="false"><path fill="currentColor" d="M470.6 105.4c12.5 12.5 12.5 32.8 0 45.3l-256 256c-12.5 12.5-32.8 12.5-45.3 0l-128-128c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0L192 338.7 425.4 105.4c12.5-12.5 32.8-12.5 45.3 0z"/></svg>';
