@@ -272,8 +272,8 @@
   // The hero is static Webflow DOM, so these swaps run once at init, before
   // any data arrives; initContact() later only sets hrefs / hides the anchors.
   var ICON_CROWN = ASSET + '69f4dbb3533f0ee2046ab0fb_crown-solid.png';      // = market card founding badge
-  var ICON_GLOBE = ASSET + '69f8b5e89bc57b40690cbc77_globe-solid.png';
-  var ICON_IG    = ASSET + '69f8b5e8a4030414bb433441_instagram-brands-solid.png';
+  var ICON_GLOBE = ASSET + '6b04bee2f317626e33df6f98_globe-solid-lavender.svg';   // CLEAN-P30: was a 36 KB PNG
+  var ICON_IG    = ASSET + '6b04bee240588f79b3b80ab4_instagram-brands-lavender.svg'; // CLEAN-P30: was a 36 KB PNG
   var HEART_PATH = 'M12 20.5l-1.4-1.27C5.6 14.86 2.5 12.07 2.5 8.6 2.5 6.1 4.5 4.1 7 4.1c1.5 0 2.95.7 3.9 1.81C11.85 4.8 13.3 4.1 14.8 4.1c2.5 0 4.5 2 4.5 4.5 0 3.47-3.1 6.26-8.1 10.63L12 20.5z'; // same heart as the market cards
 
   function styleHeroChrome() {
@@ -390,7 +390,14 @@
   // storefront's own owner (vendors.me check below) and never once following.
   function vlQrNudge(vid, v) {
     try {
-      if (!/[?&]utm_source=qr(&|$)/.test(window.location.search || '')) return;
+      var qs = window.location.search || '';
+      var fromQr = /[?&]utm_source=qr(&|$)/.test(qs);
+      // Done-check 2026-11-23 (Shopper Growth, F 'Yes, build all'): a link someone
+      // shared (?via=) gets the banner too, and o=1 marks a link the owner copied
+      // from their dashboard ('Did <first> send you this?').
+      var fromOwner = /[?&]o=1(&|$)/.test(qs);
+      var fromShare = fromOwner || /[?&]via=[^&]+/.test(qs);
+      if (!fromQr && !fromShare) return;
       var key = 'lokali_qr_nudge_' + vid;
       if (localStorage.getItem(key) === '1') return;
       var saveBtn = document.getElementById('vl-save');
@@ -402,14 +409,18 @@
         var name = (v && v.business_name) || 'this vendor';
         var box = ce('div', 'vl-qr-nudge'); box.id = 'vl-qr-nudge'; box.setAttribute('role', 'region'); box.setAttribute('aria-label', 'Follow this vendor');
         var ic = ce('span', 'vl-qr-ic'); ic.innerHTML = '<svg viewBox=\"0 0 448 512\" aria-hidden=\"true\"><path fill=\"currentColor\" d=\"M0 80C0 53.5 21.5 32 48 32h96c26.5 0 48 21.5 48 48v96c0 26.5-21.5 48-48 48H48c-26.5 0-48-21.5-48-48V80zM64 96v64h64V96H64zM0 336c0-26.5 21.5-48 48-48h96c26.5 0 48 21.5 48 48v96c0 26.5-21.5 48-48 48H48c-26.5 0-48-21.5-48-48V336zm64 16v64h64V352H64zM304 32h96c26.5 0 48 21.5 48 48v96c0 26.5-21.5 48-48 48H304c-26.5 0-48-21.5-48-48V80c0-26.5 21.5-48 48-48zm80 64H320v64h64V96zM256 304c0-8.8 7.2-16 16-16h64c8.8 0 16 7.2 16 16s7.2 16 16 16h32c8.8 0 16-7.2 16-16s7.2-16 16-16s16 7.2 16 16v96c0 8.8-7.2 16-16 16H368c-8.8 0-16-7.2-16-16s-7.2-16-16-16s-16 7.2-16 16v64c0 8.8-7.2 16-16 16H272c-8.8 0-16-7.2-16-16V304zM368 480a16 16 0 1 1 0-32 16 16 0 1 1 0 32zm64 0a16 16 0 1 1 0-32 16 16 0 1 1 0 32z\"/></svg>';
-        var p = ce('p'); var b = ce('b'); b.textContent = 'Just met ' + (_vlOwnerFirst || 'them') + '? ';
-        p.appendChild(b); p.appendChild(document.createTextNode('Follow ' + name + ' to hear where they’ll be next. One email a week.'));
+        var p = ce('p'); var b = ce('b');
+        b.textContent = fromQr ? 'Just met ' + (_vlOwnerFirst || 'them') + '? '
+          : (fromOwner && _vlOwnerFirst ? 'Did ' + _vlOwnerFirst + ' send you this? ' : '');
+        if (b.textContent) p.appendChild(b);
+        p.appendChild(document.createTextNode('Follow ' + name + (fromQr ? ' to hear where they’ll be next.' : ' to hear what’s new.') + ' One email a week.'));
+        if (!fromQr) ic = null; // the QR glyph only makes sense after a scan
         var go = ce('button', 'vl-qr-go'); go.type = 'button'; go.textContent = 'Follow';
-        go.addEventListener('click', function () { try { sessionStorage.setItem('lokali_prompt_source', 'qr_banner'); } catch (e) {} saveBtn.click(); });
+        go.addEventListener('click', function () { try { sessionStorage.setItem('lokali_prompt_source', fromQr ? 'qr_banner' : fromOwner ? 'owner_link' : 'share_link'); } catch (e) {} saveBtn.click(); });
         var x = ce('button', 'vl-qr-x'); x.type = 'button'; x.setAttribute('aria-label', 'Dismiss');
         x.innerHTML = '<svg viewBox=\"0 0 384 512\" aria-hidden=\"true\"><path fill=\"currentColor\" d=\"M342.6 150.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 210.7 86.6 105.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L146.7 256 41.4 361.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192 301.3 297.4 406.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.3 256 342.6 150.6z\"/></svg>';
         x.addEventListener('click', function () { try { localStorage.setItem(key, '1'); } catch (e) {} box.remove(); });
-        box.appendChild(ic); box.appendChild(p); box.appendChild(go); box.appendChild(x);
+        if (ic) box.appendChild(ic); box.appendChild(p); box.appendChild(go); box.appendChild(x);
         main.insertBefore(box, main.firstChild);
         var done = function () { if (/vl-save-on/.test(saveBtn.className)) { try { localStorage.setItem(key, '1'); } catch (e) {} box.remove(); } };
         window.addEventListener('lokali:favorites-synced', function () { setTimeout(done, 300); });
@@ -2305,6 +2316,16 @@
   var _galById = {};         // id -> artist
   var _galAll = null;        // the full product list (the filter re-renders from it)
   var _galFilter = null;     // artist id being viewed, or null = everyone
+  // GALLERY PAGE SETUP (patch_gallery_page_setup.sql, F 2026-11-21): a listing
+  // can sit in several collections. product id -> [collection ids], or null
+  // before the patch (then products.artist_id, one each, as before).
+  var _galLinksOf = null;
+  function galIdsOf(p) {
+    var ids = _galLinksOf ? (_galLinksOf[p.id] || []) : (p.artist_id != null ? [p.artist_id] : []);
+    return ids.filter(function (id) { return _galById[id]; }).sort(function (a, b) {
+      return _galArtists.indexOf(_galById[a]) - _galArtists.indexOf(_galById[b]);
+    });
+  }
   // COLLECTIONS (F 2026-11-19): the same groups under the storefront's own word.
   // 'collections' (default) keeps the standard product cards and adds a quiet
   // '<Name> collection' line; 'artists' / 'makers' is the gallery presentation.
@@ -2359,7 +2380,8 @@
     return ((parts[0] || '').charAt(0) + (parts.length > 1 ? parts[parts.length - 1].charAt(0) : '')).toUpperCase();
   }
   function setGalleryArtists(list) {
-    _galArtists = (list || []).filter(function (a) { return a && a.id != null && String(a.name || '').trim(); });
+    // Collections the owner switched off on their Products page stay off here too.
+    _galArtists = (list || []).filter(function (a) { return a && a.id != null && String(a.name || '').trim() && a.is_hidden !== true; });
     _galById = {};
     _galArtists.forEach(function (a) { _galById[a.id] = a; });
   }
@@ -2377,7 +2399,7 @@
     wrap.appendChild(eb);
     var row = ce('div', 'vl-gal-row');
     var counts = {};
-    (_galAll || []).forEach(function (p) { if (p.artist_id != null) counts[p.artist_id] = (counts[p.artist_id] || 0) + 1; });
+    (_galAll || []).forEach(function (p) { galIdsOf(p).forEach(function (id) { counts[id] = (counts[id] || 0) + 1; }); });
     _galArtists.forEach(function (a) {
       var b = ce('button', 'vl-gal-artist'); b.type = 'button';
       b.setAttribute('aria-pressed', _galFilter === a.id ? 'true' : 'false');
@@ -2431,7 +2453,7 @@
       _galAll = list;
       if (_galFilter != null && !_galById[_galFilter]) _galFilter = null;
       renderGalleryRow(grid);
-      if (_galFilter != null) list = list.filter(function (p) { return p.artist_id === _galFilter; });
+      if (_galFilter != null) list = list.filter(function (p) { return galIdsOf(p).indexOf(_galFilter) >= 0; });
     }
     // FEAT-PICKS: picks first (see services note); stable, so drag order holds.
     list = list.slice().sort(function (a, b) {
@@ -2441,7 +2463,7 @@
     opProgressiveList(grid, list, 'products', function (p, i) {
       var pr = productPrice(p);
       var buy = /^https:\/\/\S+$/.test(String(p.buy_url || ''));
-      var art = gal ? _galById[p.artist_id] : null;
+      var art = gal ? (_galById[galIdsOf(p)[0]] || null) : null;
       var stock = (p.stock_quantity == null || p.stock_quantity === '') ? null : Number(p.stock_quantity);
       var sold = gal && stock === 0;
       var bits = [];
@@ -3958,8 +3980,28 @@
       // nobody else pays for the extra read. Any failure (including the table
       // not existing yet) means "no artists" and the page renders as before.
       var galSB = window.LokaliSupabaseAPI;
+      // GALLERY PAGE SETUP: read is_hidden and the listing links straight from
+      // the shared client; before the patch those reads error and this falls
+      // back to the older artists call, exactly as before.
+      var galRaw = function () {
+        var ready = window.LokaliSupabaseReady;
+        if (!ready || !ready.then) return Promise.reject(new Error('no client'));
+        return ready.then(function (c) {
+          return Promise.all([
+            c.from('vendor_artists').select('id,vendors_id,name,origin,bio,photo_url,sort_order,is_hidden')
+              .eq('vendors_id', vid).is('deleted_at', null).order('sort_order').order('id').limit(60),
+            c.from('product_collections').select('product_id,collection_id').eq('vendors_id', vid).limit(5000)
+          ]);
+        }).then(function (r) {
+          if (!r[0] || r[0].error || !r[1] || r[1].error) throw new Error('pre-patch');
+          var m = {};
+          (r[1].data || []).forEach(function (l) { (m[l.product_id] = m[l.product_id] || []).push(l.collection_id); });
+          _galLinksOf = m;
+          return { data: r[0].data || [] };
+        });
+      };
       var artistsP = (Number(v.plan_rank) === 2 && galSB && galSB.artists)
-        ? Promise.resolve(galSB.artists.forVendor(vid)).then(function (ares) {
+        ? galRaw().catch(function () { _galLinksOf = null; return galSB.artists.forVendor(vid); }).then(function (ares) {
             var arts = (ares && ares.error) ? [] : asArray(unwrap(ares));
             // The word is only needed when there are groups to show.
             if (!arts.length) return arts;
@@ -4580,6 +4622,23 @@
             card.innerHTML = '';
             var done = ce('p', 'vl-inv-done'); done.textContent = 'Thank you. Your review is live.';
             card.appendChild(done);
+            // Done-check 2026-11-23 (Shopper Growth): the happiest moment to ask for a
+            // follow. Same look and same Follow path as the QR banner; skipped when
+            // they already follow.
+            try {
+              var sb = document.getElementById('vl-save');
+              if (sb && !/vl-save-on/.test(sb.className)) {
+                var fb = ce('div', 'vl-qr-nudge'); fb.style.margin = '12px 0 0';
+                var fp = ce('p'); fp.textContent = 'Want to hear when ' + (vendorName || 'they') + ' has something new? One email a week.';
+                var fg = ce('button', 'vl-qr-go'); fg.type = 'button'; fg.textContent = 'Follow';
+                fg.addEventListener('click', function () {
+                  try { sessionStorage.setItem('lokali_prompt_source', 'after_review'); } catch (e) {}
+                  sb.click();
+                  setTimeout(function () { if (/vl-save-on/.test(sb.className)) fb.remove(); }, 1500);
+                });
+                fb.appendChild(fp); fb.appendChild(fg); card.appendChild(fb);
+              }
+            } catch (e) {}
             setTimeout(function () { renderReviews(vendorId, vendorName); }, 1200);
           })
           .catch(function () { post.disabled = false; say('Something went wrong on our end and your review was not saved. Please try again.'); });

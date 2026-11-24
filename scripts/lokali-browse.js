@@ -1225,7 +1225,9 @@
     var recs = Number(t.recs) || 0;
     if (recs > 0) row.appendChild(sigPill('sig-trust', 'heart', 'Recommended by ' + recs + (recs === 1 ? ' neighbor' : ' neighbors'), 'Recommendations from shoppers who contacted this vendor through Lokali'));
     else if (t.reply_fast === true) row.appendChild(sigPill('sig-trust', 'clock', 'Replies within a day', 'Median first reply over the last 90 days'));
-    if (t.ships === true)         row.appendChild(sigPill('sig-get', 'box', 'Ships', 'Ships orders'));
+    var svcOnly = vCategoryIds(v).every(function (c) { return c === SLUG_TO_ID.professional || c === SLUG_TO_ID.business; });
+    if (svcOnly) { if (t.remote === true) row.appendChild(sigPill('sig-get', 'laptop', 'Works remotely', 'Available remotely')); }
+    else if (t.ships === true)         row.appendChild(sigPill('sig-get', 'box', 'Ships', 'Ships orders'));
     else if (t.delivers === true) row.appendChild(sigPill('sig-get', 'truck', 'Delivers locally', 'Local delivery'));
     else if (t.pickup === true)   row.appendChild(sigPill('sig-get', 'bag', 'Pickup', 'Pickup available'));
     else if (t.remote === true)   row.appendChild(sigPill('sig-get', 'laptop', 'Works remotely', 'Available remotely'));
@@ -1392,7 +1394,7 @@
     mount.innerHTML = '';
 
     // Category
-    var cs = ce('div', 'lk-filter-section');
+    var cs = ce('div', 'lk-filter-section lk-cat-section'); // v3.1: hidden on desktop (the round icons above do this job)
     var cl = ce('div', 'lk-filter-label'); cl.textContent = 'Category'; cs.appendChild(cl);
     CATEGORY_LIST.forEach(function (c) {
       var item = ce('button', 'filter-item' + (c.slug === activeCategory ? ' active' : ''));
@@ -1408,7 +1410,7 @@
     });
     mount.appendChild(cs);
     renderSubcatRow(); // #96 — unfold pills under the (restored) active category
-    mount.appendChild(ce('div', 'lk-divider'));
+    mount.appendChild(ce('div', 'lk-divider lk-cat-divider'));
 
     // Shortcuts (drawer only, <=991px): the occasion chips that sit above the
     // grid on desktop. Filled by renderDrawerShortcuts() once vendors exist.
@@ -1502,6 +1504,7 @@
   // Suppressed (and any stale row removed) once vendors have loaded without
   // the subcategories key — see subcatDataPresent.
   function renderSubcatRow() {
+    var oldTop = document.querySelector('.lk-mkt-subs'); if (oldTop && oldTop.parentNode) oldTop.parentNode.removeChild(oldTop);
     var old = document.querySelector('#browse-filter-panel .lk-subcat-row');
     if (old && old.parentNode) old.parentNode.removeChild(old);
     if (_allVendors.length && !subcatDataPresent()) return;
@@ -1536,18 +1539,26 @@
       row.appendChild(pill);
     });
     item.parentNode.insertBefore(row, item.nextSibling);
+    // v3.1 (F 2026-11-23): on desktop the same pills sit under the round category icons,
+    // where the eye already is (the side panel no longer lists categories there).
+    var cats = document.querySelector('.lk-mkt-cats');
+    if (cats && cats.parentNode) {
+      var top = row.cloneNode(true); top.className = 'lk-mkt-subs';
+      Array.prototype.forEach.call(top.querySelectorAll('button'), function (b) {
+        b.addEventListener('click', function () { toggleSubcat(b.getAttribute('data-subcat-slug')); });
+      });
+      cats.parentNode.insertBefore(top, cats.nextSibling);
+    }
   }
 
   function toggleSubcat(slug) {
     _rawRestoredSubcats = null; // user is driving now — no late-restore overwrite
     var i = activeSubcats.indexOf(slug);
     if (i === -1) activeSubcats.push(slug); else activeSubcats.splice(i, 1);
-    var pill = document.querySelector('#browse-filter-panel .subcat-pill[data-subcat-slug="' + slug + '"]');
-    if (pill) {
-      var on = activeSubcats.indexOf(slug) !== -1;
-      pill.classList.toggle('on', on);
-      pill.setAttribute('aria-pressed', on ? 'true' : 'false');
-    }
+    var on = activeSubcats.indexOf(slug) !== -1;
+    // v3.1: the same pill lives in the panel (drawer) AND under the round icons
+    var pills = document.querySelectorAll('#browse-filter-panel .subcat-pill[data-subcat-slug="' + slug + '"], .lk-mkt-subs .subcat-pill[data-subcat-slug="' + slug + '"]');
+    for (var p = 0; p < pills.length; p++) { pills[p].classList.toggle('on', on); pills[p].setAttribute('aria-pressed', on ? 'true' : 'false'); }
     applyFilters();
   }
 
@@ -1567,6 +1578,8 @@
       // active category stays visible even at 0 so a deep link / stale filter
       // can still be seen and cleared rather than pointing at a vanished row.
       items[i].style.display = (count === 0 && slug !== 'all' && slug !== activeCategory) ? 'none' : '';
+      var rb = document.querySelector('.lk-mkt-cat[data-category-slug="' + slug + '"]');
+      if (rb) rb.style.display = items[i].style.display; // v3.1: same rule for the round icons
     }
   }
 
@@ -2251,7 +2264,6 @@
     row.setAttribute('role', 'group'); row.setAttribute('aria-label', 'Shortcuts');
     if (!inDrawer) { var l = ce('span', 'lk-occ-chips-l'); l.textContent = 'Shortcuts'; row.appendChild(l); }
     OCCASIONS.forEach(function (o) { row.appendChild(occChip(o, o.t, OCC_SVG[o.ico], inDrawer)); });
-    if (anyNewThisWeek()) row.appendChild(occChip(NEW_SHORTCUT, NEW_SHORTCUT.t, SIG_SVG.bolt, inDrawer, 'new'));
     return row;
   }
   function renderStartHere() {
@@ -2533,7 +2545,8 @@
       pill.style.background = style.bg;
       pill.style.color = style.text;
       if (style.url) pill.appendChild(maskIcon(style.url, style.text, 12));
-      pill.appendChild(document.createTextNode(' ' + style.label));
+      var SHORTN = { 'Handmade & Custom': 'Handmade', 'Clothing & Accessories': 'Clothing', 'Events & Entertainment': 'Events', 'Home & Property': 'Home', 'Professional Services': 'Professional' };
+      pill.appendChild(document.createTextNode(' ' + (SHORTN[style.label] || style.label)));
       cover.appendChild(pill);
     }
     card.appendChild(cover);
@@ -2627,13 +2640,13 @@
     var foot = ce('div', 'vcard-foot');
     var footMeta = ce('span', 'vcard-foot-meta');
     if (vIsFounding(v)) {
-      footMeta.appendChild(maskIcon(ICON_CROWN, '#C99A1F', 11));
+      footMeta.appendChild(maskIcon(ICON_CROWN, '#6002EE', 11));
       footMeta.appendChild(document.createTextNode(' Founding'));
     }
     // Town only ("The Woodlands", not "The Woodlands, Texas") — every open city
     // is Texas today, and the shorter label keeps the foot line quiet.
     var town = vAreaLabel(v).split(',')[0].trim();
-    if (town) {
+    if (town && town !== 'The Woodlands') {
       if (footMeta.childNodes.length) footMeta.appendChild(document.createTextNode(' · '));
       footMeta.appendChild(maskIcon(ICON_PIN, '#6E6A85', 10));
       footMeta.appendChild(document.createTextNode(' ' + town));
@@ -3004,7 +3017,7 @@
   // icons, short labels), and the two bottom cards folded into one soft pink
   // "Have a business?" band. Orange leaves the page (brand guide 2026-11-22:
   // orange is the logo only), so the newsletter box turns lavender + violet.
-  var MKT_V3_SHORT = { all: 'Everyone', fashion: 'Clothing', events: 'Events', handcrafted: 'Handmade', home: 'Home', professional: 'Professional' };
+  var MKT_V3_SHORT = { all: 'All', fashion: 'Clothing', events: 'Events', handcrafted: 'Handmade', home: 'Home', professional: 'Professional' };
   var MKT_V3_CSS = [
     '.browse-hero{background:#F3EBFF!important;padding-bottom:22px!important;}',
     '.lk-mkt-cats{flex:1 0 100%;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin:14px 0 0;padding:4px 2px 2px;}',
@@ -3018,6 +3031,26 @@
     '.lk-mkt-cat.on .lk-mkt-ci span{background-color:#fff!important;}',
     '.lk-mkt-cat:focus-visible{outline:none;}.lk-mkt-cat:focus-visible .lk-mkt-ci{outline:2px solid #6002EE;outline-offset:2px;}',
     '@media (min-width:1200px){.lk-mkt-cats{justify-content:space-between;}}',
+    // v3.1 (F 2026-11-23 'Yes, without counts'): categories live in ONE place on desktop (the icons);
+    // the drawer (<=991px) keeps its list. Icons wrap instead of scrolling sideways (phones: 2 rows of 6).
+    // v3.2 (F 2026-11-23 'Yes, put it live', the calmer Market from the expert review): one quiet label
+    // style on every card (white photo tag, soft grey chips, violet icons), so the photos carry the colour.
+    '.vcard .cat-pill{background:rgba(255,255,255,.95) !important;color:#45415A !important;}',
+    '.vcard .cat-pill > span{background-color:#6002EE !important;}',
+    '.vcard .sig-pill,.vcard .sig-trust,.vcard .sig-get,.vcard .name-chip{background:#F5F3FA !important;color:#4A4761 !important;border-color:transparent !important;}',
+    '.vcard .sig-pill svg,.vcard .name-chip > span{color:#6002EE !important;background-color:#6002EE;}',
+    '.vcard .sig-pill .sig-ico{color:#6002EE !important;}',
+    '.vcard .sig-pill .sig-ico svg{background:none !important;}',
+    '.lk-occ-chip i{color:#6002EE !important;}',
+    '@media (min-width:992px){#browse-filter-panel .lk-cat-section,#browse-filter-panel .lk-cat-divider{display:none !important;}}',
+    '.lk-mkt-cats{flex-wrap:wrap;overflow:visible;row-gap:12px;}',
+    '.lk-mkt-subs{flex:1 0 100%;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:16px;}',
+    '.lk-mkt-subs .subcat-pill{font:700 13px/1 "Plus Jakarta Sans",sans-serif;background:#fff;color:#6002EE;border:1.5px solid #D9CCF5;border-radius:999px;padding:9px 14px;cursor:pointer;min-height:36px;}',
+    '.lk-mkt-subs .subcat-pill:hover{border-color:#6002EE;}',
+    '.lk-mkt-subs .subcat-pill.on{background:#6002EE;color:#fff;border-color:#6002EE;}',
+    '.lk-mkt-subs .subcat-pill:focus-visible{outline:2px solid #6002EE;outline-offset:2px;}',
+    '@media (max-width:991px){.lk-mkt-subs{display:none;}.lk-mkt-cats{justify-content:flex-start;}}',
+    '@media (max-width:767px){.lk-mkt-cats{margin:4px 0 0 !important;padding:2px 0 0 !important;gap:10px 0 !important;}.lk-mkt-cat{width:calc(100% / 6) !important;font-size:10.5px !important;gap:5px !important;}.lk-mkt-ci{width:40px !important;height:40px !important;}.lk-mkt-ci span{width:18px !important;height:18px !important;}}',
     '@media (max-width:767px){.lk-mkt-cats{margin:6px -16px 0;padding:4px 16px 2px;}.lk-mkt-cat{width:72px;font-size:11.5px;}.lk-mkt-ci{width:50px;height:50px;}}',
     // newsletter box: lavender + violet (was light orange)
     '.newsletter-nudge.lk-warm{background:#F3EBFF!important;}',
