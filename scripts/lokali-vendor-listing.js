@@ -2190,18 +2190,11 @@
       '<div class="' + priceClass + '"></div></div>' +
       '<div class="vl-card-desc"></div>' +
       '<div class="vl-card-foot"><span class="' + ctaClass + '">' + (opts.cta || 'Inquire') + '</span></div></div>';
-    // FEAT-PICKS: a small "Vendor's pick" chip on hand-picked items — makes the
-    // curation visible to customers (and the perk visible to vendors). Static
-    // markup only; positioned over the tinted image block.
     if (opts.ownLink) a.querySelector('.vl-card-cta').setAttribute('data-own-link', opts.ownLink); // set even before the booking probe answers; applyBookNow() reads it later
     if (opts.noBook) a.querySelector('.vl-card-cta').setAttribute('data-no-book', '1'); // #251: applyBookNow() skips it when the booking probe answers late
     if (opts.book) wireBookNow(a.querySelector('.vl-card-cta'));
-    if (opts.pick) {
-      var pickChip = document.createElement('div');
-      pickChip.className = 'vl-card-pick';
-      pickChip.textContent = "★ Vendor's pick";
-      a.querySelector('.vl-card-img').appendChild(pickChip);
-    }
+    // 2026-11-24 (F 'take out vendor's pick from images on the storefronts'): the
+    // "★ Vendor's pick" chip on photos is gone. Picked items still sort first.
     // Build the image via properties (never interpolate vendor free-text into an
     // attribute string) so a crafted item title can't break out into stored XSS.
     if (opts.image) {
@@ -2243,7 +2236,6 @@
     if (opts.galChip) {
       var gc = ce('div', 'vl-card-pick vl-gal-chip' + (opts.sold ? ' vl-gal-chip-sold' : ''));
       gc.textContent = opts.galChip;
-      if (opts.pick) gc.style.top = '40px'; // sits under the "Vendor's pick" chip
       a.querySelector('.vl-card-img').appendChild(gc);
     }
     if (opts.sold) a.className += ' vl-gal-sold';
