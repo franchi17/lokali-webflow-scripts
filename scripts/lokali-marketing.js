@@ -76,7 +76,7 @@
   // Review-code blue (the brand blue of the email headlines). Two codes, two
   // inks: storefront = violet, review = blue, so a printout tells them apart
   // (F 2026-11-10: 'a visual differentiator so they don't use the wrong one').
-  var REVIEW_BLUE = '#021AEE';
+  var REVIEW_BLUE = '#1D4E9E'; // done-check 2026-11-23: brand guide keeps #021AEE for emails; the sky family's deep blue still tells the two codes apart
   var CAPS = { cta: 20, showcase: 10 };
   // Spotlight ad creative (phase 2): backend is live and grid-proven, but the
   // vendor-facing flow is undesigned — Francesca 2026-08-18: keep it hidden
@@ -263,7 +263,7 @@
       '.mkt-band{display:flex;align-items:center;gap:8px;margin:-22px -24px 16px;padding:9px 24px;border-radius:14px 14px 0 0;color:#fff;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;}' +
       '.mkt-band svg{width:14px;height:14px;fill:#fff;flex:0 0 auto;}' +
       '.mkt-band.store{background:' + BRAND + ';}' +
-      '.mkt-band.review{background:' + REVIEW_BLUE + ';}' +
+      '.mkt-band.review{background:#E8F0FF;color:#1B3FA8;}.mkt-band.review svg{fill:#1B3FA8;}' + // quick fixes 2026-11-23: soft sky header, not a second loud band under the violet one
       '.mkt-card.store{background:#F9F6FF;border-color:#E4DEF4;}' +
       '.mkt-card.review{background:#F1F4FF;border-color:#C9D3FB;}' +
       '.mkt-card.store .mkt-h,.mkt-card.review .mkt-h{display:flex;align-items:center;gap:8px;}' +
@@ -272,14 +272,14 @@
       '.mkt-card.review .mkt-h svg{width:18px;height:18px;fill:' + REVIEW_BLUE + ';flex:0 0 auto;}' +
       '.mkt-card.review .mkt-sub,.mkt-card.review .mkt-qr-url,.mkt-card.review .mkt-note{color:#5A66A0;}' +
       '.mkt-card.review .mkt-qr-url b{color:#13227A;}' +
-      '.mkt-card.review .mkt-qr-dl{background:#E0E6FF;color:' + REVIEW_BLUE + ';}' +
+      '.mkt-card.review .mkt-qr-dl{background:#E6EFFB;color:' + REVIEW_BLUE + ';}' +
       '.mkt-card.review .mkt-qr-code{border-color:#C9D3FB;}' +
       '.mkt-card.review .mkt-rv-rot button{color:' + REVIEW_BLUE + ';}' +
       '.mkt-card.review .mkt-rv-rot button.warn{color:#B3261E;}' +
       '.mkt-card.review .mkt-rv-rot button.plain{color:#6E6A85;}' +
       '.mkt-tag{display:inline-block;font-size:11.5px;font-weight:600;border-radius:999px;padding:4px 10px;white-space:nowrap;}' +
       '.mkt-tag.store{background:#F3EBFF;color:' + BRAND + ';}' +
-      '.mkt-tag.review{background:#E0E6FF;color:#13227A;}' +
+      '.mkt-tag.review{background:#E6EFFB;color:#1D4E9E;}' +
       '.mkt-qr-code{line-height:1.2;}' +
       '.mkt-qr-cap{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;text-align:center;margin:8px 0 0;line-height:1;}' +
       '.mkt-card.store .mkt-qr-cap{color:' + BRAND + ';}' +
@@ -288,7 +288,17 @@
       '.mkt-diff svg{flex:0 0 auto;width:16px;height:16px;fill:' + REVIEW_BLUE + ';margin-top:2px;}' +
       '.mkt-diff b{color:#13227A;font-weight:600;}' +
       '@media (max-width:600px){.mkt-band{margin:-16px -16px 14px;padding:8px 16px;}.mkt-head{flex-wrap:wrap;}}' +
-      '@media (max-width:600px){.mkt-card{padding:16px;}.mkt-acts{gap:0;}}';
+      '.mkt-mini-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;}' +
+      '.mkt-mini{border:1px solid #ECE8F8;border-radius:12px;overflow:hidden;background:#fff;min-width:0;}' +
+      '.mkt-mini-hd{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:8px 12px;}' +
+      '.mkt-mini.store .mkt-mini-hd{background:' + BRAND + ';color:#fff;}' +
+      '.mkt-mini.review .mkt-mini-hd{background:#E8F0FF;color:#1B3FA8;}' +
+      '.mkt-mini-bd{padding:12px;display:grid;gap:8px;justify-items:start;}' +
+      '.mkt-mini-code svg{display:block;width:120px;height:120px;max-width:100%;}' +
+      '.mkt-mini-sub{margin:0;font-size:13px;color:#4A4761;}' +
+      '.mkt-mini-more{font-size:12.5px;font-weight:600;color:' + BRAND + ';}' +
+      '.mkt-mini.review .mkt-qr-dl{background:#E6EFFB;color:' + REVIEW_BLUE + ';}' +
+      '@media (max-width:600px){.mkt-card{padding:16px;}.mkt-acts{gap:0;}.mkt-mini-row{gap:8px;}.mkt-mini-bd{padding:10px;}.mkt-mini-code svg{width:96px;height:96px;}}';
     document.head.appendChild(st);
   }
 
@@ -423,12 +433,16 @@
   Page.prototype.render = function () {
     this.mount.className = 'lok-mkt';
     if (this.free) {
-      this.mount.innerHTML = this.qrCardHtml() + this.reviewCardHtml() + this.postCardHtml() + upsellHtml();
+      this.mount.innerHTML = this.quickCodesHtml() + this.qrCardHtml() + this.reviewCardHtml() + this.postCardHtml() + upsellHtml();
       this.bind();
       this.drawPost();
       return;
     }
+    // One-page changes 2026-11-23 (team review 'Bring your customers in', F 'Build
+    // all four'): the page opens with both QR codes side by side; Showcase of the
+    // week follows. The full code cards keep every option further down.
     this.mount.innerHTML =
+      this.quickCodesHtml() +
       (this.premium ? this.cardHtml('showcase') : this.lockedShowcaseHtml()) +
       this.qrCardHtml() +
       this.reviewCardHtml() +
@@ -436,6 +450,22 @@
       (SPOTLIGHT_CREATIVE_ENABLED && this.premium && this.spot ? this.spotlightCardHtml() : '');
     this.bind();
     this.drawPost();
+  };
+
+  Page.prototype.quickCodesHtml = function () {
+    if (!window.LokaliQR || !this.vendor.slug) return '';
+    var mini = function (cls, head, svg, sub, act, anchor) {
+      return '<div class="mkt-mini ' + cls + '"><div class="mkt-mini-hd">' + head + '</div><div class="mkt-mini-bd">' +
+        '<div class="mkt-mini-code">' + svg + '</div><p class="mkt-mini-sub">' + sub + '</p>' +
+        '<button type="button" class="mkt-qr-dl" data-act="' + act + '">Download</button>' +
+        '<a class="mkt-mini-more" href="#' + anchor + '">More options</a></div></div>';
+    };
+    return '<div class="mkt-card mkt-quick"><p class="mkt-h">Your two QR codes</p>' +
+      '<p class="mkt-sub">One helps new people find you, one asks a customer you served for a review. Print them, or show them on your phone.</p>' +
+      '<div class="mkt-mini-row">' +
+        mini('store', 'For everyone', window.LokaliQR.toSvg(this.qrUrl(), this.qrOpts(120, BRAND)), 'Opens your storefront', 'qr-png', 'mkt-qr-full') +
+        mini('review', 'For customers', window.LokaliQR.toSvg(this.reviewUrl(), this.qrOpts(120, REVIEW_BLUE)), 'Asks for a review', 'rv-png', 'mkt-rv-full') +
+      '</div></div>';
   };
 
   // ---- #163 Your QR code ------------------------------------------------------
@@ -466,8 +496,7 @@
           '<div class="mkt-qr-stat"><div class="mkt-qr-sv">' + (+q.d7 || 0) + '</div><div class="mkt-qr-sl">This week</div></div>' +
         '</div>' +
         (q.total > 0
-          ? '<p class="mkt-note">' + mobilePct + '% of scans came from a phone' +
-            (since ? ', counting since ' + esc(since) : '') + '.</p>'
+          ? (since ? '<p class="mkt-note">Counting since ' + esc(since) + '.</p>' : '') // quick fixes 2026-11-23: the '% from a phone' line is gone
           : '<p class="mkt-note">No scans yet. Counting starts the moment your code is out in the world.</p>');
     } else if (q && !q.allowed) {
       // Pro teaser: scans ARE being recorded, but the payload carries NO
@@ -488,7 +517,7 @@
       // #163b: Featured also puts the vendor's own logo in the center.
       statsHtml += '<p class="mkt-note">Featured vendors can also put their own logo in the center of the code.</p>';
     }
-    return '<div class="mkt-card store" data-kind="qr">' +
+    return '<div class="mkt-card store" data-kind="qr" id="mkt-qr-full">' +
       '<div class="mkt-band store">' + ICON_STORE + ' For everyone &middot; opens your storefront</div>' +
       '<div class="mkt-head"><p class="mkt-h">' + ICON_STORE + 'Your storefront QR code</p><span class="mkt-tag store">Opens your storefront</span></div>' +
       '<p class="mkt-sub">For people who have not met you yet. Put it on flyers, table tents, business cards and packaging, anywhere people can point a camera.</p>' +
@@ -500,7 +529,7 @@
             '<button type="button" class="mkt-qr-dl" data-act="qr-png">Download for phone and web</button>' +
             '<button type="button" class="mkt-qr-dl" data-act="qr-svg">Download for print</button>' +
           '</div>' +
-          '<p class="mkt-note">Print it at least 1 inch (2.5 cm) wide and keep the white border, cameras need it. The SVG stays sharp at any size.</p>' +
+          '<p class="mkt-note">Print it at least 1 inch (2.5 cm) wide and keep the white border, cameras need it.</p>' +
           '<div class="mkt-qr-badge-slot">' + this.qrBadgeHtml() + '</div>' +
           statsHtml +
         '</div>' +
@@ -627,7 +656,7 @@
     var name = this.vendor.business_name || 'We';
     return name + ' is now on Lokali, the marketplace for local businesses. ' +
       'See what we offer, send us a message, or leave a review at golokali.com/' + this.vendor.slug + '. ' +
-      'And if you are a neighbor with a business of your own, there is a free storefront waiting for you too.';
+      'Tap Follow on our Lokali page to hear when we have something new.'; // quick fixes 2026-11-23: asks customers to follow, no 'free storefront' pitch
   };
 
   // Fonts, wordmark, logo, photo candidates (pin first) and lookups, loaded once
@@ -850,14 +879,14 @@
       : '';
     // F 2026-11-10: no copy-ready text / email / packaging wording here any more.
     // Vendors get the link and the code and say it their own way.
-    return '<div class="mkt-card review" data-kind="review">' +
+    return '<div class="mkt-card review" data-kind="review" id="mkt-rv-full">' +
       '<div class="mkt-band review">' + ICON_STAR + ' For customers only &middot; asks for a review</div>' +
       '<div class="mkt-head"><p class="mkt-h">' + ICON_STAR + 'Your review QR code</p><span class="mkt-tag review">Opens your Reviews tab, ready to post</span></div>' +
       '<p class="mkt-sub">For customers you already served. Show it at pickup or print it on a thank-you note. The best moment to ask is right after a handoff, while the good feeling is fresh.</p>' +
       '<div class="mkt-qr-row">' + qr +
         '<div class="mkt-qr-side">' +
-          '<p class="mkt-qr-url">Opens <b style="overflow-wrap:anywhere">golokali.com/' + esc(self.reviewPath()) + '#reviews</b>: your storefront, straight to the Reviews tab' +
-            (self.reviewCode ? ', with posting unlocked for the person who scanned it.' : '.') + '</p>' +
+          '<p class="mkt-qr-url">Opens your storefront right at the Reviews tab' + // quick fixes 2026-11-23: no raw link with its code, Copy link carries it
+            (self.reviewCode ? ', ready for your customer to post.' : '.') + '</p>' +
           '<div class="mkt-qr-btns">' +
             '<button type="button" class="mkt-qr-dl" data-act="rv-copy-link">Copy link</button>' +
             (window.LokaliQR ? '<button type="button" class="mkt-qr-dl" data-act="rv-png">Download for phone and web</button><button type="button" class="mkt-qr-dl" data-act="rv-svg">Download for print</button>' : '') +
@@ -899,6 +928,9 @@
     var box = document.createElement('div');
     box.innerHTML = this.reviewCardHtml();
     if (box.firstChild) old.parentNode.replaceChild(box.firstChild, old);
+    // The review code in the top strip carries the same link: redraw it too.
+    var oq = this.mount.querySelector('.mkt-quick');
+    if (oq) { var qb = document.createElement('div'); qb.innerHTML = this.quickCodesHtml(); if (qb.firstChild) oq.parentNode.replaceChild(qb.firstChild, oq); }
   };
   Page.prototype.rotateReviewLink = function (btn) {
     var self = this;
@@ -1226,7 +1258,7 @@
           // #149c WYSIWYG: same treatment as the listing forms — the frame is
           // the storefront crop, and the frame itself is the drag surface.
           (img
-            ? '<p class="mkt-note" style="margin:8px 0 0;">How it will appear on your storefront \u2014 drag the photo to adjust.</p>' +
+            ? '<p class="mkt-note" style="margin:8px 0 0;">How it will appear on your storefront. Drag the photo to adjust.</p>' +
               '<div class="mkt-focusframe"><img data-f="focusprev" src="' + esc(img) + '" alt="Crop preview"' +
               (e && e.image_focus_x != null && e.image_focus_y != null
                 ? ' style="object-position:' + (+e.image_focus_x) + '% ' + (+e.image_focus_y) + '%;"' : '') +
