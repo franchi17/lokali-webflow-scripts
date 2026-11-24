@@ -55,8 +55,22 @@
         // Services/Products: four cards across, plus an "Add another" tile.
         '.lok-grid{grid-template-columns:repeat(4,minmax(0,1fr)) !important;}' +
         '.lok-add-tile{display:flex !important;}' +
+        // Expert review fixes (2026-11-24):
+        // a scrollbar on long pages shifted the centered content ~7px between pages; reserve its space everywhere.
+        'html{scrollbar-gutter:stable;}' +
+        // Events: an empty title block kept a 20px gap, so its title sat lower than every other page's.
+        '.div-block-45:has(+ #lok-events-page){margin-bottom:0 !important;}' +
+        // long single lines stay at reading width (Followers intro, Analytics summary band)
+        '.subheader{max-width:80ch;}' +
+        '.an-insight{padding-right:max(16px,calc(100% - 80ch)) !important;}' +
+        // Marketing: the two code cards share the row evenly, each code centered in its card
+        '.mkt-mini-row{display:grid !important;grid-template-columns:repeat(2,minmax(0,1fr)) !important;gap:16px;}' +
+        '.mkt-mini-bd{display:flex !important;flex-direction:column;align-items:center;text-align:center;}' +
+        // Home: the side column shows the latest five, so it ends near the left column ("All leads" has the rest)
+        '#lok-feed-card .lok-feed li:nth-child(n+6){display:none;}' +
       '}' +
-      '.lok-add-tile{display:none;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:260px;' +
+      // margin-bottom matches the cards' 16px so the bottoms line up
+      '.lok-add-tile{display:none;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:200px;margin-bottom:16px;' +
         'border:2px dashed #E5D4FD;border-radius:14px;background:#fff;color:#6002EE;cursor:pointer;' +
         'font-family:"Plus Jakarta Sans",-apple-system,sans-serif;padding:16px;text-align:center;}' +
       // The grid stretches any non-card child across the row (order 99); the tile is one card wide, right after the cards.
@@ -76,24 +90,39 @@
       : path.indexOf('/vendor-dashboard/products') !== -1 ? 'product' : '';
     if (!kind) return;
     var stackId = kind + 's-stack', btnId = kind + 's-add-btn', cardSel = '.' + kind + '-card[data-' + kind + '-id]'; // real cards only, never the hidden template
+    // The page's own button says "Add Service" / "Add product"; one wording everywhere: "Add a service".
+    function fixButtonWords() {
+      var b = document.getElementById(btnId);
+      if (!b) return;
+      var w = document.createTreeWalker(b, NodeFilter.SHOW_TEXT), n;
+      while ((n = w.nextNode())) {
+        if (/^\s*Add (service|product)\s*$/i.test(n.nodeValue)) n.nodeValue = 'Add a ' + kind;
+      }
+    }
     function sync(stack) {
       var tile = stack.querySelector(':scope > .lok-add-tile');
-      if (!stack.querySelector(cardSel)) { if (tile) tile.remove(); return; }
+      var count = stack.querySelectorAll(cardSel).length;
+      if (!count) { if (tile) tile.remove(); return; }
       if (!tile) {
         tile = document.createElement('button');
         tile.type = 'button';
         tile.className = 'lok-add-tile';
-        tile.innerHTML = '<span class="p" aria-hidden="true">+</span><span class="t">Add another ' + kind + '</span>';
+        tile.innerHTML = '<span class="p" aria-hidden="true">+</span><span class="t"></span>';
         tile.addEventListener('click', function () {
           var b = document.getElementById(btnId);
           if (b) b.click();
         });
       }
+      // Three listings is the floor we coach toward (Vendor Success), so say it plainly until then.
+      var words = count === 1 ? 'Add your 2nd ' + kind : count === 2 ? 'Add your 3rd ' + kind : 'Add another ' + kind;
+      var t = tile.querySelector('.t');
+      if (t.textContent !== words) t.textContent = words;
       if (stack.lastElementChild !== tile) stack.appendChild(tile);
     }
     function start() {
       var stack = document.getElementById(stackId);
       if (!stack) return false;
+      fixButtonWords();
       sync(stack);
       new MutationObserver(function () { sync(stack); }).observe(stack, { childList: true });
       return true;
