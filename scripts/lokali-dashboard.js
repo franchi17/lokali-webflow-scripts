@@ -12,6 +12,9 @@
     // Dashboard pages only — never pad the body on public pages (no sidebar).
     if (String(location.pathname || '').indexOf('/vendor-dashboard') === -1) return;
     if (document.getElementById('lok-dashboard-layout-fix')) return;
+    if (/^\/vendor-dashboard\/(profile|settings|availability)\/?$/.test(String(location.pathname || ''))) {
+      document.documentElement.classList.add('lok-dash-form');
+    }
     var s = document.createElement('style');
     s.id = 'lok-dashboard-layout-fix';
     s.textContent = '@media (min-width:992px){body{padding-left:200px;}}' +
@@ -68,7 +71,16 @@
         '.mkt-mini-bd{display:flex !important;flex-direction:column;align-items:center;text-align:center;}' +
         // Home: the side column shows the latest five, so it ends near the left column ("All leads" has the rest)
         '#lok-feed-card .lok-feed li:nth-child(n+6){display:none;}' +
+        // Form pages (F 2026-11-24, all three experts: option A, centered): Profile, Settings and
+        // Availability keep a narrow centered column (~760px of content) so boxes are not 1,300px
+        // wide; the add/edit listing form on Services/Products is centered at the same width.
+        'html.lok-dash-form .div-block-39{max-width:840px !important;}' +
+        '[id$="-form-view"].lok-org{max-width:760px !important;margin-left:auto !important;margin-right:auto !important;}' +
       '}' +
+      // Profile: more room to write the About text (vendor care: a box should look like a paragraph).
+      '@media (min-width:768px){#textarea-description{min-height:200px !important;}}' +
+      '.lok-desc-words{font-size:12px;color:#6E6A85;text-align:right;margin:6px 0 0;font-family:"Plus Jakarta Sans",-apple-system,sans-serif;}' +
+      '.lok-desc-words.ok{color:#17634A;}' +
       // margin-bottom matches the cards' 16px so the bottoms line up
       '.lok-add-tile{display:none;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:200px;margin-bottom:16px;' +
         'border:2px dashed #E5D4FD;border-radius:14px;background:#fff;color:#6002EE;cursor:pointer;' +
@@ -79,6 +91,35 @@
       '.lok-add-tile .p{font-size:32px;font-weight:300;line-height:1;}' +
       '.lok-add-tile .t{font-size:15px;font-weight:700;}';
     (document.head || document.documentElement).appendChild(s);
+  })();
+
+  // Profile: a word counter under "About your business". 40 words is the line Vendor Success
+  // coaches toward for a complete storefront. Plain count, no nagging: "23 of 40 words", then
+  // just "62 words" in green once there. Delegated, so it survives the profile form re-drawing.
+  (function aboutWordCounter() {
+    if (!/^\/vendor-dashboard\/profile\/?$/.test(String(location.pathname || ''))) return;
+    function words(t) { var m = String(t || '').trim().match(/\S+/g); return m ? m.length : 0; }
+    function paint(ta) {
+      if (!ta || !ta.parentNode) return;
+      var el = ta.parentNode.querySelector(':scope > .lok-desc-words');
+      if (!el) {
+        el = document.createElement('p');
+        el.className = 'lok-desc-words';
+        el.setAttribute('aria-live', 'polite');
+        ta.insertAdjacentElement('afterend', el);
+      }
+      var n = words(ta.value);
+      el.textContent = n >= 40 ? n + ' words' : n + ' of 40 words';
+      el.classList.toggle('ok', n >= 40);
+    }
+    document.addEventListener('input', function (e) {
+      if (e.target && e.target.id === 'textarea-description') paint(e.target);
+    }, true);
+    var tries = 0, t = setInterval(function () {
+      var ta = document.getElementById('textarea-description');
+      if (ta && ta.value) { paint(ta); clearInterval(t); }
+      else if (++tries > 40) { if (ta) paint(ta); clearInterval(t); }
+    }, 250);
   })();
 
   // "Add another" tile at the end of the Services / Products card grid. Shown
@@ -1445,8 +1486,19 @@
     box.id = 'lok-gallery-notice';
     box.setAttribute('role', 'note');
     box.style.cssText = 'display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin:12px 0 18px;padding:12px 14px;border:1px solid #E9DDFF;border-radius:14px;background:linear-gradient(90deg,#F3EBFF,#FBF8FF);font-family:' + F + ';box-sizing:border-box;width:100%;';
+    // A tiny picture of the Gallery look (cover band + wall of work), the same drawing as
+    // the Gallery choice on the Products page. It was a plain violet square (F 2026-11-24: "fix that blue square").
     var thumb = document.createElement('div');
-    thumb.style.cssText = 'flex:none;width:56px;height:42px;border-radius:8px;background:linear-gradient(160deg,#8D5CF0,#4A1FB8);';
+    thumb.setAttribute('aria-hidden', 'true');
+    thumb.style.cssText = 'flex:none;width:56px;height:42px;border-radius:8px;background:#fff;border:1px solid #E5D4FD;padding:4px;box-sizing:border-box;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:10px 1fr 1fr;gap:2px;';
+    var band = document.createElement('span');
+    band.style.cssText = 'grid-column:1/-1;border-radius:2px;background:linear-gradient(90deg,#8D5CF0,#6002EE);';
+    thumb.appendChild(band);
+    for (var ti = 0; ti < 8; ti++) {
+      var cell = document.createElement('span');
+      cell.style.cssText = 'border-radius:2px;background:' + (ti % 3 === 1 ? '#D9C7F5' : '#EEE4FD') + ';';
+      thumb.appendChild(cell);
+    }
     var txt = document.createElement('div');
     txt.style.cssText = 'flex:1;min-width:190px;font-size:13.5px;line-height:1.45;color:#4A4761;';
     var b = document.createElement('b');
