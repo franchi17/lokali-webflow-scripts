@@ -1258,7 +1258,7 @@
                 liveZip = z;
                 box.innerHTML = liveRates.map(function (c, i) { return '<label class="lb-rate' + (i === 0 ? ' on' : '') + '"><input type="radio" name="vd-lok-rate" value="' + escapeText(c.service) + '"' + (i === 0 ? ' checked' : '') + '><span>' + escapeText(c.name) + (c.days_text ? '<small>' + escapeText(c.days_text) + (c.insured ? ', insured' : '') + '</small>' : (c.insured ? '<small>Insured</small>' : '')) + '</span><b>' + money(c.cents) + '</b></label>'; }).join('');
                 box.querySelectorAll('input[name="vd-lok-rate"]').forEach(function (r) { r.addEventListener('change', paint); });
-                msg.textContent = 'Shipping to ' + z + '. You type the full address at payment.';
+                msg.textContent = 'Shipping to ' + z + '. You type the full address at payment. Shipping is an estimate: if the label costs more than $3 less, you get the difference back.';
                 err.style.display = 'none';
                 paint();
               }).catch(function () { msg.textContent = 'Prices are unavailable right now. Try again, or use Inquire.'; });
