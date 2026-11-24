@@ -1225,7 +1225,9 @@
     var recs = Number(t.recs) || 0;
     if (recs > 0) row.appendChild(sigPill('sig-trust', 'heart', 'Recommended by ' + recs + (recs === 1 ? ' neighbor' : ' neighbors'), 'Recommendations from shoppers who contacted this vendor through Lokali'));
     else if (t.reply_fast === true) row.appendChild(sigPill('sig-trust', 'clock', 'Replies within a day', 'Median first reply over the last 90 days'));
-    if (t.ships === true)         row.appendChild(sigPill('sig-get', 'box', 'Ships', 'Ships orders'));
+    var svcOnly = vCategoryIds(v).every(function (c) { return c === SLUG_TO_ID.professional || c === SLUG_TO_ID.business; });
+    if (svcOnly) { if (t.remote === true) row.appendChild(sigPill('sig-get', 'laptop', 'Works remotely', 'Available remotely')); }
+    else if (t.ships === true)         row.appendChild(sigPill('sig-get', 'box', 'Ships', 'Ships orders'));
     else if (t.delivers === true) row.appendChild(sigPill('sig-get', 'truck', 'Delivers locally', 'Local delivery'));
     else if (t.pickup === true)   row.appendChild(sigPill('sig-get', 'bag', 'Pickup', 'Pickup available'));
     else if (t.remote === true)   row.appendChild(sigPill('sig-get', 'laptop', 'Works remotely', 'Available remotely'));
@@ -2262,7 +2264,6 @@
     row.setAttribute('role', 'group'); row.setAttribute('aria-label', 'Shortcuts');
     if (!inDrawer) { var l = ce('span', 'lk-occ-chips-l'); l.textContent = 'Shortcuts'; row.appendChild(l); }
     OCCASIONS.forEach(function (o) { row.appendChild(occChip(o, o.t, OCC_SVG[o.ico], inDrawer)); });
-    if (anyNewThisWeek()) row.appendChild(occChip(NEW_SHORTCUT, NEW_SHORTCUT.t, SIG_SVG.bolt, inDrawer, 'new'));
     return row;
   }
   function renderStartHere() {
@@ -2544,7 +2545,8 @@
       pill.style.background = style.bg;
       pill.style.color = style.text;
       if (style.url) pill.appendChild(maskIcon(style.url, style.text, 12));
-      pill.appendChild(document.createTextNode(' ' + style.label));
+      var SHORTN = { 'Handmade & Custom': 'Handmade', 'Clothing & Accessories': 'Clothing', 'Events & Entertainment': 'Events', 'Home & Property': 'Home', 'Professional Services': 'Professional' };
+      pill.appendChild(document.createTextNode(' ' + (SHORTN[style.label] || style.label)));
       cover.appendChild(pill);
     }
     card.appendChild(cover);
@@ -2638,13 +2640,13 @@
     var foot = ce('div', 'vcard-foot');
     var footMeta = ce('span', 'vcard-foot-meta');
     if (vIsFounding(v)) {
-      footMeta.appendChild(maskIcon(ICON_CROWN, '#C99A1F', 11));
+      footMeta.appendChild(maskIcon(ICON_CROWN, '#6002EE', 11));
       footMeta.appendChild(document.createTextNode(' Founding'));
     }
     // Town only ("The Woodlands", not "The Woodlands, Texas") — every open city
     // is Texas today, and the shorter label keeps the foot line quiet.
     var town = vAreaLabel(v).split(',')[0].trim();
-    if (town) {
+    if (town && town !== 'The Woodlands') {
       if (footMeta.childNodes.length) footMeta.appendChild(document.createTextNode(' · '));
       footMeta.appendChild(maskIcon(ICON_PIN, '#6E6A85', 10));
       footMeta.appendChild(document.createTextNode(' ' + town));
@@ -3015,7 +3017,7 @@
   // icons, short labels), and the two bottom cards folded into one soft pink
   // "Have a business?" band. Orange leaves the page (brand guide 2026-11-22:
   // orange is the logo only), so the newsletter box turns lavender + violet.
-  var MKT_V3_SHORT = { all: 'Everyone', fashion: 'Clothing', events: 'Events', handcrafted: 'Handmade', home: 'Home', professional: 'Professional' };
+  var MKT_V3_SHORT = { all: 'All', fashion: 'Clothing', events: 'Events', handcrafted: 'Handmade', home: 'Home', professional: 'Professional' };
   var MKT_V3_CSS = [
     '.browse-hero{background:#F3EBFF!important;padding-bottom:22px!important;}',
     '.lk-mkt-cats{flex:1 0 100%;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin:14px 0 0;padding:4px 2px 2px;}',
@@ -3031,6 +3033,15 @@
     '@media (min-width:1200px){.lk-mkt-cats{justify-content:space-between;}}',
     // v3.1 (F 2026-11-23 'Yes, without counts'): categories live in ONE place on desktop (the icons);
     // the drawer (<=991px) keeps its list. Icons wrap instead of scrolling sideways (phones: 2 rows of 6).
+    // v3.2 (F 2026-11-23 'Yes, put it live', the calmer Market from the expert review): one quiet label
+    // style on every card (white photo tag, soft grey chips, violet icons), so the photos carry the colour.
+    '.vcard .cat-pill{background:rgba(255,255,255,.95) !important;color:#45415A !important;}',
+    '.vcard .cat-pill > span{background-color:#6002EE !important;}',
+    '.vcard .sig-pill,.vcard .sig-trust,.vcard .sig-get,.vcard .name-chip{background:#F5F3FA !important;color:#4A4761 !important;border-color:transparent !important;}',
+    '.vcard .sig-pill svg,.vcard .name-chip > span{color:#6002EE !important;background-color:#6002EE;}',
+    '.vcard .sig-pill .sig-ico{color:#6002EE !important;}',
+    '.vcard .sig-pill .sig-ico svg{background:none !important;}',
+    '.lk-occ-chip i{color:#6002EE !important;}',
     '@media (min-width:992px){#browse-filter-panel .lk-cat-section,#browse-filter-panel .lk-cat-divider{display:none !important;}}',
     '.lk-mkt-cats{flex-wrap:wrap;overflow:visible;row-gap:12px;}',
     '.lk-mkt-subs{flex:1 0 100%;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:16px;}',
