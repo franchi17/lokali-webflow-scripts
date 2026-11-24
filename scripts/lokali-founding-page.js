@@ -25,6 +25,14 @@
   'use strict';
   var CAP = 50;
   var HIDE_VENDORS = { '250': true };
+  // 2026-11-24 (F 'What if we put initials?'): founding seats that can't show a photo (the storefront
+  // is switched off or not public yet, so the public vendor list doesn't return it) show the business
+  // initials instead of a plain pink square. Order matters: when a seat starts returning a photo,
+  // the LAST entries drop off first, so list the seats least likely to get a photo first.
+  var INITIAL_SEATS = [
+    { ini: 'BB', name: 'Baxter Blue Woodworks' },
+    { ini: 'SL', name: 'Shuggie by Leah' }
+  ];
   var FONT = '"Plus Jakarta Sans",sans-serif';
 
   function $(s, r) { return (r || document).querySelector(s); }
@@ -79,11 +87,12 @@
     '.lkfd3-free{margin-top:18px !important;font-size:14.5px !important;color:#6E6A85 !important;}',
     '.lkfd3-free a{color:#B0006A;font-weight:700;text-decoration:underline;text-underline-offset:3px;}',
     '.lkfd a:focus-visible{outline:2px solid #B0006A;outline-offset:3px;}',
+    '.lkfd3-wall i.ini{display:flex;align-items:center;justify-content:center;color:#fff;font:800 clamp(13px,1.6vw,20px)/1 ' + FONT + ';font-style:normal;letter-spacing:.02em;}',
     '@media (max-width:991px){.lkfd3-grid{grid-template-columns:minmax(0,1fr);gap:30px;}.lkfd3-n{font-size:120px;}}',
     '@media (max-width:600px){.lkfd3-on .lkfd-sec:not(.lkfd-sec-lav) .lkfd-cards{grid-template-columns:minmax(0,1fr);}.lkfd3-wall{gap:5px;}.lkfd3-wall i{border-radius:8px;}.lkfd3-n{font-size:100px;}.lkfd.lkfd3-on h1.lkfd3-h1{font-size:25px !important;}}'
   ].join('');
 
-  var root, numEl, ofEl, wall, seatPhotos = [], remaining = null;
+  var root, numEl, ofEl, wall, seatPhotos = [], seatsLoaded = false, remaining = null;
 
   function render() {
     if (!wall) return;
@@ -102,6 +111,9 @@
       if (i < t && seatPhotos[i]) {
         s.style.backgroundImage = 'url("' + seatPhotos[i].url + '")';
         if (typeof seatPhotos[i].fx === 'number' && typeof seatPhotos[i].fy === 'number') s.style.backgroundPosition = seatPhotos[i].fx + '% ' + seatPhotos[i].fy + '%';
+      } else if (i < t && seatsLoaded) {
+        var extra = INITIAL_SEATS[i - seatPhotos.length];
+        if (extra) { s.className = 't ini'; s.textContent = extra.ini; s.title = extra.name; }
       }
       wall.appendChild(s);
     }
@@ -143,6 +155,7 @@
           var c = map[id] || map[String(id)], cu = c && safeUrl(c.url);
           return cu ? { url: cu, fx: c.fx, fy: c.fy } : null;
         }).filter(Boolean);
+        seatsLoaded = true;
         render();
       });
     }).catch(function () { /* seats stay plain pink */ });

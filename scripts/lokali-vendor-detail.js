@@ -1144,11 +1144,19 @@
       if (!cta || !cta.parentNode) return;
       c.rpc('product_checkout_options', { p_products_id: p.id }).then(function (r) {
         var opt = r && r.data;
-        if (!opt || !opt.available || r.error) return;
+        if (!opt || !opt.available || r.error) return null;
+        // #262 live shipping prices: does this listing have its box set up? A
+        // failed or slow answer just means the flat price (or no shipping).
+        return fetch(CHECKOUT_BASE + '/shipping/quote', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ products_id: p.id }) })
+          .then(function (res) { return res.ok ? res.json() : {}; }).catch(function () { return {}; })
+          .then(function (lq) { opt.liveShip = !!(lq && lq.live === true); return opt; });
+      }).then(function (opt) {
+        if (!opt) return;
         var ways = [];
         if (opt.pickup) ways.push({ k: 'pickup', label: 'Pickup', sub: 'no charge', cents: 0 });
         if (opt.delivery) ways.push({ k: 'delivery', label: 'Local delivery', sub: 'no charge', cents: 0 });
-        if (opt.shipping) ways.push({ k: 'shipping', label: 'Shipping', sub: money(opt.shipping_cents) + ' flat', cents: opt.shipping_cents || 0 });
+        if (opt.liveShip) ways.push({ k: 'shipping', label: 'Ship it to me', sub: 'price by zip code', cents: 0, live: true });
+        else if (opt.shipping) ways.push({ k: 'shipping', label: 'Shipping', sub: money(opt.shipping_cents) + ' flat', cents: opt.shipping_cents || 0 });
         if (!ways.length) return;
         if (!document.getElementById('vd-lok-buy-css')) {
           var st = document.createElement('style'); st.id = 'vd-lok-buy-css';
@@ -1169,6 +1177,10 @@
             '#vd-lok-sheet .lb-total{display:flex;justify-content:space-between;font-weight:700;font-size:15px;border-top:1px solid #EEEDF6;padding-top:10px;margin-top:10px;}' +
             '#vd-lok-sheet .lb-go{display:block;width:100%;margin-top:12px;min-height:46px;border:0;border-radius:999px;background:#6002EE;color:#fff;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;}#vd-lok-sheet .lb-go[disabled]{opacity:.6;cursor:default;}' +
             '#vd-lok-sheet .lb-note{font-size:12px;color:#6E6A85;margin-top:8px;line-height:1.5;}#vd-lok-sheet .lb-err{font-size:13px;color:#B1006A;margin-top:8px;display:none;}' +
+            '#vd-lok-zipbox{margin:4px 0 8px 23px;}#vd-lok-zipbox .lb-ziprow{display:flex;gap:8px;}#vd-lok-zipbox input{font-family:inherit;font-size:14px;padding:8px 10px;border:1px solid #DEDAEE;border-radius:10px;min-height:44px;width:120px;color:#1A1829;}' +
+            '#vd-lok-zipbox button{font-family:inherit;font-size:14px;font-weight:600;border:1px solid #6002EE;color:#6002EE;background:#fff;border-radius:10px;min-height:44px;padding:0 14px;cursor:pointer;}' +
+            '#vd-lok-zipbox .lb-rate{display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid #DEDAEE;border-radius:12px;margin:6px 0;cursor:pointer;font-size:14px;}#vd-lok-zipbox .lb-rate.on{border-color:#6002EE;background:#F3EBFF;}' +
+            '#vd-lok-zipbox .lb-rate input{margin:0;accent-color:#6002EE;flex:0 0 auto;width:16px;height:16px;}#vd-lok-zipbox .lb-rate small{display:block;color:#6E6A85;font-size:12px;}#vd-lok-zipbox .lb-rate b{margin-left:auto;font-weight:700;}#vd-lok-zipbox .lb-zipmsg{font-size:12px;color:#6E6A85;margin-top:6px;}' +
             '#vd-lok-sheet .lb-x{background:none;border:0;font-family:inherit;font-size:13px;color:#6E6A85;cursor:pointer;padding:6px 0;}' +
             '#vd-lok-sheet.vd-lok-float{position:fixed;left:12px;right:12px;bottom:calc(74px + env(safe-area-inset-bottom));z-index:61;max-height:70vh;overflow:auto;margin:0;}';
           document.head.appendChild(st);
@@ -1209,6 +1221,7 @@
             '<div class="lb-row"><span>Quantity</span><select id="vd-lok-qty" aria-label="Quantity">' + qtyOpts + '</select></div>' +
             '<div style="font-size:13px;font-weight:600;color:#4A4761;margin-top:6px;">How you get it</div>' +
             ways.map(function (w, i) { return '<label class="lb-way' + (i === 0 ? ' on' : '') + '"><input type="radio" name="vd-lok-way" value="' + w.k + '"' + (i === 0 ? ' checked' : '') + '> <span>' + w.label + '</span><small>' + w.sub + '</small><em data-when="' + w.k + '">The vendor will be in touch to arrange it.</em></label>'; }).join('') +
+            (ways.some(function (w) { return w.live; }) ? '<div id="vd-lok-zipbox" style="display:none;"><div class="lb-ziprow"><input id="vd-lok-zip" inputmode="numeric" maxlength="5" autocomplete="postal-code" placeholder="77380" aria-label="Your zip code"><button type="button" id="vd-lok-zipgo">See prices</button></div><div id="vd-lok-rates"></div><div class="lb-zipmsg" id="vd-lok-zipmsg">Real post office and UPS prices for your zip code.</div></div>' : '') +
             '<div class="lb-total"><span>Total</span><span id="vd-lok-total"></span></div>' +
             '<div class="lb-tax" id="vd-lok-tax"></div>' +
             '<button type="button" class="lb-go" id="vd-lok-go">Continue to payment</button>' +
@@ -1221,9 +1234,40 @@
           if (!btn.offsetParent) { sheet.classList.add('vd-lok-float'); document.body.appendChild(sheet); }
           var qty = sheet.querySelector('#vd-lok-qty'), total = sheet.querySelector('#vd-lok-total'), go = sheet.querySelector('#vd-lok-go'), err = sheet.querySelector('#vd-lok-err');
           function way() { var r = sheet.querySelector('input[name="vd-lok-way"]:checked'); return r ? r.value : ways[0].k; }
-          function wayCents() { var k = way(); for (var i = 0; i < ways.length; i++) if (ways[i].k === k) return ways[i].cents; return 0; }
-          function paint() { total.textContent = money((opt.unit_amount_cents * Number(qty.value || 1)) + wayCents()); sheet.querySelectorAll('.lb-way').forEach(function (l) { l.classList.toggle('on', l.querySelector('input').checked); }); }
-          qty.addEventListener('change', paint);
+          // #262 live shipping: the shopper's zip, the prices it got, the one picked.
+          var zipbox = sheet.querySelector('#vd-lok-zipbox'), liveRates = [], liveZip = '';
+          function isLive() { var k = way(); for (var i = 0; i < ways.length; i++) if (ways[i].k === k) return !!ways[i].live; return false; }
+          function liveChoice() { var r = sheet.querySelector('input[name="vd-lok-rate"]:checked'); if (!r) return null; for (var i = 0; i < liveRates.length; i++) if (liveRates[i].service === r.value) return liveRates[i]; return null; }
+          function wayCents() { if (isLive()) { var lc = liveChoice(); return lc ? lc.cents : 0; } var k = way(); for (var i = 0; i < ways.length; i++) if (ways[i].k === k) return ways[i].cents; return 0; }
+          function paint() {
+            total.textContent = money((opt.unit_amount_cents * Number(qty.value || 1)) + wayCents()) + (isLive() && !liveChoice() ? ' + shipping' : '');
+            sheet.querySelectorAll('.lb-way').forEach(function (l) { l.classList.toggle('on', l.querySelector('input').checked); });
+            sheet.querySelectorAll('.lb-rate').forEach(function (l) { l.classList.toggle('on', l.querySelector('input').checked); });
+            if (zipbox) zipbox.style.display = isLive() ? '' : 'none';
+          }
+          function getRates() {
+            var zi = sheet.querySelector('#vd-lok-zip'), msg = sheet.querySelector('#vd-lok-zipmsg'), box = sheet.querySelector('#vd-lok-rates');
+            var z = (zi.value || '').replace(/\D/g, '').slice(0, 5);
+            if (z.length !== 5) { msg.textContent = 'Type a 5-digit zip code.'; return; }
+            msg.textContent = 'Asking the post office and UPS...'; box.innerHTML = ''; liveRates = []; liveZip = ''; paint();
+            fetch(CHECKOUT_BASE + '/shipping/quote', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ products_id: p.id, quantity: Number(qty.value || 1), zip: z }) })
+              .then(function (res) { return res.json().catch(function () { return {}; }); })
+              .then(function (d) {
+                liveRates = (d && d.choices) || [];
+                if (!liveRates.length) { msg.textContent = d && d.error === 'rate_limited' ? 'Too many lookups from this connection. Try again in a bit.' : 'No prices came back for that zip code. Check it, or use Inquire.'; paint(); return; }
+                liveZip = z;
+                box.innerHTML = liveRates.map(function (c, i) { return '<label class="lb-rate' + (i === 0 ? ' on' : '') + '"><input type="radio" name="vd-lok-rate" value="' + escapeText(c.service) + '"' + (i === 0 ? ' checked' : '') + '><span>' + escapeText(c.name) + (c.days_text ? '<small>' + escapeText(c.days_text) + (c.insured ? ', insured' : '') + '</small>' : (c.insured ? '<small>Insured</small>' : '')) + '</span><b>' + money(c.cents) + '</b></label>'; }).join('');
+                box.querySelectorAll('input[name="vd-lok-rate"]').forEach(function (r) { r.addEventListener('change', paint); });
+                msg.textContent = 'Shipping to ' + z + '. You type the full address at payment. Shipping is an estimate: if the label costs more than $3 less, you get the difference back.';
+                err.style.display = 'none';
+                paint();
+              }).catch(function () { msg.textContent = 'Prices are unavailable right now. Try again, or use Inquire.'; });
+          }
+          if (zipbox) {
+            sheet.querySelector('#vd-lok-zipgo').addEventListener('click', getRates);
+            sheet.querySelector('#vd-lok-zip').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); getRates(); } });
+          }
+          qty.addEventListener('change', function () { if (liveZip) getRates(); paint(); });
           sheet.querySelectorAll('input[name="vd-lok-way"]').forEach(function (r) { r.addEventListener('change', paint); });
           paint();
           // What the vendor promises, said BEFORE payment (F 2026-11-19): how
@@ -1231,14 +1275,14 @@
           // works without it (older database = generic lines stay).
           (function () {
             var shipEm = sheet.querySelector('em[data-when="shipping"]');
-            if (shipEm) shipEm.textContent = 'Sent to the address you give at payment.';
+            if (shipEm) shipEm.textContent = opt.liveShip ? 'Type your zip code to see real prices.' : 'Sent to the address you give at payment.';
             var within = function (n) { return 'within ' + n + ' day' + (n === 1 ? '' : 's'); };
             c.rpc('product_checkout_promises', { p_products_id: p.id }).then(function (pr) {
               var d = pr && !pr.error && pr.data;
               if (!d || typeof d !== 'object') return;
               var pd = Number(d.pickup_days), sd = Number(d.ship_days), who = vendorNameForSheet();
               if (pd >= 1) sheet.querySelectorAll('em[data-when="pickup"],em[data-when="delivery"]').forEach(function (em) { em.textContent = 'Ready ' + within(pd) + '. ' + who + ' will be in touch to arrange it.'; });
-              if (sd >= 1 && shipEm) shipEm.textContent = 'Ships ' + within(sd) + ' to the address you give at payment.';
+              if (sd >= 1 && shipEm) shipEm.textContent = opt.liveShip ? 'Leaves the studio ' + within(sd) + '. Type your zip code to see real prices.' : 'Ships ' + within(sd) + ' to the address you give at payment.';
               var tax = sheet.querySelector('#vd-lok-tax');
               if (tax) tax.textContent = d.tax_added === true ? 'Plus sales tax, shown on the next step before you pay.' : (d.tax_added === false ? 'No sales tax is added to this order.' : '');
               var ret = sheet.querySelector('#vd-lok-ret');
@@ -1247,13 +1291,15 @@
           })();
           sheet.querySelector('#vd-lok-x').addEventListener('click', function () { sheet.style.display = 'none'; });
           go.addEventListener('click', function () {
+            if (isLive() && !liveChoice()) { err.textContent = 'Type your zip code and pick a shipping option first.'; err.style.display = 'block'; var zf = sheet.querySelector('#vd-lok-zip'); if (zf) zf.focus(); return; }
             go.disabled = true; go.textContent = 'One moment'; err.style.display = 'none';
             var headers = { 'Content-Type': 'application/json' };
             var tokenP = (window.LokaliAuth && typeof window.LokaliAuth.token === 'function') ? Promise.resolve().then(function () { return window.LokaliAuth.token(); }).catch(function () { return null; }) : Promise.resolve(null);
             tokenP.then(function (jwt) {
               if (jwt) headers['Authorization'] = 'Bearer ' + jwt;
               return fetch(CHECKOUT_BASE + '/checkout/session', { method: 'POST', headers: headers,
-                body: JSON.stringify({ products_id: p.id, quantity: Number(qty.value || 1), fulfilment: way(), return_url: window.location.href }) });
+                body: JSON.stringify(Object.assign({ products_id: p.id, quantity: Number(qty.value || 1), fulfilment: way(), return_url: window.location.href },
+                  isLive() && liveChoice() ? { ship_service: liveChoice().service, ship_zip: liveZip } : {})) });
             }).then(function (res) { return res.json().catch(function () { return {}; }).then(function (d) { return { ok: res.ok, status: res.status, data: d || {} }; }); })
             .then(function (r) {
               if (r.ok && r.data.url) {
@@ -1264,10 +1310,11 @@
               var msg = code === 'out_of_stock' ? 'Only ' + (r.data.available || 0) + ' left. Pick a smaller quantity.'
                 : code === 'rate_limited' ? 'Too many attempts from this connection. Try again in a bit.'
                 : code === 'checkout_not_available' ? 'This vendor is not taking card payments right now. Use Inquire instead.'
+                : code === 'ship_choice_gone' ? 'That shipping price just changed. Tap See prices again and pick one.'
                 : 'Checkout is unavailable right now. Use Inquire and the vendor will sort it out.';
-              err.textContent = msg; err.style.display = '';
+              err.textContent = msg; err.style.display = 'block';
               go.disabled = false; go.textContent = 'Continue to payment';
-            }).catch(function () { err.textContent = 'Checkout is unavailable right now. Use Inquire instead.'; err.style.display = ''; go.disabled = false; go.textContent = 'Continue to payment'; });
+            }).catch(function () { err.textContent = 'Checkout is unavailable right now. Use Inquire instead.'; err.style.display = 'block'; go.disabled = false; go.textContent = 'Continue to payment'; });
           });
         });
       }).catch(function () {});

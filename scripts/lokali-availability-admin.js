@@ -59,12 +59,12 @@
       '@media(max-width:767px){.lok-ava{background:transparent;border-radius:0;padding:0;}}' +
       '.lok-ava .ava-card{background:#fff;border:1px solid #ECE8F6;border-radius:16px;padding:18px 20px;margin-bottom:14px;}' +
       '.lok-ava h3{margin:0;font-size:14px;font-weight:600;color:#3E3A55;}' +
-      '.lok-ava .ava-sub{font-size:12px;color:#8B8798;}' +
+      '.lok-ava .ava-sub{font-size:12px;line-height:1.45;color:#6E6A85;}' +
       '.lok-ava .ava-chip{font-size:11px;font-weight:500;padding:4px 11px;border-radius:999px;}' +
       '.lok-ava .ava-btn{font-family:inherit;font-size:13px;font-weight:600;color:#fff;background:' + BRAND + ';' +
         'border:none;border-radius:9px;padding:8px 14px;cursor:pointer;white-space:nowrap;}' +
       '.lok-ava .ava-btn[disabled]{opacity:.55;cursor:default;}' +
-      '.lok-ava .ava-btn2{font-family:inherit;font-size:13px;color:#8B8798;background:#F4F1FB;border:none;' +
+      '.lok-ava .ava-btn2{font-family:inherit;font-size:13px;color:#6E6A85;background:#F4F1FB;border:none;' +
         'border-radius:9px;padding:8px 12px;cursor:pointer;}' +
       '.lok-ava .ava-row{display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid #F2EFF8;}' +
       '.lok-ava .ava-row:last-child{border-bottom:none;}' +
@@ -79,14 +79,14 @@
       '.lok-ava .ava-info-wrap{position:relative;display:inline-flex;align-items:center;}' +
       '.lok-ava .ava-info-btn{width:20px;height:20px;border-radius:50%;border:1.5px solid #6002EE;background:#fff;color:#6002EE;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0;font-family:inherit;font-weight:700;font-size:11px;line-height:1;margin-left:7px;}' +
       '.lok-ava .ava-info-pop{position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);z-index:60;width:min(290px,calc(100vw - 32px));background:#fff;border:1px solid #E9E3F7;border-radius:12px;box-shadow:0 10px 30px rgba(26,24,41,.15);padding:14px 30px 14px 14px;display:none;text-align:left;}' +
-      '.lok-ava .ava-ip-h{display:block;margin:0 0 6px;font-size:13px;font-weight:700;color:#3E3A55;}' +
+      '.lok-ava .ava-ip-h{display:block;margin:0 0 6px;font-size:13px;line-height:1.45;font-weight:700;color:#3E3A55;}' +
       '.lok-ava .ava-ip-p{display:block;margin:0 0 8px;font-size:12.5px;font-weight:400;line-height:1.6;color:#6C6880;}' +
       '.lok-ava .ava-ip-p:last-child{margin-bottom:0;}' +
-      '.lok-ava .ava-info-x{position:absolute;top:8px;right:8px;width:22px;height:22px;border:none;background:transparent;color:#8B8798;font-size:12px;cursor:pointer;padding:0;line-height:1;font-family:inherit;}' +
+      '.lok-ava .ava-info-x{position:absolute;top:8px;right:8px;width:22px;height:22px;border:none;background:transparent;color:#6E6A85;font-size:12px;cursor:pointer;padding:0;line-height:1;font-family:inherit;}' +
       '.lok-ava .ava-avatar{width:36px;height:36px;border-radius:50%;background:#EEE6FF;display:flex;align-items:center;' +
         'justify-content:center;color:' + BRAND + ';font-weight:600;font-size:13px;flex-shrink:0;}' +
       '.lok-ava input[type=time]{font-family:inherit;font-size:13px;color:#45415A;border:1px solid #E4DEF4;border-radius:9px;padding:5px 8px;background:#FCFBFE;}' +
-      '.lok-ava .ava-note{font-size:12px;color:#8B8798;line-height:1.5;}' +
+      '.lok-ava .ava-note{font-size:12px;color:#6E6A85;line-height:1.5;}' +
       '.lok-ava .ava-hday{display:flex;flex-wrap:wrap;align-items:flex-start;gap:8px 12px;padding:11px 0;border-bottom:1px solid #F4F1FB;}' +
       '.lok-ava .ava-hday:last-child{border-bottom:none;}' +
       // Francesca 2026-08-13: hours used to sit BESIDE the day, and "Mon, Tue,
@@ -95,19 +95,19 @@
       '.lok-ava .ava-hlabel{flex-basis:100%;font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#5D4F9E;padding-top:0;}' +
       '.lok-ava .ava-hwins{flex:1;min-width:120px;display:flex;flex-direction:column;gap:6px;}' +
       '.lok-ava .ava-hwin{background:#F6F2FD;border:1px solid #E9E3F7;border-radius:10px;padding:7px 11px;}' +
-      '.lok-ava .ava-hwin .ava-htime{font-size:13px;font-weight:600;color:#4B4666;}' +
-      '.lok-ava .ava-hwin u{cursor:pointer;text-decoration:none;color:#B0A9C4;font-style:normal;margin-left:8px;float:right;}' +
+      '.lok-ava .ava-hwin .ava-htime{font-size:13px;line-height:1.45;font-weight:600;color:#4B4666;}' +
+      '.lok-ava .ava-hwin u{cursor:pointer;text-decoration:none;color:#6E6A85;font-style:normal;margin-left:8px;float:right;}' +
       '.lok-ava .ava-hadd{display:flex;align-items:center;gap:6px;flex-shrink:0;flex-wrap:wrap;}' +
       '.lok-ava .ava-hadd input[type=time]{font-family:inherit;font-size:12px;color:#45415A;border:1px solid #E4DEF4;border-radius:8px;padding:5px 7px;background:#FCFBFE;}' +
       // #93 — copy one day's hours to other days (Calendly-style)
-      '.lok-ava .ava-copylink{cursor:pointer;text-decoration:none;font-style:normal;font-size:11.5px;color:#8B8798;padding-top:9px;flex-shrink:0;}' +
+      '.lok-ava .ava-copylink{cursor:pointer;text-decoration:none;font-style:normal;font-size:12px;color:#6E6A85;padding-top:9px;flex-shrink:0;}' +
       '.lok-ava .ava-copylink:hover{color:#5D4F9E;}' +
       '.lok-ava .ava-copy{flex-basis:100%;margin:8px 0 2px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;' +
         'background:#FCFBFE;border:1px solid #E9E3F7;border-radius:10px;padding:9px 12px;}' +
-      '.lok-ava .ava-copy .ava-copyto{font-size:11.5px;color:#8B8798;flex-basis:100%;}' +
+      '.lok-ava .ava-copy .ava-copyto{font-size:12px;line-height:1.45;color:#6E6A85;flex-basis:100%;}' +
       '.lok-ava .ava-copy label{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:#45415A;cursor:pointer;}' +
       '.lok-ava .ava-copy input[type=checkbox]{accent-color:#5D4F9E;width:14px;height:14px;cursor:pointer;}' +
-      '.lok-ava .ava-copy .ava-copycancel{cursor:pointer;text-decoration:none;font-style:normal;font-size:11.5px;color:#B0A9C4;}' +
+      '.lok-ava .ava-copy .ava-copycancel{cursor:pointer;text-decoration:none;font-style:normal;font-size:12px;color:#6E6A85;}' +
       '@media (max-width:600px){.lok-ava .ava-copy{margin-left:0;}}' +
       // Mobile: the day-hours row [label][windows][start–end + Add] overflowed
       // 375px and clipped the "Add" button. Let it wrap so the add-window
@@ -252,7 +252,7 @@
           '<button type="button" class="ava-btn ava-booking-save" style="display:none">Save</button>' + // save-and-undo step 3: saves when you leave the box
           (cur ? '<u class="ava-sub ava-booking-clear" style="cursor:pointer;">remove</u>' : '') +
         '</div>' +
-        '<p class="ava-booking-msg" style="margin:8px 0 0;font-size:12px;color:#6C6880;"></p>' +
+        '<p class="ava-booking-msg" style="margin:8px 0 0;font-size:12px;line-height:1.45;color:#6C6880;"></p>' +
       '</div>';
 
     var input = this.$booking.querySelector('.ava-booking-url');
@@ -355,7 +355,7 @@
           '<div class="ava-hwins">' + (chips || '<span class="ava-sub" style="line-height:32px;">Closed</span>') + '</div>' +
           '<span class="ava-hadd">' +
             '<input type="time" class="ava-hopen" data-wd="' + wd + '" step="300" />' +
-            '<span style="color:#B0ACBC;font-size:12px;">to</span>' +
+            '<span style="color:#6E6A85;font-size:12px;line-height:1.45;">to</span>' +
             '<input type="time" class="ava-hclose" data-wd="' + wd + '" step="300" />' +
             '<button class="ava-btn2" data-addh="' + wd + '" style="display:none">Add</button></span>' + // step 3: adds itself once both times are picked
           copyLink + copyPanel +
@@ -486,7 +486,7 @@
       // divs/spans only in this block — an injected <p> would be auto-closed by
       // the parser around the popover's inner blocks and mangle the tree.
       '<div class="ava-acceptrow" style="display:flex;align-items:center;justify-content:space-between;gap:12px;background:#F6F2FD;border:1px solid #E9E3F7;border-radius:10px;padding:10px 14px;">' +
-        '<div><div style="font-size:13px;font-weight:600;color:#3E3A55;display:flex;align-items:center;">Accepting new clients' +
+        '<div><div style="font-size:13px;line-height:1.45;font-weight:600;color:#3E3A55;display:flex;align-items:center;">Accepting new clients' +
           '<span class="ava-info-wrap"><button type="button" class="ava-info-btn" aria-label="What does this do?">?</button>' +
             '<span class="ava-info-pop">' +
               '<button type="button" class="ava-info-x" aria-label="Close">✕</button>' +
@@ -495,12 +495,12 @@
               (self.waitlistPlan ? '<span class="ava-ip-p"><b>Off</b>: your page says your books are full. Instead of the booking button, new customers join the waiting list on this card, and when you have room you tap <b>Offer spot</b> to invite one. Your hours stay visible either way.<' : '<span class="ava-ip-p"><b>Off</b>: your page says your books are full and hides the booking button. A waiting list for new customers comes with the Featured plan. Your hours stay visible either way.<') + '/span>' +
             '</span></span></div>' +
           '<p class="ava-note" style="margin:2px 0 0;">' + (self.waitlistPlan ? 'Off: new clients see a books-full note and can join the waiting list below.' : 'Off: new clients see a books-full note.') + '</p></div>' +
-        '<span style="display:flex;align-items:center;gap:8px;flex-shrink:0;"><span class="ava-accepting-msg" style="font-size:12px;color:#6C6880;"></span>' +
+        '<span style="display:flex;align-items:center;gap:8px;flex-shrink:0;"><span class="ava-accepting-msg" style="font-size:12px;line-height:1.45;color:#6C6880;"></span>' +
           '<label class="ava-switch"><input type="checkbox" class="ava-accepting"' + (accepting ? ' checked' : '') + ' /><span class="ava-track"></span></label></span>' +
       '</div>';
 
     if (general.length) {
-      html += '<p style="margin:14px 0 2px;font-size:13px;font-weight:600;color:#3E3A55;">Waiting to be taken on' +
+      html += '<p style="margin:14px 0 2px;font-size:13px;line-height:1.45;font-weight:600;color:#3E3A55;">Waiting to be taken on' +
         '<span class="ava-sub" style="font-weight:400;"> · no date in mind</span></p>' +
         waitlistRows(general);
     } else if (!accepting) {
@@ -581,12 +581,12 @@
         : '<button class="ava-btn" data-offer="' + w.id + '">Offer spot</button>') +
         '<span style="display:inline-flex;gap:10px;margin-left:10px;">' + links + '</span>';
       out += '<div class="ava-row">' +
-        '<span style="font-size:12px;font-weight:600;color:#B0ACBC;width:14px;">' + (idx + 1) + '</span>' +
+        '<span style="font-size:12px;line-height:1.45;font-weight:600;color:#6E6A85;width:14px;">' + (idx + 1) + '</span>' +
         '<div class="ava-avatar" style="background:#F5EFE4;color:#B0006A;">' + esc(initials(w.customer_name || w.customer_email)) + '</div>' +
         '<div style="flex:1;min-width:0;"><p style="margin:0;font-size:14px;font-weight:500;color:#3E3A55;">' +
           esc(w.customer_name || w.customer_email) +
           (w.requested_qty ? ' · <span style="color:#5D4F9E;">wants ' + w.requested_qty + '</span>' : '') + '</p>' +
-          '<p style="margin:1px 0 0;font-size:12px;color:#8B8798;">' + esc(w.customer_email || '') + '</p></div>' +
+          '<p style="margin:1px 0 0;font-size:12px;line-height:1.45;color:#6E6A85;">' + esc(w.customer_email || '') + '</p></div>' +
         '<div data-wrow="' + w.id + '">' + right + '</div></div>';
     });
     return out;
@@ -651,12 +651,12 @@
         '#lok-away-card .aw-sw::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.18);transition:left .15s;}' +
         '#lok-away-card .aw-sw:checked{background:#6002EE;}#lok-away-card .aw-sw:checked::after{left:18px;}' +
         '#lok-away-card .aw-body{display:none;margin-top:12px;}#lok-away-card.on .aw-body{display:block;}' +
-        '#lok-away-card label.aw-l{display:block;font-size:12.5px;font-weight:700;margin:10px 0 5px;}' +
+        '#lok-away-card label.aw-l{display:block;font-size:12.5px;line-height:1.45;font-weight:700;margin:10px 0 5px;}' +
         '#lok-away-card input[type=date],#lok-away-card textarea{width:100%;box-sizing:border-box;font:inherit;font-size:14px;padding:9px 11px;border:1px solid #EEEDF6;border-radius:9px;color:#1A1829;background:#fff;}' +
         '#lok-away-card textarea{min-height:64px;resize:vertical;}' +
         '#lok-away-card .aw-acts{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px;}' +
         '#lok-away-card .aw-save{font:700 13px/1.2 inherit;background:#6002EE;color:#fff;border:none;border-radius:9px;padding:10px 16px;cursor:pointer;min-height:38px;}' +
-        '#lok-away-card .aw-msg{font-size:12.5px;color:#6E6A85;}' +
+        '#lok-away-card .aw-msg{font-size:12.5px;line-height:1.45;color:#6E6A85;}' +
         '#lok-away-card .aw-chip{display:inline-block;font-size:11px;font-weight:700;border-radius:100px;padding:3px 9px;background:#FDE6F2;color:#B0006A;margin-left:8px;vertical-align:middle;}';
       document.head.appendChild(st);
     }
@@ -671,7 +671,7 @@
       '<div class="aw-body">' +
         '<label class="aw-l" for="lok-away-until">Back on</label><input type="date" id="lok-away-until" min="' + today + '" value="' + (active ? until : '') + '">' +
         '<label class="aw-l" for="lok-away-note">Note shoppers see (optional)</label><textarea id="lok-away-note" maxlength="240" placeholder="Taking a short break. Orders placed now will be answered when I\u2019m back.">' + String(vendor.away_note || '').replace(/[<>&]/g, function (c) { return { '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]; }) + '</textarea>' +
-        '<div class="aw-row" style="margin-top:12px"><div><div style="font-size:13px;font-weight:700">Keep taking messages while away</div><div class="aw-s">On: the form works and shows your note. Off: the form says "back on" and nothing is sent.</div></div>' +
+        '<div class="aw-row" style="margin-top:12px"><div><div style="font-size:13px;line-height:1.45;font-weight:700">Keep taking messages while away</div><div class="aw-s">On: the form works and shows your note. Off: the form says "back on" and nothing is sent.</div></div>' +
         '<input type="checkbox" class="aw-sw" id="lok-away-inq"' + (vendor.away_accepts_inquiries !== false ? ' checked' : '') + ' aria-label="Keep taking messages while away"></div>' +
         '<div class="aw-acts"><button type="button" class="aw-save" id="lok-away-save" style="display:none">Save</button><span class="aw-msg" id="lok-away-msg"></span></div>' + // step 3: saves by itself
       '</div>';

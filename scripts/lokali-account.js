@@ -2959,6 +2959,7 @@
       // most on this view, and a vendor row's "Sign in as" scrolls up to it.
       var tool = T('div', 'lk-ash-sec'); tool.style.margin = '0 0 22px'; appendSignInAsSection(tool); signInHost = tool.querySelector('.lk-admin-section'); v.appendChild(tool);
       var linkTool = appendLinkStorefrontsSection(v); // #215
+      var npTool = T('div', 'lk-ash-sec'); npTool.style.margin = '0 0 22px'; appendNonprofitSection(npTool); v.appendChild(npTool); // #263
 
       var tools = T('div', 'lk-ash-tools');
       var search = T('input', 'lk-ash-search'); search.type = 'search'; search.id = 'lk-ash-vsearch'; search.placeholder = 'Find a vendor by name'; search.setAttribute('aria-label', 'Find a vendor by name');
@@ -3943,6 +3944,7 @@
     appendSpotlightSection(zAttn.grid, ov);
     appendInviteVendorSection(zTools.grid);   // #168
     appendSignInAsSection(zTools.grid);       // #171
+    appendNonprofitSection(zTools.grid);      // #263
     appendAcquisitionSection(zIns.grid);  // #156
     appendQrScansSection(zIns.grid);
     appendExitSurveySection(zIns.grid, ov);
@@ -4370,6 +4372,93 @@
     }).catch(function () { host.innerHTML = ''; host.appendChild(el('div', 'lk-admin-empty', 'Address flags unavailable.')); });
   }
 
+
+  // #263 (F 2026-11-24) — Nonprofits: the ONLY way a storefront gets the
+  // "Nonprofit" badge (owners cannot set it; patch_nonprofit.sql keeps the column
+  // out of their update grant). F checks the charity letter by hand first. The
+  // price itself (Pro free, Featured half) is set the usual comp way.
+  function appendNonprofitSection(wrap) {
+    var ready = window.LokaliSupabaseReady;
+    if (!ready || typeof ready.then !== 'function') return;
+    var host = el('div', 'lk-admin-section lk-admin-section-wide');
+    wrap.appendChild(host);
+    function rpc(name, args) { return ready.then(function (c) { return c.rpc(name, args || {}); }); }
+    var t = el('div', 'lk-admin-qtitle');
+    t.appendChild(document.createTextNode('Nonprofits'));
+    var cnt = el('span', 'lk-admin-qcount', '0'); t.appendChild(cnt);
+    host.appendChild(t);
+    host.appendChild(el('p', 'lk-admin-sub',
+      'Storefronts with the green Nonprofit badge. Add one only after you have seen their charity letter (the IRS 501(c)(3) letter). Then set their plan the usual way: Pro for free, or Featured at half price ($25 a month) once billing starts. Removing the badge does not change their plan.'));
+    var form = document.createElement('form'); form.setAttribute('novalidate', '');
+    form.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 12px;';
+    var inSlug = document.createElement('input'); inSlug.type = 'text'; inSlug.className = 'lk-admin-input';
+    inSlug.placeholder = 'golokali.com/their-storefront'; inSlug.setAttribute('aria-label', 'Storefront web address'); inSlug.style.width = '260px';
+    var inNote = document.createElement('input'); inNote.type = 'text'; inNote.className = 'lk-admin-input'; inNote.maxLength = 300;
+    inNote.placeholder = 'Note, e.g. letter seen 11-24'; inNote.setAttribute('aria-label', 'Note for yourself'); inNote.style.width = '220px';
+    var add = document.createElement('button'); add.type = 'submit'; add.className = 'lk-admin-btn'; add.textContent = 'Add the badge';
+    var msg = el('div', 'lk-admin-row-l2'); msg.style.flexBasis = '100%'; msg.setAttribute('role', 'status');
+    form.appendChild(inSlug); form.appendChild(inNote); form.appendChild(add); form.appendChild(msg);
+    host.appendChild(form);
+    var list = el('div'); host.appendChild(list);
+    var WHY = { not_found: 'No storefront has that web address. Copy it from the address bar of their storefront.', no_slug: 'Paste their storefront web address first.', not_admin: 'Only the Lokali admin account can do this.' };
+    function draw(rows) {
+      list.innerHTML = '';
+      cnt.textContent = String(rows.length);
+      if (!rows.length) { list.appendChild(el('div', 'lk-admin-empty', 'No nonprofits yet.')); return; }
+      rows.forEach(function (r) {
+        var row = el('div', 'lk-admin-row');
+        var meta = el('div', 'lk-admin-row-meta');
+        var l1 = el('div', 'lk-admin-row-l1'); l1.textContent = r.business_name || 'Unnamed storefront'; meta.appendChild(l1); // vendor text: textContent only (el() sets innerHTML)
+        var plan = r.plan === 'pro' ? 'on Pro' : r.plan === 'featured' ? 'on Featured' : 'on Free (set Pro if they asked)';
+        var l2 = el('div', 'lk-admin-row-l2');
+        l2.textContent = (r.slug ? 'golokali.com/' + r.slug + ' · ' : '') + plan +
+          (r.checked_at ? ' · added ' + fmtLocalDay(r.checked_at) : '') + (r.note ? ' · ' + r.note : '');
+        meta.appendChild(l2);
+        row.appendChild(meta);
+        if (r.slug) {
+          var view = document.createElement('a'); view.className = 'lk-admin-btn'; view.textContent = 'View';
+          view.href = '/' + encodeURIComponent(r.slug); view.target = '_blank'; view.rel = 'noopener';
+          row.appendChild(view);
+        }
+        var off = document.createElement('button'); off.type = 'button'; off.className = 'lk-admin-btn'; off.textContent = 'Remove badge';
+        off.addEventListener('click', function () {
+          if (!window.confirm('Remove the Nonprofit badge from ' + (r.business_name || 'this storefront') + '? Their plan stays as it is.')) return;
+          off.disabled = true; off.textContent = 'Removing…';
+          rpc('admin_set_nonprofit', { p_slug: r.slug, p_on: false, p_note: null }).then(function (res) {
+            var d = res && res.data;
+            if (!d || d.ok !== true) { off.disabled = false; off.textContent = 'Remove badge'; msg.textContent = WHY[d && d.reason] || 'That did not work. Try again in a minute.'; return; }
+            load();
+          }).catch(function () { off.disabled = false; off.textContent = 'Remove badge'; });
+        });
+        row.appendChild(off);
+        list.appendChild(row);
+      });
+    }
+    function load() {
+      rpc('admin_nonprofits').then(function (res) {
+        var d = res && res.data;
+        if (!d || d.ok !== true) { list.innerHTML = ''; list.appendChild(el('div', 'lk-admin-empty', (res && res.error) ? 'Nonprofits are not set up yet (apply patch_nonprofit.sql).' : (WHY[d && d.reason] || 'Nonprofits could not be loaded.'))); return; }
+        draw(d.rows || []);
+      }).catch(function () { list.innerHTML = ''; list.appendChild(el('div', 'lk-admin-empty', 'Nonprofits could not be loaded.')); });
+    }
+    form.addEventListener('submit', function (ev) {
+      ev.preventDefault();
+      var slug = inSlug.value.trim();
+      if (!slug) { msg.textContent = WHY.no_slug; inSlug.focus(); return; }
+      add.disabled = true; add.textContent = 'Adding…'; msg.textContent = '';
+      rpc('admin_set_nonprofit', { p_slug: slug, p_on: true, p_note: inNote.value.trim() || null }).then(function (res) {
+        add.disabled = false; add.textContent = 'Add the badge';
+        var d = res && res.data;
+        if (!d || d.ok !== true) { msg.textContent = WHY[d && d.reason] || 'That did not work. Try again in a minute.'; return; }
+        msg.textContent = (d.business_name || 'The storefront') + ' now shows the Nonprofit badge. Remember to set their plan.';
+        inSlug.value = ''; inNote.value = '';
+        load();
+      }).catch(function () { add.disabled = false; add.textContent = 'Add the badge'; msg.textContent = 'That did not work. Try again in a minute.'; });
+    });
+    inSlug.addEventListener('input', function () { msg.textContent = ''; });
+    list.appendChild(el('div', 'lk-admin-empty', 'Loading…'));
+    load();
+  }
 
   // #168 (F 2026-09-04) — invite a vendor: creates their account + pre-fills the
   // storefront; Supabase sends the "set your password" email. Nothing is sent
@@ -5571,11 +5660,11 @@
     function card(o) {
       var st = statusOf(o), due = '';
       var n = Number(o.ready_days), start = new Date(o.paid_at);
-      if ((o.status === 'paid' || o.status === 'partially_refunded') && n >= 1 && !isNaN(start)) {
+      if (o.fulfilment !== 'event' && (o.status === 'paid' || o.status === 'partially_refunded') && n >= 1 && !isNaN(start)) {
         due = pill((o.fulfilment === 'shipping' ? 'Ships by ' : o.fulfilment === 'delivery' ? 'Ready by ' : 'Pickup by ') + oDay(new Date(start.getTime() + n * 864e5).toISOString()), '#FFF7E8', '#7A4A00');
       }
       var next = o.status === 'paid' || o.status === 'partially_refunded'
-        ? (o.fulfilment === 'shipping' ? 'It ships to the address you gave at payment.' : esc(o.vendor_name || 'The vendor') + ' will be in touch about ' + (o.fulfilment === 'delivery' ? 'delivery.' : 'when and where to pick it up.'))
+        ? (o.fulfilment === 'event' ? 'Tickets. Your name is on the guest list at the door.' : o.fulfilment === 'shipping' ? 'It ships to the address you gave at payment.' : esc(o.vendor_name || 'The vendor') + ' will be in touch about ' + (o.fulfilment === 'delivery' ? 'delivery.' : 'when and where to pick it up.'))
         : '';
       var w = el('div');
       w.style.cssText = 'background:#fff;border:1px solid #DEDAEE;border-radius:16px;padding:16px;margin:0 0 10px;max-width:640px;';
@@ -5596,12 +5685,52 @@
       var S = window.LokaliSupabaseAPI && window.LokaliSupabaseAPI.favorites;
       try { if (S && typeof S.add === 'function') Promise.resolve(S.add(Number(pending.vendor_id))).then(function () {}, function () {}); } catch (e) {}
     }
+    // #261 "Coming up": upcoming tickets + waitlists above the orders (F 2026-11-23,
+    // mockup v3 screen 7). Best-effort: no tickets or an error draws nothing.
+    var TZ = 'America/Chicago';
+    function tTime(d) { return d.toLocaleTimeString('en-US', { timeZone: TZ, hour: 'numeric', minute: '2-digit' }).toLowerCase().replace(/[\u202f\u00a0]/g, ' ').replace(':00', ''); }
+    function comingUp(t) {
+      var tickets = (t && t.tickets) || [], waits = (t && t.waitlists) || [];
+      if (!tickets.length && !waits.length) return null;
+      var box = el('div'); box.style.cssText = 'max-width:640px;margin:0 0 18px;';
+      box.innerHTML = '<div style="font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#6E6A85;margin:0 0 8px;">Coming up</div>';
+      tickets.forEach(function (k) {
+        var d = new Date(k.starts_at);
+        var mon = d.toLocaleDateString('en-US', { timeZone: TZ, month: 'short' }).toUpperCase(), day = d.toLocaleDateString('en-US', { timeZone: TZ, day: 'numeric' });
+        var w = el('div');
+        w.style.cssText = 'background:#fff;border:1px solid #DEDAEE;border-radius:16px;padding:14px;margin:0 0 8px;display:flex;gap:12px;';
+        var cal = 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + encodeURIComponent(k.title) + '&dates=' +
+          [d, k.ends_at ? new Date(k.ends_at) : new Date(d.getTime() + 3 * 36e5)].map(function (x) { return x.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, ''); }).join('/') +
+          '&location=' + encodeURIComponent(k.place || '');
+        w.innerHTML = '<div style="background:#F3EBFF;border-radius:10px;padding:6px 10px;text-align:center;color:#6002EE;flex:none;align-self:flex-start;"><div style="font-size:11px;font-weight:700;">' + esc(mon) + '</div><div style="font-size:22px;font-weight:700;line-height:1.1;">' + esc(day) + '</div></div>' +
+          '<div style="flex:1;min-width:0;font-size:14px;color:#1A1829;"><div style="font-weight:700;">' + esc(k.title) + '</div>' +
+          '<div style="color:#6E6A85;font-size:13px;margin-top:2px;">' + esc(k.vendor_name || '') + ' · ' + esc(tTime(d)) + ' · ' + esc(k.quantity) + ' ' + (k.kind === 'spot' ? 'spot' : 'ticket') + (k.quantity === 1 ? '' : 's') + (k.kind === 'spot' ? ' · free' : '') + '</div>' +
+          (k.canceled ? '<div style="font-size:13px;color:#45415A;margin-top:4px;">This event was canceled.' + (k.kind === 'spot' ? '' : ' Your refund is on its way.') + '</div>'
+            : '<div style="font-size:13px;color:#17634A;font-weight:600;margin-top:4px;">On the guest list as ' + esc(k.guest_name || 'you') + '</div>' +
+              '<div style="display:flex;gap:14px;margin-top:8px;font-size:13px;"><a href="https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(k.place || '') + '" target="_blank" rel="noopener" style="color:#6002EE;font-weight:700;text-decoration:none;">Directions</a>' +
+              '<a href="' + esc(cal) + '" target="_blank" rel="noopener" style="color:#6002EE;font-weight:700;text-decoration:none;">Add to calendar</a></div>') + '</div>';
+        box.appendChild(w);
+      });
+      waits.forEach(function (x) {
+        var w = el('div');
+        w.style.cssText = 'border:1px dashed #DEDAEE;border-radius:14px;padding:10px 12px;margin:0 0 8px;font-size:13px;color:#1A1829;display:flex;justify-content:space-between;gap:10px;align-items:center;';
+        w.innerHTML = '<span><b>' + esc(x.title) + '</b> · <span style="color:#6E6A85;">we\'ll email you if tickets open up</span></span><button type="button" style="border:0;background:none;color:#6002EE;font-weight:700;font-size:13px;cursor:pointer;min-height:40px;">Leave waitlist</button>';
+        w.querySelector('button').addEventListener('click', function () {
+          Promise.resolve(c.rpc('my_leave_event_waitlist', { p_id: x.id })).then(function () { w.remove(); }, function () {});
+        });
+        box.appendChild(w);
+      });
+      return box;
+    }
+    var ticketsP = Promise.resolve();
     Promise.resolve(c.rpc('claim_my_orders')).then(function () {}, function () {}).then(function () {
+      ticketsP = Promise.resolve(c.rpc('my_tickets')).then(function (t) { return (t && !t.error) ? t.data : null; }, function () { return null; });
       return c.rpc('my_purchases', { p_limit: 50 });
     }).then(function (r) {
       var rows = (r && !r.error && Array.isArray(r.data)) ? r.data : [];
       body.innerHTML = '';
       finishFollow();
+      ticketsP.then(function (t) { var cu = comingUp(t); if (cu) body.insertBefore(cu, body.firstChild); });
       if (!rows.length) {
         if (pending) {
           var mail = String((state.account && state.account.email) || 'this account\'s email');

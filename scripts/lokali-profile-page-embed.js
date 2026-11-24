@@ -47,7 +47,7 @@
     "  /* breathing room under the phone input and between the contact checkboxes */\n" +
     "  #wf-form-Business-Profile .lokali-phone { margin-bottom: 12px; }\n" +
     "  #wf-form-Business-Profile .checkbox-form { margin-bottom: 9px; }");
-  injectStyle("lokali-locations-ui-style", "  .location-multi {\n    font-family: \"Plus Jakarta Sans\", system-ui, -apple-system, sans-serif;\n    background: #eee6ff;\n    padding: 12px 14px;\n    border-radius: 8px;\n    box-sizing: border-box;\n  }\n  .location-hint {\n    font-size: 13px;\n    color: #5A5570;\n    margin: 0 0 10px;\n    line-height: 1.4;\n  }\n  .location-pills {\n    display: flex;\n    flex-wrap: wrap;\n    gap: 8px;\n  }\n  .location-pill {\n    font-family: inherit;\n    -webkit-appearance: none;\n    appearance: none;\n    display: inline-flex;\n    align-items: center;\n    gap: 7px;\n    background: #fff;\n    color: #5A5570;\n    border: 1px solid #C9BDE8;\n    border-radius: 999px;\n    padding: 8px 14px;\n    font-size: 14px;\n    line-height: 1.3;\n    cursor: pointer;\n    user-select: none;\n    transition: background .12s, border-color .12s, color .12s;\n  }\n  .location-pill:hover {\n    border-color: #6002ee;\n    color: #6002ee;\n  }\n  .location-pill.is-on {\n    background: #6002EE;\n    border-color: #6002EE;\n    color: #fff;\n    font-weight: 600;\n  }\n  .location-pill.is-on:hover {\n    background: #4a01c7;\n    border-color: #4a01c7;\n    color: #fff;\n  }\n  .location-pill .lp-g {\n    font-weight: 700;\n    font-size: 13px;\n    line-height: 1;\n  }\n  .location-count {\n    font-size: 12.5px;\n    color: #6B6787;\n    margin: 10px 0 0;\n  }\n  .category-pills {\n    font-family: \"Plus Jakarta Sans\", system-ui, -apple-system, sans-serif;\n    background: #eee6ff;\n    padding: 12px 14px;\n    border-radius: 8px;\n    box-sizing: border-box;\n  }\n  .category-hint {\n    font-size: 13px;\n    color: #5A5570;\n    margin: 0 0 10px;\n    line-height: 1.4;\n  }\n  .category-pill-row {\n    display: flex;\n    flex-wrap: wrap;\n    gap: 8px;\n  }\n  .category-pill {\n    font-family: inherit;\n    -webkit-appearance: none;\n    appearance: none;\n    display: inline-flex;\n    align-items: center;\n    gap: 8px;\n    background: #fff;\n    color: #5A5570;\n    border: 1px solid #C9BDE8;\n    border-radius: 999px;\n    padding: 8px 14px;\n    font-size: 14px;\n    line-height: 1.3;\n    cursor: pointer;\n    user-select: none;\n    transition: background .12s, border-color .12s, color .12s;\n  }\n  .category-pill:hover {\n    border-color: #6002ee;\n    color: #6002ee;\n  }\n  .category-pill.is-on {\n    background: #6002EE;\n    border-color: #6002EE;\n    color: #fff;\n    font-weight: 600;\n  }\n  .category-pill .cp-ic {\n    width: 16px;\n    height: 16px;\n    flex-shrink: 0;\n    background-color: currentColor;\n    -webkit-mask-position: center;\n    -webkit-mask-repeat: no-repeat;\n    -webkit-mask-size: contain;\n    mask-position: center;\n    mask-repeat: no-repeat;\n    mask-size: contain;\n  }");
+  injectStyle("lokali-locations-ui-style", "  .location-multi {\n    font-family: \"Plus Jakarta Sans\", system-ui, -apple-system, sans-serif;\n    background: #eee6ff;\n    padding: 12px 14px;\n    border-radius: 8px;\n    box-sizing: border-box;\n  }\n  .location-hint {\n    font-size: 13px;\n    color: #5A5570;\n    margin: 0 0 10px;\n    line-height: 1.4;\n  }\n  .location-pills {\n    display: flex;\n    flex-wrap: wrap;\n    gap: 8px;\n  }\n  .location-pill {\n    font-family: inherit;\n    -webkit-appearance: none;\n    appearance: none;\n    display: inline-flex;\n    align-items: center;\n    gap: 7px;\n    background: #fff;\n    color: #5A5570;\n    border: 1px solid #C9BDE8;\n    border-radius: 999px;\n    padding: 8px 14px;\n    font-size: 14px;\n    line-height: 1.3;\n    cursor: pointer;\n    user-select: none;\n    transition: background .12s, border-color .12s, color .12s;\n  }\n  .location-pill:hover {\n    border-color: #6002ee;\n    color: #6002ee;\n  }\n  .location-pill.is-on {\n    background: #6002EE;\n    border-color: #6002EE;\n    color: #fff;\n    font-weight: 600;\n  }\n  .location-pill.is-on:hover {\n    background: #4a01c7;\n    border-color: #4a01c7;\n    color: #fff;\n  }\n  .location-pill .lp-g {\n    font-weight: 700;\n    font-size: 13px;\n    line-height: 1;\n  }\n  .location-count {\n    font-size: 12.5px;line-height:1.45;\n    color: #6B6787;\n    margin: 10px 0 0;\n  }\n  .category-pills {\n    font-family: \"Plus Jakarta Sans\", system-ui, -apple-system, sans-serif;\n    background: #eee6ff;\n    padding: 12px 14px;\n    border-radius: 8px;\n    box-sizing: border-box;\n  }\n  .category-hint {\n    font-size: 13px;\n    color: #5A5570;\n    margin: 0 0 10px;\n    line-height: 1.4;\n  }\n  .category-pill-row {\n    display: flex;\n    flex-wrap: wrap;\n    gap: 8px;\n  }\n  .category-pill {\n    font-family: inherit;\n    -webkit-appearance: none;\n    appearance: none;\n    display: inline-flex;\n    align-items: center;\n    gap: 8px;\n    background: #fff;\n    color: #5A5570;\n    border: 1px solid #C9BDE8;\n    border-radius: 999px;\n    padding: 8px 14px;\n    font-size: 14px;\n    line-height: 1.3;\n    cursor: pointer;\n    user-select: none;\n    transition: background .12s, border-color .12s, color .12s;\n  }\n  .category-pill:hover {\n    border-color: #6002ee;\n    color: #6002ee;\n  }\n  .category-pill.is-on {\n    background: #6002EE;\n    border-color: #6002EE;\n    color: #fff;\n    font-weight: 600;\n  }\n  .category-pill .cp-ic {\n    width: 16px;\n    height: 16px;\n    flex-shrink: 0;\n    background-color: currentColor;\n    -webkit-mask-position: center;\n    -webkit-mask-repeat: no-repeat;\n    -webkit-mask-size: contain;\n    mask-position: center;\n    mask-repeat: no-repeat;\n    mask-size: contain;\n  }");
 })();
 
 
@@ -667,7 +667,7 @@ var LokaliProfilePage = (function () {
     var h = document.createElement('div'); h.id = 'lok-pp-title'; h.style.cssText = 'font-size:17px;font-weight:700;color:#1A1829;'; h.textContent = o.title || 'Choose a photo';
     var sub = document.createElement('div'); sub.style.cssText = 'font-size:13px;color:#6E6A85;line-height:1.5;margin-top:3px;'; sub.textContent = o.sub || '';
     ht.appendChild(h); ht.appendChild(sub);
-    var count = document.createElement('div'); count.style.cssText = 'font-size:13px;font-weight:600;color:#4A4761;white-space:nowrap;padding-top:3px;';
+    var count = document.createElement('div'); count.style.cssText = 'font-size:13px;line-height:1.45;font-weight:600;color:#4A4761;white-space:nowrap;padding-top:3px;';
     head.appendChild(ht); head.appendChild(count);
     var body = document.createElement('div');
     body.style.cssText = 'flex:1 1 auto;min-height:0;overflow:auto;border:1px solid #E6E4F0;border-radius:10px;padding:10px;display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:8px;align-content:start;';
@@ -959,7 +959,7 @@ var LokaliProfilePage = (function () {
     b.type = 'button';
     b.setAttribute('aria-label', 'Close');
     b.textContent = '✕';
-    b.style.cssText = 'position:absolute;top:8px;right:8px;width:22px;height:22px;border:none;background:transparent;color:#8E8BA6;font-size:12px;cursor:pointer;padding:0;line-height:1;font-family:inherit;';
+    b.style.cssText = 'position:absolute;top:8px;right:8px;width:22px;height:22px;border:none;background:transparent;color:#6E6A85;font-size:12px;cursor:pointer;padding:0;line-height:1;font-family:inherit;';
     b.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); pop.style.display = 'none'; });
     pop.appendChild(b);
   }
@@ -1005,9 +1005,9 @@ var LokaliProfilePage = (function () {
   }
   function _photoInfoIcon() {
     return _infoPopover('i', 'Photo guidelines',
-      '<div style="font-weight:700;font-size:13px;color:#1A1829;margin-bottom:6px;">Photo guidelines</div>' +
+      '<div style="font-weight:700;font-size:13px;line-height:1.45;color:#1A1829;margin-bottom:6px;">Photo guidelines</div>' +
       '<div style="font-size:12.5px;color:#565170;line-height:1.6;">JPG, PNG or WEBP &middot; under 5&nbsp;MB<br>Square, at least 500&nbsp;px (1000&times;1000 ideal)<br>Bright and clear, no text overlays</div>' +
-      '<a href="/vendor-resources/profile-photo-guide" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;font-weight:700;font-size:12.5px;color:#6002EE;text-decoration:none;">Read the full guide &rarr;</a>');
+      '<a href="/vendor-resources/profile-photo-guide" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;font-weight:700;font-size:12.5px;line-height:1.45;color:#6002EE;text-decoration:none;">Read the full guide &rarr;</a>');
   }
 
   // "Public Email" -> "Business Email" + circled-? explaining where messages
@@ -1023,7 +1023,7 @@ var LokaliProfilePage = (function () {
       h.style.display = 'flex';
       h.style.alignItems = 'center';
       h.appendChild(_infoPopover('?', 'About Business Email',
-        '<div style="font-weight:700;font-size:13px;color:#1A1829;margin-bottom:6px;">Business Email</div>' +
+        '<div style="font-weight:700;font-size:13px;line-height:1.45;color:#1A1829;margin-bottom:6px;">Business Email</div>' +
         '<div style="font-size:12.5px;color:#565170;line-height:1.6;">Every message a customer sends from the <b>&ldquo;Send a message&rdquo;</b> button on your page is emailed here (and it’s also saved in your Leads). Leave it empty and messages go to your login email instead.</div>'));
     }
   }
@@ -1131,7 +1131,7 @@ var LokaliProfilePage = (function () {
             full.target = '_blank';
             full.rel = 'noopener';
             full.textContent = 'Read the full guide →';
-            full.style.cssText = 'display:inline-block;margin-top:10px;font-weight:700;font-size:12.5px;color:#6002EE;text-decoration:none;font-family:"Plus Jakarta Sans",sans-serif;';
+            full.style.cssText = 'display:inline-block;margin-top:10px;font-weight:700;font-size:12.5px;line-height:1.45;color:#6002EE;text-decoration:none;font-family:"Plus Jakarta Sans",sans-serif;';
             pop.appendChild(full);
             _popCloseX(pop);
           }
@@ -1247,7 +1247,7 @@ var LokaliProfilePage = (function () {
       h.style.alignItems = 'center';
       h.textContent = 'Instagram handle (private)';
       h.appendChild(_infoPopover('?', 'About your Instagram handle',
-        '<div style="font-weight:700;font-size:13px;color:#1A1829;margin-bottom:6px;">Only Lokali sees this</div>' +
+        '<div style="font-weight:700;font-size:13px;line-height:1.45;color:#1A1829;margin-bottom:6px;">Only Lokali sees this</div>' +
         '<div style="font-size:12.5px;color:#565170;line-height:1.6;">Your handle is <b>never shown on your storefront</b>. Now and then we share new neighbors together in one Lokali post. Your handle lets us tag you when you are in one.</div>'));
     }
     if (!document.getElementById('lok-ig-hint')) {
@@ -1677,11 +1677,11 @@ var LokaliProfilePage = (function () {
     card.col.appendChild(vidRow);
     var vidHint = document.createElement('p');
     vidHint.id = 'lok-pf-vidhint';
-    vidHint.style.cssText = 'font:400 12px/1.5 "Plus Jakarta Sans",sans-serif;color:#8E8BA6;margin:6px 0 0;white-space:normal;display:none;';
+    vidHint.style.cssText = 'font:400 12px/1.5 "Plus Jakarta Sans",sans-serif;color:#6E6A85;margin:6px 0 0;white-space:normal;display:none;';
     card.col.appendChild(vidHint);
     function vidSay(msg, bad) {
       vidHint.textContent = msg; vidHint.style.display = msg ? 'block' : 'none';
-      vidHint.style.color = bad ? '#B1006A' : '#8E8BA6';
+      vidHint.style.color = bad ? '#B1006A' : '#6E6A85';
     }
     vidRow.addEventListener('click', function (ev) {
       if (!ev.target || ev.target.id !== 'lok-pf-vidsave') return;
@@ -1861,7 +1861,7 @@ var LokaliProfilePage = (function () {
         plabRow.style.cssText = 'display:flex;align-items:flex-start;gap:8px;';
         var plab = document.createElement('div');
         plab.id = 'lok-pf-preview-label';
-        plab.style.cssText = 'font-size:12px;font-weight:600;color:#4A4761;margin-bottom:6px;flex:1;';
+        plab.style.cssText = 'font-size:12px;line-height:1.45;font-weight:600;color:#4A4761;margin-bottom:6px;flex:1;';
         var pclose = document.createElement('button');
         pclose.type = 'button';
         pclose.textContent = '✕';
@@ -3242,7 +3242,7 @@ var LokaliProfilePage = (function () {
     if (!document.getElementById('lok-addr-info-css')) {
       var st = document.createElement('style'); st.id = 'lok-addr-info-css';
       st.textContent =
-        '.lok-addr-info{font-family:"Plus Jakarta Sans",sans-serif;font-size:12px;color:#6C6880;margin:6px 0 0;display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;position:relative;}' +
+        '.lok-addr-info{font-family:"Plus Jakarta Sans",sans-serif;font-size:12px;line-height:1.45;color:#6C6880;margin:6px 0 0;display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;position:relative;}' +
         '.lok-addr-info-btn{display:inline-flex;align-items:center;gap:5px;background:none;border:none;padding:0;font:inherit;color:#6002EE;cursor:pointer;}' +
         '.lok-addr-info-btn svg{flex:none;}' +
         '.lok-addr-pob{flex:1 1 100%;color:#6C6880;}' +

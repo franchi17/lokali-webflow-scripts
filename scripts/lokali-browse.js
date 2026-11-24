@@ -286,8 +286,15 @@
   var TOGGLE_LIST = [
     { key: 'new',      id: 'browse-toggle-new',      label: 'New this week',         color: '#1D6A45', url: ASSET + '6a1af53c6b8fa6046c223ce9_bullhorn-solid.png' },
     { key: 'founding', id: 'browse-toggle-founding', label: 'Founding vendors only', color: '#C9A22A', url: ASSET + '69f4dbb3533f0ee2046ab0fb_crown-solid.png' },
-    { key: 'verified', id: 'browse-toggle-verified', label: 'Verified only',         color: '#0000E4', glyph: '✓' }
+    { key: 'verified', id: 'browse-toggle-verified', label: 'Verified only',         color: '#0000E4', glyph: '✓' },
+    // #263 (F 2026-11-24): registered charities, marked by Lokali by hand. The row
+    // stays hidden until at least one live storefront is a nonprofit (an empty
+    // filter would read as a broken one).
+    { key: 'nonprofit', id: 'browse-toggle-nonprofit', label: 'Nonprofits only',     color: '#17634A', url: ASSET + '6a186b06cfcb6c4d6d1e1cf7_heart-regular.png' }
   ];
+  function toggleOn(key) {
+    return key === 'new' ? showNewOnly : key === 'founding' ? showFoundingOnly : key === 'nonprofit' ? showNonprofitOnly : showVerifiedOnly;
+  }
   var SORT_LIST = [
     { sort: 'best_match', id: 'sort-match', label: 'Featured first',   url: ASSET + '6a1d92f85db0d873ff20900a_sort-solid.png' },
     { sort: 'newest',     id: 'sort-new',  label: 'Newest first',  url: ASSET + '6a1d92f83a64390307583b8e_bolt-solid.png' },
@@ -512,6 +519,7 @@
     // circle was undecodable for first-time visitors). Same palette as the old badges.
     ".vcard .name-chip{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;border-radius:100px;padding:2px 7px;line-height:1.3;flex-shrink:0;}",
     ".vcard .chip-verified{background:#D2DEFF;color:#1730C9;}",
+    ".vcard .chip-nonprofit{background:#E0F5EB;color:#17634A;}", // #263 brand soft green
     ".vcard .chip-new{background:#C6F2DB;color:#11744A;}",
     ".vcard .chip-spotlight{background:#E2D2FF;color:#5A00E0;}",
     // Away chip (v1.4.444 shipped it without a rule, so it inherited nothing).
@@ -764,6 +772,7 @@
   var showNewOnly = false;
   var showFoundingOnly = false;
   var showVerifiedOnly = false;
+  var showNonprofitOnly = false; // #263
   var searchTerm = '';
 
   // ── helpers ──
@@ -828,6 +837,7 @@
   function vCreated(v) { var c = (v.published_at != null ? v.published_at : v.created_at); if (c == null) return 0; return typeof c === 'number' ? c : (Date.parse(c) || 0); }
   function vIsNew(v)       { var t = vCreated(v); return t > 0 && (Date.now() - t) < NEW_WINDOW_MS; }
   function vIsFounding(v)  { return v.is_founding_member === true; }
+  function vIsNonprofit(v) { return v.is_nonprofit === true; } // #263, admin-set only (patch_nonprofit.sql)
   function vIsVerified(v)  { var f = window.LOKALI_VERIFIED_FIELD; if (f && v[f] != null) return v[f] === true; return v.is_verified === true; }
   function vIsSpotlight(v) { var f = window.LOKALI_SPOTLIGHT_FIELD; if (f && v[f] != null) return v[f] === true; return v.is_spotlight === true; }
   // Featured = the paid TIER (server-synced is_featured), distinct from the
@@ -1134,6 +1144,7 @@
       if (!subcatDataPresent()) { activeSubcats = []; _rawRestoredSubcats = null; }
       renderSubcatRow();
       updateCategoryCounts();
+      syncNonprofitToggle();
       _vendorsReady = true;
       applyFilters();
       fetchCovers();
@@ -1225,7 +1236,9 @@
     var recs = Number(t.recs) || 0;
     if (recs > 0) row.appendChild(sigPill('sig-trust', 'heart', 'Recommended by ' + recs + (recs === 1 ? ' neighbor' : ' neighbors'), 'Recommendations from shoppers who contacted this vendor through Lokali'));
     else if (t.reply_fast === true) row.appendChild(sigPill('sig-trust', 'clock', 'Replies within a day', 'Median first reply over the last 90 days'));
-    if (t.ships === true)         row.appendChild(sigPill('sig-get', 'box', 'Ships', 'Ships orders'));
+    var svcOnly = vCategoryIds(v).every(function (c) { return c === SLUG_TO_ID.professional || c === SLUG_TO_ID.business; });
+    if (svcOnly) { if (t.remote === true) row.appendChild(sigPill('sig-get', 'laptop', 'Works remotely', 'Available remotely')); }
+    else if (t.ships === true)         row.appendChild(sigPill('sig-get', 'box', 'Ships', 'Ships orders'));
     else if (t.delivers === true) row.appendChild(sigPill('sig-get', 'truck', 'Delivers locally', 'Local delivery'));
     else if (t.pickup === true)   row.appendChild(sigPill('sig-get', 'bag', 'Pickup', 'Pickup available'));
     else if (t.remote === true)   row.appendChild(sigPill('sig-get', 'laptop', 'Works remotely', 'Available remotely'));
@@ -1392,7 +1405,7 @@
     mount.innerHTML = '';
 
     // Category
-    var cs = ce('div', 'lk-filter-section');
+    var cs = ce('div', 'lk-filter-section lk-cat-section'); // v3.1: hidden on desktop (the round icons above do this job)
     var cl = ce('div', 'lk-filter-label'); cl.textContent = 'Category'; cs.appendChild(cl);
     CATEGORY_LIST.forEach(function (c) {
       var item = ce('button', 'filter-item' + (c.slug === activeCategory ? ' active' : ''));
@@ -1408,7 +1421,7 @@
     });
     mount.appendChild(cs);
     renderSubcatRow(); // #96 — unfold pills under the (restored) active category
-    mount.appendChild(ce('div', 'lk-divider'));
+    mount.appendChild(ce('div', 'lk-divider lk-cat-divider'));
 
     // Shortcuts (drawer only, <=991px): the occasion chips that sit above the
     // grid on desktop. Filled by renderDrawerShortcuts() once vendors exist.
@@ -1425,15 +1438,16 @@
       var row = ce('button', 'lk-toggle');
       row.type = 'button';
       row.setAttribute('role', 'switch');
-      var on0 = t.key === 'new' ? showNewOnly : (t.key === 'founding' ? showFoundingOnly : showVerifiedOnly);
+      var on0 = toggleOn(t.key);
       row.setAttribute('aria-checked', on0 ? 'true' : 'false');
       var label = ce('span', 'lk-toggle-label');
       label.appendChild(t.url ? maskIcon(t.url, t.color, 16) : glyphIcon(t.glyph, t.color));
       label.appendChild(document.createTextNode(t.label));
       var sw = ce('span', 'toggle-switch'); sw.id = t.id;
+      if (t.key === 'nonprofit') { row.id = 'browse-toggle-nonprofit-row'; row.style.display = (_allVendors && _allVendors.some(vIsNonprofit)) ? '' : 'none'; }
       row.appendChild(label); row.appendChild(sw);
       row.addEventListener('click', function () {
-        var cur = t.key === 'new' ? showNewOnly : (t.key === 'founding' ? showFoundingOnly : showVerifiedOnly);
+        var cur = toggleOn(t.key);
         setToggle(t.key, !cur);
       });
       fs.appendChild(row);
@@ -1502,6 +1516,7 @@
   // Suppressed (and any stale row removed) once vendors have loaded without
   // the subcategories key — see subcatDataPresent.
   function renderSubcatRow() {
+    var oldTop = document.querySelector('.lk-mkt-subs'); if (oldTop && oldTop.parentNode) oldTop.parentNode.removeChild(oldTop);
     var old = document.querySelector('#browse-filter-panel .lk-subcat-row');
     if (old && old.parentNode) old.parentNode.removeChild(old);
     if (_allVendors.length && !subcatDataPresent()) return;
@@ -1536,18 +1551,26 @@
       row.appendChild(pill);
     });
     item.parentNode.insertBefore(row, item.nextSibling);
+    // v3.1 (F 2026-11-23): on desktop the same pills sit under the round category icons,
+    // where the eye already is (the side panel no longer lists categories there).
+    var cats = document.querySelector('.lk-mkt-cats');
+    if (cats && cats.parentNode) {
+      var top = row.cloneNode(true); top.className = 'lk-mkt-subs';
+      Array.prototype.forEach.call(top.querySelectorAll('button'), function (b) {
+        b.addEventListener('click', function () { toggleSubcat(b.getAttribute('data-subcat-slug')); });
+      });
+      cats.parentNode.insertBefore(top, cats.nextSibling);
+    }
   }
 
   function toggleSubcat(slug) {
     _rawRestoredSubcats = null; // user is driving now — no late-restore overwrite
     var i = activeSubcats.indexOf(slug);
     if (i === -1) activeSubcats.push(slug); else activeSubcats.splice(i, 1);
-    var pill = document.querySelector('#browse-filter-panel .subcat-pill[data-subcat-slug="' + slug + '"]');
-    if (pill) {
-      var on = activeSubcats.indexOf(slug) !== -1;
-      pill.classList.toggle('on', on);
-      pill.setAttribute('aria-pressed', on ? 'true' : 'false');
-    }
+    var on = activeSubcats.indexOf(slug) !== -1;
+    // v3.1: the same pill lives in the panel (drawer) AND under the round icons
+    var pills = document.querySelectorAll('#browse-filter-panel .subcat-pill[data-subcat-slug="' + slug + '"], .lk-mkt-subs .subcat-pill[data-subcat-slug="' + slug + '"]');
+    for (var p = 0; p < pills.length; p++) { pills[p].classList.toggle('on', on); pills[p].setAttribute('aria-pressed', on ? 'true' : 'false'); }
     applyFilters();
   }
 
@@ -1567,6 +1590,8 @@
       // active category stays visible even at 0 so a deep link / stale filter
       // can still be seen and cleared rather than pointing at a vanished row.
       items[i].style.display = (count === 0 && slug !== 'all' && slug !== activeCategory) ? 'none' : '';
+      var rb = document.querySelector('.lk-mkt-cat[data-category-slug="' + slug + '"]');
+      if (rb) rb.style.display = items[i].style.display; // v3.1: same rule for the round icons
     }
   }
 
@@ -1857,8 +1882,18 @@
       } catch (e) {}
     }, 0);
   }
+  // #263: show the 'Nonprofits only' row once a live nonprofit exists; if a
+  // restored state had it on and none exist (mark removed), switch it off.
+  function syncNonprofitToggle() {
+    var any = _allVendors.some(vIsNonprofit);
+    var row = el('browse-toggle-nonprofit-row');
+    if (row) row.style.display = any ? '' : 'none';
+    var nb = el('lk-bar-np'); if (nb) nb.style.display = any ? '' : 'none';
+    if (!any && showNonprofitOnly) { showNonprofitOnly = false; var sw = el('browse-toggle-nonprofit'); if (sw) { sw.classList.remove('on'); syncSwitchAria(sw, false); } }
+  }
   function applyFilters() {
     try { mktV3SyncCats(); } catch (e) {} // v3 round category buttons follow every route in (deep link, shortcut, restore)
+    try { lkBar(); lkBarSync(); } catch (e) {}
     // A shortcut lives only while its own filter is still applied: editing the
     // search or picking another category turns it into an ordinary filter state.
     if (_occ && !occMatches(_occ)) {
@@ -1890,6 +1925,7 @@
       if (showNewOnly && !vIsNew(v)) return false;
       if (showFoundingOnly && !vIsFounding(v)) return false;
       if (showVerifiedOnly && !vIsVerified(v)) return false;
+      if (showNonprofitOnly && !vIsNonprofit(v)) return false;
       var occTerms = _occ && _occ.terms;
       if (q || occTerms) {
         // #96: search covers what vendors OFFER — subcategory labels, active
@@ -1987,7 +2023,7 @@
   var _startEl = null;
   function isDefaultView() {
     return !searchTerm.trim() && !(_occ && _occ.terms) && activeCategory === 'all' && !activeSubcats.length &&
-      !showNewOnly && !showFoundingOnly && !showVerifiedOnly;
+      !showNewOnly && !showFoundingOnly && !showVerifiedOnly && !showNonprofitOnly;
   }
   // ── occasion bar + way back (F 2026-09-18: "allow people to clear the
   // occasion search on phones and go back to the main market page") ──────
@@ -2025,7 +2061,7 @@
   function clearFiltersToMarket() {    // state only: the default view, neighborhood + sort kept
     _occ = null;
     searchTerm = ''; activeCategory = 'all'; activeSubcats = []; _rawRestoredSubcats = null;
-    showNewOnly = false; showFoundingOnly = false; showVerifiedOnly = false;
+    showNewOnly = false; showFoundingOnly = false; showVerifiedOnly = false; showNonprofitOnly = false;
   }
   function occHistoryState() { var st = null; try { st = window.history.state; } catch (e) {} return st && typeof st === 'object' ? st : null; }
   function occMarkEntry(mark, key) {
@@ -2251,7 +2287,6 @@
     row.setAttribute('role', 'group'); row.setAttribute('aria-label', 'Shortcuts');
     if (!inDrawer) { var l = ce('span', 'lk-occ-chips-l'); l.textContent = 'Shortcuts'; row.appendChild(l); }
     OCCASIONS.forEach(function (o) { row.appendChild(occChip(o, o.t, OCC_SVG[o.ico], inDrawer)); });
-    if (anyNewThisWeek()) row.appendChild(occChip(NEW_SHORTCUT, NEW_SHORTCUT.t, SIG_SVG.bolt, inDrawer, 'new'));
     return row;
   }
   function renderStartHere() {
@@ -2276,7 +2311,7 @@
         // Persist the RAW restored list while it's still authoritative — else
         // an interim baked-only sanitize would permanently drop a DB-only pick.
         sc: _rawRestoredSubcats || activeSubcats,
-        n: showNewOnly, f: showFoundingOnly, v: showVerifiedOnly, q: searchTerm,
+        n: showNewOnly, f: showFoundingOnly, v: showVerifiedOnly, np: showNonprofitOnly, q: searchTerm,
         o: _occ ? _occ.k : null
       }));
     } catch (e) {}
@@ -2288,7 +2323,7 @@
     if (s.c) activeCategory = s.c;
     if (s.l) activeLocationId = s.l;
     if (s.s) activeSort = s.s;
-    showNewOnly = !!s.n; showFoundingOnly = !!s.f; showVerifiedOnly = !!s.v;
+    showNewOnly = !!s.n; showFoundingOnly = !!s.f; showVerifiedOnly = !!s.v; showNonprofitOnly = !!s.np;
     searchTerm = s.q || '';
     _occ = s.o ? occByKey(s.o) : null; // validated against the filters on the first render
     // Sessions saved by v1.4.450 kept the tile's single word in the search box
@@ -2355,7 +2390,7 @@
     try { mktV3SyncCats(); } catch (e) {}
     if (activeLocationId !== 'all' && !_locationsById[activeLocationId]) activeLocationId = 'all';
     TOGGLE_LIST.forEach(function (t) {
-      var on = t.key === 'new' ? showNewOnly : (t.key === 'founding' ? showFoundingOnly : showVerifiedOnly);
+      var on = toggleOn(t.key);
       var sw = el(t.id); if (sw) { sw.classList.toggle('on', on); syncSwitchAria(sw, on); }
     });
     syncSearchBox(0); // shadow-DOM aware; retries while the island hydrates
@@ -2419,7 +2454,7 @@
   // it, so these targeted text swaps can't touch the live Brevo capture.
   var _emptyOrig = null; // original Webflow title/sub, captured before first rewrite
   function structuralEmpty() {
-    return !searchTerm && !(_occ && _occ.terms) && !showNewOnly && !showFoundingOnly && !showVerifiedOnly;
+    return !searchTerm && !(_occ && _occ.terms) && !showNewOnly && !showFoundingOnly && !showVerifiedOnly && !showNonprofitOnly;
   }
   function categoryLabel() {
     if (activeCategory === 'all') return '';
@@ -2533,7 +2568,8 @@
       pill.style.background = style.bg;
       pill.style.color = style.text;
       if (style.url) pill.appendChild(maskIcon(style.url, style.text, 12));
-      pill.appendChild(document.createTextNode(' ' + style.label));
+      var SHORTN = { 'Handmade & Custom': 'Handmade', 'Clothing & Accessories': 'Clothing', 'Events & Entertainment': 'Events', 'Home & Property': 'Home', 'Professional Services': 'Professional' };
+      pill.appendChild(document.createTextNode(' ' + (SHORTN[style.label] || style.label)));
       cover.appendChild(pill);
     }
     card.appendChild(cover);
@@ -2552,7 +2588,10 @@
     // signaled "pays more". Placement ranking (#75 plan_rank) is untouched.
     // Founding moved to the quiet foot line; Verified/New/Spotlight stay here.
     // ONE identity pill (F 2026-09-16 pill budget): Verified beats New.
-    if (vIsVerified(v))  nameRow.appendChild(nameChip('chip-verified', '✓ Verified', null, null, 'Verified'));
+    // #263 (F 2026-11-24): Nonprofit is checked by Lokali by hand, so it takes the
+    // one identity slot ahead of Verified. Text only, soft green (brand guide).
+    if (vIsNonprofit(v)) nameRow.appendChild(nameChip('chip-nonprofit', 'Nonprofit', null, null, 'A registered charity. Lokali checked their paperwork.'));
+    else if (vIsVerified(v))  nameRow.appendChild(nameChip('chip-verified', '✓ Verified', null, null, 'Verified'));
     else if (vIsNew(v))  nameRow.appendChild(nameChip('chip-new', 'New', ICON_BULLHORN, '#11744A', 'New this week'));
     // Away mode (2026-09-17): a quiet dated chip, no greying, no ranking change.
     if (vAwayLabel(v))   nameRow.appendChild(nameChip('chip-away', 'Back ' + vAwayLabel(v), null, '#B8471B', 'Away until ' + vAwayLabel(v)));
@@ -2627,13 +2666,13 @@
     var foot = ce('div', 'vcard-foot');
     var footMeta = ce('span', 'vcard-foot-meta');
     if (vIsFounding(v)) {
-      footMeta.appendChild(maskIcon(ICON_CROWN, '#C99A1F', 11));
+      footMeta.appendChild(maskIcon(ICON_CROWN, '#6002EE', 11));
       footMeta.appendChild(document.createTextNode(' Founding'));
     }
     // Town only ("The Woodlands", not "The Woodlands, Texas") — every open city
     // is Texas today, and the shorter label keeps the foot line quiet.
     var town = vAreaLabel(v).split(',')[0].trim();
-    if (town) {
+    if (town && town !== 'The Woodlands') {
       if (footMeta.childNodes.length) footMeta.appendChild(document.createTextNode(' · '));
       footMeta.appendChild(maskIcon(ICON_PIN, '#6E6A85', 10));
       footMeta.appendChild(document.createTextNode(' ' + town));
@@ -2686,6 +2725,7 @@
     if (showNewOnly && !occOwnsNew) addChip(strip, 'New this week', function () { setToggle('new', false); });
     if (showFoundingOnly) addChip(strip, 'Founding vendors', function () { setToggle('founding', false); });
     if (showVerifiedOnly) addChip(strip, 'Verified',         function () { setToggle('verified', false); });
+    if (showNonprofitOnly) addChip(strip, 'Nonprofits',      function () { setToggle('nonprofit', false); });
   }
   function addChip(strip, label, onRemove) {
     var chip = ce('span', 'active-filter-chip');
@@ -2749,7 +2789,7 @@
     // renderCategoryChips() stays for a quick revert.
     var btn = el('browse-mobile-filter-btn');
     if (!btn) return;
-    btn.classList.toggle('has-filters', activeCategory !== 'all' || activeSubcats.length > 0 || showNewOnly || showFoundingOnly || showVerifiedOnly || activeLocationId !== 'all' || !!searchTerm || !!(_occ && _occ.terms));
+    btn.classList.toggle('has-filters', activeCategory !== 'all' || activeSubcats.length > 0 || showNewOnly || showFoundingOnly || showVerifiedOnly || showNonprofitOnly || activeLocationId !== 'all' || !!searchTerm || !!(_occ && _occ.terms));
   }
 
   // ── setters ──
@@ -2777,6 +2817,7 @@
     if (which === 'new')      { showNewOnly = on;      sw = el('browse-toggle-new'); }
     if (which === 'founding') { showFoundingOnly = on; sw = el('browse-toggle-founding'); }
     if (which === 'verified') { showVerifiedOnly = on; sw = el('browse-toggle-verified'); }
+    if (which === 'nonprofit') { showNonprofitOnly = on; sw = el('browse-toggle-nonprofit'); }
     if (sw) { sw.classList.toggle('on', on); syncSwitchAria(sw, on); }
     applyFilters();
   }
@@ -3004,7 +3045,7 @@
   // icons, short labels), and the two bottom cards folded into one soft pink
   // "Have a business?" band. Orange leaves the page (brand guide 2026-11-22:
   // orange is the logo only), so the newsletter box turns lavender + violet.
-  var MKT_V3_SHORT = { all: 'Everyone', fashion: 'Clothing', events: 'Events', handcrafted: 'Handmade', home: 'Home', professional: 'Professional' };
+  var MKT_V3_SHORT = { all: 'All', fashion: 'Clothing', events: 'Events', handcrafted: 'Handmade', home: 'Home', professional: 'Professional' };
   var MKT_V3_CSS = [
     '.browse-hero{background:#F3EBFF!important;padding-bottom:22px!important;}',
     '.lk-mkt-cats{flex:1 0 100%;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin:14px 0 0;padding:4px 2px 2px;}',
@@ -3018,6 +3059,26 @@
     '.lk-mkt-cat.on .lk-mkt-ci span{background-color:#fff!important;}',
     '.lk-mkt-cat:focus-visible{outline:none;}.lk-mkt-cat:focus-visible .lk-mkt-ci{outline:2px solid #6002EE;outline-offset:2px;}',
     '@media (min-width:1200px){.lk-mkt-cats{justify-content:space-between;}}',
+    // v3.1 (F 2026-11-23 'Yes, without counts'): categories live in ONE place on desktop (the icons);
+    // the drawer (<=991px) keeps its list. Icons wrap instead of scrolling sideways (phones: 2 rows of 6).
+    // v3.2 (F 2026-11-23 'Yes, put it live', the calmer Market from the expert review): one quiet label
+    // style on every card (white photo tag, soft grey chips, violet icons), so the photos carry the colour.
+    '.vcard .cat-pill{background:rgba(255,255,255,.95) !important;color:#45415A !important;}',
+    '.vcard .cat-pill > span{background-color:#6002EE !important;}',
+    '.vcard .sig-pill,.vcard .sig-trust,.vcard .sig-get,.vcard .name-chip{background:#F5F3FA !important;color:#4A4761 !important;border-color:transparent !important;}',
+    '.vcard .sig-pill svg,.vcard .name-chip > span{color:#6002EE !important;background-color:#6002EE;}',
+    '.vcard .sig-pill .sig-ico{color:#6002EE !important;}',
+    '.vcard .sig-pill .sig-ico svg{background:none !important;}',
+    '.lk-occ-chip i{color:#6002EE !important;}',
+    '@media (min-width:992px){#browse-filter-panel .lk-cat-section,#browse-filter-panel .lk-cat-divider{display:none !important;}}',
+    '.lk-mkt-cats{flex-wrap:wrap;overflow:visible;row-gap:12px;}',
+    '.lk-mkt-subs{flex:1 0 100%;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:16px;}',
+    '.lk-mkt-subs .subcat-pill{font:700 13px/1 "Plus Jakarta Sans",sans-serif;background:#fff;color:#6002EE;border:1.5px solid #D9CCF5;border-radius:999px;padding:9px 14px;cursor:pointer;min-height:36px;}',
+    '.lk-mkt-subs .subcat-pill:hover{border-color:#6002EE;}',
+    '.lk-mkt-subs .subcat-pill.on{background:#6002EE;color:#fff;border-color:#6002EE;}',
+    '.lk-mkt-subs .subcat-pill:focus-visible{outline:2px solid #6002EE;outline-offset:2px;}',
+    '@media (max-width:991px){.lk-mkt-subs{display:none;}.lk-mkt-cats{justify-content:flex-start;}}',
+    '@media (max-width:767px){.lk-mkt-cats{margin:4px 0 0 !important;padding:2px 0 0 !important;gap:10px 0 !important;}.lk-mkt-cat{width:calc(100% / 6) !important;font-size:10.5px !important;gap:5px !important;}.lk-mkt-ci{width:40px !important;height:40px !important;}.lk-mkt-ci span{width:18px !important;height:18px !important;}}',
     '@media (max-width:767px){.lk-mkt-cats{margin:6px -16px 0;padding:4px 16px 2px;}.lk-mkt-cat{width:72px;font-size:11.5px;}.lk-mkt-ci{width:50px;height:50px;}}',
     // newsletter box: lavender + violet (was light orange)
     '.newsletter-nudge.lk-warm{background:#F3EBFF!important;}',
@@ -3081,6 +3142,101 @@
     var l = ce('a', 'lk-door-link'); l.href = '/contact-us'; l.textContent = 'Not where you live? Tell us.'; act.appendChild(l);
     light.appendChild(act);
     ctas.classList.add('lk-door');
+  }
+
+
+  // ── v3.3 (F 2026-11-24, four-reviewer pick 'A'): desktop has no side panel. One quiet line
+  // above the cards: neighborhood, a Filters menu (the three switches), Clear all, the count,
+  // and 'Sort: <current>'. Cards three across, full width. Phones/tablets keep their bar + sheet.
+  var BAR_CSS = [
+    '@media (min-width:992px){',
+    '#browse-sidebar{display:none !important;}',
+    '.browse-body .w-layout-grid.grid-template-columns{grid-template-columns:minmax(0,1fr) !important;}',
+    '#browse-vendor-grid{grid-template-columns:repeat(3,minmax(0,1fr)) !important;}',
+    '.lk-bar{display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;margin:0 0 14px;padding:0 0 14px;border-bottom:1px solid #EDE8F2;font-family:"Plus Jakarta Sans",sans-serif;}',
+    '.lk-bar .grid-header{margin:0 0 0 auto !important;padding:0 !important;}',
+    '}',
+    // below 992px the phone/tablet bar does the job; only the 'Showing N vendors' line stays visible
+    '@media (max-width:991px){.lk-bar{display:block !important;border:0 !important;margin:0 !important;padding:0 !important;}.lk-bar > :not(.grid-header){display:none !important;}}',
+    '.lk-bar-sel{position:relative;display:inline-flex;align-items:center;}',
+    '.lk-bar select{-webkit-appearance:none;appearance:none;font:700 13.5px/1 "Plus Jakarta Sans",sans-serif;color:#45415A;background:#fff;border:1.5px solid #E2DAF5;border-radius:999px;padding:10px 32px 10px 14px;cursor:pointer;}',
+    '.lk-bar-sel::after{content:"";position:absolute;right:14px;top:50%;width:6px;height:6px;border-right:2px solid #6002EE;border-bottom:2px solid #6002EE;transform:translateY(-70%) rotate(45deg);pointer-events:none;}',
+    '.lk-bar select:hover,.lk-bar-fbtn:hover{border-color:#6002EE;}',
+    '.lk-bar-fwrap{position:relative;}',
+    '.lk-bar-fbtn{font:700 13.5px/1 "Plus Jakarta Sans",sans-serif;color:#45415A;background:#fff;border:1.5px solid #E2DAF5;border-radius:999px;padding:10px 14px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;}',
+    '.lk-bar-fbtn.on{border-color:#6002EE;color:#6002EE;}',
+    '.lk-bar-fbtn b{background:#6002EE;color:#fff;border-radius:999px;font-size:11px;padding:3px 7px;}',
+    '.lk-bar-pop{position:absolute;left:0;top:calc(100% + 8px);z-index:30;background:#fff;border-radius:16px;padding:8px;min-width:240px;box-shadow:0 18px 40px -18px rgba(40,32,90,.35),0 0 0 1px #EDE8F2;display:none;}',
+    '.lk-bar-pop.open{display:block;}',
+    '.lk-bar-pop button{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;background:none;border:0;border-radius:10px;padding:11px 12px;font:600 14px/1.2 "Plus Jakarta Sans",sans-serif;color:#45415A;cursor:pointer;text-align:left;}',
+    '.lk-bar-pop button:hover{background:#F6F2FF;}',
+    '.lk-bar-pop i{width:18px;height:18px;border-radius:5px;box-shadow:inset 0 0 0 1.5px #CFC3EC;flex:none;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:12px;color:#fff;}',
+    '.lk-bar-pop button[aria-checked="true"] i{background:#6002EE;box-shadow:none;}',
+    '.lk-bar-clear{font:700 13px/1 "Plus Jakarta Sans",sans-serif;color:#6002EE;background:none;border:0;cursor:pointer;text-decoration:underline;text-underline-offset:3px;padding:6px 2px;}',
+    '.lk-bar-sortl{font:600 13px/1 "Plus Jakarta Sans",sans-serif;color:#6E6A85;}',
+    '.lk-bar :focus-visible{outline:2px solid #6002EE;outline-offset:2px;}',
+    // Shortcuts = lavender chips (F 2026-11-24): white = a control, lavender = an idea to browse, violet = on.
+    '.lk-occ-chip{background:#E9DEFF !important;border:1.5px solid transparent !important;color:#6002EE !important;font-weight:700 !important;min-height:40px !important;padding:0 15px !important;}',
+    '.lk-occ-chip i,.lk-occ-chip i svg{width:15px !important;height:15px !important;}',
+    '.lk-occ-chip:hover{border-color:#6002EE !important;color:#6002EE !important;}',
+    // small phones: 'Professional' touched 'Wellness' in the two-row icon grid
+    '@media (max-width:430px){.lk-mkt-cat{font-size:10px !important;letter-spacing:-.015em;padding:0 2px !important;box-sizing:border-box;}}'
+  ].join('');
+  var _bar = null;
+  function lkBar() {
+    if (_bar || !_grid || !_grid.parentNode) return;
+    var main = _grid.parentNode, hdr = main.querySelector(':scope > .grid-header');
+    var st = ce('style'); st.id = 'lk-bar-css'; st.textContent = BAR_CSS; document.head.appendChild(st);
+    _bar = ce('div', 'lk-bar'); _bar.setAttribute('role', 'region'); _bar.setAttribute('aria-label', 'Filter and sort');
+    // neighborhood
+    var hw = ce('span', 'lk-bar-sel'), hs = ce('select'); hs.setAttribute('aria-label', 'Neighborhood'); hs.id = 'lk-bar-hood';
+    var src = locSelectEl();
+    if (src) for (var i = 0; i < src.options.length; i++) { var o = ce('option'); o.value = src.options[i].value; o.textContent = src.options[i].textContent; hs.appendChild(o); }
+    hs.addEventListener('change', function () { setLocation(hs.value); });
+    hw.appendChild(hs); _bar.appendChild(hw);
+    // Filters menu
+    var fw = ce('span', 'lk-bar-fwrap'), fb = ce('button', 'lk-bar-fbtn'); fb.type = 'button'; fb.setAttribute('aria-expanded', 'false'); fb.id = 'lk-bar-fbtn';
+    var pop = ce('div', 'lk-bar-pop'); pop.setAttribute('role', 'menu');
+    TOGGLE_LIST.forEach(function (t) {
+      var b = ce('button'); b.type = 'button'; b.setAttribute('role', 'menuitemcheckbox'); b.setAttribute('data-k', t.key);
+      b.appendChild(document.createTextNode(t.label)); var ic = ce('i'); ic.textContent = '✓'; b.appendChild(ic);
+      b.addEventListener('click', function () { setToggle(t.key, !toggleOn(t.key)); });
+      if (t.key === 'nonprofit') { b.id = 'lk-bar-np'; b.style.display = (_allVendors && _allVendors.some(vIsNonprofit)) ? '' : 'none'; } // #263: hidden until a live nonprofit exists
+      pop.appendChild(b);
+    });
+    fb.addEventListener('click', function (e) { e.stopPropagation(); var open = !pop.classList.contains('open'); pop.classList.toggle('open', open); fb.setAttribute('aria-expanded', open ? 'true' : 'false'); });
+    document.addEventListener('click', function (e) { if (!fw.contains(e.target)) { pop.classList.remove('open'); fb.setAttribute('aria-expanded', 'false'); } });
+    fw.appendChild(fb); fw.appendChild(pop); _bar.appendChild(fw);
+    // Clear all
+    var cl = ce('button', 'lk-bar-clear'); cl.type = 'button'; cl.textContent = 'Clear all'; cl.id = 'lk-bar-clear';
+    cl.addEventListener('click', function () { ['new', 'founding', 'verified', 'nonprofit'].forEach(function (k) { setToggle(k, false); }); setLocation('all'); });
+    _bar.appendChild(cl);
+    // count (the existing header moves in) + sort
+    if (hdr) _bar.appendChild(hdr);
+    var sl = ce('span', 'lk-bar-sortl'); sl.textContent = 'Sort:'; _bar.appendChild(sl);
+    var sw = ce('span', 'lk-bar-sel'), ss = ce('select'); ss.setAttribute('aria-label', 'Sort'); ss.id = 'lk-bar-sort';
+    SORT_LIST.forEach(function (x) { var o = ce('option'); o.value = x.sort; o.textContent = x.label; ss.appendChild(o); });
+    ss.addEventListener('change', function () { setSort(ss.value); });
+    sw.appendChild(ss); _bar.appendChild(sw);
+    main.insertBefore(_bar, main.firstChild);
+    lkBarSync();
+  }
+  function lkBarSync() {
+    if (!_bar) return;
+    var hs = el('lk-bar-hood'), src = locSelectEl();
+    if (hs && src && hs.options.length !== src.options.length) { // neighborhoods arrive after the bar
+      hs.innerHTML = '';
+      for (var i = 0; i < src.options.length; i++) { var o = ce('option'); o.value = src.options[i].value; o.textContent = src.options[i].textContent; hs.appendChild(o); }
+    }
+    if (hs) hs.value = String(activeLocationId);
+    var ss = el('lk-bar-sort'); if (ss) ss.value = activeSort;
+    var n = (showNewOnly ? 1 : 0) + (showFoundingOnly ? 1 : 0) + (showVerifiedOnly ? 1 : 0) + (showNonprofitOnly ? 1 : 0);
+    var fb = el('lk-bar-fbtn'); if (fb) { fb.innerHTML = ''; fb.appendChild(document.createTextNode('Filters')); if (n) { var b = ce('b'); b.textContent = String(n); fb.appendChild(b); } fb.classList.toggle('on', n > 0); }
+    Array.prototype.forEach.call(_bar.querySelectorAll('.lk-bar-pop button'), function (b) {
+      var k = b.getAttribute('data-k'); var on = toggleOn(k);
+      b.setAttribute('aria-checked', on ? 'true' : 'false');
+    });
+    var cl = el('lk-bar-clear'); if (cl) cl.style.display = (n > 0 || String(activeLocationId) !== 'all') ? '' : 'none';
   }
 
   function frameTail() {

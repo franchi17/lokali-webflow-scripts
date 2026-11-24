@@ -272,6 +272,7 @@
     'text_messages,whatsapp_messages,phone_calls,phone_visible,' +
     'created_at,is_active,slug,is_founding_member,' +
     'is_spotlight,spotlight_until,is_verified,is_featured,plan_rank,' +
+    'is_nonprofit,' +      // #263 Nonprofit badge (patch_nonprofit.sql, anon-granted; admin-set only)
     'is_publish_ready,' +  // #90 publish gate — listing page renders a "not public yet" state on false
     'away_until,away_note,away_accepts_inquiries'; // away mode (patch_dashboard_additions.sql 2026-09-17): storefront banner + inquiry form note
   // SEC-080 (2026-09-24): contact + payment fields are NOT table columns for

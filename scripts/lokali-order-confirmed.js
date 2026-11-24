@@ -37,7 +37,44 @@
     document.head.appendChild(s);
   }
 
+  // #261 tickets (F 2026-11-23, mockup v3 screen 5): "You're on the list", the
+  // name at the door, Add to calendar + Directions, then the same save + follow
+  // box, worded for a ticket. Times are the event's own (Central).
+  var TZ = 'America/Chicago';
+  function tm(d) { return d.toLocaleTimeString('en-US', { timeZone: TZ, hour: 'numeric', minute: '2-digit' }).toLowerCase().replace(/[\u202f\u00a0]/g, ' ').replace(':00', ''); }
+  function evWhen(s, e) {
+    var a = new Date(s); if (isNaN(a)) return '';
+    var day = a.toLocaleDateString('en-US', { timeZone: TZ, weekday: 'long', month: 'long', day: 'numeric' });
+    if (!e) return day + ' at ' + tm(a);
+    var x = tm(a), y = tm(new Date(e));
+    return day + ', ' + (x.slice(-2) === y.slice(-2) ? x.slice(0, -3) : x) + ' to ' + y;
+  }
+  function calUrl(ev, host) {
+    function f(d) { return d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, ''); }
+    var s = new Date(ev.starts_at), e = ev.ends_at ? new Date(ev.ends_at) : new Date(s.getTime() + 3 * 36e5);
+    return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + encodeURIComponent(ev.title) + '&dates=' + f(s) + '/' + f(e) +
+      '&location=' + encodeURIComponent(ev.place) + '&details=' + encodeURIComponent('Tickets from ' + host + ' on Lokali. Your name is on the guest list at the door.');
+  }
+  function renderTicket(mount, o) {
+    var ev = o.event, host = (o.vendor && o.vendor.name) || 'the host';
+    var vendorHref = o.vendor && o.vendor.slug ? '/' + o.vendor.slug : '/this-week';
+    var guest = ev.guest_name || o.shopper_first_name || '';
+    var first = String(guest).split(' ')[0];
+    var follow = (o.vendor && o.vendor.id != null) ? '<div class="oc-follow" id="oc-follow"></div>' : '';
+    mount.innerHTML = '<div class="oc-card"><div class="oc-ok">Paid</div><h1>You\'re on the list' + (first ? ', ' + esc(first) : '') + '</h1>' +
+      '<p>' + esc(o.quantity) + (o.quantity === 1 ? ' ticket' : ' tickets') + ' · ' + esc(evWhen(ev.starts_at, ev.ends_at)) + ' · ' + esc(ev.place) + '. We emailed everything to ' + esc(o.shopper_email_masked || 'you') + '.</p>' +
+      '<div class="oc-item"><div><div style="font-weight:700;">' + esc(ev.title) + '</div><div style="font-size:13px;color:#17634A;font-weight:600;">On the guest list as ' + esc(guest || 'you') + '. Nothing to print.</div></div></div>' +
+      '<div class="oc-row t"><span>Total</span><span>' + money(o.total_cents) + '</span></div>' +
+      follow +
+      '<a class="oc-btn ghost" href="' + esc(calUrl(ev, host)) + '" target="_blank" rel="noopener" style="margin-left:0;">Add to calendar</a>' +
+      '<a class="oc-btn ghost" href="https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(ev.place) + '" target="_blank" rel="noopener">Directions</a>' +
+      '<a class="oc-btn ghost" href="' + esc(vendorHref) + '">Back to ' + esc(host) + '</a>' +
+      '<small>Order ' + esc(o.id) + '. Questions: reply to your ticket email and it reaches ' + esc(host) + ' directly.</small></div>';
+    fillFollow(o);
+  }
+
   function render(mount, o) {
+    if (o.event && o.event.starts_at) { renderTicket(mount, o); return; }
     var vendorHref = o.vendor && o.vendor.slug ? '/' + o.vendor.slug : '/the-market';
     var how = o.fulfilment === 'pickup' ? 'will be in touch about when and where to pick it up'
       : o.fulfilment === 'delivery' ? 'will be in touch to arrange local delivery' : 'will ship it to the address you gave';
@@ -103,10 +140,14 @@
     }
 
     function signedOut() {
-      box.innerHTML = '<b>Keep this order in one place</b>' +
-        '<ul><li>See your order and where it stands, any time</li><li>Hear when ' + name + ' has something new</li></ul>' +
-        '<button type="button" class="oc-btn" id="oc-save-go">Save my order and follow ' + name + '</button>' +
-        '<span style="margin-top:8px;">Takes about 20 seconds. Use the email you paid with' + (o.shopper_email_masked ? ' (' + esc(o.shopper_email_masked) + ')' : '') + ' so the order shows up. Your order is safe either way.</span>';
+      var tk = !!o.event;
+      box.innerHTML = (tk ? '<b>Keep your ticket in one place</b>' +
+          '<ul><li>Your ticket, with Directions and Add to calendar, any time</li><li>Hear about ' + name + '\'s next event</li></ul>' +
+          '<button type="button" class="oc-btn" id="oc-save-go">Save my ticket and follow ' + name + '</button>'
+        : '<b>Keep this order in one place</b>' +
+          '<ul><li>See your order and where it stands, any time</li><li>Hear when ' + name + ' has something new</li></ul>' +
+          '<button type="button" class="oc-btn" id="oc-save-go">Save my order and follow ' + name + '</button>') +
+        '<span style="margin-top:8px;">Takes about 20 seconds. Use the email you paid with' + (o.shopper_email_masked ? ' (' + esc(o.shopper_email_masked) + ')' : '') + ' so ' + (tk ? 'the ticket' : 'the order') + ' shows up. ' + (tk ? 'Your ticket' : 'Your order') + ' is safe either way.</span>';
       document.getElementById('oc-save-go').addEventListener('click', function () {
         try { localStorage.setItem(ORDER_FOLLOW_KEY, JSON.stringify({ vendor_id: vid, name: rawName, at: Date.now() })); } catch (e) {}
         try {

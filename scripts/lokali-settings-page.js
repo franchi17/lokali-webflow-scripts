@@ -223,7 +223,7 @@
     }
 
     var currentSlug = (_vendor && _vendor.slug) || '';
-    var label = '<div style="font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#8E8BA6;margin-bottom:6px;">Your own web address</div>';
+    var label = '<div style="font-size:12px;line-height:1.45;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#6E6A85;margin-bottom:6px;">Your own web address</div>';
 
     if (!slugAllowed()) {
       host.innerHTML = label +
@@ -234,13 +234,13 @@
 
     host.innerHTML = label +
       '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
-      '<span style="color:#8E8BA6;font-size:14px;">golokali.com/</span>' +
+      '<span style="color:#6E6A85;font-size:14px;">golokali.com/</span>' +
       '<input id="lok-slug-input" type="text" value="' + escapeHtml(currentSlug) + '" maxlength="30" autocomplete="off" spellcheck="false" ' +
       'style="flex:1;min-width:140px;border:1px solid #c8c6d8;border-radius:8px;padding:9px 12px;font-size:14px;color:#1A1829;background:#fff;font-family:inherit;">' +
       '<button type="button" id="lok-slug-save" style="border:none;border-radius:8px;background:#6002ee;color:#fff;padding:10px 16px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">Save address</button>' +
       '</div>' +
-      '<div id="lok-slug-status" style="font-size:13px;margin-top:6px;min-height:18px;color:#8E8BA6;"></div>' +
-      '<div style="font-size:12px;color:#8E8BA6;margin-top:2px;">Lowercase letters, numbers, hyphens. One change every 30 days; your old link keeps working.</div>';
+      '<div id="lok-slug-status" style="font-size:13px;margin-top:6px;min-height:18px;color:#6E6A85;"></div>' +
+      '<div style="font-size:12px;line-height:1.45;color:#6E6A85;margin-top:2px;">Lowercase letters, numbers, hyphens. One change every 30 days; your old link keeps working.</div>';
 
     var input = $('lok-slug-input');
     var saveBtn = $('lok-slug-save');
@@ -265,7 +265,7 @@
     };
     function slugErrorMessage(code) { return SLUG_ERRORS[code] || SLUG_OUR_FAULT; }
 
-    function setStatus(msg, color) { if (status) { status.textContent = msg || ''; status.style.color = color || '#8E8BA6'; } }
+    function setStatus(msg, color) { if (status) { status.textContent = msg || ''; status.style.color = color || '#6E6A85'; } }
 
     input.addEventListener('input', function () {
       var v = input.value.trim().toLowerCase();
@@ -544,7 +544,7 @@
       delCard.style.cssText = 'display:none;width:100%;box-sizing:border-box;margin-top:14px;padding:14px 16px;' +
         "border:1px solid #F3D6D6;border-radius:12px;background:#FDF7F7;font-family:'Plus Jakarta Sans',sans-serif;";
       var delHelp = document.createElement('div');
-      delHelp.style.cssText = 'font-size:13px;color:#6B6580;margin-bottom:10px;';
+      delHelp.style.cssText = 'font-size:13px;line-height:1.45;color:#6B6580;margin-bottom:10px;';
       delHelp.appendChild(document.createTextNode('Type '));
       var bTag = document.createElement('b'); bTag.textContent = 'DELETE';
       delHelp.appendChild(bTag);
@@ -575,7 +575,7 @@
       var surveyWrap = document.createElement('div');
       surveyWrap.style.cssText = 'margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #F3D6D6;';
       var sTitle = document.createElement('div');
-      sTitle.style.cssText = 'font-size:13px;font-weight:600;color:#4A4761;margin-bottom:8px;';
+      sTitle.style.cssText = 'font-size:13px;line-height:1.45;font-weight:600;color:#4A4761;margin-bottom:8px;';
       sTitle.textContent = 'Before you go: why are you leaving? (optional)';
       surveyWrap.appendChild(sTitle);
       var pillRow = document.createElement('div');
@@ -700,13 +700,13 @@
     '.lok-set-jump a:hover,.lok-set-jump a:focus-visible{border-color:#D4BFF9;color:#6002EE;}' +
     '.lok-set-sec{scroll-margin-top:84px;}' +
     '.lok-set-sub{font-family:' + FONT + ';font-size:13.5px;color:#6E6A85;margin:-4px 0 12px;}' +
-    '.lok-set-grp{font-family:' + FONT + ';font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#6E6A85;margin:18px 0 6px;}' +
+    '.lok-set-grp{font-family:' + FONT + ';font-size:12px;line-height:1.45;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#6E6A85;margin:18px 0 6px;}' +
     '.lok-set-grp:first-of-type{margin-top:4px;}' +
     '.lok-set-link{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:52px;padding:10px 14px;margin:0 0 10px;border:1px solid #DEDAEE;border-radius:12px;' +
       'background:#F7F6FC;text-decoration:none;font-family:' + FONT + ';}' +
     '.lok-set-link:hover,.lok-set-link:focus-visible{border-color:#D4BFF9;background:#EEE6FF;}' +
     '.lok-set-link b{display:block;font-size:15px;font-weight:600;color:#1A1829;}' +
-    '.lok-set-link span{display:block;font-size:13px;color:#6E6A85;}' +
+    '.lok-set-link span{display:block;font-size:13px;line-height:1.45;color:#6E6A85;}' +
     '.lok-set-link i{font-style:normal;font-size:14px;font-weight:700;color:#6002EE;flex:0 0 auto;}' +
     '.lok-set-tog{display:flex !important;align-items:center;justify-content:flex-end;gap:8px;flex:0 0 auto;margin:0 !important;padding:0 !important;}' +
     // .w-embed carries clearfix ::before/::after; as flex items they put a gap to the
@@ -720,7 +720,7 @@
     '.lok-set-sec .div-block-158.stripe a:hover{border-color:#D4BFF9;background:#EEE6FF;}' +
     '.lok-set-sec .div-block-158.stripe a img{display:none;}' +
     '.lok-set-sec .div-block-158.stripe a .text-link{font-family:' + FONT + ';font-size:14px;font-weight:700;color:#4A4761;margin:0;}' +
-    '.lok-set-saved{font-family:' + FONT + ';font-size:12.5px;font-weight:700;color:#1B7A4B;opacity:0;transition:opacity .2s;min-width:42px;text-align:right;}' +
+    '.lok-set-saved{font-family:' + FONT + ';font-size:12.5px;line-height:1.45;font-weight:700;color:#1B7A4B;opacity:0;transition:opacity .2s;min-width:42px;text-align:right;}' +
     '.lok-set-saved.on{opacity:1;}' +
     '.lok-set-btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 18px;border-radius:10px;border:1px solid #D4BFF9;background:#fff;' +
       'font-family:' + FONT + ';font-size:14px;font-weight:700;color:#6002EE;cursor:pointer;flex:0 0 auto;}' +
@@ -731,7 +731,7 @@
     '.lok-set-btn.danger{border-color:#F3C6C6;color:#B42318;}.lok-set-btn.danger:hover{background:#FDF1F1;}' +
     '.lok-set-btn[disabled]{opacity:.55;cursor:default;}' +
     '.lok-sf{font-family:' + FONT + ';margin:0 0 8px;scroll-margin-top:84px;}' +
-    '.lok-sf-head{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#6E6A85;margin:22px 0 6px;}' +
+    '.lok-sf-head{font-size:12px;line-height:1.45;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#6E6A85;margin:22px 0 6px;}' +
     '.lok-sf-sub{font-size:13.5px;line-height:1.5;color:#6E6A85;margin:0 0 12px;}' +
     '.lok-sf-list{display:flex;flex-direction:column;gap:8px;margin:0 0 12px;}' +
     '.lok-sf-row{display:flex;align-items:center;gap:12px;min-height:60px;padding:10px 12px 10px 10px;border:1px solid #DEDAEE;border-radius:12px;background:#fff;}' +
@@ -744,7 +744,7 @@
     '.lok-sf-txt span.new{color:#B1006A;font-weight:700;}' +
     '.lok-sf-txt{flex:1 1 auto;min-width:0;}' +
     '.lok-sf-txt b{display:block;font-size:15px;font-weight:600;color:#1A1829;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}' +
-    '.lok-sf-txt span{display:block;font-size:13px;color:#6E6A85;}' +
+    '.lok-sf-txt span{display:block;font-size:13px;line-height:1.45;color:#6E6A85;}' +
     '.lok-sf-txt span.on{color:#1B7A4B;font-weight:600;}' +
     '.lok-sf-acts{display:flex;gap:8px;flex:0 0 auto;flex-wrap:wrap;justify-content:flex-end;}' +
     '.lok-sf-form{display:flex;gap:10px;flex-wrap:wrap;align-items:stretch;}' +
@@ -761,7 +761,7 @@
     '.lok-sf-panel{border:1px solid #DEDAEE;background:#FDFCFF;border-radius:14px;padding:16px;margin:12px 0 0;}' +
     '.lok-sf-panel>b{display:block;font-size:16px;font-weight:700;color:#1A1829;margin:0 0 12px;}' +
     '.lok-sf-field{display:block;margin:0 0 14px;}' +
-    '.lok-sf-field>span{display:block;font-size:13px;font-weight:600;color:#4A4761;margin:0 0 6px;}' +
+    '.lok-sf-field>span{display:block;font-size:13px;line-height:1.45;font-weight:600;color:#4A4761;margin:0 0 6px;}' +
     '.lok-sf-field input{display:block;width:100%;box-sizing:border-box;min-height:44px;padding:0 14px;border:1.5px solid #DEDAEE;border-radius:10px;background:#fff;font-family:' + FONT + ';font-size:15px;color:#1A1829;outline:none;}' +
     '.lok-sf-field input:focus{border-color:#6002EE;box-shadow:0 0 0 3px rgba(96,2,238,.12);}' +
     '.lok-sf-hint{font-size:13px;line-height:1.5;color:#6E6A85;margin:6px 0 12px;overflow-wrap:anywhere;}' +
@@ -783,7 +783,7 @@
     '.lok-set-sec .div-block-160>div:first-child,.lok-set-sec .div-block-162>div:first-child,.lok-set-sec .div-block-163>div:first-child{flex:1 1 auto;min-width:0;}' +
     // 2026-09-21, measured on the live signed-in page (F's Chrome): bring this page to the
     // same floor as the shopper hub: AA text, 44px tap areas, 16px fields.
-    // Slate #8E8BA6 was 3.28:1 on white; #6E6A85 is 5.17:1.
+    // Slate #6E6A85 was 3.28:1 on white; #6E6A85 is 5.17:1.
     '.lok-set-sec .settings-header,.lok-set-sec .settings-lokali-text,.lok-set-sec .settings-lokali-text a{color:#6E6A85 !important;}' +
     // #EE0290 was 4.16:1 at 14px; #D1007E is 5.23:1.
     '.lok-set-sec #settings-delete .text-block-94{color:#D1007E !important;}' +

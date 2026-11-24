@@ -257,22 +257,22 @@
     '.lok-btn:focus-visible,.quick-actions-card:focus-visible{outline:2px solid #6002EE;outline-offset:2px;}',
     '.lok-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:0 0 16px;font-family:"Plus Jakarta Sans",-apple-system,sans-serif;}',
     '.lok-kpi{background:#fff;border:.5px solid #EEEDF6;border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;min-width:0;}',
-    '.lok-klabel{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#8E8BA6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.5;}',
+    '.lok-klabel{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#6E6A85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.5;}',
     '.lok-krow{display:flex;align-items:flex-end;justify-content:space-between;gap:8px;}',
     '.lok-kvalue{font-size:28px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums;color:#1A1829;margin:0;}',
     '.lok-spark{width:84px;height:28px;flex-shrink:0;}',
     '.lok-delta{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;border-radius:100px;padding:2px 8px;width:fit-content;line-height:1.5;}',
     '.lok-delta.up{color:#1D6A45;background:#EAFAF2;}',
     '.lok-delta.down{color:#5F5B73;background:#F1F0F5;}',
-    '.lok-delta.flat{color:#8E8BA6;background:#EEEDF6;}',
+    '.lok-delta.flat{color:#6E6A85;background:#EEEDF6;}',
     '.lok-delta.new{color:#6002EE;background:#F3EBFF;}',
-    '.lok-kdetail{font-size:11.5px;color:#6E6A85;line-height:1.5;}',
+    '.lok-kdetail{font-size:12px;color:#6E6A85;line-height:1.5;}',
     '#lok-cols{display:grid;grid-template-columns:1.1fr .9fr;gap:12px;margin:0 0 16px;align-items:start;}',
     '.lok-card{background:#fff;border:.5px solid #EEEDF6;border-radius:12px;padding:16px 18px;min-width:0;font-family:"Plus Jakarta Sans",-apple-system,sans-serif;}',
     '.lok-card.accent{border-color:#E5D4FD;}',
     '.lok-ct{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;}',
     '.lok-ct h3{font-size:13.5px;font-weight:700;margin:0;color:#1A1829;line-height:1.4;}',
-    '.lok-ct a{font-size:12px;font-weight:600;text-decoration:none;color:#6002EE;}',
+    '.lok-ct a{font-size:12px;line-height:1.45;font-weight:600;text-decoration:none;color:#6002EE;}',
     '.lok-pill{font-size:11px;font-weight:700;border-radius:100px;padding:3px 10px;background:#F3EBFF;color:#6002EE;white-space:nowrap;line-height:1.5;}',
     '.lok-pill.ok{background:#EAFAF2;color:#1D6A45;}',
     '.lok-next{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start;padding:12px;border-radius:10px;background:#F3EBFF;}',
@@ -283,18 +283,18 @@
     '.lok-meter{height:5px;background:#EEEDF6;border-radius:100px;overflow:hidden;margin:12px 0 6px;}',
     '.lok-meter>div{height:100%;background:#6002EE;border-radius:100px;}',
     '.lok-meter.ok>div{background:#1D6A45;}',
-    '.lok-mline{display:flex;justify-content:space-between;gap:10px;font-size:11.5px;color:#6E6A85;line-height:1.5;}',
+    '.lok-mline{display:flex;justify-content:space-between;gap:10px;font-size:12px;color:#6E6A85;line-height:1.5;}',
     '.lok-mline a{text-decoration:none;font-weight:600;color:#6002EE;white-space:nowrap;}',
     '.lok-also{list-style:none;margin:10px 0 0;padding:0;font-size:12.5px;color:#4A4761;}',
     '.lok-also li{display:flex;align-items:center;gap:8px;padding:6px 0;border-top:.5px solid #EEEDF6;line-height:1.5;}',
-    '.lok-also li svg{width:14px;height:14px;color:#8E8BA6;flex-shrink:0;}',
+    '.lok-also li svg{width:14px;height:14px;color:#6E6A85;flex-shrink:0;}',
     '.lok-also li a{margin-left:auto;text-decoration:none;font-weight:600;font-size:12px;white-space:nowrap;color:#6002EE;min-height:32px;display:inline-flex;align-items:center;}',
     '.lok-ns-done{font-size:12.5px;color:#4A4761;line-height:1.55;}',
     '.lok-card.accent{position:relative;}',
-    '.lok-ns-x{position:absolute;top:8px;right:8px;width:32px;height:32px;border:none;background:none;color:#8E8BA6;font-size:15px;line-height:1;cursor:pointer;font-family:inherit;border-radius:8px;}',
+    '.lok-ns-x{position:absolute;top:8px;right:8px;width:32px;height:32px;border:none;background:none;color:#6E6A85;font-size:15px;line-height:1;cursor:pointer;font-family:inherit;border-radius:8px;}',
     '.lok-ns-x:hover{background:#F3EBFF;color:#6002EE;}',
     '.lok-ns-x~.lok-ns-done{padding-right:28px;}',
-    '.lok-ns-skip{display:inline-flex;align-items:center;min-height:34px;margin-left:12px;font-size:12px;font-weight:600;color:#8E8BA6;text-decoration:underline;text-underline-offset:2px;}',
+    '.lok-ns-skip{display:inline-flex;align-items:center;min-height:34px;margin-left:12px;font-size:12px;font-weight:600;color:#6E6A85;text-decoration:underline;text-underline-offset:2px;}',
     '.lok-also li .lok-ns-skip{margin-left:auto;min-height:32px;}.lok-also li .lok-ns-skip+a{margin-left:12px;}',
     '.lok-feed{list-style:none;margin:0;padding:0;}',
     '.lok-feed li{display:grid;grid-template-columns:26px 1fr auto;gap:10px;align-items:start;padding:9px 0;border-bottom:.5px solid #EEEDF6;font-size:12.5px;line-height:1.5;}',
@@ -309,7 +309,7 @@
     '.lok-ft{margin:0;color:#1A1829;}',
     '.lok-ft b{font-weight:700;}',
     '.lok-ft .m{color:#6E6A85;}',
-    '.lok-fw{font-size:11px;color:#8E8BA6;white-space:nowrap;font-variant-numeric:tabular-nums;padding-top:2px;}',
+    '.lok-fw{font-size:11px;line-height:1.45;color:#6E6A85;white-space:nowrap;font-variant-numeric:tabular-nums;padding-top:2px;}',
     '.lok-feed-empty{font-size:12.5px;color:#4A4761;background:#F7F6FC;border-radius:10px;padding:12px 14px;line-height:1.55;}',
     '#lokali-share-teaser{margin-top:12px;}',
     // Webflow's .quick-actions-card is a 2-col grid with a 45px .large-icon carrying a 20px
@@ -327,7 +327,7 @@
     '.lok-quiet .lok-qt{flex:1 1 260px;min-width:0;}',
     '.lok-quiet .lok-qt b{display:block;font-size:14px;font-weight:700;color:#1A1829;line-height:1.4;}',
     '.lok-quiet .lok-qt span{font-size:12.5px;color:#6E6A85;line-height:1.5;}',
-    '.lok-quiet .lok-qm{display:flex;gap:16px;font-size:11.5px;color:#4A4761;font-variant-numeric:tabular-nums;line-height:1.4;}',
+    '.lok-quiet .lok-qm{display:flex;gap:16px;font-size:12px;color:#4A4761;font-variant-numeric:tabular-nums;line-height:1.4;}',
     '.lok-quiet .lok-qm b{display:block;font-size:16px;font-weight:700;color:#1A1829;line-height:1.2;}',
     '.lok-next.calm{background:#F7F6FC;}',
     '.lok-next.calm .n{background:#6002EE;}',
@@ -520,8 +520,10 @@
       tile('Leads · last 7 days', 'stat-profile-complete', l7, '',
         unread ? '<span class="lok-delta new">' + unread + ' unread</span>' : deltaChip(l7, lPrev), 'Messages and taps to call or email') +
       tile('Payment taps · last 7 days', 'stat-active-products', p7, '', deltaChip(p7, pPrev), 'Venmo, Cash App, PayPal, Buy') +
-      tile('Shared link · all time', null, landings, '',
-        '<span class="lok-delta ' + (sharers ? 'up' : 'flat') + '">' + (sharers ? sharers + (sharers === 1 ? ' neighbor shared it' : ' neighbors shared it') : 'not shared yet') + '</span>',
+      // 2026-11-24 (experts): '0' beside '1 neighbor shared it' read as a contradiction. The number is
+      // OPENS from shared links; the chip says who shared. Name both plainly.
+      tile('Opens from shared links', null, landings, '',
+        '<span class="lok-delta ' + (sharers ? 'up' : 'flat') + '">' + (sharers ? 'Shared by ' + sharers + (sharers === 1 ? ' neighbor' : ' neighbors') : 'not shared yet') + '</span>',
         'People who opened a link someone shared');
     return false;
   }
@@ -987,7 +989,7 @@
   // exactly as before — these cards simply don't mount.
   var GAM_CSS = [
     '.lok-gam-card{font-family:"Plus Jakarta Sans",-apple-system,sans-serif;background:#fff;border:.5px solid #EEEDF6;border-radius:12px;padding:1.5rem;margin:0 0 16px;color:#1A1829;}',
-    '.lok-gam-eyebrow{font-size:11px;font-weight:700;color:#6002EE;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;}',
+    '.lok-gam-eyebrow{font-size:11px;line-height:1.45;font-weight:700;color:#6002EE;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;}',
     '.lok-gam-title{font-size:17px;font-weight:700;letter-spacing:-.2px;}',
     '.lok-gam-sub{font-size:13px;color:#4A4761;margin-top:4px;line-height:1.5;}',
     '.lok-gam-list{margin-top:1.25rem;padding-top:.25rem;border-top:.5px solid #EEEDF6;}',
@@ -999,12 +1001,12 @@
     // line-height 1.5 throughout — these inherit the page's 26px line-height,
     // which reads far too airy on 11.5-13px text (Francesca 2026-08-13).
     '.lok-gam-name{font-size:13px;font-weight:500;line-height:1.5;}',
-    '.lok-gam-row.upcoming .lok-gam-name{color:#8E8BA6;font-weight:400;}',
-    '.lok-gam-detail{font-size:11.5px;color:#8E8BA6;margin-top:1px;line-height:1.5;}',
-    '.lok-gam-date{font-size:11.5px;color:#8E8BA6;flex-shrink:0;text-align:right;min-width:52px;line-height:1.5;}',
+    '.lok-gam-row.upcoming .lok-gam-name{color:#6E6A85;font-weight:400;}',
+    '.lok-gam-detail{font-size:12px;color:#6E6A85;margin-top:1px;line-height:1.5;}',
+    '.lok-gam-date{font-size:12px;color:#6E6A85;flex-shrink:0;text-align:right;min-width:52px;line-height:1.5;}',
     '.lok-gam-pill{font-size:10.5px;font-weight:700;border-radius:100px;padding:2px 8px;flex-shrink:0;white-space:nowrap;}',
     '.lok-gam-pill.green{background:#EAFAF2;color:#1D6A45;}',
-    '.lok-gam-pill.grey{background:#EEEDF6;color:#8E8BA6;}',
+    '.lok-gam-pill.grey{background:#EEEDF6;color:#6E6A85;}',
     '.lok-gam-moment{font-family:"Plus Jakarta Sans",-apple-system,sans-serif;background:linear-gradient(135deg,#F3EBFF 0%,#fff 65%);border:.5px solid #E5D4FD;border-radius:12px;padding:1.5rem;margin:0 0 16px;display:flex;gap:14px;align-items:flex-start;color:#1A1829;}',
     '.lok-gam-moment-ico{width:44px;height:44px;border-radius:50%;flex-shrink:0;background:#6002EE;color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(96,2,238,.25);}',
     '.lok-gam-moment-title{font-size:16px;font-weight:700;}',
@@ -1012,7 +1014,7 @@
     '.lok-gam-actions{display:flex;gap:8px;margin-top:12px;}',
     '.lok-gam-btn{font-family:inherit;font-size:12.5px;font-weight:600;color:#fff;background:#6002EE;border:none;border-radius:8px;padding:8px 16px;cursor:pointer;text-decoration:none;display:inline-block;}',
     '.lok-gam-btn:hover{opacity:.9;}',
-    '.lok-gam-ghost{font-family:inherit;font-size:12.5px;font-weight:500;color:#8E8BA6;background:none;border:none;padding:8px 10px;cursor:pointer;}',
+    '.lok-gam-ghost{font-family:inherit;font-size:12.5px;font-weight:500;color:#6E6A85;background:none;border:none;padding:8px 10px;cursor:pointer;}',
     '.lok-gam-ghost:hover{color:#4A4761;}',
     // Share-your-profile card polish (Francesca 2026-08-13): the Webflow
     // "Copy link" pill carried a stray 20px left margin (misaligned with the
@@ -1292,7 +1294,7 @@
         '<button type="button" class="lok-gam-ghost" data-a2hs-later style="white-space:nowrap;">Not now</button></div>';
     }
     card.innerHTML =
-      '<button type="button" data-a2hs-close aria-label="Dismiss" style="position:absolute;top:10px;right:10px;width:32px;height:32px;border:none;background:none;color:#8E8BA6;font-size:18px;line-height:1;cursor:pointer;font-family:inherit;">✕</button>' +
+      '<button type="button" data-a2hs-close aria-label="Dismiss" style="position:absolute;top:10px;right:10px;width:32px;height:32px;border:none;background:none;color:#6E6A85;font-size:18px;line-height:1;cursor:pointer;font-family:inherit;">✕</button>' +
       '<div class="lok-gam-moment-ico">' + A2HS_ICO_PHONE + '</div>' +
       '<div style="min-width:0;padding-right:28px;">' +
         '<div class="lok-gam-moment-title">Add Lokali to your home screen</div>' +
@@ -1434,19 +1436,19 @@
       opts = opts || {};
       card.innerHTML =
         '<button data-wz-x aria-label="Close" style="position:absolute;top:14px;right:14px;background:none;' +
-          'border:none;cursor:pointer;font-size:18px;color:#9A9AB0;line-height:1;">✕</button>' +
-        '<div style="font-size:12px;font-weight:700;letter-spacing:.06em;color:#6002EE;margin-bottom:6px;">' +
+          'border:none;cursor:pointer;font-size:18px;color:#6E6A85;line-height:1;">✕</button>' +
+        '<div style="font-size:12px;line-height:1.45;font-weight:700;letter-spacing:.06em;color:#6002EE;margin-bottom:6px;">' +
           'Step ' + (stepIdx + 1) + ' of ' + steps.length + '</div>' +
         '<h3 id="lok-wz-title" style="font-size:21px;font-weight:700;color:#231d3f;margin:0 0 6px;font-family:inherit;">' + title + '</h3>' +
         '<p style="font-size:14px;line-height:1.55;margin:0 0 16px;">' + sub + '</p>' +
         '<div data-wz-body>' + bodyHtml + '</div>' +
-        '<div data-wz-err aria-live="polite" style="display:none;color:#C05621;font-size:13px;margin-top:10px;"></div>' +
+        '<div data-wz-err aria-live="polite" style="display:none;color:#C05621;font-size:13px;line-height:1.45;margin-top:10px;"></div>' +
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:18px;gap:12px;">' +
-          '<div style="font-size:12.5px;line-height:1.45;color:#9A9AB0;max-width:55%;">' +
+          '<div style="font-size:12.5px;line-height:1.45;color:#6E6A85;max-width:55%;">' +
             'You can skip, but your storefront <strong style="color:#3B2A6B;">won’t go live</strong> until this is set.</div>' +
           '<div style="display:flex;align-items:center;gap:14px;white-space:nowrap;">' +
             '<button type="button" data-wz-skip style="background:none;border:none;padding:0;cursor:pointer;' +
-              'font-family:inherit;font-size:14px;color:#9A9AB0;text-decoration:underline;">Skip for now</button>' +
+              'font-family:inherit;font-size:14px;color:#6E6A85;text-decoration:underline;">Skip for now</button>' +
             (opts.noContinue ? '' :
               '<button data-wz-next style="background:#6002EE;color:#fff;border:none;cursor:pointer;font-family:inherit;' +
               'font-weight:700;font-size:14px;padding:10px 22px;border-radius:999px;">' + (opts.nextLabel || 'Continue') + '</button>') +

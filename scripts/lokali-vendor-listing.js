@@ -198,6 +198,7 @@
     ".vl-badge-row .vl-badge{margin:0;}",
     ".vl-badge.vl-badge-founding{background:#FDF6DF;color:#9A6B00;border:.5px solid #EFDFA8;}",
     ".vl-badge.vl-badge-verified{background:#EEF3FF;color:#1730C9;border:.5px solid #C9D6F8;}",
+    ".vl-badge.vl-badge-nonprofit{background:#E0F5EB;color:#17634A;border:.5px solid #B9E3CF;display:inline-flex;align-items:center;gap:5px;}", // #263 brand soft green
     ".vl-badge.vl-badge-featured{background:#FAE4FC;color:#D602EE;border:.5px solid rgba(214,2,238,.3);}",
     ".vl-avatar.vl-avatar-initials{display:flex;align-items:center;justify-content:center;}",
     ".vl-avatar-txt{color:#6002EE;font-weight:600;font-size:30px;letter-spacing:.5px;font-family:'Plus Jakarta Sans',sans-serif;line-height:1;}",
@@ -391,15 +392,13 @@
   function vlQrNudge(vid, v) {
     try {
       var qs = window.location.search || '';
-      // ?follow=1 = arriving from the order-confirmed page (#205): same banner, different first words.
-      var fromOrder = /[?&]follow=1(&|$)/.test(qs);
       var fromQr = /[?&]utm_source=qr(&|$)/.test(qs);
       // Done-check 2026-11-23 (Shopper Growth, F 'Yes, build all'): a link someone
       // shared (?via=) gets the banner too, and o=1 marks a link the owner copied
       // from their dashboard ('Did <first> send you this?').
       var fromOwner = /[?&]o=1(&|$)/.test(qs);
       var fromShare = fromOwner || /[?&]via=[^&]+/.test(qs);
-      if (!fromOrder && !fromQr && !fromShare) return;
+      if (!fromQr && !fromShare) return;
       var key = 'lokali_qr_nudge_' + vid;
       if (localStorage.getItem(key) === '1') return;
       var saveBtn = document.getElementById('vl-save');
@@ -412,14 +411,13 @@
         var box = ce('div', 'vl-qr-nudge'); box.id = 'vl-qr-nudge'; box.setAttribute('role', 'region'); box.setAttribute('aria-label', 'Follow this vendor');
         var ic = ce('span', 'vl-qr-ic'); ic.innerHTML = '<svg viewBox=\"0 0 448 512\" aria-hidden=\"true\"><path fill=\"currentColor\" d=\"M0 80C0 53.5 21.5 32 48 32h96c26.5 0 48 21.5 48 48v96c0 26.5-21.5 48-48 48H48c-26.5 0-48-21.5-48-48V80zM64 96v64h64V96H64zM0 336c0-26.5 21.5-48 48-48h96c26.5 0 48 21.5 48 48v96c0 26.5-21.5 48-48 48H48c-26.5 0-48-21.5-48-48V336zm64 16v64h64V352H64zM304 32h96c26.5 0 48 21.5 48 48v96c0 26.5-21.5 48-48 48H304c-26.5 0-48-21.5-48-48V80c0-26.5 21.5-48 48-48zm80 64H320v64h64V96zM256 304c0-8.8 7.2-16 16-16h64c8.8 0 16 7.2 16 16s7.2 16 16 16h32c8.8 0 16-7.2 16-16s7.2-16 16-16s16 7.2 16 16v96c0 8.8-7.2 16-16 16H368c-8.8 0-16-7.2-16-16s-7.2-16-16-16s-16 7.2-16 16v64c0 8.8-7.2 16-16 16H272c-8.8 0-16-7.2-16-16V304zM368 480a16 16 0 1 1 0-32 16 16 0 1 1 0 32zm64 0a16 16 0 1 1 0-32 16 16 0 1 1 0 32z\"/></svg>';
         var p = ce('p'); var b = ce('b');
-        b.textContent = fromOrder ? 'Thanks for your order. '
-          : fromQr ? 'Just met ' + (_vlOwnerFirst || 'them') + '? '
+        b.textContent = fromQr ? 'Just met ' + (_vlOwnerFirst || 'them') + '? '
           : (fromOwner && _vlOwnerFirst ? 'Did ' + _vlOwnerFirst + ' send you this? ' : '');
         if (b.textContent) p.appendChild(b);
-        p.appendChild(document.createTextNode('Follow ' + name + (fromQr || fromOrder ? ' to hear where they’ll be next.' : ' to hear what’s new.') + ' One email a week.'));
-        if (!fromQr && !fromOrder) ic = null; // the QR glyph only makes sense after a scan or an order
+        p.appendChild(document.createTextNode('Follow ' + name + (fromQr ? ' to hear where they’ll be next.' : ' to hear what’s new.') + ' One email a week.'));
+        if (!fromQr) ic = null; // the QR glyph only makes sense after a scan
         var go = ce('button', 'vl-qr-go'); go.type = 'button'; go.textContent = 'Follow';
-        go.addEventListener('click', function () { try { sessionStorage.setItem('lokali_prompt_source', fromOrder ? 'order_confirmed' : fromQr ? 'qr_banner' : fromOwner ? 'owner_link' : 'share_link'); } catch (e) {} saveBtn.click(); });
+        go.addEventListener('click', function () { try { sessionStorage.setItem('lokali_prompt_source', fromQr ? 'qr_banner' : fromOwner ? 'owner_link' : 'share_link'); } catch (e) {} saveBtn.click(); });
         var x = ce('button', 'vl-qr-x'); x.type = 'button'; x.setAttribute('aria-label', 'Dismiss');
         x.innerHTML = '<svg viewBox=\"0 0 384 512\" aria-hidden=\"true\"><path fill=\"currentColor\" d=\"M342.6 150.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 210.7 86.6 105.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L146.7 256 41.4 361.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192 301.3 297.4 406.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.3 256 342.6 150.6z\"/></svg>';
         x.addEventListener('click', function () { try { localStorage.setItem(key, '1'); } catch (e) {} box.remove(); });
@@ -1273,7 +1271,40 @@
     row.parentNode.insertBefore(pop, row.nextSibling);
   }
 
+  // #263 (F 2026-11-24): "Nonprofit" pill beside Founding/Verified, set only by
+  // Lokali (admin_set_nonprofit) after F checks the charity letter by hand. It
+  // explains itself on tap like the Founding pill, and adds one glance-card row.
+  var ICON_HEART = ASSET + '6a186b06cfcb6c4d6d1e1cf7_heart-regular.png';
+  function mountNonprofitBadge(v) {
+    if (!v || v.is_nonprofit !== true || document.getElementById('vl-badge-nonprofit')) return;
+    var row = document.querySelector('.vl-badge-row');
+    if (!row) {
+      var nameRow = document.querySelector('.vl-name-row');
+      if (!nameRow || !nameRow.parentNode) return;
+      row = ce('div', 'vl-badge-row');
+      nameRow.parentNode.insertBefore(row, nameRow.nextSibling);
+    }
+    var pill = ce('span', 'vl-badge vl-badge-nonprofit vl-badge-info');
+    pill.id = 'vl-badge-nonprofit';
+    pill.appendChild(maskIcon(ICON_HEART, '#17634A', 12));
+    pill.appendChild(document.createTextNode('Nonprofit'));
+    pill.setAttribute('role', 'button'); pill.setAttribute('tabindex', '0');
+    pill.setAttribute('aria-label', 'Nonprofit, what this means');
+    var i = ce('span', 'vl-badge-i'); i.setAttribute('aria-hidden', 'true'); i.textContent = 'i';
+    pill.appendChild(i);
+    row.appendChild(pill);
+    var pop = ce('div', 'vl-op-pop'); pop.id = 'vl-nonprofit-pop'; pop.setAttribute('role', 'note');
+    var pb = ce('b'); pb.textContent = 'Registered charity'; pop.appendChild(pb);
+    pop.appendChild(document.createTextNode('A nonprofit. Lokali checked their charity paperwork.'));
+    opWirePop(pill, pop);
+    row.parentNode.insertBefore(pop, row.nextSibling);
+  }
+
   function renderHighlights(v) {
+    mountNonprofitBadge(v);
+    if (v.is_nonprofit === true) {
+      opAddHighlight({ key: 'nonprofit', url: ICON_HEART, tint: '#17634A', bg: '#E0F5EB', t: 'Registered charity', s: 'Lokali checked their charity paperwork' });
+    }
     // F 2026-09-19: "Founding vendor" is said ONCE, by the pill beside the name
     // (it was also a glance-card cell and the first words of the Meet line:
     // three times on one screen). The pill explains itself on tap instead.
@@ -1676,7 +1707,8 @@
     window.LokaliAPI.marketing.current(vid).then(function (res) {
       var d = (res && res.data) || {};
       if (d.cta && d.cta.title) renderMarketingCta(d.cta);
-      if (d.showcase && d.showcase.title) renderShowcase(d.showcase);
+      // 2026-11-24 (F 'Yes, hide it'): Showcase of the week RETIRED; Events does
+      // that job now. renderShowcase stays unused; the data stays in the database.
     }).catch(function () {});
   }
 
@@ -2159,18 +2191,11 @@
       '<div class="' + priceClass + '"></div></div>' +
       '<div class="vl-card-desc"></div>' +
       '<div class="vl-card-foot"><span class="' + ctaClass + '">' + (opts.cta || 'Inquire') + '</span></div></div>';
-    // FEAT-PICKS: a small "Vendor's pick" chip on hand-picked items — makes the
-    // curation visible to customers (and the perk visible to vendors). Static
-    // markup only; positioned over the tinted image block.
     if (opts.ownLink) a.querySelector('.vl-card-cta').setAttribute('data-own-link', opts.ownLink); // set even before the booking probe answers; applyBookNow() reads it later
     if (opts.noBook) a.querySelector('.vl-card-cta').setAttribute('data-no-book', '1'); // #251: applyBookNow() skips it when the booking probe answers late
     if (opts.book) wireBookNow(a.querySelector('.vl-card-cta'));
-    if (opts.pick) {
-      var pickChip = document.createElement('div');
-      pickChip.className = 'vl-card-pick';
-      pickChip.textContent = "★ Vendor's pick";
-      a.querySelector('.vl-card-img').appendChild(pickChip);
-    }
+    // 2026-11-24 (F 'take out vendor's pick from images on the storefronts'): the
+    // "★ Vendor's pick" chip on photos is gone. Picked items still sort first.
     // Build the image via properties (never interpolate vendor free-text into an
     // attribute string) so a crafted item title can't break out into stored XSS.
     if (opts.image) {
@@ -2212,7 +2237,6 @@
     if (opts.galChip) {
       var gc = ce('div', 'vl-card-pick vl-gal-chip' + (opts.sold ? ' vl-gal-chip-sold' : ''));
       gc.textContent = opts.galChip;
-      if (opts.pick) gc.style.top = '40px'; // sits under the "Vendor's pick" chip
       a.querySelector('.vl-card-img').appendChild(gc);
     }
     if (opts.sold) a.className += ' vl-gal-sold';

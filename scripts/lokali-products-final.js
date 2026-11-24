@@ -9,10 +9,10 @@ const LokaliProductsPage = (() => {
     var s = document.createElement('style');
     s.id = 'lok-icon-btn-delete-style';
     s.textContent = '.icon-btn--delete:hover{color:#C0152F;background:#FCEBED;border-color:#F2C4CB;}' +
-      // Duplicate (2026-09-17): same look as Edit, in the products orange.
+      // Duplicate (2026-09-17): same look as Edit. Violet since 2026-11-24 (was the products orange).
       // Webflow's .icon-btn is a fixed 32px square; the two text buttons need their own width.
       '.lok-gc .card-actions .icon-btn[data-action="edit"],.lok-gc .card-actions .icon-btn[data-action="duplicate"]{width:auto!important;}' +
-      '.lok-gc .card-actions .icon-btn[data-action="duplicate"]{order:0;display:inline-flex;align-items:center;gap:5px;color:#B8471B;border-color:#FFDDB0;background:#fff;font-weight:600;}';
+      '.lok-gc .card-actions .icon-btn[data-action="duplicate"]{order:0;display:inline-flex;align-items:center;gap:5px;color:#6002EE;border-color:#E5D4FD;background:#fff;font-weight:600;}';
     (document.head || document.documentElement).appendChild(s);
   })();
 
@@ -120,10 +120,10 @@ const LokaliProductsPage = (() => {
     host.id = 'lok-product-ship-row';
     host.style.cssText = 'display:none;margin:4px 0 10px 26px;font-family:"Plus Jakarta Sans",system-ui,sans-serif;';
     host.innerHTML =
-      '<label for="lok-product-ship-price" style="display:block;font-size:12px;font-weight:600;color:#4A4761;margin-bottom:4px;">Flat shipping price for Lokali checkout</label>' +
-      '<div style="display:flex;align-items:center;gap:8px;"><span style="color:#8E8BA6;font-size:14px;">$</span>' +
+      '<label for="lok-product-ship-price" style="display:block;font-size:12px;line-height:1.45;font-weight:600;color:#4A4761;margin-bottom:4px;">Flat shipping price for Lokali checkout</label>' +
+      '<div style="display:flex;align-items:center;gap:8px;"><span style="color:#6E6A85;font-size:14px;">$</span>' +
       '<input id="lok-product-ship-price" type="number" inputmode="decimal" min="0" max="500" step="0.01" placeholder="0.00" style="width:120px;box-sizing:border-box;padding:9px 11px;border:1px solid #E6E4F0;border-radius:10px;font-size:14px;font-family:inherit;color:#1A1829;background:#fff;" /></div>' +
-      '<div style="font-size:12px;color:#8E8BA6;margin-top:5px;line-height:1.5;">Charged once per order when a shopper picks shipping at checkout. Leave blank and shipping stays an Inquire conversation.</div>';
+      '<div style="font-size:12px;color:#6E6A85;margin-top:5px;line-height:1.5;">Charged once per order when a shopper picks shipping at checkout. Leave blank and shipping stays an Inquire conversation.</div>';
     row.insertAdjacentElement('afterend', host);
     var sync = function () { host.style.display = input.checked ? '' : 'none'; };
     input.addEventListener('change', sync);
@@ -136,6 +136,102 @@ const LokaliProductsPage = (() => {
     const n = Math.round(parseFloat(v) * 100); return (isFinite(n) && n >= 0 && n <= 50000) ? n : undefined;
   };
   const setShipCents = (c) => { const inp = shipPriceInput(); if (!inp) return; inp.value = (c == null) ? '' : (c / 100).toFixed(2); const sh = document.getElementById('product-shipping'); const ev = sh && (sh.tagName === 'INPUT' ? sh : sh.querySelector && sh.querySelector('input[type="checkbox"]')); if (ev) ev.dispatchEvent(new Event('change')); };
+
+  // #262 live shipping prices (F 2026-11-23). A storefront Lokali has opened for
+  // it (server: SHIPPING_OPEN_TO) sees a "Shipping prices" panel under "Ships":
+  // the packed box, its weight, an optional packing fee, insure, and once per
+  // storefront the corrections tick. Saved through lokali-api (the table is
+  // server-only), with its own Save button so the listing form's save is untouched.
+  // New listings: save the listing first. Not open = nothing renders.
+  var LS_BASE = ((window.LOKALI_BILLING_BASE ? String(window.LOKALI_BILLING_BASE) : 'https://lokali-api.vercel.app/api/lokali')).replace(/\/$/, '');
+  function lsCall(body) {
+    var tp = (window.LokaliAuth && typeof window.LokaliAuth.token === 'function') ? Promise.resolve().then(function () { return window.LokaliAuth.token(); }).catch(function () { return null; }) : Promise.resolve(null);
+    return tp.then(function (jwt) {
+      if (!jwt) return { error: 'signed_out' };
+      return fetch(LS_BASE + '/shipping/settings', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + jwt }, body: JSON.stringify(body) })
+        .then(function (r) { return r.json().catch(function () { return {}; }); });
+    }).catch(function () { return { error: 'network' }; });
+  }
+  function lsMoney(c) { var d = (c || 0) / 100; return '$' + d.toFixed(d % 1 ? 2 : 0); }
+  var _lsFor = null;
+  function mountLiveShip(productId) {
+    _lsFor = productId;
+    var old = document.getElementById('lok-live-ship'); if (old) old.remove();
+    var node = document.getElementById('product-shipping'); if (!node) return;
+    var cb = (node.tagName === 'INPUT' && node.type === 'checkbox') ? node : (node.querySelector ? node.querySelector('input[type="checkbox"]') : null);
+    if (!cb) return;
+    var anchorEl = document.getElementById('lok-product-ship-row') || cb.closest('.w-checkbox') || cb.parentElement;
+    if (!anchorEl) return;
+    if (!productId) return; // a new listing has no id yet; the panel appears after the first save
+    lsCall({ action: 'get', products_id: productId }).then(function (st) {
+      if (_lsFor !== productId || !st || !st.open) return;
+      var set = st.settings || null, presets = st.presets || {};
+      var wrap = document.createElement('div'); wrap.id = 'lok-live-ship';
+      wrap.style.cssText = 'margin:6px 0 14px 26px;padding:14px;border:1px solid #E6E4F0;border-radius:14px;background:#fff;font-family:"Plus Jakarta Sans",system-ui,sans-serif;color:#45415A;max-width:460px;';
+      var chip = function (k, label, sub) { var on = (set ? set.box_preset : '') === k; return '<label class="lsk" style="display:flex;justify-content:space-between;align-items:center;gap:10px;border:' + (on ? '1.5px solid #6002EE;background:#F3EBFF' : '1px solid #E6E4F0;background:#fff') + ';border-radius:10px;padding:9px 11px;margin:0 0 6px;cursor:pointer;font-size:14px;"><span>' + label + (sub ? '<br><span style="font-size:12px;line-height:1.45;color:#6E6A85;">' + sub + '</span>' : '') + '</span><input type="radio" name="lok-ls-box" value="' + k + '"' + (on ? ' checked' : '') + ' style="accent-color:#6002EE;"></label>'; };
+      var inp = function (id, val, w, ph) { return '<input id="' + id + '" type="number" inputmode="decimal" min="0" step="0.1" value="' + (val == null ? '' : val) + '" placeholder="' + (ph || '') + '" style="width:' + w + 'px;box-sizing:border-box;padding:8px 10px;border:1px solid #E6E4F0;border-radius:10px;font-size:14px;font-family:inherit;color:#1A1829;background:#fff;">'; };
+      var lab = function (t) { return '<div style="font-size:12px;line-height:1.45;font-weight:600;color:#4A4761;margin:12px 0 6px;">' + t + '</div>'; };
+      var custom = set && set.box_preset === 'custom';
+      wrap.innerHTML =
+        '<div style="font-size:15px;font-weight:700;color:#1A1829;">Shipping prices</div>' +
+        '<div style="font-size:12px;color:#6E6A85;margin-top:2px;line-height:1.5;">Buyers type their zip code and see real post office and UPS prices. Lokali buys the label and emails it to you, already paid.</div>' +
+        lab('Packed box (measure it packed)') +
+        Object.keys(presets).map(function (k) { var b = presets[k]; return chip(k, b.label, b.l + ' x ' + b.w + ' x ' + b.h + ' in'); }).join('') +
+        chip('custom', 'My own size', '') +
+        '<div id="lok-ls-custom" style="display:' + (custom ? 'flex' : 'none') + ';gap:6px;align-items:center;font-size:13px;line-height:1.45;color:#6E6A85;margin-bottom:6px;">' +
+          inp('lok-ls-l', custom ? set.length_in : '', 70, 'L') + 'x' + inp('lok-ls-w', custom ? set.width_in : '', 70, 'W') + 'x' + inp('lok-ls-h', custom ? set.height_in : '', 70, 'H') + 'in</div>' +
+        '<div style="display:flex;gap:16px;flex-wrap:wrap;">' +
+          '<div>' + lab('Weight packed (pounds)') + inp('lok-ls-lb', set ? Math.round(set.weight_oz / 16 * 10) / 10 : '', 110, '9') + '</div>' +
+          '<div>' + lab('Packing fee (optional, $)') + inp('lok-ls-fee', set ? (set.packing_fee_cents / 100) : '', 110, '0') + '</div>' +
+        '</div>' +
+        lab('A phone the carrier can call') +
+        '<input id="lok-ls-phone" type="tel" inputmode="tel" autocomplete="tel" value="' + (st.phone ? ('(' + st.phone.slice(0, 3) + ') ' + st.phone.slice(3, 6) + '-' + st.phone.slice(6)) : '') + '" placeholder="(281) 555-0100" style="width:200px;box-sizing:border-box;padding:8px 10px;border:1px solid #E6E4F0;border-radius:10px;font-size:14px;font-family:inherit;color:#1A1829;background:#fff;">' +
+        '<div style="font-size:12px;line-height:1.45;color:#6E6A85;margin-top:4px;">The post office prints it on every label. Shoppers never see it.</div>' +
+        '<label style="display:flex;gap:8px;align-items:center;font-size:14px;margin-top:12px;cursor:pointer;"><input id="lok-ls-ins" type="checkbox"' + ((set ? set.insure : st.insure_default) ? ' checked' : '') + ' style="accent-color:#6002EE;"> Insure it for its price</label>' +
+        (st.agreed_at ? '' : '<label style="display:flex;gap:8px;align-items:flex-start;font-size:13px;margin-top:12px;line-height:1.5;cursor:pointer;background:#F3EBFF;border-radius:10px;padding:10px;"><input id="lok-ls-agree" type="checkbox" style="accent-color:#6002EE;margin-top:3px;"> <span>I agree: if the carrier measures a bigger box or a heavier weight than I set here, the extra they charge comes out of my sales.</span></label>') +
+        '<div style="display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap;"><button type="button" id="lok-ls-save" style="font-family:inherit;font-size:14px;font-weight:700;border:0;border-radius:999px;background:#6002EE;color:#fff;min-height:40px;padding:0 18px;cursor:pointer;">Save shipping</button>' +
+          (set ? '<button type="button" id="lok-ls-off" style="font-family:inherit;font-size:13px;border:0;background:none;color:#6E6A85;cursor:pointer;">Stop live prices</button>' : '') +
+          '<span id="lok-ls-msg" style="font-size:12px;line-height:1.45;color:#6E6A85;"></span></div>' +
+        '<div id="lok-ls-ex" style="margin-top:10px;background:#E6EFFB;color:#1D4E9E;border-radius:10px;padding:10px;font-size:12px;line-height:1.5;display:' + ((st.examples || []).length ? '' : 'none') + ';">' +
+          (st.examples || []).map(function (e) { return 'A buyer in ' + e.city + ' would pay about <b>' + lsMoney(e.cents) + '</b>.'; }).join(' ') + '</div>';
+      anchorEl.insertAdjacentElement('afterend', wrap);
+      var sync = function () { wrap.style.display = cb.checked ? '' : 'none'; };
+      cb.addEventListener('change', sync); sync();
+      wrap.querySelectorAll('input[name="lok-ls-box"]').forEach(function (r) {
+        r.addEventListener('change', function () {
+          wrap.querySelectorAll('.lsk').forEach(function (l) { var on = l.querySelector('input').checked; l.style.border = on ? '1.5px solid #6002EE' : '1px solid #E6E4F0'; l.style.background = on ? '#F3EBFF' : '#fff'; });
+          wrap.querySelector('#lok-ls-custom').style.display = wrap.querySelector('input[name="lok-ls-box"]:checked').value === 'custom' ? 'flex' : 'none';
+        });
+      });
+      var msg = wrap.querySelector('#lok-ls-msg');
+      var save = wrap.querySelector('#lok-ls-save');
+      save.addEventListener('click', function () {
+        var box = wrap.querySelector('input[name="lok-ls-box"]:checked');
+        var ag = wrap.querySelector('#lok-ls-agree');
+        if (!box) { msg.style.color = '#B1006A'; msg.textContent = 'Pick a box size.'; return; }
+        if (ag && !ag.checked) { msg.style.color = '#B1006A'; msg.textContent = 'Tick the box above to agree first.'; return; }
+        var v = function (id) { var e = wrap.querySelector('#' + id); return e ? e.value : ''; };
+        save.disabled = true; msg.style.color = '#6E6A85'; msg.textContent = 'Saving and checking prices...';
+        lsCall({ action: 'save', products_id: productId, box_preset: box.value, length_in: v('lok-ls-l'), width_in: v('lok-ls-w'), height_in: v('lok-ls-h'),
+                 weight_lb: v('lok-ls-lb'), packing_fee: v('lok-ls-fee'), phone: v('lok-ls-phone'), insure: wrap.querySelector('#lok-ls-ins').checked, agree: ag ? ag.checked : undefined })
+          .then(function (r) {
+            save.disabled = false;
+            if (!r || r.error) {
+              msg.style.color = '#B1006A';
+              msg.textContent = r && r.error === 'phone_required' ? 'Add a phone the carrier can call.' : r && r.error === 'bad_phone' ? 'Type a 10-digit phone number.' : r && r.error === 'bad_weight' ? 'Type the packed weight in pounds.' : r && r.error === 'bad_size' ? 'Type all three box sizes in inches.' : r && r.error === 'bad_fee' ? 'The packing fee should be a dollar amount.' : 'That did not save. Try again.';
+              return;
+            }
+            mountLiveShip(productId);
+          });
+      });
+      var off = wrap.querySelector('#lok-ls-off');
+      if (off) off.addEventListener('click', function () {
+        off.disabled = true;
+        lsCall({ action: 'remove', products_id: productId }).then(function () { mountLiveShip(productId); });
+      });
+    });
+  }
+
 
   let products     = [];
   let editingId    = null;
@@ -302,7 +398,7 @@ const LokaliProductsPage = (() => {
       const hint = document.createElement('div');
       hint.id = 'lok-product-focus-hint';
       // white-space:normal — .container-11 sets nowrap page-wide (see gallery hosts)
-      hint.style.cssText = 'font-size:12px;color:#8E8BA6;margin-top:6px;line-height:1.5;white-space:normal;max-width:220px;font-family:"Plus Jakarta Sans",system-ui,sans-serif;';
+      hint.style.cssText = 'font-size:12px;color:#6E6A85;margin-top:6px;line-height:1.5;white-space:normal;max-width:220px;font-family:"Plus Jakarta Sans",system-ui,sans-serif;';
       hint.textContent = 'Drag the photo to choose which part stays in view on your cards.';
       (thumb.closest('div') || thumb).insertAdjacentElement('afterend', hint);
     }
@@ -391,7 +487,7 @@ const LokaliProductsPage = (() => {
     const wrap = document.createElement('div');
     wrap.style.cssText = 'margin-top:14px;white-space:normal;';
     const lab = document.createElement('div');
-    lab.style.cssText = 'font-size:12px;font-weight:600;color:#4A4761;margin-bottom:6px;';
+    lab.style.cssText = 'font-size:12px;line-height:1.45;font-weight:600;color:#4A4761;margin-bottom:6px;';
     lab.textContent = 'How your cover photo will appear on your card. Drag it to adjust';
     const frame = document.createElement('div');
     frame.style.cssText = 'width:230px;max-width:100%;height:150px;border-radius:12px;overflow:hidden;border:1px solid #EEEDF6;background:#F7F6FC;box-shadow:0 2px 8px rgba(26,24,41,.08);';
@@ -713,7 +809,7 @@ const LokaliProductsPage = (() => {
         orderHint = document.createElement('div');
         orderHint.id = 'products-order-hint';
         orderHint.style.cssText =
-          'font-family:"Plus Jakarta Sans",sans-serif;font-size:13px;color:#6B6580;' +
+          'font-family:"Plus Jakarta Sans",sans-serif;font-size:13px;line-height:1.45;color:#6B6580;' +
           'margin:2px 0 10px;line-height:1.5;';
         orderHint.textContent =
           'New products start at the top. Drag a card to move it.';
@@ -1097,6 +1193,7 @@ const LokaliProductsPage = (() => {
     editingId    = productId;
     imageRemoved = false;
     clearError();
+    mountLiveShip(productId); // #262
 
     const isEditing = !!productId;
     const titleEl   = el.formTitle();
@@ -1264,7 +1361,7 @@ const LokaliProductsPage = (() => {
     const v = inp.value.trim();
     const bad = v && !isValidVideoUrl(v);
     inp.style.borderColor = bad ? '#E4739A' : '#E6E4F0';
-    if (hint) { hint.style.color = bad ? '#B1006A' : '#8E8BA6'; hint.textContent = bad ? 'Enter a valid YouTube or Vimeo link (or leave blank).' : VIDEO_HINT; }
+    if (hint) { hint.style.color = bad ? '#B1006A' : '#6E6A85'; hint.textContent = bad ? 'Enter a valid YouTube or Vimeo link (or leave blank).' : VIDEO_HINT; }
   };
 
   const videoHost = () => {
@@ -1278,9 +1375,9 @@ const LokaliProductsPage = (() => {
     host.id = 'lok-product-video';
     host.style.cssText = 'margin-top:16px;font-family:"Plus Jakarta Sans",system-ui,sans-serif;white-space:normal;';
     host.innerHTML =
-      '<div style="font-size:13px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;color:#4A4761;margin-bottom:8px;">Showcase video <span style="font-weight:500;text-transform:none;color:#8E8BA6;">· optional</span></div>' +
+      '<div style="font-size:13px;line-height:1.45;font-weight:600;letter-spacing:.02em;text-transform:uppercase;color:#4A4761;margin-bottom:8px;">Showcase video <span style="font-weight:500;text-transform:none;color:#6E6A85;">· optional</span></div>' +
       '<input id="lok-product-video-input" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="Paste a YouTube or Vimeo link" style="width:100%;box-sizing:border-box;padding:11px 13px;border:1px solid #E6E4F0;border-radius:10px;font-size:14px;font-family:inherit;color:#1A1829;background:#fff;" />' +
-      '<div id="lok-product-video-hint" style="font-size:12px;color:#8E8BA6;margin-top:6px;line-height:1.5;">' + VIDEO_HINT + '</div>';
+      '<div id="lok-product-video-hint" style="font-size:12px;color:#6E6A85;margin-top:6px;line-height:1.5;">' + VIDEO_HINT + '</div>';
     const parent = anchorEl.parentElement || document.body;
     if (anchorEl.nextSibling) parent.insertBefore(host, anchorEl.nextSibling);
     else parent.appendChild(host);
@@ -1314,7 +1411,7 @@ const LokaliProductsPage = (() => {
     const v = inp.value.trim();
     const bad = v && !isValidBuyUrl(v);
     inp.style.borderColor = bad ? '#E4739A' : '#E6E4F0';
-    if (hint) { hint.style.color = bad ? '#B1006A' : '#8E8BA6'; hint.textContent = bad ? 'Enter a full https:// link with no spaces (or leave blank).' : BUY_HINT; }
+    if (hint) { hint.style.color = bad ? '#B1006A' : '#6E6A85'; hint.textContent = bad ? 'Enter a full https:// link with no spaces (or leave blank).' : BUY_HINT; }
     const fill = document.getElementById('lok-product-buy-fill');
     if (fill) fill.style.display = fillEligible(v) ? 'inline-flex' : 'none';   // #173c
   };
@@ -1329,12 +1426,12 @@ const LokaliProductsPage = (() => {
     host.id = 'lok-product-buy';
     host.style.cssText = 'margin-top:16px;font-family:"Plus Jakarta Sans",system-ui,sans-serif;white-space:normal;';
     host.innerHTML =
-      '<div style="font-size:13px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;color:#4A4761;margin-bottom:8px;">Buy link <span style="font-weight:500;text-transform:none;color:#8E8BA6;">· optional</span></div>' +
+      '<div style="font-size:13px;line-height:1.45;font-weight:600;letter-spacing:.02em;text-transform:uppercase;color:#4A4761;margin-bottom:8px;">Buy link <span style="font-weight:500;text-transform:none;color:#6E6A85;">· optional</span></div>' +
       '<div style="display:flex;gap:8px;align-items:stretch;">' +
         '<input id="lok-product-buy-input" type="url" inputmode="url" autocomplete="off" spellcheck="false" maxlength="' + BUY_MAXLEN + '" placeholder="https://www.etsy.com/listing/..." style="flex:1 1 auto;min-width:0;box-sizing:border-box;padding:11px 13px;border:1px solid #E6E4F0;border-radius:10px;font-size:14px;font-family:inherit;color:#1A1829;background:#fff;" />' +
         '<button type="button" id="lok-product-buy-fill" style="display:none;flex:0 0 auto;padding:0 14px;border:1px solid #D9CFFB;border-radius:10px;background:#fff;color:#6002EE;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">Fill from link</button>' +
       '</div>' +
-      '<div id="lok-product-buy-hint" style="font-size:12px;color:#8E8BA6;margin-top:6px;line-height:1.5;">' + BUY_HINT + '</div>';
+      '<div id="lok-product-buy-hint" style="font-size:12px;color:#6E6A85;margin-top:6px;line-height:1.5;">' + BUY_HINT + '</div>';
     anchorEl.insertAdjacentElement('afterend', host);
     const inp = host.querySelector('#lok-product-buy-input');
     if (inp) inp.addEventListener('input', markBuyValidity);
@@ -1485,10 +1582,10 @@ const LokaliProductsPage = (() => {
     if (!body) return;
 
     // the organised form already titles this section; the inline heading is for the un-organised layout
-    const title = (window.LokaliListingUI && window.LokaliListingUI.organize ? '' : '<div style="font-size:13px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;color:#4A4761;margin-bottom:8px;">Photos</div>') +
+    const title = (window.LokaliListingUI && window.LokaliListingUI.organize ? '' : '<div style="font-size:13px;line-height:1.45;font-weight:600;letter-spacing:.02em;text-transform:uppercase;color:#4A4761;margin-bottom:8px;">Photos</div>') +
       '<a href="/vendor-resources/product-photo-guide" target="_blank" rel="noopener" ' +
-      'style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#ee6002;text-decoration:none;margin:-2px 0 12px;">' +
-      '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" style="flex-shrink:0;"><circle cx="12" cy="12" r="9" stroke="#ee6002" stroke-width="2"/><path d="M12 11v5M12 8h.01" stroke="#ee6002" stroke-width="2" stroke-linecap="round"/></svg>' +
+      'style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#6002EE;text-decoration:none;margin:-2px 0 12px;">' +
+      '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" style="flex-shrink:0;"><circle cx="12" cy="12" r="9" stroke="#6002EE" stroke-width="2"/><path d="M12 11v5M12 8h.01" stroke="#6002EE" stroke-width="2" stroke-linecap="round"/></svg>' +
       'Photo size &amp; tips guide</a>';
 
     // Locked: plan allows a single photo per listing (no plan does since 2026-09-20)
@@ -1510,10 +1607,10 @@ const LokaliProductsPage = (() => {
       return;
     }
 
-    body.innerHTML = title + '<div style="font-size:13px;color:#8E8BA6;">Loading photos…</div>';
+    body.innerHTML = title + '<div style="font-size:13px;line-height:1.45;color:#6E6A85;">Loading photos…</div>';
     const res = await window.LokaliAPI.products.listPhotos(productId);
     if (res.error) {
-      body.innerHTML = title + '<div style="font-size:13px;color:#B1006A;">Couldn’t load your photos. Refresh to try again.</div>';
+      body.innerHTML = title + '<div style="font-size:13px;line-height:1.45;color:#B1006A;">Couldn’t load your photos. Refresh to try again.</div>';
       return;
     }
     const raw = res.data;
@@ -1537,7 +1634,7 @@ const LokaliProductsPage = (() => {
     const count = _galleryPhotos.length;
 
     let html = title +
-      '<div style="font-size:12px;color:#8E8BA6;margin-bottom:8px;">' + count + ' of ' + cap + ' photos · the first photo is your cover. Drag it to choose what stays in view' +
+      '<div style="font-size:12px;line-height:1.45;color:#6E6A85;margin-bottom:8px;">' + count + ' of ' + cap + ' photos · the first photo is your cover. Drag it to choose what stays in view' +
       (count > 1 ? ' · use ‹ › to reorder' : '') + '</div>' +
       '<div style="display:flex;flex-wrap:wrap;gap:10px;">';
 
@@ -1558,7 +1655,7 @@ const LokaliProductsPage = (() => {
     }
     html += '</div>';
     if (count >= cap) {
-      html += '<div style="font-size:12px;color:#8E8BA6;margin-top:8px;">You’ve reached your ' + cap + '-photo limit for this product.</div>';
+      html += '<div style="font-size:12px;line-height:1.45;color:#6E6A85;margin-top:8px;">You’ve reached your ' + cap + '-photo limit for this product.</div>';
     }
     body.innerHTML = html;
     // Set image src via property (never interpolate the uploaded URL into an
@@ -1632,7 +1729,7 @@ const LokaliProductsPage = (() => {
     const count = _pendingGalleryPhotos.length;
     const arrowStyle = 'position:absolute;bottom:4px;width:22px;height:22px;border:none;border-radius:50%;background:rgba(26,24,41,.72);color:#fff;font-size:13px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;';
     let html = title +
-      '<div style="font-size:12px;color:#8E8BA6;margin-bottom:8px;">' + count + ' of ' + cap + ' photos · the first photo is your cover. Drag it to choose what stays in view' +
+      '<div style="font-size:12px;line-height:1.45;color:#6E6A85;margin-bottom:8px;">' + count + ' of ' + cap + ' photos · the first photo is your cover. Drag it to choose what stays in view' +
       (count > 1 ? ' · use ‹ › to reorder' : '') + '</div>' +
       '<div style="display:flex;flex-wrap:wrap;gap:10px;">';
     _pendingGalleryPhotos.forEach((p, i) => {
@@ -1649,7 +1746,7 @@ const LokaliProductsPage = (() => {
         'style="width:84px;height:84px;border-radius:10px;border:1.5px dashed #6002ee;background:#fff;color:#6002ee;font-size:28px;font-weight:300;cursor:pointer;display:flex;align-items:center;justify-content:center;">+</button>';
     }
     html += '</div>';
-    html += '<div style="font-size:12px;color:#8E8BA6;margin-top:8px;">' +
+    html += '<div style="font-size:12px;line-height:1.45;color:#6E6A85;margin-top:8px;">' +
       (count ? 'These photos are added to your product when you hit Save.' : 'Add up to ' + cap + ' photos. They’re saved with your product.') + '</div>';
     body.innerHTML = html;
     _coverViews = [];
@@ -2434,17 +2531,17 @@ const LokaliProductsPage = (() => {
       card.innerHTML =
         '<div id="lok-import-title" style="font-size:17px;font-weight:700;color:#1A1829;margin-bottom:4px;">Import products from a spreadsheet</div>' +
         '<p data-import-sub style="font-size:13.5px;color:#5A5570;line-height:1.5;margin:0 0 12px;"></p>' +
-        '<p style="font-size:13px;color:#6E6A85;margin:-6px 0 12px;"><a href="/vendor-resources/import-guide" target="_blank" rel="noopener" style="color:#6002EE;font-weight:600;text-decoration:none;">How importing works</a> (opens the guide in a new tab)</p>' +
+        '<p style="font-size:13px;line-height:1.45;color:#6E6A85;margin:-6px 0 12px;"><a href="/vendor-resources/import-guide" target="_blank" rel="noopener" style="color:#6002EE;font-weight:600;text-decoration:none;">How importing works</a> (opens the guide in a new tab)</p>' +
         (platform === 'etsy' || platform === 'shopify'
           ? '<div style="margin:0 0 12px;">' +
-              '<label for="lok-import-store" style="display:block;font-size:12.5px;font-weight:600;color:#4A4761;margin-bottom:5px;">' +
+              '<label for="lok-import-store" style="display:block;font-size:12.5px;line-height:1.45;font-weight:600;color:#4A4761;margin-bottom:5px;">' +
                 (platform === 'etsy' ? 'Your Etsy shop name <span style="font-weight:500;color:#6E6A85;">(the part after etsy.com/shop/) · adds a "Buy on Etsy" link to every item</span>'
                                      : 'Your store address <span style="font-weight:500;color:#6E6A85;">(for example, mystore.com) · adds the exact product link to every item</span>') +
               '</label>' +
               '<input id="lok-import-store" type="text" autocomplete="off" spellcheck="false" placeholder="' + (platform === 'etsy' ? 'MyShopName' : 'mystore.com') + '" style="width:100%;max-width:360px;box-sizing:border-box;padding:9px 12px;border:1px solid #E6E4F0;border-radius:10px;font-size:14px;font-family:inherit;color:#1A1829;background:#fff;" />' +
             '</div>'
           : '') +
-        '<div style="display:flex;gap:14px;align-items:center;font-size:13px;color:#6E6A85;margin-bottom:8px;">' +
+        '<div style="display:flex;gap:14px;align-items:center;font-size:13px;line-height:1.45;color:#6E6A85;margin-bottom:8px;">' +
           '<button type="button" data-import-all style="background:none;border:0;padding:0;color:#6002EE;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;">Select all new</button>' +
           '<button type="button" data-import-none style="background:none;border:0;padding:0;color:#6002EE;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;">Select none</button>' +
           '<span data-import-count style="margin-left:auto;"></span></div>' +
@@ -2472,7 +2569,7 @@ const LokaliProductsPage = (() => {
       var tbody = card.querySelector('[data-import-rows]');
       items.forEach(function (it, i) {
         var tr = document.createElement('tr');
-        tr.style.cssText = 'border-top:1px solid #EEEDF6;' + (it.dup ? 'color:#8E8BA6;' : '');
+        tr.style.cssText = 'border-top:1px solid #EEEDF6;' + (it.dup ? 'color:#6E6A85;' : '');
         var tdC = document.createElement('td'); tdC.style.cssText = 'padding:8px 10px;text-align:center;';
         var cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = it.checked; cb.setAttribute('aria-label', 'Import ' + it.title);
         cb.addEventListener('change', function () { it.checked = cb.checked; updateCount(); });
@@ -2691,7 +2788,7 @@ const LokaliProductsPage = (() => {
         '#lok-import-btn:focus-visible{outline:2px solid #6002EE;outline-offset:2px;}' +
         '#lok-import-btn svg{width:16px;height:16px;flex:0 0 auto;}' +
         '#lok-import-btn .lok-import-short{display:none;}' +
-        '#lok-import-help{margin-left:auto;margin-right:14px;font-family:"Plus Jakarta Sans",system-ui,sans-serif;font-size:13px;font-weight:600;color:#6002EE;text-decoration:none;white-space:nowrap;}' +
+        '#lok-import-help{margin-left:auto;margin-right:14px;font-family:"Plus Jakarta Sans",system-ui,sans-serif;font-size:13px;line-height:1.45;font-weight:600;color:#6002EE;text-decoration:none;white-space:nowrap;}' +
         '#lok-import-help:hover{text-decoration:underline;}' +
         '#lok-import-help + #lok-import-btn{margin-left:0;}' +
         '@media (max-width:640px){#lok-import-help{display:none;}#lok-import-btn{padding:0 12px;margin-right:8px;}#lok-import-btn .lok-import-full{display:none;}#lok-import-btn .lok-import-short{display:inline;}}';
@@ -2814,7 +2911,7 @@ const LokaliProductsPage = (() => {
     }
     box.innerHTML =
       '<div style="font-size:15px;font-weight:600;color:#1A1829;margin-bottom:4px;">Couldn’t load your products</div>' +
-      '<div style="font-size:13px;color:#6B6580;margin-bottom:14px;">Check your connection and try again.</div>' +
+      '<div style="font-size:13px;line-height:1.45;color:#6B6580;margin-bottom:14px;">Check your connection and try again.</div>' +
       '<button type="button" data-load-retry style="font-family:inherit;font-size:14px;font-weight:600;min-height:44px;padding:10px 24px;border-radius:10px;border:1px solid #6002EE;background:#6002EE;color:#fff;cursor:pointer;">Try again</button>';
     var btn = box.querySelector('[data-load-retry]');
     btn.addEventListener('click', function () {
@@ -2947,11 +3044,11 @@ const LokaliProductsPage = (() => {
     wrap.id = 'lok-product-leadtime';
     wrap.style.cssText = "margin:14px 0 0;width:100%;box-sizing:border-box;font-family:'Plus Jakarta Sans',system-ui,sans-serif;";
     wrap.innerHTML =
-      '<div style="font-size:13px;font-weight:600;color:#1A1829;margin-bottom:2px;">Lead time <span style="font-weight:400;color:#8E8BA6;">(optional)</span></div>' +
-      '<p style="font-size:12.5px;color:#8E8BA6;margin:0 0 8px;">How long until this is ready for the customer? Shown on your listing so people know what to expect.</p>' +
+      '<div style="font-size:13px;line-height:1.45;font-weight:600;color:#1A1829;margin-bottom:2px;">Lead time <span style="font-weight:400;color:#6E6A85;">(optional)</span></div>' +
+      '<p style="font-size:12.5px;line-height:1.45;color:#6E6A85;margin:0 0 8px;">How long until this is ready for the customer? Shown on your listing so people know what to expect.</p>' +
       '<div data-lead-presets style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:9px;"></div>' +
       '<input data-lead-input class="w-input" maxlength="' + LEAD_MAXLEN + '" placeholder="For example, ready in about 2 weeks" style="width:100%;box-sizing:border-box;font-family:inherit;">' +
-      '<p style="font-size:12px;color:#8E8BA6;margin:8px 0 0;line-height:1.45;">Tap a suggestion or write your own. This is a heads-up for customers. It doesn’t block anyone from ordering.</p>';
+      '<p style="font-size:12px;color:#6E6A85;margin:8px 0 0;line-height:1.45;">Tap a suggestion or write your own. This is a heads-up for customers. It doesn’t block anyone from ordering.</p>';
     host.appendChild(wrap);
     const inp = wrap.querySelector('[data-lead-input]');
     inp.addEventListener('input', () => {
@@ -3093,7 +3190,7 @@ const LokaliProductsPage = (() => {
     sum.style.cssText = 'cursor:pointer;font-size:14.5px;font-weight:700;color:#1A1829;list-style-position:inside;';
     sum.textContent = W.title + ' (' + _galArtists.length + ')';
     const hint = document.createElement('span');
-    hint.style.cssText = 'font-weight:500;font-size:12.5px;color:#6B6880;margin-left:8px;';
+    hint.style.cssText = 'font-weight:500;font-size:12.5px;line-height:1.45;color:#6B6880;margin-left:8px;';
     hint.textContent = 'A Featured perk: group your listings';
     sum.appendChild(hint);
     panel.appendChild(sum);
@@ -3105,10 +3202,10 @@ const LokaliProductsPage = (() => {
     // What the storefront calls its groups.
     const pick = document.createElement('div');
     pick.style.cssText = 'display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 12px;';
-    const pl = document.createElement('span'); pl.style.cssText = 'font-size:13px;font-weight:600;color:#1A1829;margin-right:2px;';
+    const pl = document.createElement('span'); pl.style.cssText = 'font-size:13px;line-height:1.45;font-weight:600;color:#1A1829;margin-right:2px;';
     pl.textContent = 'What do you call these?';
     pick.appendChild(pl);
-    const pickMsg = document.createElement('span'); pickMsg.style.cssText = 'font-size:12.5px;color:#B42318;';
+    const pickMsg = document.createElement('span'); pickMsg.style.cssText = 'font-size:12.5px;line-height:1.45;color:#B42318;';
     // Two words on offer (F 2026-11-19: Makers was one choice too many). A stored
     // 'makers' still renders everywhere; it just is not offered.
     ['collections', 'artists'].forEach((key) => {
@@ -3167,7 +3264,7 @@ const LokaliProductsPage = (() => {
       }
       const txt = document.createElement('div'); txt.style.cssText = 'flex:1;min-width:0;';
       const nm = document.createElement('div'); nm.style.cssText = 'font-size:14px;font-weight:600;color:#1A1829;'; nm.textContent = a.name;
-      const sub = document.createElement('div'); sub.style.cssText = 'font-size:12.5px;color:#6B6880;';
+      const sub = document.createElement('div'); sub.style.cssText = 'font-size:12.5px;line-height:1.45;color:#6B6880;';
       const n = products.filter((p) => p.artist_id === a.id).length;
       sub.textContent = (a.origin ? a.origin + ' · ' : '') + n + ' ' + (n === 1 ? W.count1 : W.countN);
       txt.appendChild(nm); txt.appendChild(sub);
@@ -3329,7 +3426,7 @@ const LokaliProductsPage = (() => {
     '.lokgp-h{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid #E7E2F3;flex-wrap:wrap;}',
     '.lokgp-ic{width:40px;height:40px;border-radius:12px;background:#F3EBFF;color:#6002EE;display:flex;align-items:center;justify-content:center;flex:none;}',
     '.lokgp-h h3{font-size:16.5px;font-weight:700;margin:0;color:#1A1829;line-height:1.3;}',
-    '.lokgp-h p{font-size:13px;color:#6B6880;margin:2px 0 0;}',
+    '.lokgp-h p{font-size:13px;line-height:1.45;color:#6B6880;margin:2px 0 0;}',
     '.lokgp-sp{flex:1;}',
     '.lokgp-feat{font-size:11px;font-weight:700;letter-spacing:.05em;color:#6002EE;background:#F3EBFF;padding:4px 9px;border-radius:999px;}',
     '.lokgp-tabs{display:flex;gap:4px;padding:6px 12px 0;border-bottom:1px solid #E7E2F3;}',
@@ -3353,8 +3450,8 @@ const LokaliProductsPage = (() => {
     '.lokgp-btn.q{background:#fff;color:#6002EE;}',
     '.lokgp-btn[disabled]{opacity:.5;cursor:default;}',
     '.lokgp-note{font-size:12.5px;color:#6B6880;line-height:1.45;margin:10px 0 0;}',
-    '.lokgp-err{font-size:13px;color:#B42318;margin:10px 0 0;}',
-    '.lokgp-lbl{font-size:13px;font-weight:700;color:#1A1829;margin:0 0 8px;}',
+    '.lokgp-err{font-size:13px;line-height:1.45;color:#B42318;margin:10px 0 0;}',
+    '.lokgp-lbl{font-size:13px;line-height:1.45;font-weight:700;color:#1A1829;margin:0 0 8px;}',
     '.lokgp-two{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:18px;align-items:start;}',
     '.lokgp-radio{display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;border:1.5px solid #E7E2F3;border-radius:12px;padding:10px 12px;margin:0 0 8px;background:#fff;cursor:pointer;}',
     '.lokgp-radio[aria-pressed="true"]{border-color:#6002EE;background:#FCFAFF;}',
@@ -3369,7 +3466,7 @@ const LokaliProductsPage = (() => {
     '.lokgp-row:first-child{border-top:0;}',
     '.lokgp-av{flex:none;width:36px;height:36px;border-radius:10px;background:#F3EBFF;color:#6002EE;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;overflow:hidden;}',
     '.lokgp-av img{width:100%;height:100%;object-fit:cover;}',
-    '.lokgp-nm{flex:1;min-width:0;}.lokgp-nm b{display:block;font-size:14px;font-weight:600;color:#1A1829;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}.lokgp-nm span{font-size:12px;color:#6B6880;}',
+    '.lokgp-nm{flex:1;min-width:0;}.lokgp-nm b{display:block;font-size:14px;font-weight:600;color:#1A1829;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}.lokgp-nm span{font-size:12px;line-height:1.45;color:#6B6880;}',
     '.lokgp-row.off .lokgp-nm,.lokgp-row.off .lokgp-av{opacity:.45;}',
     '.lokgp-mini{width:28px;height:28px;border-radius:8px;border:1px solid #E7E2F3;background:#fff;color:#6B6880;cursor:pointer;font-size:13px;line-height:1;flex:none;}',
     '.lokgp-mini[disabled]{opacity:.35;cursor:default;}',
@@ -3705,7 +3802,7 @@ const LokaliProductsPage = (() => {
     photoBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>';
     const photoBtnTxt = document.createElement('span'); photoBtnTxt.textContent = galArtMode() ? 'Add a photo' : 'Add a cover photo';
     photoBtn.appendChild(photoBtnTxt);
-    const photoName = document.createElement('span'); photoName.style.cssText = 'font-size:12.5px;color:#6B6880;';
+    const photoName = document.createElement('span'); photoName.style.cssText = 'font-size:12.5px;line-height:1.45;color:#6B6880;';
     photoName.textContent = 'Optional';
     fPhoto.addEventListener('change', () => {
       const f = fPhoto.files && fPhoto.files[0];
@@ -3762,15 +3859,15 @@ const LokaliProductsPage = (() => {
     wrap.id = 'lok-artwork-details';
     wrap.style.cssText = 'margin:14px 0 16px;width:100%;box-sizing:border-box;font-family:' + GAL_FONT + ';';
     wrap.innerHTML =
-      '<div style="font-size:13px;font-weight:600;color:#1A1829;margin-bottom:2px;"><span data-gal-title></span> <span style="font-weight:400;color:#8E8BA6;">(optional)</span></div>' +
-      '<p data-gal-sub style="font-size:12.5px;color:#8E8BA6;margin:0 0 8px;"></p>' +
+      '<div style="font-size:13px;line-height:1.45;font-weight:600;color:#1A1829;margin-bottom:2px;"><span data-gal-title></span> <span style="font-weight:400;color:#6E6A85;">(optional)</span></div>' +
+      '<p data-gal-sub style="font-size:12.5px;line-height:1.45;color:#6E6A85;margin:0 0 8px;"></p>' +
       '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;">' +
       '<select data-gal-artist class="w-select" style="width:100%;box-sizing:border-box;font-family:inherit;margin:0;background-color:#fff;color:#1A1829;border:1px solid #CCCCCC;border-radius:8px;min-height:42px;padding:8px 12px;"></select>' +
       '<input data-gal-medium class="w-input" maxlength="80" placeholder="Medium, for example oil on canvas" style="width:100%;box-sizing:border-box;font-family:inherit;margin:0;">' +
       '<input data-gal-dims class="w-input" maxlength="60" placeholder="Size, for example 24 x 36 in" style="width:100%;box-sizing:border-box;font-family:inherit;margin:0;">' +
       '</div>' +
       '<div data-gal-multi style="display:none;flex-wrap:wrap;gap:8px;margin-top:2px;"></div>' +
-      '<p data-gal-hint style="font-size:12px;color:#8E8BA6;margin:8px 0 0;line-height:1.45;">For a one-of-a-kind piece set the stock to 1. When it sells, set it to 0 and the page shows it as Sold.</p>';
+      '<p data-gal-hint style="font-size:12px;color:#6E6A85;margin:8px 0 0;line-height:1.45;">For a one-of-a-kind piece set the stock to 1. When it sells, set it to 0 and the page shows it as Sold.</p>';
     host.appendChild(wrap);
     wrap.querySelector('[data-gal-artist]').addEventListener('change', (e) => {
       const v = e.target.value; _galArtistId = v === '' ? null : Number(v);
@@ -3918,8 +4015,8 @@ const LokaliProductsPage = (() => {
     // first ship). Inside the cell = normal flow in SERVICE DETAILS.
     wrap.style.cssText = "margin:14px 0 0;width:100%;box-sizing:border-box;background:#eee6ff;border-radius:8px;padding:12px 14px;font-family:'Plus Jakarta Sans',system-ui,sans-serif;";
     wrap.innerHTML =
-      '<div style="font-size:13px;font-weight:600;color:#33254E;margin-bottom:2px;">What kind of product is this?</div>' +
-      '<p style="font-size:12.5px;color:#5A5570;margin:0 0 10px;">Shoppers use this to narrow The Market. Pick the closest match, or leave it on None.</p>' +
+      '<div style="font-size:13px;line-height:1.45;font-weight:600;color:#33254E;margin-bottom:2px;">What kind of product is this?</div>' +
+      '<p style="font-size:12.5px;line-height:1.45;color:#5A5570;margin:0 0 10px;">Shoppers use this to narrow The Market. Pick the closest match, or leave it on None.</p>' +
       '<select data-subcat-select aria-label="What kind of product is this?" style="display:block;width:100%;max-width:420px;font-family:inherit;font-size:16px;padding:9px 12px;border:1px solid #C9BDE8;border-radius:8px;background:#fff;color:#1A1829;cursor:pointer;box-sizing:border-box;"></select>' +
       '<p data-subcat-note style="display:none;font-size:12px;color:#6B6787;margin:8px 0 0;line-height:1.45;"></p>' +
       // The suggest box is folded behind one link: most vendors only ever pick
@@ -3930,7 +4027,7 @@ const LokaliProductsPage = (() => {
           '<input data-subcat-suggest maxlength="40" placeholder="For example, power washing" style="flex:1;min-width:0;font-family:inherit;font-size:16px;padding:8px 12px;border:1px solid #C9BDE8;border-radius:8px;background:#fff;color:#1A1829;">' +
           '<button type="button" data-subcat-suggest-btn style="font-family:inherit;font-size:13px;font-weight:600;padding:8px 16px;border-radius:8px;border:1px solid #6002EE;background:#6002EE;color:#fff;cursor:pointer;">Suggest</button>' +
         '</div>' +
-        '<p style="font-size:12px;color:#8E8BA6;margin:8px 0 0;line-height:1.45;">We review new ones first so the filters stay tidy. Once approved, yours shows up here for everyone.</p>' +
+        '<p style="font-size:12px;color:#6E6A85;margin:8px 0 0;line-height:1.45;">We review new ones first so the filters stay tidy. Once approved, yours shows up here for everyone.</p>' +
         '<p data-subcat-hint style="font-size:12px;color:#6B6787;margin:8px 0 0;line-height:1.45;"></p>' +
         '<div data-subcat-pending style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>' +
       '</div>';

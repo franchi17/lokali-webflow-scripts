@@ -62,7 +62,7 @@
     '.lok-acct .lok-acct-chip{display:flex;align-items:center;gap:10px;cursor:pointer;}' +
     '.lok-acct .lok-acct-chip .lok-acct-meta{flex:1 1 auto;min-width:0;}' +
     '.lok-acct .lok-acct-chip .lok-acct-name{font-family:\'Plus Jakarta Sans\',sans-serif;font-size:13.5px;font-weight:700;color:#2E2E3F;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}' +
-    '.lok-acct .lok-acct-chip .lok-acct-plan{font-family:\'Plus Jakarta Sans\',sans-serif;font-size:12px;font-weight:500;color:#6E6A85;}' + // 2026-09-21: was 11.5px #8A8AA0 = 3.37:1
+    '.lok-acct .lok-acct-chip .lok-acct-plan{font-family:\'Plus Jakarta Sans\',sans-serif;font-size:12px;line-height:1.45;font-weight:500;color:#6E6A85;}' + // 2026-09-21: was 11.5px #8A8AA0 = 3.37:1
     '.lok-acct .lok-acct-caret{margin-left:auto;flex:0 0 auto;width:26px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:8px;color:#6B6B80;transition:transform .18s ease,background .12s ease,color .12s ease;}' +
     '.lok-acct .lok-acct-caret svg{width:14px;height:14px;display:block;}' +
     '.lok-acct .lok-acct-chip:hover .lok-acct-caret{background:#F3EBFF;color:#6002EE;}' +
@@ -272,7 +272,7 @@
     if (!menu) return;
     if (!document.getElementById('lok-sw-css')) {
       var st = document.createElement('style'); st.id = 'lok-sw-css';
-      st.textContent = '.lok-acct .lok-acct-menu .lok-sw-cap{font-family:\'Plus Jakarta Sans\',sans-serif;font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:#B3B1C6;padding:8px 10px 2px;}' +
+      st.textContent = '.lok-acct .lok-acct-menu .lok-sw-cap{font-family:\'Plus Jakarta Sans\',sans-serif;font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:#6E6A85;padding:8px 10px 2px;}' +
         '.lok-acct .lok-acct-menu button.lok-acct-row{all:unset;box-sizing:border-box;width:100%;cursor:pointer;display:flex;flex-direction:row;align-items:center;gap:8px;padding:9px 10px;font-family:\'Plus Jakarta Sans\',sans-serif;font-size:13px;font-weight:600;color:#44445A;line-height:1.2;border-radius:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}' +
         '.lok-acct .lok-acct-menu button.lok-acct-row:hover{background:#F3EBFF;color:#6002EE;}' +
         '.lok-acct .lok-acct-menu button.lok-acct-row[disabled]{opacity:.6;cursor:default;}' +
@@ -540,7 +540,7 @@
     '.div-block-28 .dashboard-btn strong.dashboard-menu{margin-right:6px;}' +
     '.div-block-28 .dashboard-btn .icon-div{flex:0 0 auto;}' +
     '.div-block-28 .dashboard-btn .text-block-17 strong{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}' +
-    '.lok-nav-ext{display:inline-block;width:11px;height:11px;margin-left:6px;vertical-align:-1px;color:#8E8BA6;}' +
+    '.lok-nav-ext{display:inline-block;width:11px;height:11px;margin-left:6px;vertical-align:-1px;color:#6E6A85;}' +
     '.lok-nav-ext svg{width:11px;height:11px;fill:currentColor;display:block;}' +
     // Mobile: the hamburger (built by lokali-dashboard-mobile-nav.js) gets a dot
     // while Leads has unread — the drawer is closed, so the badge alone is unseen.
@@ -569,6 +569,7 @@
       else if (href.indexOf('/vendor-dashboard/availability') === 0) out.availability = a;
       else if (href.indexOf('/vendor-dashboard/marketing') === 0) out.marketing = a;
       else if (href.indexOf('/vendor-dashboard/followers') === 0) out.followers = a;
+      else if (href.indexOf('/vendor-dashboard/events') === 0) out.events = a;
       else if (href.indexOf('/vendor-dashboard/settings') === 0) out.settings = a;
       else if (a.getAttribute('data-lok-contact')) out.contact = a;
       else if (href.indexOf('/vendor-dashboard/analytics') === 0 || t === 'Analytics') out.analytics = a;
@@ -590,6 +591,22 @@
         '<div class="text-block-17"><strong class="dashboard-menu">Followers</strong></div>';
       parent.insertBefore(f, out.leads.nextSibling);
       out.followers = f;
+    }
+    // Events (#261, 2026-11-23): built like Followers, but only once the
+    // /vendor-dashboard/events page is live: the site footer sets
+    // window.LOKALI_EVENTS_MENU = true at release, so the row can never point
+    // at a page that does not exist yet. Icon: a plain calendar.
+    if (!out.events && out.products && window.LOKALI_EVENTS_MENU === true) {
+      var ev = document.createElement('a');
+      ev.href = '/vendor-dashboard/events';
+      ev.className = 'dashboard-btn w-inline-block';
+      var evOn = /^\/vendor-dashboard\/events(\/|$)/.test(String(window.location.pathname || ''));
+      if (evOn) { ev.className += ' w--current'; ev.setAttribute('aria-current', 'page'); }
+      ev.innerHTML = '<div class="icon-div"><svg class="dashboard-icon" viewBox="0 0 24 24" fill="none" stroke="' + (evOn ? '#6002EE' : '#1A1829') + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="width:18px;height:18px;display:block;">' +
+        '<rect x="3" y="5" width="18" height="16" rx="2"/><line x1="16" y1="3" x2="16" y2="7"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>' +
+        '<div class="text-block-17"><strong class="dashboard-menu">Events</strong></div>';
+      parent.insertBefore(ev, out.products.nextSibling);
+      out.events = ev;
     }
     // Help and guides (2026-09-20): one row that opens the guides landing page in
     // a NEW tab, so a vendor mid-edit never loses unsaved work. Same build-it-here
@@ -658,7 +675,7 @@
     // Order is the append order; every node is moved, never cloned.
     move(r.dashboard);
     label('store', 'Your storefront');
-    move(r.profile); move(r.services); move(r.products); move(r.availability); move(r.storefront);
+    move(r.profile); move(r.services); move(r.products); move(r.events); move(r.availability); move(r.storefront);
     label('grow', 'Grow');
     move(r.leads); move(r.followers); move(r.analytics); move(r.marketing);
     if (r.settings) { label('account', 'Your account'); move(r.settings); }

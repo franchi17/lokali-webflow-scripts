@@ -632,7 +632,7 @@
       '.lk-spot-mtv{background:#F3EBFF;color:#45415A;border-radius:10px;padding:10px 14px;font-size:13px;line-height:1.5;margin:0 0 12px;}' +
       '.lk-spot-mtv a{color:#6002EE;font-weight:600;}' +
       '.lk-spot-form{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:2px 0 10px;}' +
-      '.lk-spot-form label{font-size:13px;font-weight:600;color:#231D3F;}' +
+      '.lk-spot-form label{font-size:13px;line-height:1.45;font-weight:600;color:#231D3F;}' +
       '.lk-spot-form input[type=date]{border:1.5px solid #E4E1EF;border-radius:10px;padding:8px 10px;font-family:inherit;font-size:14px;color:#231D3F;background:#fff;}' +
       '.lk-spot-btn{display:inline-block;border:0;border-radius:999px;padding:9px 20px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;background:#6002EE;color:#fff;text-decoration:none;line-height:1.2;}' +
       '.lk-spot-btn:hover{opacity:.88;}' +
@@ -645,9 +645,9 @@
       '.lk-spot-result .ok{color:#047857;font-weight:600;}' +
       '.lk-spot-result .full{color:#E0245E;font-weight:600;}' +
       '.lk-spot-rows{margin:10px 0 4px;}' +
-      '.lk-spot-rows h4{font-size:13px;font-weight:700;color:#231D3F;letter-spacing:.02em;margin:14px 0 6px;text-transform:uppercase;}' +
+      '.lk-spot-rows h4{font-size:13px;line-height:1.45;font-weight:700;color:#231D3F;letter-spacing:.02em;margin:14px 0 6px;text-transform:uppercase;}' +
       '.lk-spot-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-top:1px solid #EFEDF6;font-size:14px;color:#231D3F;flex-wrap:wrap;}' +
-      '.lk-spot-row .r-sub{color:#6B6580;font-size:12.5px;}' +
+      '.lk-spot-row .r-sub{color:#6B6580;font-size:12.5px;line-height:1.45;}' +
       '.lk-spot-chip{display:inline-block;border-radius:999px;padding:3px 10px;font-size:11.5px;font-weight:700;}' +
       '.lk-spot-chip.live{background:#E3F4EC;color:#047857;}' +
       '.lk-spot-chip.booked{background:var(--system--purple-50,#eee6ff);color:var(--lokali-primary,#6002ee);}' +
@@ -667,21 +667,21 @@
       // the same token .price-body uses for the tagline under each plan price.
       '.lk-spotcard .c-name{font-weight:400;font-size:14px;text-transform:uppercase;color:var(--dusk,#4A4761);margin:0 0 14px;}' +
       '.lk-spotcard .c-price{font-weight:700;font-size:30px;color:var(--lokali-primary,#6002ee);margin:0 0 2px;}' +
-      '.lk-spotcard .c-per{color:#6B6580;font-size:13px;margin-bottom:12px;}' +
+      '.lk-spotcard .c-per{color:#6B6580;font-size:13px;line-height:1.45;margin-bottom:12px;}' +
       '.lk-spotcard ul{list-style:none;padding:0;margin:0 0 16px;}' +
       '.lk-spotcard li{position:relative;padding:5px 0 5px 26px;color:#3C3550;font-size:14px;line-height:1.45;}' +
       '.lk-spotcard li:before{content:"✓";position:absolute;left:0;top:4px;width:18px;height:18px;border-radius:50%;background:var(--system--purple-50,#eee6ff);color:#6002EE;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;}' +
-      '.lk-spot-closed{display:block;margin-top:6px;font-size:13px;color:#6E6A85;}' +
+      '.lk-spot-closed{display:block;margin-top:6px;font-size:13px;line-height:1.45;color:#6E6A85;}' +
       '.lk-spot-prelaunch{background:#FDE6F2;color:#B0006A;border-radius:10px;padding:10px 14px;font-size:13px;line-height:1.5;margin:0 0 12px;}' +
       '.lk-cal{max-width:420px;margin:2px 0 10px;}' +
-      '.lk-cal-tier{font-size:12px;font-weight:700;letter-spacing:.03em;color:var(--lokali-primary,#6002ee);margin:0 0 6px;text-transform:uppercase;}' +
+      '.lk-cal-tier{font-size:12px;line-height:1.45;font-weight:700;letter-spacing:.03em;color:var(--lokali-primary,#6002ee);margin:0 0 6px;text-transform:uppercase;}' +
       '.lk-cal-head{display:flex;align-items:center;justify-content:space-between;margin:0 0 8px;}' +
       '.lk-cal-title{font-size:14px;font-weight:700;color:#231D3F;}' +
       '.lk-cal-nav{background:#fff;border:1.5px solid #E4E1EF;border-radius:8px;width:30px;height:30px;font-family:inherit;font-size:15px;color:#6002EE;cursor:pointer;line-height:1;}' +
       '.lk-cal-nav:hover{border-color:#6002EE;}' +
       '.lk-cal-nav[disabled]{opacity:.3;pointer-events:none;}' +
       '.lk-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}' +
-      '.lk-cal-dow{font-size:10.5px;font-weight:700;color:#A9A3BC;text-align:center;text-transform:uppercase;padding:2px 0;}' +
+      '.lk-cal-dow{font-size:10.5px;font-weight:700;color:#6E6A85;text-align:center;text-transform:uppercase;padding:2px 0;}' +
       '.lk-cal-day{aspect-ratio:1;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:13px;color:#231D3F;background:#fff;border:1px solid #E4E1EF;cursor:pointer;}' +
       '.lk-cal-day:hover{border-color:#6002EE;}' +
       '.lk-cal-day.busy{background:#F1EFF7;border-color:transparent;color:#A9A3BC;}' +
@@ -689,7 +689,7 @@
       '.lk-cal-day.dim{visibility:hidden;pointer-events:none;}' +
       '.lk-cal-day.off{background:transparent;border-color:transparent;color:#D6D2E4;pointer-events:none;}' +
       '.lk-cal-day.sel{background:#6002EE;border-color:#6002EE;color:#fff;font-weight:700;}' +
-      '.lk-cal-legend{display:flex;gap:16px;margin-top:8px;font-size:12px;color:#6B6580;}' +
+      '.lk-cal-legend{display:flex;gap:16px;margin-top:8px;font-size:12px;line-height:1.45;color:#6B6580;}' +
       '.lk-cal-legend span{display:inline-flex;align-items:center;gap:6px;}' +
       '.lk-cal-dot{width:11px;height:11px;border-radius:4px;display:inline-block;}' +
       '.lk-cal-dot.open{background:#fff;border:1px solid #E4E1EF;}' +
@@ -1203,7 +1203,7 @@
       'Top of your category',
       '10 photos per listing and a 15-photo portfolio',
       'Calendar on your page, plus a waitlist',
-      'Import your catalog from a spreadsheet, Showcase of the week, and your logo on your QR code'
+      'Import your catalog from a spreadsheet, and your logo on your QR code'
     ]
   };
   var UP_CHECK_SVG = '<svg viewBox="0 0 512 512" aria-hidden="true" focusable="false"><path fill="currentColor" d="M470.6 105.4c12.5 12.5 12.5 32.8 0 45.3l-256 256c-12.5 12.5-32.8 12.5-45.3 0l-128-128c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0L192 338.7 425.4 105.4c12.5-12.5 32.8-12.5 45.3 0z"/></svg>';
@@ -1258,7 +1258,7 @@
     '.lok-up-btn.is-second:hover{background:#F7F3FF;}',
     '.lok-up-btn[disabled]{cursor:default;background:#F2F1F9;color:#6B6680;border:1px solid #E2E0EC;}',
     '.lok-up-btn[aria-busy="true"]{opacity:.7;cursor:progress;}',
-    '.lok-up-foot{margin:18px 0 0;padding-top:14px;border-top:1px solid #E2E0EC;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;font-size:13px;color:#4A4761;}',
+    '.lok-up-foot{margin:18px 0 0;padding-top:14px;border-top:1px solid #E2E0EC;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;font-size:13px;line-height:1.45;color:#4A4761;}',
     '.lok-up-foot a{color:#4D02BE;font-weight:600;text-decoration:underline;text-underline-offset:2px;}',
     '#lok-up-manage{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 16px;border:1.5px solid #6002EE;border-radius:10px;background:#fff;color:#4D02BE;font-size:14px;font-weight:600;cursor:pointer;}',
     '#lok-up-manage:hover{background:#F7F3FF;}',

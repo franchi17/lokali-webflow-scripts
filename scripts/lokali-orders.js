@@ -47,14 +47,14 @@
       '.op-spin{width:28px;height:28px;border:3px solid ' + VIOLET_B + ';border-top-color:' + VIOLET + ';border-radius:50%;margin:0 auto 12px;animation:opspin .8s linear infinite;}@keyframes opspin{to{transform:rotate(360deg)}}' +
       '.op-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:0 0 20px;}' +
       '.op-tile{background:#fff;border:1px solid #DEDAEE;border-radius:14px;padding:14px 16px;}' +
-      '.op-tile b{display:block;font-size:22px;font-weight:700;}.op-tile span{font-size:12px;color:' + GRAY + ';}' +
+      '.op-tile b{display:block;font-size:22px;font-weight:700;}.op-tile span{font-size:12px;line-height:1.45;color:' + GRAY + ';}' +
       '.op-h{font-size:15px;font-weight:700;margin:22px 0 10px;display:flex;align-items:center;gap:8px;}' +
       '.op-h small{font-weight:600;color:' + GRAY + ';font-size:12px;background:' + SNOW + ';padding:3px 8px;border-radius:999px;}' +
       '.op-card{background:#fff;border:1px solid #DEDAEE;border-radius:16px;padding:16px;margin:0 0 10px;box-shadow:0 1px 2px rgba(26,24,41,.04);}' +
       '.op-top{display:flex;gap:12px;align-items:flex-start;}' +
       '.op-img{width:56px;height:56px;border-radius:12px;object-fit:cover;flex:none;background:' + SNOW + ';}' +
       '.op-main{flex:1;min-width:0;}.op-name{font-size:15px;font-weight:700;}' +
-      '.op-sub{font-size:13px;color:' + DUSK + ';margin-top:2px;}.op-sub b{font-weight:600;}' +
+      '.op-sub{font-size:13px;line-height:1.45;color:' + DUSK + ';margin-top:2px;}.op-sub b{font-weight:600;}' +
       '.op-amt{font-size:16px;font-weight:700;white-space:nowrap;text-align:right;}' +
       '.op-pill{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;padding:4px 9px;border-radius:999px;margin-top:6px;}' +
       '.op-pill.paid{background:' + VIOLET_L + ';color:' + VIOLET + ';}.op-pill.fulfilled{background:' + GREEN_L + ';color:' + GREEN + ';}' +
@@ -66,10 +66,10 @@
       '.op-btn{display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:0 14px;border-radius:999px;border:1px solid ' + VIOLET_B + ';background:#fff;color:' + VIOLET + ';font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;text-decoration:none;}' +
       '.op-btn.primary{background:' + VIOLET + ';color:#fff;border-color:' + VIOLET + ';}.op-btn.danger{color:' + PINK + ';border-color:#F5C3DB;}.op-btn[disabled]{opacity:.6;cursor:default;}' +
       '.op-form{margin-top:10px;padding:12px;border:1px dashed ' + VIOLET_B + ';border-radius:12px;background:#FCFBFF;}' +
-      '.op-form label{display:block;font-size:12px;font-weight:600;color:' + DUSK + ';margin:8px 0 4px;}' +
+      '.op-form label{display:block;font-size:12px;line-height:1.45;font-weight:600;color:' + DUSK + ';margin:8px 0 4px;}' +
       '.op-form input,.op-form textarea{width:100%;font-family:inherit;font-size:14px;padding:9px 11px;border:1px solid #DEDAEE;border-radius:10px;color:' + INK + ';background:#fff;}' +
-      '.op-form textarea{min-height:64px;resize:vertical;}.op-form .op-check{display:flex;align-items:center;gap:8px;font-size:13px;margin-top:8px;}' +
-      '.op-err{font-size:13px;color:' + PINK + ';margin-top:8px;}' +
+      '.op-form textarea{min-height:64px;resize:vertical;}.op-form .op-check{display:flex;align-items:center;gap:8px;font-size:13px;line-height:1.45;margin-top:8px;}' +
+      '.op-err{font-size:13px;line-height:1.45;color:' + PINK + ';margin-top:8px;}' +
       '.op-fold{font-family:inherit;background:none;border:0;color:' + VIOLET + ';font-weight:700;font-size:13px;cursor:pointer;padding:8px 0;}' +
       '.op-hist{font-size:12px;color:' + GRAY + ';margin-top:8px;line-height:1.5;}' +
       '.op-empty{background:#fff;border:1px solid #DEDAEE;border-radius:16px;padding:24px;}' +
@@ -88,7 +88,7 @@
     if (d.length === 11 && d.charAt(0) === '1') d = d.slice(1);
     return d.length === 10 ? '(' + d.slice(0, 3) + ') ' + d.slice(3, 6) + '-' + d.slice(6) : String(p || '');
   }
-  function fulfilLabel(o) { return o.fulfilment === 'pickup' ? 'Pickup' : o.fulfilment === 'delivery' ? 'Local delivery' : 'Shipping'; }
+  function fulfilLabel(o) { return o.fulfilment === 'event' ? 'Tickets' : o.fulfilment === 'pickup' ? 'Pickup' : o.fulfilment === 'delivery' ? 'Local delivery' : 'Shipping'; }
   function statusLabel(o) {
     return { paid: 'Paid, waiting on you', fulfilled: 'Done', refunded: 'Refunded', partially_refunded: 'Partly refunded', disputed: 'Disputed', canceled: 'Canceled' }[o.status] || o.status;
   }
@@ -96,7 +96,7 @@
   // within N days" (Settings, Get paid on Lokali). Uses today's setting.
   var _promise = { pickup: null, ship: null };
   function duePill(o) {
-    if (o.status !== 'paid' && o.status !== 'partially_refunded') return '';
+    if (o.fulfilment === 'event' || (o.status !== 'paid' && o.status !== 'partially_refunded')) return '';
     var n = Number(o.fulfilment === 'shipping' ? _promise.ship : _promise.pickup);
     var start = new Date(o.paid_at || o.created_at);
     if (!(n >= 1) || isNaN(start)) return '';
@@ -117,7 +117,7 @@
 
   function card(o) {
     var c = el('div', 'op-card'); c.id = 'op-' + o.id;
-    var refunded = o.refunded_cents > 0 ? '<div style="color:' + GRAY + ';font-weight:600;font-size:12px;">' + money(o.refunded_cents) + ' refunded</div>' : '';
+    var refunded = o.refunded_cents > 0 ? '<div style="color:' + GRAY + ';font-weight:600;font-size:12px;line-height:1.45;">' + money(o.refunded_cents) + ' refunded</div>' : '';
     var contact = [];
     if (o.shopper_email) contact.push('<a href="mailto:' + esc(o.shopper_email) + '?subject=' + encodeURIComponent('Your Lokali order ' + o.id + ': ' + o.product_name) + '">' + esc(o.shopper_email) + '</a>');
     if (o.shopper_phone) contact.push('<a href="tel:' + esc(o.shopper_phone) + '">' + esc(phoneText(o.shopper_phone)) + '</a>');
@@ -129,16 +129,29 @@
         '<span class="op-pill ' + esc(o.status) + '">' + statusLabel(o) + '</span>' + duePill(o) + '</div>' +
         '<div class="op-amt">' + money(o.total_cents) + refunded + '</div>' +
       '</div>' +
-      '<div class="op-who"><b>' + esc(o.shopper_name || 'Shopper') + '</b>' + (contact.length ? ' · ' + contact.join(' · ') : '') +
+      '<div class="op-who"><b>' + esc(o.shopper_name || 'Shopper') + '</b>' + (o.fulfilment === 'event' && o.guest_name ? ' · on the guest list as ' + esc(o.guest_name) : '') + (contact.length ? ' · ' + contact.join(' · ') : '') +
         (o.fulfilment === 'shipping' && o.shipping_address ? '<br>' + addr(o.shipping_address) : '') + '</div>' +
+      labelBlock(o) +
       (o.shopper_note ? '<div class="op-note">Their note: ' + esc(o.shopper_note) + '</div>' : '') +
       (o.vendor_note ? '<div class="op-note">Your note: ' + esc(o.vendor_note) + '</div>' : '') +
       (o.status === 'disputed' ? '<div class="op-note" style="background:' + PINK_L + ';color:' + PINK + ';">The shopper\'s bank opened a dispute. Answer it with your evidence in your Stripe dashboard (Settings, Get paid on Lokali, Open Stripe dashboard). The amount is held until it is decided.</div>' : '') +
       '<div class="op-acts" id="op-acts-' + o.id + '"></div><div id="op-form-' + o.id + '"></div>' +
       '<div class="op-hist">' + (o.events || []).map(function (e) { return esc(String(e.kind || '').replace('_', ' ')) + ' ' + when(e.at); }).join(' · ') + '</div>';
+    var retry = c.querySelector('#op-lretry-' + o.id);
+    if (retry) retry.addEventListener('click', function () {
+      retry.disabled = true; retry.textContent = 'Trying';
+      post('/shipping/labels', { action: 'retry', orders_id: o.id }).then(function (r) {
+        if (r.ok && r.data.label) { o.label = r.data.label; replaceCard(o.id, o); return; }
+        retry.disabled = false; retry.textContent = 'Try again';
+      }).catch(function () { retry.disabled = false; retry.textContent = 'Try again'; });
+    });
     var acts = c.querySelector('#op-acts-' + o.id);
     var refundable = (o.total_cents || 0) - (o.refunded_cents || 0);
-    if (o.status === 'paid' || o.status === 'partially_refunded') {
+    if (o.fulfilment === 'event' && ['paid', 'fulfilled', 'partially_refunded'].indexOf(o.status) >= 0) {
+      // #261 tickets have nothing to hand over: the door list is on the Events page.
+      var g = el('a', 'op-btn primary', 'Open the guest list'); g.href = '/vendor-dashboard/events';
+      acts.appendChild(g);
+    } else if (o.status === 'paid' || o.status === 'partially_refunded') {
       var f = el('button', 'op-btn primary', o.fulfilment === 'shipping' ? 'Mark shipped' : o.fulfilment === 'delivery' ? 'Mark delivered' : 'Mark picked up');
       f.addEventListener('click', function () { openFulfil(o, c); });
       acts.appendChild(f);
@@ -149,6 +162,23 @@
       acts.appendChild(r);
     }
     return c;
+  }
+
+  // #262 live shipping: the label Lokali bought for this order (Print label +
+  // tracking), "being made" right after payment, or "Try again" after a failure.
+  function labelBlock(o) {
+    var l = o.label;
+    if (!l || o.fulfilment !== 'shipping') return '';
+    var box = 'margin:10px 0 0;padding:10px 12px;border-radius:12px;background:#F3EBFF;font-size:13px;line-height:1.5;color:#45415A;';
+    if (l.status === 'bought' && l.label_url) {
+      return '<div style="' + box + '"><b>Shipping label paid</b>' + (l.service ? ' · ' + esc(l.service) : '') +
+        (l.tracking_number ? '<br>Tracking: ' + (l.tracking_url ? '<a href="' + esc(l.tracking_url) + '" target="_blank" rel="noopener" style="color:' + VIOLET + ';">' + esc(l.tracking_number) + '</a>' : esc(l.tracking_number)) : '') +
+        '<div style="margin-top:8px;"><a class="op-btn primary" href="' + esc(l.label_url) + '" target="_blank" rel="noopener">Print label</a></div></div>';
+    }
+    if (l.status === 'failed') return '<div style="' + box + 'background:' + PINK_L + ';">The shipping label could not be made yet. Lokali has been told. <button type="button" class="op-btn" id="op-lretry-' + o.id + '" style="margin-left:6px;">Try again</button></div>';
+    if (l.status === 'void_requested' || l.status === 'voided') return '<div style="' + box + '">The unused label was canceled and its postage refunded.</div>';
+    if (o.status === 'paid') return '<div style="' + box + '">Your shipping label is being made. It arrives by email in a minute or two.</div>';
+    return '';
   }
 
   function openFulfil(o, c) {
@@ -196,7 +226,7 @@
   var _orders = [];
   function replaceCard(id, fresh) {
     if (!fresh) { load($('lok-orders-page'), 0); return; }
-    for (var i = 0; i < _orders.length; i++) if (_orders[i].id === id) { fresh.events = fresh.events || _orders[i].events; _orders[i] = fresh; }
+    for (var i = 0; i < _orders.length; i++) if (_orders[i].id === id) { fresh.events = fresh.events || _orders[i].events; fresh.label = fresh.label || _orders[i].label; _orders[i] = fresh; }
     render($('lok-orders-page'), _orders);
   }
 
@@ -207,14 +237,16 @@
       var e = el('div', 'op-empty');
       e.innerHTML = '<h3>No orders yet</h3><p>Once shoppers can pay by card on your product pages, every paid order lands here with the shopper\'s details and a button to mark it done.</p>' +
         '<ol><li>Open <a href="/vendor-dashboard/settings#lokali-checkout" style="color:' + VIOLET + ';font-weight:600;">Settings, Get paid on Lokali</a> and set up payouts with Stripe.</li>' +
-        '<li>Give your products a price and, if you ship, a flat shipping price.</li><li>Turn on Show Buy on Lokali.</li></ol>' +
+        '<li>Give your products a price and, if you ship, a shipping price.</li><li>Turn on Show Buy on Lokali.</li></ol>' +
         '<a class="op-btn primary" href="/vendor-dashboard/settings#lokali-checkout">Set up payments</a>';
       mount.appendChild(e); return;
     }
     var now = new Date(), mk = now.getFullYear() + '-' + (now.getMonth() + 1);
-    var paid = orders.filter(function (o) { return o.status === 'paid' || o.status === 'partially_refunded'; });
-    var done = orders.filter(function (o) { return o.status === 'fulfilled'; });
-    var rest = orders.filter(function (o) { return paid.indexOf(o) < 0 && done.indexOf(o) < 0; });
+    // #261 paid tickets are their own group: nothing to hand over, so never "waiting on you".
+    var tickets = orders.filter(function (o) { return o.fulfilment === 'event' && ['paid', 'fulfilled', 'partially_refunded'].indexOf(o.status) >= 0; });
+    var paid = orders.filter(function (o) { return o.fulfilment !== 'event' && (o.status === 'paid' || o.status === 'partially_refunded'); });
+    var done = orders.filter(function (o) { return o.fulfilment !== 'event' && o.status === 'fulfilled'; });
+    var rest = orders.filter(function (o) { return paid.indexOf(o) < 0 && done.indexOf(o) < 0 && tickets.indexOf(o) < 0; });
     var month = orders.filter(function (o) { var d = new Date(o.paid_at || o.created_at); return (d.getFullYear() + '-' + (d.getMonth() + 1)) === mk && ['paid', 'fulfilled', 'partially_refunded'].indexOf(o.status) >= 0; });
     var net = month.reduce(function (s, o) { return s + (o.total_cents - o.refunded_cents); }, 0);
     var fees = month.reduce(function (s, o) { return s + (o.platform_fee_cents || 0); }, 0);
@@ -222,6 +254,7 @@
     strip.innerHTML = tile(paid.length, 'waiting on you') + tile(month.length, 'orders this month') + tile(money(net), 'sales this month') + tile(money(fees), 'Lokali fees this month');
     mount.appendChild(strip);
     section(mount, 'Waiting on you', paid, 'Nothing waiting on you.');
+    if (tickets.length) section(mount, 'Tickets', tickets.slice(0, 30), '');
     section(mount, 'Done', done.slice(0, 20), 'Nothing fulfilled yet.');
     if (rest.length) {
       var h = el('div', 'op-h'); h.innerHTML = 'Everything else <small>' + rest.length + '</small>'; mount.appendChild(h);
@@ -234,7 +267,7 @@
   }
   function section(mount, title, rows, emptyText) {
     var h = el('div', 'op-h'); h.innerHTML = esc(title) + ' <small>' + rows.length + '</small>'; mount.appendChild(h);
-    if (!rows.length) { var p = el('div', null, emptyText); p.style.cssText = 'font-size:13px;color:' + GRAY + ';padding:4px 0 8px;'; mount.appendChild(p); return; }
+    if (!rows.length) { var p = el('div', null, emptyText); p.style.cssText = 'font-size:13px;line-height:1.45;color:' + GRAY + ';padding:4px 0 8px;'; mount.appendChild(p); return; }
     rows.forEach(function (o) { mount.appendChild(card(o)); });
   }
 
@@ -246,7 +279,11 @@
     c.rpc('my_orders', { p_limit: 300 }).then(function (r) {
       if (r.error) { if (attempt < 8 && /JWT|401|403/i.test(String(r.error.message || ''))) { setTimeout(function () { load(mount, attempt + 1); }, 500); return; } showError(mount, "We couldn't load your orders."); return; }
       var rows = Array.isArray(r.data) ? r.data : [];
-      loadPromise(c, rows).then(function () { render(mount, rows); });
+      // #262 labels live in a server-only table: ask lokali-api, attach by order.
+      var labelsP = rows.some(function (o) { return o.fulfilment === 'shipping'; })
+        ? post('/shipping/labels', { action: 'list' }).then(function (lr) { var m = {}; ((lr.ok && lr.data.labels) || []).forEach(function (l) { m[l.orders_id] = l; }); rows.forEach(function (o) { if (m[o.id]) o.label = m[o.id]; }); }).catch(function () {})
+        : Promise.resolve();
+      Promise.all([loadPromise(c, rows), labelsP]).then(function () { render(mount, rows); });
     }).catch(function () { showError(mount, "We couldn't load your orders."); });
   }
 

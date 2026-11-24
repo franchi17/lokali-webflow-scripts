@@ -208,6 +208,33 @@
       '@media (prefers-reduced-motion:reduce){.lkh-gift{transition:none;}}'
     ].join('');
     document.head.appendChild(s);
+    // v2 colours (F 2026-11-24 'the holiday is great', site consistency mockup): the brand guide's
+    // green family only. Soft green #E0F5EB + deep green #17634A replace the dark evergreen band,
+    // the gold and cream chips, the berry red and the cream 'Ask a neighbor' band. Same gifts,
+    // dates, filters and photo. Layout untouched; this layer just wins by coming last.
+    var s2 = document.createElement('style'); s2.id = 'lkh-v2';
+    s2.textContent = [
+      '.lkh{background:#fff;color:#4A4761;}',
+      '.lkh h1{color:#45415A;}',
+      '.lkh-eyebrow{color:#17634A;}',
+      '@media (min-width:721px){.lkh-wrap:not(.narrow) .lkh-hero{background:#E0F5EB;color:#45415A;}.lkh-wrap:not(.narrow) .lkh-hero .lkh-eyebrow{color:#17634A;}.lkh .lkh-wrap:not(.narrow) .lkh-hero h1{color:#45415A;}.lkh-wrap:not(.narrow) .lkh-hero .lkh-lede{color:#4A4761;}.lkh-wrap:not(.narrow) .lkh-hero .lkh-link{color:#17634A;}}',
+      '.lkh-hero .lkh-eyebrow,.lkh-hero .lkh-link{color:#E0F5EB;}',
+      '.lkh-sub{color:#17634A;}.lkh-sub .lkh-ic,.lkh-sub svg,.lkh-sub svg *{color:#17634A;fill:#17634A;}.lkh-sub::before,.lkh-sub::after{background:#CDEBDB;}',
+      '.lkh-chip{border-color:#CDEBDB;color:#17634A;font-weight:700;}',
+      '.lkh-chip[aria-pressed="true"]{background:#17634A;border-color:#17634A;color:#fff;}',
+      '.lkh-gift{border-color:#E3EFE8;}',
+      '.lkh-gift .lkh-ph::after{display:none;}',
+      '.lkh-pill{background:#E0F5EB;color:#17634A;}',
+      '.lkh-pill.soon{background:#17634A;color:#fff;}',
+      '.lkh-count.over{color:#17634A;}',
+      '.lkh-band{background:#E0F5EB;border-color:#E0F5EB;}',
+      '.lkh-band p{color:#45415A;}',
+      '.lkh-btn{background:#17634A;border-color:#17634A;}',
+      '.lkh-btn.ghost{background:#fff;color:#17634A;}',
+      '.lkh-fine a,.lkh-link{color:#17634A;}',
+      '.lkh-chip:focus-visible,.lkh-btn:focus-visible,.lkh-gift:focus-visible,.lkh-opt:focus-visible{outline-color:#8FD0B0;}'
+    ].join('');
+    document.head.appendChild(s2);
   }
 
   /* ---------- shopper view ---------- */

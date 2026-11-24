@@ -121,16 +121,16 @@
       '.lok-mkt *{font-family:inherit;box-sizing:border-box;}' +
       '.mkt-card{background:#fff;border:1px solid #ECE8F8;border-radius:14px;padding:22px 24px;margin:0 0 18px;}' +
       '.mkt-h{margin:0 0 2px;font-size:17px;font-weight:700;color:#3E3A55;}' +
-      '.mkt-sub{margin:0 0 14px;font-size:13px;color:#8E8BA6;}' +
+      '.mkt-sub{margin:0 0 14px;font-size:13px;line-height:1.45;color:#6E6A85;}' +
       '.mkt-head{display:flex;align-items:baseline;gap:12px;}' +
       '.mkt-head .mkt-h{flex:1;}' +
-      '.mkt-live-link{font-size:12.5px;font-weight:600;color:' + BRAND + ';text-decoration:none;white-space:nowrap;}' +
+      '.mkt-live-link{font-size:12.5px;line-height:1.45;font-weight:600;color:' + BRAND + ';text-decoration:none;white-space:nowrap;}' +
       '.mkt-live-link:hover{text-decoration:underline;}' +
       // First-run example: a dashed frame around a scaled mock of the actual
       // storefront element (same colors/shape as .vl-mkt-cta / .vl-mkt-show
       // in lokali-vendor-listing.js), so "what it looks like" is not a lie.
       '.mkt-example{border:1.5px dashed #DCCFFA;border-radius:13px;padding:16px;background:#FBFAFE;margin:0 0 14px;}' +
-      '.mkt-example-lbl{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#9490AC;margin:0 0 10px;}' +
+      '.mkt-example-lbl{font-size:11px;line-height:1.45;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#6E6A85;margin:0 0 10px;}' +
       '.mkt-demo-cta{display:flex;align-items:center;justify-content:center;background:#F3EBFF;color:' + BRAND + ';' +
         'border:1px solid #E4D6FB;border-radius:10px;min-height:44px;padding:10px 14px;font:600 14px/1.3 ' + FONT + ';text-align:center;}' +
       // Mini contact card: the promo button shown IN PLACE — vivid among
@@ -143,17 +143,17 @@
         'background:#F1EFF8;color:#B7B4C7;font-size:12.5px;font-weight:600;margin:0 0 8px;}' +
       '.mkt-demo-ghost-row{display:flex;gap:8px;}' +
       '.mkt-demo-ghost-row .mkt-demo-ghost{flex:1;margin:0;}' +
-      '.mkt-demo-sec{font-size:12.5px;font-weight:700;color:#3E3A55;margin:0 0 8px;}' +
+      '.mkt-demo-sec{font-size:12.5px;line-height:1.45;font-weight:700;color:#3E3A55;margin:0 0 8px;}' +
       '.mkt-demo-show{background:#fff;border:1px solid #EEEDF6;border-radius:12px;padding:14px;}' +
       '.mkt-demo-show-img{width:100%;height:92px;border-radius:8px;background:linear-gradient(135deg,#F3EBFF,#FDF1E7);margin:0 0 10px;' +
         'display:flex;align-items:center;justify-content:center;gap:8px;color:#8E76C9;}' +
       '.mkt-demo-show-img svg{width:24px;height:24px;fill:currentColor;}' +
-      '.mkt-demo-show-img span{font-size:12px;font-weight:600;}' +
-      '.mkt-example-note{font-size:11.5px;color:#9490AC;margin:10px 0 0;}' +
+      '.mkt-demo-show-img span{font-size:12px;line-height:1.45;font-weight:600;}' +
+      '.mkt-example-note{font-size:12px;line-height:1.45;color:#6E6A85;margin:10px 0 0;}' +
       '.mkt-demo-show-t{font-size:15px;font-weight:700;color:#1A1829;margin:0 0 4px;}' +
       '.mkt-demo-show-b{font-size:13px;color:#6B6880;line-height:1.5;margin:0;}' +
       '.mkt-seg{display:inline-flex;border:1px solid #ECE8F8;border-radius:10px;overflow:hidden;margin:0 0 14px;}' +
-      '.mkt-seg button{border:0;background:#fff;color:#8E8BA6;font-size:12.5px;font-weight:600;padding:7px 14px;cursor:pointer;}' +
+      '.mkt-seg button{border:0;background:#fff;color:#6E6A85;font-size:12.5px;font-weight:600;padding:7px 14px;cursor:pointer;}' +
       '.mkt-seg button.on{background:#F3EBFF;color:' + BRAND + ';}' +
       // Entry cards: every queued item is its own card with a WHEN chip (the
       // week it goes live, derived from the same rotation the server runs).
@@ -168,10 +168,10 @@
       '.mkt-when.hid{color:#B7B4C7;background:#FAFAFC;}' +
       '.mkt-spacer{flex:1;}' +
       '.mkt-t{font-size:14.5px;font-weight:600;color:#3E3A55;}' +
-      '.mkt-u{font-size:12px;color:#8E8BA6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px;}' +
-      '.mkt-b{font-size:12.5px;color:#6B6880;margin-top:3px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}' +
+      '.mkt-u{font-size:12px;line-height:1.45;color:#6E6A85;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px;}' +
+      '.mkt-b{font-size:12.5px;line-height:1.45;color:#6B6880;margin-top:3px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}' +
       '.mkt-links{display:flex;align-items:center;gap:7px;margin-top:9px;}' +
-      '.mkt-tb{border:0;background:none;color:#8E8BA6;font-size:12.5px;font-weight:600;cursor:pointer;padding:0;}' +
+      '.mkt-tb{border:0;background:none;color:#6E6A85;font-size:12.5px;font-weight:600;cursor:pointer;padding:0;}' +
       '.mkt-tb:hover{color:' + BRAND + ';}' +
       '.mkt-dot{color:#D8D5E6;}' +
       // Showcase queue: product-card style — image on TOP, text under it,
@@ -186,35 +186,35 @@
       '.mkt-scard-noimg svg{width:24px;height:24px;fill:currentColor;}' +
       '.mkt-scard-body{padding:14px 16px 16px;}' +
       '.mkt-scard-t{font-size:14px;font-weight:600;color:#3E3A55;}' +
-      '.mkt-ib{border:0;background:none;color:#8E8BA6;cursor:pointer;font-size:15px;padding:5px 6px;border-radius:7px;line-height:1;}' +
+      '.mkt-ib{border:0;background:none;color:#6E6A85;cursor:pointer;font-size:15px;padding:5px 6px;border-radius:7px;line-height:1;}' +
       '.mkt-ib:hover{background:#F7F6FC;color:#3E3A55;}' +
       '.mkt-ib[disabled]{opacity:.3;cursor:default;}' +
       '.mkt-pin{accent-color:' + BRAND + ';cursor:pointer;margin:0 4px 0 0;}' +
       '.mkt-add{display:inline-block;border:0;background:#F3EBFF;color:' + BRAND + ';font-weight:600;font-size:13px;' +
         'border-radius:10px;padding:9px 16px;cursor:pointer;margin-top:12px;}' +
-      '.mkt-count{font-size:12px;color:#8E8BA6;margin-left:8px;font-weight:500;}' +
+      '.mkt-count{font-size:12px;line-height:1.45;color:#6E6A85;margin-left:8px;font-weight:500;}' +
       '.mkt-form{background:#F7F6FC;border:1px solid #ECE8F8;border-radius:12px;padding:14px;margin-top:12px;}' +
-      '.mkt-form label{display:block;font-size:12px;font-weight:600;color:#6B6880;margin:10px 0 4px;}' +
+      '.mkt-form label{display:block;font-size:12px;line-height:1.45;font-weight:600;color:#6B6880;margin:10px 0 4px;}' +
       '.mkt-form label:first-child{margin-top:0;}' +
       '.mkt-in{width:100%;border:1px solid #ECE8F8;border-radius:9px;background:#fff;padding:9px 12px;font-size:14px;color:#231D3F;}' +
       '.mkt-in:focus{outline:none;border-color:#C9B4F5;}' +
       'textarea.mkt-in{min-height:74px;resize:vertical;}' +
       '.mkt-fbtns{display:flex;gap:8px;margin-top:12px;}' +
       '.mkt-save{border:0;background:' + BRAND + ';color:#fff;font-weight:600;font-size:13px;border-radius:9px;padding:9px 18px;cursor:pointer;}' +
-      '.mkt-cancel{border:0;background:none;color:#8E8BA6;font-size:13px;cursor:pointer;}' +
+      '.mkt-cancel{border:0;background:none;color:#6E6A85;font-size:13px;cursor:pointer;}' +
       '.mkt-upbtn{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px dashed #C9B4F5;color:' + BRAND + ';' +
         'font-size:12.5px;font-weight:600;border-radius:9px;padding:8px 12px;cursor:pointer;}' +
       '.mkt-upthumb{width:56px;height:56px;border-radius:9px;object-fit:cover;margin-right:10px;vertical-align:middle;}' +
       '.mkt-focusframe{width:320px;max-width:100%;height:150px;border-radius:12px;overflow:hidden;border:1px solid #EEEDF6;background:#F7F6FC;box-shadow:0 2px 8px rgba(26,24,41,.08);margin-top:6px;}' +
       '.mkt-focusframe img{width:100%;height:100%;object-fit:cover;display:block;touch-action:none;cursor:grab;}' +
-      '.mkt-note{font-size:12px;color:#8E8BA6;margin-top:8px;}' +
+      '.mkt-note{font-size:12px;line-height:1.45;color:#6E6A85;margin-top:8px;}' +
       '.mkt-post-row{display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;}' +
       '.mkt-post-prevs{display:flex;gap:10px;flex:0 0 auto;align-items:flex-start;}' +
       '.mkt-post-prev{flex:0 0 auto;width:188px;height:188px;border:1px solid #ECE8F8;border-radius:12px;overflow:hidden;background:#F7F6FC;line-height:0;}' +
       '.mkt-post-prev canvas{width:188px;height:188px;display:block;}' +
       '.mkt-post-prev.mkt-post-story{width:106px;}' +
       '.mkt-post-prev.mkt-post-story canvas{width:106px;height:188px;}' +
-      '.mkt-post-lbl{display:block;font-size:13px;font-weight:700;color:#2E2A3B;margin:0 0 6px;}' +
+      '.mkt-post-lbl{display:block;font-size:13px;line-height:1.45;font-weight:700;color:#2E2A3B;margin:0 0 6px;}' +
       '.mkt-post-in{width:100%;box-sizing:border-box;font-family:"Plus Jakarta Sans",sans-serif;font-size:14px;color:#2E2A3B;border:1px solid #DCD6EE;border-radius:9px;padding:9px 12px;}' +
       '.mkt-post-in:focus{outline:2px solid ' + BRAND + ';outline-offset:1px;}' +
       '.mkt-post-cap{margin:10px 0 0;background:#F7F6FC;border:1px solid #ECE8F8;border-radius:10px;padding:10px 12px;font-size:13px;color:#3E3A55;line-height:1.5;white-space:pre-wrap;}' +
@@ -226,7 +226,7 @@
       '.mkt-rv-rot button.warn{color:#B3261E;}' +
       '.mkt-rv-rot button.plain{color:#6E6A85;margin-left:14px;}' +
       '.mkt-lock{text-align:center;padding:26px 18px;}' +
-      '.mkt-lock p{margin:0 auto 14px;max-width:430px;font-size:13.5px;color:#8E8BA6;}' +
+      '.mkt-lock p{margin:0 auto 14px;max-width:430px;font-size:13.5px;color:#6E6A85;}' +
       '.mkt-lock .mkt-lockh{font-size:16px;font-weight:700;color:#3E3A55;margin-bottom:6px;}' +
       '.mkt-cta-demo{display:inline-block;background:' + BRAND + ';color:#fff;border-radius:10px;padding:10px 20px;' +
         'font-size:13.5px;font-weight:600;margin-bottom:12px;}' +
@@ -239,7 +239,7 @@
       '.mkt-qr-code{flex:0 0 auto;border:1px solid #ECE8F8;border-radius:12px;padding:10px;background:#fff;line-height:0;}' +
       '.mkt-qr-code svg{display:block;width:168px;height:168px;}' +
       '.mkt-qr-side{flex:1;min-width:230px;}' +
-      '.mkt-qr-url{font-size:12px;color:#8E8BA6;overflow-wrap:anywhere;margin:0 0 10px;}' +
+      '.mkt-qr-url{font-size:12px;line-height:1.45;color:#6E6A85;overflow-wrap:anywhere;margin:0 0 10px;}' +
       '.mkt-qr-url b{color:#6B6880;font-weight:600;}' +
       '.mkt-qr-btns{display:flex;gap:8px;flex-wrap:wrap;}' +
       '.mkt-qr-dl{display:inline-block;border:0;background:#F3EBFF;color:' + BRAND + ';font-weight:600;font-size:12.5px;' +
@@ -247,14 +247,14 @@
       '.mkt-qr-stats{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 0;}' +
       '.mkt-qr-stat{background:#F7F6FC;border:1px solid #ECE8F8;border-radius:10px;padding:10px 14px;min-width:86px;}' +
       '.mkt-qr-sv{font-size:20px;font-weight:700;color:#3E3A55;line-height:1.2;}' +
-      '.mkt-qr-sl{font-size:11px;font-weight:600;color:#8E8BA6;text-transform:uppercase;letter-spacing:.04em;}' +
+      '.mkt-qr-sl{font-size:11px;line-height:1.45;font-weight:600;color:#6E6A85;text-transform:uppercase;letter-spacing:.04em;}' +
       '.mkt-qr-teaser{background:#F7F6FC;border:1px solid #ECE8F8;border-radius:10px;padding:12px 14px;margin:14px 0 0;' +
         'font-size:12.5px;color:#6B6880;}' +
       '.mkt-qr-teaser a{color:' + BRAND + ';font-weight:600;text-decoration:none;}' +
       '.mkt-qr-teaser a:hover{text-decoration:underline;}' +
       // #163b badge toggle (Featured): two pills under the preview.
       '.mkt-qr-badge{display:flex;align-items:center;gap:6px;margin:10px 0 0;flex-wrap:wrap;}' +
-      '.mkt-qr-badge span{font-size:11.5px;color:#8E8BA6;margin-right:2px;}' +
+      '.mkt-qr-badge span{font-size:12px;line-height:1.45;color:#6E6A85;margin-right:2px;}' +
       '.mkt-qr-badge button{border:1px solid #E4DEF4;background:#fff;color:#5D4F9E;font-family:inherit;font-size:12px;' +
         'font-weight:600;border-radius:999px;padding:5px 11px;cursor:pointer;}' +
       '.mkt-qr-badge button.on{background:#F3EBFF;border-color:' + BRAND + ';color:' + BRAND + ';}' +
@@ -295,8 +295,8 @@
       '.mkt-mini.review .mkt-mini-hd{background:#E8F0FF;color:#1B3FA8;}' +
       '.mkt-mini-bd{padding:12px;display:grid;gap:8px;justify-items:start;}' +
       '.mkt-mini-code svg{display:block;width:120px;height:120px;max-width:100%;}' +
-      '.mkt-mini-sub{margin:0;font-size:13px;color:#4A4761;}' +
-      '.mkt-mini-more{font-size:12.5px;font-weight:600;color:' + BRAND + ';}' +
+      '.mkt-mini-sub{margin:0;font-size:13px;line-height:1.45;color:#4A4761;}' +
+      '.mkt-mini-more{font-size:12.5px;line-height:1.45;font-weight:600;color:' + BRAND + ';}' +
       '.mkt-mini.review .mkt-qr-dl{background:#E6EFFB;color:' + REVIEW_BLUE + ';}' +
       '@media (max-width:600px){.mkt-card{padding:16px;}.mkt-acts{gap:0;}.mkt-mini-row{gap:8px;}.mkt-mini-bd{padding:10px;}.mkt-mini-code svg{width:96px;height:96px;}}';
     document.head.appendChild(st);
@@ -408,8 +408,11 @@
   // Re-render just the QR preview + toggle (no full re-render, so an open
   // editor elsewhere on the page is untouched).
   Page.prototype.refreshQrPreview = function () {
-    var box = this.mount.querySelector('.mkt-qr-code');
-    if (box) box.innerHTML = window.LokaliQR.toSvg(this.qrUrl(), this.qrOpts(168, BRAND)) + '<p class="mkt-qr-cap">Storefront</p>';
+    // The codes now show only in the top strip, so the logo choice previews there.
+    var box = this.mount.querySelector('.mkt-mini.store .mkt-mini-code');
+    if (box) box.innerHTML = window.LokaliQR.toSvg(this.qrUrl(), this.qrOpts(120, BRAND));
+    var rbox = this.mount.querySelector('.mkt-mini.review .mkt-mini-code');
+    if (rbox) rbox.innerHTML = window.LokaliQR.toSvg(this.reviewUrl(), this.qrOpts(120, REVIEW_BLUE));
     // The slot is always rendered (empty until the logo lands), so the toggle
     // can appear AFTER the async logo load without a full re-render.
     var slot = this.mount.querySelector('.mkt-qr-badge-slot');
@@ -433,17 +436,19 @@
   Page.prototype.render = function () {
     this.mount.className = 'lok-mkt';
     if (this.free) {
-      this.mount.innerHTML = this.quickCodesHtml() + this.qrCardHtml() + this.reviewCardHtml() + this.postCardHtml() + upsellHtml();
+      this.mount.innerHTML = this.quickCodesHtml() + this.qrCardHtml() + this.reviewCardHtml() + this.postCardHtml();
       this.bind();
       this.drawPost();
       return;
     }
     // One-page changes 2026-11-23 (team review 'Bring your customers in', F 'Build
-    // all four'): the page opens with both QR codes side by side; Showcase of the
-    // week follows. The full code cards keep every option further down.
+    // all four'): the page opens with both QR codes side by side. The full code
+    // cards keep every option further down.
+    // 2026-11-24 (F 'Yes, hide it'): Showcase of the week RETIRED from every screen;
+    // Events does that job now. cardHtml('showcase') / lockedShowcaseHtml stay in
+    // the file unused and the marketing_entries rows stay in the database.
     this.mount.innerHTML =
       this.quickCodesHtml() +
-      (this.premium ? this.cardHtml('showcase') : this.lockedShowcaseHtml()) +
       this.qrCardHtml() +
       this.reviewCardHtml() +
       this.postCardHtml() +
@@ -522,10 +527,12 @@
       '<div class="mkt-head"><p class="mkt-h">' + ICON_STORE + 'Your storefront QR code</p><span class="mkt-tag store">Opens your storefront</span></div>' +
       '<p class="mkt-sub">For people who have not met you yet. Put it on flyers, table tents, business cards and packaging, anywhere people can point a camera.</p>' +
       '<div class="mkt-qr-row">' +
-        '<div class="mkt-qr-code">' + window.LokaliQR.toSvg(this.qrUrl(), this.qrOpts(168, BRAND)) + '<p class="mkt-qr-cap">Storefront</p></div>' +
+        // No second copy of the code here (expert review 2026-11-24): the same code
+        // sits in "Your two QR codes" at the top; this card keeps the options.
         '<div class="mkt-qr-side">' +
           '<p class="mkt-qr-url">Opens <b>golokali.com/' + esc(this.vendor.slug) + '</b>. Scans are counted automatically.</p>' +
           '<div class="mkt-qr-btns">' +
+            '<button type="button" class="mkt-qr-dl" data-act="qr-copy-link">Copy link</button>' +
             '<button type="button" class="mkt-qr-dl" data-act="qr-png">Download for phone and web</button>' +
             '<button type="button" class="mkt-qr-dl" data-act="qr-svg">Download for print</button>' +
           '</div>' +
@@ -874,9 +881,8 @@
   Page.prototype.reviewCardHtml = function () {
     if (!this.vendor.slug) return '';
     var self = this;
-    var qr = window.LokaliQR
-      ? '<div class="mkt-qr-code">' + window.LokaliQR.toSvg(this.reviewUrl(), this.qrOpts(168, REVIEW_BLUE)) + '<p class="mkt-qr-cap">Review</p></div>'
-      : '';
+    // The review code itself is shown once, in "Your two QR codes" at the top.
+    var qr = '';
     // F 2026-11-10: no copy-ready text / email / packaging wording here any more.
     // Vendors get the link and the code and say it their own way.
     return '<div class="mkt-card review" data-kind="review" id="mkt-rv-full">' +
@@ -951,6 +957,15 @@
       finish('We could not make a new link just now. Your current link still works.');
     });
   };
+  // Storefront code card: Copy link too (experts 2026-11-24; the review card had one, this one did not).
+  // The plain storefront address, no tracking tags, so it reads well when pasted into a post.
+  Page.prototype.copyStoreLink = function () {
+    var text = 'https://www.golokali.com/' + this.vendor.slug;
+    var done = function () { toast('Copied. Paste it anywhere you post.'); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, function () { fallbackCopy(text); done(); });
+    } else { fallbackCopy(text); done(); }
+  };
   Page.prototype.copyReviewLink = function () {
     var text = 'https://www.golokali.com/' + this.reviewPath() + '#reviews';
     var done = function () { toast('Copied. Send it right after the handoff.'); };
@@ -1002,7 +1017,7 @@
             ? '<div class="mkt-note">&ldquo;' + esc(c.review_note) + '&rdquo; Fix it and resubmit below.</div>' : '');
       }
       html += '<div class="mkt-form" data-booking="' + b.id + '">' +
-        '<div style="font-size:13px;font-weight:600;color:#3E3A55;">Homepage Spotlight · ' + esc(win) +
+        '<div style="font-size:13px;line-height:1.45;font-weight:600;color:#3E3A55;">Homepage Spotlight · ' + esc(win) +
           (b.status === 'active' ? ' · <span style="color:#3E7C5E;">LIVE NOW</span>' : '') + '</div>' +
         (pill ? '<div style="margin-top:8px;">' + pill + '</div>' : '') +
         '<label>Creative image</label>' +
@@ -1138,7 +1153,7 @@
           (list.length ? '<span class="mkt-count">' + list.length + ' / ' + CAPS[kind] + '</span>' : '') +
           '</p>' +
           (kind === 'showcase'
-            ? '<a class="mkt-live-link" style="color:#8E8BA6;" href="/vendor-resources/marketing-tools-guide" target="_blank" rel="noopener">How it works</a>' : '') +
+            ? '<a class="mkt-live-link" style="color:#6E6A85;" href="/vendor-resources/marketing-tools-guide" target="_blank" rel="noopener">How it works</a>' : '') +
           (list.length && storeUrl
             ? '<a class="mkt-live-link" href="' + storeUrl + '" target="_blank" rel="noopener">See it on your page &#8599;</a>' : '') +
         '</div>' +
@@ -1316,6 +1331,7 @@
       else if (act === 'post-story') self.downloadPost('story');
       else if (act === 'post-photo') self.nextPostPhoto();
       else if (act === 'post-copy') { var capEl = document.getElementById('mkt-post-cap'); if (capEl) { var capTxt = capEl.textContent, capDone = function () { toast('Caption copied'); }; if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(capTxt).then(capDone, function () { fallbackCopy(capTxt); capDone(); }); else { fallbackCopy(capTxt); capDone(); } } }
+      else if (act === 'qr-copy-link') self.copyStoreLink();
       else if (act === 'qr-png') self.downloadQr('png');
       else if (act === 'qr-svg') self.downloadQr('svg');
       else if (act === 'qr-badge-l') self.setQrBadge('l');
@@ -1534,11 +1550,12 @@
   };
 
   // ---- upsell (free plan, direct URL) -----------------------------------------
+  // 2026-11-24: the Showcase teaser is gone with the feature. A free storefront
+  // with no web address yet gets a plain note instead of an empty page.
   function upsellHtml() {
     return '<div class="mkt-card mkt-lock">' +
-        '<p class="mkt-lockh">Showcase of the week</p>' +
-        '<p>' + SHOWCASE_WHAT + ' It changes every Monday. Comes with the Featured plan.</p>' +
-        '<a class="mkt-up" href="/pricing">See plans</a>' +
+        '<p class="mkt-lockh">Your QR codes</p>' +
+        '<p>Your QR codes show up here once your storefront has its web address.</p>' +
       '</div>';
   }
   function renderUpsell(mount) {
