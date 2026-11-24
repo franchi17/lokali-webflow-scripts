@@ -854,16 +854,29 @@
     // = the widget could not run at all (script blocked, render threw, widget
     // error): stop gating so the click reaches Supabase and shows the friendly
     // error, instead of a button stuck on "checking" forever.
+    // v1.4.687: when Cloudflare asks for a tick (interactive challenge) the button
+    // says so instead of "checking"; and a wait that stalls for 20 s frees the
+    // button (the click then shows the friendly "complete the verification" error)
+    // so a visitor is never left on a button that does nothing and says nothing.
     var gated = [];
-    var released = false;
+    var released = false;   // widget cannot run at all: stop gating for good
+    var stalled = false;    // this wait ran past 20 s: free the button until the next reset
+    var needTick = false;   // Cloudflare is showing the "Verify you are human" box
+    var stallTimer = null;
     var WAIT_LABEL = 'One moment, checking\u2026';
+    var TICK_LABEL = 'Tick the box above first';
+    function armStall() {
+      clearTimeout(stallTimer);
+      stalled = false;
+      stallTimer = setTimeout(function () { if (!tok) { stalled = true; paint(); } }, 20000);
+    }
     function paint() {
       gated.forEach(function (b) {
         if (b.querySelector('.lok-auth-spin')) return; // mid-submit: setBusy owns it
-        if (!tok && !released) {
+        if (!tok && !released && (!stalled || needTick)) { // a tick request keeps its own label
           b.disabled = true;
           b.classList.add('lok-auth-btn-wait');
-          b.textContent = WAIT_LABEL;
+          b.textContent = needTick ? TICK_LABEL : WAIT_LABEL;
         } else if (b.classList.contains('lok-auth-btn-wait')) {
           b.disabled = false;
           b.classList.remove('lok-auth-btn-wait');
@@ -879,9 +892,11 @@
         wid = window.turnstile.render(holder, {
           sitekey: TURNSTILE_KEY,
           theme: 'light', // default 'auto' rendered an ink-dark widget on the light card for dark-mode visitors
-          callback: function (t) { tok = t; paint(); },
-          'expired-callback': function () { tok = null; paint(); },
-          'timeout-callback': function () { tok = null; paint(); },
+          callback: function (t) { tok = t; needTick = false; clearTimeout(stallTimer); paint(); },
+          'expired-callback': function () { tok = null; armStall(); paint(); },
+          'timeout-callback': function () { tok = null; armStall(); paint(); },
+          'before-interactive-callback': function () { needTick = true; paint(); },
+          'after-interactive-callback': function () { needTick = false; paint(); },
           'error-callback': function () { tok = null; release(); }
         });
         clearTimeout(giveUp);
@@ -892,9 +907,10 @@
       reset: function () {
         tok = null;
         try { if (wid != null && window.turnstile) window.turnstile.reset(wid); } catch (e) {}
+        armStall();
         paint();
       },
-      gate: function (btn) { if (btn) { gated.push(btn); paint(); } }
+      gate: function (btn) { if (btn) { if (!gated.length) armStall(); gated.push(btn); paint(); } }
     };
   }
 
