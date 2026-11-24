@@ -272,8 +272,8 @@
   // The hero is static Webflow DOM, so these swaps run once at init, before
   // any data arrives; initContact() later only sets hrefs / hides the anchors.
   var ICON_CROWN = ASSET + '69f4dbb3533f0ee2046ab0fb_crown-solid.png';      // = market card founding badge
-  var ICON_GLOBE = ASSET + '69f8b5e89bc57b40690cbc77_globe-solid.png';
-  var ICON_IG    = ASSET + '69f8b5e8a4030414bb433441_instagram-brands-solid.png';
+  var ICON_GLOBE = ASSET + '6b04bee2f317626e33df6f98_globe-solid-lavender.svg';   // CLEAN-P30: was a 36 KB PNG
+  var ICON_IG    = ASSET + '6b04bee240588f79b3b80ab4_instagram-brands-lavender.svg'; // CLEAN-P30: was a 36 KB PNG
   var HEART_PATH = 'M12 20.5l-1.4-1.27C5.6 14.86 2.5 12.07 2.5 8.6 2.5 6.1 4.5 4.1 7 4.1c1.5 0 2.95.7 3.9 1.81C11.85 4.8 13.3 4.1 14.8 4.1c2.5 0 4.5 2 4.5 4.5 0 3.47-3.1 6.26-8.1 10.63L12 20.5z'; // same heart as the market cards
 
   function styleHeroChrome() {
@@ -390,9 +390,16 @@
   // storefront's own owner (vendors.me check below) and never once following.
   function vlQrNudge(vid, v) {
     try {
+      var qs = window.location.search || '';
       // ?follow=1 = arriving from the order-confirmed page (#205): same banner, different first words.
-      var fromOrder = /[?&]follow=1(&|$)/.test(window.location.search || '');
-      if (!fromOrder && !/[?&]utm_source=qr(&|$)/.test(window.location.search || '')) return;
+      var fromOrder = /[?&]follow=1(&|$)/.test(qs);
+      var fromQr = /[?&]utm_source=qr(&|$)/.test(qs);
+      // Done-check 2026-11-23 (Shopper Growth, F 'Yes, build all'): a link someone
+      // shared (?via=) gets the banner too, and o=1 marks a link the owner copied
+      // from their dashboard ('Did <first> send you this?').
+      var fromOwner = /[?&]o=1(&|$)/.test(qs);
+      var fromShare = fromOwner || /[?&]via=[^&]+/.test(qs);
+      if (!fromOrder && !fromQr && !fromShare) return;
       var key = 'lokali_qr_nudge_' + vid;
       if (localStorage.getItem(key) === '1') return;
       var saveBtn = document.getElementById('vl-save');
@@ -404,14 +411,19 @@
         var name = (v && v.business_name) || 'this vendor';
         var box = ce('div', 'vl-qr-nudge'); box.id = 'vl-qr-nudge'; box.setAttribute('role', 'region'); box.setAttribute('aria-label', 'Follow this vendor');
         var ic = ce('span', 'vl-qr-ic'); ic.innerHTML = '<svg viewBox=\"0 0 448 512\" aria-hidden=\"true\"><path fill=\"currentColor\" d=\"M0 80C0 53.5 21.5 32 48 32h96c26.5 0 48 21.5 48 48v96c0 26.5-21.5 48-48 48H48c-26.5 0-48-21.5-48-48V80zM64 96v64h64V96H64zM0 336c0-26.5 21.5-48 48-48h96c26.5 0 48 21.5 48 48v96c0 26.5-21.5 48-48 48H48c-26.5 0-48-21.5-48-48V336zm64 16v64h64V352H64zM304 32h96c26.5 0 48 21.5 48 48v96c0 26.5-21.5 48-48 48H304c-26.5 0-48-21.5-48-48V80c0-26.5 21.5-48 48-48zm80 64H320v64h64V96zM256 304c0-8.8 7.2-16 16-16h64c8.8 0 16 7.2 16 16s7.2 16 16 16h32c8.8 0 16-7.2 16-16s7.2-16 16-16s16 7.2 16 16v96c0 8.8-7.2 16-16 16H368c-8.8 0-16-7.2-16-16s-7.2-16-16-16s-16 7.2-16 16v64c0 8.8-7.2 16-16 16H272c-8.8 0-16-7.2-16-16V304zM368 480a16 16 0 1 1 0-32 16 16 0 1 1 0 32zm64 0a16 16 0 1 1 0-32 16 16 0 1 1 0 32z\"/></svg>';
-        var p = ce('p'); var b = ce('b'); b.textContent = fromOrder ? 'Thanks for your order. ' : 'Just met ' + (_vlOwnerFirst || 'them') + '? ';
-        p.appendChild(b); p.appendChild(document.createTextNode('Follow ' + name + ' to hear where they’ll be next. One email a week.'));
+        var p = ce('p'); var b = ce('b');
+        b.textContent = fromOrder ? 'Thanks for your order. '
+          : fromQr ? 'Just met ' + (_vlOwnerFirst || 'them') + '? '
+          : (fromOwner && _vlOwnerFirst ? 'Did ' + _vlOwnerFirst + ' send you this? ' : '');
+        if (b.textContent) p.appendChild(b);
+        p.appendChild(document.createTextNode('Follow ' + name + (fromQr || fromOrder ? ' to hear where they’ll be next.' : ' to hear what’s new.') + ' One email a week.'));
+        if (!fromQr && !fromOrder) ic = null; // the QR glyph only makes sense after a scan or an order
         var go = ce('button', 'vl-qr-go'); go.type = 'button'; go.textContent = 'Follow';
-        go.addEventListener('click', function () { try { sessionStorage.setItem('lokali_prompt_source', fromOrder ? 'order_confirmed' : 'qr_banner'); } catch (e) {} saveBtn.click(); });
+        go.addEventListener('click', function () { try { sessionStorage.setItem('lokali_prompt_source', fromOrder ? 'order_confirmed' : fromQr ? 'qr_banner' : fromOwner ? 'owner_link' : 'share_link'); } catch (e) {} saveBtn.click(); });
         var x = ce('button', 'vl-qr-x'); x.type = 'button'; x.setAttribute('aria-label', 'Dismiss');
         x.innerHTML = '<svg viewBox=\"0 0 384 512\" aria-hidden=\"true\"><path fill=\"currentColor\" d=\"M342.6 150.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 210.7 86.6 105.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L146.7 256 41.4 361.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192 301.3 297.4 406.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.3 256 342.6 150.6z\"/></svg>';
         x.addEventListener('click', function () { try { localStorage.setItem(key, '1'); } catch (e) {} box.remove(); });
-        box.appendChild(ic); box.appendChild(p); box.appendChild(go); box.appendChild(x);
+        if (ic) box.appendChild(ic); box.appendChild(p); box.appendChild(go); box.appendChild(x);
         main.insertBefore(box, main.firstChild);
         var done = function () { if (/vl-save-on/.test(saveBtn.className)) { try { localStorage.setItem(key, '1'); } catch (e) {} box.remove(); } };
         window.addEventListener('lokali:favorites-synced', function () { setTimeout(done, 300); });
@@ -4613,6 +4625,23 @@
             card.innerHTML = '';
             var done = ce('p', 'vl-inv-done'); done.textContent = 'Thank you. Your review is live.';
             card.appendChild(done);
+            // Done-check 2026-11-23 (Shopper Growth): the happiest moment to ask for a
+            // follow. Same look and same Follow path as the QR banner; skipped when
+            // they already follow.
+            try {
+              var sb = document.getElementById('vl-save');
+              if (sb && !/vl-save-on/.test(sb.className)) {
+                var fb = ce('div', 'vl-qr-nudge'); fb.style.margin = '12px 0 0';
+                var fp = ce('p'); fp.textContent = 'Want to hear when ' + (vendorName || 'they') + ' has something new? One email a week.';
+                var fg = ce('button', 'vl-qr-go'); fg.type = 'button'; fg.textContent = 'Follow';
+                fg.addEventListener('click', function () {
+                  try { sessionStorage.setItem('lokali_prompt_source', 'after_review'); } catch (e) {}
+                  sb.click();
+                  setTimeout(function () { if (/vl-save-on/.test(sb.className)) fb.remove(); }, 1500);
+                });
+                fb.appendChild(fp); fb.appendChild(fg); card.appendChild(fb);
+              }
+            } catch (e) {}
             setTimeout(function () { renderReviews(vendorId, vendorName); }, 1200);
           })
           .catch(function () { post.disabled = false; say('Something went wrong on our end and your review was not saved. Please try again.'); });

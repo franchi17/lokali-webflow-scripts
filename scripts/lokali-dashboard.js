@@ -168,9 +168,11 @@
       'Pin a cover photo for your Market card', 'Cover photo pinned',
       'Your card is the first thing shoppers see in the Market. Right now we pick a photo for you.',
       'Pick a cover', CK_PROFILE + '#lok-card-photo');
-    add('depth', listings >= 2,
-      listings === 0 ? 'Add your first service or product' : 'Add a second service or product', 'More than one listing',
-      'One listing reads as a side project. Two or more reads as a business.',
+    // Done-check 2026-11-23 (Vendor Success): a storefront counts as complete at 3
+    // listings everywhere else, so the checklist asks for the third one too.
+    add('depth', listings >= 3,
+      listings === 0 ? 'Add your first service or product' : listings === 1 ? 'Add a second service or product' : 'Add a third service or product', 'Three or more listings',
+      'One listing reads as a side project. Three give neighbors something to look through.',
       'Add a listing', SVC);
     add('desc', desc.length >= 80,
       desc ? 'Say more in your description' : 'Write a description', 'Description written',
@@ -1260,7 +1262,9 @@
 (function () {
   'use strict';
   var path = String(window.location.pathname || '');
-  if (!/^\/vendor-dashboard\/(profile|services)\/?$/.test(path)) return;
+  // Done-check 2026-11-23 (UX): Profile only. Services dropped; the Gallery is
+  // already on Products and in Settings, four places was too many.
+  if (!/^\/vendor-dashboard\/profile\/?$/.test(path)) return;
   var KEY = 'lok_gallery_notice_off';
   function off() { try { return !!window.localStorage.getItem(KEY); } catch (e) { return false; } }
   function setOff() { try { window.localStorage.setItem(KEY, '1'); } catch (e) {} }

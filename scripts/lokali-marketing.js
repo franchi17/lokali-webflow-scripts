@@ -76,7 +76,7 @@
   // Review-code blue (the brand blue of the email headlines). Two codes, two
   // inks: storefront = violet, review = blue, so a printout tells them apart
   // (F 2026-11-10: 'a visual differentiator so they don't use the wrong one').
-  var REVIEW_BLUE = '#021AEE';
+  var REVIEW_BLUE = '#1D4E9E'; // done-check 2026-11-23: brand guide keeps #021AEE for emails; the sky family's deep blue still tells the two codes apart
   var CAPS = { cta: 20, showcase: 10 };
   // Spotlight ad creative (phase 2): backend is live and grid-proven, but the
   // vendor-facing flow is undesigned — Francesca 2026-08-18: keep it hidden
@@ -272,14 +272,14 @@
       '.mkt-card.review .mkt-h svg{width:18px;height:18px;fill:' + REVIEW_BLUE + ';flex:0 0 auto;}' +
       '.mkt-card.review .mkt-sub,.mkt-card.review .mkt-qr-url,.mkt-card.review .mkt-note{color:#5A66A0;}' +
       '.mkt-card.review .mkt-qr-url b{color:#13227A;}' +
-      '.mkt-card.review .mkt-qr-dl{background:#E0E6FF;color:' + REVIEW_BLUE + ';}' +
+      '.mkt-card.review .mkt-qr-dl{background:#E6EFFB;color:' + REVIEW_BLUE + ';}' +
       '.mkt-card.review .mkt-qr-code{border-color:#C9D3FB;}' +
       '.mkt-card.review .mkt-rv-rot button{color:' + REVIEW_BLUE + ';}' +
       '.mkt-card.review .mkt-rv-rot button.warn{color:#B3261E;}' +
       '.mkt-card.review .mkt-rv-rot button.plain{color:#6E6A85;}' +
       '.mkt-tag{display:inline-block;font-size:11.5px;font-weight:600;border-radius:999px;padding:4px 10px;white-space:nowrap;}' +
       '.mkt-tag.store{background:#F3EBFF;color:' + BRAND + ';}' +
-      '.mkt-tag.review{background:#E0E6FF;color:#13227A;}' +
+      '.mkt-tag.review{background:#E6EFFB;color:#1D4E9E;}' +
       '.mkt-qr-code{line-height:1.2;}' +
       '.mkt-qr-cap{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;text-align:center;margin:8px 0 0;line-height:1;}' +
       '.mkt-card.store .mkt-qr-cap{color:' + BRAND + ';}' +
@@ -297,7 +297,7 @@
       '.mkt-mini-code svg{display:block;width:120px;height:120px;max-width:100%;}' +
       '.mkt-mini-sub{margin:0;font-size:13px;color:#4A4761;}' +
       '.mkt-mini-more{font-size:12.5px;font-weight:600;color:' + BRAND + ';}' +
-      '.mkt-mini.review .mkt-qr-dl{background:#E0E6FF;color:' + REVIEW_BLUE + ';}' +
+      '.mkt-mini.review .mkt-qr-dl{background:#E6EFFB;color:' + REVIEW_BLUE + ';}' +
       '@media (max-width:600px){.mkt-card{padding:16px;}.mkt-acts{gap:0;}.mkt-mini-row{gap:8px;}.mkt-mini-bd{padding:10px;}.mkt-mini-code svg{width:96px;height:96px;}}';
     document.head.appendChild(st);
   }
@@ -1258,7 +1258,7 @@
           // #149c WYSIWYG: same treatment as the listing forms — the frame is
           // the storefront crop, and the frame itself is the drag surface.
           (img
-            ? '<p class="mkt-note" style="margin:8px 0 0;">How it will appear on your storefront \u2014 drag the photo to adjust.</p>' +
+            ? '<p class="mkt-note" style="margin:8px 0 0;">How it will appear on your storefront. Drag the photo to adjust.</p>' +
               '<div class="mkt-focusframe"><img data-f="focusprev" src="' + esc(img) + '" alt="Crop preview"' +
               (e && e.image_focus_x != null && e.image_focus_y != null
                 ? ' style="object-position:' + (+e.image_focus_x) + '% ' + (+e.image_focus_y) + '%;"' : '') +
