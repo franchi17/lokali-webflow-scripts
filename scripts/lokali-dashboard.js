@@ -51,7 +51,7 @@
         '#lok-marketing-page p,#lok-followers-page p,#lok-events-page p,#lok-week p{max-width:75ch;}' +
         // Home: "What happened" becomes a lavender side column, quick actions one row.
         '#lok-cols{grid-template-columns:minmax(0,1fr) 360px !important;}' +
-        '#lok-feed-card{background:#F3EBFF;border-color:#E5D4FD;}' +
+        '#lok-feed-card{background:#E6EFFB;border-color:#C9D9F5;}' +
         '.div-block-169{grid-template-columns:repeat(4,minmax(0,1fr)) !important;}' +
         // Analytics: the number boxes share the row evenly, however many there are.
         '.an-grid{grid-template-columns:none !important;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);}' +
@@ -71,12 +71,42 @@
         '.mkt-mini-bd{display:flex !important;flex-direction:column;align-items:center;text-align:center;}' +
         // Home: the side column shows the latest five, so it ends near the left column ("All leads" has the rest)
         '#lok-feed-card .lok-feed li:nth-child(n+6){display:none;}' +
-        // Form pages (F 2026-11-24, all three experts: option A, centered): Profile, Settings and
-        // Availability keep a narrow centered column (~760px of content) so boxes are not 1,300px
-        // wide; the add/edit listing form on Services/Products is centered at the same width.
+        // Form pages (F 2026-11-24, experts option A, centered): Settings and Availability keep a
+        // narrow centered column (~760px of content) so boxes are not 1,300px wide. Profile also
+        // starts here and switches to the helper-column layout once that column is built.
         'html.lok-dash-form .div-block-39{max-width:840px !important;}' +
-        '[id$="-form-view"].lok-org{max-width:760px !important;margin-left:auto !important;margin-right:auto !important;}' +
+        // Profile helper column (F 2026-11-24 'Yes, build it', mockup ProfileHelper): one form
+        // column plus a 320px column that stays in view: progress, section links, Market card preview.
+        'html.lok-dash-profile .div-block-39{display:grid !important;grid-template-columns:minmax(0,1fr) 320px;column-gap:28px;row-gap:0;align-items:start;}' +
+        'html.lok-dash-profile .div-block-39>*{grid-column:1;min-width:0;}' +
+        'html.lok-dash-profile .div-block-39>#lok-help-col{grid-column:2;grid-row:1 / span 6;position:sticky;top:24px;display:flex;}' +
+        'html.lok-dash-profile #lok-profile-nav,html.lok-dash-profile #lok-complete-strip{display:none !important;}' +
+        // Add / edit listing form (mockup ListingHelper): its own "What shoppers see" preview moves
+        // into a side column that stays in view while the vendor fills in the steps.
+        '[id$="-form-view"].lok-org{display:grid !important;grid-template-columns:minmax(0,1fr) 320px;column-gap:28px;align-items:start;max-width:none !important;width:100% !important;overflow:visible !important;box-sizing:border-box;}' +
+        // two listing-page wrappers clip/scroll (and never actually scroll); they stopped the preview staying in view
+        '.container-11:has([id$="-form-view"].lok-org),.main-content-area:has([id$="-form-view"].lok-org){overflow:visible !important;}' +
+        '[id$="-form-view"].lok-org>*{grid-column:1;min-width:0;}' +
+        '[id$="-form-view"].lok-org>#lok-lc-preview{grid-column:2;grid-row:1 / span 6;position:sticky;top:24px;grid-template-columns:1fr !important;margin-top:0 !important;background:#E6EFFB !important;border-radius:16px;padding:16px !important;box-sizing:border-box;}' +
       '}' +
+      '#lok-help-col{display:none;flex-direction:column;gap:14px;font-family:"Plus Jakarta Sans",-apple-system,sans-serif;color:#1A1829;}' +
+      '#lok-help-col .hc-card{background:#fff;border:1px solid #E7E1F3;border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:12px;}' +
+      '#lok-help-col .hc-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:15px;font-weight:700;}' +
+      '#lok-help-col .hc-count{font-size:13px;color:#6002EE;}#lok-help-col .hc-count.ok{color:#17634A;}' +
+      '#lok-help-col .hc-bar{height:6px;border-radius:999px;background:#EEE4FD;overflow:hidden;}#lok-help-col .hc-bar i{display:block;height:100%;background:#6002EE;border-radius:999px;}#lok-help-col .hc-bar.ok i{background:#17634A;}' +
+      '#lok-help-col .hc-links{display:flex;flex-direction:column;}' +
+      '#lok-help-col .hc-links a{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;font-size:14px;color:#1A1829;text-decoration:none;min-height:36px;box-sizing:border-box;}' +
+      '#lok-help-col .hc-links a:hover{background:#F7F6FC;}#lok-help-col .hc-links a.on{background:#F3EBFF;color:#6002EE;font-weight:600;}' +
+      '#lok-help-col .hc-links .ck{color:#17634A;font-weight:700;}#lok-help-col .hc-links .todo{width:10px;height:10px;border-radius:50%;border:2px solid #CBB8F5;}' +
+      // Blue = what shoppers see or do (F 2026-11-24 'sooo much purple', brand guide's soft second colour: sky).
+      '#lok-help-col .hc-prev{background:#E6EFFB;border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:10px;}' +
+      '#lok-help-col .hc-lbl{font-size:11px;font-weight:700;letter-spacing:.5px;color:#1D4E9E;}' +
+      '#lok-help-col .hc-mc{background:#fff;border:1px solid #C9D9F5;border-radius:12px;overflow:hidden;}' +
+      '#lok-help-col .hc-img{height:130px;background:linear-gradient(135deg,#D9C7F5,#FDE6F2) center/cover no-repeat;}' +
+      '#lok-help-col .hc-txt{padding:12px 14px;display:flex;flex-direction:column;gap:3px;}' +
+      '#lok-help-col .hc-name{font-size:15px;font-weight:700;}#lok-help-col .hc-tag{font-size:13px;color:#4A4761;}#lok-help-col .hc-cat{font-size:12px;color:#6E6A85;}' +
+      '#lok-help-col .hc-note{margin:0;font-size:12px;color:#1D4E9E;}' +
+      '#lok-help-col .hc-view{display:block;text-align:center;padding:10px;border-radius:10px;border:1.5px solid #1D4E9E;background:#fff;color:#1D4E9E;font-size:14px;font-weight:600;text-decoration:none;}' +
       // Profile: more room to write the About text (vendor care: a box should look like a paragraph).
       '@media (min-width:768px){#textarea-description{min-height:200px !important;}}' +
       '.lok-desc-words{font-size:12px;color:#6E6A85;text-align:right;margin:6px 0 0;font-family:"Plus Jakarta Sans",-apple-system,sans-serif;}' +
@@ -120,6 +150,105 @@
       if (ta && ta.value) { paint(ta); clearInterval(t); }
       else if (++tries > 40) { if (ta) paint(ta); clearInterval(t); }
     }, 250);
+  })();
+
+  // Profile helper column (F 2026-11-24, mockup ProfileHelper). Built only from what the
+  // profile page already shows (the completion ring, the section links, the Market card photo,
+  // the name and tagline boxes), so no new data and nothing saved. Shown at 1200px and up by
+  // the CSS above; below that the page is exactly as before (chips and ring stay).
+  (function profileHelperColumn() {
+    if (!/^\/vendor-dashboard\/profile\/?$/.test(String(location.pathname || ''))) return;
+    var col = null, links = [], raf = 0;
+    function txt(el) { return el ? String(el.textContent || '').trim() : ''; }
+    function cardImg() {
+      var imgs = document.querySelectorAll('#lok-card-photo img');
+      for (var i = 0; i < imgs.length; i++) { if (imgs[i].currentSrc || imgs[i].src) return imgs[i].currentSrc || imgs[i].src; }
+      return '';
+    }
+    function category() {
+      var s = document.querySelectorAll('.lok-sec-summary');
+      for (var i = 0; i < s.length; i++) { var t = txt(s[i]); if (/Serving/.test(t)) return t.split(' · ')[0]; }
+      return '';
+    }
+    function render() {
+      raf = 0;
+      if (!col) return;
+      var m = txt(document.getElementById('lok-complete-ring')).match(/(\d+)\s*\/\s*(\d+)/);
+      var done = m ? +m[1] : 0, total = m ? +m[2] : 0, ok = total && done >= total;
+      var cnt = col.querySelector('.hc-count'), bar = col.querySelector('.hc-bar');
+      cnt.textContent = total ? done + ' of ' + total : '';
+      cnt.classList.toggle('ok', !!ok); bar.classList.toggle('ok', !!ok);
+      bar.firstChild.style.width = total ? Math.round(100 * done / total) + '%' : '0%';
+      var nav = document.querySelectorAll('#lok-profile-nav a');
+      var box = col.querySelector('.hc-links');
+      box.innerHTML = '';
+      links = [];
+      for (var i = 0; i < nav.length; i++) {
+        (function (src) {
+          var t = txt(src), isDone = /✓/.test(t);
+          var a = document.createElement('a');
+          a.href = src.getAttribute('href') || '#';
+          var label = document.createElement('span'); label.textContent = t.replace(/\s*✓\s*$/, '');
+          var mark = document.createElement('span'); mark.className = isDone ? 'ck' : 'todo';
+          if (isDone) { mark.textContent = '✓'; mark.setAttribute('aria-label', 'done'); }
+          a.appendChild(label); a.appendChild(mark);
+          a.addEventListener('click', function (e) { e.preventDefault(); src.click(); });
+          box.appendChild(a); links.push(a);
+        })(nav[i]);
+      }
+      var img = cardImg();
+      col.querySelector('.hc-img').style.backgroundImage = img ? 'url("' + img.replace(/"/g, '%22') + '")' : '';
+      var name = document.getElementById('business-name'), tag = document.getElementById('input-tagline');
+      col.querySelector('.hc-name').textContent = (name && name.value) || 'Your business name';
+      col.querySelector('.hc-tag').textContent = (tag && tag.value) || 'Your tagline';
+      col.querySelector('.hc-cat').textContent = category();
+      spy();
+    }
+    function later() { if (!raf) raf = requestAnimationFrame(render); }
+    function spy() {
+      var on = -1;
+      for (var i = 0; i < links.length; i++) {
+        var id = (links[i].getAttribute('href') || '').replace(/^#/, '');
+        var sec = id && document.getElementById(id);
+        if (sec && sec.getBoundingClientRect().top < 160) on = i;
+      }
+      for (var j = 0; j < links.length; j++) links[j].classList.toggle('on', j === on);
+    }
+    function build() {
+      var host = document.querySelector('.div-block-39');
+      if (!host || !document.getElementById('lok-profile-nav') || !document.getElementById('lok-complete-ring')) return false;
+      if (document.getElementById('lok-help-col')) return true;
+      var view = null, as = document.querySelectorAll('a');
+      for (var i = 0; i < as.length; i++) { if (/View my storefront/.test(as[i].textContent)) { view = as[i].href; break; } }
+      col = document.createElement('aside');
+      col.id = 'lok-help-col';
+      col.setAttribute('aria-label', 'Your storefront page');
+      col.innerHTML =
+        '<div class="hc-card"><div class="hc-top"><span>Your storefront page</span><span class="hc-count"></span></div>' +
+        '<div class="hc-bar"><i></i></div><nav class="hc-links" aria-label="Profile sections"></nav></div>' +
+        '<div class="hc-prev"><span class="hc-lbl">WHAT SHOPPERS SEE IN THE MARKET</span>' +
+        '<div class="hc-mc"><div class="hc-img" role="img" aria-label="Your Market card photo"></div><div class="hc-txt"><span class="hc-name"></span><span class="hc-tag"></span><span class="hc-cat"></span></div></div>' +
+        '<p class="hc-note">Changes as you type.</p>' +
+        (view ? '<a class="hc-view" target="_blank" rel="noopener"></a>' : '') + '</div>';
+      if (view) { var v = col.querySelector('.hc-view'); v.href = view; v.textContent = 'View my storefront'; }
+      host.appendChild(col);
+      document.documentElement.classList.remove('lok-dash-form');
+      document.documentElement.classList.add('lok-dash-profile');
+      render();
+      document.addEventListener('input', function (e) {
+        var id = e.target && e.target.id;
+        if (id === 'business-name' || id === 'input-tagline') later();
+      }, true);
+      var mo = new MutationObserver(later);
+      ['lok-complete-strip', 'lok-profile-nav', 'lok-card-photo'].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) mo.observe(el, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['src'] });
+      });
+      window.addEventListener('scroll', function () { if (!raf) raf = requestAnimationFrame(function () { raf = 0; spy(); }); }, { passive: true });
+      return true;
+    }
+    if (build()) return;
+    var tries = 0, t = setInterval(function () { if (build() || ++tries > 60) clearInterval(t); }, 250);
   })();
 
   // "Add another" tile at the end of the Services / Products card grid. Shown
