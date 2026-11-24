@@ -779,6 +779,8 @@
     // logo and business cards only). Violet fill #6002EE, lavender tint #F3EBFF;
     // #FAF7FF / #E5D4FD / #ECE8F8 are the card tint, borders and hairlines.
     // Needed (green) and done (green) stay semantic. Page-script inline styles need !important.
+    // Webflow gives the product Save button its own orange class (.save-btn.orange).
+    '#products-save-btn.orange{background:#6002EE!important;border-color:#6002EE!important;color:#fff!important;}',
     '[id$="-form-view"].lok-org.lok-org-product{background:#FAF7FF!important;border-color:#E5D4FD!important;}',
     '.lok-org-product .lok-fs{border-color:#ECE8F8;box-shadow:0 2px 10px rgba(96,2,238,.06);}',
     '.lok-org-product .lok-fs.need{border-color:#E5D4FD;}',
