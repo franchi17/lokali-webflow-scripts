@@ -198,6 +198,7 @@
     ".vl-badge-row .vl-badge{margin:0;}",
     ".vl-badge.vl-badge-founding{background:#FDF6DF;color:#9A6B00;border:.5px solid #EFDFA8;}",
     ".vl-badge.vl-badge-verified{background:#EEF3FF;color:#1730C9;border:.5px solid #C9D6F8;}",
+    ".vl-badge.vl-badge-nonprofit{background:#E0F5EB;color:#17634A;border:.5px solid #B9E3CF;display:inline-flex;align-items:center;gap:5px;}", // #263 brand soft green
     ".vl-badge.vl-badge-featured{background:#FAE4FC;color:#D602EE;border:.5px solid rgba(214,2,238,.3);}",
     ".vl-avatar.vl-avatar-initials{display:flex;align-items:center;justify-content:center;}",
     ".vl-avatar-txt{color:#6002EE;font-weight:600;font-size:30px;letter-spacing:.5px;font-family:'Plus Jakarta Sans',sans-serif;line-height:1;}",
@@ -1270,7 +1271,40 @@
     row.parentNode.insertBefore(pop, row.nextSibling);
   }
 
+  // #263 (F 2026-11-24): "Nonprofit" pill beside Founding/Verified, set only by
+  // Lokali (admin_set_nonprofit) after F checks the charity letter by hand. It
+  // explains itself on tap like the Founding pill, and adds one glance-card row.
+  var ICON_HEART = ASSET + '6a186b06cfcb6c4d6d1e1cf7_heart-regular.png';
+  function mountNonprofitBadge(v) {
+    if (!v || v.is_nonprofit !== true || document.getElementById('vl-badge-nonprofit')) return;
+    var row = document.querySelector('.vl-badge-row');
+    if (!row) {
+      var nameRow = document.querySelector('.vl-name-row');
+      if (!nameRow || !nameRow.parentNode) return;
+      row = ce('div', 'vl-badge-row');
+      nameRow.parentNode.insertBefore(row, nameRow.nextSibling);
+    }
+    var pill = ce('span', 'vl-badge vl-badge-nonprofit vl-badge-info');
+    pill.id = 'vl-badge-nonprofit';
+    pill.appendChild(maskIcon(ICON_HEART, '#17634A', 12));
+    pill.appendChild(document.createTextNode('Nonprofit'));
+    pill.setAttribute('role', 'button'); pill.setAttribute('tabindex', '0');
+    pill.setAttribute('aria-label', 'Nonprofit, what this means');
+    var i = ce('span', 'vl-badge-i'); i.setAttribute('aria-hidden', 'true'); i.textContent = 'i';
+    pill.appendChild(i);
+    row.appendChild(pill);
+    var pop = ce('div', 'vl-op-pop'); pop.id = 'vl-nonprofit-pop'; pop.setAttribute('role', 'note');
+    var pb = ce('b'); pb.textContent = 'Registered charity'; pop.appendChild(pb);
+    pop.appendChild(document.createTextNode('A nonprofit. Lokali checked their charity paperwork.'));
+    opWirePop(pill, pop);
+    row.parentNode.insertBefore(pop, row.nextSibling);
+  }
+
   function renderHighlights(v) {
+    mountNonprofitBadge(v);
+    if (v.is_nonprofit === true) {
+      opAddHighlight({ key: 'nonprofit', url: ICON_HEART, tint: '#17634A', bg: '#E0F5EB', t: 'Registered charity', s: 'Lokali checked their charity paperwork' });
+    }
     // F 2026-09-19: "Founding vendor" is said ONCE, by the pill beside the name
     // (it was also a glance-card cell and the first words of the Meet line:
     // three times on one screen). The pill explains itself on tap instead.

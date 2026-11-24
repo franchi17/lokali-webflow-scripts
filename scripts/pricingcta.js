@@ -82,8 +82,55 @@
     });
   }
 
+  // #263 (F 2026-11-24 "Yes, Pro free and Featured half price"; "I don't like the
+  // violet with the green"): one band under the plans for registered charities.
+  // All green (brand guide soft green), no violet. Prices are applied by hand
+  // after F checks the charity letter, so the button opens an email, not checkout.
+  var NP_MAIL = 'mailto:hello@golokali.com?subject=' + encodeURIComponent('Nonprofit pricing') +
+    '&body=' + encodeURIComponent('Hi Lokali,\n\nWe are a registered charity and would like nonprofit pricing.\n\nOrganization name:\nOur Lokali storefront (if we have one):\n\nI have attached our charity letter (the IRS 501(c)(3) letter).\n\nThank you!');
+  function mountNonprofitBand() {
+    if (document.getElementById('lok-nonprofit-band')) return;
+    // The page has one .pricing-tier-wrapper per plan card; the band goes after
+    // the smallest block that holds ALL of them (never between two cards).
+    var tiers = document.querySelectorAll('.pricing-tier-wrapper');
+    if (!tiers.length) return;
+    var tier = tiers[0];
+    while (tier && tier.parentNode) {
+      var all = true;
+      for (var k = 0; k < tiers.length; k++) if (!tier.contains(tiers[k])) { all = false; break; }
+      if (all) break;
+      tier = tier.parentNode;
+    }
+    if (!tier || !tier.parentNode || tier === document.body) return;
+    var G = '#17634A';
+    var band = document.createElement('section');
+    band.id = 'lok-nonprofit-band';
+    band.setAttribute('aria-labelledby', 'lok-np-h');
+    band.style.cssText = 'box-sizing:border-box;max-width:980px;margin:28px auto 8px;background:#E0F5EB;border-radius:16px;' +
+      'padding:22px 24px;display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;font-family:"Plus Jakarta Sans",sans-serif;color:' + G + ';';
+    band.innerHTML = // static markup only, no vendor data
+      '<span aria-hidden="true" style="flex:none;width:40px;height:40px;border-radius:12px;background:#fff;display:inline-flex;align-items:center;justify-content:center;">' +
+        '<svg viewBox="0 0 512 512" width="18" height="18"><path fill="' + G + '" d="M47.6 300.4L228.3 469.1c7.5 7 17.4 10.9 27.7 10.9s20.2-3.9 27.7-10.9L464.4 300.4c30.4-28.3 47.6-68 47.6-109.5v-5.8c0-69.9-50.5-129.5-119.4-141C347 36.5 300.6 51.4 268 84L256 96 244 84c-32.6-32.6-79-47.5-124.6-39.9C50.5 55.6 0 115.2 0 185.1v5.8c0 41.5 17.2 81.2 47.6 109.5z"/></svg>' +
+      '</span>' +
+      '<div style="flex:1 1 260px;min-width:0;">' +
+        '<h3 id="lok-np-h" style="margin:0 0 4px;font:700 18px/1.3 \'Plus Jakarta Sans\',sans-serif;color:' + G + ';">Running a nonprofit?</h3>' +
+        '<p style="margin:0 0 14px;font:400 15px/1.6 \'Plus Jakarta Sans\',sans-serif;color:' + G + ';">Registered charities get Pro for free, and Featured at half price. Send us your charity letter and we\u2019ll set it up.</p>' +
+        '<div style="display:flex;gap:10px;flex-wrap:wrap;margin:0 0 16px;">' +
+          '<div style="background:#fff;border-radius:12px;padding:10px 16px;min-width:140px;"><div style="font-size:13px;">Pro</div><div><s style="font-size:13px;opacity:.7;">$20</s> <b style="font-size:20px;font-weight:700;">Free</b></div></div>' +
+          '<div style="background:#fff;border-radius:12px;padding:10px 16px;min-width:140px;"><div style="font-size:13px;">Featured</div><div><s style="font-size:13px;opacity:.7;">$50</s> <b style="font-size:20px;font-weight:700;">$25</b><span style="font-size:13px;">/mo</span></div></div>' +
+        '</div>' +
+        '<a id="lok-np-apply" href="' + NP_MAIL + '" style="display:inline-block;background:' + G + ';color:#fff;text-decoration:none;border-radius:999px;padding:11px 20px;min-height:44px;box-sizing:border-box;font:600 14px/22px \'Plus Jakarta Sans\',sans-serif;">Apply as a nonprofit</a>' +
+      '</div>';
+    tier.parentNode.insertBefore(band, tier.nextSibling);
+    var a = document.getElementById('lok-np-apply');
+    if (a) a.addEventListener('click', function () {
+      try { if (typeof window.gtag === 'function') window.gtag('event', 'nonprofit_apply_click', { source: 'pricing' }); } catch (e) {}
+    });
+  }
+
   function init() {
     initAnchorFeedback();
+    mountNonprofitBand();
     document.querySelectorAll('[data-plan]').forEach(function (btn) {
       btn.style.cursor = 'pointer';
       btn.addEventListener('click', function () {

@@ -286,8 +286,15 @@
   var TOGGLE_LIST = [
     { key: 'new',      id: 'browse-toggle-new',      label: 'New this week',         color: '#1D6A45', url: ASSET + '6a1af53c6b8fa6046c223ce9_bullhorn-solid.png' },
     { key: 'founding', id: 'browse-toggle-founding', label: 'Founding vendors only', color: '#C9A22A', url: ASSET + '69f4dbb3533f0ee2046ab0fb_crown-solid.png' },
-    { key: 'verified', id: 'browse-toggle-verified', label: 'Verified only',         color: '#0000E4', glyph: '✓' }
+    { key: 'verified', id: 'browse-toggle-verified', label: 'Verified only',         color: '#0000E4', glyph: '✓' },
+    // #263 (F 2026-11-24): registered charities, marked by Lokali by hand. The row
+    // stays hidden until at least one live storefront is a nonprofit (an empty
+    // filter would read as a broken one).
+    { key: 'nonprofit', id: 'browse-toggle-nonprofit', label: 'Nonprofits only',     color: '#17634A', url: ASSET + '6a186b06cfcb6c4d6d1e1cf7_heart-regular.png' }
   ];
+  function toggleOn(key) {
+    return key === 'new' ? showNewOnly : key === 'founding' ? showFoundingOnly : key === 'nonprofit' ? showNonprofitOnly : showVerifiedOnly;
+  }
   var SORT_LIST = [
     { sort: 'best_match', id: 'sort-match', label: 'Featured first',   url: ASSET + '6a1d92f85db0d873ff20900a_sort-solid.png' },
     { sort: 'newest',     id: 'sort-new',  label: 'Newest first',  url: ASSET + '6a1d92f83a64390307583b8e_bolt-solid.png' },
@@ -512,6 +519,7 @@
     // circle was undecodable for first-time visitors). Same palette as the old badges.
     ".vcard .name-chip{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;border-radius:100px;padding:2px 7px;line-height:1.3;flex-shrink:0;}",
     ".vcard .chip-verified{background:#D2DEFF;color:#1730C9;}",
+    ".vcard .chip-nonprofit{background:#E0F5EB;color:#17634A;}", // #263 brand soft green
     ".vcard .chip-new{background:#C6F2DB;color:#11744A;}",
     ".vcard .chip-spotlight{background:#E2D2FF;color:#5A00E0;}",
     // Away chip (v1.4.444 shipped it without a rule, so it inherited nothing).
@@ -764,6 +772,7 @@
   var showNewOnly = false;
   var showFoundingOnly = false;
   var showVerifiedOnly = false;
+  var showNonprofitOnly = false; // #263
   var searchTerm = '';
 
   // ── helpers ──
@@ -828,6 +837,7 @@
   function vCreated(v) { var c = (v.published_at != null ? v.published_at : v.created_at); if (c == null) return 0; return typeof c === 'number' ? c : (Date.parse(c) || 0); }
   function vIsNew(v)       { var t = vCreated(v); return t > 0 && (Date.now() - t) < NEW_WINDOW_MS; }
   function vIsFounding(v)  { return v.is_founding_member === true; }
+  function vIsNonprofit(v) { return v.is_nonprofit === true; } // #263, admin-set only (patch_nonprofit.sql)
   function vIsVerified(v)  { var f = window.LOKALI_VERIFIED_FIELD; if (f && v[f] != null) return v[f] === true; return v.is_verified === true; }
   function vIsSpotlight(v) { var f = window.LOKALI_SPOTLIGHT_FIELD; if (f && v[f] != null) return v[f] === true; return v.is_spotlight === true; }
   // Featured = the paid TIER (server-synced is_featured), distinct from the
@@ -1134,6 +1144,7 @@
       if (!subcatDataPresent()) { activeSubcats = []; _rawRestoredSubcats = null; }
       renderSubcatRow();
       updateCategoryCounts();
+      syncNonprofitToggle();
       _vendorsReady = true;
       applyFilters();
       fetchCovers();
@@ -1427,15 +1438,16 @@
       var row = ce('button', 'lk-toggle');
       row.type = 'button';
       row.setAttribute('role', 'switch');
-      var on0 = t.key === 'new' ? showNewOnly : (t.key === 'founding' ? showFoundingOnly : showVerifiedOnly);
+      var on0 = toggleOn(t.key);
       row.setAttribute('aria-checked', on0 ? 'true' : 'false');
       var label = ce('span', 'lk-toggle-label');
       label.appendChild(t.url ? maskIcon(t.url, t.color, 16) : glyphIcon(t.glyph, t.color));
       label.appendChild(document.createTextNode(t.label));
       var sw = ce('span', 'toggle-switch'); sw.id = t.id;
+      if (t.key === 'nonprofit') { row.id = 'browse-toggle-nonprofit-row'; row.style.display = (_allVendors && _allVendors.some(vIsNonprofit)) ? '' : 'none'; }
       row.appendChild(label); row.appendChild(sw);
       row.addEventListener('click', function () {
-        var cur = t.key === 'new' ? showNewOnly : (t.key === 'founding' ? showFoundingOnly : showVerifiedOnly);
+        var cur = toggleOn(t.key);
         setToggle(t.key, !cur);
       });
       fs.appendChild(row);
@@ -1870,6 +1882,14 @@
       } catch (e) {}
     }, 0);
   }
+  // #263: show the 'Nonprofits only' row once a live nonprofit exists; if a
+  // restored state had it on and none exist (mark removed), switch it off.
+  function syncNonprofitToggle() {
+    var any = _allVendors.some(vIsNonprofit);
+    var row = el('browse-toggle-nonprofit-row');
+    if (row) row.style.display = any ? '' : 'none';
+    if (!any && showNonprofitOnly) { showNonprofitOnly = false; var sw = el('browse-toggle-nonprofit'); if (sw) { sw.classList.remove('on'); syncSwitchAria(sw, false); } }
+  }
   function applyFilters() {
     try { mktV3SyncCats(); } catch (e) {} // v3 round category buttons follow every route in (deep link, shortcut, restore)
     // A shortcut lives only while its own filter is still applied: editing the
@@ -1903,6 +1923,7 @@
       if (showNewOnly && !vIsNew(v)) return false;
       if (showFoundingOnly && !vIsFounding(v)) return false;
       if (showVerifiedOnly && !vIsVerified(v)) return false;
+      if (showNonprofitOnly && !vIsNonprofit(v)) return false;
       var occTerms = _occ && _occ.terms;
       if (q || occTerms) {
         // #96: search covers what vendors OFFER — subcategory labels, active
@@ -2000,7 +2021,7 @@
   var _startEl = null;
   function isDefaultView() {
     return !searchTerm.trim() && !(_occ && _occ.terms) && activeCategory === 'all' && !activeSubcats.length &&
-      !showNewOnly && !showFoundingOnly && !showVerifiedOnly;
+      !showNewOnly && !showFoundingOnly && !showVerifiedOnly && !showNonprofitOnly;
   }
   // ── occasion bar + way back (F 2026-09-18: "allow people to clear the
   // occasion search on phones and go back to the main market page") ──────
@@ -2038,7 +2059,7 @@
   function clearFiltersToMarket() {    // state only: the default view, neighborhood + sort kept
     _occ = null;
     searchTerm = ''; activeCategory = 'all'; activeSubcats = []; _rawRestoredSubcats = null;
-    showNewOnly = false; showFoundingOnly = false; showVerifiedOnly = false;
+    showNewOnly = false; showFoundingOnly = false; showVerifiedOnly = false; showNonprofitOnly = false;
   }
   function occHistoryState() { var st = null; try { st = window.history.state; } catch (e) {} return st && typeof st === 'object' ? st : null; }
   function occMarkEntry(mark, key) {
@@ -2288,7 +2309,7 @@
         // Persist the RAW restored list while it's still authoritative — else
         // an interim baked-only sanitize would permanently drop a DB-only pick.
         sc: _rawRestoredSubcats || activeSubcats,
-        n: showNewOnly, f: showFoundingOnly, v: showVerifiedOnly, q: searchTerm,
+        n: showNewOnly, f: showFoundingOnly, v: showVerifiedOnly, np: showNonprofitOnly, q: searchTerm,
         o: _occ ? _occ.k : null
       }));
     } catch (e) {}
@@ -2300,7 +2321,7 @@
     if (s.c) activeCategory = s.c;
     if (s.l) activeLocationId = s.l;
     if (s.s) activeSort = s.s;
-    showNewOnly = !!s.n; showFoundingOnly = !!s.f; showVerifiedOnly = !!s.v;
+    showNewOnly = !!s.n; showFoundingOnly = !!s.f; showVerifiedOnly = !!s.v; showNonprofitOnly = !!s.np;
     searchTerm = s.q || '';
     _occ = s.o ? occByKey(s.o) : null; // validated against the filters on the first render
     // Sessions saved by v1.4.450 kept the tile's single word in the search box
@@ -2367,7 +2388,7 @@
     try { mktV3SyncCats(); } catch (e) {}
     if (activeLocationId !== 'all' && !_locationsById[activeLocationId]) activeLocationId = 'all';
     TOGGLE_LIST.forEach(function (t) {
-      var on = t.key === 'new' ? showNewOnly : (t.key === 'founding' ? showFoundingOnly : showVerifiedOnly);
+      var on = toggleOn(t.key);
       var sw = el(t.id); if (sw) { sw.classList.toggle('on', on); syncSwitchAria(sw, on); }
     });
     syncSearchBox(0); // shadow-DOM aware; retries while the island hydrates
@@ -2431,7 +2452,7 @@
   // it, so these targeted text swaps can't touch the live Brevo capture.
   var _emptyOrig = null; // original Webflow title/sub, captured before first rewrite
   function structuralEmpty() {
-    return !searchTerm && !(_occ && _occ.terms) && !showNewOnly && !showFoundingOnly && !showVerifiedOnly;
+    return !searchTerm && !(_occ && _occ.terms) && !showNewOnly && !showFoundingOnly && !showVerifiedOnly && !showNonprofitOnly;
   }
   function categoryLabel() {
     if (activeCategory === 'all') return '';
@@ -2565,7 +2586,10 @@
     // signaled "pays more". Placement ranking (#75 plan_rank) is untouched.
     // Founding moved to the quiet foot line; Verified/New/Spotlight stay here.
     // ONE identity pill (F 2026-09-16 pill budget): Verified beats New.
-    if (vIsVerified(v))  nameRow.appendChild(nameChip('chip-verified', '✓ Verified', null, null, 'Verified'));
+    // #263 (F 2026-11-24): Nonprofit is checked by Lokali by hand, so it takes the
+    // one identity slot ahead of Verified. Text only, soft green (brand guide).
+    if (vIsNonprofit(v)) nameRow.appendChild(nameChip('chip-nonprofit', 'Nonprofit', null, null, 'A registered charity. Lokali checked their paperwork.'));
+    else if (vIsVerified(v))  nameRow.appendChild(nameChip('chip-verified', '✓ Verified', null, null, 'Verified'));
     else if (vIsNew(v))  nameRow.appendChild(nameChip('chip-new', 'New', ICON_BULLHORN, '#11744A', 'New this week'));
     // Away mode (2026-09-17): a quiet dated chip, no greying, no ranking change.
     if (vAwayLabel(v))   nameRow.appendChild(nameChip('chip-away', 'Back ' + vAwayLabel(v), null, '#B8471B', 'Away until ' + vAwayLabel(v)));
@@ -2699,6 +2723,7 @@
     if (showNewOnly && !occOwnsNew) addChip(strip, 'New this week', function () { setToggle('new', false); });
     if (showFoundingOnly) addChip(strip, 'Founding vendors', function () { setToggle('founding', false); });
     if (showVerifiedOnly) addChip(strip, 'Verified',         function () { setToggle('verified', false); });
+    if (showNonprofitOnly) addChip(strip, 'Nonprofits',      function () { setToggle('nonprofit', false); });
   }
   function addChip(strip, label, onRemove) {
     var chip = ce('span', 'active-filter-chip');
@@ -2762,7 +2787,7 @@
     // renderCategoryChips() stays for a quick revert.
     var btn = el('browse-mobile-filter-btn');
     if (!btn) return;
-    btn.classList.toggle('has-filters', activeCategory !== 'all' || activeSubcats.length > 0 || showNewOnly || showFoundingOnly || showVerifiedOnly || activeLocationId !== 'all' || !!searchTerm || !!(_occ && _occ.terms));
+    btn.classList.toggle('has-filters', activeCategory !== 'all' || activeSubcats.length > 0 || showNewOnly || showFoundingOnly || showVerifiedOnly || showNonprofitOnly || activeLocationId !== 'all' || !!searchTerm || !!(_occ && _occ.terms));
   }
 
   // ── setters ──
@@ -2790,6 +2815,7 @@
     if (which === 'new')      { showNewOnly = on;      sw = el('browse-toggle-new'); }
     if (which === 'founding') { showFoundingOnly = on; sw = el('browse-toggle-founding'); }
     if (which === 'verified') { showVerifiedOnly = on; sw = el('browse-toggle-verified'); }
+    if (which === 'nonprofit') { showNonprofitOnly = on; sw = el('browse-toggle-nonprofit'); }
     if (sw) { sw.classList.toggle('on', on); syncSwitchAria(sw, on); }
     applyFilters();
   }
