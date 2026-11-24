@@ -408,8 +408,11 @@
   // Re-render just the QR preview + toggle (no full re-render, so an open
   // editor elsewhere on the page is untouched).
   Page.prototype.refreshQrPreview = function () {
-    var box = this.mount.querySelector('.mkt-qr-code');
-    if (box) box.innerHTML = window.LokaliQR.toSvg(this.qrUrl(), this.qrOpts(168, BRAND)) + '<p class="mkt-qr-cap">Storefront</p>';
+    // The codes now show only in the top strip, so the logo choice previews there.
+    var box = this.mount.querySelector('.mkt-mini.store .mkt-mini-code');
+    if (box) box.innerHTML = window.LokaliQR.toSvg(this.qrUrl(), this.qrOpts(120, BRAND));
+    var rbox = this.mount.querySelector('.mkt-mini.review .mkt-mini-code');
+    if (rbox) rbox.innerHTML = window.LokaliQR.toSvg(this.reviewUrl(), this.qrOpts(120, REVIEW_BLUE));
     // The slot is always rendered (empty until the logo lands), so the toggle
     // can appear AFTER the async logo load without a full re-render.
     var slot = this.mount.querySelector('.mkt-qr-badge-slot');
@@ -524,7 +527,8 @@
       '<div class="mkt-head"><p class="mkt-h">' + ICON_STORE + 'Your storefront QR code</p><span class="mkt-tag store">Opens your storefront</span></div>' +
       '<p class="mkt-sub">For people who have not met you yet. Put it on flyers, table tents, business cards and packaging, anywhere people can point a camera.</p>' +
       '<div class="mkt-qr-row">' +
-        '<div class="mkt-qr-code">' + window.LokaliQR.toSvg(this.qrUrl(), this.qrOpts(168, BRAND)) + '<p class="mkt-qr-cap">Storefront</p></div>' +
+        // No second copy of the code here (expert review 2026-11-24): the same code
+        // sits in "Your two QR codes" at the top; this card keeps the options.
         '<div class="mkt-qr-side">' +
           '<p class="mkt-qr-url">Opens <b>golokali.com/' + esc(this.vendor.slug) + '</b>. Scans are counted automatically.</p>' +
           '<div class="mkt-qr-btns">' +
@@ -876,9 +880,8 @@
   Page.prototype.reviewCardHtml = function () {
     if (!this.vendor.slug) return '';
     var self = this;
-    var qr = window.LokaliQR
-      ? '<div class="mkt-qr-code">' + window.LokaliQR.toSvg(this.reviewUrl(), this.qrOpts(168, REVIEW_BLUE)) + '<p class="mkt-qr-cap">Review</p></div>'
-      : '';
+    // The review code itself is shown once, in "Your two QR codes" at the top.
+    var qr = '';
     // F 2026-11-10: no copy-ready text / email / packaging wording here any more.
     // Vendors get the link and the code and say it their own way.
     return '<div class="mkt-card review" data-kind="review" id="mkt-rv-full">' +
