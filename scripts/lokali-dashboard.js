@@ -32,8 +32,74 @@
       // nav items use <strong class="dashboard-menu"> (16px). On services/products
       // pages an ancestor font-size (24px) cascades into the unstyled label and
       // blows it up. Pin it to match .dashboard-menu so it can't inherit the leak.
-      '.dashboard-btn .text-block-17{font-size:16px !important;font-weight:500;line-height:26px;}';
+      '.dashboard-btn .text-block-17{font-size:16px !important;font-weight:500;line-height:26px;}' +
+      // Wide screens (F 2026-11-24, mockup https://claude.ai/artifact/M5yXt8DZ1SHKSvRbjgQJB3):
+      // the content column was pinned left at 900px, leaving a third of a
+      // laptop screen empty. One shared width on every dashboard page:
+      // up to 1160px of content, centered beside the menu. Wrappers differ per
+      // page (div-block-39 on most, .main-content-area on Services/Products)
+      // and some pages cap their own block (Marketing 860, Followers 760,
+      // Events 720), so those caps lift here too. Long text stays readable
+      // (max ~75 characters a line). Phones and tablets are untouched.
+      '@media (min-width:1200px){' +
+        '.div-block-39{max-width:1240px !important;width:100% !important;margin-left:auto !important;margin-right:auto !important;box-sizing:border-box;}' +
+        '.main-content-area{max-width:1240px;width:100%;margin-left:auto !important;margin-right:auto !important;box-sizing:border-box;}' +
+        '#lok-marketing-page,#lok-followers-page,#lok-events-page{max-width:none !important;}' +
+        '#lok-marketing-page p,#lok-followers-page p,#lok-events-page p,#lok-week p{max-width:75ch;}' +
+        // Home: "What happened" becomes a lavender side column, quick actions one row.
+        '#lok-cols{grid-template-columns:minmax(0,1fr) 360px !important;}' +
+        '#lok-feed-card{background:#F3EBFF;border-color:#E5D4FD;}' +
+        '.div-block-169{grid-template-columns:repeat(4,minmax(0,1fr)) !important;}' +
+        // Analytics: the number boxes share the row evenly, however many there are.
+        '.an-grid{grid-template-columns:none !important;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);}' +
+        // Services/Products: four cards across, plus an "Add another" tile.
+        '.lok-grid{grid-template-columns:repeat(4,minmax(0,1fr)) !important;}' +
+        '.lok-add-tile{display:flex !important;}' +
+      '}' +
+      '.lok-add-tile{display:none;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:260px;' +
+        'border:2px dashed #E5D4FD;border-radius:14px;background:#fff;color:#6002EE;cursor:pointer;' +
+        'font-family:"Plus Jakarta Sans",-apple-system,sans-serif;padding:16px;text-align:center;}' +
+      // The grid stretches any non-card child across the row (order 99); the tile is one card wide, right after the cards.
+      '.lok-grid > .lok-add-tile{grid-column:auto !important;order:1 !important;}' +
+      '.lok-add-tile:hover{background:#F3EBFF;}' +
+      '.lok-add-tile .p{font-size:32px;font-weight:300;line-height:1;}' +
+      '.lok-add-tile .t{font-size:15px;font-weight:700;}';
     (document.head || document.documentElement).appendChild(s);
+  })();
+
+  // "Add another" tile at the end of the Services / Products card grid. Shown
+  // only on wide screens (CSS above); it just clicks the page's own Add button.
+  // Kept last in the grid whenever the cards re-draw or are dragged.
+  (function addAnotherTile() {
+    var path = String(location.pathname || '');
+    var kind = path.indexOf('/vendor-dashboard/services') !== -1 ? 'service'
+      : path.indexOf('/vendor-dashboard/products') !== -1 ? 'product' : '';
+    if (!kind) return;
+    var stackId = kind + 's-stack', btnId = kind + 's-add-btn', cardSel = '.' + kind + '-card[data-' + kind + '-id]'; // real cards only, never the hidden template
+    function sync(stack) {
+      var tile = stack.querySelector(':scope > .lok-add-tile');
+      if (!stack.querySelector(cardSel)) { if (tile) tile.remove(); return; }
+      if (!tile) {
+        tile = document.createElement('button');
+        tile.type = 'button';
+        tile.className = 'lok-add-tile';
+        tile.innerHTML = '<span class="p" aria-hidden="true">+</span><span class="t">Add another ' + kind + '</span>';
+        tile.addEventListener('click', function () {
+          var b = document.getElementById(btnId);
+          if (b) b.click();
+        });
+      }
+      if (stack.lastElementChild !== tile) stack.appendChild(tile);
+    }
+    function start() {
+      var stack = document.getElementById(stackId);
+      if (!stack) return false;
+      sync(stack);
+      new MutationObserver(function () { sync(stack); }).observe(stack, { childList: true });
+      return true;
+    }
+    if (start()) return;
+    var tries = 0, t = setInterval(function () { if (start() || ++tries > 40) clearInterval(t); }, 250);
   })();
 
   // Role guard: the vendor dashboard is vendors-only. A signed-in CUSTOMER who
