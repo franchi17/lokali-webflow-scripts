@@ -47,7 +47,7 @@
     '#lok-analytics-section .an-delta.up{color:' + GREEN + ';background:' + GREEN_L + ';}',
     '#lok-analytics-section .an-delta.down{color:' + SLATE + ';background:' + MIST + ';}', // quick fixes 2026-11-23: never red, a drop is not a grade
     '#lok-analytics-section .an-delta.flat{color:' + SLATE + ';background:' + MIST + ';}',
-    '#lok-analytics-section .an-kdetail{font-size:11px;color:' + SLATE + ';}',
+    '#lok-analytics-section .an-kdetail{font-size:11px;line-height:1.45;color:' + SLATE + ';}', // F 2026-11-24 'make the lines tighter'
     '#lok-analytics-section .an-klink{font-size:11px;font-weight:600;color:' + VIOLET + ';text-decoration:none;}',
     '#lok-analytics-section .an-klink:hover{text-decoration:underline;}',
     '#lok-analytics-section .an-ctitle{font-size:13px;font-weight:600;margin-bottom:1.1rem;}',
