@@ -67,6 +67,38 @@
     }, function () { return { ok: false, status: 0, data: { error: 'network' } }; });
   }
 
+  // ── robot check (SEC-136, 2026-11-24): Cloudflare Turnstile on Reserve ─────
+  // Same site key as sign-up (window.LOKALI_TURNSTILE_SITE_KEY). The server only
+  // insists once its secret is set; without a key here nothing is drawn.
+  var tsLoading = null;
+  function loadTurnstile() {
+    if (window.turnstile) return Promise.resolve(window.turnstile);
+    if (tsLoading) return tsLoading;
+    tsLoading = new Promise(function (resolve) {
+      var sc = document.createElement('script');
+      sc.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+      sc.async = true;
+      sc.onload = function () { resolve(window.turnstile || null); };
+      sc.onerror = function () { tsLoading = null; resolve(null); };
+      document.head.appendChild(sc);
+    });
+    return tsLoading;
+  }
+  function robotBox(box) {
+    var key = window.LOKALI_TURNSTILE_SITE_KEY, state = { token: '', id: null };
+    if (!key || !box) return { token: function () { return ''; }, reset: function () {} };
+    loadTurnstile().then(function (ts) {
+      if (!ts || !box.isConnected) return;
+      try {
+        state.id = ts.render(box, { sitekey: key, callback: function (t) { state.token = t; }, 'expired-callback': function () { state.token = ''; }, 'error-callback': function () { state.token = ''; } });
+      } catch (e) {}
+    });
+    return {
+      token: function () { return state.token; },
+      reset: function () { state.token = ''; try { if (window.turnstile && state.id != null) window.turnstile.reset(state.id); } catch (e) {} }
+    };
+  }
+
   // ── styles (Plus Jakarta Sans set explicitly; violet + lavender, no black) ──
   function styles() {
     if (document.getElementById('lke-css')) return;
@@ -311,6 +343,7 @@
       '<div data-mailrow><label class="lke-lbl" for="lke-rmail">Your email</label>' +
       '<input class="lke-in" id="lke-rmail" type="email" autocomplete="email" maxlength="200" style="width:100%;" placeholder="you@example.com"></div>' +
       '<div class="lke-info">Free, nothing to print. We\'ll email you to confirm, then your name is on the list at the door.</div>' +
+      '<div data-robot style="display:flex;justify-content:center;margin:0 0 12px;"></div>' +
       '<button type="button" class="lke-btn" data-go style="width:100%;">Reserve my spot</button><div data-msg></div>' +
       '</div>';
     document.body.appendChild(ovl);
@@ -318,6 +351,7 @@
     var qEl = ovl.querySelector('[data-q]'), go = ovl.querySelector('[data-go]'), msg = ovl.querySelector('[data-msg]');
     var nameIn = ovl.querySelector('#lke-rname'), mailIn = ovl.querySelector('#lke-rmail'), mailRow = ovl.querySelector('[data-mailrow]');
     var signedIn = false;
+    var robot = robotBox(ovl.querySelector('[data-robot]'));
     jwt().then(function (t) {
       signedIn = !!t;
       if (signedIn) { mailRow.style.display = 'none'; ovl.querySelector('.lke-info').textContent = 'Free, nothing to print. Your name goes on the list at the door, and the confirmation goes to your account email.'; }
@@ -340,22 +374,23 @@
       if (!name) { msg.innerHTML = '<p class="lke-err">Add the name you\'ll give at the door.</p>'; nameIn.focus(); return; }
       if (!signedIn && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { msg.innerHTML = '<p class="lke-err">Add your email so we can confirm your spot.</p>'; mailIn.focus(); return; }
       go.disabled = true; go.textContent = 'Reserving';
-      post('/checkout/event-reserve', { action: 'reserve', events_id: ev.id, quantity: qty, guest_name: name, email: signedIn ? '' : email }, true).then(function (r) {
+      post('/checkout/event-reserve', { action: 'reserve', events_id: ev.id, quantity: qty, guest_name: name, email: signedIn ? '' : email, cf_token: robot.token() }, true).then(function (r) {
         if (r.ok) {
           var done = r.data.status === 'confirmed';
           ovl.querySelector('.lke-sheet').innerHTML = '<button type="button" class="lke-x" aria-label="Close">Close</button>' +
             '<h3>' + (done ? 'You\'re on the list' : 'Check your email') + '</h3>' +
             '<p class="lke-when" style="margin:6px 0 14px;">' + (done
               ? 'Your confirmation is in your email, with Add to calendar and Directions.'
-              : 'We sent a "Confirm your spot" email to ' + esc(r.data.email_hint || 'you') + '. Tap the button in it within 2 hours to keep your spot.') + '</p>' +
+              : 'We sent a "Confirm your spot" email to ' + esc(r.data.email_hint || 'you') + '. Tap the button in it within 20 minutes to keep your spot.') + '</p>' +
             '<button type="button" class="lke-btn" data-done style="width:100%;">Done</button>';
           ovl.querySelector('.lke-x').addEventListener('click', close);
           ovl.querySelector('[data-done]').addEventListener('click', close);
           return;
         }
-        go.disabled = false; draw();
+        go.disabled = false; draw(); robot.reset();
         var e = r.data && r.data.error;
-        var t = e === 'sold_out' ? (r.data.available > 0 ? 'Only ' + r.data.available + ' left now. Choose fewer?' : 'Those spots just went.')
+        var t = e === 'robot_check' ? 'Tick the box above to show you\'re a person, then try again.'
+          : e === 'sold_out' ? (r.data.available > 0 ? 'Only ' + r.data.available + ' left now. Choose fewer?' : 'Those spots just went.')
           : e === 'already_reserved' ? (r.data.status === 'pending' ? 'You already asked for a spot: check your email for the Confirm button.' : 'You\'re already on the list for this event.')
           : e === 'sales_closed' ? 'This event has already started.'
           : e === 'bad_email' ? 'That email doesn\'t look right. Try again?'
