@@ -88,6 +88,15 @@
         '.container-11:has([id$="-form-view"].lok-org),.main-content-area:has([id$="-form-view"].lok-org){overflow:visible !important;}' +
         '[id$="-form-view"].lok-org>*{grid-column:1;min-width:0;}' +
         '[id$="-form-view"].lok-org>#lok-lc-preview{grid-column:2;grid-row:1 / span 6;position:sticky;top:24px;grid-template-columns:1fr !important;margin-top:0 !important;background:#E6EFFB !important;border-radius:16px;padding:16px !important;box-sizing:border-box;}' +
+        // Expert review fixes (F 2026-11-24 'fix them together with the older ones'):
+        // Save bar lines up with the form cards (they sit 20px in from the column edge).
+        '[id$="-form-view"].lok-org>.lok-form-bar{padding-left:20px !important;padding-right:20px !important;box-sizing:border-box;}' +
+        // Profile: the grey line under the title repeated the one under 'Your storefront page'.
+        'html.lok-dash-profile .div-block-45 .subheader{display:none !important;}' +
+        // Availability: its cards sat 22px right of the page title; closed days lacked the Copy link,
+        // so their time boxes sat 44px right of the open days'.
+        '.div-block-39:has(> #lok-away-card)>*{margin-left:0 !important;margin-right:0 !important;}' +
+        '.ava-hday:not(:has(.ava-copylink)) .ava-hadd{margin-right:44px;}' +
       '}' +
       '#lok-help-col{display:none;flex-direction:column;gap:14px;font-family:"Plus Jakarta Sans",-apple-system,sans-serif;color:#1A1829;}' +
       '#lok-help-col .hc-card{background:#fff;border:1px solid #E7E1F3;border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:12px;}' +
@@ -111,6 +120,22 @@
       '@media (min-width:768px){#textarea-description{min-height:200px !important;}}' +
       '.lok-desc-words{font-size:12px;color:#6E6A85;text-align:right;margin:6px 0 0;font-family:"Plus Jakarta Sans",-apple-system,sans-serif;}' +
       '.lok-desc-words.ok{color:#17634A;}' +
+      // Listing preview: sky blue like every 'what shoppers see' box; no 'Live' label on a blank, unsaved listing.
+      '#lok-lc-preview .lok-gc-cover.ph{background:linear-gradient(135deg,#CFE0F7,#E6EFFB) !important;}' +
+      '#lok-lc-preview .lok-gc-corner{display:none !important;}' +
+      // Marketing: the solid violet bars become soft lavender with violet words (less purple, F).
+      '.mkt-band.store,.mkt-mini.store .mkt-mini-hd{background:#F3EBFF !important;color:#6002EE !important;}' +
+      '.mkt-band.store svg,.mkt-mini.store .mkt-mini-hd svg{color:#6002EE !important;fill:currentColor;}' +
+      // Products with no products yet: 'Add your first product' comes before the Gallery look panel.
+      '#products-list-view:not(:has(.product-card[data-product-id]))>#lok-gallery-page{order:9;}' +
+      // Settings: the Gallery look is chosen in one place, Products; Settings keeps a one-line pointer.
+      '#lok-look-card{display:none !important;}' +
+      '.lok-look-pointer{margin:4px 0 0;font-size:13px;color:#4A4761;font-family:"Plus Jakarta Sans",-apple-system,sans-serif;}' +
+      '#lok-help-col .hc-todo{display:flex;flex-direction:column;gap:6px;}' +
+      '#lok-help-col .hc-open{font-size:13px;color:#6002EE;text-decoration:none;padding:6px 10px;border-radius:8px;background:#F7F6FC;}' +
+      '#lok-help-col .hc-open:hover{background:#F3EBFF;}' +
+      '#lok-help-col .hc-done{margin:0;font-size:13px;color:#17634A;}' +
+      '#lok-help-col .hc-sec{margin-top:4px;color:#6E6A85;}' +
       // margin-bottom matches the cards' 16px so the bottoms line up
       '.lok-add-tile{display:none;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:200px;margin-bottom:16px;' +
         'border:2px dashed #E5D4FD;border-radius:14px;background:#fff;color:#6002EE;cursor:pointer;' +
@@ -152,50 +177,116 @@
     }, 250);
   })();
 
-  // Profile helper column (F 2026-11-24, mockup ProfileHelper). Built only from what the
-  // profile page already shows (the completion ring, the section links, the Market card photo,
-  // the name and tagline boxes), so no new data and nothing saved. Shown at 1200px and up by
-  // the CSS above; below that the page is exactly as before (chips and ring stay).
+  // Profile helper column (F 2026-11-24, mockups ProfileHelper; expert fixes the same evening).
+  // Built from what the profile page already shows plus the SAME storefront checkup Analytics
+  // uses (window.LokaliCheckup), so the two pages never disagree ("6 of 6" used to say done
+  // with one listing and a two-line About). No new data, nothing saved. Shown at 1200px and up
+  // by the CSS above; below that the page is exactly as before (chips and ring stay).
   (function profileHelperColumn() {
     if (!/^\/vendor-dashboard\/profile\/?$/.test(String(location.pathname || ''))) return;
-    var col = null, links = [], raf = 0;
+    var col = null, links = [], raf = 0, ck = null;
+    var NAMES = { 'lok-portfolio-card': 'Portfolio', 'lok-card-photo': 'Market card', 'lok-sec-logo': 'Logo',
+      'lok-sec-business': 'Business info', 'lok-sec-about': 'About your business', 'lok-sec-categories': 'Categories and areas',
+      'lok-about-you': 'Meet the vendor', 'lok-pay-card': 'Payments' };
     function txt(el) { return el ? String(el.textContent || '').trim() : ''; }
+    function words(t) { var m = String(t || '').trim().match(/\S+/g); return m ? m.length : 0; }
     function cardImg() {
       var imgs = document.querySelectorAll('#lok-card-photo img');
       for (var i = 0; i < imgs.length; i++) { if (imgs[i].currentSrc || imgs[i].src) return imgs[i].currentSrc || imgs[i].src; }
       return '';
     }
-    function category() {
+    function catSection() {
       var s = document.querySelectorAll('.lok-sec-summary');
-      for (var i = 0; i < s.length; i++) { var t = txt(s[i]); if (/Serving/.test(t)) return t.split(' · ')[0]; }
-      return '';
+      for (var i = 0; i < s.length; i++) { if (/Serving/.test(txt(s[i]))) return s[i].closest('section'); }
+      return null;
+    }
+    function category() {
+      var sec = catSection(), sum = sec && sec.querySelector('.lok-sec-summary');
+      return sum ? txt(sum).split(' · ')[0] : '';
+    }
+    // Every profile section, in page order (the chip row only knew six of the eight).
+    function sections() {
+      var cs = catSection();
+      if (cs && !cs.id) cs.id = 'lok-sec-categories';
+      var chips = {};
+      document.querySelectorAll('#lok-profile-nav a').forEach(function (a) {
+        chips[(a.getAttribute('href') || '').replace(/^#/, '')] = /✓/.test(txt(a));
+      });
+      var out = [];
+      document.querySelectorAll('section.section-12[id]').forEach(function (s) {
+        if (!NAMES[s.id]) return;
+        var done = chips[s.id];
+        if (s.id === 'lok-sec-about') done = words((document.getElementById('textarea-description') || {}).value) >= 40;
+        if (s.id === 'lok-sec-categories') done = !!category();
+        out.push({ id: s.id, name: NAMES[s.id], done: !!done, el: s });
+      });
+      return out;
+    }
+    function unwrap(r) { return r && typeof r === 'object' && 'data' in r ? r.data : r; }
+    function asArray(x) { return Array.isArray(x) ? x : (x && Array.isArray(x.items) ? x.items : (x && Array.isArray(x.data) ? x.data : [])); }
+    // Same reads and the same builder as the Analytics checkup (lokali-insights.js load()).
+    function loadCheckup() {
+      var API = window.LokaliAPI, S = window.LokaliSupabaseAPI;
+      if (!API || typeof window.LokaliCheckup !== 'function' || !API.vendors || !API.vendors.me) return;
+      Promise.all([
+        API.services && API.services.getMine ? API.services.getMine() : null,
+        API.products && API.products.getMine ? API.products.getMine() : null,
+        API.vendors.me(),
+        API.plans && API.plans.getMyBilling ? API.plans.getMyBilling().catch(function () { return null; }) : null
+      ]).then(function (r) {
+        var v = unwrap(r[2]); if (v && v.vendor && typeof v.vendor === 'object') v = v.vendor;
+        if (!v || v.id == null) return;
+        return Promise.all([
+          S && S.photos && S.photos.list ? S.photos.list('vendor', v.id).catch(function () { return null; }) : null,
+          S && S.availability && S.availability.getConfig ? S.availability.getConfig(v.id).catch(function () { return null; }) : null
+        ]).then(function (x) {
+          ck = window.LokaliCheckup(v, asArray(unwrap(r[0])), asArray(unwrap(r[1])), asArray(unwrap(x[0])), unwrap(x[1]), unwrap(r[3])) || null;
+          later();
+        });
+      }).catch(function () {});
     }
     function render() {
       raf = 0;
       if (!col) return;
-      var m = txt(document.getElementById('lok-complete-ring')).match(/(\d+)\s*\/\s*(\d+)/);
-      var done = m ? +m[1] : 0, total = m ? +m[2] : 0, ok = total && done >= total;
-      var cnt = col.querySelector('.hc-count'), bar = col.querySelector('.hc-bar');
+      var cnt = col.querySelector('.hc-count'), bar = col.querySelector('.hc-bar'), todo = col.querySelector('.hc-todo');
+      var total = ck && ck.items ? ck.items.length : 0;
+      var open = ck && ck.items ? ck.items.filter(function (i) { return !i.done; }) : [];
+      var done = total - open.length, ok = total && !open.length;
       cnt.textContent = total ? done + ' of ' + total : '';
       cnt.classList.toggle('ok', !!ok); bar.classList.toggle('ok', !!ok);
       bar.firstChild.style.width = total ? Math.round(100 * done / total) + '%' : '0%';
-      var nav = document.querySelectorAll('#lok-profile-nav a');
+      todo.innerHTML = '';
+      if (total) {
+        if (!open.length) {
+          var p = document.createElement('p'); p.className = 'hc-done';
+          p.textContent = 'Everything shoppers look for is in place.';
+          todo.appendChild(p);
+        }
+        open.slice(0, 3).forEach(function (it) {
+          var a = document.createElement('a');
+          a.className = 'hc-open'; a.href = it.href || '#';
+          a.textContent = it.title || '';
+          todo.appendChild(a);
+        });
+      }
       var box = col.querySelector('.hc-links');
       box.innerHTML = '';
       links = [];
-      for (var i = 0; i < nav.length; i++) {
-        (function (src) {
-          var t = txt(src), isDone = /✓/.test(t);
-          var a = document.createElement('a');
-          a.href = src.getAttribute('href') || '#';
-          var label = document.createElement('span'); label.textContent = t.replace(/\s*✓\s*$/, '');
-          var mark = document.createElement('span'); mark.className = isDone ? 'ck' : 'todo';
-          if (isDone) { mark.textContent = '✓'; mark.setAttribute('aria-label', 'done'); }
-          a.appendChild(label); a.appendChild(mark);
-          a.addEventListener('click', function (e) { e.preventDefault(); src.click(); });
-          box.appendChild(a); links.push(a);
-        })(nav[i]);
-      }
+      sections().forEach(function (s) {
+        var a = document.createElement('a');
+        a.href = '#' + s.id;
+        var label = document.createElement('span'); label.textContent = s.name;
+        var mark = document.createElement('span'); mark.className = s.done ? 'ck' : 'todo';
+        if (s.done) { mark.textContent = '✓'; mark.setAttribute('aria-label', 'done'); }
+        a.appendChild(label); a.appendChild(mark);
+        a.addEventListener('click', function (e) {
+          e.preventDefault();
+          var chip = document.querySelector('#lok-profile-nav a[href="#' + s.id + '"]');
+          if (chip) chip.click(); else s.el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+        a._sec = s.el;
+        box.appendChild(a); links.push(a);
+      });
       var img = cardImg();
       col.querySelector('.hc-img').style.backgroundImage = img ? 'url("' + img.replace(/"/g, '%22') + '")' : '';
       var name = document.getElementById('business-name'), tag = document.getElementById('input-tagline');
@@ -205,18 +296,21 @@
       spy();
     }
     function later() { if (!raf) raf = requestAnimationFrame(render); }
+    // "You are here": the last section whose top has passed the upper third of the screen;
+    // at the very bottom, the last section that is on screen; before any, the first one.
     function spy() {
-      var on = -1;
+      if (!links.length) return;
+      var line = window.innerHeight * 0.33, on = 0;
+      var atEnd = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4;
       for (var i = 0; i < links.length; i++) {
-        var id = (links[i].getAttribute('href') || '').replace(/^#/, '');
-        var sec = id && document.getElementById(id);
-        if (sec && sec.getBoundingClientRect().top < 160) on = i;
+        var top = links[i]._sec.getBoundingClientRect().top;
+        if (top < line || (atEnd && top < window.innerHeight - 80)) on = i;
       }
       for (var j = 0; j < links.length; j++) links[j].classList.toggle('on', j === on);
     }
     function build() {
       var host = document.querySelector('.div-block-39');
-      if (!host || !document.getElementById('lok-profile-nav') || !document.getElementById('lok-complete-ring')) return false;
+      if (!host || !document.getElementById('lok-profile-nav') || !document.querySelector('section.section-12[id]')) return false;
       if (document.getElementById('lok-help-col')) return true;
       var view = null, as = document.querySelectorAll('a');
       for (var i = 0; i < as.length; i++) { if (/View my storefront/.test(as[i].textContent)) { view = as[i].href; break; } }
@@ -224,8 +318,9 @@
       col.id = 'lok-help-col';
       col.setAttribute('aria-label', 'Your storefront page');
       col.innerHTML =
-        '<div class="hc-card"><div class="hc-top"><span>Your storefront page</span><span class="hc-count"></span></div>' +
-        '<div class="hc-bar"><i></i></div><nav class="hc-links" aria-label="Profile sections"></nav></div>' +
+        '<div class="hc-card"><div class="hc-top"><span>Storefront checkup</span><span class="hc-count"></span></div>' +
+        '<div class="hc-bar"><i></i></div><div class="hc-todo"></div>' +
+        '<span class="hc-lbl hc-sec">ON THIS PAGE</span><nav class="hc-links" aria-label="Profile sections"></nav></div>' +
         '<div class="hc-prev"><span class="hc-lbl">WHAT SHOPPERS SEE IN THE MARKET</span>' +
         '<div class="hc-mc"><div class="hc-img" role="img" aria-label="Your Market card photo"></div><div class="hc-txt"><span class="hc-name"></span><span class="hc-tag"></span><span class="hc-cat"></span></div></div>' +
         '<p class="hc-note">Changes as you type.</p>' +
@@ -235,10 +330,14 @@
       document.documentElement.classList.remove('lok-dash-form');
       document.documentElement.classList.add('lok-dash-profile');
       render();
+      loadCheckup();
       document.addEventListener('input', function (e) {
         var id = e.target && e.target.id;
-        if (id === 'business-name' || id === 'input-tagline') later();
+        if (id === 'business-name' || id === 'input-tagline' || id === 'textarea-description') later();
       }, true);
+      // Saves happen as you go; refresh the checkup a moment after a change settles.
+      var reload = 0;
+      document.addEventListener('change', function () { clearTimeout(reload); reload = setTimeout(loadCheckup, 2500); }, true);
       var mo = new MutationObserver(later);
       ['lok-complete-strip', 'lok-profile-nav', 'lok-card-photo'].forEach(function (id) {
         var el = document.getElementById(id);
@@ -249,6 +348,26 @@
     }
     if (build()) return;
     var tries = 0, t = setInterval(function () { if (build() || ++tries > 60) clearInterval(t); }, 250);
+  })();
+
+  // Settings: the Classic / Gallery chooser now lives only on Products (experts 2026-11-24: it was
+  // offered in three places). Where the Settings card would be, one plain line points there.
+  (function settingsLookPointer() {
+    if (!/^\/vendor-dashboard\/settings\/?$/.test(String(location.pathname || ''))) return;
+    var tries = 0, t = setInterval(function () {
+      var card = document.getElementById('lok-look-card');
+      if (card && !document.querySelector('.lok-look-pointer')) {
+        var p = document.createElement('p');
+        p.className = 'lok-look-pointer';
+        p.appendChild(document.createTextNode('How your storefront looks (Classic or Gallery) is chosen on your '));
+        var a = document.createElement('a');
+        a.href = '/vendor-dashboard/products#gallery'; a.textContent = 'Products page';
+        a.style.cssText = 'color:#6002EE;font-weight:600;';
+        p.appendChild(a); p.appendChild(document.createTextNode('.'));
+        card.insertAdjacentElement('afterend', p);
+      }
+      if (card || ++tries > 40) clearInterval(t);
+    }, 250);
   })();
 
   // "Add another" tile at the end of the Services / Products card grid. Shown
@@ -846,7 +965,7 @@
           '<div class="lok-btns"><button type="button" class="lok-btn primary" data-lui-add>Add a ' + noun + '</button>' +
           (isP && o.onImport ? '<button type="button" class="lok-btn" data-lui-import>Import from Etsy or Shopify</button>' : '') + '</div>' +
         '</div><div class="lok-ghosts">' +
-          '<div class="lok-gc"><div class="lok-gc-cover" style="background-image:linear-gradient(135deg,#d9c7f5,#fde6f2)"><div class="lok-gc-corner"><span class="lok-gc-chip" style="background:#F1ECFE;color:#6002EE">Example</span></div></div><div class="lok-gc-body"><div class="service-name">Your first ' + noun + '</div><div class="lok-gc-line"><span style="font-weight:700">' + (isP ? '$24' : 'from $60') + '</span></div><div class="lok-gc-meta"><span class="lok-tagc way">' + (isP ? 'Pickup' : 'About a week') + '</span></div></div></div>' +
+          '<div class="lok-gc"><div class="lok-gc-cover" style="background-image:linear-gradient(135deg,#CFE0F7,#E6EFFB)"><div class="lok-gc-corner"><span class="lok-gc-chip" style="background:#F1ECFE;color:#6002EE">Example</span></div></div><div class="lok-gc-body"><div class="service-name">Your first ' + noun + '</div><div class="lok-gc-line"><span style="font-weight:700">' + (isP ? '$24' : 'from $60') + '</span></div><div class="lok-gc-meta"><span class="lok-tagc way">' + (isP ? 'Pickup' : 'About a week') + '</span></div></div></div>' +
           '<div class="lok-gc"><div class="lok-gc-cover ph">' + LUI_ICO.photo + '</div><div class="lok-gc-body"><div class="service-name" style="color:#8E8BA6">The next one</div><div class="lok-gc-line"><span class="lok-gc-noprice">Price</span></div></div></div>' +
         '</div></div>';
       host.style.background = 'transparent'; host.style.border = 'none'; host.style.padding = '0';

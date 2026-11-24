@@ -520,8 +520,10 @@
       tile('Leads · last 7 days', 'stat-profile-complete', l7, '',
         unread ? '<span class="lok-delta new">' + unread + ' unread</span>' : deltaChip(l7, lPrev), 'Messages and taps to call or email') +
       tile('Payment taps · last 7 days', 'stat-active-products', p7, '', deltaChip(p7, pPrev), 'Venmo, Cash App, PayPal, Buy') +
-      tile('Shared link · all time', null, landings, '',
-        '<span class="lok-delta ' + (sharers ? 'up' : 'flat') + '">' + (sharers ? sharers + (sharers === 1 ? ' neighbor shared it' : ' neighbors shared it') : 'not shared yet') + '</span>',
+      // 2026-11-24 (experts): '0' beside '1 neighbor shared it' read as a contradiction. The number is
+      // OPENS from shared links; the chip says who shared. Name both plainly.
+      tile('Opens from shared links', null, landings, '',
+        '<span class="lok-delta ' + (sharers ? 'up' : 'flat') + '">' + (sharers ? 'Shared by ' + sharers + (sharers === 1 ? ' neighbor' : ' neighbors') : 'not shared yet') + '</span>',
         'People who opened a link someone shared');
     return false;
   }
