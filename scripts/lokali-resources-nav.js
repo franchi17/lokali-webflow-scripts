@@ -125,8 +125,10 @@
       // Only the decorated link (About) carries a caret; a plain current link
       // (The Market) gets the full-width rule (F 2026-10-24: the line ran under
       // half the word).
-      '.header-bottom-wrapper .header-nav-link.lok-res-link.lok-nav-cur::after{right:17px;}' + // stop short of the caret on About
-      '.header-bottom-wrapper .lok-res-trig.lok-nav-cur::after{right:13px;}' +
+      // F 2026-11-25 (option B, design team unanimous): the rule now runs under the caret
+      // too; it used to stop short of it and read as cut off. Caret turns violet with it.
+      '.header-bottom-wrapper .lok-nav-cur .lok-res-car{color:' + BRAND + ';}' +
+      '.header-bottom-wrapper .header-nav-link:focus-visible,.header-bottom-wrapper .lok-res-trig:focus-visible{outline:2px solid ' + BRAND + ';outline-offset:4px;border-radius:4px;}' +
       // mobile accordion variant (inside the hamburger menu)
       '.lok-res-li.mob .lok-res-trig{display:flex;justify-content:space-between;width:100%;}' +
       '.lok-res-li.mob .lok-res-panel{position:static;opacity:1;visibility:visible;transform:none;box-shadow:none;border:none;' +
@@ -187,7 +189,7 @@
       });
     }
     // Current page underline: About for /about, and for the panel's pages.
-    if (!isMobile && cfg.links.some(function (l) { return !l.sep && pathOf(l.href) === HERE; })) a.classList.add('lok-nav-cur');
+    if (!isMobile && cfg.links.some(function (l) { return !l.sep && pathOf(l.href) === HERE; })) { a.classList.add('lok-nav-cur'); a.setAttribute('aria-current', 'true'); }
   }
 
   function inject(ul, cfg) {
@@ -214,7 +216,7 @@
     trig.setAttribute('aria-haspopup', 'true');
     trig.setAttribute('aria-expanded', 'false');
     trig.innerHTML = cfg.label + '<i class="lok-res-car" aria-hidden="true"></i>';
-    if (!isMobile && cfg.links.some(function (l) { return !l.sep && pathOf(l.href) === HERE; })) trig.classList.add('lok-nav-cur');
+    if (!isMobile && cfg.links.some(function (l) { return !l.sep && pathOf(l.href) === HERE; })) { trig.classList.add('lok-nav-cur'); trig.setAttribute('aria-current', 'true'); }
 
     var panel = buildPanel(cfg.links);
     li.appendChild(trig);
@@ -248,7 +250,7 @@
     if (ul.closest('.w-nav-menu, .show-in-tablet')) return;
     var links = ul.querySelectorAll('a.header-nav-link');
     for (var i = 0; i < links.length; i++) {
-      if (pathOf(links[i].getAttribute('href') || '') === HERE) links[i].classList.add('lok-nav-cur');
+      if (pathOf(links[i].getAttribute('href') || '') === HERE) { links[i].classList.add('lok-nav-cur'); links[i].setAttribute('aria-current', 'page'); }
     }
   }
 
