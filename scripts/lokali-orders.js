@@ -25,6 +25,8 @@
   function $(id) { return document.getElementById(id); }
   function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
   function esc(v) { return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  // SEC-146 (2026-11-25): only plain https links (label + tracking come from Shippo via the server).
+  function httpsUrl(v) { var s = String(v == null ? '' : v).trim(); return /^https:\/\//i.test(s) ? s : ''; }
   function money(c) { var d = (Number(c) || 0) / 100; return '$' + d.toLocaleString('en-US', { minimumFractionDigits: (d % 1) ? 2 : 0, maximumFractionDigits: 2 }); }
   function when(iso) { if (!iso) return ''; var d = new Date(iso); if (isNaN(d)) return ''; return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ', ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }); }
   function ago(iso) { var ms = Date.now() - new Date(iso).getTime(); var h = Math.floor(ms / 36e5); if (h < 1) return 'just now'; if (h < 24) return h + 'h ago'; var d = Math.floor(h / 24); return d + (d === 1 ? ' day ago' : ' days ago'); }
@@ -170,10 +172,11 @@
     var l = o.label;
     if (!l || o.fulfilment !== 'shipping') return '';
     var box = 'margin:10px 0 0;padding:10px 12px;border-radius:12px;background:#F3EBFF;font-size:13px;line-height:1.5;color:#45415A;';
-    if (l.status === 'bought' && l.label_url) {
+    var labelUrl = httpsUrl(l.label_url), trackUrl = httpsUrl(l.tracking_url);
+    if (l.status === 'bought' && labelUrl) {
       return '<div style="' + box + '"><b>Shipping label paid</b>' + (l.service ? ' · ' + esc(l.service) : '') +
-        (l.tracking_number ? '<br>Tracking: ' + (l.tracking_url ? '<a href="' + esc(l.tracking_url) + '" target="_blank" rel="noopener" style="color:' + VIOLET + ';">' + esc(l.tracking_number) + '</a>' : esc(l.tracking_number)) : '') +
-        '<div style="margin-top:8px;"><a class="op-btn primary" href="' + esc(l.label_url) + '" target="_blank" rel="noopener">Print label</a></div></div>';
+        (l.tracking_number ? '<br>Tracking: ' + (trackUrl ? '<a href="' + esc(trackUrl) + '" target="_blank" rel="noopener" style="color:' + VIOLET + ';">' + esc(l.tracking_number) + '</a>' : esc(l.tracking_number)) : '') +
+        '<div style="margin-top:8px;"><a class="op-btn primary" href="' + esc(labelUrl) + '" target="_blank" rel="noopener">Print label</a></div></div>';
     }
     if (l.status === 'failed') return '<div style="' + box + 'background:' + PINK_L + ';">The shipping label could not be made yet. Lokali has been told. <button type="button" class="op-btn" id="op-lretry-' + o.id + '" style="margin-left:6px;">Try again</button></div>';
     if (l.status === 'void_requested' || l.status === 'voided') return '<div style="' + box + '">The unused label was canceled and its postage refunded.</div>';

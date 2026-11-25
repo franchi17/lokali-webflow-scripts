@@ -57,7 +57,7 @@
   }
   function renderTicket(mount, o) {
     var ev = o.event, host = (o.vendor && o.vendor.name) || 'the host';
-    var vendorHref = o.vendor && o.vendor.slug ? '/' + o.vendor.slug : '/this-week';
+    var vendorHref = o.vendor && o.vendor.slug ? '/' + encodeURIComponent(o.vendor.slug) : '/this-week'; // SEC-146
     var guest = ev.guest_name || o.shopper_first_name || '';
     var first = String(guest).split(' ')[0];
     var follow = (o.vendor && o.vendor.id != null) ? '<div class="oc-follow" id="oc-follow"></div>' : '';
@@ -75,7 +75,7 @@
 
   function render(mount, o) {
     if (o.event && o.event.starts_at) { renderTicket(mount, o); return; }
-    var vendorHref = o.vendor && o.vendor.slug ? '/' + o.vendor.slug : '/the-market';
+    var vendorHref = o.vendor && o.vendor.slug ? '/' + encodeURIComponent(o.vendor.slug) : '/the-market'; // SEC-146
     var how = o.fulfilment === 'pickup' ? 'will be in touch about when and where to pick it up'
       : o.fulfilment === 'delivery' ? 'will be in touch to arrange local delivery' : 'will ship it to the address you gave';
     // "Ready within N days" when the vendor promised it (F 2026-11-19).

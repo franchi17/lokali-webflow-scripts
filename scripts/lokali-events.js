@@ -330,21 +330,25 @@
         '<p style="font-size:13px;color:#45415A;">If anyone cancels, we email everyone on the list at the same time. First to ' + (u === 'spot' ? 'reserve' : 'buy') + ' gets them.</p>' +
         '<div class="lke-row">' + (signedIn ? '' : '<input class="lke-in" type="email" autocomplete="email" placeholder="you@example.com" aria-label="Your email" style="flex:1 1 200px;">') +
         '<select class="lke-in" aria-label="How many">' + opts + '</select></div>' +
+        '<div data-robot style="margin-top:10px;"></div>' +
         '<div style="margin-top:10px;"><button type="button" class="lke-btn2">Email me if ' + u + 's open up</button></div><div data-msg></div></div>';
       var btn = box.querySelector('button'), msg = box.querySelector('[data-msg]');
       var mail = box.querySelector('input'), qty = box.querySelector('select');
+      // SEC-143 (2026-11-25): the same robot check as Reserve, so a script
+      // cannot put strangers' addresses on the list.
+      var robot = robotBox(box.querySelector('[data-robot]'));
       btn.addEventListener('click', function () {
         msg.innerHTML = '';
         var email = mail ? mail.value.trim() : '';
         if (mail && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { msg.innerHTML = '<p class="lke-err">Add your email so we can tell you.</p>'; mail.focus(); return; }
         btn.disabled = true; btn.textContent = 'Adding you';
-        post('/checkout/event-waitlist', { action: 'join', events_id: ev.id, email: email, quantity: Number(qty.value) || 1 }, true).then(function (r) {
+        post('/checkout/event-waitlist', { action: 'join', events_id: ev.id, email: email, quantity: Number(qty.value) || 1, cf_token: robot.token() }, true).then(function (r) {
           if (r.ok) {
             box.innerHTML = '<div class="lke-wait"><p class="lke-ok" style="margin:0;">You\'re on the waitlist. We\'ll email you if ' + u + 's open up.</p></div>';
           } else {
-            btn.disabled = false; btn.textContent = 'Email me if ' + u + 's open up';
+            btn.disabled = false; btn.textContent = 'Email me if ' + u + 's open up'; robot.reset();
             var e = r.data && r.data.error;
-            msg.innerHTML = '<p class="lke-err">' + (e === 'waitlist_closed' ? 'The waitlist for this event is closed.' : e === 'bad_email' ? 'That email doesn\'t look right. Try again?' : e === 'rate_limited' ? 'Too many tries. Give it a few minutes.' : 'That didn\'t go through. Try again in a moment.') + '</p>';
+            msg.innerHTML = '<p class="lke-err">' + (e === 'robot_check' ? 'Tick the box above to show you\'re a person, then try again.' : e === 'waitlist_closed' ? 'The waitlist for this event is closed.' : e === 'bad_email' ? 'That email doesn\'t look right. Try again?' : e === 'rate_limited' ? 'Too many tries. Give it a few minutes.' : 'That didn\'t go through. Try again in a moment.') + '</p>';
           }
         });
       });
