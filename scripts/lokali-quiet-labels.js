@@ -11,10 +11,14 @@
   var p = String(location.pathname || '').replace(/\/+$/, '') || '/';
   var css = '';
   if (p === '/pricing') {
-    css = '.title-header,.c-eyebrow{display:none!important;}';
+    css = '.title-header,.c-eyebrow{display:none!important;}' +
+      // F 2026-11-25 'needs spacing': the pilot note sat flush under the headline
+      'section#plans p.lk-beta-note{margin-top:28px!important;}';
   } else if (p === '/for-customers') {
     css = '.lkfc .eye,.lk-ai-eye{display:none!important;}' +
-      '.lkfc figcaption,.lkfc figcaption a{text-transform:none!important;letter-spacing:normal!important;}';
+      '.lkfc figcaption,.lkfc figcaption a{text-transform:none!important;letter-spacing:normal!important;}' +
+      // F 2026-11-25: 'Also on Lokali' list sat flush under its heading (.lkfc ul{margin:0} beat .lkfc-list)
+      '.lkfc .lkfc-list{margin-top:24px!important;}';
   } else if (p === '/this-week' || p === '/this-weekend') {
     // lokali-weekend.js is pinned in the site footer loader; v1.4.703+ drops it at the source too.
     css = '.lkw-eyebrow{display:none!important;}';
