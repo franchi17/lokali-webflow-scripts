@@ -360,6 +360,7 @@
   // offered in three places). Where the Settings card would be, one plain line points there.
   (function settingsLookPointer() {
     if (!/^\/vendor-dashboard\/settings\/?$/.test(String(location.pathname || ''))) return;
+    return; // retired 2026-11-25: no look to choose; the Settings card stays hidden by CSS
     var tries = 0, t = setInterval(function () {
       var card = document.getElementById('lok-look-card');
       if (card && !document.querySelector('.lok-look-pointer')) {
@@ -522,7 +523,8 @@
     var desc = String(v.business_description || '').trim();
     var paidWays = !!(v.venmo_username || v.cashapp_cashtag || v.paypalme_slug || v.zelle_contact || v.other_pay_url);
     var gallery = photos.filter(function (p) { return p && p.is_active !== false && (p.image_url || p.video_url); }).length;
-    var paidPlan = (Number(f.max_vendor_photos) || 0) > 0 || !!f.trust_badge;
+    // Free gets 1 portfolio photo since 2026-11-24, so photos no longer mean "paid".
+    var paidPlan = !!f.availability_enabled || !!f.analytics_enabled || !!f.trust_badge;
     var SVC = '/vendor-dashboard/services', PRD = '/vendor-dashboard/products';
     function n(c, w) { return c + ' ' + w + (c === 1 ? '' : 's'); }
     var items = [];
@@ -1759,7 +1761,7 @@
     b.style.cssText = 'display:block;font-size:14.5px;color:#1A1829;';
     b.textContent = 'Your plan includes the Gallery look';
     txt.appendChild(b);
-    txt.appendChild(document.createTextNode('A big cover photo and a wall of your work. See your own page that way first, then choose.'));
+    txt.appendChild(document.createTextNode('A cover photo and a wall of your work. See your own page that way first, then choose.'));
     var go = document.createElement('a');
     go.href = '/vendor-dashboard/products#gallery';
     go.textContent = 'Set it up';
@@ -1795,7 +1797,8 @@
       });
     }).then(function (r) {
       var d = r && !r.error ? r.data : null;
-      if (d && Number(d.plan_rank) === 2 && d.storefront_look === 'classic') show(d);
+      // Retired 2026-11-25: every storefront uses the one look, nothing to choose.
+      if (false && d) show(d);
     }).catch(function () {});
   }
 

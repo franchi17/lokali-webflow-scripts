@@ -2738,8 +2738,8 @@
     img.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') go(e); });
   }
 
-  // ---- portfolio gallery (Pro/Featured only) -----------------------------
-  // Ceiling = the TOP tier's entitlement (plan.max_vendor_photos: Free 0 / Pro
+  // ---- portfolio gallery (every plan since 2026-11-24: Free shows 1) --------
+  // Ceiling = the TOP tier's entitlement (plan.max_vendor_photos: Free 1 / Pro
   // 5 / Featured 15). The real per-plan cap is enforced at write time by the
   // trigger in fn_limits.sql, so this is only a runaway guard — it must never
   // sit below the top tier or paid vendors silently lose photos they uploaded.
@@ -2842,7 +2842,10 @@
   function loadPortfolio(vendorId, vendor) {
     var section = document.getElementById('vl-portfolio');
     if (!section || !vendorId || !window.LokaliAPI) return;
-    if (planEligible(vendor) === false) return; // explicitly ineligible plan
+    // Free shows ONE photo (F 2026-11-24). The public read rule already returns
+    // only a Free storefront's first photo; the owner reads all their rows, so
+    // cap here as well (a downgrade keeps the extra rows, hidden).
+    var pfCap = planEligible(vendor) === false ? 1 : PORTFOLIO_MAX;
     window.LokaliAPI.request('vendors', 'GET',
       'vendor/id/' + encodeURIComponent(vendorId) + '/portfolio/photos/list', null, false
     ).then(function (res) {
@@ -2853,8 +2856,8 @@
           return !!imgUrl(p.image_url || p.image) || !!vlParseVideo(p.video_url);
         })
         .sort(function (a, b) { return (a.sort_order || 0) - (b.sort_order || 0); })
-        .slice(0, PORTFOLIO_MAX);
-      if (!photos.length) return; // nothing to show (free vendors are capped at 0)
+        .slice(0, pfCap);
+      if (!photos.length) return; // nothing to show
       var strip = document.getElementById('vl-portfolio-strip');
       var pips = document.getElementById('vl-portfolio-pips');
       if (!strip) return;

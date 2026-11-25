@@ -10,10 +10,11 @@
  * so their behaviour, lead tracking and inquiry modal stay exactly as they are.
  * Contact buttons proxy-click the real hidden controls for the same reason.
  *
- * Who sees it (F 2026-11-21, patch_gallery_page_setup.sql):
- *   - a storefront whose owner chose Gallery (vendors.storefront_look) AND is
- *     still on Featured (plan_rank 2). A downgrade shows Classic again; the
- *     choice is kept. Before the patch the read errors and nobody gets it;
+ * Who sees it (F 2026-11-25): EVERY storefront. There is no Classic/Gallery
+ * switch any more (vendors.storefront_look is no longer read). By plan:
+ *   - cover: Free 1 photo, Pro up to 5 rotating, Featured up to 15; no portfolio
+ *     photo = a plain lavender band with the name (no product-photo stand-in);
+ *   - collections / artists / art details: Featured only (unchanged);
  *   - any storefront with ?look=portfolio in the address (preview / testing).
  * ?look=classic always shows the normal storefront.
  * The hand-kept ON_FOR list is gone: owners switch on their Products page.
@@ -93,6 +94,13 @@
     '.lkp-cover .lkp-sl.on{opacity:1;}',
     '.lkp-scrim{position:absolute;inset:0;background:linear-gradient(rgba(30,28,40,0) 45%,rgba(30,28,40,.55));}',
     '.lkp-ctx{position:absolute;left:0;right:0;bottom:40px;}',
+    // no cover photo: a plain lavender band with the name (F 2026-11-24)
+    '.lkp-cover.lkp-plain{height:auto;min-height:0;padding:64px 0 48px;background:#F3EBFF;}',
+    '.lkp-plain .lkp-ctx{position:static;}',
+    '.lkp-plain h1{color:#1A1829 !important;}.lkp-plain .lkp-tag{color:#3B3850 !important;}.lkp-plain .lkp-meta{color:#5E5A73 !important;}',
+    '.lkp-plain .lkp-b{background:#6002EE !important;border-color:#6002EE !important;color:#fff !important;}',
+    '.lkp-plain .lkp-b.gh{background:#fff !important;color:#4A1FB8 !important;border-color:#CFC4F0 !important;}',
+    '.lkp-plain .lkp-rec{color:#4A1FB8;background:#fff;}',
     '.lkp-logo{width:56px;height:56px;border-radius:14px;background:#fff;overflow:hidden;margin-bottom:14px;display:flex;align-items:center;justify-content:center;font:700 18px ' + F + ';color:#4A1FB8;}',
     '.lkp-logo img{width:100%;height:100%;object-fit:cover;}',
     '.lkp-cover h1{font:700 clamp(34px,5vw,56px)/1.04 ' + F + ';color:#fff;margin:0;letter-spacing:-1px;}',
@@ -218,6 +226,8 @@
     '.lkp-ctx{position:static;padding:0 0 24px;}',
     '.lkp-logo{margin-top:-30px;position:relative;box-shadow:0 2px 10px rgba(38,24,82,.15);width:48px;height:48px;}',
     '.lkp-cover h1{color:#1A1829;font-size:32px;}',
+    '.lkp-cover.lkp-plain{padding:28px 0 0;background:#F3EBFF;}',
+    '.lkp-plain .lkp-logo{margin-top:0;}',
     '.lkp-tag{color:#3B3850;font-size:15.5px;}',
     '.lkp-meta{color:#6B6880;}',
     '.lkp-b{background:#6002EE;border-color:#6002EE;color:#fff;}',
@@ -266,7 +276,9 @@
   }, 20000).then(function (lv) {
     if (!lv) return;
     var vid = Number(lv.id);
-    (FORCED ? Promise.resolve(true) : chosen(vid)).then(function (on) {
+    // Gallery is THE storefront for every plan (F 2026-11-25: no Classic/Gallery
+    // switch). ?look=classic above still shows the old page for testing.
+    Promise.resolve(true).then(function (on) {
       if (!on) return;
       return start(vid);
     }).catch(function (e) {
@@ -277,13 +289,13 @@
     });
   });
 
-  // Did the owner choose Gallery, and is the storefront still Featured?
+  // Did the owner choose Gallery? (Every plan may, since 2026-11-24.)
   function chosen(vid) {
     return client().then(function (c) {
       return c.from('vendors').select('storefront_look,plan_rank').eq('id', vid).maybeSingle();
     }).then(function (res) {
       var v = unwrap(res);
-      return !!(v && v.storefront_look === 'gallery' && Number(v.plan_rank) === 2);
+      return !!(v && v.storefront_look === 'gallery');
     }, function () { return false; });
   }
 
@@ -300,7 +312,7 @@
         c.from('locations').select('id,location_name'),
         SB.subcategories && SB.subcategories.list ? Promise.resolve(SB.subcategories.list()).catch(function () { return null; }) : null,
         loadGroups(c, SB, vid),
-        waitFor(function () { return portfolioUrls().length ? portfolioUrls() : null; }, 5000)
+        coverPhotos(c, vid)
       ]);
     }).then(function (r) {
       var v = unwrap(r[0]);
@@ -346,6 +358,25 @@
   }
 
   // Photos the normal page already loaded (plan caps already applied there).
+  // Cover photos straight from vendor_photos (the public read rule already
+  // limits a Free storefront to its first photo). Falls back to reading the
+  // normal page's portfolio strip if the read fails. Each item: {u, x, y}.
+  function coverPhotos(c, vid) {
+    return Promise.resolve(c.from('vendor_photos').select('id,image_url,sort_order,image_focus_x,image_focus_y')
+      .eq('vendors_id', vid).eq('is_active', true)
+      .order('sort_order', { ascending: true }).order('id', { ascending: true }))
+      .then(function (res) {
+        if (!res || res.error) throw new Error('photos');
+        return (res.data || []).map(function (r) {
+          var u = safeUrl(r.image_url);
+          return u ? { u: u, x: r.image_focus_x, y: r.image_focus_y } : null;
+        }).filter(Boolean);
+      })
+      .catch(function () {
+        return waitFor(function () { return portfolioUrls().length ? portfolioUrls() : null; }, 3000)
+          .then(function (l) { return (l || []).map(function (u) { return { u: u }; }); });
+      });
+  }
   function portfolioUrls() {
     var seen = {}, out = [];
     $all('#vl-portfolio-strip img').forEach(function (im) {
@@ -411,17 +442,18 @@
 
     // ===== cover =====
     var cover = ce('section', 'lkp-cover');
-    var slides = photos.slice(0, 15);
-    if (!slides.length) {
-      var img0 = products.map(function (p) { return safeUrl(p.image_url); }).filter(Boolean)[0];
-      if (img0) slides = [img0];
-    }
-    slides.forEach(function (u, i) {
+    // Cover photos by plan: Free 1, Pro 5, Featured 15 (the owner viewing their
+    // own page can read every row, so cap here too).
+    var rank = Number(v.plan_rank) || 0;
+    var slides = photos.slice(0, rank >= 2 ? 15 : rank === 1 ? 5 : 1);
+    slides.forEach(function (ph, i) {
       var im = ce('img', 'lkp-sl' + (i === 0 ? ' on' : ''));
-      im.alt = i === 0 ? name + ' work' : ''; if (i > 1) im.loading = 'lazy'; setImg(im, u, 1600);
+      im.alt = i === 0 ? name + ' work' : ''; if (i > 1) im.loading = 'lazy'; setImg(im, ph.u, 1600);
+      if (ph.x != null && ph.y != null) im.style.objectPosition = ph.x + '% ' + ph.y + '%';
       cover.appendChild(im);
     });
-    cover.appendChild(ce('div', 'lkp-scrim'));
+    if (slides.length) cover.appendChild(ce('div', 'lkp-scrim'));
+    else cover.classList.add('lkp-plain');
     var fav = ce('button', 'lkp-fav'); fav.type = 'button';
     fav.setAttribute('aria-label', 'Follow ' + name); fav.title = 'Follow ' + name;
     fav.appendChild(svg(IC.heart, 22));
@@ -450,8 +482,10 @@
     var quoteMostly = products.length && products.filter(function (p) { return p.is_quote_based || p.price == null || p.price === ''; }).length > products.length / 2;
     var ctaWord = quoteMostly ? 'Ask for a quote' : 'Send a message';
     var btns = ce('div', 'lkp-btns');
-    var bWork = ce('button', 'lkp-b', gallery ? 'See the art' : 'See the work'); bWork.type = 'button';
-    bWork.addEventListener('click', function () { scrollToId('lkp-work'); });
+    // Services-only storefronts (most of them) jump to their services instead.
+    var noWork = !products.length;
+    var bWork = ce('button', 'lkp-b', noWork ? 'See services' : (gallery ? 'See the art' : 'See the work')); bWork.type = 'button';
+    bWork.addEventListener('click', function () { scrollToId(noWork && document.getElementById('lkp-book') ? 'lkp-book' : 'lkp-work'); });
     var bMsg = ce('button', 'lkp-b gh', ctaWord); bMsg.type = 'button';
     bMsg.addEventListener('click', function () { proxyClick('lok-inq-btn'); });
     btns.appendChild(bWork);
@@ -529,9 +563,10 @@
     sh.appendChild(ce('h2', null, gallery ? 'The art' : 'The work'));
     var cnt = ce('span', 'lkp-cnt'); sh.appendChild(cnt);
     work.appendChild(sh);
-    work.appendChild(ce('p', 'lkp-lede', byCollections
+    var lede = ce('p', 'lkp-lede', byCollections
       ? (gallery ? 'Pick an artist to see only their work.' : 'Pick a collection to narrow things down.')
-      : (quoteMostly ? 'Everything is made to order. Pick what you need and ask for a quote.' : 'Pick a kind to narrow things down.')));
+      : (quoteMostly ? 'Everything is made to order. Pick what you need and ask for a quote.' : 'Pick a kind to narrow things down.'));
+    work.appendChild(lede);
     var fbar = ce('div', 'lkp-fbar');
     var fbtn = ce('button', 'lkp-fbtn'); fbtn.type = 'button'; fbtn.appendChild(svg(IC.filter, 18)); fbtn.appendChild(document.createTextNode('Filter and sort'));
     fbar.appendChild(fbtn);
@@ -561,6 +596,8 @@
       : Object.keys(counts).filter(function (g) { return counts[g] >= 2; })
           .sort(function (a, b) { return counts[b] - counts[a] || groupLabel(a).localeCompare(groupLabel(b)); });
     var hasFilters = groups.length >= 2;
+    // No filter row: don't tell shoppers to pick one (the made-to-order line stays).
+    if (!hasFilters && !(quoteMostly && !byCollections)) lede.style.display = 'none';
     var state = { group: '', sort: 'picks', shown: 0 };
     var PAGE_FIRST = 12, PAGE_MORE = 24;
     var hasPrices = products.some(function (p) { return !p.is_quote_based && p.price != null && p.price !== '' && isFinite(Number(p.price)); });
@@ -744,7 +781,7 @@
     var ah = ce('div', 'lkp-sh'); ah.appendChild(ce('h2', null, 'About ' + name)); about.appendChild(ah);
     var grid2 = ce('div', 'lkp-about'); about.appendChild(grid2);
     var left = ce('div'); grid2.appendChild(left);
-    var inside = photos.slice(1, 4);
+    var inside = slides.slice(1, 4).map(function (ph) { return ph.u; });
     if (inside.length === 3) {
       var ins = ce('div', 'lkp-inside');
       inside.forEach(function (u) { var d = ce('div'); var im = ce('img'); im.alt = ''; im.loading = 'lazy'; setImg(im, u, 800); d.appendChild(im); ins.appendChild(d); });
