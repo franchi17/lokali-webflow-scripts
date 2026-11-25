@@ -13,7 +13,9 @@
   if (p === '/pricing') {
     css = '.title-header,.c-eyebrow{display:none!important;}' +
       // F 2026-11-25 'needs spacing': the pilot note sat flush under the headline
-      'section#plans p.lk-beta-note{margin-top:28px!important;}';
+      'section#plans p.lk-beta-note{margin-top:28px!important;}' +
+      // F 2026-11-25: an open question's answer sat flush under the question (closed ones stay tight)
+      '.faq-list .faqs-item.faq-open .faqs-a{margin-top:10px!important;}';
   } else if (p === '/for-customers') {
     css = '.lkfc .eye,.lk-ai-eye{display:none!important;}' +
       '.lkfc figcaption,.lkfc figcaption a{text-transform:none!important;letter-spacing:normal!important;}' +
