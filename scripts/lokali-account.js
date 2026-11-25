@@ -788,6 +788,86 @@
         '#lokali-account .lk-input{width:100%;}' +
         '#lokali-account .lk-save-bar{bottom:8px;}' +
       '}',
+      // ── 2026-11-25 shopper account review (five experts, F 'Build all five') ──
+      // No dashed lines anywhere (F 11-25), no orange on screen, readable greys,
+      // headings in the brand heading grey, centered empty-state buttons.
+      R + '.lk-empty{border:1px solid #E7E1F3;background:#FBF9FF;}',
+      R + '.lkh-mini{border:1px solid #E7E1F3;background:#FBF9FF;}',
+      R + '.lkh-b span{border:1.5px solid #E5D4FD;}',
+      R + '.lkg-node-dot{border-style:solid;}',
+      R + '.lkg-node-dot.c-peach{background:' + VL + ';border-color:' + VM + ';color:' + V + ';}',
+      R + '.lkg-node.earned .lkg-node-dot.c-peach{background:' + V + ';border-color:' + V + ';color:#fff;box-shadow:0 3px 10px rgba(96,2,238,.26);}',
+      R + '.lkg-dot.c-peach{background:' + VL + ';color:' + V + ';}',
+      R + '.lkg-dot.c-peach.earned{background:' + V + ';color:#fff;}',
+      R + '.lkg-badge-pill.c-peach{background:' + VL + ';color:' + V + ';}',
+      R + '.lkh-n{background:' + VL + ';color:' + V + ';}',
+      R + '.lk-sf{border-style:solid;border-color:#E7E1F3;background:#fff;}',
+      R + '.lk-sf-icon{background:' + VL + ';color:' + V + ';}',
+      R + '.lk-sf-cta{background:' + VL + ';color:' + V + ';border:1px solid ' + VM + ';}',
+      R + '.lk-sf-cta:hover{background:' + VM + ';}',
+      R + '.lk-empty .lk-btn{display:inline-flex !important;}',
+      R + '.lk-greet,' + R + '.lkh-next h3,' + R + '.lkh-head h3,' + R + '.lk-empty-title,' + R + '.lkg-title,' + R + '.lk-row-name,' + R + '.lk-set-label{color:#45415A;}',
+      R + '.lk-group-label.lk-quiet{color:' + SLATE + ';}',
+      R + '.lk-row-name a{display:inline-block;padding:13px 0;margin:-13px 0;}',
+      R + '.lk-so-foot a{display:inline-block;padding:12px 2px;margin:-12px 0;}',
+      R + '.lk-toggle::before{inset:-7px -4px;}',
+      // Home: town line under the next step, Not yet, the owner strip on every tab
+      R + '.lkh-area{flex-basis:100%;display:flex;flex-wrap:wrap;align-items:center;gap:2px 6px;font-size:14px;color:' + DUSK + ';}',
+      R + '.lkh-chips[hidden]{display:none;}',
+      R + '.lkh-area button{all:unset;cursor:pointer;color:' + V + ';font-weight:700;min-height:44px;display:inline-flex;align-items:center;}',
+      R + '.lkh-area button:focus-visible{outline:2px solid ' + V + ';outline-offset:2px;border-radius:4px;}',
+      R + '.lkh-acts{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}',
+      R + '.lkh-notyet{all:unset;cursor:pointer;color:' + V + ';font-weight:700;font-size:14px;min-height:44px;padding:0 14px;display:inline-flex;align-items:center;justify-content:center;}',
+      R + '.lkh-notyet:focus-visible{outline:2px solid ' + V + ';outline-offset:2px;border-radius:8px;}',
+      R + '.lkh-main > .lk-sfr{margin-bottom:18px;}',
+      R + '.lkh-cols.one{grid-template-columns:minmax(0,1fr);}',
+      R + '.lk-so-title,' + R + '.lk-so-perk b,' + R + '.lkg-count-main,' + R + '.lkg-foot-text strong,' + R + '.lkg-sub b{color:#45415A;}',
+      R + '.lk-card > .lk-set-row:last-child{border-bottom:0;}',
+      R + '.lk-btn.danger{border-color:' + VM + ';}',
+      R + '.lk-sfr-cta{justify-content:center;}',
+      R + '.lk-sfr-title{color:#45415A;}',
+      '#lokali-account[data-active="home"] .lkh-main > .lk-sfr{display:none;}',
+      // Settings top on phones and tablets: a way back, a title, the gear lit
+      R + '.lkh-sethead{display:none;}',
+      // Badges as one-line rows
+      R + '.lkb{display:flex;flex-direction:column;gap:10px;max-width:760px;}',
+      R + '.lkb-row{background:#fff;border:1px solid ' + BORDER + ';border-radius:16px;}',
+      R + '.lkb-btn{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:12px;width:100%;min-height:64px;padding:12px 16px;border-radius:16px;font-family:' + F + ';}',
+      R + '.lkb-btn:focus-visible{outline:2px solid ' + V + ';outline-offset:-2px;}',
+      R + '.lkb-ic{width:44px;height:44px;border-radius:50%;background:' + VL + ';color:' + V + ';display:flex;align-items:center;justify-content:center;flex:none;}',
+      R + '.lkb-row.on .lkb-ic{background:' + V + ';color:#fff;}',
+      R + '.lkb-tx{flex:1;min-width:0;}',
+      R + '.lkb-tx b{display:block;font-size:16px;font-weight:700;color:#45415A;}',
+      R + '.lkb-tx span{display:block;font-size:13.5px;color:' + SLATE + ';}',
+      R + '.lkb-row.on .lkb-tx span{color:#17634A;font-weight:600;}',
+      R + '.lkb-chev{color:' + SLATE + ';flex:none;transition:transform .15s;}',
+      R + '.lkb-row.open .lkb-chev{transform:rotate(180deg);}',
+      R + '.lkb-detail{display:none;padding:0 16px 16px;border-top:1px solid #EEEDF6;}',
+      R + '.lkb-row.open .lkb-detail{display:block;}',
+      R + '.lkb-detail .lkg-card{border:0;padding:0;margin:0;box-shadow:none;background:transparent;}',
+      R + '.lkb-detail .lkg-head,' + R + '.lkb-detail .lkg-banner,' + R + '.lkb-detail .lkg-grid{display:none;}',
+      R + '.lkb-detail .lkg-sub{margin-top:12px;}',
+      R + '.lkb-go{all:unset;cursor:pointer;color:' + V + ';font-weight:700;font-size:14px;min-height:44px;display:inline-flex;align-items:center;}',
+      // Empty Reviews: the two honest ways in
+      R + '.lkr-ways{background:#EEE6FF;border:1px solid #D4BFF9;border-radius:16px;padding:20px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;max-width:860px;}',
+      R + '.lkr-ways > div{display:flex;flex-direction:column;gap:6px;align-items:flex-start;min-width:0;}',
+      R + '.lkr-ways > div + div{border-left:1px solid #D4BFF9;padding-left:24px;}',
+      R + '.lkr-ways h3{margin:0;font-size:18px;font-weight:700;color:#45415A;letter-spacing:-.3px;}',
+      R + '.lkr-ways p{margin:0;font-size:14px;line-height:1.5;color:' + DUSK + ';}',
+      R + '.lkr-ways .lk-btn{margin-top:8px;}',
+      '@media (max-width:991px){' +
+        '#lokali-account .lkh-sethead{display:flex;align-items:center;gap:12px;margin:0 0 16px;}' +
+        '#lokali-account .lkh-sethead .tx{flex:1;min-width:0;}' +
+        '#lokali-account .lkh-sethead .back{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:4px;min-height:44px;color:#6002EE;font-weight:700;font-size:14px;}' +
+        '#lokali-account .lkh-sethead h2{margin:0;font-size:24px;font-weight:800;color:#45415A;}' +
+        '#lokali-account .lkh-sethead .gear-on{width:44px;height:44px;border-radius:10px;background:#6002EE;color:#fff;display:flex;align-items:center;justify-content:center;flex:none;}' +
+      '}',
+      '@media (max-width:640px){' +
+        '#lokali-account .lkr-ways{grid-template-columns:minmax(0,1fr);gap:16px;}' +
+        '#lokali-account .lkr-ways > div + div{border-left:0;padding-left:0;border-top:1px solid #D4BFF9;padding-top:16px;}' +
+        '#lokali-account .lkr-ways .lk-btn{width:100%;}' +
+        '#lokali-account .lkh-acts{flex-direction:column-reverse;align-items:stretch;width:100%;gap:2px;}' +
+      '}',
       '@media (max-width:360px){#lokali-account .lkh-tab{padding:4px 0;}#lokali-account .lkh-bdg{gap:2px;}#lokali-account .lkh-grid .lk-thumb{width:52px;height:52px;}}'
     ].join('');
     document.head.appendChild(s);
@@ -844,6 +924,15 @@
     var meP = (A.vendors && A.vendors.me)
       ? A.vendors.me().catch(function () { return { data: null }; })
       : Promise.resolve({ data: null });
+    // 2026-11-25: "My orders" shows only once there is something in it (the
+    // first order, a ticket, or an order just being saved). Best-effort probe.
+    var sc = window.LokaliSupabase;
+    var ordersP = (sc && typeof sc.rpc === 'function')
+      ? Promise.all([
+          Promise.resolve(sc.rpc('my_purchases', { p_limit: 1 })).then(function (r) { return !!(r && !r.error && Array.isArray(r.data) && r.data.length); }, function () { return false; }),
+          Promise.resolve(sc.rpc('my_tickets')).then(function (t) { var d = t && !t.error && t.data; return !!(d && ((d.tickets && d.tickets.length) || (d.waitlists && d.waitlists.length))); }, function () { return false; })
+        ]).then(function (x) { return x[0] || x[1]; }, function () { return false; })
+      : Promise.resolve(false);
     return Promise.all([
       A.account.get().catch(function () { return { data: null }; }),
       A.request('favorites', 'GET', '/favorites', null, true).catch(function () { return { data: [] }; }),
@@ -854,8 +943,11 @@
       // Gamification badge state (guarded: stale adapter caches lack the group)
       (A.gamification && typeof A.gamification.badges === 'function')
         ? A.gamification.badges().catch(function () { return { data: null }; })
-        : Promise.resolve({ data: null })
+        : Promise.resolve({ data: null }),
+      ordersP
     ]).then(function (r) {
+      var follow = false; try { follow = !!localStorage.getItem('lokali_order_follow'); } catch (e) {}
+      state.hasOrders = !!r[7] || follow;
       var bd = r[6] && r[6].data;
       state.badges = (bd && bd.ok === true) ? bd : null;
       state.admin = r[5] || null;
@@ -949,7 +1041,9 @@
     rail.style.top = (headH + 12) + 'px';
     var tabs = el('nav', 'lkh-tabs'); tabs.setAttribute('aria-label', 'Your account');
     tabs.style.top = (headH + 8) + 'px';
+    var showOrders = state.hasOrders || pane === 'orders';
     HUB_NAV.forEach(function (n) {
+      if (n[0] === 'orders' && !showOrders) return;
       var waiting = (n[0] === 'reviews' && state.awaiting.length) ? state.awaiting.length : 0;
       var nb = el('button', 'lkh-nav'); nb.type = 'button'; nb.setAttribute('data-nav', n[0]);
       nb.innerHTML = '<i>' + gIco(n[2], 18) + '</i>' + esc(n[1]) + (waiting ? '<span class="lkh-n">' + waiting + '</span>' : '');
@@ -973,6 +1067,8 @@
 
     var main = el('div', 'lkh-main');
     main.appendChild(tabs);
+    // owners: the switch back to their dashboard sits above every tab
+    if (state.hasStorefront) main.appendChild(renderStorefrontReturn());
 
     // #96-SUGGEST — the Lokali admin panel (overview + specialty-suggestion
     // queue). Renders only when the is_admin-gated data actually loaded.
@@ -998,6 +1094,7 @@
       var node = mount.querySelector('.lk-pane[data-pane="' + p + '"]');
       if (node) node.classList.toggle('is-active', p === pane);
     });
+    mount.setAttribute('data-active', pane);
     var navs = mount.querySelectorAll('[data-nav]');
     for (var i = 0; i < navs.length; i++) {
       if (navs[i].getAttribute('data-nav') === pane) navs[i].setAttribute('aria-current', 'page');
@@ -5387,10 +5484,10 @@
     card.appendChild(el('div', 'lk-sf-icon',
       '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.5-5h15L21 9"/><path d="M4 9v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9"/><path d="M3 9a2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 3 0"/><path d="M9 20v-6h6v6"/></svg>'));
     var body = el('div', 'lk-sf-body');
-    body.appendChild(el('div', 'lk-sf-title', 'Open your storefront'));
-    body.appendChild(el('div', 'lk-sf-sub', "You're all set up to shop. Selling on Lokali too? Open a storefront. It's free to start, and locals can find, contact, and review you."));
+    body.appendChild(el('div', 'lk-sf-title', 'Run a business too?'));
+    body.appendChild(el('div', 'lk-sf-sub', "You're all set up to shop. A storefront lets neighbors find you, get in touch and leave a review."));
     card.appendChild(body);
-    var cta = el('button', 'lk-sf-cta', 'Open your storefront for free');
+    var cta = el('button', 'lk-sf-cta', 'Open a storefront');
     card.appendChild(cta);
 
     // Inline confirm form (business name).
@@ -5465,10 +5562,10 @@
     var body = el('div', 'lk-sfr-body');
     body.appendChild(el('div', 'lk-sfr-title', "You're in your shopping space"));
     body.appendChild(el('div', 'lk-sfr-sub', state.storefrontName
-      ? ('Managing ' + esc(state.storefrontName) + '? Switch to your storefront.')
-      : 'Switch to your storefront to manage your listing.'));
+      ? ('Managing ' + esc(state.storefrontName) + '? Your dashboard is one tap away.')
+      : 'Your dashboard is one tap away.'));
     strip.appendChild(body);
-    var go = el('a', 'lk-sfr-cta', 'Go to storefront →');
+    var go = el('a', 'lk-sfr-cta', 'Go to my dashboard');
     go.href = '/vendor-dashboard/dashboard';
     strip.appendChild(go);
     return strip;
@@ -5485,52 +5582,95 @@
   // seventh community means adding it here too.
   var HUB_AREAS = ['The Woodlands', 'Woodforest', 'Spring', 'Tomball', 'Katy', 'Conroe', 'Shenandoah', 'Sugar Land', 'Houston'];
 
+  // 2026-11-25 (drawings 1 + 5): the review question first (once the contact
+  // is a few days old and not snoozed), else follow-first with the town as one
+  // quiet line ("Pick your town" opens the nine towns). "Not yet" hides the
+  // question for a week (this device only; lokali_review_snooze_v1).
+  var SNOOZE_KEY = 'lokali_review_snooze_v1';
+  function snoozes() { try { return JSON.parse(localStorage.getItem(SNOOZE_KEY) || '{}') || {}; } catch (e) { return {}; } }
+  function snoozed(id) { var t = snoozes()[String(id)]; return !!t && Date.now() < Number(t); }
+  function snooze(id) { try { var m = snoozes(); m[String(id)] = Date.now() + 7 * 864e5; localStorage.setItem(SNOOZE_KEY, JSON.stringify(m)); } catch (e) {} }
+  function dueAwaiting() {
+    return state.awaiting.filter(function (row) {
+      var v = vendorOf(row), id = (v && v.id != null) ? v.id : row.id;
+      return !snoozed(id);
+    });
+  }
+  function agoWords(iso) {
+    var d = new Date(iso); if (isNaN(d)) return '';
+    var days = Math.floor((Date.now() - d.getTime()) / 864e5);
+    if (days < 7) return 'a few days ago';
+    if (days < 14) return 'about a week ago';
+    if (days < 60) return Math.round(days / 7) + ' weeks ago';
+    return 'a while ago';
+  }
+
   function nextStepCard() {
     var card = el('div', 'lkh-next');
     var tx = el('div', 'lkh-next-tx');
     tx.appendChild(el('div', 'lkh-k', 'Your next step'));
     card.appendChild(tx);
     var acc = state.account || {};
-    if (state.awaiting.length) {
-      var v = vendorOf(state.awaiting[0]);
+    var due = dueAwaiting();
+    if (due.length) {
+      var row = due[0], v = vendorOf(row);
+      var vid = (v && v.id != null) ? v.id : row.id;
+      var when = row.contacted_at ? agoWords(row.contacted_at) : '';
       tx.appendChild(el('h3', null, 'How did it go with ' + esc(vendorName(v)) + '?'));
-      tx.appendChild(el('p', null, 'You contacted them through Lokali. Two taps tells your neighbors whether you would recommend them.'));
+      tx.appendChild(el('p', null, (when ? 'You got in touch ' + when + '. ' : 'You got in touch through Lokali. ') + 'Two taps tell your neighbors whether you’d recommend them.'));
+      var acts = el('div', 'lkh-acts');
       var go = el('button', 'lk-btn primary', 'Share how it went'); go.type = 'button';
       go.addEventListener('click', function () { location.hash = 'reviews'; show('reviews'); });
-      card.appendChild(go);
-    } else if (!acc.region) {
-      tx.appendChild(el('h3', null, 'Where do you shop?'));
-      tx.appendChild(el('p', null, 'Pick one and The Market shows vendors near you first. You can change it any time in Settings.'));
-      var chips = el('div', 'lkh-chips');
-      HUB_AREAS.forEach(function (city) {
-        var c = el('button', 'lkh-chip', esc(city)); c.type = 'button';
-        c.addEventListener('click', function () {
-          var all = chips.querySelectorAll('button');
-          for (var i = 0; i < all.length; i++) all[i].disabled = true;
-          var region = city + ', TX';
-          api().account.update({ region: region }).then(function (res) {
-            if (res && res.error) {
-              for (var j = 0; j < all.length; j++) all[j].disabled = false;
-              toast('Couldn’t save your area. Please try again.');
-              return;
-            }
-            state.account.region = region;
-            rerender();
-            toast('Saved. The Market now starts with ' + city + '.');
-          }, function () {
-            for (var k = 0; k < all.length; k++) all[k].disabled = false;
-            toast('Couldn’t save your area. Please try again.');
-          });
-        });
-        chips.appendChild(c);
+      var later = el('button', 'lkh-notyet', 'Not yet'); later.type = 'button';
+      later.addEventListener('click', function () {
+        snooze(vid);
+        toast('No rush. We’ll ask again next week.');
+        var fresh = nextStepCard();
+        if (card.parentNode) card.parentNode.replaceChild(fresh, card);
       });
-      card.appendChild(chips);
-    } else {
-      tx.appendChild(el('h3', null, state.saved.length ? 'See who is new near you' : 'Follow your first local vendor'));
-      tx.appendChild(el('p', null, 'The Market starts with vendors near ' + esc(acc.region) + '. Tap the heart to follow anyone you want to keep up with.'));
-      var a = el('a', 'lk-btn primary', 'Browse The Market'); a.href = '/the-market';
-      card.appendChild(a);
+      acts.appendChild(later); acts.appendChild(go);
+      card.appendChild(acts);
+      return card;
     }
+    var town = acc.region ? String(acc.region).replace(/,\s*[A-Z]{2}$/, '') : '';
+    tx.appendChild(el('h3', null, state.saved.length ? 'See who is new near you' : 'Follow your first local vendor'));
+    tx.appendChild(el('p', null, state.saved.length
+      ? 'New storefronts open every week. Tap the heart on anyone you want to keep up with.'
+      : 'Tap the heart on anyone you want to keep up with. You’ll see their news here, and in one email each Thursday.'));
+    var a = el('a', 'lk-btn primary', 'Open The Market'); a.href = '/the-market';
+    card.appendChild(a);
+    var area = el('div', 'lkh-area');
+    area.appendChild(el('span', null, town ? 'Near ' + esc(town) : 'All towns'));
+    area.appendChild(el('span', null, '·'));
+    var pick = el('button', null, town ? 'Change town' : 'Pick your town'); pick.type = 'button';
+    area.appendChild(pick);
+    card.appendChild(area);
+    var chips = el('div', 'lkh-chips'); chips.hidden = true;
+    HUB_AREAS.forEach(function (city) {
+      var c = el('button', 'lkh-chip', esc(city)); c.type = 'button';
+      c.addEventListener('click', function () {
+        var all = chips.querySelectorAll('button');
+        for (var i = 0; i < all.length; i++) all[i].disabled = true;
+        var region = city + ', TX';
+        api().account.update({ region: region }).then(function (res) {
+          if (res && res.error) {
+            for (var j = 0; j < all.length; j++) all[j].disabled = false;
+            toast('Couldn’t save your town. Please try again.');
+            return;
+          }
+          state.account.region = region;
+          rerender();
+          toast('Saved. The Market now starts with ' + city + '.');
+        }, function () {
+          for (var k = 0; k < all.length; k++) all[k].disabled = false;
+          toast('Couldn’t save your town. Please try again.');
+        });
+      });
+      chips.appendChild(c);
+    });
+    pick.addEventListener('click', function () { chips.hidden = !chips.hidden; pick.setAttribute('aria-expanded', String(!chips.hidden)); });
+    pick.setAttribute('aria-expanded', 'false');
+    card.appendChild(chips);
     return card;
   }
 
@@ -5554,8 +5694,7 @@
     var pane = el('div', 'lk-pane'); pane.setAttribute('data-pane', 'home');
     var stack = el('div', 'lkh-stack');
 
-    // owners: the switch back to the storefront comes first
-    if (state.hasStorefront) stack.appendChild(renderStorefrontReturn());
+    // owners: the switch back to the dashboard is drawn above every tab (render)
 
     var hello = el('div', 'lkh-hello');
     hello.style.marginBottom = '0';
@@ -5569,10 +5708,12 @@
     gear.addEventListener('click', function () { location.hash = 'settings'; show('settings'); });
     hello.appendChild(gear);
     stack.appendChild(hello);
+    if (state.hasStorefront) stack.appendChild(renderStorefrontReturn());
 
     stack.appendChild(nextStepCard());
 
     var cols = el('div', 'lkh-cols');
+    var earned = earnedBadgeCount();
     var sc = el('div', 'lkh-card');
     var sh = el('div', 'lkh-head'); sh.appendChild(el('h3', null, 'Vendors you follow'));
     if (state.saved.length) {
@@ -5585,14 +5726,12 @@
       var g = el('div', 'lkh-grid'); // one column: two-up truncated vendor names at 1320px
       state.saved.slice(0, 3).forEach(function (row) { g.appendChild(savedRow(row, true)); });
       sc.appendChild(g);
-    } else {
-      sc.appendChild(el('div', 'lkh-mini', '<b>Not following anyone yet</b>Tap the heart on any vendor in The Market to follow them. They will show up here, and in one email each Thursday.'));
     }
-    cols.appendChild(sc);
+    // 2026-11-25: an empty follow box repeats the next-step card; it waits.
+    if (state.saved.length) cols.appendChild(sc);
 
     var bc = el('div', 'lkh-card');
     var bh = el('div', 'lkh-head'); bh.appendChild(el('h3', null, 'Your badges'));
-    var earned = earnedBadgeCount();
     var bm = el('button', 'lkh-more', earned ? (earned + ' of 5 earned') : 'How they work'); bm.type = 'button';
     bm.addEventListener('click', function () { location.hash = 'badges'; show('badges'); });
     bh.appendChild(bm); bc.appendChild(bh);
@@ -5601,16 +5740,18 @@
     var nExp = cats.filter(function (c) { return c && c.explored; }).length;
     if (cats.length) {
       bc.appendChild(el('p', 'lkh-hint', nExp >= cats.length
-        ? 'Every category explored. Status only, no perks.'
-        : (nExp ? 'You have explored ' + nExp + ' of ' + cats.length + ' categories already. ' : 'Browse any category to start your Explorer badge. ') + 'Status only, no perks.'));
+        ? 'Every category explored. Just for bragging rights.'
+        : (nExp ? 'You have explored ' + nExp + ' of ' + cats.length + ' categories already. Just for bragging rights.' : 'Open any category to start your Explorer badge.')));
     }
-    cols.appendChild(bc);
-    stack.appendChild(cols);
+    // 2026-11-25: five empty circles read as "you're behind"; they wait for the first badge.
+    if (earned) cols.appendChild(bc);
+    if (cols.children.length === 1) cols.classList.add('one');
+    if (cols.children.length) stack.appendChild(cols);
 
     if (cats.length) {
       var ec = el('div', 'lkh-card');
       var eh = el('div', 'lkh-head'); eh.appendChild(el('h3', null, 'Keep exploring'));
-      var em = el('a', 'lkh-more', 'Open The Market'); em.href = '/the-market'; eh.appendChild(em);
+      if (dueAwaiting().length) { var em = el('a', 'lkh-more', 'Open The Market'); em.href = '/the-market'; eh.appendChild(em); }
       ec.appendChild(eh);
       var tiles = el('div', 'lkh-tiles');
       cats.forEach(function (c) {
@@ -5648,7 +5789,7 @@
     try { pending = JSON.parse(localStorage.getItem('lokali_order_follow') || 'null'); } catch (e) {}
     if (pending && !(Date.now() - Number(pending.at || 0) < 14 * 864e5)) pending = null; // two weeks, then forget it
     var c = window.LokaliSupabase;
-    if (!c || typeof c.rpc !== 'function') { body.innerHTML = ''; body.appendChild(emptyState('No orders yet', 'When you buy from a vendor on Lokali, your order lands here.', 'Browse The Market', '/the-market')); return pane; }
+    if (!c || typeof c.rpc !== 'function') { body.innerHTML = ''; body.appendChild(emptyState('No orders yet', 'When you buy from a vendor on Lokali, your order lands here.', 'Open The Market', '/the-market')); return pane; }
     function oMoney(cents) { var d = (Number(cents) || 0) / 100; return '$' + d.toLocaleString('en-US', { minimumFractionDigits: (d % 1) ? 2 : 0, maximumFractionDigits: 2 }); }
     function oDay(iso) { var d = new Date(iso); return isNaN(d) ? '' : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); }
     function statusOf(o) {
@@ -5656,12 +5797,12 @@
       return { paid: ['Getting ready', '#F3EBFF', '#6002EE'], partially_refunded: ['Getting ready', '#F3EBFF', '#6002EE'], fulfilled: [got, '#EAFAF2', '#1D6A45'],
         refunded: ['Refunded', '#F7F6FC', '#6E6A85'], disputed: ['Under review', '#F7F6FC', '#6E6A85'], canceled: ['Canceled', '#F7F6FC', '#6E6A85'] }[o.status] || [String(o.status || ''), '#F7F6FC', '#6E6A85'];
     }
-    function pill(text, bg, fg) { return '<span style="display:inline-block;font-size:11px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;padding:4px 9px;border-radius:999px;margin:6px 4px 0 0;background:' + bg + ';color:' + fg + ';">' + esc(text) + '</span>'; }
+    function pill(text, bg, fg) { return '<span style="display:inline-block;font-size:12px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;padding:4px 9px;border-radius:999px;margin:6px 4px 0 0;background:' + bg + ';color:' + fg + ';">' + esc(text) + '</span>'; }
     function card(o) {
       var st = statusOf(o), due = '';
       var n = Number(o.ready_days), start = new Date(o.paid_at);
       if (o.fulfilment !== 'event' && (o.status === 'paid' || o.status === 'partially_refunded') && n >= 1 && !isNaN(start)) {
-        due = pill((o.fulfilment === 'shipping' ? 'Ships by ' : o.fulfilment === 'delivery' ? 'Ready by ' : 'Pickup by ') + oDay(new Date(start.getTime() + n * 864e5).toISOString()), '#FFF7E8', '#7A4A00');
+        due = pill((o.fulfilment === 'shipping' ? 'Ships by ' : o.fulfilment === 'delivery' ? 'Ready by ' : 'Pickup by ') + oDay(new Date(start.getTime() + n * 864e5).toISOString()), '#FEF1C4', '#7A4F00');
       }
       var next = o.status === 'paid' || o.status === 'partially_refunded'
         ? (o.fulfilment === 'event' ? 'Tickets. Your name is on the guest list at the door.' : o.fulfilment === 'shipping' ? 'It ships to the address you gave at payment.' : esc(o.vendor_name || 'The vendor') + ' will be in touch about ' + (o.fulfilment === 'delivery' ? 'delivery.' : 'when and where to pick it up.'))
@@ -5670,13 +5811,13 @@
       w.style.cssText = 'background:#fff;border:1px solid #DEDAEE;border-radius:16px;padding:16px;margin:0 0 10px;max-width:640px;';
       w.innerHTML = '<div style="display:flex;gap:12px;align-items:flex-start;">' +
         (o.product_image_url ? '<img src="' + esc(o.product_image_url) + '" alt="" style="width:56px;height:56px;border-radius:12px;object-fit:cover;flex:none;">' : '<div style="width:56px;height:56px;border-radius:12px;background:#EFE5FD;flex:none;"></div>') +
-        '<div style="flex:1;min-width:0;"><div style="font-size:15px;font-weight:700;color:#1A1829;">' + esc(o.product_name) + (o.quantity > 1 ? ' <span style="color:#6E6A85;font-weight:600;">x ' + esc(o.quantity) + '</span>' : '') + '</div>' +
+        '<div style="flex:1;min-width:0;"><div style="font-size:15px;font-weight:700;color:#45415A;">' + esc(o.product_name) + (o.quantity > 1 ? ' <span style="color:#6E6A85;font-weight:600;">x ' + esc(o.quantity) + '</span>' : '') + '</div>' +
         '<div style="font-size:13px;color:#4A4761;margin-top:2px;">' + esc(o.vendor_name || '') + (o.paid_at ? ' · ' + oDay(o.paid_at) : '') + '</div>' + pill(st[0], st[1], st[2]) + due + '</div>' +
-        '<div style="font-size:16px;font-weight:700;white-space:nowrap;text-align:right;color:#1A1829;">' + oMoney(o.total_cents) + (o.refunded_cents > 0 ? '<div style="font-size:12px;font-weight:600;color:#6E6A85;">' + oMoney(o.refunded_cents) + ' refunded</div>' : '') + '</div></div>' +
+        '<div style="font-size:16px;font-weight:700;white-space:nowrap;text-align:right;color:#45415A;">' + oMoney(o.total_cents) + (o.refunded_cents > 0 ? '<div style="font-size:12px;font-weight:600;color:#6E6A85;">' + oMoney(o.refunded_cents) + ' refunded</div>' : '') + '</div></div>' +
         (next ? '<div style="font-size:13px;color:#6E6A85;margin-top:10px;line-height:1.5;">' + next + '</div>' : '') +
         (o.vendor_note ? '<div style="font-size:13px;background:#F7F6FC;border-radius:10px;padding:8px 10px;margin-top:8px;color:#4A4761;">From ' + esc(o.vendor_name || 'the vendor') + ': ' + esc(o.vendor_note) + '</div>' : '') +
-        '<div style="font-size:12px;color:#8E8BA6;margin-top:10px;line-height:1.5;">Order ' + esc(o.id) + '. Your receipt is in your email. Questions or a refund: reply to it and it reaches ' + esc(o.vendor_name || 'the vendor') + ' directly.</div>' +
-        (o.vendor_slug ? '<div style="margin-top:10px;"><a href="/' + esc(o.vendor_slug) + '" style="display:inline-flex;align-items:center;min-height:40px;padding:0 14px;border-radius:999px;border:1px solid #E5D4FD;color:#6002EE;font-weight:700;font-size:13px;text-decoration:none;">Visit ' + esc(o.vendor_name || 'the storefront') + '</a></div>' : '');
+        '<div style="font-size:13px;color:#6E6A85;margin-top:10px;line-height:1.5;">Order ' + esc(o.id) + '. Your receipt is in your email. Questions or a refund: reply to it and it reaches ' + esc(o.vendor_name || 'the vendor') + ' directly.</div>' +
+        (o.vendor_slug ? '<div style="margin-top:10px;"><a href="/' + esc(o.vendor_slug) + '" style="display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border-radius:999px;border:1px solid #E5D4FD;color:#6002EE;font-weight:700;font-size:14px;text-decoration:none;">Visit ' + esc(o.vendor_name || 'the storefront') + '</a></div>' : '');
       return w;
     }
     function finishFollow() {
@@ -5713,7 +5854,7 @@
       });
       waits.forEach(function (x) {
         var w = el('div');
-        w.style.cssText = 'border:1px dashed #DEDAEE;border-radius:14px;padding:10px 12px;margin:0 0 8px;font-size:13px;color:#1A1829;display:flex;justify-content:space-between;gap:10px;align-items:center;';
+        w.style.cssText = 'border:1px solid #E7E1F3;background:#FBF9FF;border-radius:14px;padding:10px 12px;margin:0 0 8px;font-size:13px;color:#1A1829;display:flex;justify-content:space-between;gap:10px;align-items:center;';
         w.innerHTML = '<span><b>' + esc(x.title) + '</b> · <span style="color:#6E6A85;">we\'ll email you if tickets open up</span></span><button type="button" style="border:0;background:none;color:#6002EE;font-weight:700;font-size:13px;cursor:pointer;min-height:40px;">Leave waitlist</button>';
         w.querySelector('button').addEventListener('click', function () {
           Promise.resolve(c.rpc('my_leave_event_waitlist', { p_id: x.id })).then(function () { w.remove(); }, function () {});
@@ -5735,17 +5876,17 @@
         if (pending) {
           var mail = String((state.account && state.account.email) || 'this account\'s email');
           var note = el('div');
-          note.style.cssText = 'background:#FFF7E8;border:1px solid #FFE0B2;border-radius:14px;padding:14px;font-size:14px;line-height:1.55;color:#7A4A00;max-width:640px;margin:0 0 14px;';
+          note.style.cssText = 'background:#FEF1C4;border:1px solid #F5DE8F;border-radius:14px;padding:14px;font-size:14px;line-height:1.55;color:#7A4F00;max-width:640px;margin:0 0 14px;';
           note.innerHTML = '<b>We could not find your order under ' + esc(mail) + '.</b><br>An order shows up here when your account email matches the email you paid with, and once you have confirmed it from the link we sent. If you paid with a different address, your receipt email still has everything, and you can write to hello@golokali.com and we will connect it for you.';
           body.appendChild(note);
         }
-        body.appendChild(emptyState('No orders yet', 'When you buy from a vendor on Lokali, your order lands here.', 'Browse The Market', '/the-market'));
+        body.appendChild(emptyState('No orders yet', 'When you buy from a vendor on Lokali, your order lands here.', 'Open The Market', '/the-market'));
         return;
       }
       rows.forEach(function (o) { body.appendChild(card(o)); });
     }).catch(function () {
       body.innerHTML = '';
-      body.appendChild(emptyState('We could not load your orders', 'Try again in a moment. Your receipt emails have every order in the meantime.', 'Browse The Market', '/the-market'));
+      body.appendChild(emptyState('We could not load your orders', 'Try again in a moment. Your receipt emails have every order in the meantime.', 'Open The Market', '/the-market'));
     });
     return pane;
   }
@@ -5754,7 +5895,7 @@
     var pane = el('div', 'lk-pane'); pane.setAttribute('data-pane', 'saved');
     pane.appendChild(el('p', 'lk-intro', "Vendors you follow. Tap the heart on any storefront to follow it, and their market dates and news land here and in one email each Thursday."));
     if (!state.saved.length) {
-      pane.appendChild(emptyState('Not following anyone yet', 'When you find a vendor you like, tap the heart to follow them.', 'Browse The Market', '/the-market'));
+      pane.appendChild(emptyState('Not following anyone yet', 'When you find a vendor you like, tap the heart to follow them.', 'Open The Market', '/the-market'));
     } else {
       var grid = el('div', 'lkh-grid wide');
       state.saved.forEach(function (row) { grid.appendChild(savedRow(row)); });
@@ -5822,7 +5963,7 @@
     if (state.awaiting.length) {
       var ag = el('div', 'lk-group');
       ag.appendChild(el('div', 'lk-group-label', 'Awaiting your review'));
-      ag.appendChild(el('p', 'lk-intro', 'You contacted these vendors. Sharing how it went helps other locals, and it helps the vendor too.'));
+      ag.appendChild(el('p', 'lk-intro', 'You got in touch with these vendors a few days ago. Sharing how it went helps other locals, and it helps the vendor too.'));
       state.awaiting.forEach(function (row) { ag.appendChild(awaitRow(row)); });
       pane.appendChild(ag);
     }
@@ -5831,7 +5972,20 @@
     mg.appendChild(el('div', 'lk-group-label', 'Your reviews'));
     if (!state.mine.length) {
       if (!state.awaiting.length) {
-        pane.appendChild(emptyState('No reviews yet', "Once you've contacted a vendor through Lokali, you can share how it went here.", 'Browse vendors', '/the-market'));
+        // 2026-11-25 (drawing 4): the two honest ways a review happens. The
+        // review gate is unchanged: a real contact, or the vendor's own link.
+        pane.appendChild(el('p', 'lk-intro', 'Your reviews help the next neighbor choose, and they help the vendor too.'));
+        var ways = el('div', 'lkr-ways');
+        var w1 = el('div');
+        w1.appendChild(el('h3', null, 'Met them at a market? Say how it went.'));
+        w1.appendChild(el('p', null, 'Point your phone’s camera at the code on their Lokali review card. It opens their review form, and your review shows up here.'));
+        var w2 = el('div');
+        w2.appendChild(el('h3', null, 'Found someone on Lokali?'));
+        w2.appendChild(el('p', null, 'Message them from their storefront. A few days later we’ll ask how it went. Two taps, done.'));
+        var mk2 = el('a', 'lk-btn primary', 'Open The Market'); mk2.href = '/the-market';
+        w2.appendChild(mk2);
+        ways.appendChild(w1); ways.appendChild(w2);
+        pane.appendChild(ways);
         return pane;
       }
       mg.appendChild(el('p', 'lk-intro', 'Reviews you write will appear here.'));
@@ -6010,16 +6164,55 @@
   // ── pane: Badges — the customer's badge home (all four cards) ──
   function renderBadges() {
     var pane = el('div', 'lk-pane'); pane.setAttribute('data-pane', 'badges');
-    pane.appendChild(el('p', 'lk-intro', "Badges you earn by being part of the neighborhood: exploring, reviewing, and spreading the word. Status only: they show on your profile and next to your reviews, nothing more."));
+    pane.appendChild(el('p', 'lk-intro', 'They show on your profile and beside your reviews. Bragging rights only, no prizes.'));
     var b = state.badges;
     if (!b) {
-      pane.appendChild(emptyState('Badges couldn’t load', 'Give it a refresh. Your progress is safe.', 'Browse vendors', '/the-market'));
+      pane.appendChild(emptyState('Badges couldn’t load', 'Give it a refresh. Your progress is safe.', 'Open The Market', '/the-market'));
       return pane;
     }
-    appendExplorerCard(pane);
-    pane.appendChild(milestonesCard(b));
-    pane.appendChild(scoutCard(b));
-    pane.appendChild(connectorCard(b));
+    // 2026-11-25 (drawing 3): one line per badge, tap to open, one open at a
+    // time. The detail is the same card as before, minus its own heading and
+    // the category list (that lives on Home under Keep exploring).
+    var cats = (b.explorer && b.explorer.categories) || [];
+    var nExp = cats.filter(function (c) { return c && c.explored; }).length;
+    var rc = (b.reviews && b.reviews.count) || 0;
+    var scN = (b.scout && b.scout.count) || 0;
+    var coN = (b.connector && b.connector.count) || 0;
+    var exHolder = el('div'); appendExplorerCard(exHolder);
+    var exDetail = el('div'); while (exHolder.firstChild) exDetail.appendChild(exHolder.firstChild);
+    var goHome = el('button', 'lkb-go', 'Keep exploring'); goHome.type = 'button';
+    goHome.addEventListener('click', function () { location.hash = 'home'; show('home'); });
+    exDetail.appendChild(goHome);
+    var regular = el('p', 'lk-intro', rc >= 5
+      ? 'Five reviews shared. Your Neighborhood Regular badge shows on every review you write.'
+      : 'Five reviews and the Neighborhood Regular badge shows on every review you write. ' + rc + ' so far.');
+    regular.style.margin = '12px 0 0';
+    var rows = [
+      ['Explorer', GI_COMPASS, cats.length > 0 && nExp >= cats.length, cats.length ? nExp + ' of ' + cats.length + ' categories' : 'Open the categories in The Market', exDetail],
+      ['First review', GI_STAR, rc >= 1, 'Say how it went with a vendor', milestonesCard(b)],
+      ['Regular', GI_HEART, rc >= 5, rc + ' of 5 reviews', regular],
+      ['Scout', GI_FLAG, scN >= 1, 'An early review for a new business', scoutCard(b)],
+      ['Connector', GI_SHARE, coN >= 5, coN + ' of 5 neighbors sent', connectorCard(b)]
+    ];
+    var list = el('div', 'lkb');
+    var openRow = null;
+    rows.forEach(function (r, i) {
+      var row = el('div', 'lkb-row' + (r[2] ? ' on' : ''));
+      var btn = el('button', 'lkb-btn'); btn.type = 'button'; btn.setAttribute('aria-expanded', 'false');
+      btn.innerHTML = '<span class="lkb-ic">' + gIco(r[1], 20) + '</span><span class="lkb-tx"><b>' + esc(r[0]) + '</b><span>' + esc(r[2] ? 'Earned' : r[3]) + '</span></span>' +
+        '<svg class="lkb-chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
+      var det = el('div', 'lkb-detail'); det.appendChild(r[4]);
+      btn.addEventListener('click', function () {
+        var opening = !row.classList.contains('open');
+        if (openRow && openRow !== row) { openRow.classList.remove('open'); openRow.querySelector('.lkb-btn').setAttribute('aria-expanded', 'false'); }
+        row.classList.toggle('open', opening); btn.setAttribute('aria-expanded', String(opening));
+        openRow = opening ? row : null;
+      });
+      row.appendChild(btn); row.appendChild(det);
+      list.appendChild(row);
+      if (!openRow && !r[2]) { row.classList.add('open'); btn.setAttribute('aria-expanded', 'true'); openRow = row; }
+    });
+    pane.appendChild(list);
     return pane;
   }
 
@@ -6327,6 +6520,18 @@
     var acc = state.account || {};
     var pane = el('div', 'lk-pane'); pane.setAttribute('data-pane', 'settings');
 
+    // 2026-11-25 (drawing 2): phones and tablets have no Settings tab, so the
+    // page says where you are, with a way back (CSS shows it under 992px).
+    var sh = el('div', 'lkh-sethead');
+    var shx = el('div', 'tx');
+    var back = el('button', 'back', '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>Back to Home'); back.type = 'button';
+    back.addEventListener('click', function () { location.hash = 'home'; show('home'); });
+    shx.appendChild(back);
+    shx.appendChild(el('h2', null, 'Settings'));
+    sh.appendChild(shx);
+    sh.appendChild(el('div', 'gear-on', gIco(GI_GEAR, 20)));
+    pane.appendChild(sh);
+
     // Profile
     pane.appendChild(el('div', 'lk-group-label', 'Profile'));
     var pc = el('div', 'lk-card');
@@ -6339,7 +6544,7 @@
     var avRow = el('div', 'lk-set-row');
     avRow.style.display = 'block';
     avRow.appendChild(el('div', 'lk-set-label', 'Avatar'));
-    avRow.appendChild(el('div', 'lk-set-help', 'Pick one for your dashboard, or stay with your initials.'));
+    avRow.appendChild(el('div', 'lk-set-help', 'Pick one, or stay with your initials.'));
     var avGrid = el('div');
     avGrid.style.cssText = 'display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;';
     function avCircle(id) {
@@ -6350,8 +6555,8 @@
       c.setAttribute('aria-label', isInitials ? 'Use my initials' : 'Avatar: ' + id);
       c.style.cssText = 'width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;font-family:"Plus Jakarta Sans",sans-serif;border:2px solid transparent;';
       if (isInitials) {
-        c.style.background = '#6002EE';
-        c.style.color = '#fff';
+        c.style.background = '#F3EBFF';
+        c.style.color = '#6002EE';
         c.style.font = '600 15px "Plus Jakarta Sans",sans-serif';
         c.textContent = (initials((acc.first_name || '') + ' ' + (acc.last_name || '')) || 'U').toUpperCase();
       } else {
@@ -6362,7 +6567,10 @@
           '-webkit-mask:url("' + p.url + '") center / contain no-repeat;mask:url("' + p.url + '") center / contain no-repeat;';
         c.appendChild(ic);
       }
-      function paint() { c.style.borderColor = (avatarSel === id) ? '#6002EE' : 'transparent'; }
+      function paint() {
+        c.style.borderColor = (avatarSel === id) ? '#6002EE' : 'transparent';
+        if (isInitials) { var on = avatarSel === id; c.style.background = on ? '#6002EE' : '#F3EBFF'; c.style.color = on ? '#fff' : '#6002EE'; }
+      }
       paint();
       c.addEventListener('click', function () {
         avatarSel = id;
@@ -6377,7 +6585,7 @@
     pc.appendChild(avRow);
     // email
     var emailRow = el('div', 'lk-set-row');
-    emailRow.innerHTML = '<div><div class="lk-set-label">Email</div><div class="lk-set-help">' + esc(acc.email || 'Used for sign-in and reply notifications.') + ' Managed through your login.</div></div>';
+    emailRow.innerHTML = '<div><div class="lk-set-label">Email</div><div class="lk-set-help">' + esc(acc.email || 'Used for sign-in and reply notifications.') + ' · Managed through your login.</div></div>';
     var manage = el('div', null);
     var manageBtn = el('button', 'lk-btn ghost', 'Manage sign-in');
     manageBtn.addEventListener('click', function () {
@@ -6386,7 +6594,7 @@
     });
     manage.appendChild(manageBtn); emailRow.appendChild(manage);
     pc.appendChild(emailRow);
-    var areaIn = setInput('Your area', "We'll surface vendors near you first.", acc.region || '');
+    var areaIn = setInput('Your town', "We'll show you vendors near you first.", acc.region || '');
     initAreaAutocomplete(areaIn.input); // #45 — Maps city autocomplete (free-text fallback)
     pc.appendChild(areaIn.row);
     pane.appendChild(pc);
@@ -6394,11 +6602,11 @@
     // Notifications
     pane.appendChild(el('div', 'lk-group-label', 'Notifications'));
     var nc = el('div', 'lk-card');
-    var tgLetter = toggleRow('The Neighborhood Edit', 'Our bi-monthly newsletter: vendor spotlights and what’s new on Lokali. Rare by design.', acc.notif_letter !== false);
+    var tgLetter = toggleRow('The Neighborhood Edit', 'Our newsletter, every other month: local businesses worth knowing and what’s new on Lokali. Rare by design.', acc.notif_letter !== false);
     // 'Vendor replies' toggle removed 2026-10-19 (#214 gap 5): no such email exists.
     // Vendors answer inquiries from their own inbox, so Lokali never sees the reply
     // and cannot send one. The column stays; nothing reads it.
-    var tgRemind = toggleRow('Review reminders', 'A gentle nudge to review a vendor a few days after you contact them.', acc.notif_review_reminders === true);
+    var tgRemind = toggleRow('Review reminders', 'A short reminder, a few days after you contact a vendor, to say how it went.', acc.notif_review_reminders === true);
     // #185: weekly email about the vendors this person saved (default ON in
     // patch_vendor_posts.sql; the digest cron reads this flag).
     var tgSaved = toggleRow('Updates from vendors you follow', 'One email on Thursdays when a vendor you follow posts an update or where they will be. No email on quiet weeks.', acc.notif_saved_updates !== false);
@@ -6455,7 +6663,7 @@
     pane.appendChild(bar);
 
     // Account
-    pane.appendChild(el('div', 'lk-group-label lk-danger', 'Account'));
+    pane.appendChild(el('div', 'lk-group-label lk-quiet', 'Account'));
     var ac = el('div', 'lk-card');
     var outRow = el('div', 'lk-set-row');
     outRow.innerHTML = '<div><div class="lk-set-label">Sign out</div><div class="lk-set-help">Sign out of Lokali on this device.</div></div>';
@@ -6631,7 +6839,7 @@
     e.appendChild(el('div', 'lk-empty-title', esc(title)));
     e.appendChild(el('div', 'lk-empty-sub', esc(sub)));
     var a = el('a', 'lk-btn primary'); a.href = ctaHref; a.textContent = ctaText;
-    a.style.textDecoration = 'none'; a.style.display = 'inline-block';
+    a.style.textDecoration = 'none';
     e.appendChild(a);
     return e;
   }
@@ -6672,7 +6880,7 @@
     var card = el('div', 'lk-so-card');
     card.appendChild(el('div', 'lk-so-icon', gIco(GI_HEART, 26)));
     card.appendChild(el('h2', 'lk-so-title', 'Your Lokali account'));
-    card.appendChild(el('p', 'lk-so-sub', 'Follow the makers and services you like, hear where they\u2019ll be each week, and keep your reviews in one place.'));
+    card.appendChild(el('p', 'lk-so-sub', 'Follow the local businesses you like, hear where they\u2019ll be each week, and keep your reviews in one place.'));
     var acts = el('div', 'lk-so-acts');
     var si = el('a', 'lk-btn primary', 'Sign in'); si.href = '/login';
     si.addEventListener('click', function (e) {
@@ -6688,7 +6896,7 @@
     var perks = el('div', 'lk-so-perks');
     [[GI_HEART, 'Following', 'Your favorite storefronts, and a note when they post something new.'],
      [GI_STAR, 'Reviews', 'Share how it went and help the next neighbor choose.'],
-     [GI_COMPASS, 'Badges', 'Explore the Market and collect them as you go.']].forEach(function (p) {
+     [GI_COMPASS, 'Badges', 'Explore The Market and collect them as you go.']].forEach(function (p) {
       var it = el('div', 'lk-so-perk');
       it.innerHTML = '<i>' + gIco(p[0], 18) + '</i><div><b>' + esc(p[1]) + '</b><span>' + esc(p[2]) + '</span></div>';
       perks.appendChild(it);
