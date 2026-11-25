@@ -152,6 +152,13 @@
     '#lkp .vl-op-sec{border:0 !important;padding:0 !important;margin:0 !important;}',
     '#lkp .vl-op-sec > .vl-op-h{display:none !important;}',
     '#lkp #vl-pair-sec{margin-top:60px;}',
+    // contact card beside the work, in view while scrolling (F 2026-11-24)
+    '.lkp-two{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:48px;align-items:stretch;}',
+    '.lkp-side{padding-top:60px;}',
+    '.lkp-two .lkp-grid{grid-template-columns:repeat(2,minmax(0,1fr));}',
+    '.lkp-two .lkp-about{grid-template-columns:1fr;}',
+    '@media (max-width:959px){.lkp-two{grid-template-columns:1fr;gap:0;}.lkp-side{display:none;}.lkp-two .lkp-card2{position:static;}}',
+    '@media (min-width:768px) and (max-width:959px){.lkp-two .lkp-grid{grid-template-columns:repeat(3,minmax(0,1fr));}}',
     // about
     '.lkp-about{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:56px;align-items:start;margin-top:18px;}',
     '.lkp-inside{display:grid;grid-template-columns:2fr 1fr;grid-template-rows:150px 150px;gap:8px;margin-bottom:26px;}',
@@ -167,7 +174,7 @@
     // contact card
     '.lkp-card2{border:1px solid #E7E2F3;border-radius:18px;padding:22px;background:#fff;position:sticky;top:78px;}',
     '.lkp-who{display:flex;gap:12px;align-items:center;margin-bottom:16px;}',
-    '.lkp-who img,.lkp-who .lkp-av0{width:52px;height:52px;font-size:17px;}',
+    '.lkp-who img,.lkp-who .lkp-av0{width:52px;height:52px;font-size:17px;border-radius:50%;object-fit:cover;flex:none;}',
     '.lkp-wn{font:700 18px ' + F + ';}.lkp-wr{font:500 13px/1.4 ' + F + ';color:#6B6880;}',
     '.lkp-cta{display:block;width:100%;text-align:center;font:600 15px ' + F + ';padding:14px;border-radius:12px;border:0;background:#6002EE;color:#fff;}',
     '.lkp-hint{font:500 13px/1.5 ' + F + ';color:#6B6880;margin:10px 2px 14px;text-align:center;}',
@@ -508,7 +515,9 @@
     barMsg.addEventListener('click', function () { proxyClick('lok-inq-btn'); });
     host.appendChild(bar);
 
-    var wrap = ce('div', 'lkp-wrap'); host.appendChild(wrap);
+    var outer = ce('div', 'lkp-wrap lkp-two'); host.appendChild(outer);
+    var wrap = ce('div'); outer.appendChild(wrap);
+    var side = ce('aside', 'lkp-side'); outer.appendChild(side);
 
     // ===== showcase of the week (Featured), if the normal page drew one =====
     var showcase = document.getElementById('vl-op-sec-showcase');
@@ -756,7 +765,13 @@
       left.appendChild(ow);
     }
 
-    var cc = ce('div', 'lkp-card2'); grid2.appendChild(cc);
+    var cc = ce('div', 'lkp-card2');
+    // wide screens: card in the side column, following the scroll; narrower screens
+    // keep it in About (phones already have the follow-along Send a message bar)
+    var narrow = window.matchMedia ? window.matchMedia('(max-width:959px)') : null;
+    function placeCard() { (narrow && narrow.matches ? grid2 : side).appendChild(cc); }
+    placeCard();
+    if (narrow) { if (narrow.addEventListener) narrow.addEventListener('change', placeCard); else if (narrow.addListener) narrow.addListener(placeCard); }
     var who = ce('div', 'lkp-who');
     who.appendChild(avatar(v.owner_photo || v.profile_photo, owner || name));
     var wt = ce('div');
