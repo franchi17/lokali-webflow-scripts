@@ -3147,7 +3147,8 @@ const LokaliProductsPage = (() => {
 
   const loadGalleryArtists = async () => {
     const S = galSAPI();
-    if (!_isFeaturedPlan || !S?.capabilities?.galleryStorefront || !S.artists) return;
+    // The Look switch is for every plan (F 2026-11-24); collections stay Featured.
+    if (!S?.capabilities?.galleryStorefront || !S.artists) return;
     try {
       if (_galVendorId == null) {
         const me = await S.vendors.me();
@@ -3158,9 +3159,12 @@ const LokaliProductsPage = (() => {
       // otherwise the older Collections box below, exactly as before.
       if (await galLoadV2(_galVendorId)) {
         _galV2 = true; _galAvailable = true;
+        // Not Featured: no collections on the page or in the listing form.
+        if (!_isFeaturedPlan) { _galArtists = []; _galTab = 'look'; }
         renderGalleryPanel(); syncGalleryFields();
         return;
       }
+      if (!_isFeaturedPlan) return; // older Collections box: Featured only
       const res = await S.artists.forVendor(_galVendorId);
       if (!res || res.error) { _galAvailable = false; return; }
       _galArtists = Array.isArray(res.data) ? res.data : [];
@@ -3535,8 +3539,9 @@ const LokaliProductsPage = (() => {
     ic.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>';
     const ht = gpEl('div');
     ht.appendChild(gpEl('h3', null, 'Your Gallery page'));
-    ht.appendChild(gpEl('p', null, 'Shoppers see: ' + (_galLook === 'gallery' ? 'Gallery look' : 'Classic look') + ' · ' + shown + ' ' + (shown === 1 ? W.one : W.title.toLowerCase()) + ' on show'));
-    h.appendChild(ic); h.appendChild(ht); h.appendChild(gpEl('span', 'lokgp-sp')); h.appendChild(gpEl('span', 'lokgp-feat', 'FEATURED'));
+    ht.appendChild(gpEl('p', null, 'Shoppers see: ' + (_galLook === 'gallery' ? 'Gallery look' : 'Classic look') + (_isFeaturedPlan ? ' · ' + shown + ' ' + (shown === 1 ? W.one : W.title.toLowerCase()) + ' on show' : '')));
+    h.appendChild(ic); h.appendChild(ht); h.appendChild(gpEl('span', 'lokgp-sp'));
+    if (_isFeaturedPlan) h.appendChild(gpEl('span', 'lokgp-feat', 'FEATURED'));
     if (_galSlug) {
       const open = gpEl('a', 'lokgp-btn q', 'Open my storefront');
       open.href = '/' + encodeURIComponent(_galSlug); open.target = '_blank'; open.rel = 'noopener';
@@ -3603,10 +3608,19 @@ const LokaliProductsPage = (() => {
     acts.appendChild(gpEl('span', 'lokgp-note', 'Your listings, prices and reviews stay the same in both. Switch back any time.'));
     body.appendChild(acts);
     body.appendChild(err);
-    body.appendChild(gpEl('p', 'lokgp-note', 'The big cover photo uses the first photos in your portfolio on the Profile page. Drag your best one to the front there.'));
+    body.appendChild(gpEl('p', 'lokgp-note', _isProPlan
+      ? 'The big cover photo uses the first photos in your portfolio on the Profile page. Drag your best one to the front there.'
+      : 'The cover uses the one portfolio photo on your Profile page. No photo yet? Your name sits on a soft lavender band.'));
   };
 
   const gpColsTab = (body, W) => {
+    if (!_isFeaturedPlan) {
+      // Collections are a Featured perk; every plan gets the Look switch.
+      body.appendChild(gpEl('p', 'lokgp-note', 'Collections come with the Featured plan: group your listings your own way, call them Artists or Makers, and mark pieces Sold or One of a kind.'));
+      const see = gpEl('a', 'lokgp-btn q', 'See Featured'); see.href = window.LOKALI_PRICING_URL || '/pricing';
+      body.appendChild(see);
+      return;
+    }
     const two = gpEl('div', 'lokgp-two');
     const left = gpEl('div'); const right = gpEl('div');
     two.appendChild(left); two.appendChild(right); body.appendChild(two);

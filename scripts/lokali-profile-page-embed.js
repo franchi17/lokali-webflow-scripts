@@ -1555,7 +1555,9 @@ var LokaliProfilePage = (function () {
     }
 
     var card = _mkCard('lok-portfolio-card', _PF_ICON, 'Portfolio',
-      'Up to ' + _PF_MAX + ' photos and videos. They show big at the top of your public page. First item = the lead.');
+      _PF_MAX === 1
+        ? 'One photo for the top of your public page. Pick your best. Pro shows up to 5 that rotate.'
+        : 'Up to ' + _PF_MAX + ' photos and videos. They show big at the top of your public page. First item = the lead.');
     var strip = document.createElement('div');
     strip.id = 'lok-pf-strip';
     strip.style.cssText = 'display:flex;flex-wrap:wrap;gap:10px;margin:10px 0;';
@@ -1614,7 +1616,7 @@ var LokaliProfilePage = (function () {
       var api = window.LokaliAPI && window.LokaliAPI.vendors;
       if (!api || typeof api.coverCandidates !== 'function') { _showToast('error', 'Photo picking is not available right now. Please reload the page.'); return; }
       var room = _PF_MAX - _pfPhotos.length;
-      if (room <= 0) { _showToast('error', 'Your portfolio is full: ' + _PF_MAX + ' items on your plan.'); return; }
+      if (room <= 0) { _showToast('error', 'Your portfolio is full: ' + _PF_MAX + (_PF_MAX === 1 ? ' item' : ' items') + ' on your plan.'); return; }
       var have = {};
       _pfPhotos.forEach(function (r) { if (r && r.image_url) have[r.image_url] = true; });
       var loaded = _cardPhotoCands ? Promise.resolve(_cardPhotoCands) : api.coverCandidates(_vendor.id).then(function (out) {
@@ -1688,7 +1690,7 @@ var LokaliProfilePage = (function () {
       var inp = document.getElementById('lok-pf-vidurl');
       var url = inp ? String(inp.value || '').trim() : '';
       if (!_pfParseVideo(url)) { vidSay('That link doesn\u2019t look like YouTube or Vimeo. Copy the full video address from your browser.', true); return; }
-      if (_pfPhotos.length >= _PF_MAX) { vidSay('Your portfolio is full. A video uses one of your ' + _PF_MAX + ' spots.', true); return; }
+      if (_pfPhotos.length >= _PF_MAX) { vidSay('Your portfolio is full. A video uses one of your ' + _PF_MAX + (_PF_MAX === 1 ? ' spot.' : ' spots.'), true); return; }
       var S = window.LokaliSupabaseAPI;
       if (!S || !S.photos || !S.photos.addVideo || !_vendor) return;
       var nextSort = _pfPhotos.length ? (Number(_pfPhotos[_pfPhotos.length - 1].sort_order) || _pfPhotos.length) + 1 : 1;
@@ -1719,7 +1721,7 @@ var LokaliProfilePage = (function () {
         return;
       }
       if (_pfPhotos.length >= _PF_MAX) {
-        _showToast('error', 'Your portfolio is full: ' + _PF_MAX + ' items on your plan.');
+        _showToast('error', 'Your portfolio is full: ' + _PF_MAX + (_PF_MAX === 1 ? ' item' : ' items') + ' on your plan.');
         return;
       }
       var S = window.LokaliSupabaseAPI;
@@ -2506,6 +2508,7 @@ var LokaliProfilePage = (function () {
       if (_PF_MAX > 0) {
         coll(document.getElementById('lok-portfolio-card'), 'gallery', function () {
           var n = _pfPhotos ? _pfPhotos.length : 0;
+          if (_PF_MAX === 1) return n ? 'Your cover photo is set' : 'Add one photo to the top of your public page';
           return n ? n + ' of ' + _PF_MAX + ' items in your public gallery' : 'Add photos and video to the top of your public page';
         }, 'Edit', false);
       } else {
