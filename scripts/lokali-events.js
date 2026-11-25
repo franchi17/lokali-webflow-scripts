@@ -13,6 +13,8 @@
  *   Sold out     -> "Email me if tickets open up" -> POST {BASE}/checkout/event-waitlist
  *   ?waitlist_leave=<token> (link in the waitlist email) -> asks first, then leaves
  *   #event-<id>  -> scrolls to that event (the host's share link)
+ *   Views        -> log_event_view (link / opened), once per tab; the
+ *                   vendor sees "12 people looked" on the dashboard
  *
  * "Tickets left" shows only when 10 or fewer remain (expert review: no push).
  * Map: an address card with Directions; a real map picture only when
@@ -200,7 +202,7 @@
     if (m || window.location.hash === '#events') {
       var target = m ? document.getElementById('lke-ev-' + m[1]) : sec;
       if (target && target.scrollIntoView) setTimeout(function () { target.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 300);
-      if (m) { var hit = list.filter(function (x) { return String(x.id) === m[1]; })[0]; if (hit) setTimeout(function () { openDetails(hit); }, 500); }
+      if (m) { var hit = list.filter(function (x) { return String(x.id) === m[1]; })[0]; if (hit) { countView(hit.id, 'link'); setTimeout(function () { openDetails(hit, true); }, 500); } }
     }
   }
 
@@ -250,7 +252,17 @@
 
   // The details sheet: the full poster (never cropped), when and where, price
   // and the button, about, lineup, map + Directions, the refund rule.
-  function openDetails(ev) {
+  // Event view counts (patch_event_views.sql, F 2026-11-25): 'link' = arrived
+  // from the event's share link, 'opened' = tapped it for details. Once per
+  // event and kind per tab session; the server skips the owner and admins.
+  function countView(id, how) {
+    var k = 'lke-v-' + id + '-' + how;
+    try { if (sessionStorage.getItem(k)) return; sessionStorage.setItem(k, '1'); } catch (e) {}
+    client().then(function (c) { if (c && typeof c.rpc === 'function') return c.rpc('log_event_view', { p_events_id: Number(id), p_how: how }); }).catch(function () {});
+  }
+
+  function openDetails(ev, fromLink) {
+    if (!fromLink) countView(ev.id, 'opened');
     styles();
     var left = Number(ev.tickets_left) || 0;
     var open = !!ev.sales_open;

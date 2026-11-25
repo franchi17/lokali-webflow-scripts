@@ -6,7 +6,10 @@
  * LokaliSupabaseAPI). Self-mounting into <div id="lok-events-page"></div>;
  * no-op if absent.
  *
- *   List      upcoming + past events, tickets sold, Guest list / Edit / Share
+ *   List      upcoming + past events: date tile, countdown, fullness bar, views
+ *             (event_view_counts, patch_event_views.sql), Share / Guest list /
+ *             Edit / Run it again; side column with a month calendar and
+ *             "What neighbors see" (2026-11-25 redesign)
  *   Form      one column: name, photo, date, start + end, price, tickets
  *             available, where (from the profile), refund rule (3 choices);
  *             "More options": about, lineup (link someone on Lokali or type a
@@ -127,7 +130,46 @@
       '.lkea-share img{width:100%;border-radius:12px;background:#F3EBFF;display:block;}',
       '.lkea-pick{border:1px solid #E7E1F3;border-radius:10px;margin:4px 0 8px;background:#fff;}',
       '.lkea-pick button{display:block;width:100%;text-align:left;border:0;background:none;padding:10px 12px;font-size:14px;color:#1A1829;cursor:pointer;}',
-      '.lkea-pick button:hover{background:#F3EBFF;}'
+      '.lkea-pick button:hover{background:#F3EBFF;}',
+      // 2026-11-25 list redesign: date tile, bar, add tile, side column (calendar, What neighbors see)
+      '.lkea-cols{display:flex;flex-direction:column;gap:16px;}',
+      '.lkea-side{display:flex;flex-direction:column;gap:12px;}',
+      '.lkea-ev{display:flex;gap:14px;align-items:flex-start;scroll-margin:90px;transition:box-shadow .3s;}',
+      '.lkea-ev.lkea-flash{box-shadow:0 0 0 3px #E5D4FD;}',
+      '.lkea-past .lkea-dt{background:#F4F2F8;color:#6E6A85;}',
+      '.lkea-evb{flex:1;min-width:0;}',
+      '.lkea-cd{color:#6002EE;font-weight:700;}',
+      '.lkea-dt{flex:none;width:58px;border-radius:12px;background:#F3EBFF;color:#6002EE;text-align:center;padding:7px 0 8px;display:flex;flex-direction:column;line-height:1.1;}',
+      '.lkea-dt-m{font-size:11px;font-weight:700;letter-spacing:.04em;}',
+      '.lkea-dt-d{font-size:24px;font-weight:800;margin:2px 0;}',
+      '.lkea-dt-w{font-size:11px;font-weight:600;}',
+      '.lkea-bar{height:6px;border-radius:999px;background:#F3EBFF;margin:8px 0 6px;overflow:hidden;max-width:320px;}',
+      '.lkea-bar i{display:block;height:100%;background:#6002EE;border-radius:999px;transition:width .4s;}',
+      '.lkea-addtile{display:flex;flex-direction:column;align-items:center;gap:4px;width:100%;border:1.5px dashed #E5D4FD;border-radius:16px;background:#fff;color:#6002EE;padding:18px 16px;cursor:pointer;margin:0 0 12px;font-size:14px;}',
+      '.lkea-addtile span{font-size:13px;color:#6E6A85;line-height:1.45;}',
+      '.lkea-addtile:hover{background:#FAF7FF;}',
+      '.lkea-sc{background:#fff;border:1px solid #E7E1F3;border-radius:16px;padding:16px;}',
+      '.lkea-st{font-size:14px;font-weight:700;color:#1A1829;margin:0 0 8px;}',
+      '.lkea-how{margin:0;padding-left:18px;font-size:13px;line-height:1.45;color:#45415A;}.lkea-how li{margin:0 0 8px;}',
+      '.lkea-cal{background:#F3EBFF;border-radius:16px;padding:14px 14px 12px;}',
+      '.lkea-cal-h{display:flex;justify-content:space-between;align-items:center;margin:0 0 8px;font-size:14px;color:#1A1829;}',
+      '.lkea-cal-h button{width:32px;height:32px;border-radius:50%;border:0;background:#fff;color:#6002EE;font-size:18px;cursor:pointer;line-height:1;}',
+      '.lkea-cal-h button[disabled]{opacity:.35;cursor:default;}',
+      '.lkea-cal-g{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;font-size:12px;color:#45415A;}',
+      '.lkea-cal-g>*{width:30px;height:30px;line-height:30px;border-radius:50%;margin:0 auto;}',
+      '.lkea-cal-w{font-weight:700;color:#6E6A85;font-size:11px;}',
+      '.lkea-cal-t{box-shadow:inset 0 0 0 1.5px #6002EE;color:#6002EE;font-weight:700;}',
+      '.lkea-cal-e{border:0;padding:0;background:#6002EE;color:#fff;font-weight:700;font-size:12px;cursor:pointer;}',
+      '.lkea-sky{background:#E6EFFB;border-radius:16px;padding:16px;}',
+      '.lkea-skycard{background:#fff;border-radius:12px;padding:12px;display:flex;gap:12px;align-items:flex-start;}',
+      '.lkea-skycard .lkea-dt{background:#E6EFFB;color:#1D4E9E;width:52px;}',
+      '.lkea-skybtn{display:inline-block;margin-top:8px;background:#1D4E9E;color:#fff;border-radius:999px;padding:6px 12px;font-size:12px;font-weight:700;}',
+      '@media(min-width:1200px){',
+      '  #' + ROOT_ID + '.lkea-lv .lkea-cols{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:20px;align-items:start;}',
+      '  #' + ROOT_ID + '.lkea-lv .lkea-side{position:sticky;top:24px;}',
+      '  #' + ROOT_ID + '.lkea-nv{max-width:760px !important;margin-left:auto;margin-right:auto;}',
+      '}',
+      '@media(max-width:479px){.lkea-ev{gap:10px;}.lkea-dt{width:50px;}.lkea-dt-d{font-size:20px;}.lkea-acts .lkea-btn{width:100%;}}'
     ].join('\n');
     document.head.appendChild(s);
   }
@@ -139,77 +181,199 @@
   function eventLink(ev) { return 'https://www.golokali.com/' + (V && V.slug ? V.slug : '') + '#event-' + ev.id; }
 
   // ── list ─────────────────────────────────────────────────────────────────────
+  // 2026-11-25 redesign (F: "needs more? a calendar? super wide"; five-expert
+  // review docs/design/events-page-2026-11/): each card gets a tear-off date
+  // tile, "In 3 days", a fullness bar and "12 people looked"; Share is the main
+  // button; "Run it again" copies an event. On a laptop the list sits beside a
+  // side column: a small month calendar, "What neighbors see" (sky blue = the
+  // shopper's view) and the card-payments note. On a phone the side column
+  // drops below the list.
+  var VIEWS = null;      // { "<events_id>": { views, link, opened } } for this storefront
+
+  function ymd(d) {
+    var p = new Intl.DateTimeFormat('en-US', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(d);
+    var g = {}; p.forEach(function (x) { g[x.type] = x.value; });
+    return g.year + '-' + g.month + '-' + g.day;
+  }
+  function dayDiff(a, b) { return Math.round((Date.parse(a + 'T12:00:00Z') - Date.parse(b + 'T12:00:00Z')) / 864e5); }
+  function countdown(ev) {
+    var now = Date.now(), st = new Date(ev.starts_at).getTime(), en = ev.ends_at ? new Date(ev.ends_at).getTime() : st + 2 * 36e5;
+    if (st <= now && now < en) return 'Happening now';
+    var n = dayDiff(ymd(new Date(st)), ymd(new Date(now)));
+    if (n <= 0) return 'Today';
+    if (n === 1) return 'Tomorrow';
+    if (n < 14) return 'In ' + n + ' days';
+    return 'In ' + Math.round(n / 7) + ' weeks';
+  }
+  function timeRange(ev) {
+    var a = new Date(ev.starts_at); if (isNaN(a)) return '';
+    if (!ev.ends_at) return tm(a);
+    var x = tm(a), y = tm(new Date(ev.ends_at));
+    return (x.slice(-2) === y.slice(-2) ? x.slice(0, -3) : x) + ' to ' + y;
+  }
+  function priceWord(ev) { return ev.price_cents === 0 ? 'Free' : money(ev.price_cents); }
+  function dateTile(ev) {
+    var d = new Date(ev.starts_at);
+    return '<div class="lkea-dt" aria-hidden="true"><span class="lkea-dt-m">' + esc(d.toLocaleDateString('en-US', { timeZone: TZ, month: 'short' }).toUpperCase()) + '</span>' +
+      '<span class="lkea-dt-d">' + esc(d.toLocaleDateString('en-US', { timeZone: TZ, day: 'numeric' })) + '</span>' +
+      '<span class="lkea-dt-w">' + esc(d.toLocaleDateString('en-US', { timeZone: TZ, weekday: 'short' })) + '</span></div>';
+  }
+
   function showList(flash) {
-    root.innerHTML = '';
+    root.innerHTML = ''; root.className = 'lkea-lv';
     var top = document.createElement('div'); top.className = 'lkea-top';
-    top.innerHTML = '<div><h1 class="lkea-h1">Events</h1><p class="lkea-intro">Sell tickets to your classes, workshops and openings. Guests pay by card, and their names land on your door list.</p></div>' +
+    top.innerHTML = '<div><h1 class="lkea-h1">Events</h1><p class="lkea-intro">Classes, workshops and openings. Guests sign up or pay by card, and their names land on your guest list.</p></div>' +
       '<button type="button" class="lkea-btn" data-add>Add an event</button>';
     root.appendChild(top);
     top.querySelector('[data-add]').addEventListener('click', function () { showForm(null); });
     if (flash) { var f = document.createElement('p'); f.className = 'lkea-ok'; f.style.margin = '0 0 12px'; f.textContent = flash; root.appendChild(f); }
-    if (!vendorLive()) {
-      var n = document.createElement('div'); n.className = 'lkea-soft';
-      n.innerHTML = '<p class="lkea-t">Free events work right away</p><p class="lkea-m" style="color:#45415A;">For paid tickets, turn on card payments first. It takes about 10 minutes with Stripe; until then, paid events show "Ticket sales open soon".</p>' +
-        '<div class="lkea-acts"><a class="lkea-btn2" href="/vendor-dashboard/settings#lokali-checkout">Turn on card payments</a></div>';
-      root.appendChild(n);
-    }
+    var cols = document.createElement('div'); cols.className = 'lkea-cols';
+    var main = document.createElement('div'); main.className = 'lkea-main';
+    var side = document.createElement('div'); side.className = 'lkea-side';
+    cols.appendChild(main); cols.appendChild(side); root.appendChild(cols);
     var box = document.createElement('div'); box.innerHTML = '<p class="lkea-m">Loading your events</p>';
-    root.appendChild(box);
+    main.appendChild(box);
     client().then(function (c) {
-      return c.from('vendor_events').select('*').eq('vendors_id', V.id).is('deleted_at', null).order('starts_at', { ascending: true });
-    }).then(function (r) {
+      return Promise.all([
+        c.from('vendor_events').select('*').eq('vendors_id', V.id).is('deleted_at', null).order('starts_at', { ascending: true }),
+        c.rpc('event_view_counts', { p_vendors_id: V.id }).then(function (r) { return (r && !r.error && r.data) ? r.data : {}; }, function () { return {}; })
+      ]);
+    }).then(function (out) {
+      var r = out[0]; VIEWS = out[1] || {};
       var rows = (r && !r.error && r.data) ? r.data : [];
       box.innerHTML = '';
-      if (!rows.length) {
-        var e = document.createElement('div'); e.className = 'lkea-card';
-        e.innerHTML = '<p class="lkea-t">No events yet</p><p class="lkea-m">Add one and it shows on your page and on the This week page, with a Get tickets button.</p>';
-        box.appendChild(e);
-        return;
-      }
       var now = Date.now();
       var up = rows.filter(function (x) { return new Date(x.ends_at || x.starts_at).getTime() + 3 * 36e5 > now && !x.canceled_at; });
       var past = rows.filter(function (x) { return up.indexOf(x) < 0; });
       up.forEach(function (ev) { box.appendChild(eventCard(ev, false)); });
+      var add = document.createElement('button'); add.type = 'button'; add.className = 'lkea-addtile';
+      add.innerHTML = up.length ? '<b>+ Add another event</b>'
+        : '<b>+ Add your first event</b><span>A class, a workshop, an opening night. Free, or with tickets.</span>';
+      add.addEventListener('click', function () { showForm(null); });
+      box.appendChild(add);
       if (past.length) {
         var d = document.createElement('details'); d.className = 'lkea-more';
         d.innerHTML = '<summary>Past and canceled (' + past.length + ')</summary>';
         past.reverse().forEach(function (ev) { d.appendChild(eventCard(ev, true)); });
         box.appendChild(d);
       }
-    }).catch(function () { box.innerHTML = '<p class="lkea-err">We could not load your events. Try again in a moment.</p>'; });
+      drawSide(side, up);
+    }).catch(function () { box.innerHTML = '<p class="lkea-err">We could not load your events. Try again in a moment.</p>'; drawSide(side, []); });
+  }
+
+  function drawSide(side, up) {
+    side.innerHTML = '';
+    if (up.length) side.appendChild(miniCalendar(up));
+    else {
+      var how = document.createElement('div'); how.className = 'lkea-sc';
+      how.innerHTML = '<p class="lkea-st">How it works</p><ol class="lkea-how">' +
+        '<li><b>Add your event.</b> Name, date, free or with tickets.</li>' +
+        '<li><b>Share it.</b> You get a link, a QR code and an Instagram Story picture.</li>' +
+        '<li><b>Welcome your guests.</b> Their names are on your guest list at the door.</li></ol>';
+      side.appendChild(how);
+    }
+    var next = up[0];
+    var sky = document.createElement('div'); sky.className = 'lkea-sky';
+    var free = next ? next.price_cents === 0 : true;
+    var btnWord = !next ? 'Get tickets' : !free && !vendorLive() ? 'Ticket sales open soon' : free ? 'Reserve my spot' : 'Get tickets';
+    sky.innerHTML = '<p class="lkea-st" style="color:#1D4E9E;">What neighbors see' + (next ? '' : ' <span style="font-weight:600;">(an example)</span>') + '</p>' +
+      '<div class="lkea-skycard">' + (next ? dateTile(next) : '<div class="lkea-dt" aria-hidden="true"><span class="lkea-dt-m">DEC</span><span class="lkea-dt-d">12</span><span class="lkea-dt-w">Sat</span></div>') +
+      '<div style="min-width:0;"><p class="lkea-t" style="font-size:14px;">' + esc(next ? next.title : 'Holiday card workshop') + '</p>' +
+      '<p class="lkea-m">' + esc(next ? timeRange(next) + ' · ' + priceWord(next) : '2 to 4 pm · $25') + '</p>' +
+      '<span class="lkea-skybtn">' + esc(btnWord) + '</span></div></div>' +
+      '<p class="lkea-m" style="color:#1D4E9E;margin-top:8px;">It shows on your storefront, and on the This week page once that opens.</p>' +
+      (V && V.slug ? '<a class="lkea-link" style="color:#1D4E9E;display:inline-block;" href="/' + esc(V.slug) + (next ? '#event-' + esc(next.id) : '') + '" target="_blank" rel="noopener">See it on your storefront</a>' : '');
+    side.appendChild(sky);
+    if (!vendorLive()) {
+      var n = document.createElement('div'); n.className = 'lkea-sc';
+      n.innerHTML = '<p class="lkea-st">Paid tickets</p><p class="lkea-m" style="color:#45415A;">Free events work right away. For paid tickets, turn on card payments first. It takes about 10 minutes.</p>' +
+        '<div class="lkea-acts" style="margin-top:10px;"><a class="lkea-btn2" href="/vendor-dashboard/settings#lokali-checkout">Turn on card payments</a></div>';
+      side.appendChild(n);
+    }
+  }
+
+  function miniCalendar(up) {
+    var byDay = {};
+    up.forEach(function (ev) { var k = ymd(new Date(ev.starts_at)); (byDay[k] = byDay[k] || []).push(ev); });
+    var today = ymd(new Date());
+    var y = +today.slice(0, 4), m = +today.slice(5, 7) - 1;
+    var minY = y, minM = m;
+    var wrap = document.createElement('div'); wrap.className = 'lkea-cal';
+    function draw() {
+      var label = new Date(Date.UTC(y, m, 15)).toLocaleDateString('en-US', { timeZone: 'UTC', month: 'long', year: 'numeric' });
+      var startDow = new Date(Date.UTC(y, m, 1)).getUTCDay();
+      var days = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+      var atMin = (y === minY && m === minM);
+      var html = '<div class="lkea-cal-h"><button type="button" data-p aria-label="Previous month"' + (atMin ? ' disabled' : '') + '>&#8249;</button><b>' + esc(label) + '</b><button type="button" data-n aria-label="Next month">&#8250;</button></div><div class="lkea-cal-g">';
+      ['S', 'M', 'T', 'W', 'T', 'F', 'S'].forEach(function (w) { html += '<span class="lkea-cal-w">' + w + '</span>'; });
+      for (var i = 0; i < startDow; i++) html += '<span></span>';
+      for (var dd = 1; dd <= days; dd++) {
+        var k = y + '-' + ('0' + (m + 1)).slice(-2) + '-' + ('0' + dd).slice(-2);
+        var evs = byDay[k];
+        if (evs) html += '<button type="button" class="lkea-cal-e" data-k="' + k + '" title="' + esc(evs.map(function (e) { return e.title; }).join(', ')) + '" aria-label="' + dd + ': ' + esc(evs.map(function (e) { return e.title; }).join(', ')) + '">' + dd + '</button>';
+        else html += '<span' + (k === today ? ' class="lkea-cal-t" aria-label="Today"' : '') + '>' + dd + '</span>';
+      }
+      html += '</div>';
+      var inMonth = up.filter(function (e) { return ymd(new Date(e.starts_at)).slice(0, 7) === k.slice(0, 7); }).length;
+      html += '<p class="lkea-m" style="margin-top:8px;">' + (inMonth ? (inMonth === 1 ? '1 event' : inMonth + ' events') + ' this month' : 'Nothing this month. Your next one is ' + esc(new Date(up[0].starts_at).toLocaleDateString('en-US', { timeZone: TZ, month: 'long', day: 'numeric' })) + '.') + '</p>';
+      wrap.innerHTML = html;
+      var p = wrap.querySelector('[data-p]'), n = wrap.querySelector('[data-n]');
+      if (p && !atMin) p.addEventListener('click', function () { m--; if (m < 0) { m = 11; y--; } draw(); });
+      n.addEventListener('click', function () { m++; if (m > 11) { m = 0; y++; } draw(); });
+      wrap.querySelectorAll('[data-k]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          var ev = byDay[b.getAttribute('data-k')][0], el = document.getElementById('lkea-ev-' + ev.id);
+          if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.classList.add('lkea-flash'); setTimeout(function () { el.classList.remove('lkea-flash'); }, 1600); }
+        });
+      });
+    }
+    draw();
+    return wrap;
   }
 
   function eventCard(ev, past) {
-    var c = document.createElement('div'); c.className = 'lkea-card';
-    c.innerHTML = '<p class="lkea-t">' + esc(ev.title) + (ev.canceled_at ? ' <span class="lkea-m" style="display:inline;">· canceled</span>' : '') + '</p>' +
-      '<p class="lkea-m">' + esc(when(ev.starts_at, ev.ends_at)) + ' · ' + esc(ev.place) + '</p>' +
-      '<p class="lkea-m" data-sold style="margin-top:4px;">' + (ev.price_cents === 0 ? 'Free · ' + esc(ev.capacity) + ' spots' : money(ev.price_cents) + ' · ' + esc(ev.capacity) + ' tickets') + '</p>' +
-      '<div class="lkea-acts"><button type="button" class="lkea-btn2" data-g>Guest list</button>' +
-      (past ? '' : '<button type="button" class="lkea-btn2" data-e>Edit</button><button type="button" class="lkea-btn2" data-s>Share</button>') + '</div>';
+    var c = document.createElement('div'); c.className = 'lkea-card lkea-ev' + (past ? ' lkea-past' : ''); c.id = 'lkea-ev-' + ev.id;
+    var unit = ev.price_cents === 0 ? 'spots' : 'tickets';
+    var v = VIEWS && VIEWS[String(ev.id)] ? Number(VIEWS[String(ev.id)].views) || 0 : 0;
+    c.innerHTML = dateTile(ev) +
+      '<div class="lkea-evb"><p class="lkea-t">' + esc(ev.title) + (ev.canceled_at ? ' <span class="lkea-m" style="display:inline;">· canceled</span>' : '') + '</p>' +
+      '<p class="lkea-m">' + (past ? '' : '<b class="lkea-cd">' + esc(countdown(ev)) + '</b> · ') + esc(timeRange(ev)) + ' · ' + esc(priceWord(ev)) + ' · ' + esc(ev.place) + '</p>' +
+      (past ? '' : '<div class="lkea-bar" aria-hidden="true"><i data-fill style="width:0%"></i></div>') +
+      '<p class="lkea-m" data-sold style="margin-top:' + (past ? '4' : '0') + 'px;">' + esc(ev.capacity) + ' ' + unit + '</p>' +
+      '<div class="lkea-acts">' + (past ? '' : '<button type="button" class="lkea-btn" data-s>Share with your customers</button>') +
+      '<button type="button" class="lkea-btn2" data-g>Guest list</button>' +
+      (past ? '' : '<button type="button" class="lkea-btn2" data-e>Edit</button>') +
+      '<button type="button" class="lkea-btn2" data-a>Run it again</button></div></div>';
     c.querySelector('[data-g]').addEventListener('click', function () { showGuests(ev); });
+    c.querySelector('[data-a]').addEventListener('click', function () { showForm(ev, true); });
     if (!past) {
       c.querySelector('[data-e]').addEventListener('click', function () { showForm(ev); });
       c.querySelector('[data-s]').addEventListener('click', function () { showShare(ev, false); });
     }
     client().then(function (cl) { return cl.rpc('event_tickets_taken', { p_events_id: ev.id }); }).then(function (r) {
       if (r && !r.error && typeof r.data === 'number') {
-        $('[data-sold]', c).textContent = (ev.price_cents === 0 ? 'Free · ' + r.data + ' of ' + ev.capacity + ' spots taken' : money(ev.price_cents) + ' · ' + r.data + ' of ' + ev.capacity + ' tickets taken');
+        var taken = r.data, line = taken + ' of ' + ev.capacity + ' ' + unit + ' taken';
+        if (v > 0) line = (v === 1 ? '1 person looked' : v + ' people looked') + ' · ' + (taken === 1 ? '1 coming' : taken + ' coming') + ' · ' + (Math.max(0, ev.capacity - taken)) + ' ' + unit + ' left';
+        $('[data-sold]', c).textContent = line;
+        var fill = $('[data-fill]', c); if (fill) fill.style.width = Math.max(taken ? 4 : 0, Math.min(100, Math.round(taken * 100 / Math.max(1, ev.capacity)))) + '%';
       }
     }).catch(function () {});
     return c;
   }
 
   // ── add / edit ───────────────────────────────────────────────────────────────
-  function showForm(ev) {
-    var isNew = !ev;
+  function showForm(ev, again) {
+    var isNew = !ev || !!again;
+    var srcId = again && ev ? ev.id : null;
+    if (again && ev) ev = { title: ev.title, description: ev.description, photo_url: ev.photo_url, starts_at: ev.starts_at, ends_at: ev.ends_at, place: ev.place, price_cents: ev.price_cents, capacity: ev.capacity, max_per_buyer: ev.max_per_buyer, guest_refund: ev.guest_refund, waitlist_enabled: ev.waitlist_enabled };
     ev = ev || { title: '', description: '', photo_url: '', starts_at: null, ends_at: null, place: V.address || V.business_name || '', price_cents: null, capacity: null, max_per_buyer: 10, guest_refund: '2d', waitlist_enabled: true };
     var s = fromIso(ev.starts_at), e = fromIso(ev.ends_at);
-    root.innerHTML = '';
+    root.innerHTML = ''; root.className = 'lkea-nv';
     var back = document.createElement('button'); back.type = 'button'; back.className = 'lkea-link'; back.textContent = 'Back to events';
     back.addEventListener('click', function () { showList(); });
     root.appendChild(back);
     var f = document.createElement('div'); f.className = 'lkea-card';
-    f.innerHTML = '<p class="lkea-t" style="font-size:18px;">' + (isNew ? 'Add an event with tickets' : 'Edit event') + '</p>' +
+    f.innerHTML = '<p class="lkea-t" style="font-size:18px;">' + (again ? 'Run it again' : isNew ? 'Add an event with tickets' : 'Edit event') + '</p>' +
       '<label class="lkea-lbl" for="lkea-title">Event name</label><input class="lkea-in" id="lkea-title" maxlength="120" placeholder="Opening night: new work">' +
       '<span class="lkea-lbl">Photo</span><div class="lkea-photo"><img data-ph alt="" style="' + (ev.photo_url ? '' : 'display:none;') + '"><label class="lkea-btn2" style="cursor:pointer;">' + (ev.photo_url ? 'Change photo' : 'Add a photo') + '<input type="file" accept="image/*" data-file style="display:none;"></label></div>' +
       '<label class="lkea-lbl" for="lkea-date">Date</label><input class="lkea-in" id="lkea-date" type="date">' +
@@ -237,7 +401,13 @@
 
     $('#lkea-title', f).value = ev.title || '';
     $('#lkea-desc', f).value = ev.description || '';
-    $('#lkea-date', f).value = s.date; $('#lkea-start', f).value = s.time; $('#lkea-end', f).value = e.time;
+    $('#lkea-date', f).value = again ? '' : s.date; $('#lkea-start', f).value = s.time; $('#lkea-end', f).value = e.time;
+    if (again) {
+      var hint = document.createElement('p'); hint.className = 'lkea-m'; hint.style.margin = '4px 0 0';
+      hint.textContent = 'Everything is copied from last time. Pick the new date, check the rest, and save.';
+      $('.lkea-t', f).insertAdjacentElement('afterend', hint);
+      setTimeout(function () { try { $('#lkea-date', f).focus(); } catch (x) {} }, 50);
+    }
     $('#lkea-price', f).value = ev.price_cents ? (ev.price_cents / 100) : '';
     $('#lkea-cap', f).value = ev.capacity || '';
     $('#lkea-place', f).value = ev.place || '';
@@ -248,7 +418,7 @@
     f.querySelectorAll('[data-refund] .lkea-chip').forEach(function (b) { b.addEventListener('click', function () { refund = b.getAttribute('data-v'); drawRefund(); }); });
     drawRefund();
     // #261 free events: Paid / Free. An event with tickets or spots taken can't switch (the database refuses too).
-    var kind = (!isNew && ev.price_cents === 0) ? 'free' : 'paid';
+    var kind = ((!isNew || again) && ev.price_cents === 0) ? 'free' : 'paid';
     function drawKind() {
       f.querySelectorAll('[data-kind] .lkea-chip').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-v') === kind); });
       $('[data-paidonly]', f).style.display = kind === 'free' ? 'none' : '';
@@ -315,9 +485,13 @@
       });
     }
     $('[data-addp]', f).addEventListener('click', function () { if (lineup.length < 20) { lineup.push({ name: '', role: '', time_label: '', linked_vendors_id: null }); drawLineup(); } });
-    if (!isNew) {
-      client().then(function (c) { return c.from('vendor_event_lineup').select('*').eq('events_id', ev.id).order('sort_order'); })
-        .then(function (r) { lineup = (r && r.data) ? r.data : []; drawLineup(); }).catch(function () {});
+    if (!isNew || srcId) {
+      client().then(function (c) { return c.from('vendor_event_lineup').select('*').eq('events_id', srcId || ev.id).order('sort_order'); })
+        .then(function (r) {
+          lineup = (r && r.data) ? r.data : [];
+          if (srcId) lineup = lineup.map(function (p) { return { name: p.name, role: p.role, time_label: p.time_label, linked_vendors_id: p.linked_vendors_id }; });
+          drawLineup();
+        }).catch(function () {});
     }
 
     var rm = $('[data-remove]', f);
@@ -429,7 +603,7 @@
   }
 
   function showShare(ev, fresh) {
-    root.innerHTML = '';
+    root.innerHTML = ''; root.className = 'lkea-nv';
     var back = document.createElement('button'); back.type = 'button'; back.className = 'lkea-link'; back.textContent = 'Back to events';
     back.addEventListener('click', function () { showList(); });
     root.appendChild(back);
@@ -467,7 +641,7 @@
 
   // ── the door list ────────────────────────────────────────────────────────────
   function showGuests(ev) {
-    root.innerHTML = '';
+    root.innerHTML = ''; root.className = 'lkea-nv';
     var back = document.createElement('button'); back.type = 'button'; back.className = 'lkea-link'; back.textContent = 'Back to events';
     back.addEventListener('click', function () { showList(); });
     root.appendChild(back);
