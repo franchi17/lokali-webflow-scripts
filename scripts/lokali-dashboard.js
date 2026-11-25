@@ -360,6 +360,7 @@
   // offered in three places). Where the Settings card would be, one plain line points there.
   (function settingsLookPointer() {
     if (!/^\/vendor-dashboard\/settings\/?$/.test(String(location.pathname || ''))) return;
+    return; // retired 2026-11-25: no look to choose; the Settings card stays hidden by CSS
     var tries = 0, t = setInterval(function () {
       var card = document.getElementById('lok-look-card');
       if (card && !document.querySelector('.lok-look-pointer')) {
@@ -1796,7 +1797,8 @@
       });
     }).then(function (r) {
       var d = r && !r.error ? r.data : null;
-      if (d && d.storefront_look === 'classic') show(d); // every plan since 2026-11-24
+      // Retired 2026-11-25: every storefront uses the one look, nothing to choose.
+      if (false && d) show(d);
     }).catch(function () {});
   }
 

@@ -10,8 +10,8 @@
  * so their behaviour, lead tracking and inquiry modal stay exactly as they are.
  * Contact buttons proxy-click the real hidden controls for the same reason.
  *
- * Who sees it (F 2026-11-24, patch_gallery_all_plans.sql): a storefront whose
- * owner chose Gallery (vendors.storefront_look), on ANY plan. What differs by plan:
+ * Who sees it (F 2026-11-25): EVERY storefront. There is no Classic/Gallery
+ * switch any more (vendors.storefront_look is no longer read). By plan:
  *   - cover: Free 1 photo, Pro up to 5 rotating, Featured up to 15; no portfolio
  *     photo = a plain lavender band with the name (no product-photo stand-in);
  *   - collections / artists / art details: Featured only (unchanged);
@@ -276,7 +276,9 @@
   }, 20000).then(function (lv) {
     if (!lv) return;
     var vid = Number(lv.id);
-    (FORCED ? Promise.resolve(true) : chosen(vid)).then(function (on) {
+    // Gallery is THE storefront for every plan (F 2026-11-25: no Classic/Gallery
+    // switch). ?look=classic above still shows the old page for testing.
+    Promise.resolve(true).then(function (on) {
       if (!on) return;
       return start(vid);
     }).catch(function (e) {
@@ -480,8 +482,10 @@
     var quoteMostly = products.length && products.filter(function (p) { return p.is_quote_based || p.price == null || p.price === ''; }).length > products.length / 2;
     var ctaWord = quoteMostly ? 'Ask for a quote' : 'Send a message';
     var btns = ce('div', 'lkp-btns');
-    var bWork = ce('button', 'lkp-b', gallery ? 'See the art' : 'See the work'); bWork.type = 'button';
-    bWork.addEventListener('click', function () { scrollToId('lkp-work'); });
+    // Services-only storefronts (most of them) jump to their services instead.
+    var noWork = !products.length;
+    var bWork = ce('button', 'lkp-b', noWork ? 'See services' : (gallery ? 'See the art' : 'See the work')); bWork.type = 'button';
+    bWork.addEventListener('click', function () { scrollToId(noWork && document.getElementById('lkp-book') ? 'lkp-book' : 'lkp-work'); });
     var bMsg = ce('button', 'lkp-b gh', ctaWord); bMsg.type = 'button';
     bMsg.addEventListener('click', function () { proxyClick('lok-inq-btn'); });
     btns.appendChild(bWork);

@@ -3147,8 +3147,8 @@ const LokaliProductsPage = (() => {
 
   const loadGalleryArtists = async () => {
     const S = galSAPI();
-    // The Look switch is for every plan (F 2026-11-24); collections stay Featured.
-    if (!S?.capabilities?.galleryStorefront || !S.artists) return;
+    // Collections are the Featured perk; there is no look switch any more (F 2026-11-25).
+    if (!_isFeaturedPlan || !S?.capabilities?.galleryStorefront || !S.artists) return;
     try {
       if (_galVendorId == null) {
         const me = await S.vendors.me();
@@ -3159,12 +3159,9 @@ const LokaliProductsPage = (() => {
       // otherwise the older Collections box below, exactly as before.
       if (await galLoadV2(_galVendorId)) {
         _galV2 = true; _galAvailable = true;
-        // Not Featured: no collections on the page or in the listing form.
-        if (!_isFeaturedPlan) { _galArtists = []; _galTab = 'look'; }
         renderGalleryPanel(); syncGalleryFields();
         return;
       }
-      if (!_isFeaturedPlan) return; // older Collections box: Featured only
       const res = await S.artists.forVendor(_galVendorId);
       if (!res || res.error) { _galAvailable = false; return; }
       _galArtists = Array.isArray(res.data) ? res.data : [];
@@ -3521,11 +3518,10 @@ const LokaliProductsPage = (() => {
     let panel = document.getElementById('lok-gallery-page');
     if (!panel) {
       panel = document.createElement('section'); panel.id = 'lok-gallery-page';
-      panel.setAttribute('aria-label', 'Your Gallery page');
+      panel.setAttribute('aria-label', 'Your collections');
       add.parentNode.parentNode.insertBefore(panel, add.parentNode.nextSibling);
       // Arriving from the Profile / Services notice ("Set it up").
       if (location.hash === '#gallery') {
-        _galTab = 'look';
         setTimeout(() => { try { panel.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) {} }, 60);
       }
     }
@@ -3538,8 +3534,8 @@ const LokaliProductsPage = (() => {
     const ic = gpEl('div', 'lokgp-ic');
     ic.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>';
     const ht = gpEl('div');
-    ht.appendChild(gpEl('h3', null, 'Your Gallery page'));
-    ht.appendChild(gpEl('p', null, 'Shoppers see: ' + (_galLook === 'gallery' ? 'Gallery look' : 'Classic look') + (_isFeaturedPlan ? ' · ' + shown + ' ' + (shown === 1 ? W.one : W.title.toLowerCase()) + ' on show' : '')));
+    ht.appendChild(gpEl('h3', null, 'Your ' + W.title.toLowerCase()));
+    ht.appendChild(gpEl('p', null, shown + ' ' + (shown === 1 ? W.one : W.title.toLowerCase()) + ' on show. Shoppers always see all your listings; ' + W.title.toLowerCase() + ' appear as filters above them once you have two.'));
     h.appendChild(ic); h.appendChild(ht); h.appendChild(gpEl('span', 'lokgp-sp'));
     if (_isFeaturedPlan) h.appendChild(gpEl('span', 'lokgp-feat', 'FEATURED'));
     if (_galSlug) {
@@ -3550,18 +3546,10 @@ const LokaliProductsPage = (() => {
     panel.appendChild(h);
     if (_galNotice) { const n = gpEl('p', 'lokgp-err', _galNotice); n.style.margin = '10px 18px 0'; panel.appendChild(n); _galNotice = ''; }
 
-    // tabs
-    const tabs = gpEl('div', 'lokgp-tabs'); tabs.setAttribute('role', 'tablist');
-    [['look', 'Look'], ['cols', W.title]].forEach(([k, label]) => {
-      const b = gpEl('button', null, label); b.type = 'button'; b.setAttribute('role', 'tab');
-      b.setAttribute('aria-selected', _galTab === k ? 'true' : 'false');
-      b.addEventListener('click', () => { _galTab = k; renderGalleryPanel(); });
-      tabs.appendChild(b);
-    });
-    panel.appendChild(tabs);
-    const body = gpEl('div', 'lokgp-b'); body.setAttribute('role', 'tabpanel');
+    // Only collections now: every storefront uses the one look (F 2026-11-25).
+    const body = gpEl('div', 'lokgp-b');
     panel.appendChild(body);
-    if (_galTab === 'look') gpLookTab(body); else gpColsTab(body, W);
+    gpColsTab(body, W);
   };
 
   const gpLookTab = (body) => {
@@ -3614,13 +3602,6 @@ const LokaliProductsPage = (() => {
   };
 
   const gpColsTab = (body, W) => {
-    if (!_isFeaturedPlan) {
-      // Collections are a Featured perk; every plan gets the Look switch.
-      body.appendChild(gpEl('p', 'lokgp-note', 'Collections come with the Featured plan: group your listings your own way, call them Artists or Makers, and mark pieces Sold or One of a kind.'));
-      const see = gpEl('a', 'lokgp-btn q', 'See Featured'); see.href = window.LOKALI_PRICING_URL || '/pricing';
-      body.appendChild(see);
-      return;
-    }
     const two = gpEl('div', 'lokgp-two');
     const left = gpEl('div'); const right = gpEl('div');
     two.appendChild(left); two.appendChild(right); body.appendChild(two);
