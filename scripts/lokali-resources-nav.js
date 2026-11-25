@@ -34,7 +34,7 @@
   'use strict';
 
   var BRAND = '#6002EE';
-  var INK = '#1A1829';
+  var INK = '#45415A'; // F 2026-11-25: brand guide dark text, never near-black (was #1A1829)
   var DUSK = '#4A4761';
   var FONT = "'Plus Jakarta Sans', sans-serif";
 
@@ -128,6 +128,8 @@
       // F 2026-11-25 (option B, design team unanimous): the rule now runs under the caret
       // too; it used to stop short of it and read as cut off. Caret turns violet with it.
       '.header-bottom-wrapper .lok-nav-cur .lok-res-car{color:' + BRAND + ';}' +
+      // F 2026-11-25: Sign up button edge was a retired bright blue (#0000E4); match its violet fill.
+      '.header-wrapper .btn-secondary,.header-bottom-wrapper .btn-secondary{border-color:' + BRAND + '!important;}' +
       '.header-bottom-wrapper .header-nav-link:focus-visible,.header-bottom-wrapper .lok-res-trig:focus-visible{outline:2px solid ' + BRAND + ';outline-offset:4px;border-radius:4px;}' +
       // mobile accordion variant (inside the hamburger menu)
       '.lok-res-li.mob .lok-res-trig{display:flex;justify-content:space-between;width:100%;}' +
