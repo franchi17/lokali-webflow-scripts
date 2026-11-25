@@ -3,7 +3,7 @@
  * section; a label on every band reads as machine-made. Pages whose eyebrows come from our
  * own scripts had them removed at the source (home, about, start, this-week, holiday,
  * for-vendors, the-market). This file covers the pages whose eyebrows live in Webflow itself
- * (page code or HTML embeds), path-gated so no other page is touched.
+ * (page code or HTML embeds) or in a script pinned where a bump means a big rewrite, path-gated so no other page is touched.
  * Kept on purpose: This Week day names, Pricing plan names, For vendors plan tags, About
  * Vendors / Customers column labels, Founding vendors step numbers.
  */
@@ -15,6 +15,9 @@
   } else if (p === '/for-customers') {
     css = '.lkfc .eye,.lk-ai-eye{display:none!important;}' +
       '.lkfc figcaption,.lkfc figcaption a{text-transform:none!important;letter-spacing:normal!important;}';
+  } else if (p === '/this-week' || p === '/this-weekend') {
+    // lokali-weekend.js is pinned in the site footer loader; v1.4.703+ drops it at the source too.
+    css = '.lkw-eyebrow{display:none!important;}';
   } else if (p === '/neighborhood-edit') {
     css = '#ne-lp .eb{display:none!important;}';
   } else if (/^\/vendor-resources(\/|$)/.test(p)) {
