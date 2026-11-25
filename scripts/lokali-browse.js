@@ -3083,6 +3083,8 @@
     // newsletter box: lavender + violet (was light orange)
     '.newsletter-nudge.lk-warm{background:#F3EBFF!important;}',
     '.lk-warm .newsletter-nudge-eyebrow{color:#6002EE!important;}',
+    // no eyebrow (F 2026-11-25: a label on top of every section reads as machine-made)
+    '.browse-hero .text-block-115,.mkt-about .mkt-about-eyebrow,.newsletter-nudge .newsletter-nudge-eyebrow{display:none!important;}',
     '.lk-warm .newsletter-nudge-headline{color:#45415A!important;}',
     // one pink band instead of two cards
     '.bottom-ctas.lk-door{display:block!important;background:#FDE6F2!important;border-radius:16px;padding:34px 36px!important;}',

@@ -92,7 +92,7 @@
   // of the same photo so the form is not pushed down the page.
   var HERO_IMG = 'https://cdn.jsdelivr.net/gh/franchi17/lokali-webflow-scripts@d652be3252f8c0cdf14e8cb23044cfcfc65b88a4/assets/holiday-page-hero.jpg';
   function hero(eyebrow, title, lede) {
-    return '<div class="lkh-hero">' + '<span class="lkh-eyebrow">' + eyebrow + '</span><h1>' + title + '</h1><p class="lkh-lede">' + lede + '</p></div>';
+    return '<div class="lkh-hero">' + '<h1>' + title + '</h1><p class="lkh-lede">' + lede + '</p></div>';
   }
 
   var styled = false;

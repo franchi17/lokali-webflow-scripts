@@ -53,7 +53,7 @@
       // one family: sky. Buttons, links, labels and the headline's second line.
       '.lkft{color:' + C.ink + '!important;}' +
       '.lkft h1,.lkft h2,.lkft h3{color:' + C.ink + '!important;}' +
-      '.lkft .lkft-eb{color:' + C.sd + '!important;letter-spacing:.32em!important;font-size:11px!important;}' +
+      '.lkft .lkft-eb{display:none!important;}' + // no eyebrow (F 2026-11-25: a label on top of every section reads as machine-made)
       '.lkft .lkft-btn{background:' + C.sd + '!important;color:#fff!important;font-weight:800!important;}' +
       '.lkft .lkft-btn:hover{background:' + C.sdk + '!important;}' +
       '.lkft .lkft-ul{color:' + C.sd + '!important;}' +

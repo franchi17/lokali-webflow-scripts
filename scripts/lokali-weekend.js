@@ -89,7 +89,7 @@
   }
 
   function shell(inner, byDay) {
-    return '<div class="lkw"><div class="lkw-wrap"><span class="lkw-eyebrow">This week</span>' +
+    return '<div class="lkw"><div class="lkw-wrap">' +
       '<h1>Where to find your neighbors <em>this week.</em></h1>' +
       '<p class="lkw-lede">Markets, pop-ups and pickups near you, posted by the vendors themselves.</p>' +
       strip(byDay || {}) + inner +

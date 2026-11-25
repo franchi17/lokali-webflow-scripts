@@ -290,7 +290,7 @@
     fig.id = 'lok-ab-cover';
     grid.appendChild(fig);
     var card = el('div', 'lok-cv-card');
-    card.appendChild(el('p', 'lok-eye', 'Our story'));
+    // no eyebrow (F 2026-11-25: a label on top of every section reads as machine-made)
     // New headline, only while the Designer copy is the one we replaced.
     if (oneLine(h1.textContent) === NEW_H1) {
       h1.textContent = '';
@@ -327,7 +327,7 @@
     var sec = el('section', 'lok-ab lok-ab-q');
     sec.id = 'lok-ab-know';
     var wrap = el('div', 'lok-wrap');
-    if (top) wrap.appendChild(take(top, 'lok-eye'));
+    // no eyebrow (F 2026-11-25: a label on top of every section reads as machine-made): the old heading stays in the hidden original block
     var q = el('p', 'lok-quote');
     q.appendChild(document.createTextNode('Ask around any neighborhood and the same names come up. '));
     q.appendChild(el('span', null, 'Lokali is where those names live.'));
@@ -504,7 +504,7 @@
     }
     letter.appendChild(left);
     var right = el('div');
-    right.appendChild(el('p', 'lok-eye', 'A letter from the founder'));
+    // no eyebrow (F 2026-11-25: a label on top of every section reads as machine-made)
     if (h) right.appendChild(take(h, 'lok-lt-h'));
     var body = el('div', 'lok-lt-body');
     for (var i = 0; i < ps.length; i++) {

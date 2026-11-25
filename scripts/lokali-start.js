@@ -345,7 +345,6 @@
     // v4.1 (F 2026-11-23 'each page its own top'): the first question sits IN the green top,
     // beside the headline, so the page opens as a tool. The other questions follow below.
     var html = '<div class="lkst"><div class="lkst-top"><div class="lkst-in lkst-topgrid"><div>' +
-      '<span class="lkst-eyebrow">Start here</span>' +
       '<h1>Starting a small business' + (city ? ' in ' + esc(city.t) : '') + '? <em>Let’s make the paperwork shorter.</em></h1>' +
       '<p class="lkst-lede">A checklist made for where you are and what you sell: the official steps, what each one costs, and where Lokali fits. It is free, and you do not need an account.</p>' +
       '<ol class="lkst-steps" aria-label="Three steps">' + stp(1, 'Where you are') + stp(2, 'What you sell') + stp(3, 'Your checklist') + '</ol>' +

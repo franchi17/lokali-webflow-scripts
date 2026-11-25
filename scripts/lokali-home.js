@@ -522,7 +522,7 @@
     var sec = el('section', 'lok-band lok-worries lok-center');
     sec.id = 'lok-worries';
     var wrap = el('div', 'lok-wrap');
-    wrap.appendChild(el('p', 'lok-eye', 'Sound familiar?'));
+    // no eyebrow (F 2026-11-25: a label on top of every section reads as machine-made)
     wrap.appendChild(el('h2', 'lok-h2', 'Finding someone good shouldn’t take a 60-comment thread.'));
     wrap.appendChild(el('p', 'lok-sub', 'Most of us still ask around. It works, eventually.'));
     var tiles = el('div', 'lok-tiles');
