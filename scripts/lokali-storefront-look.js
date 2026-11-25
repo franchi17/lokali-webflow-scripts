@@ -563,9 +563,10 @@
     sh.appendChild(ce('h2', null, gallery ? 'The art' : 'The work'));
     var cnt = ce('span', 'lkp-cnt'); sh.appendChild(cnt);
     work.appendChild(sh);
-    work.appendChild(ce('p', 'lkp-lede', byCollections
+    var lede = ce('p', 'lkp-lede', byCollections
       ? (gallery ? 'Pick an artist to see only their work.' : 'Pick a collection to narrow things down.')
-      : (quoteMostly ? 'Everything is made to order. Pick what you need and ask for a quote.' : 'Pick a kind to narrow things down.')));
+      : (quoteMostly ? 'Everything is made to order. Pick what you need and ask for a quote.' : 'Pick a kind to narrow things down.'));
+    work.appendChild(lede);
     var fbar = ce('div', 'lkp-fbar');
     var fbtn = ce('button', 'lkp-fbtn'); fbtn.type = 'button'; fbtn.appendChild(svg(IC.filter, 18)); fbtn.appendChild(document.createTextNode('Filter and sort'));
     fbar.appendChild(fbtn);
@@ -595,6 +596,8 @@
       : Object.keys(counts).filter(function (g) { return counts[g] >= 2; })
           .sort(function (a, b) { return counts[b] - counts[a] || groupLabel(a).localeCompare(groupLabel(b)); });
     var hasFilters = groups.length >= 2;
+    // No filter row: don't tell shoppers to pick one (the made-to-order line stays).
+    if (!hasFilters && !(quoteMostly && !byCollections)) lede.style.display = 'none';
     var state = { group: '', sort: 'picks', shown: 0 };
     var PAGE_FIRST = 12, PAGE_MORE = 24;
     var hasPrices = products.some(function (p) { return !p.is_quote_based && p.price != null && p.price !== '' && isFinite(Number(p.price)); });
