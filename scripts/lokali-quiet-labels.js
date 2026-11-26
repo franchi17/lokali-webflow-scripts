@@ -10,6 +10,30 @@
  * Vendors / Customers column labels, Founding vendors step numbers.
  */
 (function () {
+  // F 2026-11-26 "Yes, remove it": the old link row under the footer (Our Story, Support,
+  // golokali.com, Privacy, Terms) goes away; the first three already sit in the footer columns.
+  // Privacy + Terms must stay reachable, so they move onto the copyright line.
+  var hide = document.createElement("style");
+  hide.id = "lokali-footer-legal";
+  hide.textContent = ".lok-ft-legal{display:none!important;}.lok-ft-copy .lok-ft-copylink{color:inherit!important;text-decoration:none!important;}.lok-ft-copy .lok-ft-copylink:hover{text-decoration:underline!important;text-underline-offset:3px;}";
+  (document.head || document.documentElement).appendChild(hide);
+  function moveLegal() {
+    var row = document.querySelector(".lok-ft-legal"), copy = document.querySelector(".lok-ft-copy");
+    if (!row || !copy || copy.querySelector(".lok-ft-copylink")) return;
+    copy.textContent = copy.textContent.replace(/\.\s*$/, "");
+    ["/privacy", "/terms"].forEach(function (h) {
+      var a = row.querySelector("a[href=\"" + h + "\"]");
+      if (!a) return;
+      a.className = "lok-ft-copylink";
+      copy.appendChild(document.createTextNode(" \u00b7 "));
+      copy.appendChild(a);
+    });
+    row.parentNode.removeChild(row);
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", moveLegal); else moveLegal();
+})();
+
+(function () {
   var p = String(location.pathname || '').replace(/\/+$/, '') || '/';
   var css = '';
   if (p === '/pricing') {
