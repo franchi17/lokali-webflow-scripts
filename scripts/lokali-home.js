@@ -104,8 +104,8 @@
   var I_ARROW = '<svg viewBox="0 0 448 512" aria-hidden="true"><path fill="currentColor" d="M438.6 278.6c12.5-12.5 12.5-32.8 0-45.3l-160-160c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L338.8 224 32 224c-17.7 0-32 14.3-32 32s14.3 32 32 32l306.7 0L233.4 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0l160-160z"/></svg>';
   var I_HEART = '<svg viewBox="0 0 512 512" aria-hidden="true"><path fill="currentColor" d="M47.6 300.4L228.3 469.1c7.5 7 17.4 10.9 27.7 10.9s20.2-3.9 27.7-10.9L464.4 300.4c30.4-28.3 47.6-68 47.6-109.5v-5.8c0-69.9-50.5-129.5-119.4-141C347 36.5 300.6 51.4 268 84L256 96 244 84c-32.6-32.6-79-47.5-124.6-39.9C50.5 55.6 0 115.2 0 185.1v5.8c0 41.5 17.2 81.2 47.6 109.5z"/></svg>';
 
-  // Founder note photo: the same picture as the About page (F 2026-11-22).
-  var FOUNDER_IMG = 'https://cdn.prod.website-files.com/6989095758ae17edfc424d30/6ace7bd4e6c66ad637d7db88_francesca.webp';
+  // Founder note photo: the square cut of the About page picture, kept as a circle here (F 2026-11-26).
+  var FOUNDER_IMG = 'https://cdn.jsdelivr.net/gh/franchi17/lokali-webflow-scripts@12e04c64793fa945eeceed77a6aec3429a1c064d/assets/francesca-circle-2026-11.webp';
   var AREA_COUNT = 9; // shown in the founder note's trust line; keep in step with AREAS
 
   // The four worries, in shoppers' own words (docs/marketing/

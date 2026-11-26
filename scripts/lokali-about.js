@@ -85,6 +85,8 @@
   // Brand guide: pink page. pk = ground, pb = big words/shapes, pd = buttons + small words.
   var C = { ink: '#45415A', body: '#4A4761', pk: '#FDE6F2', pb: '#EE0290', pd: '#B0006A', pdk: '#8E0056', line: '#F3C6DE', edge: '#EEE7F0' };
   var F = '"Plus Jakarta Sans",sans-serif';
+  // Francesca's photo for the letter (F 2026-11-26). The homepage uses the square cut of the same picture.
+  var FOUNDER_PORTRAIT = 'https://cdn.jsdelivr.net/gh/franchi17/lokali-webflow-scripts@12e04c64793fa945eeceed77a6aec3429a1c064d/assets/francesca-portrait-2026-11.webp';
 
   function injectStyle() {
     if (document.getElementById(STYLE_ID)) return;
@@ -190,8 +192,8 @@
       '.lok-ab #wl-trigger{margin-top:18px;padding:14px 24px;font-size:15px;}' +
       // the letter
       '.lok-ab-letter{background:#fff;padding:96px 0 104px;scroll-margin-top:90px;}' +
-      '.lok-letter{display:grid;grid-template-columns:260px minmax(0,1fr);gap:56px;align-items:start;max-width:1000px;margin:0 auto;}' +
-      '.lok-ab .lok-lt-face{display:block;width:260px!important;height:260px!important;border-radius:50%!important;object-fit:cover;margin:0!important;max-width:none!important;box-shadow:0 0 0 8px ' + C.pk + ';}' +
+      '.lok-letter{display:grid;grid-template-columns:380px minmax(0,1fr);gap:56px;align-items:start;max-width:1000px;margin:0 auto;}' +
+      '.lok-ab .lok-lt-face{display:block;width:380px!important;height:500px!important;border-radius:24px!important;object-fit:cover;object-position:50% 20%;margin:0!important;max-width:none!important;box-shadow:14px 14px 0 0 ' + C.pk + ';}' +
       '.lok-ab .lok-lt-h{font:800 40px/1.1 ' + F + '!important;letter-spacing:-.03em!important;color:' + C.ink + '!important;margin:0!important;text-transform:none!important;}' +
       '.lok-lt-body{margin-top:24px;display:grid;gap:18px;}' +
       '.lok-ab .lok-lt-p{font:400 17px/1.8 ' + F + '!important;color:' + C.body + '!important;margin:0!important;}' +
@@ -200,11 +202,12 @@
       '.lok-ab .lok-role{font:600 14px/1.4 ' + F + '!important;color:' + C.body + '!important;margin:2px 0 0!important;letter-spacing:0!important;text-transform:none!important;}' +
       '.lok-lt-acts{display:flex;flex-wrap:wrap;gap:12px;margin-top:30px;}' +
       // responsive
-      '@media(max-width:1149px){#lok-ab-hero h1{font-size:50px!important;}.lok-cv-card{margin-right:-80px;padding:36px;}}' +
+      '@media(max-width:1149px){#lok-ab-hero h1{font-size:50px!important;}.lok-cv-card{margin-right:-80px;padding:36px;}' +
+        '.lok-letter{grid-template-columns:320px minmax(0,1fr);gap:48px;}.lok-ab .lok-lt-face{width:320px!important;height:420px!important;}}' +
       '@media(max-width:991px){.lok-ab .lok-wrap{padding:0 24px;}.lok-ab.lok-sec,.lok-ab-letter{padding-top:56px;padding-bottom:56px;}' +
         '.lok-ab .lok-h2{font-size:30px!important;}.lok-wh-grid{grid-template-columns:1fr;gap:16px;}.lok-two{grid-template-columns:1fr;gap:14px;}' +
         '.lok-un{grid-template-columns:1fr;gap:22px;}.lok-ab .lok-quote{font-size:30px!important;}.lok-ab-q{padding:64px 0 24px;}' +
-        '.lok-letter{grid-template-columns:1fr;gap:28px;}.lok-ab .lok-lt-face{width:180px!important;height:180px!important;}.lok-open{margin-top:8px;}}' +
+        '.lok-letter{grid-template-columns:1fr;gap:36px;}.lok-ab .lok-lt-face{width:280px!important;height:364px!important;box-shadow:10px 10px 0 0 ' + C.pk + ';}.lok-open{margin-top:8px;}}' +
       '@media(max-width:767px){.lok-ab .lok-wrap{padding:0 16px;}' +
         '.lok-ab-cover{padding-top:16px;}#lok-ab-hero{grid-template-columns:1fr;}.lok-cv-ph{grid-column:1;grid-row:1;max-width:none;}' +
         '.lok-cv-card{grid-column:1;grid-row:2;margin:-64px 12px 0;padding:26px 22px 28px;}#lok-ab-hero h1{font-size:36px!important;margin-bottom:22px!important;}' +
@@ -217,7 +220,7 @@
         '.lok-chk{grid-template-columns:1fr;gap:8px;}.lok-chk li{font-size:14px;}.lok-who-foot{padding-top:20px;}' +
         '.lok-fnd{flex-direction:column;align-items:flex-start;gap:12px;padding:20px;margin-top:14px;}' +
         '.lok-open{padding:20px;}.lok-ab #wl-trigger{width:100%;}' +
-        '.lok-ab .lok-lt-h{font-size:30px!important;}.lok-ab .lok-lt-face{width:150px!important;height:150px!important;box-shadow:0 0 0 6px ' + C.pk + ';}' +
+        '.lok-ab .lok-lt-h{font-size:30px!important;}.lok-ab .lok-lt-face{width:210px!important;height:274px!important;border-radius:20px!important;box-shadow:8px 8px 0 0 ' + C.pk + ';}' +
         '.lok-lt-body{margin-top:18px;gap:14px;}.lok-ab .lok-lt-p{font-size:15.5px!important;line-height:1.75!important;}.lok-ab .lok-sig img{width:150px!important;}' +
         '.lok-lt-acts .lok-btn{width:100%;}}';
     var s = document.createElement('style');
@@ -499,7 +502,13 @@
     var letter = el('div', 'lok-letter');
     var left = el('div');
     if (face) {
+      // New photo as a tall rectangle (F 2026-11-26 'I want the rectangle on the about page').
       face.removeAttribute('sizes');
+      face.removeAttribute('srcset');
+      face.src = FOUNDER_PORTRAIT;
+      face.alt = 'Francesca, founder of Lokali';
+      face.setAttribute('width', '762');
+      face.setAttribute('height', '1024');
       left.appendChild(take(face, 'lok-lt-face'));
     }
     letter.appendChild(left);
