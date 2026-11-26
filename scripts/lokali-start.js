@@ -28,7 +28,7 @@
   var LAST_CHECKED = 'September 20, 2026';
   var KEY = 'lokali_start_v3';
   var FONT = '"Plus Jakarta Sans",sans-serif';
-  var FOUNDER_PHOTO = 'https://cdn.prod.website-files.com/6989095758ae17edfc424d30/6ace7bd4e6c66ad637d7db88_francesca-p-500.webp'; // F 2026-11-23: her note is true
+  var FOUNDER_PHOTO = 'https://cdn.jsdelivr.net/gh/franchi17/lokali-webflow-scripts@12e04c64793fa945eeceed77a6aec3429a1c064d/assets/francesca-circle-2026-11.webp'; // F 2026-11-23: her note is true. New photo F 2026-11-26.
 
   // Every entry was opened and read on LAST_CHECKED. `t` is the link label.
   var SRC = {
