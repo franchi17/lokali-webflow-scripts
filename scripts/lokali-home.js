@@ -256,9 +256,12 @@
       '.lok-note-card .lok-joke{font-weight:700;color:#6002EE;}' +
       '.lok-note-card .lok-sig{font-size:16px;color:#4A4761;font-weight:600;margin:0;}' +
       // the bold ending
-      '.lok-end{background:#6002EE;padding:112px 0;}' +
-      '.lok-end .lok-h2{color:#fff;font-size:60px;}' +
-      '.lok-end .lok-sub{color:#E9DDFF;margin-bottom:34px;}' +
+      // closing band = rounded card like Pricing (F 2026-11-25 'Yes, as drawn')
+      '.lok-end{background:#6002EE;padding:56px 0;border-radius:26px;max-width:1160px;width:calc(100% - 48px);margin:0 auto 64px;box-sizing:border-box;}' +
+      '.lok-end .lok-h2{color:#fff;font-size:38px;line-height:1.1;letter-spacing:-.025em;}' +
+      '.lok-end .lok-sub{color:#E9DDFF;font-size:17px;margin:12px auto 24px;max-width:56ch;}' +
+      '.lok-end .lok-wbtn.lok-out{border-color:transparent;text-decoration:underline!important;text-underline-offset:4px;padding-left:14px;padding-right:14px;}' +
+      '.lok-end .lok-wbtn.lok-out:hover{background:transparent;color:#E9DDFF!important;}' +
       '.lok-btns{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;}' +
       '.lok-wbtn{display:inline-flex;align-items:center;justify-content:center;background:#fff;color:#6002EE!important;font-weight:800;border-radius:999px;padding:16px 28px;font-size:15.5px;text-decoration:none!important;border:2px solid #fff;}' +
       '.lok-wbtn:hover{background:#F3EBFF;border-color:#F3EBFF;}' +
@@ -271,8 +274,8 @@
         '#lok-hero h1{font-size:56px!important;}#lok-hero .lok-lede{margin:18px auto 0!important;}.lok-hs{margin:26px auto 0;}' +
         '.lok-arch{margin:36px auto 0;justify-self:center;}.lok-tiles{grid-template-columns:repeat(2,minmax(0,1fr));}.lok-tile{min-height:0;}}' +
       '@media(max-width:991px){.lok-wrap{padding:0 24px;}.lok-cat-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:26px 16px;}' +
-        '.lok-band,.lok-cats{padding-top:56px!important;padding-bottom:56px!important;}html.lok-home3 .section.hero.v18{padding-top:40px!important;padding-bottom:76px!important;}.lok-worries{padding-top:40px!important;}.lok-end{padding:80px 0!important;}' +
-        '.lok-h2{font-size:34px;}.lok-end .lok-h2{font-size:40px;}.lok-sec-head h2{font-size:30px;}.lok-answer{font-size:24px;}' +
+        '.lok-band,.lok-cats{padding-top:56px!important;padding-bottom:56px!important;}html.lok-home3 .section.hero.v18{padding-top:40px!important;padding-bottom:76px!important;}.lok-worries{padding-top:40px!important;}.lok-end{padding:40px 0!important;width:calc(100% - 32px);border-radius:20px;margin-bottom:48px;}' +
+        '.lok-h2{font-size:34px;}.lok-end .lok-h2{font-size:30px;}.lok-sec-head h2{font-size:30px;}.lok-answer{font-size:24px;}' +
         '.lok-steps{grid-template-columns:1fr;}.lok-fol-grid{grid-template-columns:1fr;gap:32px;}.lok-fol-pic img{max-width:360px;}' +
         '.lok-note-card .lok-h2{font-size:30px;}}' +
       '@media(max-width:767px){' +

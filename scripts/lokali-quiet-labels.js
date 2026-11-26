@@ -4,6 +4,8 @@
  * own scripts had them removed at the source (home, about, start, this-week, holiday,
  * for-vendors, the-market). This file covers the pages whose eyebrows live in Webflow itself
  * (page code or HTML embeds) or in a script pinned where a bump means a big rewrite, path-gated so no other page is touched.
+ * Also (F 2026-11-25 'Yes, as drawn'): the closing band on /for-customers and /start becomes a
+ * rounded card like Pricing's (each page keeps its color).
  * Kept on purpose: This Week day names, Pricing plan names, For vendors plan tags, About
  * Vendors / Customers column labels, Founding vendors step numbers.
  */
@@ -20,7 +22,12 @@
     css = '.lkfc .eye,.lk-ai-eye{display:none!important;}' +
       '.lkfc figcaption,.lkfc figcaption a{text-transform:none!important;letter-spacing:normal!important;}' +
       // F 2026-11-25: 'Also on Lokali' list sat flush under its heading (.lkfc ul{margin:0} beat .lkfc-list)
-      '.lkfc .lkfc-list{margin-top:24px!important;}';
+      '.lkfc .lkfc-list{margin-top:24px!important;}' +
+      // closing band = rounded card like Pricing (F 2026-11-25 'Yes, as drawn')
+      '.lkfc .lkfc-end{border-radius:26px!important;max-width:1160px!important;width:calc(100% - 48px)!important;margin:0 auto 64px!important;padding:48px 40px!important;box-sizing:border-box!important;}.lkfc .lkfc-end h2{font-size:38px!important;line-height:1.1!important;}@media(max-width:767px){.lkfc .lkfc-end{width:calc(100% - 32px)!important;border-radius:20px!important;padding:36px 20px!important;margin-bottom:48px!important;}.lkfc .lkfc-end h2{font-size:30px!important;}}';
+  } else if (p === '/start') {
+    // lokali-start.js is pinned .672 in a page element; v1.4.707+ carries the same card at the source.
+    css = '.lkst .lkst-end{border-radius:26px!important;max-width:1160px!important;width:calc(100% - 48px)!important;margin:0 auto 64px!important;padding:48px 40px!important;box-sizing:border-box!important;}.lkst .lkst-end h2{font-size:38px!important;line-height:1.1!important;}@media(max-width:767px){.lkst .lkst-end{width:calc(100% - 32px)!important;border-radius:20px!important;padding:36px 20px!important;margin-bottom:48px!important;}.lkst .lkst-end h2{font-size:30px!important;}}';
   } else if (p === '/this-week' || p === '/this-weekend') {
     // lokali-weekend.js is pinned in the site footer loader; v1.4.703+ drops it at the source too.
     css = '.lkw-eyebrow{display:none!important;}';
