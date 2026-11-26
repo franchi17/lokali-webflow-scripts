@@ -316,8 +316,9 @@
       '.lkst-note img{width:96px;height:96px;border-radius:50%;object-fit:cover;box-shadow:0 0 0 4px #E0F5EB;}',
       '.lkst-note p{margin:0;font-size:17px;line-height:1.6;color:#45415A;}',
       '.lkst-note b{display:block;margin-top:8px;font-size:14px;font-weight:700;color:#17634A;}',
-      '.lkst-end{background:#17634A;color:#fff;text-align:center;padding:60px 24px;}',
-      '.lkst-end h2{margin:0;font-size:36px;line-height:1.12;font-weight:800;letter-spacing:-.025em;color:#fff;text-wrap:balance;}',
+      '.lkst-end{background:#17634A;color:#fff;text-align:center;padding:48px 40px;border-radius:26px;max-width:1160px;width:calc(100% - 48px);margin:0 auto 64px;box-sizing:border-box;}', // closing band = rounded card like Pricing (F 2026-11-25 'Yes, as drawn')
+      '@media(max-width:767px){.lkst-end{width:calc(100% - 32px);border-radius:20px;padding:36px 20px;margin-bottom:48px;}.lkst-end h2{font-size:30px;}}',
+      '.lkst-end h2{margin:0;font-size:38px;line-height:1.12;font-weight:800;letter-spacing:-.025em;color:#fff;text-wrap:balance;}',
       '.lkst-end p{margin:12px auto 22px;font-size:17px;line-height:1.6;color:#E0F5EB;max-width:52ch;}',
       '.lkst-end a{display:inline-block;background:#fff;color:#17634A;font-size:15.5px;font-weight:700;padding:15px 28px;border-radius:999px;text-decoration:none;}',
       '.lkst-end a:hover{background:#E0F5EB;color:#17634A;}',

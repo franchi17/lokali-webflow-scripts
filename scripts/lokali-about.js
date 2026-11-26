@@ -174,6 +174,10 @@
       '.lok-fnd .lok-ul{white-space:nowrap;font-size:15px;}' +
       // built for everywhere + waitlist
       '.lok-ab-where{background:' + C.pd + ';}' +
+      // closing band = rounded card like Pricing (F 2026-11-25 'Yes, as drawn')
+      '.lok-ab.lok-sec.lok-ab-where{padding:56px 0;border-radius:26px;max-width:1160px;width:calc(100% - 48px);margin:0 auto 64px;box-sizing:border-box;}' +
+      '.lok-ab.lok-ab-where .lok-h2{font-size:38px!important;line-height:1.1!important;}' +
+      '@media(max-width:991px){.lok-ab.lok-sec.lok-ab-where{padding:40px 0;width:calc(100% - 32px);border-radius:20px;margin-bottom:48px;}.lok-ab.lok-ab-where .lok-h2{font-size:30px!important;}}' +
       '.lok-ab.lok-ab-where .lok-h2,.lok-ab.lok-ab-where .lok-h2 *{color:#fff!important;}' +
       '.lok-ab.lok-ab-where .lok-wh-grid>div>.lok-copy{color:' + C.pk + '!important;}' +
       '.lok-wh-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:64px;align-items:start;}' +

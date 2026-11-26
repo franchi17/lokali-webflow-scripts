@@ -112,6 +112,10 @@
       '.lkft #plans{display:none!important;}' +
       // the ending band: deep blue
       '.lkft .lkft-ctab{background:' + C.sd + '!important;}' +
+      // closing band = rounded card like Pricing (F 2026-11-25 'Yes, as drawn')
+      '.lkft .lkft-ctab{border-radius:26px!important;max-width:1160px!important;width:calc(100% - 48px)!important;margin:0 auto 64px!important;padding:48px 40px!important;box-sizing:border-box!important;text-align:center!important;}' +
+      '.lkft .lkft-ctab h2{font-size:38px!important;line-height:1.1!important;letter-spacing:-.025em!important;}' +
+      '@media(max-width:767px){.lkft .lkft-ctab{width:calc(100% - 32px)!important;border-radius:20px!important;padding:36px 20px!important;margin-bottom:48px!important;}.lkft .lkft-ctab h2{font-size:30px!important;}}' +
       '.lkft .lkft-ctab h2{color:#fff!important;}' +
       '.lkft .lkft-ctab p,.lkft .lkft-ctab small{color:#D7E6F8!important;}' +
       '.lkft .lkft-ctab .lkft-btn{background:#fff!important;color:' + C.sd + '!important;}' +
